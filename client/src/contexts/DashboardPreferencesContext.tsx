@@ -1,7 +1,20 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
-import type { WidgetState } from '@/types/dashboard';
-import { LAYOUT_PRESETS, DEFAULT_LAYOUT_ID, WIDGET_METADATA } from '@/lib/constants/dashboardPresets';
-import { trpc } from '@/lib/trpc';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react";
+import type { WidgetState } from "@/types/dashboard";
+import {
+  LAYOUT_PRESETS,
+  DEFAULT_LAYOUT_ID,
+  WIDGET_METADATA,
+} from "@/lib/constants/dashboardPresets";
+import { trpc } from "@/lib/trpc";
 
 interface DashboardPreferencesState {
   activeLayoutId: string;
@@ -19,14 +32,17 @@ interface DashboardPreferencesActions {
   setIsCustomizing: (isCustomizing: boolean) => void;
 }
 
-type DashboardPreferencesContextType = DashboardPreferencesState & DashboardPreferencesActions & {
-  isSyncing: boolean;
-  isLoading: boolean;
-};
+type DashboardPreferencesContextType = DashboardPreferencesState &
+  DashboardPreferencesActions & {
+    isSyncing: boolean;
+    isLoading: boolean;
+  };
 
-const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
+const DashboardPreferencesContext = createContext<
+  DashboardPreferencesContextType | undefined
+>(undefined);
 
-const STORAGE_KEY = 'terp-dashboard-preferences';
+const STORAGE_KEY = "terp-dashboard-preferences";
 const DEBOUNCE_DELAY = 1000; // 1 second debounce for auto-save
 
 function loadPreferencesFromLocalStorage(): DashboardPreferencesState {
@@ -36,9 +52,12 @@ function loadPreferencesFromLocalStorage(): DashboardPreferencesState {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error('Failed to load dashboard preferences from localStorage:', error);
+    console.error(
+      "Failed to load dashboard preferences from localStorage:",
+      error
+    );
   }
-  
+
   // Return default
   return {
     activeLayoutId: DEFAULT_LAYOUT_ID,
@@ -51,15 +70,20 @@ function savePreferencesToLocalStorage(state: DashboardPreferencesState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
-    console.error('Failed to save dashboard preferences to localStorage:', error);
+    console.error(
+      "Failed to save dashboard preferences to localStorage:",
+      error
+    );
   }
 }
 
 /**
  * Convert backend WidgetConfig[] to frontend WidgetState[]
  */
-function convertBackendToFrontend(widgetConfig: Array<{ id: string; isVisible: boolean; order?: number }>): WidgetState[] {
-  return widgetConfig.map((widget) => ({
+function convertBackendToFrontend(
+  widgetConfig: Array<{ id: string; isVisible: boolean; order?: number }>
+): WidgetState[] {
+  return widgetConfig.map(widget => ({
     id: widget.id,
     isExpanded: false,
     isVisible: widget.isVisible,
@@ -70,48 +94,61 @@ function convertBackendToFrontend(widgetConfig: Array<{ id: string; isVisible: b
 /**
  * Convert frontend WidgetState[] to backend WidgetConfig[]
  */
-function convertFrontendToBackend(widgets: WidgetState[]): Array<{ id: string; isVisible: boolean; order?: number }> {
-  return widgets.map((widget) => ({
+function convertFrontendToBackend(
+  widgets: WidgetState[]
+): Array<{ id: string; isVisible: boolean; order?: number }> {
+  return widgets.map(widget => ({
     id: widget.id,
     isVisible: widget.isVisible,
     order: widget.order,
   }));
 }
 
-export function DashboardPreferencesProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<DashboardPreferencesState>(loadPreferencesFromLocalStorage);
+export function DashboardPreferencesProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [state, setState] = useState<DashboardPreferencesState>(
+    loadPreferencesFromLocalStorage
+  );
   const [isSyncing, setIsSyncing] = useState(false);
-  const [saveTimeoutId, setSaveTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
+  // Use a ref instead of state for the timeout ID — we don't need to re-render
+  // when it changes, and keeping it as state would require adding it to the
+  // debounce effect's deps (causing the effect to re-run when we setSaveTimeoutId).
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch preferences from backend
-  const { data: serverPreferences, isLoading } = trpc.dashboardPreferences.getPreferences.useQuery(undefined, {
-    retry: 1,
-    refetchOnWindowFocus: false,
-  });
+  const { data: serverPreferences, isLoading } =
+    trpc.dashboardPreferences.getPreferences.useQuery(undefined, {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    });
 
   // Mutation for updating preferences
-  const updateMutation = trpc.dashboardPreferences.updatePreferences.useMutation({
-    onMutate: () => {
-      setIsSyncing(true);
-    },
-    onSuccess: () => {
-      if (import.meta.env.DEV) {
-        console.info('Dashboard preferences synced to server');
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to sync dashboard preferences:', error);
-    },
-    onSettled: () => {
-      setIsSyncing(false);
-    },
-  });
+  const updateMutation =
+    trpc.dashboardPreferences.updatePreferences.useMutation({
+      onMutate: () => {
+        setIsSyncing(true);
+      },
+      onSuccess: () => {
+        if (import.meta.env.DEV) {
+          console.info("Dashboard preferences synced to server");
+        }
+      },
+      onError: error => {
+        console.error("Failed to sync dashboard preferences:", error);
+      },
+      onSettled: () => {
+        setIsSyncing(false);
+      },
+    });
 
   // Mutation for resetting preferences
   const resetMutation = trpc.dashboardPreferences.resetPreferences.useMutation({
     onSuccess: () => {
       if (import.meta.env.DEV) {
-        console.info('Dashboard preferences reset on server');
+        console.info("Dashboard preferences reset on server");
       }
       // Reset local state to defaults
       setState({
@@ -120,8 +157,8 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         isCustomizing: false,
       });
     },
-    onError: (error) => {
-      console.error('Failed to reset dashboard preferences:', error);
+    onError: error => {
+      console.error("Failed to reset dashboard preferences:", error);
     },
   });
 
@@ -129,13 +166,15 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   useEffect(() => {
     if (serverPreferences && serverPreferences.id !== 0) {
       // Server has saved preferences, use them
-      const backendWidgets = convertBackendToFrontend(serverPreferences.widgetConfig);
+      const backendWidgets = convertBackendToFrontend(
+        serverPreferences.widgetConfig
+      );
       setState({
         activeLayoutId: serverPreferences.activeLayout,
         widgets: backendWidgets,
         isCustomizing: false,
       });
-      
+
       // Also save to localStorage as cache
       savePreferencesToLocalStorage({
         activeLayoutId: serverPreferences.activeLayout,
@@ -144,37 +183,43 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
       });
 
       if (import.meta.env.DEV) {
-        console.info('Loaded dashboard preferences from server');
+        console.info("Loaded dashboard preferences from server");
       }
     } else if (serverPreferences && serverPreferences.id === 0) {
       // No saved preferences on server, use localStorage or defaults
       if (import.meta.env.DEV) {
-        console.info('No saved preferences on server, using localStorage/defaults');
+        console.info(
+          "No saved preferences on server, using localStorage/defaults"
+        );
       }
     }
   }, [serverPreferences]);
 
-  // Debounced auto-save to server whenever state changes
+  // Debounced auto-save to server whenever state changes.
   useEffect(() => {
     // Don't sync if we're still loading from server
     if (isLoading) return;
 
-    // Clear existing timeout
-    if (saveTimeoutId) {
-      clearTimeout(saveTimeoutId);
+    // Clear existing timeout (ref doesn't need to be in deps)
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
 
     // Set new timeout for debounced save
     const timeoutId = setTimeout(() => {
       const backendWidgets = convertFrontendToBackend(state.widgets);
-      
+
       updateMutation.mutate({
-        activeLayout: state.activeLayoutId as 'executive' | 'operations' | 'sales' | 'custom',
+        activeLayout: state.activeLayoutId as
+          | "executive"
+          | "operations"
+          | "sales"
+          | "custom",
         widgetConfig: backendWidgets,
       });
     }, DEBOUNCE_DELAY);
 
-    setSaveTimeoutId(timeoutId);
+    saveTimeoutRef.current = timeoutId;
 
     // Also save to localStorage immediately for instant persistence
     savePreferencesToLocalStorage(state);
@@ -185,19 +230,22 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         clearTimeout(timeoutId);
       }
     };
-  }, [state, isLoading]); // Intentionally not including updateMutation to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, isLoading]); // Intentionally excluding updateMutation - it's not referentially stable in TanStack Query v5
 
   const setActiveLayout = useCallback((layoutId: string) => {
     const preset = LAYOUT_PRESETS[layoutId];
     if (preset) {
-      setState((prev) => {
+      setState(prev => {
         // Special handling for 'custom' layout: preserve current widgets
         // instead of replacing with empty array
-        if (layoutId === 'custom') {
+        if (layoutId === "custom") {
           // If current widgets array is empty, initialize with all widgets hidden
           // so users can selectively enable them via Widget Visibility panel
           if (prev.widgets.length === 0) {
-            const allWidgetsHidden: WidgetState[] = Object.keys(WIDGET_METADATA).map((id, index) => ({
+            const allWidgetsHidden: WidgetState[] = Object.keys(
+              WIDGET_METADATA
+            ).map((id, index) => ({
               id,
               isVisible: false,
               isExpanded: false,
@@ -215,7 +263,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
             // Keep existing widgets when switching to custom
           };
         }
-        
+
         // For other presets, use the preset's widget configuration
         return {
           ...prev,
@@ -227,14 +275,14 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   }, []);
 
   const toggleWidgetVisibility = useCallback((widgetId: string) => {
-    setState((prev) => {
-      const existingWidget = prev.widgets.find((w) => w.id === widgetId);
-      
+    setState(prev => {
+      const existingWidget = prev.widgets.find(w => w.id === widgetId);
+
       let newWidgets: WidgetState[];
-      
+
       if (existingWidget) {
         // Widget exists, toggle its visibility
-        newWidgets = prev.widgets.map((widget) =>
+        newWidgets = prev.widgets.map(widget =>
           widget.id === widgetId
             ? { ...widget, isVisible: !widget.isVisible }
             : widget
@@ -252,10 +300,10 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
           },
         ];
       }
-      
+
       // If we're modifying a preset, switch to custom
-      const newLayoutId = 'custom';
-      
+      const newLayoutId = "custom";
+
       return {
         ...prev,
         activeLayoutId: newLayoutId,
@@ -265,55 +313,63 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   }, []);
 
   const reorderWidgets = useCallback((newOrder: string[]) => {
-    setState((prev) => {
-      const widgetMap = new Map(prev.widgets.map((w) => [w.id, w]));
-      const newWidgets = newOrder.map((id) => widgetMap.get(id)).filter((w): w is NonNullable<typeof w> => w !== undefined);
-      
+    setState(prev => {
+      const widgetMap = new Map(prev.widgets.map(w => [w.id, w]));
+      const newWidgets = newOrder
+        .map(id => widgetMap.get(id))
+        .filter((w): w is NonNullable<typeof w> => w !== undefined);
+
       return {
         ...prev,
-        activeLayoutId: 'custom',
+        activeLayoutId: "custom",
         widgets: newWidgets,
       };
     });
   }, []);
 
   const moveWidgetUp = useCallback((widgetId: string) => {
-    setState((prev) => {
-      const index = prev.widgets.findIndex((w) => w.id === widgetId);
+    setState(prev => {
+      const index = prev.widgets.findIndex(w => w.id === widgetId);
       if (index <= 0) return prev; // Already at top or not found
-      
+
       const newWidgets = [...prev.widgets];
-      [newWidgets[index - 1], newWidgets[index]] = [newWidgets[index], newWidgets[index - 1]];
-      
+      [newWidgets[index - 1], newWidgets[index]] = [
+        newWidgets[index],
+        newWidgets[index - 1],
+      ];
+
       // Update order property
       newWidgets.forEach((widget, idx) => {
         widget.order = idx;
       });
-      
+
       return {
         ...prev,
-        activeLayoutId: 'custom',
+        activeLayoutId: "custom",
         widgets: newWidgets,
       };
     });
   }, []);
 
   const moveWidgetDown = useCallback((widgetId: string) => {
-    setState((prev) => {
-      const index = prev.widgets.findIndex((w) => w.id === widgetId);
+    setState(prev => {
+      const index = prev.widgets.findIndex(w => w.id === widgetId);
       if (index === -1 || index >= prev.widgets.length - 1) return prev; // Already at bottom or not found
-      
+
       const newWidgets = [...prev.widgets];
-      [newWidgets[index], newWidgets[index + 1]] = [newWidgets[index + 1], newWidgets[index]];
-      
+      [newWidgets[index], newWidgets[index + 1]] = [
+        newWidgets[index + 1],
+        newWidgets[index],
+      ];
+
       // Update order property
       newWidgets.forEach((widget, idx) => {
         widget.order = idx;
       });
-      
+
       return {
         ...prev,
-        activeLayoutId: 'custom',
+        activeLayoutId: "custom",
         widgets: newWidgets,
       };
     });
@@ -322,7 +378,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   const resetToDefault = useCallback(() => {
     // Reset on server
     resetMutation.mutate();
-    
+
     // Reset local state immediately (optimistic update)
     setState({
       activeLayoutId: DEFAULT_LAYOUT_ID,
@@ -332,21 +388,35 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   }, [resetMutation]);
 
   const setIsCustomizing = useCallback((isCustomizing: boolean) => {
-    setState((prev) => ({ ...prev, isCustomizing }));
+    setState(prev => ({ ...prev, isCustomizing }));
   }, []);
 
-  const value: DashboardPreferencesContextType = useMemo(() => ({
-    ...state,
-    setActiveLayout,
-    toggleWidgetVisibility,
-    reorderWidgets,
-    moveWidgetUp,
-    moveWidgetDown,
-    resetToDefault,
-    setIsCustomizing,
-    isSyncing,
-    isLoading,
-  }), [state, setActiveLayout, toggleWidgetVisibility, reorderWidgets, moveWidgetUp, moveWidgetDown, resetToDefault, setIsCustomizing, isSyncing, isLoading]);
+  const value: DashboardPreferencesContextType = useMemo(
+    () => ({
+      ...state,
+      setActiveLayout,
+      toggleWidgetVisibility,
+      reorderWidgets,
+      moveWidgetUp,
+      moveWidgetDown,
+      resetToDefault,
+      setIsCustomizing,
+      isSyncing,
+      isLoading,
+    }),
+    [
+      state,
+      setActiveLayout,
+      toggleWidgetVisibility,
+      reorderWidgets,
+      moveWidgetUp,
+      moveWidgetDown,
+      resetToDefault,
+      setIsCustomizing,
+      isSyncing,
+      isLoading,
+    ]
+  );
 
   return (
     <DashboardPreferencesContext.Provider value={value}>
@@ -358,7 +428,9 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
 export function useDashboardPreferences() {
   const context = useContext(DashboardPreferencesContext);
   if (!context) {
-    throw new Error('useDashboardPreferences must be used within DashboardPreferencesProvider');
+    throw new Error(
+      "useDashboardPreferences must be used within DashboardPreferencesProvider"
+    );
   }
   return context;
 }

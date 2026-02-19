@@ -1,6 +1,6 @@
 /**
  * Test Suite for Workflow Queue Setup Script
- * 
+ *
  * Tests all scenarios to ensure the setup script is production-ready:
  * - Empty database (fresh install)
  * - Existing workflow_statuses table
@@ -8,7 +8,7 @@
  * - Existing batches with statusId
  * - Idempotency (running twice)
  * - Error handling and rollback
- * 
+ *
  * @version 1.0
  * @date 2024-11-09
  */
@@ -39,10 +39,13 @@ interface TestResult {
 
 const testResults: TestResult[] = [];
 
-async function runTest(name: string, testFn: () => Promise<void>): Promise<void> {
+async function runTest(
+  name: string,
+  testFn: () => Promise<void>
+): Promise<void> {
   const startTime = Date.now();
   log(`\n🧪 Running: ${name}`, "cyan");
-  
+
   try {
     await testFn();
     const duration = Date.now() - startTime;
@@ -50,12 +53,20 @@ async function runTest(name: string, testFn: () => Promise<void>): Promise<void>
     log(`✅ PASSED (${duration}ms)`, "green");
   } catch (error) {
     const duration = Date.now() - startTime;
-    testResults.push({ name, passed: false, error: error instanceof Error ? error.message : String(error), duration });
+    testResults.push({
+      name,
+      passed: false,
+      error: error instanceof Error ? error.message : String(error),
+      duration,
+    });
     log(`❌ FAILED: ${error.message} (${duration}ms)`, "red");
   }
 }
 
-async function checkTableExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string): Promise<boolean> {
+async function checkTableExists(
+  db: { execute: (sql: unknown) => Promise<unknown[]> },
+  tableName: string
+): Promise<boolean> {
   const result = await db.execute(sql`
     SELECT COUNT(*) as count 
     FROM information_schema.tables 
@@ -65,7 +76,11 @@ async function checkTableExists(db: { execute: (sql: unknown) => Promise<unknown
   return (result[0][0] as { count: number }).count > 0;
 }
 
-async function checkColumnExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string, columnName: string): Promise<boolean> {
+async function checkColumnExists(
+  db: { execute: (sql: unknown) => Promise<unknown[]> },
+  tableName: string,
+  columnName: string
+): Promise<boolean> {
   const result = await db.execute(sql`
     SELECT COUNT(*) as count 
     FROM information_schema.columns 
@@ -73,17 +88,19 @@ async function checkColumnExists(db: { execute: (sql: unknown) => Promise<unknow
     AND table_name = ${tableName}
     AND column_name = ${columnName}
   `);
-  return (result[0][0] as any).count > 0;
+  return (result[0][0] as { count: number }).count > 0;
 }
 
 async function runTests() {
   log("\n🚀 Starting Workflow Queue Setup Script Test Suite\n", "green");
-  log("=" .repeat(70), "cyan");
-  
+  log("=".repeat(70), "cyan");
+
   const db = await getDb();
-  
+
   if (!db) {
-    throw new Error("Failed to connect to database. Please check DATABASE_URL environment variable.");
+    throw new Error(
+      "Failed to connect to database. Please check DATABASE_URL environment variable."
+    );
   }
 
   // ============================================================================
@@ -106,11 +123,22 @@ async function runTests() {
     }
 
     // Check required columns
-    const requiredColumns = ["id", "name", "description", "color", "order", "isActive", "createdAt", "updatedAt"];
+    const requiredColumns = [
+      "id",
+      "name",
+      "description",
+      "color",
+      "order",
+      "isActive",
+      "createdAt",
+      "updatedAt",
+    ];
     for (const col of requiredColumns) {
       const colExists = await checkColumnExists(db, "workflow_statuses", col);
       if (!colExists) {
-        throw new Error(`Required column '${col}' missing from workflow_statuses table`);
+        throw new Error(
+          `Required column '${col}' missing from workflow_statuses table`
+        );
       }
     }
 
@@ -122,7 +150,7 @@ async function runTests() {
       AND table_name = 'workflow_statuses'
       AND constraint_type = 'UNIQUE'
     `);
-    
+
     if (!constraints[0] || constraints[0].length === 0) {
       throw new Error("UNIQUE constraint on 'name' column is missing");
     }
@@ -138,11 +166,25 @@ async function runTests() {
     }
 
     // Check required columns
-    const requiredColumns = ["id", "batchId", "fromStatusId", "toStatusId", "changedBy", "notes", "createdAt"];
+    const requiredColumns = [
+      "id",
+      "batchId",
+      "fromStatusId",
+      "toStatusId",
+      "changedBy",
+      "notes",
+      "createdAt",
+    ];
     for (const col of requiredColumns) {
-      const colExists = await checkColumnExists(db, "batch_status_history", col);
+      const colExists = await checkColumnExists(
+        db,
+        "batch_status_history",
+        col
+      );
       if (!colExists) {
-        throw new Error(`Required column '${col}' missing from batch_status_history table`);
+        throw new Error(
+          `Required column '${col}' missing from batch_status_history table`
+        );
       }
     }
 
@@ -154,9 +196,12 @@ async function runTests() {
       AND table_name = 'batch_status_history'
       AND constraint_type = 'FOREIGN KEY'
     `);
-    
+
     if (!fkConstraints[0] || fkConstraints[0].length < 4) {
-      throw new Error("Expected 4 foreign key constraints, found " + (fkConstraints[0]?.length || 0));
+      throw new Error(
+        "Expected 4 foreign key constraints, found " +
+          (fkConstraints[0]?.length || 0)
+      );
     }
   });
 
@@ -177,12 +222,17 @@ async function runTests() {
       AND table_name = 'batches'
       AND column_name = 'statusId'
     `);
-    
-    const info = columnInfo[0][0] as { COLUMN_TYPE: string; IS_NULLABLE: string };
+
+    const info = columnInfo[0][0] as {
+      COLUMN_TYPE: string;
+      IS_NULLABLE: string;
+    };
     if (!info.COLUMN_TYPE.includes("int")) {
-      throw new Error(`statusId column should be INT, found ${info.COLUMN_TYPE}`);
+      throw new Error(
+        `statusId column should be INT, found ${info.COLUMN_TYPE}`
+      );
     }
-    
+
     if (info.IS_NULLABLE !== "YES") {
       throw new Error("statusId column should be nullable");
     }
@@ -195,26 +245,28 @@ async function runTests() {
     const statuses = await db.execute(sql`
       SELECT name FROM workflow_statuses ORDER BY \`order\`
     `);
-    
+
     const expectedStatuses = [
       "Intake Queue",
       "Quality Check",
       "Lab Testing",
       "Packaging",
       "Ready for Sale",
-      "On Hold"
+      "On Hold",
     ];
-    
+
     const actualStatuses = statuses[0].map((r: { name: string }) => r.name);
-    
+
     for (const expected of expectedStatuses) {
       if (!actualStatuses.includes(expected)) {
         throw new Error(`Missing expected status: ${expected}`);
       }
     }
-    
+
     if (actualStatuses.length < 6) {
-      throw new Error(`Expected at least 6 statuses, found ${actualStatuses.length}`);
+      throw new Error(
+        `Expected at least 6 statuses, found ${actualStatuses.length}`
+      );
     }
   });
 
@@ -226,7 +278,7 @@ async function runTests() {
       SELECT COUNT(*) as count FROM batches
     `);
     const total = (totalBatches[0][0] as { count: number }).count;
-    
+
     if (total === 0) {
       log("⚠️  No batches in database to test migration", "yellow");
       return;
@@ -236,16 +288,18 @@ async function runTests() {
       SELECT COUNT(*) as count FROM batches WHERE statusId IS NOT NULL
     `);
     const migrated = (migratedBatches[0][0] as { count: number }).count;
-    
+
     if (migrated === 0) {
       throw new Error("No batches have been migrated to workflow statuses");
     }
-    
+
     const percentage = ((migrated / total) * 100).toFixed(1);
     log(`  ℹ️  ${migrated}/${total} batches migrated (${percentage}%)`, "blue");
-    
+
     if (migrated < total) {
-      throw new Error(`Only ${migrated}/${total} batches migrated. Expected all batches to have statusId.`);
+      throw new Error(
+        `Only ${migrated}/${total} batches migrated. Expected all batches to have statusId.`
+      );
     }
   });
 
@@ -262,25 +316,30 @@ async function runTests() {
       GROUP BY ws.id, ws.name
       ORDER BY ws.\`order\`
     `);
-    
+
     const totalBatches = await db.execute(sql`
       SELECT COUNT(*) as count FROM batches
     `);
-    const total = (totalBatches[0][0] as any).count;
-    
+    const total = (totalBatches[0][0] as { count: number }).count;
+
     if (total === 0) {
       log("⚠️  No batches in database to test distribution", "yellow");
       return;
     }
 
     log("  Distribution:", "blue");
-    distribution[0].forEach((row: any) => {
-      const percentage = total > 0 ? ((row.batch_count / total) * 100).toFixed(1) : "0.0";
-      log(`    ${row.name}: ${row.batch_count} (${percentage}%)`, "blue");
-    });
+    (distribution[0] as Array<{ name: string; batch_count: number }>).forEach(
+      row => {
+        const percentage =
+          total > 0 ? ((row.batch_count / total) * 100).toFixed(1) : "0.0";
+        log(`    ${row.name}: ${row.batch_count} (${percentage}%)`, "blue");
+      }
+    );
 
     // Check that at least some statuses have batches
-    const statusesWithBatches = distribution[0].filter((r: any) => r.batch_count > 0).length;
+    const statusesWithBatches = (
+      distribution[0] as Array<{ batch_count: number }>
+    ).filter(r => r.batch_count > 0).length;
     if (statusesWithBatches === 0) {
       throw new Error("No workflow statuses have any batches assigned");
     }
@@ -301,7 +360,11 @@ async function runTests() {
       `);
     } catch (error) {
       // If the new syntax fails, try old syntax
-      if (error instanceof Error ? error.message : String(error)?.includes("syntax")) {
+      if (
+        error instanceof Error
+          ? error.message
+          : String(error)?.includes("syntax")
+      ) {
         await db.execute(sql`
           INSERT INTO workflow_statuses (name, description, color, \`order\`)
           VALUES ('Quality Check', 'Test duplicate', '#000000', 99)
@@ -317,7 +380,7 @@ async function runTests() {
     const count = await db.execute(sql`
       SELECT COUNT(*) as count FROM workflow_statuses WHERE name = 'Quality Check'
     `);
-    
+
     if ((count[0][0] as { count: number }).count !== 1) {
       throw new Error("Duplicate status was created instead of being updated");
     }
@@ -335,11 +398,16 @@ async function runTests() {
         VALUES (999999, 999999)
       `);
     } catch (error) {
-      if (error instanceof Error ? error.message : String(error)?.includes("foreign key constraint") || error.message?.includes("Cannot add or update")) {
+      if (
+        error instanceof Error
+          ? error.message
+          : String(error)?.includes("foreign key constraint") ||
+            error.message?.includes("Cannot add or update")
+      ) {
         constraintWorks = true;
       }
     }
-    
+
     if (!constraintWorks) {
       throw new Error("Foreign key constraints are not working properly");
     }
@@ -350,7 +418,7 @@ async function runTests() {
   // ============================================================================
   await runTest("Query Performance", async () => {
     const start = Date.now();
-    
+
     // Test common query: get batches by status
     await db.execute(sql`
       SELECT b.*, ws.name as status_name
@@ -359,12 +427,14 @@ async function runTests() {
       WHERE ws.name = 'Quality Check'
       LIMIT 100
     `);
-    
+
     const duration = Date.now() - start;
     log(`  Query took ${duration}ms`, "blue");
-    
+
     if (duration > 1000) {
-      throw new Error(`Query took ${duration}ms, expected < 1000ms. May need index optimization.`);
+      throw new Error(
+        `Query took ${duration}ms, expected < 1000ms. May need index optimization.`
+      );
     }
   });
 
@@ -373,30 +443,38 @@ async function runTests() {
   // ============================================================================
   log("\n" + "=".repeat(70), "cyan");
   log("\n📊 Test Summary\n", "cyan");
-  
+
   const passed = testResults.filter(r => r.passed).length;
   const failed = testResults.filter(r => !r.passed).length;
   const total = testResults.length;
   const totalDuration = testResults.reduce((sum, r) => sum + r.duration, 0);
-  
+
   log(`Total Tests: ${total}`, "blue");
   log(`Passed: ${passed}`, passed === total ? "green" : "yellow");
   log(`Failed: ${failed}`, failed === 0 ? "green" : "red");
   log(`Total Duration: ${totalDuration}ms`, "blue");
-  
+
   if (failed > 0) {
     log("\n❌ Failed Tests:", "red");
-    testResults.filter(r => !r.passed).forEach(r => {
-      log(`  - ${r.name}: ${r.error}`, "red");
-    });
+    testResults
+      .filter(r => !r.passed)
+      .forEach(r => {
+        log(`  - ${r.name}: ${r.error}`, "red");
+      });
   }
-  
+
   log("\n" + "=".repeat(70), "cyan");
-  
+
   if (failed === 0) {
-    log("\n✅ All tests passed! Workflow queue setup is production-ready.\n", "green");
+    log(
+      "\n✅ All tests passed! Workflow queue setup is production-ready.\n",
+      "green"
+    );
   } else {
-    log("\n❌ Some tests failed. Please review and fix issues before deploying.\n", "red");
+    log(
+      "\n❌ Some tests failed. Please review and fix issues before deploying.\n",
+      "red"
+    );
     process.exit(1);
   }
 }
@@ -406,7 +484,7 @@ runTests()
   .then(() => {
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     log("\n❌ Test suite crashed", "red");
     logger.error(error);
     process.exit(1);

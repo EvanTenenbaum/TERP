@@ -1,7 +1,6 @@
 import { z } from "zod";
 import crypto from "crypto";
 import { protectedProcedure, router, vipPortalProcedure } from "../_core/trpc";
-import { invalidateVipSession } from "../_core/tokenInvalidation";
 import { getDb } from "../db";
 import {
   appointmentRequests,
@@ -26,19 +25,35 @@ import {
   vendorSupply,
   vipPortalAuth,
   vipPortalConfigurations,
+  type InsertInvoice,
+  type InsertBill,
+  type InsertClientTransaction,
 } from "../../drizzle/schema";
 import * as liveCatalogService from "../services/liveCatalogService";
 import * as pricingEngine from "../pricingEngine";
 import * as priceAlertsService from "../services/priceAlertsService";
 import * as vipDebtAgingService from "../services/vipDebtAgingService";
 import * as vipCreditService from "../services/vipCreditService";
-import { eq, and, desc, gte, lte, sql, like, or, inArray, isNull } from "drizzle-orm";
+import {
+  eq,
+  and,
+  desc,
+  gte,
+  lte,
+  sql,
+  like,
+  or,
+  inArray,
+  isNull,
+} from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
-import { requirePermission } from "../_core/permissionMiddleware";
 import type { MetricType } from "../services/leaderboard";
 import { jsPDF } from "jspdf";
-import { getNotificationRepository, resolveRecipient } from "../services/notificationRepository";
+import {
+  getNotificationRepository,
+  resolveRecipient,
+} from "../services/notificationRepository";
 
 /**
  * Map legacy leaderboard type to new metric type
@@ -79,12 +94,16 @@ function formatDateKey(date: Date | string): string {
   return value.toISOString().split("T")[0] ?? "";
 }
 
-function formatCurrencyValue(value: string | number | null | undefined): string {
+function formatCurrencyValue(
+  value: string | number | null | undefined
+): string {
   const numericValue = typeof value === "number" ? value : Number(value ?? 0);
   return numericValue.toFixed(2);
 }
 
-function formatQuantityValue(value: string | number | null | undefined): string {
+function formatQuantityValue(
+  value: string | number | null | undefined
+): string {
   const numericValue = typeof value === "number" ? value : Number(value ?? 0);
   return numericValue.toFixed(2);
 }
@@ -151,7 +170,7 @@ async function buildAvailableSlots(
     );
 
   const blockedDateSet = new Set(
-    blockedDates.map((entry) => formatDateKey(entry.date))
+    blockedDates.map(entry => formatDateKey(entry.date))
   );
 
   const existingEvents = await db
@@ -228,7 +247,9 @@ async function buildAvailableSlots(
   );
 
   const maxBookingDate = new Date(now);
-  maxBookingDate.setDate(maxBookingDate.getDate() + appointmentType.maxAdvanceDays);
+  maxBookingDate.setDate(
+    maxBookingDate.getDate() + appointmentType.maxAdvanceDays
+  );
 
   const totalDuration =
     appointmentType.bufferBefore +
@@ -322,7 +343,7 @@ async function buildAvailableSlots(
 
         if (!hasConflict) {
           const pendingTimes = pendingByDate[dateKey] ?? [];
-          if (pendingTimes.some((pendingStart) => pendingStart === slotStart)) {
+          if (pendingTimes.some(pendingStart => pendingStart === slotStart)) {
             hasConflict = true;
           }
         }
@@ -349,17 +370,23 @@ export const vipPortalRouter = router({
   // ============================================================================
   // AUTHENTICATION
   // ============================================================================
-  
+
   auth: router({
     // Login with email and password
     login: protectedProcedure
-      .input(z.object({
-        email: z.string().email(),
-        password: z.string(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: eq(vipPortalAuth.email, input.email),
           with: {
@@ -374,7 +401,10 @@ export const vipPortalRouter = router({
           });
         }
 
-        const isValid = await bcrypt.compare(input.password, authRecord.passwordHash);
+        const isValid = await bcrypt.compare(
+          input.password,
+          authRecord.passwordHash
+        );
         if (!isValid) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -388,7 +418,8 @@ export const vipPortalRouter = router({
         const sessionExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
         // Update auth record
-        await db.update(vipPortalAuth)
+        await db
+          .update(vipPortalAuth)
           .set({
             sessionToken,
             sessionExpiresAt,
@@ -398,7 +429,8 @@ export const vipPortalRouter = router({
           .where(eq(vipPortalAuth.id, authRecord.id));
 
         // Update client last login
-        await db.update(clients)
+        await db
+          .update(clients)
           .set({ vipPortalLastLogin: new Date() })
           .where(eq(clients.id, authRecord.clientId));
 
@@ -412,24 +444,34 @@ export const vipPortalRouter = router({
     // Verify session token
     // SEC-030: Now properly validates impersonation tokens against the database
     verifySession: protectedProcedure
-      .input(z.object({
-        sessionToken: z.string(),
-      }))
+      .input(
+        z.object({
+          sessionToken: z.string(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
 
         // SEC-030: Validate UUID format to prevent token forgery
         const isValidUUID = (str: string): boolean => {
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          const uuidRegex =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           return uuidRegex.test(str);
         };
 
         // Check if this is an impersonation token
         if (input.sessionToken.startsWith("imp_")) {
           // SEC-030: Use the proper validation service for impersonation tokens
-          const { validateImpersonationSession } = await import("../services/vipPortalAdminService");
-          const validation = await validateImpersonationSession(input.sessionToken);
+          const { validateImpersonationSession } =
+            await import("../services/vipPortalAdminService");
+          const validation = await validateImpersonationSession(
+            input.sessionToken
+          );
 
           if (!validation.valid || validation.clientId === undefined) {
             throw new TRPCError({
@@ -501,13 +543,20 @@ export const vipPortalRouter = router({
 
     // Logout
     logout: protectedProcedure
-      .input(z.object({
-        sessionToken: z.string(),
-      }))
+      .input(
+        z.object({
+          sessionToken: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        await db.update(vipPortalAuth)
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+        await db
+          .update(vipPortalAuth)
           .set({
             sessionToken: null,
             sessionExpiresAt: null,
@@ -519,12 +568,18 @@ export const vipPortalRouter = router({
 
     // Request password reset
     requestPasswordReset: protectedProcedure
-      .input(z.object({
-        email: z.string().email(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+        })
+      )
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: eq(vipPortalAuth.email, input.email),
         });
@@ -537,7 +592,8 @@ export const vipPortalRouter = router({
         const resetToken = crypto.randomUUID();
         const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-        await db.update(vipPortalAuth)
+        await db
+          .update(vipPortalAuth)
           .set({
             resetToken,
             resetTokenExpiresAt,
@@ -546,7 +602,8 @@ export const vipPortalRouter = router({
 
         // Send password reset email via notification service
         try {
-          const { sendNotification } = await import("../services/notificationService");
+          const { sendNotification } =
+            await import("../services/notificationService");
           const appUrl = process.env.APP_URL;
           if (!appUrl) {
             throw new Error("APP_URL environment variable must be set");
@@ -574,13 +631,19 @@ export const vipPortalRouter = router({
 
     // Reset password with token
     resetPassword: protectedProcedure
-      .input(z.object({
-        resetToken: z.string(),
-        newPassword: z.string().min(8),
-      }))
+      .input(
+        z.object({
+          resetToken: z.string(),
+          newPassword: z.string().min(8),
+        })
+      )
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: and(
             eq(vipPortalAuth.resetToken, input.resetToken),
@@ -597,7 +660,8 @@ export const vipPortalRouter = router({
 
         const passwordHash = await bcrypt.hash(input.newPassword, 10);
 
-        await db.update(vipPortalAuth)
+        await db
+          .update(vipPortalAuth)
           .set({
             passwordHash,
             resetToken: null,
@@ -612,16 +676,22 @@ export const vipPortalRouter = router({
   // ============================================================================
   // CONFIGURATION
   // ============================================================================
-  
+
   config: router({
     // Get portal configuration
     get: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
@@ -654,16 +724,22 @@ export const vipPortalRouter = router({
   // ============================================================================
   // DASHBOARD
   // ============================================================================
-  
+
   dashboard: router({
     // Get dashboard KPIs
     getKPIs: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const client = await db.query.clients.findFirst({
           where: eq(clients.id, input.clientId),
         });
@@ -680,14 +756,16 @@ export const vipPortalRouter = router({
         const ytdTransactions = await db
           .select()
           .from(clientTransactions)
-          .where(and(
-            eq(clientTransactions.clientId, input.clientId),
-            sql`${clientTransactions.transactionDate} >= ${ytdStart.toISOString().split('T')[0]}`,
-            eq(clientTransactions.transactionType, "INVOICE")
-          ));
+          .where(
+            and(
+              eq(clientTransactions.clientId, input.clientId),
+              sql`${clientTransactions.transactionDate} >= ${ytdStart.toISOString().split("T")[0]}`,
+              eq(clientTransactions.transactionType, "INVOICE")
+            )
+          );
 
         const ytdSpend = ytdTransactions.reduce(
-          (sum, tx) => sum + parseFloat(tx.amount.toString()), 
+          (sum, tx) => sum + parseFloat(tx.amount.toString()),
           0
         );
 
@@ -695,10 +773,12 @@ export const vipPortalRouter = router({
         const activeNeeds = await db
           .select({ count: sql<number>`count(*)` })
           .from(clientNeeds)
-          .where(and(
-            eq(clientNeeds.clientId, input.clientId),
-            eq(clientNeeds.status, "ACTIVE")
-          ));
+          .where(
+            and(
+              eq(clientNeeds.clientId, input.clientId),
+              eq(clientNeeds.status, "ACTIVE")
+            )
+          );
 
         // Calculate credit utilization based on total owed
         // Note: creditLimit is not in the clients schema, so we use a default or skip this metric
@@ -710,10 +790,12 @@ export const vipPortalRouter = router({
         const activeSupply = await db
           .select({ count: sql<number>`count(*)` })
           .from(vendorSupply)
-          .where(and(
-            eq(vendorSupply.vendorId, input.clientId),
-            eq(vendorSupply.status, "AVAILABLE")
-          ));
+          .where(
+            and(
+              eq(vendorSupply.vendorId, input.clientId),
+              eq(vendorSupply.status, "AVAILABLE")
+            )
+          );
 
         return {
           currentBalance,
@@ -728,50 +810,58 @@ export const vipPortalRouter = router({
   // ============================================================================
   // ACCOUNTS RECEIVABLE
   // ============================================================================
-  
+
   ar: router({
     getInvoices: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-        search: z.string().optional(),
-        status: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+          search: z.string().optional(),
+          status: z.string().optional(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const { clientId, search, status } = input;
-        
+
         // Build query conditions
         const conditions = [eq(invoices.customerId, clientId)];
-        
+
         if (search) {
           conditions.push(like(invoices.invoiceNumber, `%${search}%`));
         }
-        
+
         if (status) {
-          conditions.push(eq(invoices.status, status as any));
+          conditions.push(
+            eq(invoices.status, status as NonNullable<InsertInvoice["status"]>)
+          );
         }
-        
+
         // Fetch invoices
         const clientInvoices = await db
           .select()
           .from(invoices)
           .where(and(...conditions))
           .orderBy(desc(invoices.invoiceDate));
-        
+
         // Calculate summary
         const totalOutstanding = clientInvoices
           .filter(inv => inv.status !== "PAID" && inv.status !== "VOID")
           .reduce((sum, inv) => sum + parseFloat(inv.amountDue.toString()), 0);
-        
+
         const overdueAmount = clientInvoices
           .filter(inv => inv.status === "OVERDUE")
           .reduce((sum, inv) => sum + parseFloat(inv.amountDue.toString()), 0);
-        
-        const openInvoiceCount = clientInvoices
-          .filter(inv => inv.status !== "PAID" && inv.status !== "VOID")
-          .length;
-        
+
+        const openInvoiceCount = clientInvoices.filter(
+          inv => inv.status !== "PAID" && inv.status !== "VOID"
+        ).length;
+
         return {
           summary: {
             totalOutstanding,
@@ -786,50 +876,64 @@ export const vipPortalRouter = router({
   // ============================================================================
   // ACCOUNTS PAYABLE
   // ============================================================================
-  
+
   ap: router({
     getBills: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-        search: z.string().optional(),
-        status: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+          search: z.string().optional(),
+          status: z.string().optional(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const { clientId, search, status } = input;
-        
+
         // Build query conditions
         const conditions = [eq(bills.vendorId, clientId)];
-        
+
         if (search) {
           conditions.push(like(bills.billNumber, `%${search}%`));
         }
-        
+
         if (status) {
-          conditions.push(eq(bills.status, status as any));
+          conditions.push(
+            eq(bills.status, status as NonNullable<InsertBill["status"]>)
+          );
         }
-        
+
         // Fetch bills
         const clientBills = await db
           .select()
           .from(bills)
           .where(and(...conditions))
           .orderBy(desc(bills.billDate));
-        
+
         // Calculate summary
         const totalOwed = clientBills
           .filter(bill => bill.status !== "PAID" && bill.status !== "VOID")
-          .reduce((sum, bill) => sum + parseFloat(bill.amountDue.toString()), 0);
-        
+          .reduce(
+            (sum, bill) => sum + parseFloat(bill.amountDue.toString()),
+            0
+          );
+
         const overdueAmount = clientBills
           .filter(bill => bill.status === "OVERDUE")
-          .reduce((sum, bill) => sum + parseFloat(bill.amountDue.toString()), 0);
-        
-        const openBillCount = clientBills
-          .filter(bill => bill.status !== "PAID" && bill.status !== "VOID")
-          .length;
-        
+          .reduce(
+            (sum, bill) => sum + parseFloat(bill.amountDue.toString()),
+            0
+          );
+
+        const openBillCount = clientBills.filter(
+          bill => bill.status !== "PAID" && bill.status !== "VOID"
+        ).length;
+
         return {
           summary: {
             totalOwed,
@@ -844,35 +948,53 @@ export const vipPortalRouter = router({
   // ============================================================================
   // TRANSACTION HISTORY
   // ============================================================================
-  
+
   transactions: router({
     getHistory: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-        search: z.string().optional(),
-        type: z.string().optional(),
-        status: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+          search: z.string().optional(),
+          type: z.string().optional(),
+          status: z.string().optional(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const { clientId, search, type, status } = input;
-        
+
         // Build query conditions
         const conditions = [eq(clientTransactions.clientId, clientId)];
-        
+
         if (search) {
-          conditions.push(like(clientTransactions.transactionNumber, `%${search}%`));
+          conditions.push(
+            like(clientTransactions.transactionNumber, `%${search}%`)
+          );
         }
-        
+
         if (type) {
-          conditions.push(eq(clientTransactions.transactionType, type as any));
+          conditions.push(
+            eq(
+              clientTransactions.transactionType,
+              type as NonNullable<InsertClientTransaction["transactionType"]>
+            )
+          );
         }
-        
+
         if (status) {
-          conditions.push(eq(clientTransactions.paymentStatus, status as any));
+          conditions.push(
+            eq(
+              clientTransactions.paymentStatus,
+              status as NonNullable<InsertClientTransaction["paymentStatus"]>
+            )
+          );
         }
-        
+
         // Fetch transactions
         const txList = await db
           .select()
@@ -880,17 +1002,16 @@ export const vipPortalRouter = router({
           .where(and(...conditions))
           .orderBy(desc(clientTransactions.transactionDate))
           .limit(100);
-        
+
         // Calculate summary
         const totalCount = txList.length;
         const totalValue = txList.reduce(
-          (sum, tx) => sum + parseFloat(tx.amount.toString()), 
+          (sum, tx) => sum + parseFloat(tx.amount.toString()),
           0
         );
-        const lastTransactionDate = txList.length > 0 
-          ? txList[0].transactionDate 
-          : null;
-        
+        const lastTransactionDate =
+          txList.length > 0 ? txList[0].transactionDate : null;
+
         return {
           summary: {
             totalCount,
@@ -905,16 +1026,22 @@ export const vipPortalRouter = router({
   // ============================================================================
   // MARKETPLACE - NEEDS
   // ============================================================================
-  
+
   marketplace: router({
     // Get client needs
     getNeeds: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         const needs = await db
           .select()
           .from(clientNeeds)
@@ -927,22 +1054,28 @@ export const vipPortalRouter = router({
     // Create client need
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     createNeed: vipPortalProcedure
-      .input(z.object({
-        strain: z.string().optional(),
-        category: z.string(),
-        quantity: z.number(),
-        unit: z.string(),
-        priceMax: z.number().optional(),
-        notes: z.string().optional(),
-        expiresInDays: z.number().default(5),
-      }))
+      .input(
+        z.object({
+          strain: z.string().optional(),
+          category: z.string(),
+          quantity: z.number(),
+          unit: z.string(),
+          priceMax: z.number().optional(),
+          notes: z.string().optional(),
+          expiresInDays: z.number().default(5),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         // Get clientId from verified VIP portal session (not from input)
         const clientId = ctx.clientId;
-        
+
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
 
@@ -960,30 +1093,41 @@ export const vipPortalRouter = router({
           createdByClientId: clientId, // VIP portal client attribution (BUG-037 fix)
         });
 
-        return { needId: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
+        return {
+          needId: Array.isArray(result)
+            ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+            : 0,
+        };
       }),
 
     // Update client need
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     updateNeed: vipPortalProcedure
-      .input(z.object({
-        id: z.number(),
-        strain: z.string().optional(),
-        category: z.string(),
-        quantity: z.number(),
-        unit: z.string(),
-        priceMax: z.number().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          strain: z.string().optional(),
+          category: z.string(),
+          quantity: z.number(),
+          unit: z.string(),
+          priceMax: z.number().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         // Get clientId from verified VIP portal session (not from input)
         const clientId = ctx.clientId;
         const { id, ...updateData } = input;
 
-        await db.update(clientNeeds)
+        await db
+          .update(clientNeeds)
           .set({
             strain: updateData.strain,
             category: updateData.category,
@@ -992,10 +1136,9 @@ export const vipPortalRouter = router({
             priceMax: updateData.priceMax?.toString(),
             notes: updateData.notes,
           })
-          .where(and(
-            eq(clientNeeds.id, id),
-            eq(clientNeeds.clientId, clientId)
-          ));
+          .where(
+            and(eq(clientNeeds.id, id), eq(clientNeeds.clientId, clientId))
+          );
 
         return { success: true };
       }),
@@ -1003,34 +1146,49 @@ export const vipPortalRouter = router({
     // Cancel client need
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     cancelNeed: vipPortalProcedure
-      .input(z.object({
-        id: z.number(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         // Get clientId from verified VIP portal session (not from input)
         const clientId = ctx.clientId;
-        
-        await db.update(clientNeeds)
+
+        await db
+          .update(clientNeeds)
           .set({ status: "CANCELLED" })
-          .where(and(
-            eq(clientNeeds.id, input.id),
-            eq(clientNeeds.clientId, clientId)
-          ));
+          .where(
+            and(
+              eq(clientNeeds.id, input.id),
+              eq(clientNeeds.clientId, clientId)
+            )
+          );
 
         return { success: true };
       }),
 
     // Get client supply listings
     getSupply: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
-      .query(async ({ input }) => {
+      .input(
+        z.object({
+          clientId: z.number(),
+        })
+      )
+      .query(async () => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         // For now, returning empty array as vendorSupply uses vendorId
         // In production, this would require a schema update or junction table
         // to link clients to their supply listings
@@ -1040,20 +1198,26 @@ export const vipPortalRouter = router({
     // Create supply listing
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     createSupply: vipPortalProcedure
-      .input(z.object({
-        strain: z.string(),
-        category: z.string(),
-        quantity: z.number(),
-        unit: z.string(),
-        priceMin: z.number().optional(),
-        priceMax: z.number().optional(),
-        notes: z.string().optional(),
-        expiresInDays: z.number().default(5),
-      }))
+      .input(
+        z.object({
+          strain: z.string(),
+          category: z.string(),
+          quantity: z.number(),
+          unit: z.string(),
+          priceMin: z.number().optional(),
+          priceMax: z.number().optional(),
+          notes: z.string().optional(),
+          expiresInDays: z.number().default(5),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         const clientId = ctx.clientId;
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
@@ -1072,26 +1236,36 @@ export const vipPortalRouter = router({
           createdByClientId: clientId, // VIP portal client attribution (BUG-037 fix)
         });
 
-        return { supplyId: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
+        return {
+          supplyId: Array.isArray(result)
+            ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+            : 0,
+        };
       }),
 
     // Update supply listing
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     updateSupply: vipPortalProcedure
-      .input(z.object({
-        id: z.number(),
-        strain: z.string(),
-        category: z.string(),
-        quantity: z.number(),
-        unit: z.string(),
-        priceMin: z.number().optional(),
-        priceMax: z.number().optional(),
-        notes: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          strain: z.string(),
+          category: z.string(),
+          quantity: z.number(),
+          unit: z.string(),
+          priceMin: z.number().optional(),
+          priceMax: z.number().optional(),
+          notes: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         const clientId = ctx.clientId;
         const { id, ...updateData } = input;
 
@@ -1110,7 +1284,8 @@ export const vipPortalRouter = router({
           });
         }
 
-        await db.update(vendorSupply)
+        await db
+          .update(vendorSupply)
           .set({
             strain: updateData.strain,
             category: updateData.category,
@@ -1127,13 +1302,19 @@ export const vipPortalRouter = router({
     // Cancel supply listing
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     cancelSupply: vipPortalProcedure
-      .input(z.object({
-        id: z.number(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         const clientId = ctx.clientId;
 
         // Verify ownership before cancellation
@@ -1152,7 +1333,8 @@ export const vipPortalRouter = router({
         }
 
         // Soft delete by setting status to EXPIRED (CANCELLED is not a valid status)
-        await db.update(vendorSupply)
+        await db
+          .update(vendorSupply)
           .set({
             status: "EXPIRED",
             updatedAt: new Date(),
@@ -1166,17 +1348,23 @@ export const vipPortalRouter = router({
   // ============================================================================
   // LEADERBOARD
   // ============================================================================
-  
+
   leaderboard: router({
     // Get leaderboard data for client (enhanced with unified leaderboard services)
     getLeaderboard: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         // Get client's VIP portal configuration
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
@@ -1193,18 +1381,18 @@ export const vipPortalRouter = router({
           });
         }
 
-        const displayMode = (leaderboardConfig?.displayMode || 'blackbox') as 'blackbox' | 'transparent';
+        const displayMode = (leaderboardConfig?.displayMode || "blackbox") as
+          | "blackbox"
+          | "transparent";
         const showSuggestions = leaderboardConfig?.showSuggestions ?? true;
         const minimumClients = leaderboardConfig?.minimumClients ?? 5;
         // Use 'type' field from existing config, map to new metric types
-        const legacyType = leaderboardConfig?.type || 'ytd_spend';
+        const legacyType = leaderboardConfig?.type || "ytd_spend";
         const primaryMetric = mapLegacyTypeToMetric(legacyType);
 
         // Import unified leaderboard services
-        const { 
-          getLeaderboard: getUnifiedLeaderboard, 
-          sanitizeForVipPortal,
-        } = await import('../services/leaderboard');
+        const { getLeaderboard: getUnifiedLeaderboard, sanitizeForVipPortal } =
+          await import("../services/leaderboard");
 
         // Get all VIP clients count for minimum threshold check
         const vipClients = await db.query.clients.findMany({
@@ -1240,8 +1428,10 @@ export const vipPortalRouter = router({
         entriesToShow.add(2);
         entriesToShow.add(3);
         entriesToShow.add(sanitizedResult.clientRank);
-        if (sanitizedResult.clientRank > 1) entriesToShow.add(sanitizedResult.clientRank - 1);
-        if (sanitizedResult.clientRank < sanitizedResult.totalParticipants) entriesToShow.add(sanitizedResult.clientRank + 1);
+        if (sanitizedResult.clientRank > 1)
+          entriesToShow.add(sanitizedResult.clientRank - 1);
+        if (sanitizedResult.clientRank < sanitizedResult.totalParticipants)
+          entriesToShow.add(sanitizedResult.clientRank + 1);
         entriesToShow.add(sanitizedResult.totalParticipants);
 
         const entries = sanitizedResult.entries
@@ -1250,7 +1440,8 @@ export const vipPortalRouter = router({
             rank: r.rank,
             // Only show client ID for the requesting client (already sanitized)
             clientId: r.isCurrentClient ? input.clientId : undefined,
-            metricValue: displayMode === 'transparent' ? r.metricValue : undefined,
+            metricValue:
+              displayMode === "transparent" ? r.metricValue : undefined,
             isCurrentClient: r.isCurrentClient,
           }));
 
@@ -1267,12 +1458,18 @@ export const vipPortalRouter = router({
 
     // Get available metrics for VIP Portal configuration
     getAvailableMetrics: protectedProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
+      .input(
+        z.object({
+          clientId: z.number(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
 
         // Verify client exists and has VIP portal enabled
         const client = await db.query.clients.findFirst({
@@ -1287,12 +1484,10 @@ export const vipPortalRouter = router({
         }
 
         // Return available metrics for customers (VIP Portal users)
-        const { METRIC_CONFIGS } = await import('../services/leaderboard');
-        
+        const { METRIC_CONFIGS } = await import("../services/leaderboard");
+
         const customerMetrics = Object.entries(METRIC_CONFIGS)
-          .filter(([_, config]) => 
-            config.applicableTo.includes('CUSTOMER')
-          )
+          .filter(([_, config]) => config.applicableTo.includes("CUSTOMER"))
           .map(([key, config]) => ({
             type: key,
             name: config.name,
@@ -1302,7 +1497,7 @@ export const vipPortalRouter = router({
 
         return {
           metrics: customerMetrics,
-          defaultPrimaryMetric: 'ytd_revenue',
+          defaultPrimaryMetric: "ytd_revenue",
         };
       }),
   }),
@@ -1314,19 +1509,24 @@ export const vipPortalRouter = router({
     listCalendars: vipPortalProcedure.query(async () => {
       const db = await getDb();
       if (!db) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       }
 
       const availableCalendars = await db
         .select()
         .from(calendars)
-        .where(or(eq(calendars.isArchived, false), isNull(calendars.isArchived)));
+        .where(
+          or(eq(calendars.isArchived, false), isNull(calendars.isArchived))
+        );
 
       if (availableCalendars.length === 0) {
         return [];
       }
 
-      const calendarIds = availableCalendars.map((calendar) => calendar.id);
+      const calendarIds = availableCalendars.map(calendar => calendar.id);
 
       const activeAppointmentTypes = await db
         .select({
@@ -1353,16 +1553,16 @@ export const vipPortalRouter = router({
         .where(inArray(calendarAvailability.calendarId, calendarIds));
 
       const calendarsWithTypes = availableCalendars
-        .filter((calendar) =>
-          availability.some((entry) => entry.calendarId === calendar.id)
+        .filter(calendar =>
+          availability.some(entry => entry.calendarId === calendar.id)
         )
-        .map((calendar) => ({
+        .map(calendar => ({
           id: calendar.id,
           name: calendar.name,
           description: calendar.description ?? "",
           appointmentTypes: activeAppointmentTypes
-            .filter((type) => type.calendarId === calendar.id)
-            .map((type) => ({
+            .filter(type => type.calendarId === calendar.id)
+            .map(type => ({
               id: type.id,
               name: type.name,
               description: type.description ?? "",
@@ -1370,7 +1570,7 @@ export const vipPortalRouter = router({
               color: type.color,
             })),
         }))
-        .filter((calendar) => calendar.appointmentTypes.length > 0);
+        .filter(calendar => calendar.appointmentTypes.length > 0);
 
       return calendarsWithTypes;
     }),
@@ -1455,7 +1655,10 @@ export const vipPortalRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         }
 
         const interval = input.slotIntervalMinutes ?? 30;
@@ -1481,19 +1684,28 @@ export const vipPortalRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         }
 
         const { calendarId, appointmentTypeId, requestedSlot, notes } = input;
         const clientId = ctx.clientId;
 
         if (!clientId) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "VIP session required",
+          });
         }
 
         const requestedDate = new Date(requestedSlot);
         if (Number.isNaN(requestedDate.getTime())) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid requested time" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid requested time",
+          });
         }
 
         const dateKey = formatDateKey(requestedDate);
@@ -1501,7 +1713,10 @@ export const vipPortalRouter = router({
         const slotLabel = `${requestedDate
           .getUTCHours()
           .toString()
-          .padStart(2, "0")}:${requestedDate.getUTCMinutes().toString().padStart(2, "0")}`;
+          .padStart(
+            2,
+            "0"
+          )}:${requestedDate.getUTCMinutes().toString().padStart(2, "0")}`;
 
         const available = await buildAvailableSlots(
           db,
@@ -1540,12 +1755,18 @@ export const vipPortalRouter = router({
     listMyRequests: vipPortalProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       }
 
       const clientId = ctx.clientId;
       if (!clientId) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "VIP session required",
+        });
       }
 
       const requests = await db
@@ -1555,7 +1776,7 @@ export const vipPortalRouter = router({
         .orderBy(desc(appointmentRequests.createdAt));
 
       const typeIds = Array.from(
-        new Set(requests.map((request) => request.appointmentTypeId))
+        new Set(requests.map(request => request.appointmentTypeId))
       );
 
       const typeMap =
@@ -1570,15 +1791,19 @@ export const vipPortalRouter = router({
                   })
                   .from(appointmentTypes)
                   .where(inArray(appointmentTypes.id, typeIds))
-              ).map((type) => [type.id, type])
+              ).map(type => [type.id, type])
             )
-          : new Map<number, { id: number; name: string; color: string | null }>();
+          : new Map<
+              number,
+              { id: number; name: string; color: string | null }
+            >();
 
-      return requests.map((request) => ({
+      return requests.map(request => ({
         id: request.id,
         calendarId: request.calendarId,
         appointmentTypeId: request.appointmentTypeId,
-        appointmentTypeName: typeMap.get(request.appointmentTypeId)?.name ?? "Appointment",
+        appointmentTypeName:
+          typeMap.get(request.appointmentTypeId)?.name ?? "Appointment",
         color: typeMap.get(request.appointmentTypeId)?.color ?? "#0EA5E9",
         requestedSlot: request.requestedSlot,
         status: request.status,
@@ -1656,7 +1881,10 @@ export const vipPortalRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         }
 
         const invoice = await db.query.invoices.findFirst({
@@ -1698,7 +1926,7 @@ export const vipPortalRouter = router({
           doc.text("No line items", 14, y);
           y += 8;
         } else {
-          lineItems.forEach((item) => {
+          lineItems.forEach(item => {
             doc.text(
               `${item.description} — ${formatQuantityValue(item.quantity)} x $${formatCurrencyValue(
                 item.unitPrice
@@ -1717,7 +1945,11 @@ export const vipPortalRouter = router({
         y += 6;
         doc.text(`Total: $${formatCurrencyValue(invoice.totalAmount)}`, 14, y);
         y += 6;
-        doc.text(`Amount Due: $${formatCurrencyValue(invoice.amountDue)}`, 14, y);
+        doc.text(
+          `Amount Due: $${formatCurrencyValue(invoice.amountDue)}`,
+          14,
+          y
+        );
 
         const pdfBase64 = doc.output("datauristring").split(",")[1] ?? "";
 
@@ -1732,7 +1964,10 @@ export const vipPortalRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
         }
 
         const bill = await db.query.bills.findFirst({
@@ -1769,7 +2004,7 @@ export const vipPortalRouter = router({
           doc.text("No line items", 14, y);
           y += 8;
         } else {
-          lineItems.forEach((item) => {
+          lineItems.forEach(item => {
             doc.text(
               `${item.description} — ${formatQuantityValue(item.quantity)} x $${formatCurrencyValue(
                 item.unitPrice
@@ -1802,27 +2037,33 @@ export const vipPortalRouter = router({
   // ============================================================================
   // LIVE CATALOG (CLIENT-FACING)
   // ============================================================================
-  
+
   liveCatalog: router({
     // Get catalog with filters
     get: protectedProcedure
-      .input(z.object({
-        category: z.string().optional(),
-        brand: z.array(z.string()).optional(),
-        grade: z.array(z.string()).optional(),
-        stockLevel: z.enum(['all', 'in_stock', 'low_stock']).optional(),
-        priceMin: z.number().optional(),
-        priceMax: z.number().optional(),
-        search: z.string().optional(),
-        sortBy: z.enum(['name', 'price', 'category', 'date']).optional(),
-        sortOrder: z.enum(['asc', 'desc']).optional(),
-        limit: z.number().optional().default(50),
-        offset: z.number().optional().default(0),
-      }))
+      .input(
+        z.object({
+          category: z.string().optional(),
+          brand: z.array(z.string()).optional(),
+          grade: z.array(z.string()).optional(),
+          stockLevel: z.enum(["all", "in_stock", "low_stock"]).optional(),
+          priceMin: z.number().optional(),
+          priceMax: z.number().optional(),
+          search: z.string().optional(),
+          sortBy: z.enum(["name", "price", "category", "date"]).optional(),
+          sortOrder: z.enum(["asc", "desc"]).optional(),
+          limit: z.number().optional().default(50),
+          offset: z.number().optional().default(0),
+        })
+      )
       .query(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         const clientId = ctx.vipPortalClientId;
         if (!clientId) {
           throw new TRPCError({
@@ -1830,12 +2071,12 @@ export const vipPortalRouter = router({
             message: "Not authenticated",
           });
         }
-        
+
         // Get client configuration
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, clientId),
         });
-        
+
         // If Live Catalog is disabled, return empty
         if (!config || !config.moduleLiveCatalogEnabled) {
           return {
@@ -1844,10 +2085,10 @@ export const vipPortalRouter = router({
             appliedFilters: input,
           };
         }
-        
+
         // Get catalog using service
         const result = await liveCatalogService.getCatalog(clientId, input);
-        
+
         // Map service response to UI-expected format
         const mappedItems = result.items.map(item => ({
           id: item.batchId,
@@ -1864,127 +2105,137 @@ export const vipPortalRouter = router({
           inDraft: item.inDraft,
           imageUrl: item.imageUrl,
         }));
-        
+
         return {
           items: mappedItems,
           total: result.total,
           appliedFilters: input,
         };
       }),
-    
+
     // Get filter options
-    getFilterOptions: protectedProcedure
-      .query(async ({ ctx }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
-        
-        // Get filter options using service
-        return await liveCatalogService.getFilterOptions(clientId);
-      }),
-    
-    // Get draft interests
-    getDraftInterests: protectedProcedure
-      .query(async ({ ctx }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
-        
-        const drafts = await db.query.clientDraftInterests.findMany({
-          where: eq(clientDraftInterests.clientId, clientId),
+    getFilterOptions: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
         });
-        
-        if (drafts.length === 0) {
-          return {
-            items: [],
-            totalItems: 0,
-            totalValue: '0.00',
-            hasChanges: false,
-          };
-        }
 
-        // Get batch details
-        const batchIds = drafts.map(d => d.batchId);
+      const clientId = ctx.vipPortalClientId;
+      if (!clientId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        });
+      }
 
-        // Guard against empty batch IDs to prevent SQL IN () crash (BUG-044)
-        if (batchIds.length === 0) {
-          return {
-            items: [],
-            totalItems: 0,
-            totalValue: '0.00',
-            hasChanges: false,
-          };
-        }
+      // Get filter options using service
+      return await liveCatalogService.getFilterOptions(clientId);
+    }),
 
-        const batchesData = await db
-          .select({
-            batch: batches,
-            product: products,
-          })
-          .from(batches)
-          .leftJoin(products, eq(batches.productId, products.id))
-          .where(inArray(batches.id, batchIds));
-        
-        // Get client pricing
-        const clientRules = await pricingEngine.getClientPricingRules(clientId);
-        
-        // Calculate current prices
-        const inventoryItems = batchesData.map(({ batch, product }) => ({
-          id: batch.id,
-          name: batch.sku || `Batch #${batch.id}`,
-          category: product?.category,
-          subcategory: product?.subcategory ?? undefined,
-          strain: undefined,
-          basePrice: parseFloat(batch.unitCogs || '0'),
-          quantity: parseFloat(batch.onHandQty || '0'),
-          grade: batch.grade || undefined,
-          vendor: undefined,
+    // Get draft interests
+    getDraftInterests: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+
+      const clientId = ctx.vipPortalClientId;
+      if (!clientId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        });
+      }
+
+      const drafts = await db.query.clientDraftInterests.findMany({
+        where: eq(clientDraftInterests.clientId, clientId),
+      });
+
+      if (drafts.length === 0) {
+        return {
+          items: [],
+          totalItems: 0,
+          totalValue: "0.00",
+          hasChanges: false,
+        };
+      }
+
+      // Get batch details
+      const batchIds = drafts.map(d => d.batchId);
+
+      // Guard against empty batch IDs to prevent SQL IN () crash (BUG-044)
+      if (batchIds.length === 0) {
+        return {
+          items: [],
+          totalItems: 0,
+          totalValue: "0.00",
+          hasChanges: false,
+        };
+      }
+
+      const batchesData = await db
+        .select({
+          batch: batches,
+          product: products,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .where(inArray(batches.id, batchIds));
+
+      // Get client pricing
+      const clientRules = await pricingEngine.getClientPricingRules(clientId);
+
+      // Calculate current prices
+      const inventoryItems = batchesData.map(({ batch, product }) => ({
+        id: batch.id,
+        name: batch.sku || `Batch #${batch.id}`,
+        category: product?.category,
+        subcategory: product?.subcategory ?? undefined,
+        strain: undefined,
+        basePrice: parseFloat(batch.unitCogs || "0"),
+        quantity: parseFloat(batch.onHandQty || "0"),
+        grade: batch.grade || undefined,
+        vendor: undefined,
+      }));
+
+      let pricedItems;
+      try {
+        pricedItems = await pricingEngine.calculateRetailPrices(
+          inventoryItems,
+          clientRules
+        );
+      } catch (_error) {
+        pricedItems = inventoryItems.map(item => ({
+          ...item,
+          retailPrice: item.basePrice,
+          priceMarkup: 0,
+          appliedRules: [],
         }));
-        
-        let pricedItems;
-        try {
-          pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
-        } catch (error) {
-          pricedItems = inventoryItems.map(item => ({
-            ...item,
-            retailPrice: item.basePrice,
-            priceMarkup: 0,
-            appliedRules: [],
-          }));
-        }
-        
-        // Build items with change detection
-        const items = drafts.map(draft => {
+      }
+
+      // Build items with change detection
+      const items = drafts
+        .map(draft => {
           const pricedItem = pricedItems.find(p => p.id === draft.batchId);
           const batchData = batchesData.find(b => b.batch.id === draft.batchId);
-          
+
           if (!pricedItem || !batchData) {
             return null;
           }
-          
+
           const currentPrice = pricedItem.retailPrice;
           const currentQuantity = pricedItem.quantity ?? 0;
           const stillAvailable = currentQuantity > 0;
-          
+
           // For simplicity, assume no price/quantity at add time (no historical tracking yet)
           // In production, you'd store these values when adding to draft
           const priceChanged = false;
           const quantityChanged = false;
-          
+
           return {
             id: draft.id,
             batchId: draft.batchId,
@@ -2000,44 +2251,57 @@ export const vipPortalRouter = router({
             quantityAtAdd: undefined,
             stillAvailable,
           };
-        }).filter(item => item !== null);
-        
-        const totalValue = items.reduce((sum, item) => sum + parseFloat(item.retailPrice), 0);
-        const hasChanges = items.some(item => item.priceChanged || item.quantityChanged || !item.stillAvailable);
-        
-        return {
-          items,
-          totalItems: items.length,
-          totalValue: totalValue.toFixed(2),
-          hasChanges,
-        };
-      }),
-    
+        })
+        .filter(item => item !== null);
+
+      const totalValue = items.reduce(
+        (sum, item) => sum + parseFloat(item.retailPrice),
+        0
+      );
+      const hasChanges = items.some(
+        item =>
+          item.priceChanged || item.quantityChanged || !item.stillAvailable
+      );
+
+      return {
+        items,
+        totalItems: items.length,
+        totalValue: totalValue.toFixed(2),
+        hasChanges,
+      };
+    }),
+
     // Add to draft
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     addToDraft: vipPortalProcedure
-      .input(z.object({
-        batchId: z.number(),
-      }))
+      .input(
+        z.object({
+          batchId: z.number(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         // clientId is guaranteed by vipPortalProcedure
         const clientId = ctx.clientId;
-        
+
         // Check if batch exists
         const batch = await db.query.batches.findFirst({
           where: eq(batches.id, input.batchId),
         });
-        
+
         if (!batch) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Batch not found",
           });
         }
-        
+
         // Check if already in draft
         const existing = await db.query.clientDraftInterests.findFirst({
           where: and(
@@ -2045,250 +2309,293 @@ export const vipPortalRouter = router({
             eq(clientDraftInterests.batchId, input.batchId)
           ),
         });
-        
+
         if (existing) {
           return {
             success: true,
             draftId: existing.id,
           };
         }
-        
+
         // Add to draft
         const result = await db.insert(clientDraftInterests).values({
           clientId,
           batchId: input.batchId,
         });
-        
+
         return {
           success: true,
-          draftId: Number(Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0),
+          draftId: Number(
+            Array.isArray(result)
+              ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+              : 0
+          ),
         };
       }),
-    
+
     // Remove from draft
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     removeFromDraft: vipPortalProcedure
-      .input(z.object({
-        draftId: z.number(),
-      }))
+      .input(
+        z.object({
+          draftId: z.number(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+
         // clientId is guaranteed by vipPortalProcedure
         const clientId = ctx.clientId;
-        
+
         // Check if draft exists and belongs to client
         const draft = await db.query.clientDraftInterests.findFirst({
           where: eq(clientDraftInterests.id, input.draftId),
         });
-        
+
         if (!draft) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Draft item not found",
           });
         }
-        
+
         if (draft.clientId !== clientId) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Draft item belongs to a different client",
           });
         }
-        
-        await db.delete(clientDraftInterests).where(eq(clientDraftInterests.id, input.draftId));
-        
+
+        await db
+          .delete(clientDraftInterests)
+          .where(eq(clientDraftInterests.id, input.draftId));
+
         return { success: true };
       }),
-    
+
     // Clear draft
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
-    clearDraft: vipPortalProcedure
-      .mutation(async ({ ctx }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
-        // clientId is guaranteed by vipPortalProcedure
-        const clientId = ctx.clientId;
-        
-        const result = await db.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, clientId));
-        
-        return {
-          success: true,
-          itemsCleared: Array.isArray(result) ? (result[0] as { affectedRows?: number })?.affectedRows ?? 0 : 0 || 0,
-        };
-      }),
-    
+    clearDraft: vipPortalProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+
+      // clientId is guaranteed by vipPortalProcedure
+      const clientId = ctx.clientId;
+
+      const result = await db
+        .delete(clientDraftInterests)
+        .where(eq(clientDraftInterests.clientId, clientId));
+
+      return {
+        success: true,
+        itemsCleared: Array.isArray(result)
+          ? ((result[0] as { affectedRows?: number })?.affectedRows ?? 0)
+          : 0,
+      };
+    }),
+
     // Submit interest list
     // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
-    submitInterestList: vipPortalProcedure
-      .mutation(async ({ ctx }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
-        // clientId is guaranteed by vipPortalProcedure
-        const clientId = ctx.clientId;
-        
-        // Get draft items
-        const drafts = await db.query.clientDraftInterests.findMany({
-          where: eq(clientDraftInterests.clientId, clientId),
+    submitInterestList: vipPortalProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
         });
-        
-        if (drafts.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Draft is empty",
-          });
-        }
 
-        // Get batch details and calculate prices
-        const batchIds = drafts.map(d => d.batchId);
+      // clientId is guaranteed by vipPortalProcedure
+      const clientId = ctx.clientId;
 
-        // Guard against empty batch IDs to prevent SQL IN () crash (BUG-044)
-        if (batchIds.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "No batch IDs found in draft",
-          });
-        }
+      // Get draft items
+      const drafts = await db.query.clientDraftInterests.findMany({
+        where: eq(clientDraftInterests.clientId, clientId),
+      });
 
-        const batchesData = await db
-          .select({
-            batch: batches,
-            product: products,
-          })
-          .from(batches)
-          .leftJoin(products, eq(batches.productId, products.id))
-          .where(inArray(batches.id, batchIds));
-        
-        // Get client pricing
-        const clientRules = await pricingEngine.getClientPricingRules(clientId);
-        
-        // Calculate current prices
-        const inventoryItems = batchesData.map(({ batch, product }) => ({
-          id: batch.id,
-          name: batch.sku || `Batch #${batch.id}`,
-          category: product?.category,
-          subcategory: product?.subcategory ?? undefined,
-          strain: undefined,
-          basePrice: parseFloat(batch.unitCogs || '0'),
-          quantity: parseFloat(batch.onHandQty || '0'),
-          grade: batch.grade || undefined,
-          vendor: undefined,
+      if (drafts.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Draft is empty",
+        });
+      }
+
+      // Get batch details and calculate prices
+      const batchIds = drafts.map(d => d.batchId);
+
+      // Guard against empty batch IDs to prevent SQL IN () crash (BUG-044)
+      if (batchIds.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No batch IDs found in draft",
+        });
+      }
+
+      const batchesData = await db
+        .select({
+          batch: batches,
+          product: products,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .where(inArray(batches.id, batchIds));
+
+      // Get client pricing
+      const clientRules = await pricingEngine.getClientPricingRules(clientId);
+
+      // Calculate current prices
+      const inventoryItems = batchesData.map(({ batch, product }) => ({
+        id: batch.id,
+        name: batch.sku || `Batch #${batch.id}`,
+        category: product?.category,
+        subcategory: product?.subcategory ?? undefined,
+        strain: undefined,
+        basePrice: parseFloat(batch.unitCogs || "0"),
+        quantity: parseFloat(batch.onHandQty || "0"),
+        grade: batch.grade || undefined,
+        vendor: undefined,
+      }));
+
+      let pricedItems;
+      try {
+        pricedItems = await pricingEngine.calculateRetailPrices(
+          inventoryItems,
+          clientRules
+        );
+      } catch (_error) {
+        pricedItems = inventoryItems.map(item => ({
+          ...item,
+          retailPrice: item.basePrice,
+          priceMarkup: 0,
+          appliedRules: [],
         }));
-        
-        let pricedItems;
-        try {
-          pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
-        } catch (error) {
-          pricedItems = inventoryItems.map(item => ({
-            ...item,
-            retailPrice: item.basePrice,
-            priceMarkup: 0,
-            appliedRules: [],
-          }));
-        }
-        
-        // Calculate totals
-        const totalValue = pricedItems.reduce((sum, item) => sum + item.retailPrice, 0);
-        
-        // Use transaction to create interest list and items
-        const result = await db.transaction(async (tx) => {
-          // Create interest list
-          const listResult = await tx.insert(clientInterestLists).values({
-            clientId,
-            status: 'NEW',
-            totalItems: drafts.length,
-            totalValue: totalValue.toFixed(2),
-          });
-          
-          const interestListId = Number((listResult as unknown as { insertId: number }).insertId);
-          
-          // Create interest list items
-          const itemsToInsert = drafts.map(draft => {
-            const pricedItem = pricedItems.find(p => p.id === draft.batchId);
-            const batchData = batchesData.find(b => b.batch.id === draft.batchId);
-            
-            if (!pricedItem || !batchData) {
-              throw new Error(`Batch ${draft.batchId} not found`);
-            }
-            
-            return {
-              interestListId,
-              batchId: draft.batchId,
-              itemName: pricedItem.name,
-              category: pricedItem.category || null,
-              subcategory: pricedItem.subcategory || null,
-              priceAtInterest: pricedItem.retailPrice.toFixed(2),
-              quantityAtInterest: (pricedItem.quantity ?? 0).toFixed(2),
-            };
-          });
-          
-          await tx.insert(clientInterestListItems).values(itemsToInsert);
-          
-          // Clear draft
-          await tx.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, clientId));
-          
+      }
+
+      // Calculate totals
+      const totalValue = pricedItems.reduce(
+        (sum, item) => sum + item.retailPrice,
+        0
+      );
+
+      // Use transaction to create interest list and items
+      const result = await db.transaction(async tx => {
+        // Create interest list
+        const listResult = await tx.insert(clientInterestLists).values({
+          clientId,
+          status: "NEW",
+          totalItems: drafts.length,
+          totalValue: totalValue.toFixed(2),
+        });
+
+        const interestListId = Number(
+          (listResult as unknown as { insertId: number }).insertId
+        );
+
+        // Create interest list items
+        const itemsToInsert = drafts.map(draft => {
+          const pricedItem = pricedItems.find(p => p.id === draft.batchId);
+          const batchData = batchesData.find(b => b.batch.id === draft.batchId);
+
+          if (!pricedItem || !batchData) {
+            throw new Error(`Batch ${draft.batchId} not found`);
+          }
+
           return {
             interestListId,
-            totalItems: drafts.length,
-            totalValue: totalValue.toFixed(2),
+            batchId: draft.batchId,
+            itemName: pricedItem.name,
+            category: pricedItem.category || null,
+            subcategory: pricedItem.subcategory || null,
+            priceAtInterest: pricedItem.retailPrice.toFixed(2),
+            quantityAtInterest: (pricedItem.quantity ?? 0).toFixed(2),
           };
         });
-        
+
+        await tx.insert(clientInterestListItems).values(itemsToInsert);
+
+        // Clear draft
+        await tx
+          .delete(clientDraftInterests)
+          .where(eq(clientDraftInterests.clientId, clientId));
+
         return {
-          success: true,
-          ...result,
+          interestListId,
+          totalItems: drafts.length,
+          totalValue: totalValue.toFixed(2),
         };
-      }),
-    
+      });
+
+      return {
+        success: true,
+        ...result,
+      };
+    }),
+
     // Saved views
     views: router({
       // List saved views
-      list: protectedProcedure
-        .query(async ({ ctx }) => {
-          const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-          
-          const clientId = ctx.vipPortalClientId;
-          if (!clientId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Not authenticated",
-            });
-          }
-          
-          const views = await db.query.clientCatalogViews.findMany({
-            where: eq(clientCatalogViews.clientId, clientId),
-            orderBy: (clientCatalogViews, { desc }) => [desc(clientCatalogViews.createdAt)],
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
           });
-          
-          return { views };
-        }),
-      
+
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+
+        const views = await db.query.clientCatalogViews.findMany({
+          where: eq(clientCatalogViews.clientId, clientId),
+          orderBy: (clientCatalogViews, { desc }) => [
+            desc(clientCatalogViews.createdAt),
+          ],
+        });
+
+        return { views };
+      }),
+
       // Save a view
       // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
       save: vipPortalProcedure
-        .input(z.object({
-          name: z.string().min(1).max(100),
-          filters: z.object({
-            category: z.string().optional().nullable(),
-            brand: z.array(z.string()).optional(),
-            grade: z.array(z.string()).optional(),
-            stockLevel: z.enum(['all', 'in_stock', 'low_stock']).optional(),
-            priceMin: z.number().optional(),
-            priceMax: z.number().optional(),
-            search: z.string().optional(),
-          }),
-        }))
+        .input(
+          z.object({
+            name: z.string().min(1).max(100),
+            filters: z.object({
+              category: z.string().optional().nullable(),
+              brand: z.array(z.string()).optional(),
+              grade: z.array(z.string()).optional(),
+              stockLevel: z.enum(["all", "in_stock", "low_stock"]).optional(),
+              priceMin: z.number().optional(),
+              priceMax: z.number().optional(),
+              search: z.string().optional(),
+            }),
+          })
+        )
         .mutation(async ({ input, ctx }) => {
           const db = await getDb();
-          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-          
+          if (!db)
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Database not available",
+            });
+
           // clientId is guaranteed by vipPortalProcedure
           const clientId = ctx.clientId;
-          
+
           // Check if name already exists
           const existing = await db.query.clientCatalogViews.findFirst({
             where: and(
@@ -2296,60 +2603,72 @@ export const vipPortalRouter = router({
               eq(clientCatalogViews.name, input.name)
             ),
           });
-          
+
           if (existing) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "A view with this name already exists",
             });
           }
-          
+
           const result = await db.insert(clientCatalogViews).values({
             clientId,
             name: input.name,
             filters: input.filters,
           });
-          
+
           return {
             success: true,
-            viewId: Number(Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0),
+            viewId: Number(
+              Array.isArray(result)
+                ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+                : 0
+            ),
           };
         }),
-      
+
       // Delete a view
       // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
       delete: vipPortalProcedure
-        .input(z.object({
-          viewId: z.number(),
-        }))
+        .input(
+          z.object({
+            viewId: z.number(),
+          })
+        )
         .mutation(async ({ input, ctx }) => {
           const db = await getDb();
-          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-          
+          if (!db)
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Database not available",
+            });
+
           // clientId is guaranteed by vipPortalProcedure
           const clientId = ctx.clientId;
-          
+
           // Check if view exists and belongs to client
           const view = await db.query.clientCatalogViews.findFirst({
             where: eq(clientCatalogViews.id, input.viewId),
           });
-          
+
           if (!view) {
             throw new TRPCError({
               code: "NOT_FOUND",
               message: "View not found",
             });
           }
-          
+
           if (view.clientId !== clientId) {
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "View belongs to a different client",
             });
           }
-          
-          await db.delete(clientCatalogViews).where(eq(clientCatalogViews.id, input.viewId));
-          
+
+          await db
+            .delete(clientCatalogViews)
+            .where(eq(clientCatalogViews.id, input.viewId));
+
           return { success: true };
         }),
     }),
@@ -2429,7 +2748,10 @@ export const vipPortalRouter = router({
       getSummary: vipPortalProcedure.query(async ({ ctx }) => {
         const clientId = ctx.clientId;
         if (!clientId) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "VIP session required",
+          });
         }
 
         return await vipDebtAgingService.getClientDebtAgingSummary(clientId);
@@ -2441,7 +2763,10 @@ export const vipPortalRouter = router({
       getNextNotification: vipPortalProcedure.query(async ({ ctx }) => {
         const clientId = ctx.clientId;
         if (!clientId) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "VIP session required",
+          });
         }
 
         return await vipDebtAgingService.getNextScheduledNotification(clientId);
@@ -2458,7 +2783,10 @@ export const vipPortalRouter = router({
       getUsage: vipPortalProcedure.query(async ({ ctx }) => {
         const clientId = ctx.clientId;
         if (!clientId) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "VIP session required",
+          });
         }
 
         return await vipCreditService.getClientCreditUsage(clientId);
@@ -2468,14 +2796,22 @@ export const vipPortalRouter = router({
        * Get credit utilization history for trends
        */
       getHistory: vipPortalProcedure
-        .input(z.object({ days: z.number().min(1).max(365).optional().default(30) }))
+        .input(
+          z.object({ days: z.number().min(1).max(365).optional().default(30) })
+        )
         .query(async ({ ctx, input }) => {
           const clientId = ctx.clientId;
           if (!clientId) {
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "VIP session required",
+            });
           }
 
-          return await vipCreditService.getCreditUtilizationHistory(clientId, input.days);
+          return await vipCreditService.getCreditUtilizationHistory(
+            clientId,
+            input.days
+          );
         }),
 
       /**
@@ -2486,10 +2822,16 @@ export const vipPortalRouter = router({
         .query(async ({ ctx, input }) => {
           const clientId = ctx.clientId;
           if (!clientId) {
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "VIP session required",
+            });
           }
 
-          return await vipCreditService.checkCreditAvailability(clientId, input.amount);
+          return await vipCreditService.checkCreditAvailability(
+            clientId,
+            input.amount
+          );
         }),
     }),
   }),

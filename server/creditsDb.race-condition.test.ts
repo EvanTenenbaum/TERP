@@ -21,7 +21,10 @@ vi.mock("./_core/dbTransaction", () => ({
 
 import { getDb } from "./db";
 import { withTransaction } from "./_core/dbTransaction";
-import { applyCredit as _applyCredit, getCreditById as _getCreditById } from "./creditsDb";
+import {
+  applyCredit as _applyCredit,
+  getCreditById as _getCreditById,
+} from "./creditsDb";
 
 describe("Credit Application Race Condition Protection", () => {
   let mockDb: Record<string, unknown>;
@@ -79,11 +82,15 @@ describe("Credit Application Race Condition Protection", () => {
           findFirst: vi.fn().mockResolvedValue(null),
         },
       },
-      transaction: vi.fn((callback) => callback(mockDb)),
+      transaction: vi.fn(callback => callback(mockDb)),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
-    vi.mocked(withTransaction).mockImplementation((callback: (db: unknown) => unknown) => callback(mockDb));
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
+    vi.mocked(withTransaction).mockImplementation(
+      (callback: (db: unknown) => unknown) => callback(mockDb)
+    );
   });
 
   it("should prevent double-application when concurrent requests use same idempotency key", async () => {
@@ -114,7 +121,10 @@ describe("Credit Application Race Condition Protection", () => {
     // Second request should return same application (deduplicated)
     const result2Promise = Promise.resolve(existingApplication);
 
-    const [result1, result2] = await Promise.all([result1Promise, result2Promise]);
+    const [result1, result2] = await Promise.all([
+      result1Promise,
+      result2Promise,
+    ]);
 
     // Assert - Both should return the same application
     expect(result1.id).toBe(result2.id);
@@ -130,14 +140,16 @@ describe("Credit Application Race Condition Protection", () => {
 
     // Mock credit that updates remaining amount after each application
     mockDb.limit.mockImplementation(() => {
-      return Promise.resolve([{ ...mockCredit, amountRemaining: String(creditRemaining) }]);
+      return Promise.resolve([
+        { ...mockCredit, amountRemaining: String(creditRemaining) },
+      ]);
     });
 
     mockDb.update.mockImplementation(() => ({
-      set: vi.fn().mockImplementation((values: any) => {
+      set: vi.fn().mockImplementation((values: Record<string, unknown>) => {
         // Simulate credit update
         if (values.amountRemaining) {
-          creditRemaining = parseFloat(values.amountRemaining);
+          creditRemaining = parseFloat(values.amountRemaining as string);
         }
         return {
           where: vi.fn().mockResolvedValue({ rowsAffected: 1 }),
@@ -166,7 +178,9 @@ describe("Credit Application Race Condition Protection", () => {
     let creditRemaining = 100;
 
     mockDb.limit.mockImplementation(() => {
-      return Promise.resolve([{ ...mockCredit, amountRemaining: String(creditRemaining) }]);
+      return Promise.resolve([
+        { ...mockCredit, amountRemaining: String(creditRemaining) },
+      ]);
     });
 
     // Simulate one succeeding and one failing due to insufficient balance
@@ -179,8 +193,8 @@ describe("Credit Application Race Condition Protection", () => {
     creditRemaining = 100 - 80; // 20 remaining
 
     // Assert - At least one should succeed
-    const succeeded = results.filter((r) => r.status === "fulfilled");
-    const failed = results.filter((r) => r.status === "rejected");
+    const succeeded = results.filter(r => r.status === "fulfilled");
+    const failed = results.filter(r => r.status === "rejected");
 
     expect(succeeded.length).toBeGreaterThan(0);
 
@@ -202,9 +216,9 @@ describe("Credit Application Race Condition Protection", () => {
     ]);
 
     mockDb.update.mockImplementation(() => ({
-      set: vi.fn().mockImplementation((values: any) => {
+      set: vi.fn().mockImplementation((values: Record<string, unknown>) => {
         if (values.amountRemaining) {
-          creditRemaining = parseFloat(values.amountRemaining);
+          creditRemaining = parseFloat(values.amountRemaining as string);
         }
         return {
           where: vi.fn().mockResolvedValue({ rowsAffected: 1 }),

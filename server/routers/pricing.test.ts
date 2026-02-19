@@ -23,7 +23,6 @@ vi.mock("../pricingEngine");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
 import * as pricingEngine from "../pricingEngine";
 
 // Mock user for authenticated requests
@@ -151,7 +150,9 @@ describe("Pricing Router", () => {
           description: "15% markup for premium products",
           adjustmentType: "PERCENT_MARKUP" as const,
           adjustmentValue: 15,
-          conditions: { productCategory: { operator: "eq" as const, value: "premium" } },
+          conditions: {
+            productCategory: { operator: "eq" as const, value: "premium" },
+          },
           logicType: "AND" as const,
           priority: 1,
         };

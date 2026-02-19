@@ -4,7 +4,7 @@
  */
 import { getDb } from "../../db";
 import { eq } from "drizzle-orm";
-import { clients, clientCreditLimits } from "../../../drizzle/schema";
+import { clientCreditLimits } from "../../../drizzle/schema";
 import { sessionCartService } from "./sessionCartService";
 import { financialMath } from "../../utils/financialMath";
 
@@ -28,7 +28,7 @@ export const sessionCreditService = {
     const cart = await sessionCartService.getCart(sessionId);
 
     // Filter out samples from total calculation
-    const billableItems = cart.items.filter((item) => !item.isSample);
+    const billableItems = cart.items.filter(item => !item.isSample);
 
     let total = "0.00";
     for (const item of billableItems) {

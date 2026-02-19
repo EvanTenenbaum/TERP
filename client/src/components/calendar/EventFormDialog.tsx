@@ -55,7 +55,9 @@ export default function EventFormDialog({
   const [visibility, setVisibility] = useState("COMPANY");
   const [isRecurring, setIsRecurring] = useState(false);
   const [attendees, setAttendees] = useState<number[]>([]);
-  const [clientId, setClientId] = useState<number | null>(initialClientId || null);
+  const [clientId, setClientId] = useState<number | null>(
+    initialClientId || null
+  );
   const [calendarId, setCalendarId] = useState<number | null>(null);
 
   // Recurrence state
@@ -66,7 +68,9 @@ export default function EventFormDialog({
   // Queries - handle paginated response
   const { data: users } = trpc.userManagement.listUsers.useQuery();
   const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
+  const clients = Array.isArray(clientsData)
+    ? clientsData
+    : (clientsData?.items ?? []);
   const { data: calendarsData } = trpc.calendarsManagement.list.useQuery({});
 
   // Mutations
@@ -75,7 +79,10 @@ export default function EventFormDialog({
 
   // Load event data if editing
   const { data: eventData } = trpc.calendar.getEventById.useQuery(
-    { id: eventId ?? 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    {
+      id: eventId ?? 0,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
     { enabled: !!eventId }
   );
 
@@ -103,7 +110,9 @@ export default function EventFormDialog({
     setRecurrenceEndDate("");
     setClientId(initialClientId || null);
     // Set default calendar
-    const defaultCalendar = calendarsData?.find((c: { id: number; isDefault: boolean }) => c.isDefault);
+    const defaultCalendar = calendarsData?.find(
+      (c: { id: number; isDefault: boolean }) => c.isDefault
+    );
     setCalendarId(defaultCalendar?.id || calendarsData?.[0]?.id || null);
   }, [initialDate, initialClientId, calendarsData]);
 
@@ -113,8 +122,16 @@ export default function EventFormDialog({
       setTitle(eventData.title);
       setDescription(eventData.description || "");
       setLocation(eventData.location || "");
-      setStartDate(typeof eventData.startDate === 'string' ? eventData.startDate : new Date(eventData.startDate).toISOString().split('T')[0]);
-      setEndDate(typeof eventData.endDate === 'string' ? eventData.endDate : new Date(eventData.endDate).toISOString().split('T')[0]);
+      setStartDate(
+        typeof eventData.startDate === "string"
+          ? eventData.startDate
+          : new Date(eventData.startDate).toISOString().split("T")[0]
+      );
+      setEndDate(
+        typeof eventData.endDate === "string"
+          ? eventData.endDate
+          : new Date(eventData.endDate).toISOString().split("T")[0]
+      );
       setStartTime(eventData.startTime || "");
       setEndTime(eventData.endTime || "");
       setIsAllDay(!eventData.startTime);
@@ -129,12 +146,20 @@ export default function EventFormDialog({
         setRecurrenceFrequency(eventData.recurrenceRule.frequency);
         setRecurrenceInterval(eventData.recurrenceRule.interval);
         const endDate = eventData.recurrenceRule.endDate;
-        setRecurrenceEndDate(endDate ? (typeof endDate === 'string' ? endDate : new Date(endDate).toISOString().split('T')[0]) : "");
+        setRecurrenceEndDate(
+          endDate
+            ? typeof endDate === "string"
+              ? endDate
+              : new Date(endDate).toISOString().split("T")[0]
+            : ""
+        );
       }
 
       // Load participants
       if (eventData.participants && eventData.participants.length > 0) {
-        setAttendees(eventData.participants.map((p: { userId: number }) => p.userId));
+        setAttendees(
+          eventData.participants.map((p: { userId: number }) => p.userId)
+        );
       }
       if (eventData.clientId) {
         setClientId(eventData.clientId);
@@ -148,7 +173,15 @@ export default function EventFormDialog({
       // Reset form for new event when dialog opens
       resetForm();
     }
-  }, [eventData, initialDate, initialClientId, calendarsData, isOpen, eventId, resetForm]);
+  }, [
+    eventData,
+    initialDate,
+    initialClientId,
+    calendarsData,
+    isOpen,
+    eventId,
+    resetForm,
+  ]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -189,7 +222,9 @@ export default function EventFormDialog({
           updates: eventPayload,
         });
       } else {
-        await createEvent.mutateAsync(eventPayload as any);
+        await createEvent.mutateAsync(
+          eventPayload as Parameters<typeof createEvent.mutateAsync>[0]
+        );
       }
       onSaved();
     } catch (error) {
@@ -209,9 +244,7 @@ export default function EventFormDialog({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {eventId ? "Edit Event" : "Create Event"}
-          </DialogTitle>
+          <DialogTitle>{eventId ? "Edit Event" : "Create Event"}</DialogTitle>
         </DialogHeader>
 
         {/* Form */}
@@ -223,7 +256,7 @@ export default function EventFormDialog({
               id="title"
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={e => setTitle(e.target.value)}
               required
               placeholder="Event title"
             />
@@ -232,12 +265,15 @@ export default function EventFormDialog({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">
-              Description <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              Description{" "}
+              <span className="text-muted-foreground text-sm font-normal">
+                (optional)
+              </span>
             </Label>
             <Textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               rows={3}
               placeholder="Event description"
             />
@@ -247,13 +283,16 @@ export default function EventFormDialog({
           <div className="space-y-2">
             <Label htmlFor="location" className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
-              Location <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              Location{" "}
+              <span className="text-muted-foreground text-sm font-normal">
+                (optional)
+              </span>
             </Label>
             <Input
               id="location"
               type="text"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={e => setLocation(e.target.value)}
               placeholder="Event location"
             />
           </div>
@@ -266,7 +305,7 @@ export default function EventFormDialog({
                 id="startDate"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => setStartDate(e.target.value)}
                 required
               />
             </div>
@@ -276,7 +315,7 @@ export default function EventFormDialog({
                 id="endDate"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={e => setEndDate(e.target.value)}
                 required
               />
             </div>
@@ -287,7 +326,7 @@ export default function EventFormDialog({
             <Checkbox
               id="isAllDay"
               checked={isAllDay}
-              onCheckedChange={(checked) => setIsAllDay(checked === true)}
+              onCheckedChange={checked => setIsAllDay(checked === true)}
             />
             <Label htmlFor="isAllDay" className="text-sm font-medium">
               All day event
@@ -303,7 +342,7 @@ export default function EventFormDialog({
                   id="startTime"
                   type="time"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={e => setStartTime(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -312,7 +351,7 @@ export default function EventFormDialog({
                   id="endTime"
                   type="time"
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  onChange={e => setEndTime(e.target.value)}
                 />
               </div>
             </div>
@@ -327,27 +366,39 @@ export default function EventFormDialog({
               </Label>
               <Select
                 value={calendarId?.toString() || ""}
-                onValueChange={(value) => setCalendarId(value ? parseInt(value, 10) : null)}
+                onValueChange={value =>
+                  setCalendarId(value ? parseInt(value, 10) : null)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select calendar" />
                 </SelectTrigger>
                 <SelectContent>
-                  {calendarsData?.map((calendar: { id: number; name: string }) => (
-                    <SelectItem key={calendar.id} value={calendar.id.toString()}>
-                      {calendar.name}
-                    </SelectItem>
-                  ))}
+                  {calendarsData?.map(
+                    (calendar: { id: number; name: string }) => (
+                      <SelectItem
+                        key={calendar.id}
+                        value={calendar.id.toString()}
+                      >
+                        {calendar.name}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>
-                Client <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+                Client{" "}
+                <span className="text-muted-foreground text-sm font-normal">
+                  (optional)
+                </span>
               </Label>
               <Select
                 value={clientId?.toString() || "none"}
-                onValueChange={(value) => setClientId(value === "none" ? null : parseInt(value, 10))}
+                onValueChange={value =>
+                  setClientId(value === "none" ? null : parseInt(value, 10))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select client" />
@@ -423,18 +474,23 @@ export default function EventFormDialog({
           <div className="space-y-2">
             <Label className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              Attendees <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              Attendees{" "}
+              <span className="text-muted-foreground text-sm font-normal">
+                (optional)
+              </span>
             </Label>
             <select
               multiple
               value={attendees.map(String)}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+              onChange={e => {
+                const selected = Array.from(e.target.selectedOptions, option =>
+                  parseInt(option.value)
+                );
                 setAttendees(selected);
               }}
               className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              {users?.map((user: any) => (
+              {users?.map(user => (
                 <option key={user.id} value={user.id}>
                   {user.name || user.email}
                 </option>
@@ -450,7 +506,7 @@ export default function EventFormDialog({
             <Checkbox
               id="isRecurring"
               checked={isRecurring}
-              onCheckedChange={(checked) => setIsRecurring(checked === true)}
+              onCheckedChange={checked => setIsRecurring(checked === true)}
             />
             <Repeat className="h-4 w-4" />
             <Label htmlFor="isRecurring" className="text-sm font-medium">
@@ -464,7 +520,10 @@ export default function EventFormDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Frequency</Label>
-                  <Select value={recurrenceFrequency} onValueChange={setRecurrenceFrequency}>
+                  <Select
+                    value={recurrenceFrequency}
+                    onValueChange={setRecurrenceFrequency}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -482,7 +541,9 @@ export default function EventFormDialog({
                     id="interval"
                     type="number"
                     value={recurrenceInterval}
-                    onChange={(e) => setRecurrenceInterval(parseInt(e.target.value))}
+                    onChange={e =>
+                      setRecurrenceInterval(parseInt(e.target.value))
+                    }
                     min="1"
                   />
                 </div>
@@ -493,7 +554,7 @@ export default function EventFormDialog({
                   id="recurrenceEndDate"
                   type="date"
                   value={recurrenceEndDate}
-                  onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                  onChange={e => setRecurrenceEndDate(e.target.value)}
                 />
               </div>
             </div>
@@ -511,8 +572,8 @@ export default function EventFormDialog({
               {createEvent.isPending || updateEvent.isPending
                 ? "Saving..."
                 : eventId
-                ? "Update Event"
-                : "Create Event"}
+                  ? "Update Event"
+                  : "Create Event"}
             </Button>
           </div>
         </form>

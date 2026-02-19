@@ -1,6 +1,10 @@
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
-import { alertConfigurations, users } from "../drizzle/schema";
+import {
+  alertConfigurations,
+  users,
+  type InsertAlertConfiguration,
+} from "../drizzle/schema";
 import { logger } from "./_core/logger";
 
 /**
@@ -20,18 +24,21 @@ export async function createAlertConfiguration(data: {
   if (!db) throw new Error("Database not available");
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [result] = await db.insert(alertConfigurations).values({
+    const insertValues: InsertAlertConfiguration = {
       userId: data.userId,
-      alertType: data.alertType as any,
-      targetType: data.targetType as any,
+      alertType: data.alertType as InsertAlertConfiguration["alertType"],
+      targetType: data.targetType as InsertAlertConfiguration["targetType"],
       targetId: data.targetId,
       thresholdValue: data.thresholdValue.toString(),
-      thresholdOperator: data.thresholdOperator as any,
-      deliveryMethod: (data.deliveryMethod as any) || "DASHBOARD",
+      thresholdOperator:
+        data.thresholdOperator as InsertAlertConfiguration["thresholdOperator"],
+      deliveryMethod:
+        (data.deliveryMethod as InsertAlertConfiguration["deliveryMethod"]) ??
+        "DASHBOARD",
       emailAddress: data.emailAddress,
       isActive: true,
-    } as any);
+    };
+    const [result] = await db.insert(alertConfigurations).values(insertValues);
 
     return { success: true, alertConfigId: result.insertId };
   } catch (error) {
@@ -42,7 +49,10 @@ export async function createAlertConfiguration(data: {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -63,18 +73,21 @@ export async function updateAlertConfiguration(
   if (!db) throw new Error("Database not available");
 
   try {
-    const updateData: { thresholdValue?: string; thresholdOperator?: string; deliveryMethod?: string; emailAddress?: string; isActive?: boolean } = {};
+    const updateData: Partial<InsertAlertConfiguration> = {};
     if (data.thresholdValue !== undefined)
       updateData.thresholdValue = data.thresholdValue.toString();
-    if (data.thresholdOperator) (updateData as any).thresholdOperator = data.thresholdOperator;
-    if (data.deliveryMethod) (updateData as any).deliveryMethod = data.deliveryMethod;
+    if (data.thresholdOperator)
+      updateData.thresholdOperator =
+        data.thresholdOperator as InsertAlertConfiguration["thresholdOperator"];
+    if (data.deliveryMethod)
+      updateData.deliveryMethod =
+        data.deliveryMethod as InsertAlertConfiguration["deliveryMethod"];
     if (data.emailAddress) updateData.emailAddress = data.emailAddress;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     await db
       .update(alertConfigurations)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .set(updateData as any)
+      .set(updateData)
       .where(eq(alertConfigurations.id, alertConfigId));
 
     return { success: true };
@@ -85,7 +98,10 @@ export async function updateAlertConfiguration(
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -109,7 +125,10 @@ export async function deleteAlertConfiguration(alertConfigId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -135,7 +154,10 @@ export async function getUserAlertConfigurations(userId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -163,7 +185,10 @@ export async function getAllActiveAlertConfigurations() {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -184,8 +209,10 @@ export async function getAlertConfigurationsByType(alertType: string) {
       .leftJoin(users, eq(alertConfigurations.userId, users.id))
       .where(
         and(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          eq(alertConfigurations.alertType, alertType as any),
+          eq(
+            alertConfigurations.alertType,
+            alertType as InsertAlertConfiguration["alertType"]
+          ),
           eq(alertConfigurations.isActive, true)
         )
       );
@@ -198,7 +225,10 @@ export async function getAlertConfigurationsByType(alertType: string) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -232,7 +262,10 @@ export async function toggleAlertConfiguration(alertConfigId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -250,4 +283,3 @@ export async function getAlertConfigurationById(alertConfigId: number) {
 
   return config || null;
 }
-

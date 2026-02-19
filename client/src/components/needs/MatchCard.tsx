@@ -1,16 +1,34 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchBadge } from "./MatchBadge";
 
-import { Package, DollarSign, Boxes, FileText, ExternalLink } from "lucide-react";
-import { useState, memo } from "react";
+import {
+  Package,
+  DollarSign,
+  Boxes,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
+import { useState, memo, type ReactNode } from "react";
 
 /**
  * Match Card Component
  * Displays a single match with all relevant details and actions
  */
+
+interface ProductDetails {
+  category?: unknown;
+  subcategory?: unknown;
+  grade?: unknown;
+  sku?: unknown;
+}
 
 interface MatchCardProps {
   match: {
@@ -19,7 +37,7 @@ interface MatchCardProps {
     reasons: string[];
     source: "INVENTORY" | "VENDOR" | "HISTORICAL";
     sourceId: number;
-    sourceData: any;
+    sourceData: Record<string, unknown>;
     calculatedPrice?: number;
     availableQuantity?: number;
   };
@@ -28,13 +46,18 @@ interface MatchCardProps {
   onViewDetails?: () => void;
 }
 
-export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismiss, onViewDetails }: MatchCardProps) {
+export const MatchCard = memo(function MatchCard({
+  match,
+  onCreateQuote,
+  onDismiss,
+  onViewDetails,
+}: MatchCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const getSourceIcon = () => {
-    if (match.source === "INVENTORY") return <Package className="h-4 w-4" /> as any;
-    if (match.source === "VENDOR") return <Boxes className="h-4 w-4" /> as any;
-    return <FileText className="h-4 w-4" /> as any;
+  const getSourceIcon = (): ReactNode => {
+    if (match.source === "INVENTORY") return <Package className="h-4 w-4" />;
+    if (match.source === "VENDOR") return <Boxes className="h-4 w-4" />;
+    return <FileText className="h-4 w-4" />;
   };
 
   const getSourceLabel = () => {
@@ -43,22 +66,31 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
     return "Historical Pattern";
   };
 
-  const getProductName = () => {
+  const getProductName = (): string => {
     if (match.source === "INVENTORY") {
-      const product = match.sourceData?.product;
-      return product?.nameCanonical || "Unknown Product";
+      const product = match.sourceData?.product as
+        | Record<string, unknown>
+        | undefined;
+      return (product?.nameCanonical as string) || "Unknown Product";
     }
     if (match.source === "VENDOR") {
       const supply = match.sourceData;
-      return `${supply?.strain || ""} ${supply?.category || ""}`.trim() || "Unknown Product";
+      return (
+        `${(supply?.strain as string) || ""} ${(supply?.category as string) || ""}`.trim() ||
+        "Unknown Product"
+      );
     }
     return "Historical Purchase Pattern";
   };
 
-  const getProductDetails = () => {
+  const getProductDetails = (): ProductDetails => {
     if (match.source === "INVENTORY") {
-      const batch = match.sourceData?.batch;
-      const product = match.sourceData?.product;
+      const batch = match.sourceData?.batch as
+        | Record<string, unknown>
+        | undefined;
+      const product = match.sourceData?.product as
+        | Record<string, unknown>
+        | undefined;
       return {
         category: product?.category,
         subcategory: product?.subcategory,
@@ -85,18 +117,18 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-2">
-              {getSourceIcon() as any}
-              <CardTitle className="text-lg">{getProductName() as any}</CardTitle>
+              {getSourceIcon()}
+              <CardTitle className="text-lg">{getProductName()}</CardTitle>
             </div>
             <CardDescription className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 {getSourceLabel()}
               </Badge>
-              {(details as any).category && (
+              {!!details.category && (
                 <span className="text-xs text-muted-foreground">
-                  {(details as any).category}
-                  {(details as any).subcategory && ` • ${(details as any).subcategory}`}
-                  {(details as any).grade && ` • Grade ${(details as any).grade}`}
+                  {String(details.category)}
+                  {!!details.subcategory && ` • ${String(details.subcategory)}`}
+                  {!!details.grade && ` • Grade ${String(details.grade)}`}
                 </span>
               )}
             </CardDescription>
@@ -112,7 +144,9 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">${match.calculatedPrice.toFixed(2)}</p>
+                <p className="text-sm font-medium">
+                  ${match.calculatedPrice.toFixed(2)}
+                </p>
                 <p className="text-xs text-muted-foreground">per unit</p>
               </div>
             </div>
@@ -121,7 +155,9 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
             <div className="flex items-center gap-2">
               <Boxes className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">{match.availableQuantity} units</p>
+                <p className="text-sm font-medium">
+                  {match.availableQuantity} units
+                </p>
                 <p className="text-xs text-muted-foreground">available</p>
               </div>
             </div>
@@ -134,12 +170,16 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            {isExpanded ? "Hide" : "Show"} match reasons ({match.reasons.length})
+            {isExpanded ? "Hide" : "Show"} match reasons ({match.reasons.length}
+            )
           </button>
           {isExpanded && (
             <ul className="mt-2 space-y-1">
-              {match.reasons?.map((r: any, _idx: number) => (
-                <li key={`reason-${_idx}`} className="text-sm text-muted-foreground flex items-start gap-2">
+              {match.reasons?.map((r: string) => (
+                <li
+                  key={`reason-${r}`}
+                  className="text-sm text-muted-foreground flex items-start gap-2"
+                >
                   <span className="text-green-500 mt-0.5">✓</span>
                   <span>{String(r)}</span>
                 </li>
@@ -169,9 +209,9 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
         </div>
 
         {/* Additional Info for Inventory */}
-        {match.source === "INVENTORY" && details.sku && (
+        {match.source === "INVENTORY" && !!details.sku && (
           <p className="text-xs text-muted-foreground pt-2 border-t">
-            SKU: {(details as any).sku}
+            SKU: {String(details.sku)}
           </p>
         )}
       </CardContent>
@@ -183,7 +223,20 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
  * Compact Match List Item
  * For use in tables or condensed lists
  */
-export function MatchListItem({ match, onSelect }: { match: { source: "INVENTORY" | "VENDOR" | "HISTORICAL"; sourceData?: { product?: { nameCanonical?: string }; strain?: string }; reasons: string[]; calculatedPrice?: number; confidence: number; type: "EXACT" | "CLOSE" | "HISTORICAL" }; onSelect?: () => void }) {
+export function MatchListItem({
+  match,
+  onSelect,
+}: {
+  match: {
+    source: "INVENTORY" | "VENDOR" | "HISTORICAL";
+    sourceData?: { product?: { nameCanonical?: string }; strain?: string };
+    reasons: string[];
+    calculatedPrice?: number;
+    confidence: number;
+    type: "EXACT" | "CLOSE" | "HISTORICAL";
+  };
+  onSelect?: () => void;
+}) {
   return (
     <div
       className="flex items-center justify-between p-3 hover:bg-accent rounded-lg cursor-pointer transition-colors"
@@ -192,19 +245,26 @@ export function MatchListItem({ match, onSelect }: { match: { source: "INVENTORY
       <div className="flex items-center gap-3 flex-1">
         <div className="flex-1">
           <p className="text-sm font-medium">
-            {match.source === "INVENTORY" 
-              ? (match as any).sourceData?.product?.nameCanonical 
-              : (match as any).sourceData?.strain || "Unknown"}
+            {match.source === "INVENTORY"
+              ? match.sourceData?.product?.nameCanonical
+              : match.sourceData?.strain || "Unknown"}
           </p>
           <p className="text-xs text-muted-foreground">
             {match.source} • {match.reasons.length} reasons
           </p>
         </div>
         {match.calculatedPrice && (
-          <p className="text-sm font-medium">${match.calculatedPrice.toFixed(2)}</p>
+          <p className="text-sm font-medium">
+            ${match.calculatedPrice.toFixed(2)}
+          </p>
         )}
       </div>
-      <MatchBadge matchType={match.type} confidence={match.confidence} size="sm" showIcon={false} />
+      <MatchBadge
+        matchType={match.type}
+        confidence={match.confidence}
+        size="sm"
+        showIcon={false}
+      />
     </div>
   );
 }

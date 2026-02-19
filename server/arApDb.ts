@@ -25,7 +25,14 @@ import { logger } from "./_core/logger";
  */
 export async function getInvoices(filters?: {
   customerId?: number;
-  status?: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
+  status?:
+    | "DRAFT"
+    | "SENT"
+    | "VIEWED"
+    | "PARTIAL"
+    | "PAID"
+    | "OVERDUE"
+    | "VOID";
   startDate?: Date;
   endDate?: Date;
   limit?: number;
@@ -79,7 +86,10 @@ export async function getInvoices(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(invoices.invoiceDate), desc(invoices.id)) as typeof query;
+  query = query.orderBy(
+    desc(invoices.invoiceDate),
+    desc(invoices.id)
+  ) as typeof query;
 
   if (filters?.limit) {
     query = query.limit(filters.limit) as typeof query;
@@ -100,10 +110,11 @@ export async function getInvoiceById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const invoice = await db.select().from(invoices).where(and(
-    eq(invoices.id, id),
-    sql`${invoices.deletedAt} IS NULL`
-  )).limit(1);
+  const invoice = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, id), sql`${invoices.deletedAt} IS NULL`))
+    .limit(1);
 
   if (!invoice[0]) return null;
 
@@ -134,7 +145,7 @@ export async function createInvoice(
 
   // Insert line items
   if (lineItems.length > 0) {
-    const lineItemsWithInvoiceId = lineItems.map((item) => ({
+    const lineItemsWithInvoiceId = lineItems.map(item => ({
       ...item,
       invoiceId,
     }));
@@ -153,10 +164,11 @@ export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
   if (!db) throw new Error("Database not available");
 
   // FEAT-008: Check if invoice can be edited based on status
-  const invoice = await db.select().from(invoices).where(and(
-    eq(invoices.id, id),
-    sql`${invoices.deletedAt} IS NULL`
-  )).limit(1);
+  const invoice = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, id), sql`${invoices.deletedAt} IS NULL`))
+    .limit(1);
 
   if (!invoice[0]) throw new Error("Invoice not found or deleted");
 
@@ -192,10 +204,11 @@ export async function recordInvoicePayment(invoiceId: number, amount: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const invoice = await db.select().from(invoices).where(and(
-    eq(invoices.id, invoiceId),
-    sql`${invoices.deletedAt} IS NULL`
-  )).limit(1);
+  const invoice = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, invoiceId), sql`${invoices.deletedAt} IS NULL`))
+    .limit(1);
 
   if (!invoice[0]) throw new Error("Invoice not found or deleted");
 
@@ -218,7 +231,14 @@ export async function recordInvoicePayment(invoiceId: number, amount: number) {
   const newAmountDue = totalAmount - newAmountPaid;
 
   // Determine new status
-  let newStatus: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID" = "PARTIAL";
+  let newStatus:
+    | "DRAFT"
+    | "SENT"
+    | "VIEWED"
+    | "PARTIAL"
+    | "PAID"
+    | "OVERDUE"
+    | "VOID" = "PARTIAL";
   if (newAmountDue <= 0.01) {
     newStatus = "PAID";
   } else if (newAmountPaid > 0) {
@@ -283,7 +303,12 @@ export async function calculateARAging() {
       .from(invoices)
       .where(
         and(
-          safeInArray(invoices.status, ["SENT", "VIEWED", "PARTIAL", "OVERDUE"]),
+          safeInArray(invoices.status, [
+            "SENT",
+            "VIEWED",
+            "PARTIAL",
+            "OVERDUE",
+          ]),
           sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
           sql`${invoices.deletedAt} IS NULL`
         )
@@ -295,10 +320,12 @@ export async function calculateARAging() {
     let days90 = 0;
     let days90Plus = 0;
 
-    result.forEach((inv) => {
+    result.forEach(inv => {
       const amountDue = Number(inv.amountDue) || 0;
       const dueDate = new Date(inv.dueDate);
-      const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysPastDue = Math.floor(
+        (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (daysPastDue < 0) {
         current += amountDue;
@@ -339,7 +366,7 @@ export async function generateInvoiceNumber(): Promise<string> {
 
   try {
     // Use transaction with row-level locking for atomicity
-    const invoiceNumber = await db.transaction(async (tx) => {
+    const invoiceNumber = await db.transaction(async tx => {
       // Try to get and lock the sequence row
       let [sequence] = await tx
         .select()
@@ -406,7 +433,14 @@ export async function generateInvoiceNumber(): Promise<string> {
  */
 export async function getBills(filters?: {
   vendorId?: number;
-  status?: "DRAFT" | "PENDING" | "APPROVED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
+  status?:
+    | "DRAFT"
+    | "PENDING"
+    | "APPROVED"
+    | "PARTIAL"
+    | "PAID"
+    | "OVERDUE"
+    | "VOID";
   startDate?: Date;
   endDate?: Date;
   limit?: number;
@@ -481,10 +515,11 @@ export async function getBillById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const bill = await db.select().from(bills).where(and(
-    eq(bills.id, id),
-    sql`${bills.deletedAt} IS NULL`
-  )).limit(1);
+  const bill = await db
+    .select()
+    .from(bills)
+    .where(and(eq(bills.id, id), sql`${bills.deletedAt} IS NULL`))
+    .limit(1);
 
   if (!bill[0]) return null;
 
@@ -515,7 +550,7 @@ export async function createBill(
 
   // Insert line items
   if (lineItems.length > 0) {
-    const lineItemsWithBillId = lineItems.map((item) => ({
+    const lineItemsWithBillId = lineItems.map(item => ({
       ...item,
       billId,
     }));
@@ -541,7 +576,14 @@ export async function updateBill(id: number, data: Partial<InsertBill>) {
  */
 export async function updateBillStatus(
   id: number,
-  newStatus: "DRAFT" | "PENDING" | "APPROVED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
+  newStatus:
+    | "DRAFT"
+    | "PENDING"
+    | "APPROVED"
+    | "PARTIAL"
+    | "PAID"
+    | "OVERDUE"
+    | "VOID"
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -572,10 +614,11 @@ export async function recordBillPayment(billId: number, amount: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const bill = await db.select().from(bills).where(and(
-    eq(bills.id, billId),
-    sql`${bills.deletedAt} IS NULL`
-  )).limit(1);
+  const bill = await db
+    .select()
+    .from(bills)
+    .where(and(eq(bills.id, billId), sql`${bills.deletedAt} IS NULL`))
+    .limit(1);
 
   if (!bill[0]) throw new Error("Bill not found or deleted");
 
@@ -598,7 +641,8 @@ export async function recordBillPayment(billId: number, amount: number) {
   const newAmountDue = totalAmount - newAmountPaid;
 
   // Determine new status
-  let newStatus: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID" = "PARTIAL";
+  let newStatus: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID" =
+    "PARTIAL";
   if (newAmountDue <= 0.01) {
     newStatus = "PAID";
   } else if (newAmountPaid > 0) {
@@ -675,10 +719,12 @@ export async function calculateAPAging() {
     let days90 = 0;
     let days90Plus = 0;
 
-    result.forEach((bill) => {
+    result.forEach(bill => {
       const amountDue = Number(bill.amountDue) || 0;
       const dueDate = new Date(bill.dueDate);
-      const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysPastDue = Math.floor(
+        (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (daysPastDue < 0) {
         current += amountDue;
@@ -719,7 +765,7 @@ export async function generateBillNumber(): Promise<string> {
 
   try {
     // Use transaction with row-level locking for atomicity
-    const billNumber = await db.transaction(async (tx) => {
+    const billNumber = await db.transaction(async tx => {
       // Try to get and lock the sequence row
       let [sequence] = await tx
         .select()
@@ -843,10 +889,13 @@ export async function getPayments(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(payments.paymentDate), desc(payments.id)) as typeof query;
+  query = query.orderBy(
+    desc(payments.paymentDate),
+    desc(payments.id)
+  ) as typeof query;
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as any;
+    query = query.limit(filters.limit) as typeof query;
   }
   if (filters?.offset) {
     query = query.offset(filters.offset) as typeof query;
@@ -864,10 +913,11 @@ export async function getPaymentById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const result = await db.select().from(payments).where(and(
-    eq(payments.id, id),
-    sql`${payments.deletedAt} IS NULL`
-  )).limit(1);
+  const result = await db
+    .select()
+    .from(payments)
+    .where(and(eq(payments.id, id), sql`${payments.deletedAt} IS NULL`))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -889,7 +939,9 @@ export async function createPayment(data: InsertPayment) {
  * Uses a yearly sequence based on payment type (e.g., "payment_received_2026")
  * with row-level locking to ensure unique payment numbers even under high concurrency.
  */
-export async function generatePaymentNumber(type: "RECEIVED" | "SENT"): Promise<string> {
+export async function generatePaymentNumber(
+  type: "RECEIVED" | "SENT"
+): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -901,7 +953,7 @@ export async function generatePaymentNumber(type: "RECEIVED" | "SENT"): Promise<
 
   try {
     // Use transaction with row-level locking for atomicity
-    const paymentNumber = await db.transaction(async (tx) => {
+    const paymentNumber = await db.transaction(async tx => {
       // Try to get and lock the sequence row
       let [sequence] = await tx
         .select()
@@ -971,10 +1023,9 @@ export async function getPaymentsForInvoice(invoiceId: number) {
   return db
     .select()
     .from(payments)
-    .where(and(
-      eq(payments.invoiceId, invoiceId),
-      sql`${payments.deletedAt} IS NULL`
-    ))
+    .where(
+      and(eq(payments.invoiceId, invoiceId), sql`${payments.deletedAt} IS NULL`)
+    )
     .orderBy(desc(payments.paymentDate));
 }
 
@@ -987,9 +1038,6 @@ export async function getPaymentsForBill(billId: number) {
   return db
     .select()
     .from(payments)
-    .where(and(
-      eq(payments.billId, billId),
-      sql`${payments.deletedAt} IS NULL`
-    ))
+    .where(and(eq(payments.billId, billId), sql`${payments.deletedAt} IS NULL`))
     .orderBy(desc(payments.paymentDate));
 }

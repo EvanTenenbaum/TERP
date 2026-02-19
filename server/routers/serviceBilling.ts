@@ -19,8 +19,7 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 
-
-import { orders, clients, users } from "../../drizzle/schema";
+import { orders, clients } from "../../drizzle/schema";
 import {
   serviceDefinitions,
   orderServiceCharges,
@@ -62,7 +61,9 @@ async function generateServiceInvoiceNumber(): Promise<string> {
   const result = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(serviceInvoices)
-    .where(sql`YEAR(created_at) = ${year} AND MONTH(created_at) = ${today.getMonth() + 1}`);
+    .where(
+      sql`YEAR(created_at) = ${year} AND MONTH(created_at) = ${today.getMonth() + 1}`
+    );
 
   const count = Number(result[0]?.count || 0) + 1;
   return `SVC-${year}${month}-${String(count).padStart(5, "0")}`;
@@ -98,14 +99,16 @@ const createServiceInvoiceSchema = z.object({
   clientId: z.number(),
   invoiceDate: z.string(),
   dueDate: z.string(),
-  lineItems: z.array(z.object({
-    serviceDefinitionId: z.number().optional(),
-    serviceName: z.string().min(1),
-    serviceType: z.enum(SERVICE_TYPES),
-    description: z.string().optional(),
-    quantity: z.number().positive().default(1),
-    unitPrice: z.number().min(0),
-  })),
+  lineItems: z.array(
+    z.object({
+      serviceDefinitionId: z.number().optional(),
+      serviceName: z.string().min(1),
+      serviceType: z.enum(SERVICE_TYPES),
+      description: z.string().optional(),
+      quantity: z.number().positive().default(1),
+      unitPrice: z.number().min(0),
+    })
+  ),
   notes: z.string().optional(),
 });
 
@@ -123,13 +126,21 @@ export const serviceBillingRouter = router({
    */
   listServices: protectedProcedure
     .use(requirePermission("settings:read"))
-    .input(z.object({
-      serviceType: z.enum(SERVICE_TYPES).optional(),
-      includeInactive: z.boolean().default(false),
-    }).optional())
+    .input(
+      z
+        .object({
+          serviceType: z.enum(SERVICE_TYPES).optional(),
+          includeInactive: z.boolean().default(false),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(serviceDefinitions.deletedAt)];
 
@@ -145,7 +156,10 @@ export const serviceBillingRouter = router({
         .select()
         .from(serviceDefinitions)
         .where(and(...conditions))
-        .orderBy(asc(serviceDefinitions.serviceType), asc(serviceDefinitions.name));
+        .orderBy(
+          asc(serviceDefinitions.serviceType),
+          asc(serviceDefinitions.name)
+        );
 
       return services;
     }),
@@ -158,7 +172,11 @@ export const serviceBillingRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [service] = await db
         .select()
@@ -167,7 +185,10 @@ export const serviceBillingRouter = router({
         .limit(1);
 
       if (!service) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Service not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Service not found",
+        });
       }
 
       return service;
@@ -181,7 +202,11 @@ export const serviceBillingRouter = router({
     .input(createServiceDefinitionSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Check for duplicate code
       const [existing] = await db
@@ -222,31 +247,43 @@ export const serviceBillingRouter = router({
    */
   updateService: protectedProcedure
     .use(requirePermission("settings:update"))
-    .input(z.object({
-      id: z.number(),
-      name: z.string().min(1).max(100).optional(),
-      description: z.string().optional(),
-      defaultPrice: z.number().min(0).optional(),
-      pricingUnit: z.string().optional(),
-      isTaxable: z.boolean().optional(),
-      taxRate: z.number().min(0).max(100).optional(),
-      isActive: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().optional(),
+        defaultPrice: z.number().min(0).optional(),
+        pricingUnit: z.string().optional(),
+        isTaxable: z.boolean().optional(),
+        taxRate: z.number().min(0).max(100).optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const { id, ...updates } = input;
 
       const updateData: Record<string, unknown> = {};
 
       if (updates.name !== undefined) updateData.name = updates.name;
-      if (updates.description !== undefined) updateData.description = updates.description;
-      if (updates.defaultPrice !== undefined) updateData.defaultPrice = updates.defaultPrice.toFixed(2);
-      if (updates.pricingUnit !== undefined) updateData.pricingUnit = updates.pricingUnit;
-      if (updates.isTaxable !== undefined) updateData.isTaxable = updates.isTaxable;
-      if (updates.taxRate !== undefined) updateData.taxRate = updates.taxRate.toFixed(2);
-      if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+      if (updates.description !== undefined)
+        updateData.description = updates.description;
+      if (updates.defaultPrice !== undefined)
+        updateData.defaultPrice = updates.defaultPrice.toFixed(2);
+      if (updates.pricingUnit !== undefined)
+        updateData.pricingUnit = updates.pricingUnit;
+      if (updates.isTaxable !== undefined)
+        updateData.isTaxable = updates.isTaxable;
+      if (updates.taxRate !== undefined)
+        updateData.taxRate = updates.taxRate.toFixed(2);
+      if (updates.isActive !== undefined)
+        updateData.isActive = updates.isActive;
 
       await db
         .update(serviceDefinitions)
@@ -264,7 +301,11 @@ export const serviceBillingRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(serviceDefinitions)
@@ -286,7 +327,11 @@ export const serviceBillingRouter = router({
     .input(addServiceToOrderSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -336,7 +381,11 @@ export const serviceBillingRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const charges = await db
         .select()
@@ -364,7 +413,11 @@ export const serviceBillingRouter = router({
     .input(z.object({ serviceChargeId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .delete(orderServiceCharges)
@@ -385,7 +438,11 @@ export const serviceBillingRouter = router({
     .input(createServiceInvoiceSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -456,17 +513,25 @@ export const serviceBillingRouter = router({
    */
   listInvoices: protectedProcedure
     .use(requirePermission("accounting:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-      status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]).optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        clientId: z.number().optional(),
+        status: z
+          .enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"])
+          .optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(serviceInvoices.deletedAt)];
 
@@ -479,11 +544,15 @@ export const serviceBillingRouter = router({
       }
 
       if (input.startDate) {
-        conditions.push(gte(serviceInvoices.invoiceDate, new Date(input.startDate)));
+        conditions.push(
+          gte(serviceInvoices.invoiceDate, new Date(input.startDate))
+        );
       }
 
       if (input.endDate) {
-        conditions.push(lte(serviceInvoices.invoiceDate, new Date(input.endDate)));
+        conditions.push(
+          lte(serviceInvoices.invoiceDate, new Date(input.endDate))
+        );
       }
 
       const invoices = await db
@@ -524,7 +593,11 @@ export const serviceBillingRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [invoice] = await db
         .select({
@@ -537,7 +610,10 @@ export const serviceBillingRouter = router({
         .limit(1);
 
       if (!invoice) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
       }
 
       const lineItems = await db
@@ -557,14 +633,20 @@ export const serviceBillingRouter = router({
    */
   updateInvoiceStatus: protectedProcedure
     .use(requirePermission("accounting:update"))
-    .input(z.object({
-      id: z.number(),
-      status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
-      amountPaid: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
+        amountPaid: z.number().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const updateData: Record<string, unknown> = { status: input.status };
 
@@ -607,14 +689,22 @@ export const serviceBillingRouter = router({
    */
   getRevenueReport: protectedProcedure
     .use(requirePermission("accounting:read"))
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      groupBy: z.enum(["serviceType", "month", "client"]).default("serviceType"),
-    }))
-    .query(async ({ input }) => {
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        groupBy: z
+          .enum(["serviceType", "month", "client"])
+          .default("serviceType"),
+      })
+    )
+    .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get revenue from order service charges
       const orderServiceRevenue = await db
@@ -633,12 +723,7 @@ export const serviceBillingRouter = router({
           count: sql<number>`COUNT(*)`,
         })
         .from(serviceInvoices)
-        .where(
-          and(
-            isNull(serviceInvoices.deletedAt),
-            sql`status != 'VOID'`
-          )
-        );
+        .where(and(isNull(serviceInvoices.deletedAt), sql`status != 'VOID'`));
 
       const orderTotal = orderServiceRevenue.reduce(
         (sum, r) => sum + parseFloat(r.total || "0"),

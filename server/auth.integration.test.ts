@@ -143,7 +143,7 @@ describe("Authentication Integration Tests", () => {
       });
 
       const ctx2 = await createContext({
-        req: { headers: {} } as any,
+        req: { headers: {} } as Record<string, unknown>,
         res: {} as Record<string, unknown>,
       });
 

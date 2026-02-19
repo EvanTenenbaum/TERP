@@ -19,8 +19,7 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 
-
-import { clients, invoices, orders, payments } from "../../drizzle/schema";
+import { clients } from "../../drizzle/schema";
 import {
   installmentPlans,
   installments,
@@ -39,7 +38,7 @@ const FREQUENCIES = [
   { value: "CUSTOM", label: "Custom", days: null },
 ] as const;
 
-type Frequency = typeof FREQUENCIES[number]["value"];
+type Frequency = (typeof FREQUENCIES)[number]["value"];
 
 // ============================================================================
 // Helper Functions
@@ -53,14 +52,15 @@ function calculateInstallmentDates(
 ): Date[] {
   const dates: Date[] = [];
   const freqConfig = FREQUENCIES.find(f => f.value === frequency);
-  const intervalDays = frequency === "CUSTOM" ? (customIntervalDays || 30) : (freqConfig?.days || 30);
+  const intervalDays =
+    frequency === "CUSTOM" ? customIntervalDays || 30 : freqConfig?.days || 30;
 
   for (let i = 0; i < numberOfInstallments; i++) {
     const date = new Date(firstPaymentDate);
     if (frequency === "MONTHLY") {
       date.setMonth(date.getMonth() + i);
     } else {
-      date.setDate(date.getDate() + (intervalDays * i));
+      date.setDate(date.getDate() + intervalDays * i);
     }
     dates.push(date);
   }
@@ -134,7 +134,11 @@ export const installmentPaymentsRouter = router({
     .input(createPlanSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -164,7 +168,9 @@ export const installmentPaymentsRouter = router({
         clientId: input.clientId,
         invoiceId: input.invoiceId,
         orderId: input.orderId,
-        planName: input.planName || `Installment Plan - ${new Date().toISOString().split("T")[0]}`,
+        planName:
+          input.planName ||
+          `Installment Plan - ${new Date().toISOString().split("T")[0]}`,
         totalAmount: input.totalAmount.toFixed(2),
         numberOfInstallments: input.numberOfInstallments,
         frequency: input.frequency,
@@ -194,8 +200,15 @@ export const installmentPaymentsRouter = router({
         // Last installment might be slightly different to account for rounding
         let amountDue = installmentAmount;
         if (i === input.numberOfInstallments - 1) {
-          const previousTotal = installmentAmount * (input.numberOfInstallments - 1);
-          amountDue = Math.round((remainingBalance - previousTotal + remainingBalance * input.interestRate / 100) * 100) / 100;
+          const previousTotal =
+            installmentAmount * (input.numberOfInstallments - 1);
+          amountDue =
+            Math.round(
+              (remainingBalance -
+                previousTotal +
+                (remainingBalance * input.interestRate) / 100) *
+                100
+            ) / 100;
           if (amountDue < 0) amountDue = installmentAmount; // Fallback
         }
 
@@ -233,7 +246,11 @@ export const installmentPaymentsRouter = router({
     .input(z.object({ planId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [plan] = await db
         .select({
@@ -272,15 +289,23 @@ export const installmentPaymentsRouter = router({
    */
   listPlans: protectedProcedure
     .use(requirePermission("payments:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-      status: z.enum(["ACTIVE", "COMPLETED", "DEFAULTED", "CANCELLED"]).optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        clientId: z.number().optional(),
+        status: z
+          .enum(["ACTIVE", "COMPLETED", "DEFAULTED", "CANCELLED"])
+          .optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(installmentPlans.deletedAt)];
 
@@ -314,10 +339,19 @@ export const installmentPaymentsRouter = router({
         .where(and(...conditions));
 
       return {
-        items: plans.map((p: { plan: typeof installmentPlans.$inferSelect; client: { id: number | null; name: string | null; teriCode: string | null } | null }) => ({
-          ...p.plan,
-          client: p.client,
-        })),
+        items: plans.map(
+          (p: {
+            plan: typeof installmentPlans.$inferSelect;
+            client: {
+              id: number | null;
+              name: string | null;
+              teriCode: string | null;
+            } | null;
+          }) => ({
+            ...p.plan,
+            client: p.client,
+          })
+        ),
         total: Number(countResult?.count || 0),
       };
     }),
@@ -330,7 +364,11 @@ export const installmentPaymentsRouter = router({
     .input(recordInstallmentPaymentSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get installment
       const [installment] = await db
@@ -340,7 +378,10 @@ export const installmentPaymentsRouter = router({
         .limit(1);
 
       if (!installment) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Installment not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Installment not found",
+        });
       }
 
       const currentPaid = parseFloat(installment.amountPaid || "0");
@@ -368,8 +409,10 @@ export const installmentPaymentsRouter = router({
         .limit(1);
 
       if (plan) {
-        const planTotalPaid = parseFloat(plan.totalPaid || "0") + input.amountPaid;
-        const planRemainingBalance = parseFloat(plan.totalAmount || "0") - planTotalPaid;
+        const planTotalPaid =
+          parseFloat(plan.totalPaid || "0") + input.amountPaid;
+        const planRemainingBalance =
+          parseFloat(plan.totalAmount || "0") - planTotalPaid;
 
         const planStatus = planRemainingBalance <= 0 ? "COMPLETED" : "ACTIVE";
 
@@ -420,12 +463,20 @@ export const installmentPaymentsRouter = router({
    */
   getOverdueInstallments: protectedProcedure
     .use(requirePermission("payments:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-    }).optional())
+    .input(
+      z
+        .object({
+          clientId: z.number().optional(),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -447,20 +498,28 @@ export const installmentPaymentsRouter = router({
           },
         })
         .from(installments)
-        .innerJoin(installmentPlans, eq(installments.planId, installmentPlans.id))
+        .innerJoin(
+          installmentPlans,
+          eq(installments.planId, installmentPlans.id)
+        )
         .leftJoin(clients, eq(installmentPlans.clientId, clients.id))
         .where(and(...conditions))
         .orderBy(asc(installments.dueDate));
 
       // Update status to OVERDUE for these installments
-      const overdueIds = overdueList.map((o: typeof overdueList[0]) => o.installment.id);
+      const overdueIds = overdueList.map(
+        (o: (typeof overdueList)[0]) => o.installment.id
+      );
       if (overdueIds.length > 0) {
         await db
           .update(installments)
           .set({ status: "OVERDUE" })
           .where(
             and(
-              sql`id IN (${sql.join(overdueIds.map(id => sql`${id}`), sql`, `)})`,
+              sql`id IN (${sql.join(
+                overdueIds.map(id => sql`${id}`),
+                sql`, `
+              )})`,
               sql`status != 'OVERDUE'`
             )
           );
@@ -469,12 +528,16 @@ export const installmentPaymentsRouter = router({
       // Filter by client if specified
       let filteredList = overdueList;
       if (input?.clientId) {
-        filteredList = overdueList.filter((o: typeof overdueList[0]) => o.client?.id === input.clientId);
+        filteredList = overdueList.filter(
+          (o: (typeof overdueList)[0]) => o.client?.id === input.clientId
+        );
       }
 
-      return filteredList.map((o: typeof overdueList[0]) => {
+      return filteredList.map((o: (typeof overdueList)[0]) => {
         const dueDate = new Date(o.installment.dueDate);
-        const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysOverdue = Math.floor(
+          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
         const amountDue = parseFloat(o.installment.amountDue || "0");
         const amountPaid = parseFloat(o.installment.amountPaid || "0");
 
@@ -504,7 +567,11 @@ export const installmentPaymentsRouter = router({
     .input(z.object({ installmentId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get installment with plan
       const [result] = await db
@@ -513,16 +580,24 @@ export const installmentPaymentsRouter = router({
           plan: installmentPlans,
         })
         .from(installments)
-        .innerJoin(installmentPlans, eq(installments.planId, installmentPlans.id))
+        .innerJoin(
+          installmentPlans,
+          eq(installments.planId, installmentPlans.id)
+        )
         .where(eq(installments.id, input.installmentId))
         .limit(1);
 
       if (!result) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Installment not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Installment not found",
+        });
       }
 
       const lateFee = parseFloat(result.plan.lateFeeAmount || "0");
-      const currentLateFee = parseFloat(result.installment.lateFeeApplied || "0");
+      const currentLateFee = parseFloat(
+        result.installment.lateFeeApplied || "0"
+      );
 
       if (lateFee <= 0) {
         return { success: true, lateFeeApplied: 0 };
@@ -530,7 +605,8 @@ export const installmentPaymentsRouter = router({
 
       // Apply late fee
       const newLateFee = currentLateFee + lateFee;
-      const newAmountDue = parseFloat(result.installment.amountDue || "0") + lateFee;
+      const newAmountDue =
+        parseFloat(result.installment.amountDue || "0") + lateFee;
 
       await db
         .update(installments)
@@ -541,12 +617,15 @@ export const installmentPaymentsRouter = router({
         .where(eq(installments.id, input.installmentId));
 
       // Update plan remaining balance
-      const planRemaining = parseFloat(result.plan.remainingBalance || "0") + lateFee;
+      const planRemaining =
+        parseFloat(result.plan.remainingBalance || "0") + lateFee;
       await db
         .update(installmentPlans)
         .set({
           remainingBalance: planRemaining.toFixed(2),
-          totalAmount: (parseFloat(result.plan.totalAmount || "0") + lateFee).toFixed(2),
+          totalAmount: (
+            parseFloat(result.plan.totalAmount || "0") + lateFee
+          ).toFixed(2),
         })
         .where(eq(installmentPlans.id, result.plan.id));
 
@@ -564,13 +643,19 @@ export const installmentPaymentsRouter = router({
    */
   cancelPlan: protectedProcedure
     .use(requirePermission("payments:delete"))
-    .input(z.object({
-      planId: z.number(),
-      reason: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        planId: z.number(),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Update plan status
       await db
@@ -606,15 +691,17 @@ export const installmentPaymentsRouter = router({
    */
   previewSchedule: protectedProcedure
     .use(requirePermission("payments:read"))
-    .input(z.object({
-      totalAmount: z.number().positive(),
-      numberOfInstallments: z.number().min(2).max(60),
-      frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "CUSTOM"]),
-      customIntervalDays: z.number().min(1).max(365).optional(),
-      firstPaymentDate: z.string(),
-      downPaymentAmount: z.number().min(0).default(0),
-      interestRate: z.number().min(0).max(50).default(0),
-    }))
+    .input(
+      z.object({
+        totalAmount: z.number().positive(),
+        numberOfInstallments: z.number().min(2).max(60),
+        frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY", "CUSTOM"]),
+        customIntervalDays: z.number().min(1).max(365).optional(),
+        firstPaymentDate: z.string(),
+        downPaymentAmount: z.number().min(0).default(0),
+        interestRate: z.number().min(0).max(50).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const installmentAmount = calculateInstallmentAmount(
         input.totalAmount,
@@ -643,9 +730,14 @@ export const installmentPaymentsRouter = router({
         schedule: dates.map((date, i) => ({
           installmentNumber: i + 1,
           dueDate: date.toISOString().split("T")[0],
-          amount: i === input.numberOfInstallments - 1
-            ? Math.round((totalWithInterest - installmentAmount * (input.numberOfInstallments - 1)) * 100) / 100
-            : installmentAmount,
+          amount:
+            i === input.numberOfInstallments - 1
+              ? Math.round(
+                  (totalWithInterest -
+                    installmentAmount * (input.numberOfInstallments - 1)) *
+                    100
+                ) / 100
+              : installmentAmount,
         })),
       };
     }),
@@ -657,7 +749,11 @@ export const installmentPaymentsRouter = router({
     .use(requirePermission("payments:read"))
     .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [stats] = await db
         .select({

@@ -24,6 +24,8 @@ interface OrderItem {
   cogsMode?: string;
   unitCogsMin?: string;
   unitCogsMax?: string;
+  lineTotal?: number;
+  overridePrice?: number;
 }
 
 interface OrderItemCardProps {
@@ -72,9 +74,9 @@ export const OrderItemCard = memo(function OrderItemCard({
             <div className="flex items-center gap-2">
               <Input
                 value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
+                onChange={e => setEditedName(e.target.value)}
                 onBlur={handleSaveName}
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === "Enter") handleSaveName();
                   if (e.key === "Escape") {
                     setEditedName(item.displayName);
@@ -117,11 +119,15 @@ export const OrderItemCard = memo(function OrderItemCard({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Unit Price</span>
-                <span className="font-medium">${item.unitPrice.toFixed(2)}</span>
+                <span className="font-medium">
+                  ${item.unitPrice.toFixed(2)}
+                </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Unit COGS</span>
-                <span className="font-medium">${(item.unitCogs || 0).toFixed(2)}</span>
+                <span className="font-medium">
+                  ${(item.unitCogs || 0).toFixed(2)}
+                </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Unit Margin</span>
@@ -162,11 +168,11 @@ export const OrderItemCard = memo(function OrderItemCard({
             min="0.01"
             step="0.01"
             value={item.quantity}
-            onChange={(e) =>
+            onChange={e =>
               onUpdate({
                 quantity: parseFloat(e.target.value) || 0,
                 lineTotal: parseFloat(e.target.value) * item.unitPrice,
-              } as any)
+              })
             }
             className="h-8 text-sm"
           />
@@ -178,12 +184,12 @@ export const OrderItemCard = memo(function OrderItemCard({
             min="0"
             step="0.01"
             value={item.unitPrice}
-            onChange={(e) =>
+            onChange={e =>
               onUpdate({
                 unitPrice: parseFloat(e.target.value) || 0,
                 lineTotal: item.quantity * parseFloat(e.target.value),
                 overridePrice: parseFloat(e.target.value),
-              } as any)
+              })
             }
             className="h-8 text-sm"
           />
@@ -196,7 +202,7 @@ export const OrderItemCard = memo(function OrderItemCard({
           <Switch
             id={`sample-${item.batchId}`}
             checked={item.isSample}
-            onCheckedChange={(checked) => onUpdate({ isSample: checked })}
+            onCheckedChange={checked => onUpdate({ isSample: checked })}
           />
           <Label
             htmlFor={`sample-${item.batchId}`}

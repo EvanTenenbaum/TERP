@@ -32,7 +32,12 @@ export async function createRecurringOrder(data: {
 
     const [result] = await db.insert(recurringOrders).values({
       clientId: data.clientId,
-      frequency: data.frequency as 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY',
+      frequency: data.frequency as
+        | "DAILY"
+        | "WEEKLY"
+        | "BIWEEKLY"
+        | "MONTHLY"
+        | "QUARTERLY",
       dayOfWeek: data.dayOfWeek,
       dayOfMonth: data.dayOfMonth,
       orderTemplate: data.orderTemplate,
@@ -43,7 +48,7 @@ export async function createRecurringOrder(data: {
       notifyEmail: data.notifyEmail,
       createdBy: data.createdBy,
       status: "ACTIVE",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return { success: true, recurringOrderId: result.insertId };
@@ -53,7 +58,10 @@ export async function createRecurringOrder(data: {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -92,12 +100,17 @@ export async function updateRecurringOrder(
     if (data.dayOfMonth !== undefined) updateData.dayOfMonth = data.dayOfMonth;
     if (data.orderTemplate) updateData.orderTemplate = data.orderTemplate;
     if (data.endDate) updateData.endDate = data.endDate;
-    if (data.notifyClient !== undefined) updateData.notifyClient = data.notifyClient;
+    if (data.notifyClient !== undefined)
+      updateData.notifyClient = data.notifyClient;
     if (data.notifyEmail) updateData.notifyEmail = data.notifyEmail;
     if (data.status) updateData.status = data.status;
 
     // Recalculate next generation date if frequency changed
-    if (data.frequency || data.dayOfWeek !== undefined || data.dayOfMonth !== undefined) {
+    if (
+      data.frequency ||
+      data.dayOfWeek !== undefined ||
+      data.dayOfMonth !== undefined
+    ) {
       const nextGenerationDate = calculateNextGenerationDate(
         existing.nextGenerationDate.toString(),
         data.frequency || existing.frequency,
@@ -119,7 +132,10 @@ export async function updateRecurringOrder(
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -143,7 +159,10 @@ export async function pauseRecurringOrder(recurringOrderId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -187,7 +206,10 @@ export async function resumeRecurringOrder(recurringOrderId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -211,7 +233,10 @@ export async function cancelRecurringOrder(recurringOrderId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -246,7 +271,10 @@ export async function getDueRecurringOrders() {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -290,7 +318,10 @@ export async function markRecurringOrderGenerated(recurringOrderId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -315,7 +346,10 @@ export async function listRecurringOrdersForClient(clientId: number) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -347,7 +381,10 @@ export async function listAllRecurringOrders(_status?: string) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -367,28 +404,36 @@ function calculateNextGenerationDate(
       date.setDate(date.getDate() + 1);
       break;
 
-    case "WEEKLY":
+    case "WEEKLY": {
       // Move to next occurrence of dayOfWeek
       const targetDay = dayOfWeek ?? 1; // Default to Monday
       const currentDay = date.getDay();
       const daysUntilTarget = (targetDay - currentDay + 7) % 7 || 7;
       date.setDate(date.getDate() + daysUntilTarget);
       break;
+    }
 
-    case "BIWEEKLY":
+    case "BIWEEKLY": {
       // Move to next occurrence of dayOfWeek, 2 weeks out
       const targetDay2 = dayOfWeek ?? 1;
       const currentDay2 = date.getDay();
       const daysUntilTarget2 = (targetDay2 - currentDay2 + 7) % 7 || 7;
       date.setDate(date.getDate() + daysUntilTarget2 + 7);
       break;
+    }
 
-    case "MONTHLY":
+    case "MONTHLY": {
       // Move to next occurrence of dayOfMonth
       const targetDayOfMonth = dayOfMonth ?? 1;
       date.setMonth(date.getMonth() + 1);
-      date.setDate(Math.min(targetDayOfMonth, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()));
+      date.setDate(
+        Math.min(
+          targetDayOfMonth,
+          new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+        )
+      );
       break;
+    }
 
     case "QUARTERLY":
       // Move 3 months forward
@@ -401,4 +446,3 @@ function calculateNextGenerationDate(
 
   return date.toISOString().split("T")[0];
 }
-

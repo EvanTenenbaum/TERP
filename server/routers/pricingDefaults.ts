@@ -5,25 +5,29 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { getDb } from "../db";
-import { products } from "../../drizzle/schema";
 import { pricingService } from "../services/pricingService";
-
 
 export const pricingDefaultsRouter = router({
   /**
    * Get all default margins
    */
-  getAll: protectedProcedure.use(requirePermission("pricing:read")).query(async () => {
-    return await pricingService.getAllDefaultMargins();
-  }),
+  getAll: protectedProcedure
+    .use(requirePermission("pricing:read"))
+    .query(async () => {
+      return await pricingService.getAllDefaultMargins();
+    }),
 
   /**
    * Get default margin for category
    */
-  getByCategory: protectedProcedure.use(requirePermission("pricing:read"))
+  getByCategory: protectedProcedure
+    .use(requirePermission("pricing:read"))
     .input(
       z.object({
         productCategory: z.string(),
@@ -31,7 +35,7 @@ export const pricingDefaultsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const effectiveDate = input.effectiveDate
+      const _effectiveDate = input.effectiveDate
         ? new Date(input.effectiveDate)
         : new Date();
 
@@ -48,7 +52,8 @@ export const pricingDefaultsRouter = router({
   /**
    * Create or update default margin
    */
-  upsert: protectedProcedure.use(requirePermission("pricing:read"))
+  upsert: protectedProcedure
+    .use(requirePermission("pricing:read"))
     .input(
       z.object({
         productCategory: z.string(),
@@ -58,7 +63,7 @@ export const pricingDefaultsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = getAuthenticatedUserId(ctx);
+      const _userId = getAuthenticatedUserId(ctx);
 
       await pricingService.setDefaultMarginByCategory(
         input.productCategory,
@@ -76,7 +81,8 @@ export const pricingDefaultsRouter = router({
    * Get margin with fallback logic
    * Used by order creation to determine margin
    */
-  getMarginWithFallback: protectedProcedure.use(requirePermission("pricing:read"))
+  getMarginWithFallback: protectedProcedure
+    .use(requirePermission("pricing:read"))
     .input(
       z.object({
         clientId: z.number(),
@@ -90,4 +96,3 @@ export const pricingDefaultsRouter = router({
       );
     }),
 });
-

@@ -18,11 +18,41 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
-import { Search, ChevronDown, ChevronUp, Plus, X, Loader2, Wifi, WifiOff, DollarSign } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  X,
+  Loader2,
+  Wifi,
+  WifiOff,
+  DollarSign,
+} from "lucide-react";
 import { useVIPPortalAuth } from "@/hooks/useVIPPortalAuth";
 
 // Types
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
+
+interface SessionCartItemView {
+  id: number;
+  productName: string;
+  batchCode: string;
+  quantity: string;
+  unitPrice: string;
+  subtotal: string;
+  isHighlighted?: boolean | null;
+  negotiationStatus?: string | null;
+  negotiationData?: string | Record<string, unknown> | null;
+}
+
+interface ProductSearchResult {
+  batchId: number;
+  productId: number;
+  productName: string;
+  batchCode: string;
+  available: string | null;
+}
 
 interface LiveShoppingSessionProps {
   sessionId: number;
@@ -73,11 +103,17 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track price changes for visual feedback
-  const [priceAnimations, setPriceAnimations] = useState<Record<number, "up" | "down">>({});
+  const [priceAnimations, setPriceAnimations] = useState<
+    Record<number, "up" | "down">
+  >({});
   const prevPricesRef = useRef<Record<number, string>>({});
 
   // Queries
-  const { data: itemsByStatus, isLoading, refetch } = trpc.vipPortalLiveShopping.getMyItemsByStatus.useQuery(
+  const {
+    data: itemsByStatus,
+    isLoading,
+    refetch,
+  } = trpc.vipPortalLiveShopping.getMyItemsByStatus.useQuery(
     { sessionId },
     { refetchInterval: 10000 } // Fallback polling every 10 seconds (SSE is primary)
   );
@@ -103,7 +139,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       });
 
       // Handle session status changes
-      evtSource.addEventListener("SESSION_STATUS", (event) => {
+      evtSource.addEventListener("SESSION_STATUS", event => {
         try {
           const data = JSON.parse(event.data);
           if (data.status === "ENDED" || data.status === "CONVERTED") {
@@ -130,7 +166,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       });
 
       // Handle price negotiation responses
-      evtSource.addEventListener("NEGOTIATION_RESPONSE", (event) => {
+      evtSource.addEventListener("NEGOTIATION_RESPONSE", event => {
         try {
           const data = JSON.parse(event.data);
           if (data.response === "ACCEPT") {
@@ -138,7 +174,9 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
           } else if (data.response === "REJECT") {
             toast.error("Your price request was declined");
           } else if (data.response === "COUNTER") {
-            toast.info(`Staff made a counter-offer: $${data.counterPrice?.toFixed(2)}`);
+            toast.info(
+              `Staff made a counter-offer: $${data.counterPrice?.toFixed(2)}`
+            );
           }
           refetch();
         } catch (e) {
@@ -178,7 +216,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
 
     const newAnimations: Record<number, "up" | "down"> = {};
 
-    allItems.forEach((item: any) => {
+    allItems.forEach((item: SessionCartItemView) => {
       const prevPrice = prevPricesRef.current[item.id];
       const currentPrice = item.unitPrice;
 
@@ -202,51 +240,54 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   }, [itemsByStatus]);
 
   // Mutations
-  const updateStatusMutation = trpc.vipPortalLiveShopping.updateItemStatus.useMutation({
-    onSuccess: () => refetch(),
-  });
+  const updateStatusMutation =
+    trpc.vipPortalLiveShopping.updateItemStatus.useMutation({
+      onSuccess: () => refetch(),
+    });
 
   const removeItemMutation = trpc.vipPortalLiveShopping.removeItem.useMutation({
     onSuccess: () => {
       toast.success("Item removed");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to remove item: ${error.message}`);
     },
   });
 
-  const requestCheckoutMutation = trpc.vipPortalLiveShopping.requestCheckout.useMutation({
-    onError: (error) => {
-      toast.error(`Failed to request checkout: ${error.message}`);
-    },
-  });
+  const requestCheckoutMutation =
+    trpc.vipPortalLiveShopping.requestCheckout.useMutation({
+      onError: error => {
+        toast.error(`Failed to request checkout: ${error.message}`);
+      },
+    });
 
   // Price negotiation mutations
-  const requestNegotiationMutation = trpc.vipPortalLiveShopping.requestNegotiation.useMutation({
-    onSuccess: () => {
-      toast.success("Price request sent to staff!");
-      setNegotiationDialogOpen(false);
-      setItemToNegotiate(null);
-      setProposedPrice("");
-      setNegotiationReason("");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to request negotiation: ${error.message}`);
-    },
-  });
+  const requestNegotiationMutation =
+    trpc.vipPortalLiveShopping.requestNegotiation.useMutation({
+      onSuccess: () => {
+        toast.success("Price request sent to staff!");
+        setNegotiationDialogOpen(false);
+        setItemToNegotiate(null);
+        setProposedPrice("");
+        setNegotiationReason("");
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to request negotiation: ${error.message}`);
+      },
+    });
 
-  const acceptCounterOfferMutation = trpc.vipPortalLiveShopping.acceptCounterOffer.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Price agreed at $${data.finalPrice?.toFixed(2)}!`);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to accept counter-offer: ${error.message}`);
-    },
-  });
-
+  const acceptCounterOfferMutation =
+    trpc.vipPortalLiveShopping.acceptCounterOffer.useMutation({
+      onSuccess: data => {
+        toast.success(`Price agreed at $${data.finalPrice?.toFixed(2)}!`);
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to accept counter-offer: ${error.message}`);
+      },
+    });
 
   // BUG-007: State for remove confirmation dialog (replaces window.confirm)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -254,14 +295,16 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
 
   // Price negotiation state
   const [negotiationDialogOpen, setNegotiationDialogOpen] = useState(false);
-  const [itemToNegotiate, setItemToNegotiate] = useState<any | null>(null);
+  const [itemToNegotiate, setItemToNegotiate] =
+    useState<SessionCartItemView | null>(null);
   const [proposedPrice, setProposedPrice] = useState("");
   const [negotiationReason, setNegotiationReason] = useState("");
 
   // Product search state
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAddStatus, setSelectedAddStatus] = useState<ItemStatus>("INTERESTED");
+  const [selectedAddStatus, setSelectedAddStatus] =
+    useState<ItemStatus>("INTERESTED");
 
   // Product search query
   const { data: searchResults, isLoading: searchLoading } =
@@ -271,16 +314,17 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
     );
 
   // Add item mutation
-  const addItemMutation = trpc.vipPortalLiveShopping.addItemWithStatus.useMutation({
-    onSuccess: () => {
-      toast.success("Item added to session");
-      refetch();
-      setSearchTerm("");
-    },
-    onError: (error) => {
-      toast.error(`Failed to add item: ${error.message}`);
-    },
-  });
+  const addItemMutation =
+    trpc.vipPortalLiveShopping.addItemWithStatus.useMutation({
+      onSuccess: () => {
+        toast.success("Item added to session");
+        refetch();
+        setSearchTerm("");
+      },
+      onError: error => {
+        toast.error(`Failed to add item: ${error.message}`);
+      },
+    });
 
   // Handle status change
   const handleStatusChange = useCallback(
@@ -295,13 +339,10 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   );
 
   // BUG-007: Show confirm dialog instead of window.confirm
-  const handleRemoveItem = useCallback(
-    (cartItemId: number) => {
-      setItemToRemove(cartItemId);
-      setRemoveDialogOpen(true);
-    },
-    []
-  );
+  const handleRemoveItem = useCallback((cartItemId: number) => {
+    setItemToRemove(cartItemId);
+    setRemoveDialogOpen(true);
+  }, []);
 
   // BUG-007: Actual remove action after confirmation
   const confirmRemoveItem = useCallback(() => {
@@ -325,7 +366,9 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       { sessionId },
       {
         onSuccess: () => {
-          toast.success("Staff has been notified that you're ready to checkout!");
+          toast.success(
+            "Staff has been notified that you're ready to checkout!"
+          );
         },
       }
     );
@@ -345,14 +388,11 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   );
 
   // Handle price negotiation request
-  const handleRequestNegotiation = useCallback(
-    (item: any) => {
-      setItemToNegotiate(item);
-      setProposedPrice(parseFloat(item.unitPrice).toFixed(2));
-      setNegotiationDialogOpen(true);
-    },
-    []
-  );
+  const handleRequestNegotiation = useCallback((item: SessionCartItemView) => {
+    setItemToNegotiate(item);
+    setProposedPrice(parseFloat(item.unitPrice).toFixed(2));
+    setNegotiationDialogOpen(true);
+  }, []);
 
   const submitNegotiation = useCallback(() => {
     if (!itemToNegotiate) return;
@@ -367,7 +407,13 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       proposedPrice: price,
       reason: negotiationReason || undefined,
     });
-  }, [sessionId, itemToNegotiate, proposedPrice, negotiationReason, requestNegotiationMutation]);
+  }, [
+    sessionId,
+    itemToNegotiate,
+    proposedPrice,
+    negotiationReason,
+    requestNegotiationMutation,
+  ]);
 
   const handleAcceptCounterOffer = useCallback(
     (cartItemId: number) => {
@@ -400,7 +446,9 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Live Shopping</h1>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Live Shopping
+                </h1>
                 <p className="text-sm text-gray-500">
                   Session: {roomCode?.slice(0, 8)}...
                 </p>
@@ -471,7 +519,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
               {/* Status selector */}
               <div className="flex items-center gap-2 py-3">
                 <span className="text-sm text-gray-500">Add items as:</span>
-                {(Object.keys(STATUS_CONFIG) as ItemStatus[]).map((status) => (
+                {(Object.keys(STATUS_CONFIG) as ItemStatus[]).map(status => (
                   <button
                     key={status}
                     onClick={() => setSelectedAddStatus(status)}
@@ -481,7 +529,8 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    {STATUS_CONFIG[status].icon} {STATUS_CONFIG[status].shortLabel}
+                    {STATUS_CONFIG[status].icon}{" "}
+                    {STATUS_CONFIG[status].shortLabel}
                   </button>
                 ))}
               </div>
@@ -493,7 +542,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
                   type="text"
                   placeholder="Search products by name or code..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {searchTerm && (
@@ -515,7 +564,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
                     </div>
                   ) : searchResults && searchResults.length > 0 ? (
                     <div className="space-y-2">
-                      {searchResults.map((product: any) => (
+                      {searchResults.map((product: ProductSearchResult) => (
                         <div
                           key={product.batchId}
                           className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -615,7 +664,9 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
               disabled={requestCheckoutMutation.isPending}
               className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all disabled:opacity-50"
             >
-              {requestCheckoutMutation.isPending ? "Notifying..." : "Ready to Checkout"}
+              {requestCheckoutMutation.isPending
+                ? "Notifying..."
+                : "Ready to Checkout"}
             </button>
           </div>
         </div>
@@ -638,7 +689,9 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Request Price Change</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                Request Price Change
+              </h2>
               <button
                 onClick={() => setNegotiationDialogOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -648,8 +701,12 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
             </div>
 
             <div className="mb-4">
-              <p className="font-medium text-gray-900">{itemToNegotiate.productName}</p>
-              <p className="text-sm text-gray-500">{itemToNegotiate.batchCode}</p>
+              <p className="font-medium text-gray-900">
+                {itemToNegotiate.productName}
+              </p>
+              <p className="text-sm text-gray-500">
+                {itemToNegotiate.batchCode}
+              </p>
             </div>
 
             <div className="mb-4">
@@ -666,13 +723,15 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
                 Your Proposed Price
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  $
+                </span>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={proposedPrice}
-                  onChange={(e) => setProposedPrice(e.target.value)}
+                  onChange={e => setProposedPrice(e.target.value)}
                   className="w-full pl-8 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -685,7 +744,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
               </label>
               <textarea
                 value={negotiationReason}
-                onChange={(e) => setNegotiationReason(e.target.value)}
+                onChange={e => setNegotiationReason(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
                 placeholder="Why are you requesting this price?"
@@ -722,11 +781,11 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
 // Status Column Component
 interface StatusColumnProps {
   status: ItemStatus;
-  items: any[];
+  items: SessionCartItemView[];
   count: number;
   onStatusChange: (cartItemId: number, newStatus: ItemStatus) => void;
   onRemove: (cartItemId: number) => void;
-  onRequestNegotiation: (item: any) => void;
+  onRequestNegotiation: (item: SessionCartItemView) => void;
   onAcceptCounterOffer: (cartItemId: number) => void;
   priceAnimations: Record<number, "up" | "down">;
 }
@@ -743,13 +802,15 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
 }) => {
   const config = STATUS_CONFIG[status];
   const otherStatuses = (Object.keys(STATUS_CONFIG) as ItemStatus[]).filter(
-    (s) => s !== status
+    s => s !== status
   );
 
   return (
     <div className={`rounded-lg border-2 ${config.color} overflow-hidden`}>
       {/* Column Header */}
-      <div className={`${config.headerColor} px-4 py-3 flex justify-between items-center`}>
+      <div
+        className={`${config.headerColor} px-4 py-3 flex justify-between items-center`}
+      >
         <div className="flex items-center gap-2">
           <span className="text-xl">{config.icon}</span>
           <span className="font-semibold">{config.label}</span>
@@ -766,7 +827,7 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
             {config.description}
           </div>
         ) : (
-          items.map((item: any) => (
+          items.map((item: SessionCartItemView) => (
             <ItemCard
               key={item.id}
               item={item}
@@ -787,12 +848,12 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
 
 // Item Card Component
 interface ItemCardProps {
-  item: any;
+  item: SessionCartItemView;
   currentStatus: ItemStatus;
   otherStatuses: ItemStatus[];
   onStatusChange: (cartItemId: number, newStatus: ItemStatus) => void;
   onRemove: (cartItemId: number) => void;
-  onRequestNegotiation: (item: any) => void;
+  onRequestNegotiation: (item: SessionCartItemView) => void;
   onAcceptCounterOffer: (cartItemId: number) => void;
   priceAnimation?: "up" | "down";
 }
@@ -824,13 +885,17 @@ const ItemCard: React.FC<ItemCardProps> = ({
   return (
     <div
       className={`bg-white rounded-lg shadow-sm p-3 border transition-all ${
-        item.isHighlighted ? "ring-2 ring-indigo-400 border-indigo-300" : "border-gray-200"
+        item.isHighlighted
+          ? "ring-2 ring-indigo-400 border-indigo-300"
+          : "border-gray-200"
       } ${priceAnimation ? "animate-pulse bg-yellow-50" : ""}`}
     >
       {/* Product Info */}
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 truncate">{item.productName}</h4>
+          <h4 className="font-medium text-gray-900 truncate">
+            {item.productName}
+          </h4>
           <p className="text-xs text-gray-500 font-mono">{item.batchCode}</p>
           {/* Negotiation Status Badge */}
           {negotiationStatus && (
@@ -839,10 +904,10 @@ const ItemCard: React.FC<ItemCardProps> = ({
                 negotiationStatus === "PENDING"
                   ? "bg-yellow-100 text-yellow-800"
                   : negotiationStatus === "COUNTER_OFFERED"
-                  ? "bg-purple-100 text-purple-800"
-                  : negotiationStatus === "ACCEPTED"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
+                    ? "bg-purple-100 text-purple-800"
+                    : negotiationStatus === "ACCEPTED"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
               }`}
             >
               {negotiationStatus === "PENDING" && "Negotiating..."}
@@ -864,7 +929,9 @@ const ItemCard: React.FC<ItemCardProps> = ({
       <div className="flex justify-between items-center mb-3">
         <div className="text-sm">
           <span className="text-gray-500">Qty:</span>{" "}
-          <span className="font-medium">{parseFloat(item.quantity).toFixed(0)}</span>
+          <span className="font-medium">
+            {parseFloat(item.quantity).toFixed(0)}
+          </span>
         </div>
         <div className="text-right">
           <span
@@ -872,13 +939,13 @@ const ItemCard: React.FC<ItemCardProps> = ({
               priceAnimation === "down"
                 ? "text-green-600 animate-pulse"
                 : priceAnimation === "up"
-                ? "text-red-600 animate-pulse"
-                : "text-gray-900"
+                  ? "text-red-600 animate-pulse"
+                  : "text-gray-900"
             }`}
           >
             {priceAnimation === "down" && "↓ "}
-            {priceAnimation === "up" && "↑ "}
-            ${parseFloat(item.unitPrice).toFixed(2)}
+            {priceAnimation === "up" && "↑ "}$
+            {parseFloat(item.unitPrice).toFixed(2)}
           </span>
           <div className="text-xs text-gray-500">
             Total: ${parseFloat(item.subtotal).toFixed(2)}
@@ -914,7 +981,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
 
       {/* Status Change Buttons */}
       <div className="flex gap-2">
-        {otherStatuses.map((newStatus) => {
+        {otherStatuses.map(newStatus => {
           const targetConfig = STATUS_CONFIG[newStatus];
           return (
             <button

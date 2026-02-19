@@ -1,14 +1,12 @@
 /**
  * Drizzle MySQL Type Extensions
- * 
+ *
  * Provides proper typing for MySQL query results that Drizzle doesn't expose correctly.
  * This fixes TS2339 errors for rowsAffected, insertId, etc.
  */
 
-import { MySqlRawQueryResult } from 'drizzle-orm/mysql2';
-
 // Extend the MySqlRawQueryResult to include MySQL-specific properties
-declare module 'drizzle-orm/mysql2' {
+declare module "drizzle-orm/mysql2" {
   interface MySqlRawQueryResult {
     affectedRows?: number;
     insertId?: number;
@@ -35,7 +33,7 @@ export function getAffectedRows(result: unknown): number {
     const header = result[0] as { affectedRows?: number };
     return header?.affectedRows ?? 0;
   }
-  if (result && typeof result === 'object' && 'affectedRows' in result) {
+  if (result && typeof result === "object" && "affectedRows" in result) {
     return (result as { affectedRows: number }).affectedRows;
   }
   return 0;
@@ -49,7 +47,7 @@ export function getInsertId(result: unknown): number {
     const header = result[0] as { insertId?: number };
     return header?.insertId ?? 0;
   }
-  if (result && typeof result === 'object' && 'insertId' in result) {
+  if (result && typeof result === "object" && "insertId" in result) {
     return (result as { insertId: number }).insertId;
   }
   return 0;

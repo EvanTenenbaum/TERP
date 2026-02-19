@@ -1,24 +1,23 @@
 /**
  * Production-Safe Workflow Queue Setup Script
- * 
+ *
  * This script safely sets up the workflow queue system in production:
  * 1. Creates workflow_statuses table (if not exists)
  * 2. Creates batch_status_history table (if not exists)
  * 3. Adds statusId column to batches table (if not exists)
  * 4. Seeds default workflow statuses (if not exists)
  * 5. Migrates existing batches to workflow statuses
- * 
+ *
  * Safe to run multiple times - will skip steps that are already complete.
  */
 
 import { getDb } from "../db";
-import { workflowStatuses, batchStatusHistory, batches } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { logger } from "../_core/logger";
 
 async function setupWorkflowQueue() {
   const db = getDb();
-  
+
   logger.info("🚀 Starting Workflow Queue Production Setup...\n");
 
   try {
@@ -72,7 +71,11 @@ async function setupWorkflowQueue() {
       `);
       logger.info("✅ statusId column added to batches table\n");
     } catch (error) {
-      if (error instanceof Error ? error.message : String(error)?.includes("Duplicate column")) {
+      if (
+        error instanceof Error
+          ? error.message
+          : String(error)?.includes("Duplicate column")
+      ) {
         logger.info("ℹ️  statusId column already exists, skipping\n");
       } else {
         throw error;
@@ -81,14 +84,44 @@ async function setupWorkflowQueue() {
 
     // Step 4: Seed default workflow statuses
     logger.info("📋 Step 4: Seeding default workflow statuses...");
-    
+
     const defaultStatuses = [
-      { name: "Intake Queue", description: "Newly received batches awaiting initial processing", color: "#EF4444", order: 1 },
-      { name: "Quality Check", description: "Batches undergoing quality inspection", color: "#F59E0B", order: 2 },
-      { name: "Lab Testing", description: "Batches in laboratory testing phase", color: "#3B82F6", order: 3 },
-      { name: "Packaging", description: "Batches being packaged for sale", color: "#8B5CF6", order: 4 },
-      { name: "Ready for Sale", description: "Batches ready to be sold", color: "#10B981", order: 5 },
-      { name: "On Hold", description: "Batches temporarily on hold", color: "#6B7280", order: 6 },
+      {
+        name: "Intake Queue",
+        description: "Newly received batches awaiting initial processing",
+        color: "#EF4444",
+        order: 1,
+      },
+      {
+        name: "Quality Check",
+        description: "Batches undergoing quality inspection",
+        color: "#F59E0B",
+        order: 2,
+      },
+      {
+        name: "Lab Testing",
+        description: "Batches in laboratory testing phase",
+        color: "#3B82F6",
+        order: 3,
+      },
+      {
+        name: "Packaging",
+        description: "Batches being packaged for sale",
+        color: "#8B5CF6",
+        order: 4,
+      },
+      {
+        name: "Ready for Sale",
+        description: "Batches ready to be sold",
+        color: "#10B981",
+        order: 5,
+      },
+      {
+        name: "On Hold",
+        description: "Batches temporarily on hold",
+        color: "#6B7280",
+        order: 6,
+      },
     ];
 
     for (const status of defaultStatuses) {
@@ -109,19 +142,29 @@ async function setupWorkflowQueue() {
     logger.info("✅ Default workflow statuses seeded\n");
 
     // Step 5: Migrate existing batches to workflow statuses
-    logger.info("📋 Step 5: Migrating existing batches to workflow statuses...");
-    
+    logger.info(
+      "📋 Step 5: Migrating existing batches to workflow statuses..."
+    );
+
     // Get status IDs
-    const statusMap = await db.execute(sql`SELECT id, name FROM workflow_statuses`);
+    const statusMap = await db.execute(
+      sql`SELECT id, name FROM workflow_statuses`
+    );
     const statuses = statusMap.rows as Array<{ id: number; name: string }>;
-    
+
     const qualityCheckId = statuses.find(s => s.name === "Quality Check")?.id;
     const labTestingId = statuses.find(s => s.name === "Lab Testing")?.id;
     const packagingId = statuses.find(s => s.name === "Packaging")?.id;
     const readyForSaleId = statuses.find(s => s.name === "Ready for Sale")?.id;
     const onHoldId = statuses.find(s => s.name === "On Hold")?.id;
 
-    if (!qualityCheckId || !labTestingId || !packagingId || !readyForSaleId || !onHoldId) {
+    if (
+      !qualityCheckId ||
+      !labTestingId ||
+      !packagingId ||
+      !readyForSaleId ||
+      !onHoldId
+    ) {
       throw new Error("Failed to find all required workflow statuses");
     }
 
@@ -129,7 +172,7 @@ async function setupWorkflowQueue() {
     const countResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM batches WHERE statusId IS NULL
     `);
-    const batchesToMigrate = (countResult.rows[0] as any).count;
+    const batchesToMigrate = (countResult.rows[0] as { count: number }).count;
 
     if (batchesToMigrate === 0) {
       logger.info("ℹ️  All batches already have workflow statuses assigned\n");
@@ -143,28 +186,28 @@ async function setupWorkflowQueue() {
         SET statusId = ${readyForSaleId}
         WHERE statusId IS NULL AND onHandQty = 0
       `);
-      
+
       // On Hold: Random 10% of remaining batches
       await db.execute(sql`
         UPDATE batches 
         SET statusId = ${onHoldId}
         WHERE statusId IS NULL AND RAND() < 0.1
       `);
-      
+
       // Quality Check: High quantity (> 500)
       await db.execute(sql`
         UPDATE batches 
         SET statusId = ${qualityCheckId}
         WHERE statusId IS NULL AND onHandQty > 500
       `);
-      
+
       // Packaging: Low to medium quantity (< 500)
       await db.execute(sql`
         UPDATE batches 
         SET statusId = ${packagingId}
         WHERE statusId IS NULL AND onHandQty > 0 AND onHandQty < 300
       `);
-      
+
       // Lab Testing: Everything else
       await db.execute(sql`
         UPDATE batches 
@@ -191,22 +234,33 @@ async function setupWorkflowQueue() {
 
     logger.info("\n📊 Workflow Queue Distribution:");
     logger.info("─".repeat(60));
-    
+
     let totalBatches = 0;
-    for (const row of verifyResult.rows as Array<{ name: string; color: string; batch_count: number; avg_quantity: number }>) {
-      const percentage = totalBatches > 0 ? ((row.batch_count / totalBatches) * 100).toFixed(1) : "0.0";
-      logger.info(`${row.name.padEnd(20)} │ ${String(row.batch_count).padStart(4)} batches │ Avg: ${Math.round(row.avg_quantity).toString().padStart(4)} units`);
+    for (const row of verifyResult.rows as Array<{
+      name: string;
+      color: string;
+      batch_count: number;
+      avg_quantity: number;
+    }>) {
+      const _percentage =
+        totalBatches > 0
+          ? ((row.batch_count / totalBatches) * 100).toFixed(1)
+          : "0.0";
+      logger.info(
+        `${row.name.padEnd(20)} │ ${String(row.batch_count).padStart(4)} batches │ Avg: ${Math.round(row.avg_quantity).toString().padStart(4)} units`
+      );
       totalBatches += row.batch_count;
     }
-    
+
     logger.info("─".repeat(60));
-    logger.info(`${"TOTAL".padEnd(20)} │ ${String(totalBatches).padStart(4)} batches`);
+    logger.info(
+      `${"TOTAL".padEnd(20)} │ ${String(totalBatches).padStart(4)} batches`
+    );
     logger.info("─".repeat(60));
 
     logger.info("\n✅ Workflow Queue Setup Complete!");
     logger.info("\n🎉 The workflow queue system is now ready to use!");
     logger.info("   Navigate to /workflow-queue to see your batches\n");
-
   } catch (error) {
     console.error("\n❌ Error during setup:", error);
     throw error;
@@ -219,7 +273,7 @@ setupWorkflowQueue()
     logger.info("✅ Setup completed successfully");
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error("❌ Setup failed:", error);
     process.exit(1);
   });

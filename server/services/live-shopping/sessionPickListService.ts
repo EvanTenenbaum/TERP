@@ -14,8 +14,12 @@ import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../../drizzle/schema-live-shopping";
-import { batches, products, batchLocations, clients } from "../../../drizzle/schema";
-import { sessionEventManager } from "../../lib/sse/sessionEventManager";
+import {
+  batches,
+  products,
+  batchLocations,
+  clients,
+} from "../../../drizzle/schema";
 import { EventEmitter } from "events";
 import { logger } from "../../_core/logger";
 
@@ -62,19 +66,25 @@ class WarehouseEventManager extends EventEmitter {
   /**
    * Subscribe to warehouse pick list events
    */
-  public subscribe(listener: (event: { type: string; data: unknown }) => void): void {
-    this.on("PICK_LIST_UPDATE", (data) => listener({ type: "PICK_LIST_UPDATE", data }));
-    this.on("NEW_PICK_ITEM", (data) => listener({ type: "NEW_PICK_ITEM", data }));
-    this.on("ITEM_REMOVED", (data) => listener({ type: "ITEM_REMOVED", data }));
+  public subscribe(
+    listener: (event: { type: string; data: unknown }) => void
+  ): void {
+    this.on("PICK_LIST_UPDATE", data =>
+      listener({ type: "PICK_LIST_UPDATE", data })
+    );
+    this.on("NEW_PICK_ITEM", data => listener({ type: "NEW_PICK_ITEM", data }));
+    this.on("ITEM_REMOVED", data => listener({ type: "ITEM_REMOVED", data }));
   }
 
   /**
    * Unsubscribe from warehouse events
    */
-  public unsubscribe(listener: (event: { type: string; data: unknown }) => void): void {
-    this.off("PICK_LIST_UPDATE", listener as any);
-    this.off("NEW_PICK_ITEM", listener as (event: { type: string; data: unknown }) => void);
-    this.off("ITEM_REMOVED", listener as any);
+  public unsubscribe(
+    listener: (event: { type: string; data: unknown }) => void
+  ): void {
+    this.off("PICK_LIST_UPDATE", listener as (...args: unknown[]) => void);
+    this.off("NEW_PICK_ITEM", listener as (...args: unknown[]) => void);
+    this.off("ITEM_REMOVED", listener as (...args: unknown[]) => void);
   }
 }
 
@@ -113,7 +123,10 @@ export interface ConsolidatedPickList {
   items: PickListItem[];
   summary: {
     totalItems: number;
-    bySession: Record<number, { count: number; clientName: string; sessionTitle: string | null }>;
+    bySession: Record<
+      number,
+      { count: number; clientName: string; sessionTitle: string | null }
+    >;
     byLocation: Record<string, number>;
     byStatus: {
       sampleRequests: number;
@@ -155,7 +168,10 @@ export const sessionPickListService = {
         sessionStatus: liveShoppingSessions.status,
       })
       .from(sessionCartItems)
-      .innerJoin(liveShoppingSessions, eq(sessionCartItems.sessionId, liveShoppingSessions.id))
+      .innerJoin(
+        liveShoppingSessions,
+        eq(sessionCartItems.sessionId, liveShoppingSessions.id)
+      )
       .innerJoin(products, eq(sessionCartItems.productId, products.id))
       .innerJoin(batches, eq(sessionCartItems.batchId, batches.id))
       .innerJoin(clients, eq(liveShoppingSessions.clientId, clients.id))
@@ -168,9 +184,17 @@ export const sessionPickListService = {
       .orderBy(desc(sessionCartItems.createdAt));
 
     // Get location details for items from batchLocations table
-    const batchIds = [...new Set(items.map((i) => i.batchId))];
+    const batchIds = [...new Set(items.map(i => i.batchId))];
 
-    const locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
+    const locationMap: Record<
+      number,
+      {
+        site: string;
+        zone: string | null;
+        shelf: string | null;
+        bin: string | null;
+      }
+    > = {};
 
     if (batchIds.length > 0) {
       const locationData = await db
@@ -182,18 +206,28 @@ export const sessionPickListService = {
           bin: batchLocations.bin,
         })
         .from(batchLocations)
-        .where(sql`${batchLocations.batchId} IN (${sql.join(batchIds.map((id) => sql`${id}`), sql`, `)})`);
+        .where(
+          sql`${batchLocations.batchId} IN (${sql.join(
+            batchIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        );
 
       // Use first location for each batch
       for (const loc of locationData) {
         if (!locationMap[loc.batchId]) {
-          locationMap[loc.batchId] = { site: loc.site, zone: loc.zone, shelf: loc.shelf, bin: loc.bin };
+          locationMap[loc.batchId] = {
+            site: loc.site,
+            zone: loc.zone,
+            shelf: loc.shelf,
+            bin: loc.bin,
+          };
         }
       }
     }
 
     // Build pick list items with priority calculation
-    const pickListItems: PickListItem[] = items.map((item) => {
+    const pickListItems: PickListItem[] = items.map(item => {
       const location = locationMap[item.batchId] || null;
 
       // Priority: TO_PURCHASE > INTERESTED > SAMPLE_REQUEST
@@ -240,7 +274,10 @@ export const sessionPickListService = {
     // Build summary
     const summary = {
       totalItems: pickListItems.length,
-      bySession: {} as Record<number, { count: number; clientName: string; sessionTitle: string | null }>,
+      bySession: {} as Record<
+        number,
+        { count: number; clientName: string; sessionTitle: string | null }
+      >,
       byLocation: {} as Record<string, number>,
       byStatus: {
         sampleRequests: 0,
@@ -317,7 +354,10 @@ export const sessionPickListService = {
         sessionTitle: liveShoppingSessions.title,
       })
       .from(sessionCartItems)
-      .innerJoin(liveShoppingSessions, eq(sessionCartItems.sessionId, liveShoppingSessions.id))
+      .innerJoin(
+        liveShoppingSessions,
+        eq(sessionCartItems.sessionId, liveShoppingSessions.id)
+      )
       .innerJoin(products, eq(sessionCartItems.productId, products.id))
       .innerJoin(batches, eq(sessionCartItems.batchId, batches.id))
       .innerJoin(clients, eq(liveShoppingSessions.clientId, clients.id))
@@ -329,9 +369,17 @@ export const sessionPickListService = {
       );
 
     // Get location details from batchLocations table
-    const batchIds = [...new Set(items.map((i) => i.batchId))];
+    const batchIds = [...new Set(items.map(i => i.batchId))];
 
-    const locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
+    const locationMap: Record<
+      number,
+      {
+        site: string;
+        zone: string | null;
+        shelf: string | null;
+        bin: string | null;
+      }
+    > = {};
 
     if (batchIds.length > 0) {
       const locationData = await db
@@ -343,17 +391,27 @@ export const sessionPickListService = {
           bin: batchLocations.bin,
         })
         .from(batchLocations)
-        .where(sql`${batchLocations.batchId} IN (${sql.join(batchIds.map((id) => sql`${id}`), sql`, `)})`);
+        .where(
+          sql`${batchLocations.batchId} IN (${sql.join(
+            batchIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        );
 
       // Use first location for each batch
       for (const loc of locationData) {
         if (!locationMap[loc.batchId]) {
-          locationMap[loc.batchId] = { site: loc.site, zone: loc.zone, shelf: loc.shelf, bin: loc.bin };
+          locationMap[loc.batchId] = {
+            site: loc.site,
+            zone: loc.zone,
+            shelf: loc.shelf,
+            bin: loc.bin,
+          };
         }
       }
     }
 
-    return items.map((item) => {
+    return items.map(item => {
       const location = locationMap[item.batchId] || null;
 
       let priority: "HIGH" | "MEDIUM" | "LOW" = "MEDIUM";
@@ -405,7 +463,9 @@ export const sessionPickListService = {
       warehouseEventManager.emitItemRemoved(sessionId, itemId);
     } else if (updateType === "ITEM_ADDED" || updateType === "ITEM_UPDATED") {
       const items = await this.getSessionPickList(sessionId);
-      const item = itemId ? items.find((i) => i.cartItemId === itemId) : items[items.length - 1];
+      const item = itemId
+        ? items.find(i => i.cartItemId === itemId)
+        : items[items.length - 1];
       if (item) {
         update.item = item;
         if (updateType === "ITEM_ADDED") {
@@ -454,7 +514,7 @@ export const sessionPickListService = {
     return {
       activeSessions: sessions.length,
       totalItemsAcrossSessions: totalItems,
-      sessions: sessions.map((s) => ({
+      sessions: sessions.map(s => ({
         sessionId: s.sessionId,
         clientName: s.clientName || "Unknown",
         title: s.title,

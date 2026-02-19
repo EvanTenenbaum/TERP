@@ -1,6 +1,6 @@
 # TERP Golden Flows Beta - Roadmap
 
-**Last Updated:** 2026-02-18
+**Last Updated:** 2026-02-19
 **Source of Truth:** [Linear Project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
 **Status:** This file is a backup. Linear is the primary source of truth for roadmap tasks.
 
@@ -20,28 +20,29 @@
 | Wave 6: Server 500s & Tx Fixes        | ✅ COMPLETE | 5/5 — merged 2026-02-18                    |
 | Wave 7: PR #404 Regression Redo       | ✅ COMPLETE | 4/4 — merged 2026-02-18 (PR #432)          |
 | Wave 8: Validation & Guard Rails      | ✅ COMPLETE | 5/5 — merged 2026-02-18 (PR #433)          |
+| Lint Zero: Full ESLint Cleanup        | ✅ COMPLETE | Merged 2026-02-19 — 346 errors to 0        |
 | Wave 9: E2E Test Stabilization        | 📋 BACKLOG  | 0/5                                        |
 | Wave 10: Infrastructure & Edge Cases  | 📋 BACKLOG  | 0/5                                        |
 | DevOps & Infrastructure               | 🟡 TODO     | 0/1 (TER-93 needs confirm)                 |
 
-**Overall:** All golden flow blockers resolved as of 2026-02-18. Waves 6, 7, 8 all shipped. All 8 golden flows should now be functional. Remaining work is E2E test stabilization (Wave 9), medium infrastructure bugs (Wave 10), and the TER-261 data cleanup script.
+**Overall:** All golden flow blockers resolved as of 2026-02-18. Waves 6, 7, 8 all shipped. All 8 golden flows should now be functional. Full ESLint cleanup completed 2026-02-19 (346 errors/warnings to 0). Remaining work is E2E test stabilization (Wave 9), medium infrastructure bugs (Wave 10), and the TER-261 data cleanup script.
 
-**MVP Assessment:** UNBLOCKED — All 8 golden flow server-side blockers fixed across Waves 6–8. Wave 9 (E2E) and Wave 10 (infra) are non-blocking for MVP. Run `scripts/fix-ter261-bad-qty-batches.ts --dry-run` to assess batch data cleanup.
+**MVP Assessment:** UNBLOCKED — All 8 golden flow server-side blockers fixed across Waves 6-8. Lint zero achieved. Wave 9 (E2E) and Wave 10 (infra) are non-blocking for MVP. Run `scripts/fix-ter261-bad-qty-batches.ts --dry-run` to assess batch data cleanup.
 
 ---
 
 ## Golden Flow Blocker Matrix
 
-| Flow   | Name              | Status                       | Fixed By                              |
-| ------ | ----------------- | ---------------------------- | ------------------------------------- |
-| GF-001 | Direct Intake     | ✅ Fixed                     | TER-96 (Wave 7, `396840f`)            |
-| GF-002 | Procure-to-Pay    | ✅ Fixed                     | TER-97 (Wave 7, `396840f`)            |
-| GF-003 | Order-to-Cash     | ✅ Fixed                     | TER-257/258/259 (Wave 6)              |
-| GF-004 | Invoice & Payment | ✅ Fixed                     | TER-256 (Wave 6, `356802b`)           |
-| GF-005 | Pick & Pack       | ✅ Fixed                     | TER-257 (Wave 6)                      |
-| GF-006 | Client Ledger     | ✅ Fixed                     | TER-99 (Wave 7, `396840f`)            |
-| GF-007 | Inventory Mgmt    | ✅ Fixed                     | TER-254/260 (Wave 8/6)                |
-| GF-008 | Sample Request    | ✅ Fixed                     | TER-98 (Wave 7, `396840f`)            |
+| Flow   | Name              | Status   | Fixed By                    |
+| ------ | ----------------- | -------- | --------------------------- |
+| GF-001 | Direct Intake     | ✅ Fixed | TER-96 (Wave 7, `396840f`)  |
+| GF-002 | Procure-to-Pay    | ✅ Fixed | TER-97 (Wave 7, `396840f`)  |
+| GF-003 | Order-to-Cash     | ✅ Fixed | TER-257/258/259 (Wave 6)    |
+| GF-004 | Invoice & Payment | ✅ Fixed | TER-256 (Wave 6, `356802b`) |
+| GF-005 | Pick & Pack       | ✅ Fixed | TER-257 (Wave 6)            |
+| GF-006 | Client Ledger     | ✅ Fixed | TER-99 (Wave 7, `396840f`)  |
+| GF-007 | Inventory Mgmt    | ✅ Fixed | TER-254/260 (Wave 8/6)      |
+| GF-008 | Sample Request    | ✅ Fixed | TER-98 (Wave 7, `396840f`)  |
 
 ---
 
@@ -51,13 +52,13 @@
 **Unblocked:** GF-003, GF-004, GF-005, GF-007 (4 flows)
 **Key Commits:** `356802b`, `1852d61`, `1aa66ee`, `ba41103`, `5e4b3c4`
 
-| Ticket                                               | Priority | Title                                                              | Status   |
-| ---------------------------------------------------- | -------- | ------------------------------------------------------------------ | -------- |
-| [TER-256](https://linear.app/terpcorp/issue/TER-256) | Urgent   | payments.recordPayment transaction rollback on valid SENT invoices | ✅ Done  |
-| [TER-257](https://linear.app/terpcorp/issue/TER-257) | High     | orders.updateOrderStatus SHIPPED — "Batch undefined not found"     | ✅ Done  |
-| [TER-258](https://linear.app/terpcorp/issue/TER-258) | High     | orders.updateOrderStatus CANCELLED — raw SQL UPDATE error          | ✅ Done  |
-| [TER-259](https://linear.app/terpcorp/issue/TER-259) | High     | Inventory deduction not triggered on order create                  | ✅ Done  |
-| [TER-260](https://linear.app/terpcorp/issue/TER-260) | High     | inventory.adjustQty does not update totalQty                       | ✅ Done  |
+| Ticket                                               | Priority | Title                                                              | Status  |
+| ---------------------------------------------------- | -------- | ------------------------------------------------------------------ | ------- |
+| [TER-256](https://linear.app/terpcorp/issue/TER-256) | Urgent   | payments.recordPayment transaction rollback on valid SENT invoices | ✅ Done |
+| [TER-257](https://linear.app/terpcorp/issue/TER-257) | High     | orders.updateOrderStatus SHIPPED — "Batch undefined not found"     | ✅ Done |
+| [TER-258](https://linear.app/terpcorp/issue/TER-258) | High     | orders.updateOrderStatus CANCELLED — raw SQL UPDATE error          | ✅ Done |
+| [TER-259](https://linear.app/terpcorp/issue/TER-259) | High     | Inventory deduction not triggered on order create                  | ✅ Done |
+| [TER-260](https://linear.app/terpcorp/issue/TER-260) | High     | inventory.adjustQty does not update totalQty                       | ✅ Done |
 
 ---
 
@@ -91,6 +92,38 @@
 
 ---
 
+## Lint Zero: Full ESLint Cleanup ✅ COMPLETE
+
+**Priority:** P1 — HIGH | **Mode:** STRICT | **Completed:** 2026-02-19
+**Branch:** `claude/fix-lint-issues-plan-65ofn`
+**Key Commits:** `790c42a`, `39f6f4f`, `3d4a47a`
+**Files Changed:** 93 files across 3 commits
+
+Eliminated all 346 ESLint errors and warnings (281 errors, 65 warnings) down to 0 errors, 0 warnings across the entire codebase. A P0 infinite loop bug in `DashboardPreferencesContext` was caught by QA during review and fixed before merge.
+
+**Scope of fixes:**
+
+- Removed unused variables and imports across 93 files
+- Replaced `any` types with proper TypeScript types (interfaces, generics, `unknown` + guards)
+- Fixed React hooks `exhaustive-deps` warnings
+- Fixed ESLint config globals (added missing browser globals)
+- Fixed `no-case-declarations` (added block scoping to switch cases)
+- Fixed `eqeqeq` violations (strict equality)
+- Fixed `no-useless-catch` patterns
+- Fixed `no-constant-binary-expression` issues
+- Resolved P0 infinite loop: `useEffect` in `DashboardPreferencesContext.tsx` had unstable dependency causing re-render loop
+
+**Verification:**
+
+- `pnpm lint`: 0 errors, 0 warnings (was 281 errors, 65 warnings)
+- `pnpm check`: PASS
+- `pnpm test`: PASS
+- `pnpm build`: PASS
+
+**Linear:** Needs TER ticket creation — resolves "Lint debt" item from LINEAR_ROADMAP_SYNC.md
+
+---
+
 ## Wave 9: E2E Test Stabilization (BACKLOG)
 
 **Priority:** P2 — HIGH | **Estimate:** 8h
@@ -109,25 +142,25 @@
 
 **Priority:** P3 — MEDIUM | **Estimate:** 8h
 
-| Ticket                                               | Priority | Title                                      | Status      |
-| ---------------------------------------------------- | -------- | ------------------------------------------ | ----------- |
-| [TER-93](https://linear.app/terpcorp/issue/TER-93)   | High     | Production migration drift / deploy parity | In Progress |
-| [TER-262](https://linear.app/terpcorp/issue/TER-262) | Medium   | vendorPayables.create SELECT query error   | Backlog     |
-| [TER-263](https://linear.app/terpcorp/issue/TER-263) | Medium   | storage.createZone INSERT failure          | Backlog     |
-| [TER-264](https://linear.app/terpcorp/issue/TER-264) | Medium   | tags.create duplicate-check SELECT error   | Backlog     |
+| Ticket                                               | Priority | Title                                      | Status                                                         |
+| ---------------------------------------------------- | -------- | ------------------------------------------ | -------------------------------------------------------------- |
+| [TER-93](https://linear.app/terpcorp/issue/TER-93)   | High     | Production migration drift / deploy parity | In Progress                                                    |
+| [TER-262](https://linear.app/terpcorp/issue/TER-262) | Medium   | vendorPayables.create SELECT query error   | Backlog                                                        |
+| [TER-263](https://linear.app/terpcorp/issue/TER-263) | Medium   | storage.createZone INSERT failure          | Backlog                                                        |
+| [TER-264](https://linear.app/terpcorp/issue/TER-264) | Medium   | tags.create duplicate-check SELECT error   | Backlog                                                        |
 | [TER-261](https://linear.app/terpcorp/issue/TER-261) | Medium   | Data cleanup: 5 LIVE batches with bad qty  | Ready — run `scripts/fix-ter261-bad-qty-batches.ts` via DO job |
 
 ---
 
 ## Open Items — Previous Phases
 
-| Ticket                                               | Priority | Title                                       | Status    | Notes                                              |
-| ---------------------------------------------------- | -------- | ------------------------------------------- | --------- | -------------------------------------------------- |
-| [TER-96](https://linear.app/terpcorp/issue/TER-96)   | Urgent   | GF-001: Fix intake location schema mismatch | ✅ Done   | Re-implemented in Wave 7 (`396840f`)               |
-| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | Urgent   | GF-002: Fix PO create vendor mapping 500    | ✅ Done   | Re-implemented in Wave 7 (`396840f`)               |
-| [TER-98](https://linear.app/terpcorp/issue/TER-98)   | Urgent   | GF-008: Fix samples.createRequest 500       | ✅ Done   | Re-implemented in Wave 7 (`396840f`)               |
-| [TER-99](https://linear.app/terpcorp/issue/TER-99)   | High     | GF-006: Restore Client Ledger navigation    | ✅ Done   | Re-implemented in Wave 7 (`396840f`)               |
-| [TER-166](https://linear.app/terpcorp/issue/TER-166) | High     | Media follow-up: edge-case gaps             | In Review | Deferred — not MVP-blocking                        |
+| Ticket                                               | Priority | Title                                       | Status    | Notes                                |
+| ---------------------------------------------------- | -------- | ------------------------------------------- | --------- | ------------------------------------ |
+| [TER-96](https://linear.app/terpcorp/issue/TER-96)   | Urgent   | GF-001: Fix intake location schema mismatch | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | Urgent   | GF-002: Fix PO create vendor mapping 500    | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
+| [TER-98](https://linear.app/terpcorp/issue/TER-98)   | Urgent   | GF-008: Fix samples.createRequest 500       | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
+| [TER-99](https://linear.app/terpcorp/issue/TER-99)   | High     | GF-006: Restore Client Ledger navigation    | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
+| [TER-166](https://linear.app/terpcorp/issue/TER-166) | High     | Media follow-up: edge-case gaps             | In Review | Deferred — not MVP-blocking          |
 
 ---
 
@@ -371,4 +404,4 @@ Additional CI fixes merged 2026-02-08 (commit `9d823285`):
 - **Linear is the primary source of truth** for all roadmap tasks
 - This GitHub roadmap is a backup and may not be as up-to-date as Linear
 - For the most current information, always refer to the [Linear project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
-- Last synced: 2026-02-17 (manual update — no Linear API access)
+- Last synced: 2026-02-19 (manual update — no Linear API access)

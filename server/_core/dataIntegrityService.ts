@@ -1,7 +1,7 @@
 /**
  * Data Integrity Service
  * Handles cleanup of orphaned records and data integrity checks
- * 
+ *
  * Critical for Calendar & Scheduling Module Data Quality
  * Version 2.0 - Post-Adversarial QA
  */
@@ -219,7 +219,9 @@ export class DataIntegrityService {
    * Clean up old soft-deleted events
    * Permanently delete events that have been soft-deleted for more than N days
    */
-  static async cleanupSoftDeletedEvents(daysToKeep: number = 30): Promise<number> {
+  static async cleanupSoftDeletedEvents(
+    daysToKeep: number = 30
+  ): Promise<number> {
     const db = await requireDb();
 
     const cutoffDate = new Date();
@@ -388,7 +390,7 @@ export class DataIntegrityService {
       oldHistoryDeleted: await this.cleanupOldHistory(),
     };
 
-    logger.info("Data integrity cleanup completed", results as any);
+    logger.info({ msg: "Data integrity cleanup completed", results });
 
     return results;
   }
@@ -422,7 +424,10 @@ export class DataIntegrityService {
 
     // Check time consistency
     if (event.startTime && event.endTime) {
-      if (event.startTime > event.endTime && event.startDate === event.endDate) {
+      if (
+        event.startTime > event.endTime &&
+        event.startDate === event.endDate
+      ) {
         errors.push("Start time is after end time on the same day");
       }
     }

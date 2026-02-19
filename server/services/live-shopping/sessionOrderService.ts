@@ -58,10 +58,14 @@ export const sessionOrderService = {
 
     // 2. Fetch Cart and filter to only TO_PURCHASE items
     const cart = await sessionCartService.getCart(options.sessionId);
-    const purchaseItems = cart.items.filter(item => item.itemStatus === "TO_PURCHASE");
-    
+    const purchaseItems = cart.items.filter(
+      item => item.itemStatus === "TO_PURCHASE"
+    );
+
     if (purchaseItems.length === 0) {
-      throw new Error("Cannot convert session to order: No items marked 'To Purchase'. Please mark items as 'To Purchase' before converting.");
+      throw new Error(
+        "Cannot convert session to order: No items marked 'To Purchase'. Please mark items as 'To Purchase' before converting."
+      );
     }
 
     // 3. Credit Check (Skip if bypassing)
@@ -81,7 +85,7 @@ export const sessionOrderService = {
     }
 
     // 4. Prepare Order Items (only TO_PURCHASE items)
-    const orderItems = purchaseItems.map((item) => ({
+    const orderItems = purchaseItems.map(item => ({
       batchId: item.batchId,
       quantity: parseFloat(item.quantity.toString()),
       unitPrice: parseFloat(item.unitPrice.toString()),
@@ -120,7 +124,9 @@ export const sessionOrderService = {
           session.roomCode
         );
       } catch (e: unknown) {
-        warnings.push(`Failed to generate sales sheet: ${e instanceof Error ? e.message : String(e)}`);
+        warnings.push(
+          `Failed to generate sales sheet: ${e instanceof Error ? e.message : String(e)}`
+        );
       }
     }
 
@@ -159,8 +165,8 @@ export const sessionOrderService = {
     clientId: number,
     cart: Awaited<ReturnType<typeof sessionCartService.getCart>>,
     userId: number,
-    referenceOrderId?: number,
-    roomCode?: string
+    _referenceOrderId?: number,
+    _roomCode?: string
   ): Promise<number> {
     // Map cart items to Sales Sheet Schema
     const sheetItems = cart.items.map((item, index) => {

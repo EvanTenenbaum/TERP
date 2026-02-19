@@ -1,15 +1,17 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { requirePermission, requireAnyPermission } from "../_core/permissionMiddleware";
-
+import {
+  requirePermission,
+  requireAnyPermission,
+} from "../_core/permissionMiddleware";
 
 import { getDb } from "../db";
-import { 
-  userRoles, 
-  roles, 
-  userPermissionOverrides, 
+import {
+  userRoles,
+  roles,
+  userPermissionOverrides,
   permissions,
-  rolePermissions
+  rolePermissions,
 } from "../../drizzle/schema";
 import { eq, inArray, and } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -17,7 +19,7 @@ import { clearPermissionCache } from "../services/permissionService";
 
 /**
  * RBAC Users Router
- * 
+ *
  * This router provides endpoints for managing user role assignments and permission overrides.
  * All endpoints require appropriate RBAC permissions.
  */
@@ -29,16 +31,17 @@ export const rbacUsersRouter = router({
    */
   list: protectedProcedure
     .use(requirePermission("rbac:users:read"))
-    .input(z.object({
-      limit: z.number().optional().default(50),
-      offset: z.number().optional().default(0),
-      search: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        limit: z.number().optional().default(50),
+        offset: z.number().optional().default(0),
+        search: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-
 
         // Get all user-role assignments
         const userRoleRecords = await db
@@ -55,15 +58,18 @@ export const rbacUsersRouter = router({
           .offset(input.offset);
 
         // Group by user
-        const userMap = new Map<string, {
-          userId: string;
-          roles: Array<{
-            roleId: number;
-            roleName: string;
-            roleDescription: string | null;
-            assignedAt: Date;
-          }>;
-        }>();
+        const userMap = new Map<
+          string,
+          {
+            userId: string;
+            roles: Array<{
+              roleId: number;
+              roleName: string;
+              roleDescription: string | null;
+              assignedAt: Date;
+            }>;
+          }
+        >();
 
         for (const record of userRoleRecords) {
           let userEntry = userMap.get(record.userId);
@@ -84,9 +90,9 @@ export const rbacUsersRouter = router({
 
         const users = Array.from(userMap.values());
 
-        logger.info({ 
-          msg: "Listed users with roles", 
-          count: users.length 
+        logger.info({
+          msg: "Listed users with roles",
+          count: users.length,
         });
 
         return {
@@ -111,7 +117,6 @@ export const rbacUsersRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-
         // Get user's roles
         const userRoleRecords = await db
           .select({
@@ -134,11 +139,14 @@ export const rbacUsersRouter = router({
             grantedAt: userPermissionOverrides.grantedAt,
           })
           .from(userPermissionOverrides)
-          .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
+          .innerJoin(
+            permissions,
+            eq(userPermissionOverrides.permissionId, permissions.id)
+          )
           .where(eq(userPermissionOverrides.userId, input.userId));
 
-        logger.info({ 
-          msg: "Retrieved user details", 
+        logger.info({
+          msg: "Retrieved user details",
           userId: input.userId,
           roleCount: userRoleRecords.length,
           overrideCount: overrideRecords.length,
@@ -161,7 +169,11 @@ export const rbacUsersRouter = router({
           })),
         };
       } catch (error) {
-        logger.error({ msg: "Error getting user details", userId: input.userId, error });
+        logger.error({
+          msg: "Error getting user details",
+          userId: input.userId,
+          error,
+        });
         throw error;
       }
     }),
@@ -172,10 +184,12 @@ export const rbacUsersRouter = router({
    */
   assignRole: protectedProcedure
     .use(requirePermission("rbac:users:assign_role"))
-    .input(z.object({
-      userId: z.string(),
-      roleId: z.number(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        roleId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -195,10 +209,12 @@ export const rbacUsersRouter = router({
         const existing = await db
           .select({ userId: userRoles.userId })
           .from(userRoles)
-          .where(and(
-            eq(userRoles.userId, input.userId),
-            eq(userRoles.roleId, input.roleId)
-          ))
+          .where(
+            and(
+              eq(userRoles.userId, input.userId),
+              eq(userRoles.roleId, input.roleId)
+            )
+          )
           .limit(1);
 
         if (existing.length > 0) {
@@ -214,8 +230,8 @@ export const rbacUsersRouter = router({
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "Role assigned to user", 
+        logger.info({
+          msg: "Role assigned to user",
           userId: input.userId,
           roleId: input.roleId,
           roleName: role[0].name,
@@ -227,7 +243,12 @@ export const rbacUsersRouter = router({
           message: `Role ${role[0].name} assigned to user`,
         };
       } catch (error) {
-        logger.error({ msg: "Error assigning role", userId: input.userId, roleId: input.roleId, error });
+        logger.error({
+          msg: "Error assigning role",
+          userId: input.userId,
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
@@ -238,10 +259,12 @@ export const rbacUsersRouter = router({
    */
   removeRole: protectedProcedure
     .use(requirePermission("rbac:users:remove_role"))
-    .input(z.object({
-      userId: z.string(),
-      roleId: z.number(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        roleId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -254,18 +277,20 @@ export const rbacUsersRouter = router({
           .limit(1);
 
         // Remove role assignment
-        const result = await db
+        const _result = await db
           .delete(userRoles)
-          .where(and(
-            eq(userRoles.userId, input.userId),
-            eq(userRoles.roleId, input.roleId)
-          ));
+          .where(
+            and(
+              eq(userRoles.userId, input.userId),
+              eq(userRoles.roleId, input.roleId)
+            )
+          );
 
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "Role removed from user", 
+        logger.info({
+          msg: "Role removed from user",
           userId: input.userId,
           roleId: input.roleId,
           roleName: role[0]?.name,
@@ -277,7 +302,12 @@ export const rbacUsersRouter = router({
           message: `Role ${role[0]?.name || input.roleId} removed from user`,
         };
       } catch (error) {
-        logger.error({ msg: "Error removing role", userId: input.userId, roleId: input.roleId, error });
+        logger.error({
+          msg: "Error removing role",
+          userId: input.userId,
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
@@ -288,10 +318,12 @@ export const rbacUsersRouter = router({
    */
   grantPermission: protectedProcedure
     .use(requirePermission("rbac:users:grant_permission"))
-    .input(z.object({
-      userId: z.string(),
-      permissionId: z.number(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        permissionId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -322,8 +354,8 @@ export const rbacUsersRouter = router({
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "Permission granted to user", 
+        logger.info({
+          msg: "Permission granted to user",
           userId: input.userId,
           permissionId: input.permissionId,
           permissionName: permission[0].name,
@@ -335,7 +367,12 @@ export const rbacUsersRouter = router({
           message: `Permission ${permission[0].name} granted to user`,
         };
       } catch (error) {
-        logger.error({ msg: "Error granting permission", userId: input.userId, permissionId: input.permissionId, error });
+        logger.error({
+          msg: "Error granting permission",
+          userId: input.userId,
+          permissionId: input.permissionId,
+          error,
+        });
         throw error;
       }
     }),
@@ -346,10 +383,12 @@ export const rbacUsersRouter = router({
    */
   revokePermission: protectedProcedure
     .use(requirePermission("rbac:users:revoke_permission"))
-    .input(z.object({
-      userId: z.string(),
-      permissionId: z.number(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        permissionId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -380,8 +419,8 @@ export const rbacUsersRouter = router({
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "Permission revoked from user", 
+        logger.info({
+          msg: "Permission revoked from user",
           userId: input.userId,
           permissionId: input.permissionId,
           permissionName: permission[0].name,
@@ -393,7 +432,12 @@ export const rbacUsersRouter = router({
           message: `Permission ${permission[0].name} revoked from user`,
         };
       } catch (error) {
-        logger.error({ msg: "Error revoking permission", userId: input.userId, permissionId: input.permissionId, error });
+        logger.error({
+          msg: "Error revoking permission",
+          userId: input.userId,
+          permissionId: input.permissionId,
+          error,
+        });
         throw error;
       }
     }),
@@ -404,10 +448,12 @@ export const rbacUsersRouter = router({
    */
   removePermissionOverride: protectedProcedure
     .use(requirePermission("rbac:users:remove_permission_override"))
-    .input(z.object({
-      userId: z.string(),
-      permissionId: z.number(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        permissionId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -422,16 +468,18 @@ export const rbacUsersRouter = router({
         // Delete permission override
         await db
           .delete(userPermissionOverrides)
-          .where(and(
-            eq(userPermissionOverrides.userId, input.userId),
-            eq(userPermissionOverrides.permissionId, input.permissionId)
-          ));
+          .where(
+            and(
+              eq(userPermissionOverrides.userId, input.userId),
+              eq(userPermissionOverrides.permissionId, input.permissionId)
+            )
+          );
 
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "Permission override removed from user", 
+        logger.info({
+          msg: "Permission override removed from user",
           userId: input.userId,
           permissionId: input.permissionId,
           permissionName: permission[0]?.name,
@@ -443,7 +491,12 @@ export const rbacUsersRouter = router({
           message: `Permission override for ${permission[0]?.name || input.permissionId} removed from user`,
         };
       } catch (error) {
-        logger.error({ msg: "Error removing permission override", userId: input.userId, permissionId: input.permissionId, error });
+        logger.error({
+          msg: "Error removing permission override",
+          userId: input.userId,
+          permissionId: input.permissionId,
+          error,
+        });
         throw error;
       }
     }),
@@ -454,10 +507,12 @@ export const rbacUsersRouter = router({
    */
   bulkAssignRoles: protectedProcedure
     .use(requirePermission("rbac:users:assign_role"))
-    .input(z.object({
-      userId: z.string(),
-      roleIds: z.array(z.number()),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        roleIds: z.array(z.number()),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -504,8 +559,8 @@ export const rbacUsersRouter = router({
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "Bulk roles assigned to user", 
+        logger.info({
+          msg: "Bulk roles assigned to user",
           userId: input.userId,
           roleIds: newRoleIds,
           assignedBy: ctx.user?.id,
@@ -517,7 +572,11 @@ export const rbacUsersRouter = router({
           assignedCount: newRoleIds.length,
         };
       } catch (error) {
-        logger.error({ msg: "Error bulk assigning roles", userId: input.userId, error });
+        logger.error({
+          msg: "Error bulk assigning roles",
+          userId: input.userId,
+          error,
+        });
         throw error;
       }
     }),
@@ -527,11 +586,15 @@ export const rbacUsersRouter = router({
    * Requires: rbac:users:assign_role and rbac:users:remove_role permissions
    */
   replaceRoles: protectedProcedure
-    .use(requireAnyPermission(["rbac:users:assign_role", "rbac:users:remove_role"]))
-    .input(z.object({
-      userId: z.string(),
-      roleIds: z.array(z.number()),
-    }))
+    .use(
+      requireAnyPermission(["rbac:users:assign_role", "rbac:users:remove_role"])
+    )
+    .input(
+      z.object({
+        userId: z.string(),
+        roleIds: z.array(z.number()),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
@@ -551,9 +614,7 @@ export const rbacUsersRouter = router({
         }
 
         // Delete all current role assignments
-        await db
-          .delete(userRoles)
-          .where(eq(userRoles.userId, input.userId));
+        await db.delete(userRoles).where(eq(userRoles.userId, input.userId));
 
         // Insert new role assignments
         if (input.roleIds.length > 0) {
@@ -568,8 +629,8 @@ export const rbacUsersRouter = router({
         // Clear permission cache for this user
         clearPermissionCache(input.userId);
 
-        logger.info({ 
-          msg: "User roles replaced", 
+        logger.info({
+          msg: "User roles replaced",
           userId: input.userId,
           newRoleIds: input.roleIds,
           replacedBy: ctx.user?.id,
@@ -580,7 +641,11 @@ export const rbacUsersRouter = router({
           message: `User roles updated to ${input.roleIds.length} role(s)`,
         };
       } catch (error) {
-        logger.error({ msg: "Error replacing user roles", userId: input.userId, error });
+        logger.error({
+          msg: "Error replacing user roles",
+          userId: input.userId,
+          error,
+        });
         throw error;
       }
     }),
@@ -589,85 +654,97 @@ export const rbacUsersRouter = router({
    * Get current user's permissions
    * Requires authentication - returns the authenticated user's permissions
    */
-  getMyPermissions: protectedProcedure
-    .query(async ({ ctx }) => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
-        // Authentication is enforced by protectedProcedure
-        const userId = String(ctx.user.id);
+  getMyPermissions: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-        // Check if user is Super Admin (check by role name since isSuperAdmin column doesn't exist)
-        const userRoleRecords = await db
-          .select({
-            roleId: userRoles.roleId,
-            roleName: roles.name,
-          })
-          .from(userRoles)
-          .innerJoin(roles, eq(userRoles.roleId, roles.id))
-          .where(eq(userRoles.userId, userId));
+      // Authentication is enforced by protectedProcedure
+      const userId = String(ctx.user.id);
 
-        const isSuperAdmin = userRoleRecords.some(r => r.roleName === 'Super Admin');
+      // Check if user is Super Admin (check by role name since isSuperAdmin column doesn't exist)
+      const userRoleRecords = await db
+        .select({
+          roleId: userRoles.roleId,
+          roleName: roles.name,
+        })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(userRoles.userId, userId));
 
-        // If Super Admin, return all permissions
-        if (isSuperAdmin) {
-          const allPermissions = await db
-            .select({ name: permissions.name })
-            .from(permissions);
-          
-          return {
-            userId,
-            isSuperAdmin: true,
-            permissions: allPermissions.map(p => p.name),
-            roles: userRoleRecords.map(r => r.roleName),
-          };
-        }
+      const isSuperAdmin = userRoleRecords.some(
+        r => r.roleName === "Super Admin"
+      );
 
-        // Get permissions from roles
-        const roleIds = userRoleRecords.map(r => r.roleId);
-        const rolePerms = roleIds.length > 0
-          ? await db
-              .select({ permissionName: permissions.name })
-              .from(rolePermissions)
-              .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-              .where(inArray(rolePermissions.roleId, roleIds))
-          : [];
-
-        // Get permission overrides
-        const overrides = await db
-          .select({
-            permissionName: permissions.name,
-            granted: userPermissionOverrides.granted,
-          })
-          .from(userPermissionOverrides)
-          .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
-          .where(eq(userPermissionOverrides.userId, userId));
-
-        // Combine permissions
-        const permissionSet = new Set<string>();
-        
-        // Add role permissions
-        rolePerms.forEach(p => permissionSet.add(p.permissionName));
-        
-        // Apply overrides
-        overrides.forEach(override => {
-          if (override.granted) {
-            permissionSet.add(override.permissionName);
-          } else {
-            permissionSet.delete(override.permissionName);
-          }
-        });
+      // If Super Admin, return all permissions
+      if (isSuperAdmin) {
+        const allPermissions = await db
+          .select({ name: permissions.name })
+          .from(permissions);
 
         return {
           userId,
-          isSuperAdmin: false,
-          permissions: Array.from(permissionSet),
+          isSuperAdmin: true,
+          permissions: allPermissions.map(p => p.name),
           roles: userRoleRecords.map(r => r.roleName),
         };
-      } catch (error) {
-        logger.error({ msg: "Error getting user permissions", userId: ctx.user?.id, error });
-        throw error;
       }
-    }),
+
+      // Get permissions from roles
+      const roleIds = userRoleRecords.map(r => r.roleId);
+      const rolePerms =
+        roleIds.length > 0
+          ? await db
+              .select({ permissionName: permissions.name })
+              .from(rolePermissions)
+              .innerJoin(
+                permissions,
+                eq(rolePermissions.permissionId, permissions.id)
+              )
+              .where(inArray(rolePermissions.roleId, roleIds))
+          : [];
+
+      // Get permission overrides
+      const overrides = await db
+        .select({
+          permissionName: permissions.name,
+          granted: userPermissionOverrides.granted,
+        })
+        .from(userPermissionOverrides)
+        .innerJoin(
+          permissions,
+          eq(userPermissionOverrides.permissionId, permissions.id)
+        )
+        .where(eq(userPermissionOverrides.userId, userId));
+
+      // Combine permissions
+      const permissionSet = new Set<string>();
+
+      // Add role permissions
+      rolePerms.forEach(p => permissionSet.add(p.permissionName));
+
+      // Apply overrides
+      overrides.forEach(override => {
+        if (override.granted) {
+          permissionSet.add(override.permissionName);
+        } else {
+          permissionSet.delete(override.permissionName);
+        }
+      });
+
+      return {
+        userId,
+        isSuperAdmin: false,
+        permissions: Array.from(permissionSet),
+        roles: userRoleRecords.map(r => r.roleName),
+      };
+    } catch (error) {
+      logger.error({
+        msg: "Error getting user permissions",
+        userId: ctx.user?.id,
+        error,
+      });
+      throw error;
+    }
+  }),
 });

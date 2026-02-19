@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { sales, batches } from "../drizzle/schema";
+import { sales } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 
 /**
@@ -20,7 +20,7 @@ export async function createSale(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const saleRecord = await db.insert(sales).values({
     batchId: data.batchId,
     productId: data.productId,
@@ -44,7 +44,7 @@ export async function createSale(data: {
 export async function getSalesByBatch(batchId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   const salesRecords = await db
     .select()
     .from(sales)
@@ -52,7 +52,7 @@ export async function getSalesByBatch(batchId: number) {
     .orderBy(desc(sales.saleDate));
 
   // Calculate profit for each sale
-  return salesRecords.map((sale: typeof salesRecords[0]) => {
+  return salesRecords.map((sale: (typeof salesRecords)[0]) => {
     const qty = parseFloat(sale.quantity);
     const cogs = parseFloat(sale.cogsAtSale);
     const price = parseFloat(sale.salePrice);
@@ -77,7 +77,8 @@ export async function getBatchSalesStats(batchId: number) {
   );
 
   const totalRevenue = salesRecords.reduce(
-    (sum: number, sale) => sum + parseFloat(sale.salePrice) * parseFloat(sale.quantity),
+    (sum: number, sale) =>
+      sum + parseFloat(sale.salePrice) * parseFloat(sale.quantity),
     0
   );
 
@@ -102,7 +103,7 @@ export async function getBatchSalesStats(batchId: number) {
 export async function updatePastSalesCogs(batchId: number, newCogs: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db
     .update(sales)
     .set({ cogsAtSale: newCogs })
@@ -117,7 +118,7 @@ export async function updatePastSalesCogs(batchId: number, newCogs: string) {
 export async function getAffectedSalesCount(batchId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  
+
   const salesRecords = await db
     .select()
     .from(sales)
@@ -125,4 +126,3 @@ export async function getAffectedSalesCount(batchId: number): Promise<number> {
 
   return salesRecords.length;
 }
-

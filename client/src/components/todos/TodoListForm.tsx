@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,25 +44,51 @@ export function TodoListForm({
 
   // Fetch available users for sharing - handle paginated response
   const { data: usersData } = trpc.users.list.useQuery();
-  const availableUsers: Array<{ id: number; name?: string | null; email?: string | null }> = usersData ? (Array.isArray(usersData) ? usersData : ((usersData as { items?: Array<{ id: number; name?: string | null; email?: string | null }> })?.items ?? [])) : [];
+  const availableUsers: Array<{
+    id: number;
+    name?: string | null;
+    email?: string | null;
+  }> = usersData
+    ? Array.isArray(usersData)
+      ? usersData
+      : ((
+          usersData as {
+            items?: Array<{
+              id: number;
+              name?: string | null;
+              email?: string | null;
+            }>;
+          }
+        )?.items ?? [])
+    : [];
 
   // Fetch current list members if editing - handle paginated response
   const { data: membersData } = trpc.todoLists.getMembers.useQuery(
     { listId: list?.id || 0 }, // safe: list id, not user id
     { enabled: !!list?.id }
   );
-  const currentMembers = Array.isArray(membersData) ? membersData : (membersData?.items ?? []);
+  // Wrap in useMemo to stabilize the array reference across renders.
+  // Without this, the conditional expression produces a new array on every
+  // render even when membersData hasn't changed, which causes the useEffect
+  // below (which lists currentMembers in its deps) to run on every render.
+  const currentMembers = useMemo(
+    () =>
+      Array.isArray(membersData) ? membersData : (membersData?.items ?? []),
+    [membersData]
+  );
 
   // Update selected users when editing and members are loaded
   useEffect(() => {
     if (list && currentMembers.length > 0) {
-      const memberUserIds = currentMembers.map((m: { userId: number }) => m.userId);
+      const memberUserIds = currentMembers.map(
+        (m: { userId: number }) => m.userId
+      );
       setSelectedUserIds(memberUserIds);
     }
   }, [list, currentMembers]);
 
   const createList = trpc.todoLists.create.useMutation({
-    onSuccess: async (newList) => {
+    onSuccess: async newList => {
       // If shared and users selected, add them as members
       if (isShared && selectedUserIds.length > 0) {
         try {
@@ -74,7 +100,9 @@ export function TodoListForm({
               role: "editor",
             });
           }
-          toast.success(`List created and shared with ${selectedUserIds.length} user(s)`);
+          toast.success(
+            `List created and shared with ${selectedUserIds.length} user(s)`
+          );
         } catch (_error) {
           toast.error("List created but failed to add some members");
         }
@@ -97,9 +125,11 @@ export function TodoListForm({
       if (list && isShared) {
         try {
           const currentMemberIds = currentMembers.map(m => m.userId);
-          
+
           // Add new members
-          const usersToAdd = selectedUserIds.filter(id => !currentMemberIds.includes(id));
+          const usersToAdd = selectedUserIds.filter(
+            id => !currentMemberIds.includes(id)
+          );
           for (const userId of usersToAdd) {
             await addMember.mutateAsync({
               listId: list.id,
@@ -109,7 +139,9 @@ export function TodoListForm({
           }
 
           // Remove members no longer selected
-          const usersToRemove = currentMemberIds.filter(id => !selectedUserIds.includes(id));
+          const usersToRemove = currentMemberIds.filter(
+            id => !selectedUserIds.includes(id)
+          );
           for (const userId of usersToRemove) {
             await removeMember.mutateAsync({
               listId: list.id,
@@ -202,7 +234,7 @@ export function TodoListForm({
                 id="name"
                 placeholder="e.g., Project Tasks, Shopping List"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 required
               />
             </div>
@@ -213,7 +245,7 @@ export function TodoListForm({
                 id="description"
                 placeholder="What is this list for?"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
                 rows={3}
               />
             </div>
@@ -256,7 +288,9 @@ export function TodoListForm({
             </Button>
             <Button
               type="submit"
-              disabled={!name.trim() || createList.isPending || updateList.isPending}
+              disabled={
+                !name.trim() || createList.isPending || updateList.isPending
+              }
             >
               {list ? "Save Changes" : "Create List"}
             </Button>

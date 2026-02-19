@@ -1,10 +1,28 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell, Code2, Building } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit2,
+  Save,
+  X,
+  Database,
+  AlertTriangle,
+  Flag,
+  Bell,
+  Code2,
+  Building,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { CalendarSettings } from "@/components/calendar/CalendarSettings";
 import { trpc } from "@/lib/trpc";
@@ -47,7 +65,9 @@ export default function Settings() {
       <BackButton label="Back to Dashboard" to="/" className="mb-2 sm:mb-4" />
       {/* UX-010: Updated title to "System Settings" to distinguish from personal "My Account" settings */}
       <div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">System Settings</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+          System Settings
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm sm:text-base">
           Manage system configurations and master data
         </p>
@@ -56,72 +76,168 @@ export default function Settings() {
       <Tabs defaultValue="users" className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
           <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-9 gap-1 h-auto">
-            <TabsTrigger value="users" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Users</TabsTrigger>
-            <TabsTrigger value="rbac" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">User Roles</TabsTrigger>
-            <TabsTrigger value="roles" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Roles</TabsTrigger>
-            <TabsTrigger value="permissions" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Permissions</TabsTrigger>
-            <TabsTrigger value="locations" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Locations</TabsTrigger>
-            <TabsTrigger value="categories" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Categories</TabsTrigger>
-            <TabsTrigger value="grades" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Grades</TabsTrigger>
-            <TabsTrigger value="tags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Tags</TabsTrigger>
+            <TabsTrigger
+              value="users"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Users
+            </TabsTrigger>
+            <TabsTrigger
+              value="rbac"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              User Roles
+            </TabsTrigger>
+            <TabsTrigger
+              value="roles"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Roles
+            </TabsTrigger>
+            <TabsTrigger
+              value="permissions"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Permissions
+            </TabsTrigger>
+            <TabsTrigger
+              value="locations"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Locations
+            </TabsTrigger>
+            <TabsTrigger
+              value="categories"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Categories
+            </TabsTrigger>
+            <TabsTrigger
+              value="grades"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Grades
+            </TabsTrigger>
+            <TabsTrigger
+              value="tags"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Tags
+            </TabsTrigger>
             {/* FEAT-018: Hide Database tab from non-admin/dev users */}
             {showDevTools && (
-              <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <TabsTrigger
+                value="database"
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+              >
                 <Code2 className="h-3 w-3 mr-1" />
                 Database
               </TabsTrigger>
             )}
-            <TabsTrigger value="feature-flags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Feature Flags</TabsTrigger>
-            <TabsTrigger value="vip-impersonation" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">VIP Access</TabsTrigger>
-            <TabsTrigger value="notifications" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Notifications</TabsTrigger>
-            <TabsTrigger value="calendars" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Calendars</TabsTrigger>
-            <TabsTrigger value="organization" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+            <TabsTrigger
+              value="feature-flags"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Feature Flags
+            </TabsTrigger>
+            <TabsTrigger
+              value="vip-impersonation"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              VIP Access
+            </TabsTrigger>
+            <TabsTrigger
+              value="notifications"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger
+              value="calendars"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Calendars
+            </TabsTrigger>
+            <TabsTrigger
+              value="organization"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
               <Building className="h-3 w-3 mr-1" />
               Organization
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="users" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="users"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <UserManagement />
         </TabsContent>
 
-        <TabsContent value="rbac" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="rbac"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <UserRoleManagement />
         </TabsContent>
 
-        <TabsContent value="roles" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="roles"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <RoleManagement />
         </TabsContent>
 
-        <TabsContent value="permissions" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="permissions"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <PermissionAssignment />
         </TabsContent>
 
-        <TabsContent value="locations" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="locations"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <LocationsManager />
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="categories"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <CategoriesManager />
         </TabsContent>
 
-        <TabsContent value="grades" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="grades"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <GradesManager />
         </TabsContent>
 
-        <TabsContent value="tags" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="tags"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <TagManagementSettings />
         </TabsContent>
 
         {/* FEAT-018: Only show Database tab content for admin/dev users */}
         {showDevTools && (
-          <TabsContent value="database" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <TabsContent
+            value="database"
+            className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+          >
             <DatabaseManager />
           </TabsContent>
         )}
 
-        <TabsContent value="feature-flags" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="feature-flags"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -134,7 +250,8 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                Feature flags allow you to enable or disable features for specific users, roles, or the entire system.
+                Feature flags allow you to enable or disable features for
+                specific users, roles, or the entire system.
               </p>
               <Button asChild>
                 <a href="/settings/feature-flags">Open Feature Flags Manager</a>
@@ -143,36 +260,53 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="vip-impersonation" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="vip-impersonation"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <VIPImpersonationManager />
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="notifications"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
                 Notification Preferences
               </CardTitle>
-              <CardDescription>Control how you receive alerts and reminders.</CardDescription>
+              <CardDescription>
+                Control how you receive alerts and reminders.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Configure in-app and email notifications along with reminders for appointments, orders, and system alerts.
+                Configure in-app and email notifications along with reminders
+                for appointments, orders, and system alerts.
               </p>
               <Button asChild>
-                <a href="/settings/notifications">Open Notification Preferences</a>
+                <a href="/settings/notifications">
+                  Open Notification Preferences
+                </a>
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="calendars" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="calendars"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <CalendarSettings />
         </TabsContent>
 
         {/* FEAT-009 to FEAT-015: Organization Settings */}
-        <TabsContent value="organization" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+        <TabsContent
+          value="organization"
+          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+        >
           <GeneralOrgSettings />
           <UserPreferencesSettings />
           <UnitTypesManager />
@@ -184,15 +318,17 @@ export default function Settings() {
 }
 
 function DatabaseManager() {
-  const [scenario, setScenario] = useState<"light" | "full" | "edgeCases" | "chaos">("light");
+  const [scenario, setScenario] = useState<
+    "light" | "full" | "edgeCases" | "chaos"
+  >("light");
   const [isOpen, setIsOpen] = useState(false);
 
   const seedMutation = trpc.settings.seedDatabase.useMutation({
-    onSuccess: (_data) => {
+    onSuccess: _data => {
       toast.success("Database seeded successfully");
       setIsOpen(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to seed database");
     },
   });
@@ -209,23 +345,34 @@ function DatabaseManager() {
           Database Seeding
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
-          Seed the database with test data. This will clear all existing data and create fresh test data.
+          Seed the database with test data. This will clear all existing data
+          and create fresh test data.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
         <div className="space-y-3 sm:space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="scenario" className="text-sm sm:text-base">Seed Scenario</Label>
+            <Label htmlFor="scenario" className="text-sm sm:text-base">
+              Seed Scenario
+            </Label>
             <select
               id="scenario"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={scenario}
-              onChange={(e) => setScenario(e.target.value as typeof scenario)}
+              onChange={e => setScenario(e.target.value as typeof scenario)}
             >
-              <option value="light">Light (~30s) - Fast seed for integration tests</option>
-              <option value="full">Full (~2min) - Complete dataset for E2E tests</option>
-              <option value="edgeCases">Edge Cases (~45s) - Extreme scenarios for stress testing</option>
-              <option value="chaos">Chaos (~60s) - Random anomalies for chaos testing</option>
+              <option value="light">
+                Light (~30s) - Fast seed for integration tests
+              </option>
+              <option value="full">
+                Full (~2min) - Complete dataset for E2E tests
+              </option>
+              <option value="edgeCases">
+                Edge Cases (~45s) - Extreme scenarios for stress testing
+              </option>
+              <option value="chaos">
+                Chaos (~60s) - Random anomalies for chaos testing
+              </option>
             </select>
           </div>
 
@@ -233,10 +380,12 @@ function DatabaseManager() {
             <div className="flex items-start gap-2 sm:gap-3">
               <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive mt-0.5 flex-shrink-0" />
               <div className="space-y-1 sm:space-y-2 min-w-0">
-                <p className="font-semibold text-destructive text-sm sm:text-base">Warning: Destructive Operation</p>
+                <p className="font-semibold text-destructive text-sm sm:text-base">
+                  Warning: Destructive Operation
+                </p>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  This will permanently delete all existing data in the database and replace it with test data.
-                  This action cannot be undone.
+                  This will permanently delete all existing data in the database
+                  and replace it with test data. This action cannot be undone.
                 </p>
               </div>
             </div>
@@ -251,10 +400,13 @@ function DatabaseManager() {
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-[95vw] sm:max-w-lg mx-4">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-base sm:text-lg">Confirm Database Seeding</AlertDialogTitle>
+                <AlertDialogTitle className="text-base sm:text-lg">
+                  Confirm Database Seeding
+                </AlertDialogTitle>
                 <AlertDialogDescription className="space-y-2 text-sm sm:text-base max-h-[60vh] overflow-y-auto">
                   <p>
-                    You are about to seed the database with the <strong>{scenario}</strong> scenario.
+                    You are about to seed the database with the{" "}
+                    <strong>{scenario}</strong> scenario.
                   </p>
                   <p className="font-semibold text-destructive">
                     This will permanently delete ALL existing data including:
@@ -289,6 +441,34 @@ function DatabaseManager() {
   );
 }
 
+interface LocationData {
+  id: number;
+  site: string;
+  zone?: string | null;
+  rack?: string | null;
+  shelf?: string | null;
+  bin?: string | null;
+}
+
+interface CategoryData {
+  id: number;
+  name: string;
+  description: string | null;
+  subcategories?: SubcategoryData[];
+}
+
+interface SubcategoryData {
+  id: number;
+  name: string;
+  categoryId: number;
+}
+
+interface GradeData {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
 function LocationsManager() {
   const [newLocation, setNewLocation] = useState({
     site: "",
@@ -298,8 +478,7 @@ function LocationsManager() {
     bin: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editData, setEditData] = useState<any>(null);
+  const [editData, setEditData] = useState<LocationData | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
@@ -322,7 +501,7 @@ function LocationsManager() {
       setHasUnsavedChanges(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       showErrorToast(error, { action: "create", resource: "location" });
     },
   });
@@ -335,7 +514,7 @@ function LocationsManager() {
       setHasUnsavedChanges(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       showErrorToast(error, { action: "update", resource: "location" });
     },
   });
@@ -345,7 +524,7 @@ function LocationsManager() {
       toast.success("Location deleted successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       showErrorToast(error, { action: "delete", resource: "location" });
     },
   });
@@ -360,14 +539,23 @@ function LocationsManager() {
 
   const handleUpdate = () => {
     if (editData && editingId) {
-      updateMutation.mutate({ id: editingId, ...editData });
+      updateMutation.mutate({
+        id: editingId,
+        site: editData.site || undefined,
+        zone: editData.zone || undefined,
+        rack: editData.rack || undefined,
+        shelf: editData.shelf || undefined,
+        bin: editData.bin || undefined,
+      });
     }
   };
 
   return (
     <Card className="overflow-hidden">
       <CardHeader className="px-4 sm:px-6">
-        <CardTitle className="text-base sm:text-lg">Storage Locations</CardTitle>
+        <CardTitle className="text-base sm:text-lg">
+          Storage Locations
+        </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
           Define warehouse locations (site, zone, rack, shelf, bin)
         </CardDescription>
@@ -375,58 +563,82 @@ function LocationsManager() {
       <CardContent className="space-y-4 sm:space-y-6">
         {/* Add New Location */}
         <div className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
-          <h3 className="font-semibold text-sm sm:text-base">Add New Location</h3>
+          <h3 className="font-semibold text-sm sm:text-base">
+            Add New Location
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <div className="space-y-2">
               <Label htmlFor="new-site">Site *</Label>
               <Input
                 id="new-site"
                 value={newLocation.site}
-                onChange={(e) => setNewLocation({ ...newLocation, site: e.target.value })}
+                onChange={e =>
+                  setNewLocation({ ...newLocation, site: e.target.value })
+                }
                 placeholder="e.g., WH1"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-zone">
-                Zone <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+                Zone{" "}
+                <span className="text-muted-foreground text-sm font-normal">
+                  (optional)
+                </span>
               </Label>
               <Input
                 id="new-zone"
                 value={newLocation.zone}
-                onChange={(e) => setNewLocation({ ...newLocation, zone: e.target.value })}
+                onChange={e =>
+                  setNewLocation({ ...newLocation, zone: e.target.value })
+                }
                 placeholder="e.g., A"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-rack">
-                Rack <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+                Rack{" "}
+                <span className="text-muted-foreground text-sm font-normal">
+                  (optional)
+                </span>
               </Label>
               <Input
                 id="new-rack"
                 value={newLocation.rack}
-                onChange={(e) => setNewLocation({ ...newLocation, rack: e.target.value })}
+                onChange={e =>
+                  setNewLocation({ ...newLocation, rack: e.target.value })
+                }
                 placeholder="e.g., R1"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-shelf">
-                Shelf <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+                Shelf{" "}
+                <span className="text-muted-foreground text-sm font-normal">
+                  (optional)
+                </span>
               </Label>
               <Input
                 id="new-shelf"
                 value={newLocation.shelf}
-                onChange={(e) => setNewLocation({ ...newLocation, shelf: e.target.value })}
+                onChange={e =>
+                  setNewLocation({ ...newLocation, shelf: e.target.value })
+                }
                 placeholder="e.g., S1"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-bin">
-                Bin <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+                Bin{" "}
+                <span className="text-muted-foreground text-sm font-normal">
+                  (optional)
+                </span>
               </Label>
               <Input
                 id="new-bin"
                 value={newLocation.bin}
-                onChange={(e) => setNewLocation({ ...newLocation, bin: e.target.value })}
+                onChange={e =>
+                  setNewLocation({ ...newLocation, bin: e.target.value })
+                }
                 placeholder="e.g., B1"
               />
             </div>
@@ -441,44 +653,61 @@ function LocationsManager() {
         <div className="space-y-2">
           <h3 className="font-semibold">Existing Locations</h3>
           <div className="border rounded-lg divide-y">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {locations?.map((location: any) => (
-              <div key={location.id} className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
-                {editingId === location.id ? (
+            {locations?.map((location: LocationData) => (
+              <div
+                key={location.id}
+                className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2"
+              >
+                {editingId === location.id && editData ? (
                   <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                     <Input
-                      value={editData?.site || ""}
-                      onChange={(e) => setEditData({ ...editData, site: e.target.value })}
+                      value={editData.site || ""}
+                      onChange={e =>
+                        setEditData({ ...editData, site: e.target.value })
+                      }
                       placeholder="Site"
                     />
                     <Input
-                      value={editData?.zone || ""}
-                      onChange={(e) => setEditData({ ...editData, zone: e.target.value })}
+                      value={editData.zone || ""}
+                      onChange={e =>
+                        setEditData({ ...editData, zone: e.target.value })
+                      }
                       placeholder="Zone"
                     />
                     <Input
-                      value={editData?.rack || ""}
-                      onChange={(e) => setEditData({ ...editData, rack: e.target.value })}
+                      value={editData.rack || ""}
+                      onChange={e =>
+                        setEditData({ ...editData, rack: e.target.value })
+                      }
                       placeholder="Rack"
                     />
                     <Input
-                      value={editData?.shelf || ""}
-                      onChange={(e) => setEditData({ ...editData, shelf: e.target.value })}
+                      value={editData.shelf || ""}
+                      onChange={e =>
+                        setEditData({ ...editData, shelf: e.target.value })
+                      }
                       placeholder="Shelf"
                     />
                     <Input
-                      value={editData?.bin || ""}
-                      onChange={(e) => setEditData({ ...editData, bin: e.target.value })}
+                      value={editData.bin || ""}
+                      onChange={e =>
+                        setEditData({ ...editData, bin: e.target.value })
+                      }
                       placeholder="Bin"
                     />
                   </div>
                 ) : (
                   <div className="flex-1 min-w-0">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <p className="font-medium text-sm sm:text-base truncate">{(location as any).site}</p>
+                    <p className="font-medium text-sm sm:text-base truncate">
+                      {location.site}
+                    </p>
                     <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {[(location as any).zone, (location as any).rack, (location as any).shelf, (location as any).bin]
+                      {[
+                        location.zone,
+                        location.rack,
+                        location.shelf,
+                        location.bin,
+                      ]
                         .filter(Boolean)
                         .join(" > ") || "No sub-locations"}
                     </p>
@@ -507,8 +736,7 @@ function LocationsManager() {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setEditingId((location as any).id);
+                          setEditingId(location.id);
                           setEditData(location);
                         }}
                       >
@@ -517,8 +745,7 @@ function LocationsManager() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        onClick={() => setDeleteConfirm((location as any).id)}
+                        onClick={() => setDeleteConfirm(location.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -537,7 +764,7 @@ function LocationsManager() {
       </CardContent>
       <ConfirmDialog
         open={deleteConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        onOpenChange={open => !open && setDeleteConfirm(null)}
         title="Delete Location"
         description="Are you sure you want to delete this location? This action cannot be undone."
         confirmLabel="Delete"
@@ -555,12 +782,19 @@ function LocationsManager() {
 
 function CategoriesManager() {
   const [newCategory, setNewCategory] = useState("");
-  const [newSubcategory, setNewSubcategory] = useState({ categoryId: 0, name: "" });
+  const [newSubcategory, setNewSubcategory] = useState({
+    categoryId: 0,
+    name: "",
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<number | null>(null);
-  const [deleteSubcategoryConfirm, setDeleteSubcategoryConfirm] = useState<number | null>(null);
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<
+    number | null
+  >(null);
+  const [deleteSubcategoryConfirm, setDeleteSubcategoryConfirm] = useState<
+    number | null
+  >(null);
 
   // UX-001: Warn before leaving with unsaved changes
   useBeforeUnloadWarning(hasUnsavedChanges);
@@ -568,13 +802,15 @@ function CategoriesManager() {
   // Track unsaved changes
   useEffect(() => {
     const hasNewCategory = newCategory !== "";
-    const hasNewSubcategory = newSubcategory.name !== "" || newSubcategory.categoryId !== 0;
+    const hasNewSubcategory =
+      newSubcategory.name !== "" || newSubcategory.categoryId !== 0;
     const isEditing = editingId !== null;
     setHasUnsavedChanges(hasNewCategory || hasNewSubcategory || isEditing);
   }, [newCategory, newSubcategory, editingId]);
 
-  const { data: categories, refetch } = trpc.settings.categories.list.useQuery();
-  
+  const { data: categories, refetch } =
+    trpc.settings.categories.list.useQuery();
+
   const createCategoryMutation = trpc.settings.categories.create.useMutation({
     onSuccess: () => {
       toast.success("Category created successfully");
@@ -584,14 +820,15 @@ function CategoriesManager() {
     },
   });
 
-  const createSubcategoryMutation = trpc.settings.subcategories.create.useMutation({
-    onSuccess: () => {
-      toast.success("Subcategory created successfully");
-      setNewSubcategory({ categoryId: 0, name: "" });
-      setHasUnsavedChanges(false);
-      refetch();
-    },
-  });
+  const createSubcategoryMutation =
+    trpc.settings.subcategories.create.useMutation({
+      onSuccess: () => {
+        toast.success("Subcategory created successfully");
+        setNewSubcategory({ categoryId: 0, name: "" });
+        setHasUnsavedChanges(false);
+        refetch();
+      },
+    });
 
   const updateCategoryMutation = trpc.settings.categories.update.useMutation({
     onSuccess: () => {
@@ -609,15 +846,16 @@ function CategoriesManager() {
     },
   });
 
-  const deleteSubcategoryMutation = trpc.settings.subcategories.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Subcategory deleted successfully");
-      refetch();
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to delete subcategory");
-    },
-  });
+  const deleteSubcategoryMutation =
+    trpc.settings.subcategories.delete.useMutation({
+      onSuccess: () => {
+        toast.success("Subcategory deleted successfully");
+        refetch();
+      },
+      onError: err => {
+        toast.error(err.message || "Failed to delete subcategory");
+      },
+    });
 
   const handleUpdateCategory = (id: number) => {
     // Note: updateProducts functionality would need to be implemented in the router
@@ -630,41 +868,59 @@ function CategoriesManager() {
       <Card className="overflow-hidden">
         <CardHeader className="px-4 sm:px-6">
           <CardTitle className="text-base sm:text-lg">Categories</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Manage product categories</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
+            Manage product categories
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
+              onChange={e => setNewCategory(e.target.value)}
               placeholder="New category name"
               className="flex-1"
             />
-            <Button onClick={() => createCategoryMutation.mutate({ name: newCategory })} className="w-full sm:w-auto">
+            <Button
+              onClick={() =>
+                createCategoryMutation.mutate({ name: newCategory })
+              }
+              className="w-full sm:w-auto"
+            >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
           <div className="border rounded-lg divide-y">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {categories?.map((category: any) => (
-              <div key={category.id} className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            {categories?.map((category: CategoryData) => (
+              <div
+                key={category.id}
+                className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+              >
                 {editingId === category.id ? (
                   <Input
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    onChange={e => setEditName(e.target.value)}
                     className="flex-1 w-full sm:mr-2"
                   />
                 ) : (
-                  <span className="font-medium text-sm sm:text-base truncate flex-1 min-w-0">{category.name}</span>
+                  <span className="font-medium text-sm sm:text-base truncate flex-1 min-w-0">
+                    {category.name}
+                  </span>
                 )}
                 <div className="flex gap-2 self-end sm:self-auto">
                   {editingId === category.id ? (
                     <>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <Button size="sm" variant="ghost" onClick={() => handleUpdateCategory((category as any).id)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUpdateCategory(category.id)}
+                      >
                         <Save className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingId(null)}
+                      >
                         <X className="h-4 w-4" />
                       </Button>
                     </>
@@ -674,16 +930,17 @@ function CategoriesManager() {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setEditingId((category as any).id);
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setEditName((category as any).name);
+                          setEditingId(category.id);
+                          setEditName(category.name);
                         }}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      <Button size="sm" variant="ghost" onClick={() => setDeleteCategoryConfirm((category as any).id)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteCategoryConfirm(category.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </>
@@ -698,50 +955,64 @@ function CategoriesManager() {
       <Card className="overflow-hidden">
         <CardHeader className="px-4 sm:px-6">
           <CardTitle className="text-base sm:text-lg">Subcategories</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Manage product subcategories</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
+            Manage product subcategories
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row gap-2">
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={newSubcategory.categoryId}
-              onChange={(e) => setNewSubcategory({ ...newSubcategory, categoryId: parseInt(e.target.value) })}
+              onChange={e =>
+                setNewSubcategory({
+                  ...newSubcategory,
+                  categoryId: parseInt(e.target.value),
+                })
+              }
             >
               <option value={0}>Select category</option>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {categories?.map((cat: any) => (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                <option key={(cat as any).id} value={(cat as any).id}>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(cat as any).name}
+              {categories?.map((cat: CategoryData) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
             <Input
               value={newSubcategory.name}
-              onChange={(e) => setNewSubcategory({ ...newSubcategory, name: e.target.value })}
+              onChange={e =>
+                setNewSubcategory({ ...newSubcategory, name: e.target.value })
+              }
               placeholder="Subcategory name"
               className="flex-1"
             />
-            <Button onClick={() => createSubcategoryMutation.mutate(newSubcategory)} className="w-full sm:w-auto">
+            <Button
+              onClick={() => createSubcategoryMutation.mutate(newSubcategory)}
+              className="w-full sm:w-auto"
+            >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
           <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {categories?.map((category: any) => (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              <div key={(category as any).id}>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <div className="p-2 bg-muted font-semibold text-xs sm:text-sm">{(category as any).name}</div>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(category as any).subcategories?.map((sub: any) => (
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  <div key={(sub as any).id} className="p-2 pl-4 sm:pl-6 flex items-center justify-between gap-2">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{(sub as any).name}</span>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Button size="sm" variant="ghost" className="flex-shrink-0" onClick={() => setDeleteSubcategoryConfirm((sub as any).id)}>
+            {categories?.map((category: CategoryData) => (
+              <div key={category.id}>
+                <div className="p-2 bg-muted font-semibold text-xs sm:text-sm">
+                  {category.name}
+                </div>
+                {category.subcategories?.map((sub: SubcategoryData) => (
+                  <div
+                    key={sub.id}
+                    className="p-2 pl-4 sm:pl-6 flex items-center justify-between gap-2"
+                  >
+                    <span className="text-xs sm:text-sm truncate flex-1 min-w-0">
+                      {sub.name}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="flex-shrink-0"
+                      onClick={() => setDeleteSubcategoryConfirm(sub.id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -753,7 +1024,7 @@ function CategoriesManager() {
       </Card>
       <ConfirmDialog
         open={deleteCategoryConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteCategoryConfirm(null)}
+        onOpenChange={open => !open && setDeleteCategoryConfirm(null)}
         title="Delete Category"
         description="Are you sure you want to delete this category? This action cannot be undone and may affect associated products."
         confirmLabel="Delete"
@@ -767,7 +1038,7 @@ function CategoriesManager() {
       />
       <ConfirmDialog
         open={deleteSubcategoryConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteSubcategoryConfirm(null)}
+        onOpenChange={open => !open && setDeleteSubcategoryConfirm(null)}
         title="Delete Subcategory"
         description="Are you sure you want to delete this subcategory? This action cannot be undone and may affect associated products."
         confirmLabel="Delete"
@@ -801,7 +1072,7 @@ function GradesManager() {
   }, [newGrade, editingId]);
 
   const { data: grades, refetch } = trpc.settings.grades.list.useQuery();
-  
+
   const createMutation = trpc.settings.grades.create.useMutation({
     onSuccess: () => {
       toast.success("Grade created successfully");
@@ -837,46 +1108,58 @@ function GradesManager() {
     <Card className="overflow-hidden">
       <CardHeader className="px-4 sm:px-6">
         <CardTitle className="text-base sm:text-lg">Product Grades</CardTitle>
-        <CardDescription className="text-xs sm:text-sm">Define and manage product quality grades</CardDescription>
+        <CardDescription className="text-xs sm:text-sm">
+          Define and manage product quality grades
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             value={newGrade}
-            onChange={(e) => setNewGrade(e.target.value)}
+            onChange={e => setNewGrade(e.target.value)}
             placeholder="New grade (e.g., A, B, Premium)"
             className="flex-1"
           />
-          <Button onClick={() => createMutation.mutate({ name: newGrade })} className="w-full sm:w-auto">
+          <Button
+            onClick={() => createMutation.mutate({ name: newGrade })}
+            className="w-full sm:w-auto"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Grade
           </Button>
         </div>
         <div className="border rounded-lg divide-y">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {grades?.map((grade: any) => (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            <div key={grade.id as number} className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {editingId === (grade.id as number) ? (
+          {grades?.map((grade: GradeData) => (
+            <div
+              key={grade.id}
+              className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+            >
+              {editingId === grade.id ? (
                 <Input
                   value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
+                  onChange={e => setEditName(e.target.value)}
                   className="flex-1 w-full sm:mr-2"
                 />
               ) : (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                <span className="font-medium text-sm sm:text-base truncate flex-1 min-w-0">{grade.name as string}</span>
+                <span className="font-medium text-sm sm:text-base truncate flex-1 min-w-0">
+                  {grade.name}
+                </span>
               )}
               <div className="flex gap-2 self-end sm:self-auto">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {editingId === (grade.id as number) ? (
+                {editingId === grade.id ? (
                   <>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Button size="sm" variant="ghost" onClick={() => handleUpdate((grade as any).id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleUpdate(grade.id)}
+                    >
                       <Save className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingId(null)}
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </>
@@ -886,16 +1169,17 @@ function GradesManager() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        setEditingId(grade.id as number);
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        setEditName(grade.name as string);
+                        setEditingId(grade.id);
+                        setEditName(grade.name);
                       }}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(grade.id as number)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirm(grade.id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </>
@@ -912,7 +1196,7 @@ function GradesManager() {
       </CardContent>
       <ConfirmDialog
         open={deleteConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        onOpenChange={open => !open && setDeleteConfirm(null)}
         title="Delete Grade"
         description="Are you sure you want to delete this grade? This action cannot be undone and may affect associated products."
         confirmLabel="Delete"

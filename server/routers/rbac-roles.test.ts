@@ -138,9 +138,9 @@ describe("RBAC Roles Router", () => {
       } as ReturnType<typeof vi.mocked>);
 
       // Act & Assert
-      await expect(
-        caller.rbacRoles.getById({ roleId })
-      ).rejects.toThrow("Role with ID 999 not found");
+      await expect(caller.rbacRoles.getById({ roleId })).rejects.toThrow(
+        "Role with ID 999 not found"
+      );
     });
   });
 
@@ -160,7 +160,7 @@ describe("RBAC Roles Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockInsert = vi.fn().mockReturnThis();
+      const _mockInsert = vi.fn().mockReturnThis();
       // QA-TEST-001: Fix mock to return array format expected by router
       const mockValues = vi.fn().mockResolvedValue([{ insertId: 10 }]);
 
@@ -196,9 +196,9 @@ describe("RBAC Roles Router", () => {
       } as ReturnType<typeof vi.mocked>);
 
       // Act & Assert
-      await expect(
-        caller.rbacRoles.create({ name: roleName })
-      ).rejects.toThrow('Role with name "Existing Role" already exists');
+      await expect(caller.rbacRoles.create({ name: roleName })).rejects.toThrow(
+        'Role with name "Existing Role" already exists'
+      );
     });
   });
 
@@ -224,7 +224,7 @@ describe("RBAC Roles Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockUpdate = vi.fn().mockReturnThis();
+      const _mockUpdate = vi.fn().mockReturnThis();
       const mockSet = vi.fn().mockReturnThis();
       const mockUpdateWhere = vi.fn().mockResolvedValue({});
 
@@ -282,14 +282,16 @@ describe("RBAC Roles Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockDelete = vi.fn().mockReturnThis();
+      const _mockDelete = vi.fn().mockReturnThis();
       const mockDeleteWhere = vi.fn().mockResolvedValue({});
 
       vi.mocked(db.delete).mockReturnValue({
         where: mockDeleteWhere,
       } as ReturnType<typeof vi.mocked>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
       const result = await caller.rbacRoles.delete({ roleId });
@@ -316,9 +318,9 @@ describe("RBAC Roles Router", () => {
       } as ReturnType<typeof vi.mocked>);
 
       // Act & Assert
-      await expect(
-        caller.rbacRoles.delete({ roleId })
-      ).rejects.toThrow("System roles cannot be deleted");
+      await expect(caller.rbacRoles.delete({ roleId })).rejects.toThrow(
+        "System roles cannot be deleted"
+      );
     });
   });
 
@@ -347,17 +349,22 @@ describe("RBAC Roles Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockInsert = vi.fn().mockReturnThis();
+      const _mockInsert = vi.fn().mockReturnThis();
       const mockValues = vi.fn().mockResolvedValue({});
 
       vi.mocked(db.insert).mockReturnValue({
         values: mockValues,
       } as ReturnType<typeof vi.mocked>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
-      const result = await caller.rbacRoles.assignPermission({ roleId, permissionId });
+      const result = await caller.rbacRoles.assignPermission({
+        roleId,
+        permissionId,
+      });
 
       // Assert
       expect(result.success).toBe(true);
@@ -389,17 +396,22 @@ describe("RBAC Roles Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockDelete = vi.fn().mockReturnThis();
+      const _mockDelete = vi.fn().mockReturnThis();
       const mockDeleteWhere = vi.fn().mockResolvedValue({});
 
       vi.mocked(db.delete).mockReturnValue({
         where: mockDeleteWhere,
       } as ReturnType<typeof vi.mocked>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
-      const result = await caller.rbacRoles.removePermission({ roleId, permissionId });
+      const result = await caller.rbacRoles.removePermission({
+        roleId,
+        permissionId,
+      });
 
       // Assert
       expect(result.success).toBe(true);

@@ -20,7 +20,6 @@ import {
   intakeReceiptItems,
   intakeDiscrepancies,
   clients,
-  products,
   users,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, or, gte, lte, like } from "drizzle-orm";
@@ -56,7 +55,9 @@ const createReceiptItemSchema = z.object({
 
 const createReceiptSchema = z.object({
   supplierId: z.number().int().positive("Supplier ID is required"),
-  items: z.array(createReceiptItemSchema).min(1, "At least one item is required"),
+  items: z
+    .array(createReceiptItemSchema)
+    .min(1, "At least one item is required"),
   notes: z.string().optional(),
 });
 
@@ -138,11 +139,18 @@ export const intakeReceiptsRouter = router({
     .input(createReceiptSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User not authenticated" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
       }
 
       // Verify supplier exists
@@ -153,7 +161,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!supplier) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Supplier not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Supplier not found",
+        });
       }
 
       // Generate receipt number and shareable token
@@ -173,7 +184,7 @@ export const intakeReceiptsRouter = router({
       const receiptId = receiptResult.insertId;
 
       // Create receipt items
-      const itemsToInsert = input.items.map((item) => ({
+      const itemsToInsert = input.items.map(item => ({
         receiptId,
         productId: item.productId ?? null,
         productName: item.productName,
@@ -186,12 +197,18 @@ export const intakeReceiptsRouter = router({
       await db.insert(intakeReceiptItems).values(itemsToInsert);
 
       logger.info(
-        { receiptId, receiptNumber, supplierId: input.supplierId, itemCount: input.items.length },
+        {
+          receiptId,
+          receiptNumber,
+          supplierId: input.supplierId,
+          itemCount: input.items.length,
+        },
         "[IntakeReceipts] Receipt created"
       );
 
       // Build shareable URL
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       const shareableUrl = `${baseUrl}/intake/verify/${shareableToken}`;
 
       return {
@@ -211,7 +228,11 @@ export const intakeReceiptsRouter = router({
     .input(z.object({ id: z.number().int().positive() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get receipt
       const [receipt] = await db
@@ -221,7 +242,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
       }
 
       // Get items
@@ -251,7 +275,12 @@ export const intakeReceiptsRouter = router({
       let supplierInfo = null;
       if (receipt.supplierId) {
         const [supplier] = await db
-          .select({ id: clients.id, name: clients.name, email: clients.email, phone: clients.phone })
+          .select({
+            id: clients.id,
+            name: clients.name,
+            email: clients.email,
+            phone: clients.phone,
+          })
           .from(clients)
           .where(eq(clients.id, receipt.supplierId))
           .limit(1);
@@ -285,7 +314,11 @@ export const intakeReceiptsRouter = router({
     .input(listReceiptsSchema.optional())
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const limit = input?.limit ?? 50;
       const offset = input?.offset ?? 0;
@@ -302,7 +335,9 @@ export const intakeReceiptsRouter = router({
       }
 
       if (input?.startDate) {
-        conditions.push(gte(intakeReceipts.createdAt, new Date(input.startDate)));
+        conditions.push(
+          gte(intakeReceipts.createdAt, new Date(input.startDate))
+        );
       }
 
       if (input?.endDate) {
@@ -310,7 +345,9 @@ export const intakeReceiptsRouter = router({
       }
 
       if (input?.search) {
-        conditions.push(like(intakeReceipts.receiptNumber, `%${input.search}%`));
+        conditions.push(
+          like(intakeReceipts.receiptNumber, `%${input.search}%`)
+        );
       }
 
       // Execute query with item count subquery
@@ -333,9 +370,8 @@ export const intakeReceiptsRouter = router({
         .from(intakeReceipts)
         .leftJoin(clients, eq(intakeReceipts.supplierId, clients.id));
 
-      const query = conditions.length > 0
-        ? baseQuery.where(and(...conditions))
-        : baseQuery;
+      const query =
+        conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
       const receipts = await query
         .orderBy(desc(intakeReceipts.createdAt))
@@ -343,9 +379,13 @@ export const intakeReceiptsRouter = router({
         .offset(offset);
 
       // Get total count
-      const countQuery = conditions.length > 0
-        ? db.select({ count: sql<number>`COUNT(*)` }).from(intakeReceipts).where(and(...conditions))
-        : db.select({ count: sql<number>`COUNT(*)` }).from(intakeReceipts);
+      const countQuery =
+        conditions.length > 0
+          ? db
+              .select({ count: sql<number>`COUNT(*)` })
+              .from(intakeReceipts)
+              .where(and(...conditions))
+          : db.select({ count: sql<number>`COUNT(*)` }).from(intakeReceipts);
 
       const [countResult] = await countQuery;
       const total = countResult?.count ?? receipts.length;
@@ -360,7 +400,11 @@ export const intakeReceiptsRouter = router({
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get receipt by token
       const [receipt] = await db
@@ -370,7 +414,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found or invalid token" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found or invalid token",
+        });
       }
 
       // Get items (limited info for public view)
@@ -412,14 +459,17 @@ export const intakeReceiptsRouter = router({
   /**
    * Generate a new receipt number (preview only)
    */
-  generateReceiptNumber: protectedProcedure
-    .query(async () => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  generateReceiptNumber: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
-      const receiptNumber = await generateReceiptNumber(db);
-      return { receiptNumber };
-    }),
+    const receiptNumber = await generateReceiptNumber(db);
+    return { receiptNumber };
+  }),
 
   // -------------------------------------------------------------------------
   // MEET-065-BE: Verification Process API
@@ -429,14 +479,20 @@ export const intakeReceiptsRouter = router({
    * Farmer acknowledges receipt (via shareable token)
    */
   verifyAsFarmer: protectedProcedure
-    .input(z.object({
-      token: z.string().min(1),
-      acknowledged: z.boolean(),
-      notes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        token: z.string().min(1),
+        acknowledged: z.boolean(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get receipt by token
       const [receipt] = await db
@@ -446,7 +502,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found or invalid token" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found or invalid token",
+        });
       }
 
       // Verify status allows farmer verification
@@ -494,17 +553,26 @@ export const intakeReceiptsRouter = router({
    * Stacker verifies receipt with actual quantities
    */
   verifyAsStacker: protectedProcedure
-    .input(z.object({
-      receiptId: z.number().int().positive(),
-      verifications: z.array(verificationItemSchema).min(1),
-    }))
+    .input(
+      z.object({
+        receiptId: z.number().int().positive(),
+        verifications: z.array(verificationItemSchema).min(1),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User not authenticated" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
       }
 
       // Get receipt
@@ -515,11 +583,17 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
       }
 
       // Verify status allows stacker verification
-      if (receipt.status !== "FARMER_VERIFIED" && receipt.status !== "PENDING") {
+      if (
+        receipt.status !== "FARMER_VERIFIED" &&
+        receipt.status !== "PENDING"
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Receipt cannot be verified by stacker from ${receipt.status} status`,
@@ -558,7 +632,8 @@ export const intakeReceiptsRouter = router({
 
         const expected = parseFloat(item.expectedQuantity);
         const actual = verification.actualQuantity;
-        const { difference, hasDiscrepancy: itemHasDiscrepancy } = calculateDiscrepancy(expected, actual);
+        const { difference, hasDiscrepancy: itemHasDiscrepancy } =
+          calculateDiscrepancy(expected, actual);
 
         // Update item
         await db
@@ -619,7 +694,11 @@ export const intakeReceiptsRouter = router({
           });
           creatorNotified = true;
           logger.info(
-            { receiptId: input.receiptId, creatorId: receipt.createdBy, discrepancyCount: discrepanciesFound.length },
+            {
+              receiptId: input.receiptId,
+              creatorId: receipt.createdBy,
+              discrepancyCount: discrepanciesFound.length,
+            },
             "[IntakeReceipts] Discrepancy notification sent to creator"
           );
         } catch (error) {
@@ -631,7 +710,11 @@ export const intakeReceiptsRouter = router({
       }
 
       logger.info(
-        { receiptId: input.receiptId, newStatus, discrepancyCount: discrepanciesFound.length },
+        {
+          receiptId: input.receiptId,
+          newStatus,
+          discrepancyCount: discrepanciesFound.length,
+        },
         "[IntakeReceipts] Stacker verified receipt"
       );
 
@@ -647,19 +730,28 @@ export const intakeReceiptsRouter = router({
    * Report a discrepancy for a specific item
    */
   reportDiscrepancy: protectedProcedure
-    .input(z.object({
-      receiptId: z.number().int().positive(),
-      itemId: z.number().int().positive(),
-      actualQuantity: z.number().min(0),
-      notes: z.string().min(1, "Discrepancy notes are required"),
-    }))
+    .input(
+      z.object({
+        receiptId: z.number().int().positive(),
+        itemId: z.number().int().positive(),
+        actualQuantity: z.number().min(0),
+        notes: z.string().min(1, "Discrepancy notes are required"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User not authenticated" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
       }
 
       // Get receipt
@@ -670,7 +762,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
       }
 
       // Get item
@@ -686,7 +781,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!item) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Item not found in this receipt" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Item not found in this receipt",
+        });
       }
 
       const expected = parseFloat(item.expectedQuantity);
@@ -755,18 +853,27 @@ export const intakeReceiptsRouter = router({
    * Resolve a discrepancy (admin action)
    */
   resolveDiscrepancy: protectedProcedure
-    .input(z.object({
-      discrepancyId: z.number().int().positive(),
-      resolution: resolutionSchema,
-      notes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        discrepancyId: z.number().int().positive(),
+        resolution: resolutionSchema,
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User not authenticated" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
       }
 
       // Get discrepancy
@@ -777,7 +884,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!discrepancy) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Discrepancy not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Discrepancy not found",
+        });
       }
 
       if (discrepancy.resolution) {
@@ -799,7 +909,8 @@ export const intakeReceiptsRouter = router({
         .where(eq(intakeDiscrepancies.id, input.discrepancyId));
 
       // Update item verification status based on resolution
-      const newItemStatus = input.resolution === "REJECTED" ? "DISCREPANCY" : "VERIFIED";
+      const newItemStatus =
+        input.resolution === "REJECTED" ? "DISCREPANCY" : "VERIFIED";
       await db
         .update(intakeReceiptItems)
         .set({ verificationStatus: newItemStatus })
@@ -827,7 +938,11 @@ export const intakeReceiptsRouter = router({
       }
 
       logger.info(
-        { discrepancyId: input.discrepancyId, resolution: input.resolution, allResolved: !hasUnresolved },
+        {
+          discrepancyId: input.discrepancyId,
+          resolution: input.resolution,
+          allResolved: !hasUnresolved,
+        },
         "[IntakeReceipts] Discrepancy resolved"
       );
 
@@ -843,17 +958,26 @@ export const intakeReceiptsRouter = router({
    * Finalize receipt (complete the intake process)
    */
   finalizeReceipt: protectedProcedure
-    .input(z.object({
-      receiptId: z.number().int().positive(),
-      notes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        receiptId: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User not authenticated" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
       }
 
       // Get receipt
@@ -864,7 +988,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
       }
 
       // Verify status allows finalization
@@ -929,7 +1056,11 @@ export const intakeReceiptsRouter = router({
       }
 
       logger.info(
-        { receiptId: input.receiptId, receiptNumber: receipt.receiptNumber, finalizedBy: userId },
+        {
+          receiptId: input.receiptId,
+          receiptNumber: receipt.receiptNumber,
+          finalizedBy: userId,
+        },
         "[IntakeReceipts] Receipt finalized"
       );
 
@@ -946,14 +1077,22 @@ export const intakeReceiptsRouter = router({
    * Get pending receipts requiring verification
    */
   getPendingVerification: protectedProcedure
-    .input(z.object({
-      type: z.enum(["farmer", "stacker", "admin"]).optional(),
-      limit: z.number().min(1).max(100).optional().default(20),
-      offset: z.number().min(0).optional().default(0),
-    }).optional())
+    .input(
+      z
+        .object({
+          type: z.enum(["farmer", "stacker", "admin"]).optional(),
+          limit: z.number().min(1).max(100).optional().default(20),
+          offset: z.number().min(0).optional().default(0),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const limit = input?.limit ?? 20;
       const offset = input?.offset ?? 0;
@@ -1012,14 +1151,20 @@ export const intakeReceiptsRouter = router({
    * Update receipt (before finalization)
    */
   updateReceipt: protectedProcedure
-    .input(z.object({
-      id: z.number().int().positive(),
-      notes: z.string().optional(),
-      supplierId: z.number().int().positive().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        notes: z.string().optional(),
+        supplierId: z.number().int().positive().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [receipt] = await db
         .select()
@@ -1028,7 +1173,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
       }
 
       if (receipt.status === "FINALIZED") {
@@ -1040,7 +1188,8 @@ export const intakeReceiptsRouter = router({
 
       const updateData: Record<string, unknown> = {};
       if (input.notes !== undefined) updateData.notes = input.notes;
-      if (input.supplierId !== undefined) updateData.supplierId = input.supplierId;
+      if (input.supplierId !== undefined)
+        updateData.supplierId = input.supplierId;
 
       if (Object.keys(updateData).length > 0) {
         await db
@@ -1059,7 +1208,11 @@ export const intakeReceiptsRouter = router({
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [receipt] = await db
         .select()
@@ -1068,7 +1221,10 @@ export const intakeReceiptsRouter = router({
         .limit(1);
 
       if (!receipt) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Receipt not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
       }
 
       if (receipt.status !== "PENDING") {
@@ -1079,16 +1235,14 @@ export const intakeReceiptsRouter = router({
       }
 
       // Delete receipt and items in transaction to prevent orphaned records
-      await withTransaction(async (tx) => {
+      await withTransaction(async tx => {
         // Delete child records first
         await tx
           .delete(intakeReceiptItems)
           .where(eq(intakeReceiptItems.receiptId, input.id));
 
         // Then delete parent
-        await tx
-          .delete(intakeReceipts)
-          .where(eq(intakeReceipts.id, input.id));
+        await tx.delete(intakeReceipts).where(eq(intakeReceipts.id, input.id));
       });
 
       logger.info(

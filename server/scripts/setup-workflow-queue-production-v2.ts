@@ -1,6 +1,6 @@
 /**
  * Production-Safe Workflow Queue Setup Script v2
- * 
+ *
  * This script safely sets up the workflow queue system in production with:
  * - Full transaction support with automatic rollback on failure
  * - Deterministic batch migration (no RAND())
@@ -9,11 +9,11 @@
  * - Dry-run mode for testing
  * - Comprehensive error handling and validation
  * - Idempotent execution (safe to run multiple times)
- * 
+ *
  * Usage:
  *   pnpm tsx server/scripts/setup-workflow-queue-production-v2.ts
  *   pnpm tsx server/scripts/setup-workflow-queue-production-v2.ts --dry-run
- * 
+ *
  * @version 2.0
  * @date 2024-11-09
  */
@@ -72,7 +72,10 @@ interface VerificationRow {
   avg_quantity: number;
 }
 
-async function checkTableExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string): Promise<boolean> {
+async function checkTableExists(
+  db: { execute: (sql: unknown) => Promise<unknown[]> },
+  tableName: string
+): Promise<boolean> {
   try {
     const result = await db.execute(sql`
       SELECT COUNT(*) as count 
@@ -81,12 +84,16 @@ async function checkTableExists(db: { execute: (sql: unknown) => Promise<unknown
       AND table_name = ${tableName}
     `);
     return (result[0][0] as { count: number }).count > 0;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
 
-async function checkColumnExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string, columnName: string): Promise<boolean> {
+async function checkColumnExists(
+  db: { execute: (sql: unknown) => Promise<unknown[]> },
+  tableName: string,
+  columnName: string
+): Promise<boolean> {
   try {
     const result = await db.execute(sql`
       SELECT COUNT(*) as count 
@@ -96,20 +103,25 @@ async function checkColumnExists(db: { execute: (sql: unknown) => Promise<unknow
       AND column_name = ${columnName}
     `);
     return (result[0][0] as { count: number }).count > 0;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
 
 async function setupWorkflowQueue() {
   const db = await getDb();
-  
+
   if (!db) {
-    throw new Error("Failed to connect to database. Please check DATABASE_URL environment variable.");
+    throw new Error(
+      "Failed to connect to database. Please check DATABASE_URL environment variable."
+    );
   }
-  
+
   if (DRY_RUN) {
-    log("\n🔍 DRY RUN MODE - No changes will be made to the database\n", "yellow");
+    log(
+      "\n🔍 DRY RUN MODE - No changes will be made to the database\n",
+      "yellow"
+    );
   } else {
     log("\n🚀 Starting Workflow Queue Production Setup...\n", "green");
   }
@@ -119,9 +131,12 @@ async function setupWorkflowQueue() {
     // STEP 1: Create workflow_statuses table
     // ============================================================================
     logStep(1, "Creating workflow_statuses table...");
-    
-    const workflowStatusesExists = await checkTableExists(db, "workflow_statuses");
-    
+
+    const workflowStatusesExists = await checkTableExists(
+      db,
+      "workflow_statuses"
+    );
+
     if (workflowStatusesExists) {
       logInfo("workflow_statuses table already exists, skipping creation");
     } else {
@@ -152,12 +167,12 @@ async function setupWorkflowQueue() {
     // STEP 2: Add statusId column to batches table (before creating FK constraints)
     // ============================================================================
     logStep(2, "Adding statusId column to batches table...");
-    
+
     const statusIdExists = await checkColumnExists(db, "batches", "statusId");
-    
+
     if (statusIdExists) {
       logInfo("statusId column already exists in batches table");
-      
+
       // Verify column type
       const columnInfo = await db.execute(sql`
         SELECT COLUMN_TYPE, IS_NULLABLE
@@ -166,8 +181,9 @@ async function setupWorkflowQueue() {
         AND table_name = 'batches'
         AND column_name = 'statusId'
       `);
-      
-      const columnType = (columnInfo[0][0] as { COLUMN_TYPE: string }).COLUMN_TYPE;
+
+      const columnType = (columnInfo[0][0] as { COLUMN_TYPE: string })
+        .COLUMN_TYPE;
       if (VERBOSE) {
         logInfo(`Current statusId column type: ${columnType}`);
       }
@@ -176,8 +192,12 @@ async function setupWorkflowQueue() {
         logInfo("Would add statusId column to batches table");
       } else {
         // Check if batchStatus column exists for positioning
-        const batchStatusExists = await checkColumnExists(db, "batches", "batchStatus");
-        
+        const batchStatusExists = await checkColumnExists(
+          db,
+          "batches",
+          "batchStatus"
+        );
+
         if (batchStatusExists) {
           await db.execute(sql`
             ALTER TABLE batches 
@@ -200,9 +220,12 @@ async function setupWorkflowQueue() {
     // STEP 3: Create batch_status_history table (after workflow_statuses exists)
     // ============================================================================
     logStep(3, "Creating batch_status_history table...");
-    
-    const historyTableExists = await checkTableExists(db, "batch_status_history");
-    
+
+    const historyTableExists = await checkTableExists(
+      db,
+      "batch_status_history"
+    );
+
     if (historyTableExists) {
       logInfo("batch_status_history table already exists, skipping creation");
     } else {
@@ -228,7 +251,9 @@ async function setupWorkflowQueue() {
             CONSTRAINT fk_history_changed_by FOREIGN KEY (changedBy) REFERENCES users(id) ON DELETE SET NULL
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         `);
-        logSuccess("batch_status_history table created with proper constraints");
+        logSuccess(
+          "batch_status_history table created with proper constraints"
+        );
       }
     }
 
@@ -236,7 +261,7 @@ async function setupWorkflowQueue() {
     // STEP 4: Add foreign key constraint to batches.statusId
     // ============================================================================
     logStep(4, "Adding foreign key constraint to batches.statusId...");
-    
+
     // Check if FK already exists
     const fkCheck = await db.execute(sql`
       SELECT COUNT(*) as count
@@ -246,9 +271,9 @@ async function setupWorkflowQueue() {
       AND constraint_type = 'FOREIGN KEY'
       AND constraint_name LIKE '%statusId%'
     `);
-    
-    const fkExists = (fkCheck[0][0] as any).count > 0;
-    
+
+    const fkExists = (fkCheck[0][0] as { count: number }).count > 0;
+
     if (fkExists) {
       logInfo("Foreign key constraint on batches.statusId already exists");
     } else {
@@ -268,14 +293,44 @@ async function setupWorkflowQueue() {
     // STEP 5: Seed default workflow statuses
     // ============================================================================
     logStep(5, "Seeding default workflow statuses...");
-    
+
     const defaultStatuses = [
-      { name: "Intake Queue", description: "Newly received batches awaiting initial processing", color: "#EF4444", order: 1 },
-      { name: "Quality Check", description: "Batches undergoing quality inspection", color: "#F59E0B", order: 2 },
-      { name: "Lab Testing", description: "Batches in laboratory testing phase", color: "#3B82F6", order: 3 },
-      { name: "Packaging", description: "Batches being packaged for sale", color: "#8B5CF6", order: 4 },
-      { name: "Ready for Sale", description: "Batches ready to be sold", color: "#10B981", order: 5 },
-      { name: "On Hold", description: "Batches temporarily on hold", color: "#6B7280", order: 6 },
+      {
+        name: "Intake Queue",
+        description: "Newly received batches awaiting initial processing",
+        color: "#EF4444",
+        order: 1,
+      },
+      {
+        name: "Quality Check",
+        description: "Batches undergoing quality inspection",
+        color: "#F59E0B",
+        order: 2,
+      },
+      {
+        name: "Lab Testing",
+        description: "Batches in laboratory testing phase",
+        color: "#3B82F6",
+        order: 3,
+      },
+      {
+        name: "Packaging",
+        description: "Batches being packaged for sale",
+        color: "#8B5CF6",
+        order: 4,
+      },
+      {
+        name: "Ready for Sale",
+        description: "Batches ready to be sold",
+        color: "#10B981",
+        order: 5,
+      },
+      {
+        name: "On Hold",
+        description: "Batches temporarily on hold",
+        color: "#6B7280",
+        order: 6,
+      },
     ];
 
     if (DRY_RUN) {
@@ -297,7 +352,11 @@ async function setupWorkflowQueue() {
           logSuccess(`  ✓ ${status.name}`);
         } catch (error) {
           // If the above syntax fails (older MySQL), try the old syntax
-          if (error instanceof Error ? error.message : String(error)?.includes("syntax")) {
+          if (
+            error instanceof Error
+              ? error.message
+              : String(error)?.includes("syntax")
+          ) {
             try {
               await db.execute(sql`
                 INSERT INTO workflow_statuses (name, description, color, \`order\`)
@@ -323,35 +382,46 @@ async function setupWorkflowQueue() {
     // STEP 6: Migrate existing batches to workflow statuses (DETERMINISTIC)
     // ============================================================================
     logStep(6, "Migrating existing batches to workflow statuses...");
-    
+
     // Get status IDs
-    const statusMapResult = await db.execute(sql`SELECT id, name FROM workflow_statuses`);
+    const statusMapResult = await db.execute(
+      sql`SELECT id, name FROM workflow_statuses`
+    );
     const statuses = statusMapResult[0] as StatusRecord[];
-    
+
     const statusMap: Record<string, number> = {};
     statuses.forEach(s => {
       statusMap[s.name.toLowerCase()] = s.id;
     });
-    
+
     const qualityCheckId = statusMap["quality check"];
     const labTestingId = statusMap["lab testing"];
     const packagingId = statusMap["packaging"];
     const readyForSaleId = statusMap["ready for sale"];
     const onHoldId = statusMap["on hold"];
 
-    if (!qualityCheckId || !labTestingId || !packagingId || !readyForSaleId || !onHoldId) {
-      throw new Error("Failed to find all required workflow statuses. Found: " + Object.keys(statusMap).join(", "));
+    if (
+      !qualityCheckId ||
+      !labTestingId ||
+      !packagingId ||
+      !readyForSaleId ||
+      !onHoldId
+    ) {
+      throw new Error(
+        "Failed to find all required workflow statuses. Found: " +
+          Object.keys(statusMap).join(", ")
+      );
     }
 
     // Count batches that need migration
     const countResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM batches WHERE statusId IS NULL
     `);
-    
+
     if (!countResult[0] || countResult[0].length === 0) {
       throw new Error("Failed to count batches needing migration");
     }
-    
+
     const batchesToMigrate = (countResult[0][0] as { count: number }).count;
 
     if (batchesToMigrate === 0) {
@@ -369,7 +439,7 @@ async function setupWorkflowQueue() {
       } else {
         // Start transaction for atomic migration
         await db.execute(sql`START TRANSACTION`);
-        
+
         try {
           // Ready for Sale: 0 quantity (sold out)
           const result1 = await db.execute(sql`
@@ -377,48 +447,61 @@ async function setupWorkflowQueue() {
             SET statusId = ${readyForSaleId}
             WHERE statusId IS NULL AND onHandQty = 0
           `);
-          logInfo(`  ✓ Assigned ${(result1 as { rowsAffected?: number }).rowsAffected || 0} batches to Ready for Sale (sold out)`);
-          
+          logInfo(
+            `  ✓ Assigned ${(result1 as { rowsAffected?: number }).rowsAffected || 0} batches to Ready for Sale (sold out)`
+          );
+
           // On Hold: Deterministic 10% (id % 10 = 0)
           const result2 = await db.execute(sql`
             UPDATE batches 
             SET statusId = ${onHoldId}
             WHERE statusId IS NULL AND MOD(id, 10) = 0
           `);
-          logInfo(`  ✓ Assigned ${(result2 as { rowsAffected?: number }).rowsAffected || 0} batches to On Hold (deterministic)`);
-          
+          logInfo(
+            `  ✓ Assigned ${(result2 as { rowsAffected?: number }).rowsAffected || 0} batches to On Hold (deterministic)`
+          );
+
           // Quality Check: High quantity (> 500)
           const result3 = await db.execute(sql`
             UPDATE batches 
             SET statusId = ${qualityCheckId}
             WHERE statusId IS NULL AND onHandQty > 500
           `);
-          logInfo(`  ✓ Assigned ${(result3 as { rowsAffected?: number }).rowsAffected || 0} batches to Quality Check (high qty)`);
-          
+          logInfo(
+            `  ✓ Assigned ${(result3 as { rowsAffected?: number }).rowsAffected || 0} batches to Quality Check (high qty)`
+          );
+
           // Packaging: Low to medium quantity (1-299)
           const result4 = await db.execute(sql`
             UPDATE batches 
             SET statusId = ${packagingId}
             WHERE statusId IS NULL AND onHandQty > 0 AND onHandQty < 300
           `);
-          logInfo(`  ✓ Assigned ${(result4 as { rowsAffected?: number }).rowsAffected || 0} batches to Packaging (low-med qty)`);
-          
+          logInfo(
+            `  ✓ Assigned ${(result4 as { rowsAffected?: number }).rowsAffected || 0} batches to Packaging (low-med qty)`
+          );
+
           // Lab Testing: Everything else (300-500 and any remaining)
           const result5 = await db.execute(sql`
             UPDATE batches 
             SET statusId = ${labTestingId}
             WHERE statusId IS NULL
           `);
-          logInfo(`  ✓ Assigned ${(result5 as { rowsAffected?: number }).rowsAffected || 0} batches to Lab Testing (remaining)`);
+          logInfo(
+            `  ✓ Assigned ${(result5 as { rowsAffected?: number }).rowsAffected || 0} batches to Lab Testing (remaining)`
+          );
 
           // Commit transaction
           await db.execute(sql`COMMIT`);
-          logSuccess("Batches migrated to workflow statuses (transaction committed)");
-          
+          logSuccess(
+            "Batches migrated to workflow statuses (transaction committed)"
+          );
         } catch (error) {
           // Rollback on any error
           await db.execute(sql`ROLLBACK`);
-          throw new Error(`Migration failed, transaction rolled back: ${error}`);
+          throw new Error(
+            `Migration failed, transaction rolled back: ${error}`
+          );
         }
       }
     }
@@ -427,7 +510,7 @@ async function setupWorkflowQueue() {
     // STEP 7: Verify migration
     // ============================================================================
     logStep(7, "Verifying migration...");
-    
+
     const verifyResult = await db.execute(sql`
       SELECT 
         ws.name,
@@ -442,26 +525,32 @@ async function setupWorkflowQueue() {
 
     log("\n📊 Workflow Queue Distribution:", "cyan");
     log("─".repeat(70), "cyan");
-    
+
     let totalBatches = 0;
     const rows = verifyResult[0] as VerificationRow[];
-    
+
     // Calculate total first
     rows.forEach(row => {
       totalBatches += row.batch_count;
     });
-    
+
     // Display with percentages
     rows.forEach(row => {
-      const percentage = totalBatches > 0 ? ((row.batch_count / totalBatches) * 100).toFixed(1) : "0.0";
+      const percentage =
+        totalBatches > 0
+          ? ((row.batch_count / totalBatches) * 100).toFixed(1)
+          : "0.0";
       log(
         `${row.name.padEnd(20)} │ ${String(row.batch_count).padStart(4)} batches (${percentage.padStart(5)}%) │ Avg: ${Math.round(row.avg_quantity).toString().padStart(4)} units`,
         "blue"
       );
     });
-    
+
     log("─".repeat(70), "cyan");
-    log(`${"TOTAL".padEnd(20)} │ ${String(totalBatches).padStart(4)} batches`, "green");
+    log(
+      `${"TOTAL".padEnd(20)} │ ${String(totalBatches).padStart(4)} batches`,
+      "green"
+    );
     log("─".repeat(70), "cyan");
 
     // Validate that all batches have been migrated
@@ -469,9 +558,11 @@ async function setupWorkflowQueue() {
       SELECT COUNT(*) as count FROM batches WHERE statusId IS NULL
     `);
     const unmigratedCount = (unmigrated[0][0] as { count: number }).count;
-    
+
     if (unmigratedCount > 0) {
-      logWarning(`Warning: ${unmigratedCount} batches still have NULL statusId`);
+      logWarning(
+        `Warning: ${unmigratedCount} batches still have NULL statusId`
+      );
     } else {
       logSuccess("All batches have been assigned workflow statuses");
     }
@@ -480,23 +571,25 @@ async function setupWorkflowQueue() {
     // COMPLETION
     // ============================================================================
     if (DRY_RUN) {
-      log("\n✅ Dry run completed successfully - No changes were made", "green");
+      log(
+        "\n✅ Dry run completed successfully - No changes were made",
+        "green"
+      );
       log("   Run without --dry-run flag to apply changes\n", "yellow");
     } else {
       log("\n✅ Workflow Queue Setup Complete!", "green");
       log("\n🎉 The workflow queue system is now ready to use!", "green");
       log("   Navigate to /workflow-queue to see your batches\n", "cyan");
     }
-
   } catch (error) {
     logError("\nError during setup:");
     logger.error(error);
-    
+
     if (!DRY_RUN) {
       logError("\n⚠️  Database may be in an inconsistent state");
       logError("   Please review the error and consider restoring from backup");
     }
-    
+
     throw error;
   }
 }
@@ -509,7 +602,7 @@ setupWorkflowQueue()
     }
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     logError("\n❌ Setup failed");
     logger.error(error);
     process.exit(1);

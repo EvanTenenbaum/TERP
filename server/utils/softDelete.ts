@@ -1,7 +1,7 @@
 /**
  * Soft Delete Utilities
  * ST-013: Standardize Soft Deletes
- * 
+ *
  * Provides consistent soft delete functionality across all tables
  */
 
@@ -32,7 +32,9 @@ function getTableId<T extends MySqlTable>(table: T): Parameters<typeof eq>[0] {
 /**
  * Helper to safely access table.deletedAt with proper typing
  */
-function getTableDeletedAt<T extends MySqlTable>(table: T): Parameters<typeof isNull>[0] {
+function getTableDeletedAt<T extends MySqlTable>(
+  table: T
+): Parameters<typeof isNull>[0] {
   return (table as T & TableWithDeletedAt).deletedAt;
 }
 
@@ -55,7 +57,9 @@ export async function softDelete<T extends MySqlTable>(
     .where(eq(getTableId(table), id));
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result)
+    ? (result[0] as ResultSetHeader)?.affectedRows
+    : 0;
   return affectedRows || 0;
 }
 
@@ -79,14 +83,15 @@ export async function softDeleteMany<T extends MySqlTable>(
     .update(table)
     .set({ deletedAt: new Date() } as Record<string, unknown>)
     .where(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (tableId as unknown as { in: (ids: number[]) => SQL }).in 
-        ? (tableId as unknown as { in: (ids: number[]) => SQL }).in(ids) 
+      (tableId as unknown as { in: (ids: number[]) => SQL }).in
+        ? (tableId as unknown as { in: (ids: number[]) => SQL }).in(ids)
         : eq(tableId, ids[0])
     );
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result)
+    ? (result[0] as ResultSetHeader)?.affectedRows
+    : 0;
   return affectedRows || 0;
 }
 
@@ -109,7 +114,9 @@ export async function restoreDeleted<T extends MySqlTable>(
     .where(eq(getTableId(table), id));
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result)
+    ? (result[0] as ResultSetHeader)?.affectedRows
+    : 0;
   return affectedRows || 0;
 }
 
@@ -130,7 +137,9 @@ export async function hardDelete<T extends MySqlTable>(
   const result = await db.delete(table).where(eq(getTableId(table), id));
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result)
+    ? (result[0] as ResultSetHeader)?.affectedRows
+    : 0;
   return affectedRows || 0;
 }
 
@@ -205,11 +214,7 @@ export async function getDeleted<T extends MySqlTable>(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  return await db
-    .select()
-    .from(table)
-    .where(onlyDeleted(table))
-    .limit(limit);
+  return await db.select().from(table).where(onlyDeleted(table)).limit(limit);
 }
 
 /**
@@ -224,7 +229,7 @@ export async function countDeleted<T extends MySqlTable>(
   if (!db) throw new Error("Database not available");
 
   const result = await db
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     .select({ count: sql<number>`count(*)` })
     .from(table)
     .where(onlyDeleted(table));

@@ -192,7 +192,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       // Prevent duplicate-SKU insert failures for repeated intake of the same
       // brand/product/day combination by bumping sequence until available.
       const maxSkuAttempts = 10_000;
-      // eslint-disable-next-line no-constant-condition
+
       while (true) {
         const [existingSku] = await tx
           .select({ id: batches.id })

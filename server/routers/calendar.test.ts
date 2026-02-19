@@ -1,7 +1,7 @@
 /**
  * Calendar Router Tests
  * Tests for calendar event operations with focus on performance and permissions
- * 
+ *
  * Following TERP Testing Protocol:
  * - TDD workflow (Red → Green → Refactor)
  * - Testing Trophy: 70% integration, 20% unit, 10% E2E
@@ -21,7 +21,6 @@ import { calendarRouter } from "./calendar";
 import { getDb } from "../db";
 
 import PermissionService from "../_core/permissionService";
-
 
 describe("Calendar Router - getEvents", () => {
   beforeEach(() => {
@@ -43,7 +42,9 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as ReturnType<typeof getDb>
+      );
 
       const mockEvents = [
         {
@@ -82,7 +83,10 @@ describe("Calendar Router - getEvents", () => {
       mockDb.where.mockResolvedValueOnce([]);
 
       // Mock batch permission checking (NEW METHOD)
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const batchCheckSpy = vi.spyOn(
+        PermissionService,
+        "batchCheckPermissions"
+      );
       batchCheckSpy.mockResolvedValue({
         1: true,
         2: true,
@@ -128,13 +132,18 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as ReturnType<typeof getDb>
+      );
       mockDb.where.mockReturnValueOnce(mockDb);
       mockDb.limit.mockReturnValueOnce(mockDb);
       mockDb.offset.mockResolvedValueOnce([]);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const batchCheckSpy = vi.spyOn(
+        PermissionService,
+        "batchCheckPermissions"
+      );
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
@@ -161,7 +170,9 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as ReturnType<typeof getDb>
+      );
 
       // Create 100 mock events
       const mockEvents = Array.from({ length: 100 }, (_, i) => ({
@@ -181,9 +192,12 @@ describe("Calendar Router - getEvents", () => {
       mockDb.where.mockResolvedValueOnce([]);
 
       // Mock batch permission checking - all events visible
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const batchCheckSpy = vi.spyOn(
+        PermissionService,
+        "batchCheckPermissions"
+      );
       const permissionMap = Object.fromEntries(
-        mockEvents.map((e) => [e.id, true])
+        mockEvents.map(e => [e.id, true])
       );
       batchCheckSpy.mockResolvedValue(permissionMap);
 
@@ -218,13 +232,47 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as ReturnType<typeof getDb>
+      );
 
       const mockEvents = [
-        { id: 1, title: "Event 1", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
-        { id: 2, title: "Event 2", startDate: "2025-11-02", endDate: "2025-11-02", createdBy: 2, visibility: "PRIVATE", deletedAt: null },
-        { id: 3, title: "Event 3", startDate: "2025-11-03", endDate: "2025-11-03", createdBy: 1, visibility: "TEAM", deletedAt: null },
-        { id: 4, title: "Event 4", startDate: "2025-11-04", endDate: "2025-11-04", createdBy: 3, visibility: "COMPANY", deletedAt: null },
+        {
+          id: 1,
+          title: "Event 1",
+          startDate: "2025-11-01",
+          endDate: "2025-11-01",
+          createdBy: 1,
+          visibility: "COMPANY",
+          deletedAt: null,
+        },
+        {
+          id: 2,
+          title: "Event 2",
+          startDate: "2025-11-02",
+          endDate: "2025-11-02",
+          createdBy: 2,
+          visibility: "PRIVATE",
+          deletedAt: null,
+        },
+        {
+          id: 3,
+          title: "Event 3",
+          startDate: "2025-11-03",
+          endDate: "2025-11-03",
+          createdBy: 1,
+          visibility: "TEAM",
+          deletedAt: null,
+        },
+        {
+          id: 4,
+          title: "Event 4",
+          startDate: "2025-11-04",
+          endDate: "2025-11-04",
+          createdBy: 3,
+          visibility: "COMPANY",
+          deletedAt: null,
+        },
       ];
 
       // Mock to return events first, then empty instances
@@ -234,7 +282,10 @@ describe("Calendar Router - getEvents", () => {
       mockDb.where.mockResolvedValueOnce([]);
 
       // User has permission for events 1, 3, and 4, but not 2 (private event by another user)
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const batchCheckSpy = vi.spyOn(
+        PermissionService,
+        "batchCheckPermissions"
+      );
       batchCheckSpy.mockResolvedValue({
         1: true,
         2: false,
@@ -270,11 +321,31 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as ReturnType<typeof getDb>
+      );
 
       const mockEvents = [
-        { id: 1, title: "Event 1", module: "INVENTORY", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
-        { id: 2, title: "Event 2", module: "ACCOUNTING", startDate: "2025-11-02", endDate: "2025-11-02", createdBy: 1, visibility: "COMPANY", deletedAt: null },
+        {
+          id: 1,
+          title: "Event 1",
+          module: "INVENTORY",
+          startDate: "2025-11-01",
+          endDate: "2025-11-01",
+          createdBy: 1,
+          visibility: "COMPANY",
+          deletedAt: null,
+        },
+        {
+          id: 2,
+          title: "Event 2",
+          module: "ACCOUNTING",
+          startDate: "2025-11-02",
+          endDate: "2025-11-02",
+          createdBy: 1,
+          visibility: "COMPANY",
+          deletedAt: null,
+        },
       ];
 
       // Mock database to return events first, then empty recurrence instances
@@ -283,7 +354,10 @@ describe("Calendar Router - getEvents", () => {
       mockDb.offset.mockResolvedValueOnce(mockEvents);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const batchCheckSpy = vi.spyOn(
+        PermissionService,
+        "batchCheckPermissions"
+      );
       batchCheckSpy.mockResolvedValue({ 1: true, 2: true });
 
       const caller = calendarRouter.createCaller({
@@ -291,7 +365,7 @@ describe("Calendar Router - getEvents", () => {
       } as { user: { id: number } });
 
       // Act
-      const result = await caller.getEvents({
+      const _result = await caller.getEvents({
         startDate: "2025-11-01",
         endDate: "2025-11-30",
         modules: ["INVENTORY"],

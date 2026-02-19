@@ -53,6 +53,53 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+interface CatalogItem {
+  id: number;
+  name: string;
+  category: string | undefined;
+  subcategory: string | undefined;
+  brand: string | undefined;
+  grade: string | undefined;
+  retailPrice: string;
+  basePrice: string | undefined;
+  quantity: string | undefined;
+  stockLevel: string | undefined;
+  imageUrl: string | undefined;
+}
+
+interface DraftItem {
+  id: number;
+  batchId: number;
+  itemName: string;
+  category: string | undefined;
+  subcategory: string | undefined;
+  retailPrice: string;
+  quantity: string;
+  addedAt: Date;
+  priceChanged: boolean;
+  priceAtAdd: undefined;
+  quantityChanged: boolean;
+  quantityAtAdd: undefined;
+  stillAvailable: boolean;
+}
+
+interface SavedView {
+  id: number;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  filters: {
+    search?: string;
+    category?: string | null;
+    brand?: string[];
+    grade?: string[];
+    stockLevel?: "all" | "in_stock" | "low_stock" | undefined;
+    priceMin?: number;
+    priceMax?: number;
+  };
+  clientId: number;
+}
+
 interface LiveCatalogProps {
   clientId: number;
 }
@@ -65,7 +112,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
   const [brandFilter, setBrandFilter] = useState<string[]>([]);
   const [gradeFilter, setGradeFilter] = useState<string[]>([]);
-  const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | undefined>();
+  const [stockFilter, setStockFilter] = useState<
+    "all" | "in_stock" | "low_stock" | undefined
+  >();
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [sortBy, setSortBy] = useState<string>("name");
   const [page, setPage] = useState(0);
@@ -79,15 +128,22 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [saveViewDialogOpen, setSaveViewDialogOpen] = useState(false);
   const [newViewName, setNewViewName] = useState("");
   const [priceAlertDialogOpen, setPriceAlertDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedProductForAlert, setSelectedProductForAlert] = useState<any>(null);
+  const [selectedProductForAlert, setSelectedProductForAlert] =
+    useState<CatalogItem | null>(null);
   const [targetPrice, setTargetPrice] = useState<string>("");
   const [showClearDraftConfirm, setShowClearDraftConfirm] = useState(false);
   const [deleteViewId, setDeleteViewId] = useState<number | null>(null);
 
   // Fetch client configuration to check if price alerts are enabled
-  const { data: clientConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
-  const priceAlertsEnabled = (clientConfig?.featuresConfig as { liveCatalog?: { enablePriceAlerts?: boolean } } | null)?.liveCatalog?.enablePriceAlerts ?? false;
+  const { data: clientConfig } = trpc.vipPortal.config.get.useQuery({
+    clientId,
+  });
+  const priceAlertsEnabled =
+    (
+      clientConfig?.featuresConfig as {
+        liveCatalog?: { enablePriceAlerts?: boolean };
+      } | null
+    )?.liveCatalog?.enablePriceAlerts ?? false;
 
   // Fetch catalog
   const {
@@ -101,10 +157,13 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     category: categoryFilter,
     brand: brandFilter.length > 0 ? brandFilter : undefined,
     grade: gradeFilter.length > 0 ? gradeFilter : undefined,
-    stockLevel: stockFilter === 'all' ? undefined : (stockFilter as 'in_stock' | 'low_stock' | undefined),
+    stockLevel:
+      stockFilter === "all"
+        ? undefined
+        : (stockFilter as "in_stock" | "low_stock" | undefined),
     priceMin: priceRange[0],
     priceMax: priceRange[1],
-    sortBy: sortBy as 'name' | 'price' | 'category' | 'date',
+    sortBy: sortBy as "name" | "price" | "category" | "date",
     limit,
     offset: page * limit,
   });
@@ -114,16 +173,12 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     trpc.vipPortal.liveCatalog.getFilterOptions.useQuery();
 
   // Fetch draft interests
-  const {
-    data: draftData,
-    refetch: refetchDraft,
-  } = trpc.vipPortal.liveCatalog.getDraftInterests.useQuery();
+  const { data: draftData, refetch: refetchDraft } =
+    trpc.vipPortal.liveCatalog.getDraftInterests.useQuery();
 
   // Fetch saved views
-  const {
-    data: savedViewsData,
-    refetch: refetchViews,
-  } = trpc.vipPortal.liveCatalog.views.list.useQuery();
+  const { data: savedViewsData, refetch: refetchViews } =
+    trpc.vipPortal.liveCatalog.views.list.useQuery();
 
   const savedViews = savedViewsData?.views || [];
 
@@ -136,7 +191,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
         description: "Item has been added to your interest list.",
       });
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error",
         description: error.message,
@@ -154,7 +209,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           description: "Item has been removed from your interest list.",
         });
       },
-      onError: (error) => {
+      onError: error => {
         toast({
           title: "Error",
           description: error.message,
@@ -171,7 +226,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
         description: "All items have been removed from your interest list.",
       });
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error",
         description: error.message,
@@ -182,7 +237,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
   const submitInterestListMutation =
     trpc.vipPortal.liveCatalog.submitInterestList.useMutation({
-      onSuccess: (data) => {
+      onSuccess: data => {
         refetchDraft();
         setSubmitDialogOpen(false);
         setInterestListOpen(false);
@@ -191,7 +246,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           description: `Your interest list (#${data.interestListId}) has been submitted successfully.`,
         });
       },
-      onError: (error) => {
+      onError: error => {
         toast({
           title: "Error submitting interest list",
           description: error.message,
@@ -210,7 +265,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
         description: "Your filter view has been saved successfully.",
       });
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error saving view",
         description: error.message,
@@ -219,42 +274,45 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     },
   });
 
-  const deleteViewMutation = trpc.vipPortal.liveCatalog.views.delete.useMutation({
-    onSuccess: () => {
-      refetchViews();
-      toast({
-        title: "View deleted",
-        description: "Your saved view has been deleted.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error deleting view",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const deleteViewMutation =
+    trpc.vipPortal.liveCatalog.views.delete.useMutation({
+      onSuccess: () => {
+        refetchViews();
+        toast({
+          title: "View deleted",
+          description: "Your saved view has been deleted.",
+        });
+      },
+      onError: error => {
+        toast({
+          title: "Error deleting view",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   // Price Alert Mutations
-  const createPriceAlertMutation = trpc.vipPortal.liveCatalog.priceAlerts.create.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Price alert set",
-        description: "You'll be notified when the price drops to your target.",
-      });
-      setPriceAlertDialogOpen(false);
-      setTargetPrice("");
-      setSelectedProductForAlert(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error setting price alert",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const createPriceAlertMutation =
+    trpc.vipPortal.liveCatalog.priceAlerts.create.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Price alert set",
+          description:
+            "You'll be notified when the price drops to your target.",
+        });
+        setPriceAlertDialogOpen(false);
+        setTargetPrice("");
+        setSelectedProductForAlert(null);
+      },
+      onError: error => {
+        toast({
+          title: "Error setting price alert",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   // Handlers
   const handleAddToInterestList = (batchId: number) => {
@@ -278,17 +336,18 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     if (!draftData || draftData.items.length === 0) {
       toast({
         title: "Empty interest list",
-        description: "Please add items to your interest list before submitting.",
+        description:
+          "Please add items to your interest list before submitting.",
         variant: "destructive",
       });
       return;
     }
 
     // Check for changes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const hasChanges = draftData.items.some(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (item: any) => item.priceChanged || item.quantityChanged || !item.currentlyAvailable
+      (item: DraftItem) =>
+        item.priceChanged || item.quantityChanged || !item.stillAvailable
     );
 
     if (hasChanges) {
@@ -302,8 +361,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     submitInterestListMutation.mutate();
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleOpenPriceAlertDialog = (item: any) => {
+  const handleOpenPriceAlertDialog = (item: CatalogItem) => {
     setSelectedProductForAlert(item);
     setTargetPrice(item.retailPrice.toString());
     setPriceAlertDialogOpen(true);
@@ -359,15 +417,14 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleLoadView = (view: any) => {
+  const handleLoadView = (view: SavedView) => {
     setSearch(view.filters.search || "");
     setCategoryFilter(view.filters.category || undefined);
     setBrandFilter(view.filters.brand || []);
     setGradeFilter(view.filters.grade || []);
-    setStockFilter(view.filters.stockLevel);
+    setStockFilter(view.filters.stockLevel ?? undefined);
     setPriceRange([view.filters.priceMin || 0, view.filters.priceMax || 1000]);
-    setSortBy(view.sortBy || "name");
+    setSortBy("name");
     setSavedViewsOpen(false);
     toast({
       title: "View loaded",
@@ -387,8 +444,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   };
 
   const isInDraft = (batchId: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return draftData?.items.some((item: any) => item.batchId === batchId);
+    return draftData?.items.some((item: DraftItem) => item.batchId === batchId);
   };
 
   const activeFiltersCount = [
@@ -411,7 +467,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
             <Input
               placeholder="Search products..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               className="pl-10 pr-4"
             />
           </div>
@@ -421,7 +477,11 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
             {/* Filter Button */}
             <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 md:flex-none">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 md:flex-none"
+                >
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
                   {activeFiltersCount > 0 && (
@@ -431,7 +491,10 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+              <SheetContent
+                side="left"
+                className="w-full sm:max-w-md overflow-y-auto"
+              >
                 <SheetHeader>
                   <SheetTitle>Filters</SheetTitle>
                   <SheetDescription>
@@ -441,44 +504,56 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
                 <div className="space-y-6 mt-6">
                   {/* Category Filter */}
-                  {filterOptions?.categories && filterOptions.categories.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Category</Label>
-                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="All categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All categories</SelectItem>
-                          {filterOptions.categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.name}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  {filterOptions?.categories &&
+                    filterOptions.categories.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Category</Label>
+                        <Select
+                          value={categoryFilter}
+                          onValueChange={setCategoryFilter}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All categories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All categories</SelectItem>
+                            {filterOptions.categories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.name}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                   {/* Brand Filter */}
                   {filterOptions?.brands && filterOptions.brands.length > 0 && (
                     <div className="space-y-2">
                       <Label>Brands</Label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {filterOptions.brands.map((brand) => (
-                          <div key={brand} className="flex items-center space-x-2">
+                        {filterOptions.brands.map(brand => (
+                          <div
+                            key={brand}
+                            className="flex items-center space-x-2"
+                          >
                             <Checkbox
                               id={`brand-${brand}`}
                               checked={brandFilter.includes(brand)}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={checked => {
                                 if (checked) {
                                   setBrandFilter([...brandFilter, brand]);
                                 } else {
-                                  setBrandFilter(brandFilter.filter((b) => b !== brand));
+                                  setBrandFilter(
+                                    brandFilter.filter(b => b !== brand)
+                                  );
                                 }
                               }}
                             />
-                            <Label htmlFor={`brand-${brand}`} className="font-normal">
+                            <Label
+                              htmlFor={`brand-${brand}`}
+                              className="font-normal"
+                            >
                               {brand}
                             </Label>
                           </div>
@@ -492,20 +567,28 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                     <div className="space-y-2">
                       <Label>Grades</Label>
                       <div className="space-y-2">
-                        {filterOptions.grades.map((grade) => (
-                          <div key={grade} className="flex items-center space-x-2">
+                        {filterOptions.grades.map(grade => (
+                          <div
+                            key={grade}
+                            className="flex items-center space-x-2"
+                          >
                             <Checkbox
                               id={`grade-${grade}`}
                               checked={gradeFilter.includes(grade)}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={checked => {
                                 if (checked) {
                                   setGradeFilter([...gradeFilter, grade]);
                                 } else {
-                                  setGradeFilter(gradeFilter.filter((g) => g !== grade));
+                                  setGradeFilter(
+                                    gradeFilter.filter(g => g !== grade)
+                                  );
                                 }
                               }}
                             />
-                            <Label htmlFor={`grade-${grade}`} className="font-normal">
+                            <Label
+                              htmlFor={`grade-${grade}`}
+                              className="font-normal"
+                            >
                               {grade}
                             </Label>
                           </div>
@@ -517,7 +600,14 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                   {/* Stock Level Filter */}
                   <div className="space-y-2">
                     <Label>Stock Level</Label>
-                    <Select value={stockFilter} onValueChange={(value) => setStockFilter(value as 'all' | 'in_stock' | 'low_stock' | undefined)}>
+                    <Select
+                      value={stockFilter}
+                      onValueChange={value =>
+                        setStockFilter(
+                          value as "all" | "in_stock" | "low_stock" | undefined
+                        )
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="All items" />
                       </SelectTrigger>
@@ -540,7 +630,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                         max={filterOptions.priceRange.max}
                         step={10}
                         value={priceRange}
-                        onValueChange={(value) => setPriceRange(value as [number, number])}
+                        onValueChange={value =>
+                          setPriceRange(value as [number, number])
+                        }
                         className="mt-2"
                       />
                     </div>
@@ -595,31 +687,30 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
                   {savedViews && savedViews.length > 0 ? (
                     <div className="space-y-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {savedViews.map((view: any) => (
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        <Card key={view.id as number} className="cursor-pointer hover:bg-accent">
+                      {savedViews.map((view: SavedView) => (
+                        <Card
+                          key={view.id}
+                          className="cursor-pointer hover:bg-accent"
+                        >
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div
                                 className="flex-1"
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                onClick={() => handleLoadView(view as any)}
+                                onClick={() => handleLoadView(view)}
                               >
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <p className="font-medium">{view.name as string}</p>
+                                <p className="font-medium">{view.name}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                  {new Date(view.createdAt as string).toLocaleDateString()}
+                                  {new Date(
+                                    view.createdAt
+                                  ).toLocaleDateString()}
                                 </p>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={(e) => {
+                                onClick={e => {
                                   e.stopPropagation();
-                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  setDeleteViewId(view.id as number);
+                                  setDeleteViewId(view.id);
                                 }}
                               >
                                 <X className="h-4 w-4" />
@@ -647,7 +738,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                 <SelectItem value="name">Name</SelectItem>
                 <SelectItem value="price_asc">Price: Low to High</SelectItem>
                 <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                <SelectItem value="quantity_desc">Quantity: High to Low</SelectItem>
+                <SelectItem value="quantity_desc">
+                  Quantity: High to Low
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -664,24 +757,24 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                   />
                 </Badge>
               )}
-              {brandFilter.map((brand) => (
+              {brandFilter.map(brand => (
                 <Badge key={brand} variant="secondary" className="gap-1">
                   {brand}
                   <X
                     className="h-3 w-3 cursor-pointer"
                     onClick={() =>
-                      setBrandFilter(brandFilter.filter((b) => b !== brand))
+                      setBrandFilter(brandFilter.filter(b => b !== brand))
                     }
                   />
                 </Badge>
               ))}
-              {gradeFilter.map((grade) => (
+              {gradeFilter.map(grade => (
                 <Badge key={grade} variant="secondary" className="gap-1">
                   {grade}
                   <X
                     className="h-3 w-3 cursor-pointer"
                     onClick={() =>
-                      setGradeFilter(gradeFilter.filter((g) => g !== grade))
+                      setGradeFilter(gradeFilter.filter(g => g !== grade))
                     }
                   />
                 </Badge>
@@ -709,42 +802,35 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
         ) : catalogData && catalogData.items.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {catalogData.items.map((item: any) => (
+              {catalogData.items.map((item: CatalogItem) => (
                 <Card
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  key={item.id as number}
+                  key={item.id}
                   className={cn(
                     "relative overflow-hidden transition-all hover:shadow-md",
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    isInDraft(item.id as number) && "ring-2 ring-primary"
+                    isInDraft(item.id) && "ring-2 ring-primary"
                   )}
                 >
                   {/* Product Image - Mobile Optimized */}
                   <div className="relative aspect-square w-full bg-muted">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(item as any).imageUrl ? (
+                    {item.imageUrl ? (
                       <img
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        src={(item as any).imageUrl as string}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        alt={(item as any).name as string || "Product image"}
+                        src={item.imageUrl}
+                        alt={item.name || "Product image"}
                         loading="lazy"
                         className="h-full w-full object-cover"
-                        onError={(e) => {
+                        onError={e => {
                           // Fallback to placeholder on error
                           const target = e.currentTarget;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
+                          target.style.display = "none";
+                          target.nextElementSibling?.classList.remove("hidden");
                         }}
                       />
                     ) : null}
                     {/* Placeholder shown when no image or on error */}
-                    <div 
+                    <div
                       className={cn(
                         "absolute inset-0 flex items-center justify-center bg-muted",
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (item as any).imageUrl && "hidden"
+                        item.imageUrl && "hidden"
                       )}
                     >
                       <div className="text-center text-muted-foreground">
@@ -753,10 +839,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                       </div>
                     </div>
                     {/* Stock badge overlay */}
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(item as any).stockLevel === 'low_stock' && (
-                      <Badge 
-                        variant="destructive" 
+                    {item.stockLevel === "low_stock" && (
+                      <Badge
+                        variant="destructive"
                         className="absolute top-2 right-2 text-xs"
                       >
                         Low Stock
@@ -766,31 +851,25 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base line-clamp-2">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(item as any).name as string}
+                        {item.name}
                       </CardTitle>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {isInDraft((item as any).id as number) && (
+                      {isInDraft(item.id) && (
                         <Badge variant="default" className="shrink-0">
                           <Check className="h-3 w-3" />
                         </Badge>
                       )}
                     </div>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(item as any).category && (
+                    {item.category && (
                       <CardDescription className="text-sm">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(item as any).category as string}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(item as any).subcategory && ` • ${(item as any).subcategory as string}`}
+                        {item.category}
+                        {item.subcategory && ` • ${item.subcategory}`}
                       </CardDescription>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {/* Price */}
                     <div className="text-2xl font-bold text-primary">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      ${(item as any).retailPrice as number}
+                      ${item.retailPrice}
                       <span className="text-sm font-normal text-muted-foreground">
                         {" "}
                         / lb
@@ -799,28 +878,26 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
                     {/* Attributes */}
                     <div className="space-y-1 text-sm">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(item as any).quantity !== undefined && (
+                      {item.quantity !== undefined && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Available:</span>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <span className="font-medium">{(item as any).quantity as number} lbs</span>
+                          <span className="text-muted-foreground">
+                            Available:
+                          </span>
+                          <span className="font-medium">
+                            {item.quantity} lbs
+                          </span>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(item as any).brand && (
+                      {item.brand && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Brand:</span>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <span className="font-medium">{(item as any).brand as string}</span>
+                          <span className="font-medium">{item.brand}</span>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(item as any).grade && (
+                      {item.grade && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Grade:</span>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <span className="font-medium">{(item as any).grade as string}</span>
+                          <span className="font-medium">{item.grade}</span>
                         </div>
                       )}
                     </div>
@@ -829,23 +906,18 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                     <div className="space-y-2">
                       <Button
                         onClick={() =>
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          isInDraft((item as any).id as number)
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            ? handleRemoveFromInterestList((item as any).id as number)
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            : handleAddToInterestList((item as any).id as number)
+                          isInDraft(item.id)
+                            ? handleRemoveFromInterestList(item.id)
+                            : handleAddToInterestList(item.id)
                         }
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        variant={isInDraft((item as any).id as number) ? "outline" : "default"}
+                        variant={isInDraft(item.id) ? "outline" : "default"}
                         className="w-full"
                         disabled={
                           addToDraftMutation.isPending ||
                           removeFromDraftMutation.isPending
                         }
                       >
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {isInDraft((item as any).id as number) ? (
+                        {isInDraft(item.id) ? (
                           <>
                             <Check className="h-4 w-4 mr-2" />
                             In Interest List
@@ -857,7 +929,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                           </>
                         )}
                       </Button>
-                      
+
                       {/* Price Alert Button (if enabled) */}
                       {priceAlertsEnabled && (
                         <Button
@@ -972,77 +1044,70 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           <div className="mt-6 space-y-4 overflow-y-auto max-h-[calc(80vh-200px)]">
             {draftData && draftData.items.length > 0 ? (
               <>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {draftData.items.map((item: any) => (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                <Card key={item.id as number}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <p className="font-medium line-clamp-2">{item.itemName as string}</p>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {item.category && (
-                          <p className="text-sm text-muted-foreground">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {item.category as string}
+                {draftData.items.map((item: DraftItem) => (
+                  <Card key={item.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium line-clamp-2">
+                            {item.itemName}
                           </p>
-                        )}
-                        <div className="mt-2 space-y-1">
-                          <p className="text-lg font-bold text-primary">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            ${item.retailPrice as number}
-                            <span className="text-sm font-normal text-muted-foreground">
-                              {" "}
-                              / lb
-                            </span>
-                          </p>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {item.quantity !== undefined && (
+                          {item.category && (
                             <p className="text-sm text-muted-foreground">
-                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                              {item.quantity as number} lbs available
+                              {item.category}
                             </p>
                           )}
-                        </div>
-
-                        {/* Change Indicators */}
-                        {(item.priceChanged ||
-                          item.quantityChanged ||
-                          !item.currentlyAvailable) && (
                           <div className="mt-2 space-y-1">
-                            {item.priceChanged && (
-                              <p className="text-sm font-bold text-red-600">
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                Price changed to ${item.currentPrice as number}
-                              </p>
-                            )}
-                            {item.quantityChanged && (
-                              <p className="text-sm font-bold text-red-600">
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                Quantity changed to {item.currentQuantity as number} lbs
-                              </p>
-                            )}
-                            {!item.currentlyAvailable && (
-                              <p className="text-sm font-bold text-red-600">
-                                Out of stock
+                            <p className="text-lg font-bold text-primary">
+                              ${item.retailPrice}
+                              <span className="text-sm font-normal text-muted-foreground">
+                                {" "}
+                                / lb
+                              </span>
+                            </p>
+                            {item.quantity !== undefined && (
+                              <p className="text-sm text-muted-foreground">
+                                {item.quantity} lbs available
                               </p>
                             )}
                           </div>
-                        )}
+
+                          {/* Change Indicators */}
+                          {(item.priceChanged ||
+                            item.quantityChanged ||
+                            !item.stillAvailable) && (
+                            <div className="mt-2 space-y-1">
+                              {item.priceChanged && (
+                                <p className="text-sm font-bold text-red-600">
+                                  Price changed
+                                </p>
+                              )}
+                              {item.quantityChanged && (
+                                <p className="text-sm font-bold text-red-600">
+                                  Quantity changed
+                                </p>
+                              )}
+                              {!item.stillAvailable && (
+                                <p className="text-sm font-bold text-red-600">
+                                  Out of stock
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleRemoveFromInterestList(item.batchId)
+                          }
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        onClick={() => handleRemoveFromInterestList(item.batchId as number)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
 
                 {/* Total */}
                 <div className="pt-4 border-t">
@@ -1102,8 +1167,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           <DialogHeader>
             <DialogTitle>Confirm Submission</DialogTitle>
             <DialogDescription>
-              Some items in your interest list have changed since you added them.
-              Do you want to proceed with submission?
+              Some items in your interest list have changed since you added
+              them. Do you want to proceed with submission?
             </DialogDescription>
           </DialogHeader>
 
@@ -1113,18 +1178,15 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
               <div className="text-sm">
                 <p className="font-medium">Changes detected:</p>
                 <ul className="list-disc list-inside mt-1 text-muted-foreground">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {draftData?.items.some((item: any) => item.priceChanged) && (
-                    <li>Price changes</li>
-                  )}
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {draftData?.items.some((item: any) => item.quantityChanged) && (
-                    <li>Quantity changes</li>
-                  )}
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {draftData?.items.some((item: any) => !item.currentlyAvailable) && (
-                    <li>Items out of stock</li>
-                  )}
+                  {draftData?.items.some(
+                    (item: DraftItem) => item.priceChanged
+                  ) && <li>Price changes</li>}
+                  {draftData?.items.some(
+                    (item: DraftItem) => item.quantityChanged
+                  ) && <li>Quantity changes</li>}
+                  {draftData?.items.some(
+                    (item: DraftItem) => !item.stillAvailable
+                  ) && <li>Items out of stock</li>}
                 </ul>
               </div>
             </div>
@@ -1137,9 +1199,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
             >
               Cancel
             </Button>
-            <Button onClick={handleConfirmSubmit}>
-              Submit Anyway
-            </Button>
+            <Button onClick={handleConfirmSubmit}>Submit Anyway</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1160,7 +1220,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
               id="viewName"
               placeholder="e.g., Premium Flower"
               value={newViewName}
-              onChange={(e) => setNewViewName(e.target.value)}
+              onChange={e => setNewViewName(e.target.value)}
               className="mt-2"
             />
           </div>
@@ -1186,7 +1246,10 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
       </Dialog>
 
       {/* Price Alert Dialog */}
-      <Dialog open={priceAlertDialogOpen} onOpenChange={setPriceAlertDialogOpen}>
+      <Dialog
+        open={priceAlertDialogOpen}
+        onOpenChange={setPriceAlertDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Set Price Alert</DialogTitle>
@@ -1197,11 +1260,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           <div className="space-y-4">
             {selectedProductForAlert && (
               <div>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Label>Product: {selectedProductForAlert.name as string}</Label>
+                <Label>Product: {selectedProductForAlert.name}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  Current Price: ${selectedProductForAlert.retailPrice as number}
+                  Current Price: ${selectedProductForAlert.retailPrice}
                 </p>
               </div>
             )}
@@ -1212,13 +1273,16 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                 type="number"
                 step="0.01"
                 value={targetPrice}
-                onChange={(e) => setTargetPrice(e.target.value)}
+                onChange={e => setTargetPrice(e.target.value)}
                 placeholder="Enter target price"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPriceAlertDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setPriceAlertDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1247,7 +1311,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
       <ConfirmDialog
         open={!!deleteViewId}
-        onOpenChange={(open) => !open && setDeleteViewId(null)}
+        onOpenChange={open => !open && setDeleteViewId(null)}
         title="Delete View"
         description="Are you sure you want to delete this saved view?"
         confirmLabel="Delete"
@@ -1277,22 +1341,23 @@ function MyPriceAlerts() {
   } = trpc.vipPortal.liveCatalog.priceAlerts.list.useQuery();
 
   // Deactivate alert mutation
-  const deactivateAlertMutation = trpc.vipPortal.liveCatalog.priceAlerts.deactivate.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Alert removed",
-        description: "Price alert has been removed.",
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove price alert",
-        variant: "destructive",
-      });
-    },
-  });
+  const deactivateAlertMutation =
+    trpc.vipPortal.liveCatalog.priceAlerts.deactivate.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Alert removed",
+          description: "Price alert has been removed.",
+        });
+        refetch();
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to remove price alert",
+          variant: "destructive",
+        });
+      },
+    });
 
   const handleRemoveAlert = (alertId: number) => {
     setRemoveAlertId(alertId);
@@ -1317,15 +1382,19 @@ function MyPriceAlerts() {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p>No active price alerts.</p>
-        <p className="text-sm mt-2">Set a price alert on any product to get notified when prices drop.</p>
+        <p className="text-sm mt-2">
+          Set a price alert on any product to get notified when prices drop.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      {priceAlerts.map((alert) => {
-        const priceDropped = alert.currentPrice !== null && alert.currentPrice <= alert.targetPrice;
+      {priceAlerts.map(alert => {
+        const priceDropped =
+          alert.currentPrice !== null &&
+          alert.currentPrice <= alert.targetPrice;
         const priceDropPercentage = alert.priceDropPercentage;
 
         return (
@@ -1351,12 +1420,18 @@ function MyPriceAlerts() {
                 {alert.currentPrice !== null && (
                   <>
                     {" • "}
-                    Current: 
-                    <span className={priceDropped ? "text-green-600 font-bold ml-1" : "ml-1"}>
+                    Current:
+                    <span
+                      className={
+                        priceDropped ? "text-green-600 font-bold ml-1" : "ml-1"
+                      }
+                    >
                       ${alert.currentPrice.toFixed(2)}
                     </span>
                     {priceDropped && priceDropPercentage !== null && (
-                      <span className="text-green-600 ml-1">({priceDropPercentage.toFixed(1)}% off)</span>
+                      <span className="text-green-600 ml-1">
+                        ({priceDropPercentage.toFixed(1)}% off)
+                      </span>
                     )}
                   </>
                 )}
@@ -1385,7 +1460,7 @@ function MyPriceAlerts() {
 
       <ConfirmDialog
         open={!!removeAlertId}
-        onOpenChange={(open) => !open && setRemoveAlertId(null)}
+        onOpenChange={open => !open && setRemoveAlertId(null)}
         title="Remove Price Alert"
         description="Are you sure you want to remove this price alert?"
         confirmLabel="Remove"

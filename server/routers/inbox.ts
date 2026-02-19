@@ -1,14 +1,13 @@
 /**
  * Inbox Router
  * API endpoints for unified inbox management
- * 
+ *
  * PERF-003: Added pagination support
  */
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { getDb } from "../db";
 import * as inboxDb from "../inboxDb";
 
 import {
@@ -18,12 +17,18 @@ import {
 
 export const inboxRouter = router({
   // API-008: Alias for getMyItems for API consistency
-  list: protectedProcedure.use(requirePermission("todos:read"))
+  list: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z
         .object({
           includeArchived: z.boolean().optional().default(false),
-          limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+          limit: z
+            .number()
+            .min(1)
+            .max(100)
+            .default(DEFAULT_PAGE_SIZE)
+            .optional(),
           offset: z.number().min(0).default(0).optional(),
         })
         .optional()
@@ -44,12 +49,18 @@ export const inboxRouter = router({
 
   // Get all inbox items for current user with pagination
   // PERF-003: Added pagination support
-  getMyItems: protectedProcedure.use(requirePermission("todos:read"))
+  getMyItems: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z
         .object({
           includeArchived: z.boolean().optional().default(false),
-          limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+          limit: z
+            .number()
+            .min(1)
+            .max(100)
+            .default(DEFAULT_PAGE_SIZE)
+            .optional(),
           offset: z.number().min(0).default(0).optional(),
         })
         .optional()
@@ -70,16 +81,19 @@ export const inboxRouter = router({
 
   // Get unread inbox items
   // BUG-034: Standardized pagination response
-  getUnread: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
+  getUnread: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
 
-    const items = await inboxDb.getUnreadInboxItems(ctx.user.id);
-    return createSafeUnifiedResponse(items, items.length, 50, 0);
-  }),
+      const items = await inboxDb.getUnreadInboxItems(ctx.user.id);
+      return createSafeUnifiedResponse(items, items.length, 50, 0);
+    }),
 
   // Get inbox items by status
   // BUG-034: Standardized pagination response
-  getByStatus: protectedProcedure.use(requirePermission("todos:read"))
+  getByStatus: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         status: z.enum(["unread", "seen", "completed"]),
@@ -88,12 +102,16 @@ export const inboxRouter = router({
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
-      const items = await inboxDb.getInboxItemsByStatus(ctx.user.id, input.status);
+      const items = await inboxDb.getInboxItemsByStatus(
+        ctx.user.id,
+        input.status
+      );
       return createSafeUnifiedResponse(items, items.length, 50, 0);
     }),
 
   // Get a specific inbox item
-  getById: protectedProcedure.use(requirePermission("todos:read"))
+  getById: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -113,7 +131,8 @@ export const inboxRouter = router({
     }),
 
   // Mark item as seen
-  markAsSeen: protectedProcedure.use(requirePermission("todos:read"))
+  markAsSeen: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -132,7 +151,8 @@ export const inboxRouter = router({
     }),
 
   // Mark item as completed
-  markAsCompleted: protectedProcedure.use(requirePermission("todos:read"))
+  markAsCompleted: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -151,7 +171,8 @@ export const inboxRouter = router({
     }),
 
   // Mark item as unread
-  markAsUnread: protectedProcedure.use(requirePermission("todos:read"))
+  markAsUnread: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -170,7 +191,8 @@ export const inboxRouter = router({
     }),
 
   // Archive an item
-  archive: protectedProcedure.use(requirePermission("todos:read"))
+  archive: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -189,7 +211,8 @@ export const inboxRouter = router({
     }),
 
   // Unarchive an item
-  unarchive: protectedProcedure.use(requirePermission("todos:read"))
+  unarchive: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -208,7 +231,8 @@ export const inboxRouter = router({
     }),
 
   // Delete an inbox item
-  delete: protectedProcedure.use(requirePermission("todos:read"))
+  delete: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -228,14 +252,17 @@ export const inboxRouter = router({
     }),
 
   // Get inbox statistics
-  getStats: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
+  getStats: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
 
-    return await inboxDb.getUserInboxStats(ctx.user.id);
-  }),
+      return await inboxDb.getUserInboxStats(ctx.user.id);
+    }),
 
   // Bulk mark items as seen
-  bulkMarkAsSeen: protectedProcedure.use(requirePermission("todos:read"))
+  bulkMarkAsSeen: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemIds: z.array(z.number()),
@@ -257,7 +284,8 @@ export const inboxRouter = router({
     }),
 
   // Bulk mark items as completed
-  bulkMarkAsCompleted: protectedProcedure.use(requirePermission("todos:read"))
+  bulkMarkAsCompleted: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         itemIds: z.array(z.number()),
@@ -279,10 +307,12 @@ export const inboxRouter = router({
     }),
 
   // Auto-archive old completed items
-  autoArchiveOld: protectedProcedure.use(requirePermission("todos:read")).mutation(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
+  autoArchiveOld: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .mutation(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
 
-    const count = await inboxDb.autoArchiveOldItems();
-    return { archivedCount: count };
-  }),
+      const count = await inboxDb.autoArchiveOldItems();
+      return { archivedCount: count };
+    }),
 });

@@ -12,8 +12,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { toast } from 'sonner';
+import { useState, useCallback, useMemo, useRef } from "react";
+import { toast } from "sonner";
 
 // ============================================================================
 // Types
@@ -125,7 +125,8 @@ const DEFAULT_LIMITS: BulkOperationLimits = {
  */
 export function useBulkOperationLimits<T>(
   options: UseBulkOperationLimitsOptions = {},
-  getItemId: (item: T) => string | number = (item: any) => item.id as string | number
+  getItemId: (item: T) => string | number = (item: any) =>
+    item.id as string | number
 ): UseBulkOperationLimitsReturn<T> {
   const {
     limits: customLimits,
@@ -134,12 +135,17 @@ export function useBulkOperationLimits<T>(
     showToasts = true,
   } = options;
 
-  const limits: BulkOperationLimits = {
-    ...DEFAULT_LIMITS,
-    ...customLimits,
-  };
+  // Memoize limits so callbacks that depend on it (executeBulk, select, etc.)
+  // are not re-created on every render when customLimits is a new object
+  // literal passed inline by the caller.
+  const limits: BulkOperationLimits = useMemo(
+    () => ({ ...DEFAULT_LIMITS, ...customLimits }),
+    [customLimits]
+  );
 
-  const [selectedMap, setSelectedMap] = useState<Map<string | number, T>>(new Map());
+  const [selectedMap, setSelectedMap] = useState<Map<string | number, T>>(
+    new Map()
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentBatch, setCurrentBatch] = useState(0);
@@ -149,108 +155,147 @@ export function useBulkOperationLimits<T>(
   const cancelRef = useRef(false);
 
   // Derive state
-  const state = useMemo((): BulkOperationState<T> => ({
-    selectedItems: Array.from(selectedMap.values()),
-    selectedCount: selectedMap.size,
-    isAtSelectionLimit: selectedMap.size >= limits.maxSelection,
-    isProcessing,
-    progress,
-    currentBatch,
-    totalBatches,
-  }), [selectedMap, limits.maxSelection, isProcessing, progress, currentBatch, totalBatches]);
+  const state = useMemo(
+    (): BulkOperationState<T> => ({
+      selectedItems: Array.from(selectedMap.values()),
+      selectedCount: selectedMap.size,
+      isAtSelectionLimit: selectedMap.size >= limits.maxSelection,
+      isProcessing,
+      progress,
+      currentBatch,
+      totalBatches,
+    }),
+    [
+      selectedMap,
+      limits.maxSelection,
+      isProcessing,
+      progress,
+      currentBatch,
+      totalBatches,
+    ]
+  );
 
   // Select single item
-  const select = useCallback((item: T): boolean => {
-    const id = getItemId(item);
+  const select = useCallback(
+    (item: T): boolean => {
+      const id = getItemId(item);
 
-    if (selectedMap.has(id)) {
-      return true; // Already selected
-    }
-
-    if (selectedMap.size >= limits.maxSelection) {
-      if (showToasts) {
-        toast.warning(`Selection limit reached (${limits.maxSelection} items)`);
+      if (selectedMap.has(id)) {
+        return true; // Already selected
       }
-      onSelectionLimitReached?.();
-      return false;
-    }
 
-    setSelectedMap((prev) => {
-      const next = new Map(prev);
-      next.set(id, item);
-      return next;
-    });
+      if (selectedMap.size >= limits.maxSelection) {
+        if (showToasts) {
+          toast.warning(
+            `Selection limit reached (${limits.maxSelection} items)`
+          );
+        }
+        onSelectionLimitReached?.();
+        return false;
+      }
 
-    return true;
-  }, [selectedMap, limits.maxSelection, showToasts, onSelectionLimitReached, getItemId]);
+      setSelectedMap(prev => {
+        const next = new Map(prev);
+        next.set(id, item);
+        return next;
+      });
+
+      return true;
+    },
+    [
+      selectedMap,
+      limits.maxSelection,
+      showToasts,
+      onSelectionLimitReached,
+      getItemId,
+    ]
+  );
 
   // Deselect item
-  const deselect = useCallback((item: T): void => {
-    const id = getItemId(item);
-    setSelectedMap((prev) => {
-      const next = new Map(prev);
-      next.delete(id);
-      return next;
-    });
-  }, [getItemId]);
+  const deselect = useCallback(
+    (item: T): void => {
+      const id = getItemId(item);
+      setSelectedMap(prev => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+    [getItemId]
+  );
 
   // Toggle selection
-  const toggle = useCallback((item: T): boolean => {
-    const id = getItemId(item);
-    if (selectedMap.has(id)) {
-      deselect(item);
-      return false;
-    }
-    return select(item);
-  }, [selectedMap, select, deselect, getItemId]);
+  const toggle = useCallback(
+    (item: T): boolean => {
+      const id = getItemId(item);
+      if (selectedMap.has(id)) {
+        deselect(item);
+        return false;
+      }
+      return select(item);
+    },
+    [selectedMap, select, deselect, getItemId]
+  );
 
   // Select multiple items
-  const selectMany = useCallback((items: T[]): number => {
-    const available = limits.maxSelection - selectedMap.size;
-    const toSelect = items.slice(0, available);
+  const selectMany = useCallback(
+    (items: T[]): number => {
+      const available = limits.maxSelection - selectedMap.size;
+      const toSelect = items.slice(0, available);
 
-    if (toSelect.length < items.length) {
-      if (showToasts) {
-        toast.warning(
-          `Only selected ${toSelect.length} of ${items.length} items (limit: ${limits.maxSelection})`
-        );
+      if (toSelect.length < items.length) {
+        if (showToasts) {
+          toast.warning(
+            `Only selected ${toSelect.length} of ${items.length} items (limit: ${limits.maxSelection})`
+          );
+        }
+        onOperationLimitWarning?.(items.length, limits.maxSelection);
       }
-      onOperationLimitWarning?.(items.length, limits.maxSelection);
-    }
 
-    setSelectedMap((prev) => {
-      const next = new Map(prev);
-      toSelect.forEach((item) => {
-        next.set(getItemId(item), item);
+      setSelectedMap(prev => {
+        const next = new Map(prev);
+        toSelect.forEach(item => {
+          next.set(getItemId(item), item);
+        });
+        return next;
       });
-      return next;
-    });
 
-    return toSelect.length;
-  }, [selectedMap, limits.maxSelection, showToasts, onOperationLimitWarning, getItemId]);
+      return toSelect.length;
+    },
+    [
+      selectedMap,
+      limits.maxSelection,
+      showToasts,
+      onOperationLimitWarning,
+      getItemId,
+    ]
+  );
 
   // Select all (up to limit)
-  const selectAll = useCallback((items: T[]): number => {
-    const toSelect = items.slice(0, limits.maxSelection);
+  const selectAll = useCallback(
+    (items: T[]): number => {
+      const toSelect = items.slice(0, limits.maxSelection);
 
-    if (toSelect.length < items.length) {
-      if (showToasts) {
-        toast.info(
-          `Selected ${toSelect.length} items (limit: ${limits.maxSelection})`
-        );
+      if (toSelect.length < items.length) {
+        if (showToasts) {
+          toast.info(
+            `Selected ${toSelect.length} items (limit: ${limits.maxSelection})`
+          );
+        }
       }
-    }
 
-    setSelectedMap(() => {
-      const next = new Map<string | number, T>();
-      toSelect.forEach((item) => {
-        next.set(getItemId(item), item);
+      setSelectedMap(() => {
+        const next = new Map<string | number, T>();
+        toSelect.forEach(item => {
+          next.set(getItemId(item), item);
+        });
+        return next;
       });
-      return next;
-    });
 
-    return toSelect.length;
-  }, [limits.maxSelection, showToasts, getItemId]);
+      return toSelect.length;
+    },
+    [limits.maxSelection, showToasts, getItemId]
+  );
 
   // Clear selection
   const clearSelection = useCallback((): void => {
@@ -258,89 +303,113 @@ export function useBulkOperationLimits<T>(
   }, []);
 
   // Check if selected
-  const isSelected = useCallback((item: T): boolean => {
-    return selectedMap.has(getItemId(item));
-  }, [selectedMap, getItemId]);
+  const isSelected = useCallback(
+    (item: T): boolean => {
+      return selectedMap.has(getItemId(item));
+    },
+    [selectedMap, getItemId]
+  );
 
   // Check limit
-  const checkLimit = useCallback((count: number): boolean => {
-    return count <= limits.maxBulkTotal;
-  }, [limits.maxBulkTotal]);
+  const checkLimit = useCallback(
+    (count: number): boolean => {
+      return count <= limits.maxBulkTotal;
+    },
+    [limits.maxBulkTotal]
+  );
 
   // Get selectable count
-  const getSelectableCount = useCallback((available: T[]): number => {
-    return Math.min(available.length, limits.maxSelection - selectedMap.size);
-  }, [selectedMap, limits.maxSelection]);
+  const getSelectableCount = useCallback(
+    (available: T[]): number => {
+      return Math.min(available.length, limits.maxSelection - selectedMap.size);
+    },
+    [selectedMap, limits.maxSelection]
+  );
 
   // Execute bulk operation with batching
-  const executeBulk = useCallback(async <R,>(
-    operation: (batch: T[]) => Promise<R>,
-    batchOptions?: { onBatchComplete?: (results: R[], batch: number) => void }
-  ): Promise<R[]> => {
-    const items = Array.from(selectedMap.values());
+  const executeBulk = useCallback(
+    async <R,>(
+      operation: (batch: T[]) => Promise<R>,
+      batchOptions?: { onBatchComplete?: (results: R[], batch: number) => void }
+    ): Promise<R[]> => {
+      const items = Array.from(selectedMap.values());
 
-    if (items.length === 0) {
-      return [];
-    }
-
-    if (!checkLimit(items.length)) {
-      if (showToasts) {
-        toast.error(`Cannot process ${items.length} items (limit: ${limits.maxBulkTotal})`);
+      if (items.length === 0) {
+        return [];
       }
-      throw new Error(`Bulk operation limit exceeded: ${items.length} > ${limits.maxBulkTotal}`);
-    }
 
-    // Calculate batches
-    const batches: T[][] = [];
-    for (let i = 0; i < items.length; i += limits.maxPerRequest) {
-      batches.push(items.slice(i, i + limits.maxPerRequest));
-    }
+      if (!checkLimit(items.length)) {
+        if (showToasts) {
+          toast.error(
+            `Cannot process ${items.length} items (limit: ${limits.maxBulkTotal})`
+          );
+        }
+        throw new Error(
+          `Bulk operation limit exceeded: ${items.length} > ${limits.maxBulkTotal}`
+        );
+      }
 
-    setIsProcessing(true);
-    setProgress(0);
-    setCurrentBatch(0);
-    setTotalBatches(batches.length);
-    cancelRef.current = false;
+      // Calculate batches
+      const batches: T[][] = [];
+      for (let i = 0; i < items.length; i += limits.maxPerRequest) {
+        batches.push(items.slice(i, i + limits.maxPerRequest));
+      }
 
-    const results: R[] = [];
+      setIsProcessing(true);
+      setProgress(0);
+      setCurrentBatch(0);
+      setTotalBatches(batches.length);
+      cancelRef.current = false;
 
-    try {
-      for (let i = 0; i < batches.length; i++) {
-        if (cancelRef.current) {
-          throw new Error('Operation cancelled');
+      const results: R[] = [];
+      // Track current batch locally so the catch block can reference the correct
+      // batch number without needing the currentBatch state variable in deps.
+      // (State updates from setCurrentBatch are async and would give a stale value
+      // in the deps array anyway.)
+      let localCurrentBatch = 0;
+
+      try {
+        for (let i = 0; i < batches.length; i++) {
+          if (cancelRef.current) {
+            throw new Error("Operation cancelled");
+          }
+
+          localCurrentBatch = i + 1;
+          setCurrentBatch(localCurrentBatch);
+
+          const batchResult = await operation(batches[i]);
+          results.push(batchResult);
+
+          const newProgress = Math.round(((i + 1) / batches.length) * 100);
+          setProgress(newProgress);
+
+          batchOptions?.onBatchComplete?.(results, i + 1);
+
+          // Small delay between batches to prevent overwhelming
+          if (i < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
         }
 
-        setCurrentBatch(i + 1);
-
-        const batchResult = await operation(batches[i]);
-        results.push(batchResult);
-
-        const newProgress = Math.round(((i + 1) / batches.length) * 100);
-        setProgress(newProgress);
-
-        batchOptions?.onBatchComplete?.(results, i + 1);
-
-        // Small delay between batches to prevent overwhelming
-        if (i < batches.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 50));
+        if (showToasts) {
+          toast.success(
+            `Processed ${items.length} items in ${batches.length} batches`
+          );
         }
-      }
 
-      if (showToasts) {
-        toast.success(`Processed ${items.length} items in ${batches.length} batches`);
+        return results;
+      } catch (error) {
+        if (showToasts && !cancelRef.current) {
+          toast.error(`Bulk operation failed at batch ${localCurrentBatch}`);
+        }
+        throw error;
+      } finally {
+        setIsProcessing(false);
+        setProgress(100);
       }
-
-      return results;
-    } catch (error) {
-      if (showToasts && !cancelRef.current) {
-        toast.error(`Bulk operation failed at batch ${currentBatch}`);
-      }
-      throw error;
-    } finally {
-      setIsProcessing(false);
-      setProgress(100);
-    }
-  }, [selectedMap, limits, showToasts, checkLimit]);
+    },
+    [selectedMap, limits, showToasts, checkLimit]
+  );
 
   return {
     state,

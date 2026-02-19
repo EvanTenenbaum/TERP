@@ -25,8 +25,12 @@ import { eq } from "drizzle-orm";
 export async function seedDefaultLocations() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    logger.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
-    logger.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
+    logger.warn(
+      "⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead."
+    );
+    logger.warn(
+      "   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures."
+    );
     logger.info("⏭️  SKIP_SEEDING is set - skipping location seeding");
     return;
   }
@@ -126,8 +130,13 @@ export async function seedDefaultLocations() {
     } catch (error: unknown) {
       // If it's a duplicate, skip it (though locations don't have unique constraints)
       // Log other errors but continue
-      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
-        logger.warn({ msg: "Failed to insert location", error: error instanceof Error ? error.message : String(error) });
+      if (
+        !(error instanceof Error && error.message?.includes("Duplicate entry"))
+      ) {
+        logger.warn({
+          msg: "Failed to insert location",
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }
@@ -217,9 +226,11 @@ export async function seedDefaultCategories() {
       await db.insert(categories).values({
         name: categoryData.name,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a duplicate key error, that's fine - category already exists
-      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+      if (
+        !(error instanceof Error && error.message?.includes("Duplicate entry"))
+      ) {
         throw error;
       }
     }
@@ -243,10 +254,17 @@ export async function seedDefaultCategories() {
           name: subName,
           categoryId: category.id,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If it's a duplicate, skip it
-        if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
-          logger.warn(`Failed to insert subcategory ${subName}:`, error);
+        if (
+          !(
+            error instanceof Error && error.message?.includes("Duplicate entry")
+          )
+        ) {
+          logger.warn({
+            msg: `Failed to insert subcategory ${subName}`,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
@@ -293,10 +311,15 @@ export async function seedDefaultGrades() {
   for (const grade of gradesData) {
     try {
       await db.insert(grades).values(grade);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a duplicate, skip it
-      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
-        logger.warn(`Failed to insert grade ${grade.name}:`, error.message || error);
+      if (
+        !(error instanceof Error && error.message?.includes("Duplicate entry"))
+      ) {
+        logger.warn({
+          msg: `Failed to insert grade ${grade.name}`,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }
@@ -368,9 +391,11 @@ export async function seedDefaultExpenseCategories() {
         categoryName: categoryData.name,
         parentCategoryId: null,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a duplicate, that's fine - category already exists
-      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+      if (
+        !(error instanceof Error && error.message?.includes("Duplicate entry"))
+      ) {
         throw error;
       }
     }
@@ -394,10 +419,17 @@ export async function seedDefaultExpenseCategories() {
           categoryName: childName,
           parentCategoryId: parent.id,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If it's a duplicate, skip it
-        if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
-          logger.warn(`Failed to insert expense category ${childName}:`, error);
+        if (
+          !(
+            error instanceof Error && error.message?.includes("Duplicate entry")
+          )
+        ) {
+          logger.warn({
+            msg: `Failed to insert expense category ${childName}`,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
@@ -503,10 +535,15 @@ export async function seedDefaultChartOfAccounts() {
   for (const account of accountsData) {
     try {
       await db.insert(accounts).values(account);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a duplicate, skip it
-      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
-        logger.warn(`Failed to insert account ${account.accountNumber}:`, error.message || error);
+      if (
+        !(error instanceof Error && error.message?.includes("Duplicate entry"))
+      ) {
+        logger.warn({
+          msg: `Failed to insert account ${account.accountNumber}`,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }
@@ -543,36 +580,153 @@ export async function seedDefaultUnitTypes() {
 
   const unitTypesData = [
     // COUNT
-    { code: "EA", name: "Each", description: "Individual unit count", category: "COUNT" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 10 },
+    {
+      code: "EA",
+      name: "Each",
+      description: "Individual unit count",
+      category: "COUNT" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 10,
+    },
 
     // WEIGHT
-    { code: "G", name: "Gram", description: "Weight in grams", category: "WEIGHT" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 20 },
-    { code: "OZ", name: "Ounce", description: "Weight in ounces (28.3495g)", category: "WEIGHT" as const, conversionFactor: "28.3495", baseUnitCode: "G", sortOrder: 30 },
-    { code: "LB", name: "Pound", description: "Weight in pounds (453.592g)", category: "WEIGHT" as const, conversionFactor: "453.592", baseUnitCode: "G", sortOrder: 40 },
-    { code: "KG", name: "Kilogram", description: "Weight in kilograms (1000g)", category: "WEIGHT" as const, conversionFactor: "1000", baseUnitCode: "G", sortOrder: 50 },
+    {
+      code: "G",
+      name: "Gram",
+      description: "Weight in grams",
+      category: "WEIGHT" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 20,
+    },
+    {
+      code: "OZ",
+      name: "Ounce",
+      description: "Weight in ounces (28.3495g)",
+      category: "WEIGHT" as const,
+      conversionFactor: "28.3495",
+      baseUnitCode: "G",
+      sortOrder: 30,
+    },
+    {
+      code: "LB",
+      name: "Pound",
+      description: "Weight in pounds (453.592g)",
+      category: "WEIGHT" as const,
+      conversionFactor: "453.592",
+      baseUnitCode: "G",
+      sortOrder: 40,
+    },
+    {
+      code: "KG",
+      name: "Kilogram",
+      description: "Weight in kilograms (1000g)",
+      category: "WEIGHT" as const,
+      conversionFactor: "1000",
+      baseUnitCode: "G",
+      sortOrder: 50,
+    },
 
     // VOLUME
-    { code: "ML", name: "Milliliter", description: "Volume in milliliters", category: "VOLUME" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 60 },
-    { code: "L", name: "Liter", description: "Volume in liters (1000ml)", category: "VOLUME" as const, conversionFactor: "1000", baseUnitCode: "ML", sortOrder: 70 },
+    {
+      code: "ML",
+      name: "Milliliter",
+      description: "Volume in milliliters",
+      category: "VOLUME" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 60,
+    },
+    {
+      code: "L",
+      name: "Liter",
+      description: "Volume in liters (1000ml)",
+      category: "VOLUME" as const,
+      conversionFactor: "1000",
+      baseUnitCode: "ML",
+      sortOrder: 70,
+    },
 
     // PACKAGED
-    { code: "PKG", name: "Package", description: "Pre-packaged unit (variable contents)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 80 },
-    { code: "PK5", name: "Pack of 5", description: "5-unit package", category: "PACKAGED" as const, conversionFactor: "5", baseUnitCode: "EA", sortOrder: 85 },
-    { code: "BOX", name: "Box", description: "Box container (packaged)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 90 },
-    { code: "PK10", name: "Pack of 10", description: "10-unit package", category: "PACKAGED" as const, conversionFactor: "10", baseUnitCode: "EA", sortOrder: 95 },
-    { code: "CASE", name: "Case", description: "Case container (packaged)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 100 },
-    { code: "CASE24", name: "Case (24)", description: "Case containing 24 units", category: "PACKAGED" as const, conversionFactor: "24", baseUnitCode: "EA", sortOrder: 105 },
-    { code: "PALLET", name: "Pallet", description: "Standard pallet (quantity varies by product)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 110 },
+    {
+      code: "PKG",
+      name: "Package",
+      description: "Pre-packaged unit (variable contents)",
+      category: "PACKAGED" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 80,
+    },
+    {
+      code: "PK5",
+      name: "Pack of 5",
+      description: "5-unit package",
+      category: "PACKAGED" as const,
+      conversionFactor: "5",
+      baseUnitCode: "EA",
+      sortOrder: 85,
+    },
+    {
+      code: "BOX",
+      name: "Box",
+      description: "Box container (packaged)",
+      category: "PACKAGED" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 90,
+    },
+    {
+      code: "PK10",
+      name: "Pack of 10",
+      description: "10-unit package",
+      category: "PACKAGED" as const,
+      conversionFactor: "10",
+      baseUnitCode: "EA",
+      sortOrder: 95,
+    },
+    {
+      code: "CASE",
+      name: "Case",
+      description: "Case container (packaged)",
+      category: "PACKAGED" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 100,
+    },
+    {
+      code: "CASE24",
+      name: "Case (24)",
+      description: "Case containing 24 units",
+      category: "PACKAGED" as const,
+      conversionFactor: "24",
+      baseUnitCode: "EA",
+      sortOrder: 105,
+    },
+    {
+      code: "PALLET",
+      name: "Pallet",
+      description: "Standard pallet (quantity varies by product)",
+      category: "PACKAGED" as const,
+      conversionFactor: "1",
+      baseUnitCode: null,
+      sortOrder: 110,
+    },
   ];
 
   // Insert unit types with error handling (has unique constraint on code)
   for (const unitType of unitTypesData) {
     try {
       await db.insert(unitTypes).values(unitType);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a duplicate, skip it
-      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
-        logger.warn(`Failed to insert unit type ${unitType.code}:`, error.message || error);
+      if (
+        !(error instanceof Error && error.message?.includes("Duplicate entry"))
+      ) {
+        logger.warn({
+          msg: `Failed to insert unit type ${unitType.code}`,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }
@@ -597,8 +751,12 @@ export async function seedAllDefaults() {
   // Bypass seeding if SKIP_SEEDING environment variable is set (case-insensitive)
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    logger.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
-    logger.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
+    logger.warn(
+      "⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead."
+    );
+    logger.warn(
+      "   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures."
+    );
     logger.info("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
     return;
   }

@@ -11,15 +11,11 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import {
-  router,
-  protectedProcedure,
-  getAuthenticatedUserId,
-} from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 import { getDb } from "../db";
-import { clients, payments } from "../../drizzle/schema";
+import { clients } from "../../drizzle/schema";
 import {
   cryptoPayments,
   clientCryptoWallets,
@@ -40,8 +36,6 @@ const CRYPTO_CURRENCIES = [
   { value: "XRP", label: "Ripple", symbol: "XRP" },
   { value: "OTHER", label: "Other", symbol: "" },
 ] as const;
-
-type CryptoCurrency = typeof CRYPTO_CURRENCIES[number]["value"];
 
 // ============================================================================
 // Input Schemas
@@ -98,7 +92,11 @@ export const cryptoPaymentsRouter = router({
     .input(recordCryptoPaymentSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Verify client exists
       const [client] = await db
@@ -150,7 +148,11 @@ export const cryptoPaymentsRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [payment] = await db
         .select({
@@ -167,7 +169,10 @@ export const cryptoPaymentsRouter = router({
         .limit(1);
 
       if (!payment) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Payment not found",
+        });
       }
 
       return {
@@ -181,16 +186,24 @@ export const cryptoPaymentsRouter = router({
    */
   list: protectedProcedure
     .use(requirePermission("payments:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-      cryptoCurrency: z.enum(["BTC", "ETH", "USDT", "USDC", "SOL", "XRP", "OTHER"]).optional(),
-      isConfirmed: z.boolean().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        clientId: z.number().optional(),
+        cryptoCurrency: z
+          .enum(["BTC", "ETH", "USDT", "USDC", "SOL", "XRP", "OTHER"])
+          .optional(),
+        isConfirmed: z.boolean().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(cryptoPayments.deletedAt)];
 
@@ -199,7 +212,9 @@ export const cryptoPaymentsRouter = router({
       }
 
       if (input.cryptoCurrency) {
-        conditions.push(eq(cryptoPayments.cryptoCurrency, input.cryptoCurrency));
+        conditions.push(
+          eq(cryptoPayments.cryptoCurrency, input.cryptoCurrency)
+        );
       }
 
       if (input.isConfirmed !== undefined) {
@@ -244,7 +259,11 @@ export const cryptoPaymentsRouter = router({
     .input(updateConfirmationSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const updateData: Record<string, unknown> = {
         confirmations: input.confirmations,
@@ -286,7 +305,11 @@ export const cryptoPaymentsRouter = router({
     .input(addWalletSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Verify client exists
       const [client] = await db
@@ -328,13 +351,21 @@ export const cryptoPaymentsRouter = router({
    */
   getClientWallets: protectedProcedure
     .use(requirePermission("clients:read"))
-    .input(z.object({
-      clientId: z.number(),
-      cryptoCurrency: z.enum(["BTC", "ETH", "USDT", "USDC", "SOL", "XRP", "OTHER"]).optional(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        cryptoCurrency: z
+          .enum(["BTC", "ETH", "USDT", "USDC", "SOL", "XRP", "OTHER"])
+          .optional(),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [
         eq(clientCryptoWallets.clientId, input.clientId),
@@ -342,14 +373,19 @@ export const cryptoPaymentsRouter = router({
       ];
 
       if (input.cryptoCurrency) {
-        conditions.push(eq(clientCryptoWallets.cryptoCurrency, input.cryptoCurrency));
+        conditions.push(
+          eq(clientCryptoWallets.cryptoCurrency, input.cryptoCurrency)
+        );
       }
 
       const wallets = await db
         .select()
         .from(clientCryptoWallets)
         .where(and(...conditions))
-        .orderBy(desc(clientCryptoWallets.isDefault), desc(clientCryptoWallets.createdAt));
+        .orderBy(
+          desc(clientCryptoWallets.isDefault),
+          desc(clientCryptoWallets.createdAt)
+        );
 
       return wallets;
     }),
@@ -362,7 +398,11 @@ export const cryptoPaymentsRouter = router({
     .input(z.object({ walletId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(clientCryptoWallets)
@@ -377,13 +417,19 @@ export const cryptoPaymentsRouter = router({
    */
   verifyWallet: protectedProcedure
     .use(requirePermission("clients:update"))
-    .input(z.object({
-      walletId: z.number(),
-      isVerified: z.boolean(),
-    }))
+    .input(
+      z.object({
+        walletId: z.number(),
+        isVerified: z.boolean(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(clientCryptoWallets)
@@ -402,13 +448,21 @@ export const cryptoPaymentsRouter = router({
    */
   getStats: protectedProcedure
     .use(requirePermission("payments:read"))
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    }).optional())
-    .query(async ({ input }) => {
+    .input(
+      z
+        .object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        })
+        .optional()
+    )
+    .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get totals by currency
       const byCurrency = await db
@@ -458,7 +512,11 @@ export const cryptoPaymentsRouter = router({
     .input(z.object({ transactionHash: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [payment] = await db
         .select()

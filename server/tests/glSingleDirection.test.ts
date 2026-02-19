@@ -16,15 +16,15 @@ vi.mock("../db", () => setupDbMock());
 vi.mock("../services/permissionService", () => setupPermissionMock());
 
 // Mock db with transaction support
-const mockInsert = vi.fn();
-const mockTransaction = vi.fn();
+const _mockInsert = vi.fn();
+const _mockTransaction = vi.fn();
 
 vi.mock("../db", async () => {
   const setupDbMock = (await import("../test-utils/testDb")).setupDbMock;
   return setupDbMock();
 });
 
-import { createLedgerEntry } from "../accountingDb";
+import { createLedgerEntry as _createLedgerEntry } from "../accountingDb";
 
 describe("GL Entry Single-Direction Constraint (ST-057)", () => {
   beforeEach(() => {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Credits Management Page
  * Wave 5C: Comprehensive credit management UI

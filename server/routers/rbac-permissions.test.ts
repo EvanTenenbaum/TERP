@@ -99,7 +99,7 @@ describe("RBAC Permissions Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockInsert = vi.fn().mockReturnThis();
+      const _mockInsert = vi.fn().mockReturnThis();
       // QA-TEST-001: Fix mock to return array format expected by router
       const mockValues = vi.fn().mockResolvedValue([{ insertId: 100 }]);
 
@@ -167,7 +167,7 @@ describe("RBAC Permissions Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockUpdate = vi.fn().mockReturnThis();
+      const _mockUpdate = vi.fn().mockReturnThis();
       const mockSet = vi.fn().mockReturnThis();
       const mockUpdateWhere = vi.fn().mockResolvedValue({});
 
@@ -204,7 +204,7 @@ describe("RBAC Permissions Router", () => {
         limit: mockLimit,
       } as ReturnType<typeof vi.mocked>);
 
-      const mockDelete = vi.fn().mockReturnThis();
+      const _mockDelete = vi.fn().mockReturnThis();
       const mockDeleteWhere = vi.fn().mockResolvedValue({});
 
       vi.mocked(db.delete).mockReturnValue({
@@ -296,7 +296,7 @@ describe("RBAC Permissions Router", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnThis();
+      const _mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockResolvedValue(mockPermissions);
 
       vi.mocked(db.select).mockReturnValue({
@@ -333,7 +333,7 @@ describe("RBAC Permissions Router", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnThis();
+      const _mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockResolvedValue(mockPermissions);
 
       vi.mocked(db.select).mockReturnValue({

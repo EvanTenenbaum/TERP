@@ -1,7 +1,11 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../../_core/trpc";
 import { getDb } from "../../db";
-import { calendars, calendarUserAccess, users } from "../../../drizzle/schema";
+import { calendarUserAccess, users } from "../../../drizzle/schema";
 import { and, eq } from "drizzle-orm";
 
 /**
