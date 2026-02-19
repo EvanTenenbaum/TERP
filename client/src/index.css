@@ -260,15 +260,6 @@
       touch-action: manipulation;
     }
 
-    /* Checkbox and radio - expand hit area via padding */
-    [data-slot="checkbox"],
-    input[type="checkbox"],
-    input[type="radio"] {
-      min-height: 24px;
-      min-width: 24px;
-      /* The actual touch target is expanded by the parent label/container */
-    }
-
     /* Dropdown menu items - ensure comfortable tap targets */
     [role="menuitem"],
     [role="menuitemcheckbox"],
@@ -284,11 +275,9 @@
       touch-action: manipulation;
     }
 
-    /* Links that function as navigation - ensure tappable */
-    nav a {
+    /* Sidebar navigation links - ensure tappable */
+    [data-slot="sidebar-menu-button"] {
       min-height: 44px;
-      display: inline-flex;
-      align-items: center;
     }
 
     /* Input elements - ensure comfortable height on mobile */
@@ -297,11 +286,8 @@
       min-height: 44px;
     }
 
-    /* Pagination controls - ensure buttons are tappable */
-    [data-slot="table-pagination"] button {
-      min-height: 44px;
-      min-width: 44px;
-    }
+    /* Pagination controls - data-slot="table-pagination" used for semantic targeting.
+       Button touch targets are enforced by button.tsx variants (max-md:min-h-11). */
   }
 }
 
