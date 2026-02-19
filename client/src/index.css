@@ -247,6 +247,48 @@
   .table-scroll-container.has-overflow::after {
     opacity: 1;
   }
+
+  /**
+   * MOBILE-UX-AUDIT: Global mobile touch target enforcement
+   * Ensures all interactive elements meet WCAG 44x44px minimum on touch devices.
+   * Applied only below the md breakpoint (< 768px) to avoid affecting desktop.
+   */
+  @media (max-width: 767px) {
+    /* Select triggers - ensure adequate touch area */
+    [data-slot="select-trigger"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    /* Dropdown menu items - ensure comfortable tap targets */
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    /* Tab triggers - ensure tappable */
+    [role="tab"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    /* Sidebar navigation links - ensure tappable */
+    [data-slot="sidebar-menu-button"] {
+      min-height: 44px;
+    }
+
+    /* Input elements - ensure comfortable height on mobile */
+    [data-slot="input"],
+    [data-slot="textarea"] {
+      min-height: 44px;
+    }
+
+    /* Pagination controls - data-slot="table-pagination" used for semantic targeting.
+       Button touch targets are enforced by button.tsx variants (max-md:min-h-11). */
+  }
 }
 
 @layer utilities {
