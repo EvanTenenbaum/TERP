@@ -9,6 +9,7 @@
  * - Rollback on any failure to maintain data integrity
  */
 
+import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import {
   vendors,
@@ -276,12 +277,14 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             batchId: batch.id,
             productId: product.id,
             imageUrl: media.url,
+            thumbnailUrl: null,
             caption: media.fileName ? media.fileName.slice(0, 255) : null,
             isPrimary: index === 0,
             sortOrder: index,
             status: "APPROVED" as const,
             uploadedBy: input.userId,
             uploadedAt: new Date(),
+            deletedAt: null,
           }))
         );
       }
@@ -295,6 +298,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         shelf: input.location.shelf,
         bin: input.location.bin,
         qty: inventoryUtils.formatQty(input.quantity),
+        deletedAt: null,
       });
 
       // 8. Create audit log
@@ -303,8 +307,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         entity: "Batch",
         entityId: batch.id,
         action: "CREATED",
+        before: null,
         after: inventoryUtils.createAuditSnapshot(batch),
         reason: "Initial intake",
+        deletedAt: null,
       });
 
       // 9. MEET-005: Create payable for consigned inventory
@@ -373,8 +379,13 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
     return result;
   } catch (error) {
     logger.error({ error }, "Error processing intake");
-    throw new Error(
-      `Failed to process intake: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+    if (error instanceof TRPCError) {
+      throw error;
+    }
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `Failed to process intake: ${error instanceof Error ? error.message : "Unknown error"}`,
+      cause: error,
+    });
   }
 }
