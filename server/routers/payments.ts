@@ -28,7 +28,7 @@ import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
-import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
+import { getFiscalPeriodId } from "../_core/fiscalPeriod";
 import { captureException } from "../_core/monitoring";
 
 // ============================================================================
@@ -298,16 +298,17 @@ export const paymentsRouter = router({
       const effectiveAmount =
         input.amount > amountDue ? amountDue : input.amount;
 
-      // Resolve GL account IDs before the transaction so that missing accounts
-      // produce descriptive TRPCErrors rather than a generic INTERNAL_SERVER_ERROR
-      // from inside the transaction. getAccountIdByName throws TRPCError(NOT_FOUND)
-      // if the chart of accounts is not seeded, which would be re-thrown as-is from
-      // the catch block — but resolving here makes the failure point explicit.
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
+      // getAccountIdByName throws TRPCError(NOT_FOUND) if the chart of accounts
+      // is not seeded. getFiscalPeriodId throws TRPCError(NOT_FOUND) if no fiscal
+      // period exists for the payment date. Resolving here makes failures explicit.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
       );
-      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
       // REL-003: Wrap transaction in try/catch for Sentry logging
       let txResult;
@@ -434,7 +435,7 @@ export const paymentsRouter = router({
         );
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Payment recording failed - transaction rolled back",
+          message: `Payment recording failed: ${error instanceof Error ? error.message : "Unknown error"}`,
           cause: error,
         });
       }
@@ -707,12 +708,14 @@ export const paymentsRouter = router({
         });
       }
 
-      // Get account IDs for GL entries
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
       );
-      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
       // REL-003: Wrap transaction in try/catch for Sentry logging
       let txResult;
@@ -1006,12 +1009,14 @@ export const paymentsRouter = router({
       const effectiveAmount =
         input.amount > amountDue ? amountDue : input.amount;
 
-      // Get account IDs for GL entries
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
       );
-      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
       // Build wire details for notes
       const wireDetails = [
@@ -1197,6 +1202,15 @@ export const paymentsRouter = router({
 
       const paymentAmount = parseFloat(payment.amount || "0");
 
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
+      const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+      const arAccountId = await getAccountIdByName(
+        ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+      );
+
       // REL-003: Wrap transaction in try/catch for Sentry logging
       let txResult;
       try {
@@ -1289,14 +1303,6 @@ export const paymentsRouter = router({
           }
 
           // Create reversing GL entries
-          const fiscalPeriodId = await getFiscalPeriodIdOrDefault(
-            new Date(),
-            1
-          );
-          const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
-          const arAccountId = await getAccountIdByName(
-            ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
-          );
           const reversalNumber = `PMT-REV-${input.id}`;
 
           // Credit Cash (reverse debit)
