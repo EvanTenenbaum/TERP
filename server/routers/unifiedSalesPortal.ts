@@ -838,7 +838,7 @@ export const unifiedSalesPortalRouter = router({
       const quoteStats = await db
         .select({
           count: sql<number>`COUNT(*)`,
-          totalValue: sql<number>`COALESCE(SUM(CAST(total_amount AS DECIMAL(15,2))), 0)`,
+          totalValue: sql<number>`COALESCE(SUM(CAST(total AS DECIMAL(15,2))), 0)`,
         })
         .from(orders)
         .where(and(...quoteConditions));
@@ -861,7 +861,7 @@ export const unifiedSalesPortalRouter = router({
       const saleStats = await db
         .select({
           count: sql<number>`COUNT(*)`,
-          totalValue: sql<number>`COALESCE(SUM(CAST(total_amount AS DECIMAL(15,2))), 0)`,
+          totalValue: sql<number>`COALESCE(SUM(CAST(total AS DECIMAL(15,2))), 0)`,
         })
         .from(orders)
         .where(and(...saleConditions));
@@ -870,7 +870,7 @@ export const unifiedSalesPortalRouter = router({
       const fulfilledStats = await db
         .select({
           count: sql<number>`COUNT(*)`,
-          totalValue: sql<number>`COALESCE(SUM(CAST(total_amount AS DECIMAL(15,2))), 0)`,
+          totalValue: sql<number>`COALESCE(SUM(CAST(total AS DECIMAL(15,2))), 0)`,
         })
         .from(orders)
         .where(

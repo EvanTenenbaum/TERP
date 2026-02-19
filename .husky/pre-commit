@@ -77,10 +77,11 @@ if git diff --cached --name-only | grep -q "drizzle/schema"; then
     echo ""
   fi
 
-  # Check 5: mysqlEnum naming convention
+  # Check 5: mysqlEnum naming convention (only check newly added lines)
   for file in $(git diff --cached --name-only | grep "drizzle/schema"); do
-    # Check for camelCase enum names (should be snake_case to match DB columns)
-    if git show ":$file" 2>/dev/null | grep -n 'mysqlEnum("[a-z]*[A-Z]' > /dev/null 2>&1; then
+    # Check for camelCase enum names in NEW lines only (not pre-existing legacy columns)
+    # Legacy tables (batches, invoices, etc.) legitimately use camelCase DB column names
+    if git diff --cached "$file" 2>/dev/null | grep "^+" | grep -v "^+++" | grep 'mysqlEnum("[a-z]*[A-Z]' > /dev/null 2>&1; then
       echo "❌ BLOCKED: mysqlEnum with camelCase name in $file"
       echo "   Pattern: mysqlEnum(\"camelCase\", [...])"
       echo "   Fix: First argument must match DATABASE column name (usually snake_case)"

@@ -12,10 +12,17 @@ export default defineConfig({
     "./drizzle/schema-rbac.ts",
     "./drizzle/schema-client360.ts",
     "./drizzle/schema-cron.ts",
+    "./drizzle/schema-gamification.ts",
+    "./drizzle/schema-feature-flags.ts",
+    "./drizzle/schema-live-shopping.ts",
+    "./drizzle/schema-extensions-live-shopping.ts",
+    "./drizzle/schema-scheduling.ts",
+    "./drizzle/schema-sprint5-trackd.ts",
+    "./drizzle/schema-storage.ts",
   ],
   out: "./drizzle",
   dialect: "mysql",
   dbCredentials: {
-    url: connectionString
+    url: connectionString,
   },
 });

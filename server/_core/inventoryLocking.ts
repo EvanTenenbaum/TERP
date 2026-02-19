@@ -317,12 +317,12 @@ export async function withBatchLock<T>(
     const [batch] = (await db.execute(sql`
       SELECT
         id,
-        lot_id as lotId,
+        lotId,
         sku,
-        on_hand_qty as onHandQty,
-        allocated_qty as allocatedQty,
-        unit_cogs as unitCogs,
-        status
+        onHandQty,
+        reservedQty as allocatedQty,
+        unitCogs,
+        batchStatus as status
       FROM batches
       WHERE id = ${batchId}
       AND deleted_at IS NULL
@@ -417,12 +417,12 @@ export async function withMultiBatchLock<T>(
     const lockedBatches = (await db.execute(sql`
       SELECT
         id,
-        lot_id as lotId,
+        lotId,
         sku,
-        on_hand_qty as onHandQty,
-        allocated_qty as allocatedQty,
-        unit_cogs as unitCogs,
-        status
+        onHandQty,
+        reservedQty as allocatedQty,
+        unitCogs,
+        batchStatus as status
       FROM batches
       WHERE id IN (${sql.join(
         sortedIds.map(id => sql`${id}`),
@@ -532,7 +532,7 @@ async function _allocateBatchDirect(
   await db
     .update(batches)
     .set({
-      onHandQty: sql`on_hand_qty - ${quantity}`,
+      onHandQty: sql`onHandQty - ${quantity}`,
       updatedAt: new Date(),
     })
     .where(eq(batches.id, batchId));
@@ -641,7 +641,7 @@ export async function allocateFromBatch(
       await db
         .update(batches)
         .set({
-          onHandQty: sql`on_hand_qty - ${quantity}`,
+          onHandQty: sql`onHandQty - ${quantity}`,
           updatedAt: new Date(),
         })
         .where(eq(batches.id, batchId));
@@ -778,7 +778,7 @@ export async function returnToBatch(
     await db
       .update(batches)
       .set({
-        onHandQty: sql`on_hand_qty + ${quantity}`,
+        onHandQty: sql`onHandQty + ${quantity}`,
         updatedAt: new Date(),
       })
       .where(eq(batches.id, batchId));

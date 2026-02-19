@@ -2334,15 +2334,16 @@ export type InsertPricingProfile = typeof pricingProfiles.$inferInsert;
  * Order Price Adjustments (FEAT-004-BE)
  * Tracks all price adjustments made during order creation for audit trail
  */
-export const orderPriceAdjustmentTypeEnum = mysqlEnum(
-  "order_price_adjustment_type",
-  ["ITEM", "CATEGORY", "ORDER"]
-);
+export const orderPriceAdjustmentTypeEnum = mysqlEnum("adjustment_type", [
+  "ITEM",
+  "CATEGORY",
+  "ORDER",
+]);
 
-export const orderPriceAdjustmentModeEnum = mysqlEnum(
-  "order_price_adjustment_mode",
-  ["PERCENT", "FIXED"]
-);
+export const orderPriceAdjustmentModeEnum = mysqlEnum("adjustment_mode", [
+  "PERCENT",
+  "FIXED",
+]);
 
 export const orderPriceAdjustments = mysqlTable(
   "order_price_adjustments",
@@ -6686,6 +6687,11 @@ export type InsertReferralCredit = typeof referralCredits.$inferInsert;
  * Referral Settings Table
  * Configures referral credit percentages (global and per-tier)
  */
+// ⚠️ SCHEMA CONFLICT: This table ("referral_settings") has a DUAL DEFINITION.
+// See also: drizzle/schema-gamification.ts:734 (referralGamificationSettings)
+// Both Drizzle objects point to the same physical DB table with different column sets.
+// Resolution: Merge into a single definition in a future migration (RED mode).
+// Tracked: P1-2 in Schema Audit Report 2026-02-19
 // SCHEMA-010 FIX: Renamed from referralSettings to avoid conflict with schema-gamification.ts
 export const referralCreditSettings = mysqlTable(
   "referral_settings",
@@ -6711,7 +6717,8 @@ export const referralCreditSettings = mysqlTable(
 );
 
 export type ReferralCreditSetting = typeof referralCreditSettings.$inferSelect;
-export type InsertReferralCreditSetting = typeof referralCreditSettings.$inferInsert;
+export type InsertReferralCreditSetting =
+  typeof referralCreditSettings.$inferInsert;
 // Backwards compatibility aliases
 export type ReferralSetting = ReferralCreditSetting;
 export type InsertReferralSetting = InsertReferralCreditSetting;
@@ -6752,10 +6759,12 @@ export const referralCreditsRelations = relations(
 // ============================================================================
 
 // Receipt transaction type enum
-export const receiptTransactionTypeEnum = mysqlEnum(
-  "receipt_transaction_type",
-  ["PAYMENT", "CREDIT", "ADJUSTMENT", "STATEMENT"]
-);
+export const receiptTransactionTypeEnum = mysqlEnum("transaction_type", [
+  "PAYMENT",
+  "CREDIT",
+  "ADJUSTMENT",
+  "STATEMENT",
+]);
 
 // Receipts table for tracking generated receipts
 export const receipts = mysqlTable(
@@ -6913,7 +6922,7 @@ export const demoMediaBlobsRelations = relations(demoMediaBlobs, ({ one }) => ({
  * Reminder Status Enum
  * Tracks the status of vendor harvest reminders
  */
-export const reminderStatusEnum = mysqlEnum("reminder_status", [
+export const reminderStatusEnum = mysqlEnum("status", [
   "PENDING",
   "CONTACTED",
   "COMPLETED",
@@ -7349,15 +7358,12 @@ export const vendorPayableStatusEnum = mysqlEnum("status", [
  * Payable Notification Type Enum (MEET-005)
  * Types of notifications for payables
  */
-export const payableNotificationTypeEnum = mysqlEnum(
-  "notification_type",
-  [
-    "GRACE_PERIOD_WARNING", // Warning before payable becomes due
-    "PAYABLE_DUE", // Payable is now due
-    "PAYMENT_REMINDER", // Reminder for outstanding payable
-    "OVERDUE", // Payable is past due
-  ]
-);
+export const payableNotificationTypeEnum = mysqlEnum("notification_type", [
+  "GRACE_PERIOD_WARNING", // Warning before payable becomes due
+  "PAYABLE_DUE", // Payable is now due
+  "PAYMENT_REMINDER", // Reminder for outstanding payable
+  "OVERDUE", // Payable is past due
+]);
 
 /**
  * Vendor Payables Table (MEET-005)
@@ -7721,41 +7727,6 @@ export const clientsRelations = relations(clients, ({ many }) => ({
 // ============================================================================
 // INTAKE VERIFICATION SYSTEM (FEAT-008: MEET-064 to MEET-066)
 // ============================================================================
-
-/**
- * Intake Receipt Status Enum
- * Tracks the lifecycle of an intake receipt through verification
- */
-export const intakeReceiptStatusEnum = mysqlEnum("intake_receipt_status", [
-  "PENDING", // Initial state - awaiting farmer verification
-  "FARMER_VERIFIED", // Farmer has acknowledged the receipt
-  "STACKER_VERIFIED", // Stacker has verified actual quantities
-  "FINALIZED", // Both parties verified, inventory updated
-  "DISPUTED", // Discrepancy requires admin resolution
-]);
-
-/**
- * Intake Receipt Verification Status Enum
- * Status for individual line items
- */
-export const intakeVerificationStatusEnum = mysqlEnum(
-  "intake_verification_status",
-  [
-    "PENDING", // Not yet verified
-    "VERIFIED", // Verified as correct
-    "DISCREPANCY", // Quantity mismatch found
-  ]
-);
-
-/**
- * Intake Discrepancy Resolution Enum
- * How a discrepancy was resolved
- */
-export const intakeResolutionEnum = mysqlEnum("intake_resolution", [
-  "ACCEPTED", // Accept actual quantity
-  "ADJUSTED", // Adjust to expected quantity
-  "REJECTED", // Reject the item entirely
-]);
 
 /**
  * Intake Receipts Table

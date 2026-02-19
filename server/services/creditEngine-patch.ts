@@ -101,7 +101,7 @@ export async function calculateTotalExposure(
   // Placeholder query structure for Open Orders:
   /* 
   const openOrdersResult = await db
-    .select({ total: sql<number>`SUM(total_amount)` })
+    .select({ total: sql<number>`SUM(total)` })
     .from(orders)
     .where(and(eq(orders.clientId, clientId), eq(orders.status, 'CONFIRMED')));
   const openOrders = Number(openOrdersResult[0]?.total || 0);

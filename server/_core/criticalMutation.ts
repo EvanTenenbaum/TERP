@@ -29,7 +29,7 @@
  * ```typescript
  * const result = await criticalMutation(
  *   async (tx) => {
- *     await tx.update(batches).set({ onHandQty: sql`on_hand_qty - ${qty}` });
+ *     await tx.update(batches).set({ onHandQty: sql`onHandQty - ${qty}` });
  *     return { success: true };
  *   },
  *   { domain: "inventory", operation: "allocateBatch" }
@@ -299,7 +299,7 @@ startCacheCleanup();
  * const result = await criticalMutation(
  *   async (tx) => {
  *     // Perform atomic operations
- *     await tx.update(batches).set({ onHandQty: sql`on_hand_qty - ${qty}` });
+ *     await tx.update(batches).set({ onHandQty: sql`onHandQty - ${qty}` });
  *     await tx.insert(inventoryMovements).values({ ... });
  *     return { success: true };
  *   },
