@@ -453,7 +453,7 @@ function DataTableComponent<T>({
         </div>
       )}
 
-      <div className="border rounded-md">
+      <div className="border rounded-md overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -490,7 +490,7 @@ function DataTableComponent<T>({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center gap-2 px-0"
+                      className="flex items-center gap-2 px-1 max-md:min-h-11"
                       onClick={() => {
                         if (!enableSorting || column.enableSorting === false)
                           return;

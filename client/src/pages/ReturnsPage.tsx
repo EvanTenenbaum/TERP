@@ -208,11 +208,11 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
   };
 
   if (isLoading) {
-    return <div className="p-8">Loading returns...</div>;
+    return <div className="p-4 md:p-8">Loading returns...</div>;
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {!embedded && (
         <BackButton label="Back to Orders" to="/orders" className="mb-4" />
       )}
@@ -259,7 +259,7 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
       </div>
 
       {/* Returns Table */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

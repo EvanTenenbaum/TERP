@@ -93,7 +93,9 @@ function DashboardLayoutContent({
             return null;
           }
           // Other HTTP errors
-          throw new Error(`Authentication check failed with status ${res.status}`);
+          throw new Error(
+            `Authentication check failed with status ${res.status}`
+          );
         }
         return res.json();
       })
@@ -105,12 +107,14 @@ function DashboardLayoutContent({
           return;
         }
       })
-      .catch((error) => {
-        console.error('Auth check failed:', error);
+      .catch(error => {
+        console.error("Auth check failed:", error);
         // Network error or server error - notify user
         toast({
           title: "Authentication Error",
-          description: error.message || "Unable to verify authentication status. You are logged in as a guest.",
+          description:
+            error.message ||
+            "Unable to verify authentication status. You are logged in as a guest.",
           variant: "destructive",
           duration: 5000,
         });
@@ -340,30 +344,30 @@ function DashboardLayoutContent({
       <SidebarInset>
         {/* BUG-023: Add consistent header for desktop users */}
         {!isMobile && <AppHeader />}
-        {/* BUG-M001: Mobile responsive header with hamburger menu */}
+        {/* MOBILE-UX: Mobile responsive header with hamburger menu */}
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger
-                className="h-10 w-10 rounded-lg bg-background hover:bg-accent"
+                className="size-11 shrink-0 rounded-lg bg-background hover:bg-accent touch-manipulation"
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <img
                   src={APP_LOGO}
-                  className="h-7 w-7 rounded-md object-cover ring-1 ring-border"
+                  className="h-7 w-7 rounded-md object-cover ring-1 ring-border shrink-0"
                   alt="Logo"
                 />
-                <span className="font-semibold tracking-tight text-foreground">
+                <span className="font-semibold tracking-tight text-foreground truncate">
                   {activeMenuItem?.name ?? APP_TITLE}
                 </span>
               </div>
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 min-w-0 overflow-x-hidden p-4">{children}</main>
       </SidebarInset>
     </>
   );
