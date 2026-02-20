@@ -104,6 +104,16 @@ pnpm setup:admin your-email@example.com YourPassword123!
 pnpm seed:test-accounts
 ```
 
+### Full-System Mock Data
+
+```bash
+# Canonical realistic full-system seed (clears + reseeds)
+pnpm seed:system --force
+
+# Preview execution plan only
+pnpm seed:system --dry-run
+```
+
 ### Get Auth Token (for AI Agents/E2E)
 
 ```bash

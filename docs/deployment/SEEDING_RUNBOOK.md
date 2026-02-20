@@ -15,27 +15,24 @@ Before seeding production:
 1. **Backup the database** (DigitalOcean takes automatic daily backups)
 2. **Verify you have production access** via DigitalOcean console
 3. **Ensure no active users** are using the system during seeding
-4. **Review the seed size** - start with `small` for testing
+4. **Review the seed profile** - start with `--light` for testing
 
 ---
 
 ## Quick Reference
 
 ```bash
-# Dry-run (preview only, no changes)
-pnpm seed:new --dry-run --size=small
+# Canonical full-system dry-run (no writes)
+pnpm seed:system --dry-run
 
-# Small seed (195 records) - for testing
-pnpm seed:new --clean --size=small --force
+# Canonical full-system seed (recommended for realistic testing)
+pnpm seed:system --force
 
-# Medium seed (1,950 records) - for staging
-pnpm seed:new --clean --size=medium --force
+# Faster variant for iterative local testing
+pnpm seed:system --light --force
 
-# Large seed (19,500 records) - for production
-pnpm seed:new --clean --size=large --force
-
-# Complete seed (includes bills, POs)
-pnpm seed:new --clean --size=medium --complete --force
+# Keep existing records and only top-up missing data
+pnpm seed:system --no-clear --force
 ```
 
 ---
@@ -54,26 +51,19 @@ pnpm seed:new --clean --size=medium --complete --force
 Always run a dry-run first to preview what will be seeded:
 
 ```bash
-pnpm seed:new --dry-run --size=small
+pnpm seed:system --dry-run
 ```
 
 **Expected Output**:
-```
-🌱 TERP Database Seeder
-========================
-Mode: DRY RUN (no changes will be made)
-Size: small
 
-📊 Preview:
-  vendors:    5 records
-  clients:    10 records
-  products:   20 records
-  batches:    30 records
-  orders:     50 records
-  invoices:   50 records
-  payments:   30 records
-  
-Total: 195 records
+```
+TERP FULL-SYSTEM SEED PLAN
+...
+1. Seed comprehensive linked ERP data
+2. Seed module defaults
+3. Reconcile RBAC roles/permissions
+...
+10. Run strict relational integrity verification
 ```
 
 ### Step 3: Execute Seed
@@ -81,13 +71,14 @@ Total: 195 records
 If dry-run looks correct, execute the seed:
 
 ```bash
-pnpm seed:new --clean --size=small --force
+pnpm seed:system --force
 ```
 
 **Flags explained**:
-- `--clean`: Clears existing data before seeding
-- `--size=small`: Uses small dataset (195 records)
-- `--force`: Skips confirmation prompt
+
+- `--force`: Skips destructive-operation confirmation prompt
+- `--light`: Uses smaller dataset for faster iteration
+- `--no-clear`: Preserves existing rows and only fills gaps
 
 ### Step 4: Verify Seeded Data
 
@@ -112,36 +103,23 @@ npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM orders"
 
 ---
 
-## Seed Sizes
+## Seed Profiles
 
-| Size | Records | Use Case |
-|------|---------|----------|
-| `small` | 195 | Testing, quick verification |
-| `medium` | 1,950 | Staging, demo environments |
-| `large` | 19,500 | Production, load testing |
-
-### Record Distribution by Size
-
-| Entity | Small | Medium | Large |
-|--------|-------|--------|-------|
-| Vendors | 5 | 15 | 50 |
-| Clients | 10 | 50 | 200 |
-| Products | 20 | 100 | 500 |
-| Batches | 30 | 200 | 1,000 |
-| Orders | 50 | 500 | 5,000 |
-| Invoices | 50 | 500 | 5,000 |
-| Payments | 30 | 300 | 3,000 |
+| Profile        | Command                            | Use Case                    |
+| -------------- | ---------------------------------- | --------------------------- |
+| Light          | `pnpm seed:system --light --force` | Faster local iteration      |
+| Full (default) | `pnpm seed:system --force`         | Realistic end-to-end QA/UAT |
 
 ---
 
 ## Rollback Procedures
 
-### Option 1: Re-seed with Clean Flag
+### Option 1: Re-seed Full System
 
 The simplest rollback is to re-seed:
 
 ```bash
-pnpm seed:new --clean --size=small --force
+pnpm seed:system --force
 ```
 
 ### Option 2: Manual Data Cleanup
@@ -223,7 +201,8 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 ### Error: "Connection refused"
 
 **Cause**: Database not accessible
-**Solution**: 
+**Solution**:
+
 1. Check DATABASE_URL in environment variables
 2. Verify database is running in DigitalOcean
 
@@ -231,20 +210,23 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 **Cause**: Seeding order incorrect or orphaned references
 **Solution**:
-1. Use `--clean` flag to clear existing data
-2. Verify seeding order in `scripts/seed/seeders/index.ts`
+
+1. Re-run canonical seed with a fresh reset: `pnpm seed:system --force`
+2. Run integrity checks: `pnpm seed:verify:integrity`
 
 ### Error: "Duplicate entry"
 
 **Cause**: Data already exists
 **Solution**:
-1. Use `--clean` flag to clear existing data
-2. Or use `--force` to overwrite
+
+1. Use canonical reset path: `pnpm seed:system --force`
+2. For additive mode, use: `pnpm seed:system --no-clear --force`
 
 ### Error: "Lock wait timeout"
 
 **Cause**: Another process has table locked
 **Solution**:
+
 1. Wait for other process to complete
 2. Or kill stuck process (see Rollback section)
 
@@ -252,8 +234,9 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 **Cause**: Large seed size on limited resources
 **Solution**:
-1. Use smaller seed size
-2. Seed in batches (run multiple small seeds)
+
+1. Use the `--light` profile
+2. Seed in batches (run multiple light seeds)
 
 ---
 
@@ -262,23 +245,27 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 ### Console Timeout
 
 The DigitalOcean console may timeout after 10 minutes of inactivity. For large seeds:
+
 1. Keep the console active
 2. Or use `nohup` to run in background
 
 ### Environment Variables
 
 Ensure these are set in DigitalOcean App Settings:
+
 - `DATABASE_URL` - Production database connection string
 - `NODE_ENV=production` - Ensures production behavior
 
 ### Resource Limits
 
 DigitalOcean App Platform has resource limits:
+
 - Memory: Check your plan's limits
 - CPU: Seeding is CPU-intensive
 - Timeout: Long-running commands may be killed
 
 For large seeds, consider:
+
 1. Upgrading instance temporarily
 2. Running during off-peak hours
 3. Using smaller batch sizes
@@ -288,8 +275,8 @@ For large seeds, consider:
 ## Best Practices
 
 1. **Always dry-run first** - Preview before executing
-2. **Start small** - Test with `small` size before `large`
-3. **Backup first** - Ensure backup exists before `--clean`
+2. **Use the canonical command** - `pnpm seed:system`
+3. **Backup first** - Ensure backup exists before running `pnpm seed:system --force`
 4. **Monitor progress** - Watch console output for errors
 5. **Verify after** - Check data and test application
 6. **Document changes** - Note when and what was seeded
@@ -299,6 +286,7 @@ For large seeds, consider:
 ## Related Documentation
 
 - `scripts/seed/README.md` - Seeder technical documentation
+- `scripts/seed-full-system.ts` - Canonical full-system orchestrator
+- `scripts/verify-seed-integrity.ts` - Post-seed relational verification
 - `.kiro/steering/04-infrastructure.md` - Infrastructure guide
 - `docs/deployment/README.md` - Deployment overview
-

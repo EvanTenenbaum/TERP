@@ -1,78 +1,65 @@
 # Seed Script Usage Guide
 
-## Resource Considerations
+## Canonical Command
 
-**⚠️ IMPORTANT:** The seed script is resource-intensive and should NOT run automatically on every deployment.
-
-### Resource Usage:
-- **Compute Time:** ~30 seconds (light) to ~2 minutes (full)
-- **Database Operations:** Clears and recreates all data
-- **Network:** Downloads dependencies (`pnpm install`)
-- **Cost:** Spins up compute instance for duration
-
-## Recommended Usage Patterns
-
-### 1. **Manual Execution (Recommended)**
-Run only when you need fresh test data:
+Use this as the single full-system seeding entrypoint:
 
 ```bash
-# From local/dev environment with database access
-DATABASE_URL="mysql://..." pnpm seed:light
+pnpm seed:system
 ```
 
-### 2. **One-Time Setup**
-Run once after initial database setup, then disable:
+This command orchestrates:
+
+- Comprehensive transactional seed data
+- Module defaults (feature flags, scheduling, storage, gamification, leaderboard)
+- RBAC reconciliation
+- QA/test account seeding
+- QA fixture seeding
+- Gap-filling and augmentation
+- Final relational integrity verification
+
+## Common Modes
 
 ```bash
-# Initial setup
-DATABASE_URL="mysql://..." pnpm seed:light
+# Preview only (no writes)
+pnpm seed:system --dry-run
 
-# Then remove/disable automatic seeding
+# Faster, smaller dataset
+pnpm seed:system --light --force
+
+# Full realistic dataset (recommended for end-to-end testing)
+pnpm seed:system --force
+
+# Preserve existing rows and only top-up
+pnpm seed:system --no-clear --force
 ```
 
-### 3. **Scheduled Job (If Needed)**
-If you need periodic reseeding, use a scheduled job instead of POST_DEPLOY:
-
-```yaml
-jobs:
-  - name: seed-database
-    # ... config ...
-    kind: SCHEDULED
-    schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
-```
-
-### 4. **Manual Trigger via DigitalOcean**
-If you need to run it in DigitalOcean infrastructure:
+## Required Environment
 
 ```bash
-# Create a one-off job run (when job component exists)
-doctl apps create-job-run <app-id> <job-name>
+DATABASE_URL="mysql://user:password@host:3306/db?ssl-mode=REQUIRED"
 ```
 
-## When to Run Seed Script
+## When To Use It
 
-✅ **DO run when:**
-- Setting up a new development/staging database
-- Resetting test data for QA
-- Initial production setup (one-time)
-- After major schema changes requiring data refresh
+✅ Use for:
 
-❌ **DON'T run:**
-- On every deployment (wasteful, slow, expensive)
-- In production with real data (will delete everything!)
-- As part of CI/CD pipeline (unless specifically needed)
-- Automatically without explicit trigger
+- Fresh QA/UAT environments
+- End-to-end workflow testing
+- Regression testing after schema/logic changes
 
-## Cost Optimization
+❌ Avoid for:
 
-**Current Configuration:** Job removed from automatic execution
-- **Savings:** No compute costs on every deployment
-- **Deployment Speed:** Faster deployments (no seed step)
-- **Safety:** Prevents accidental data loss
+- Every deployment
+- Production environments with real user data
+- CI jobs that should stay lightweight
 
-## Alternative: Incremental Seeding
+## Verification
 
-If you need to add data without clearing:
-- Use targeted seed scripts (`seed-critical-tables.ts`, etc.)
-- Add data incrementally via migrations
-- Use database fixtures for specific test scenarios
+After seeding, run:
+
+```bash
+pnpm seed:verify:integrity
+```
+
+The command exits non-zero if critical relational integrity checks fail.

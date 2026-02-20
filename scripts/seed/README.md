@@ -2,10 +2,22 @@
 
 Production-grade database seeding with concurrency control, schema validation, and PII masking.
 
+## Canonical Full-System Command
+
+For realistic end-to-end testing across the whole app, use:
+
+```bash
+pnpm seed:system
+```
+
+This `scripts/seed/` package is the **core transactional seed engine** used by
+the full-system orchestrator. Running `pnpm seed:new` directly seeds core tables
+only.
+
 ## Quick Start
 
 ```bash
-# Seed all tables with medium data volume
+# Seed core transactional tables with medium data volume
 pnpm seed:new
 
 # Seed specific table
@@ -71,32 +83,32 @@ scripts/seed/
 
 ### Commands
 
-| Command | Description |
-|---------|-------------|
-| `pnpm seed:new` | Seed all tables with default settings |
-| `pnpm seed:new:dry-run` | Preview seeding without executing |
-| `pnpm seed:new:rollback` | Rollback seeded data (Phase 2) |
+| Command                  | Description                           |
+| ------------------------ | ------------------------------------- |
+| `pnpm seed:new`          | Seed all tables with default settings |
+| `pnpm seed:new:dry-run`  | Preview seeding without executing     |
+| `pnpm seed:new:rollback` | Rollback seeded data (Phase 2)        |
 
 ### Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--table=<name>` | Seed specific table | All tables |
-| `--size=<small\|medium\|large>` | Data volume | `medium` |
-| `--env=<dev\|staging\|production>` | Override environment | Auto-detect |
-| `--dry-run` | Preview without executing | `false` |
-| `--force, -f` | Skip confirmation prompts | `false` |
-| `--rollback` | Rollback seeded data | `false` |
-| `--verbose, -v` | Enable verbose output | `false` |
-| `--help, -h` | Show help message | - |
+| Option                             | Description               | Default     |
+| ---------------------------------- | ------------------------- | ----------- |
+| `--table=<name>`                   | Seed specific table       | All tables  |
+| `--size=<small\|medium\|large>`    | Data volume               | `medium`    |
+| `--env=<dev\|staging\|production>` | Override environment      | Auto-detect |
+| `--dry-run`                        | Preview without executing | `false`     |
+| `--force, -f`                      | Skip confirmation prompts | `false`     |
+| `--rollback`                       | Rollback seeded data      | `false`     |
+| `--verbose, -v`                    | Enable verbose output     | `false`     |
+| `--help, -h`                       | Show help message         | -           |
 
 ### Data Volumes
 
-| Size | Records per Table | Use Case |
-|------|-------------------|----------|
-| `small` | ~10 | Quick testing, CI/CD |
-| `medium` | ~100 | Development (default) |
-| `large` | ~1000+ | Performance testing |
+| Size     | Records per Table | Use Case              |
+| -------- | ----------------- | --------------------- |
+| `small`  | ~10               | Quick testing, CI/CD  |
+| `medium` | ~100              | Development (default) |
+| `large`  | ~1000+            | Performance testing   |
 
 ## Components
 
@@ -105,23 +117,24 @@ scripts/seed/
 Prevents concurrent seeding operations using MySQL advisory locks.
 
 ```typescript
-import { SeedingLock } from './lib/locking';
+import { SeedingLock } from "./lib/locking";
 
 const lock = new SeedingLock(db);
 
 try {
-  const acquired = await lock.acquire('terp_seeding_global', 0);
+  const acquired = await lock.acquire("terp_seeding_global", 0);
   if (!acquired) {
-    throw new Error('Another seeding operation is in progress');
+    throw new Error("Another seeding operation is in progress");
   }
 
   // ... seeding logic ...
 } finally {
-  await lock.release('terp_seeding_global');
+  await lock.release("terp_seeding_global");
 }
 ```
 
 **Features:**
+
 - MySQL `GET_LOCK()` / `RELEASE_LOCK()` for cross-process safety
 - Automatic cleanup on process termination (SIGINT, SIGTERM)
 - Lock status checking with `IS_USED_LOCK()`
@@ -132,18 +145,19 @@ try {
 Validates data against database schema before insertion.
 
 ```typescript
-import { SchemaValidator } from './lib/validation';
+import { SchemaValidator } from "./lib/validation";
 
 const validator = new SchemaValidator(db);
 
-const result = await validator.validateColumns('orders', orderData);
+const result = await validator.validateColumns("orders", orderData);
 if (!result.valid) {
-  console.error('Validation errors:', result.errors);
-  throw new Error('Schema validation failed');
+  console.error("Validation errors:", result.errors);
+  throw new Error("Schema validation failed");
 }
 ```
 
 **Features:**
+
 - Column name validation (camelCase ↔ snake_case)
 - Data type checking
 - NOT NULL constraint validation
@@ -156,22 +170,23 @@ if (!result.valid) {
 Anonymizes sensitive data for GDPR/CCPA compliance.
 
 ```typescript
-import { PIIMasker } from './lib/data-masking';
+import { PIIMasker } from "./lib/data-masking";
 
 const masker = new PIIMasker({
-  environment: 'development',
+  environment: "development",
   seed: 12345, // Deterministic output
 });
 
-const maskedClient = masker.maskRecord('clients', {
-  name: 'John Doe',
-  email: 'john@example.com',
-  phone: '555-1234',
+const maskedClient = masker.maskRecord("clients", {
+  name: "John Doe",
+  email: "john@example.com",
+  phone: "555-1234",
 });
 // Result: { name: 'Jane Smith', email: 'jane.smith@faker.com', ... }
 ```
 
 **Features:**
+
 - Auto-detection of PII fields by name pattern
 - Environment-aware (disabled in production)
 - Deterministic masking with seeds
@@ -183,26 +198,28 @@ const maskedClient = masker.maskRecord('clients', {
 Provides consistent, structured logging for all operations.
 
 ```typescript
-import { seedLogger, withPerformanceLogging } from './lib/logging';
+import { seedLogger, withPerformanceLogging } from "./lib/logging";
 
 // Log operation lifecycle
-seedLogger.operationStart('seed', { tables: ['clients', 'orders'] });
-seedLogger.operationSuccess('seed', { recordsInserted: 100 });
-seedLogger.operationFailure('seed', error, { table: 'clients' });
+seedLogger.operationStart("seed", { tables: ["clients", "orders"] });
+seedLogger.operationSuccess("seed", { recordsInserted: 100 });
+seedLogger.operationFailure("seed", error, { table: "clients" });
 
 // Log with performance tracking
-await withPerformanceLogging('seed-clients', async () => {
+await withPerformanceLogging("seed-clients", async () => {
   // ... operation ...
 });
 ```
 
 **Log Levels:**
+
 - `debug` - Lock operations, PII masking, detailed progress
 - `info` - Operation start/success, record counts, summary
 - `warn` - Validation failures, skipped operations
 - `error` - Operation failures, lock conflicts, critical errors
 
 **Output Format:**
+
 - Development: Pretty-printed with colors
 - Production: JSON for log aggregation
 
@@ -214,11 +231,11 @@ await withPerformanceLogging('seed-clients', async () => {
 
 ```typescript
 // scripts/seed/seeders/seed-clients.ts
-import { db } from '../../db-sync';
-import { clients } from '../../../drizzle/schema';
-import { SchemaValidator } from '../lib/validation';
-import { PIIMasker } from '../lib/data-masking';
-import { seedLogger } from '../lib/logging';
+import { db } from "../../db-sync";
+import { clients } from "../../../drizzle/schema";
+import { SchemaValidator } from "../lib/validation";
+import { PIIMasker } from "../lib/data-masking";
+import { seedLogger } from "../lib/logging";
 
 export async function seedClients(
   count: number,
@@ -235,14 +252,14 @@ export async function seedClients(
     };
 
     // Validate
-    const result = await validator.validateColumns('clients', record);
+    const result = await validator.validateColumns("clients", record);
     if (!result.valid) {
-      seedLogger.validationFailure('clients', result.errors);
+      seedLogger.validationFailure("clients", result.errors);
       continue;
     }
 
     // Mask PII
-    const masked = masker.maskRecord('clients', record);
+    const masked = masker.maskRecord("clients", record);
     records.push(masked);
   }
 
@@ -287,6 +304,7 @@ pnpm seed:new --table=clients --size=small --dry-run
 **Cause:** MySQL advisory lock is held by another process.
 
 **Solution:**
+
 1. Wait for the other operation to complete
 2. Check for stuck locks: `SELECT IS_USED_LOCK('terp_seeding_global')`
 3. Release manually if needed: `SELECT RELEASE_LOCK('terp_seeding_global')`
@@ -296,6 +314,7 @@ pnpm seed:new --table=clients --size=small --dry-run
 **Cause:** Database schema is out of sync.
 
 **Solution:**
+
 1. Run database migrations: `pnpm db:push`
 2. Verify table exists: `SHOW TABLES LIKE 'tablename'`
 
@@ -304,6 +323,7 @@ pnpm seed:new --table=clients --size=small --dry-run
 **Cause:** Data structure doesn't match database schema.
 
 **Solution:**
+
 1. Check error details for specific field
 2. Verify column names (camelCase vs snake_case)
 3. Check data types match (number vs string)
@@ -374,6 +394,7 @@ pnpm seed:new --clean --size=small --force
 ```
 
 **Important Notes:**
+
 - Always run dry-run first in production
 - Start with small data volumes for testing
 - Monitor logs in real-time during seeding
@@ -382,13 +403,14 @@ pnpm seed:new --clean --size=small --force
 
 ### Environment-Specific Behavior
 
-| Environment | PII Masking | Confirmation Prompts | Logging |
-|-------------|-------------|---------------------|----------|
-| Development | Enabled | Enabled | Standard |
-| Staging | Enabled | Enabled | Standard |
-| Production | Disabled | Enabled | Enhanced JSON |
+| Environment | PII Masking | Confirmation Prompts | Logging       |
+| ----------- | ----------- | -------------------- | ------------- |
+| Development | Enabled     | Enabled              | Standard      |
+| Staging     | Enabled     | Enabled              | Standard      |
+| Production  | Disabled    | Enabled              | Enhanced JSON |
 
 **Production Safety:**
+
 - PII masking is disabled to preserve real data integrity
 - Confirmation prompts prevent accidental data modification
 - Enhanced JSON logging for log aggregation and monitoring
@@ -428,9 +450,9 @@ UNION ALL SELECT 'invoices', COUNT(*) FROM invoices
 UNION ALL SELECT 'payments', COUNT(*) FROM payments;
 
 -- Verify foreign key integrity
-SELECT COUNT(*) as orphaned_orders 
-FROM orders o 
-LEFT JOIN clients c ON o.client_id = c.id 
+SELECT COUNT(*) as orphaned_orders
+FROM orders o
+LEFT JOIN clients c ON o.client_id = c.id
 WHERE c.id IS NULL;
 -- Expected: 0
 ```
@@ -480,17 +502,18 @@ For comprehensive production procedures, see **`docs/deployment/SEEDING_RUNBOOK.
 
 ## Related Files
 
-| File | Purpose |
-|------|---------|
-| `scripts/db-sync.ts` | Database connection (reused) |
-| `scripts/utils/schema-introspection.ts` | Schema utilities (reused) |
-| `server/_core/logger.ts` | Logging patterns (referenced) |
-| `scripts/generators/*` | Data generators (Phase 2) |
-| `scripts/seed-realistic-main.ts` | Legacy seeder (to be replaced) |
+| File                                    | Purpose                        |
+| --------------------------------------- | ------------------------------ |
+| `scripts/db-sync.ts`                    | Database connection (reused)   |
+| `scripts/utils/schema-introspection.ts` | Schema utilities (reused)      |
+| `server/_core/logger.ts`                | Logging patterns (referenced)  |
+| `scripts/generators/*`                  | Data generators (Phase 2)      |
+| `scripts/seed-realistic-main.ts`        | Legacy seeder (to be replaced) |
 
 ## Roadmap
 
 ### Phase 1 ✅
+
 - [x] Database locking mechanism
 - [x] Schema validation utilities
 - [x] PII masking utilities
@@ -499,6 +522,7 @@ For comprehensive production procedures, see **`docs/deployment/SEEDING_RUNBOOK.
 - [x] Documentation
 
 ### Phase 2 ✅
+
 - [x] Individual table seeders (vendors, clients, products, batches, orders, invoices, payments)
 - [x] FK dependency ordering
 - [x] Schema validation before insert
@@ -506,6 +530,7 @@ For comprehensive production procedures, see **`docs/deployment/SEEDING_RUNBOOK.
 - [x] Batch inserts for performance
 
 ### Phase 3 (Future)
+
 - [ ] Idempotency checks (seeding_metadata table)
 - [ ] Rollback capabilities
 - [ ] Seed data snapshots
