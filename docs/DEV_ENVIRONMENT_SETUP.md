@@ -21,7 +21,6 @@ Current workflow deploys every change to production, causing:
 | --------------- | ----------- | ----------------------------------- | ------------------- | ----------- |
 | **Production**  | `main`      | terp-app-b9s35.ondigitalocean.app   | Live users          | 5-10 min    |
 | **Development** | `develop`   | terp-dev-app.ondigitalocean.app     | Testing & iteration | 3-5 min     |
-| **Preview**     | `feature/*` | terp-pr-{number}.ondigitalocean.app | Feature testing     | 3-5 min     |
 
 ---
 
@@ -164,58 +163,6 @@ git merge develop
 git push origin main
 
 # 7. Auto-deploys to production
-```
-
----
-
-## Phase 3: Setup Preview Deployments (Optional)
-
-For testing specific features in isolation:
-
-### Enable GitHub Integration
-
-```yaml
-# .do/app-preview.yaml
-name: terp-preview-${BRANCH}
-region: nyc
-
-services:
-  - name: web
-    github:
-      repo: your-org/terp
-      branch: ${BRANCH}
-      deploy_on_push: true
-
-    # Minimal resources for previews
-    instance_size_slug: basic-xxs
-    instance_count: 1
-
-    envs:
-      - key: NODE_ENV
-        value: "preview"
-      - key: DATABASE_URL
-        value: "${dev-db.DATABASE_URL}" # Share dev database
-    # ... other env vars
-```
-
-### Create Preview App Script
-
-```bash
-#!/bin/bash
-# scripts/create-preview.sh
-
-BRANCH=$1
-if [ -z "$BRANCH" ]; then
-  echo "Usage: ./scripts/create-preview.sh <branch-name>"
-  exit 1
-fi
-
-# Create preview app
-doctl apps create --spec .do/app-preview.yaml \
-  --env BRANCH=$BRANCH
-
-echo "Preview app created for branch: $BRANCH"
-echo "URL will be available in ~3 minutes"
 ```
 
 ---
