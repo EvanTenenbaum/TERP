@@ -1918,7 +1918,10 @@ async function main() {
     console.error('❌ SEED FAILED');
     console.error('='.repeat(70));
     console.error('\nError:', error);
-    process.exit(1);
+    // NOTE: Do NOT call process.exit() here — it bypasses the finally block,
+    // leaving the database connection open. Re-throw instead so
+    // finally { connection.end() } always runs, then main().catch() handles exit.
+    throw error;
   } finally {
     await connection.end();
   }
