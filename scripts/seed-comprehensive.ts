@@ -1704,7 +1704,7 @@ async function seedReferralCredits(connection: mysql.Connection, clientIds: numb
   console.log('🎁 Seeding referral credits...');
 
   // Production schema: referrer_client_id, referred_client_id, referred_order_id,
-  // credit_percentage, order_total, credit_amount, referralCreditStatus (camelCase in DB)
+  // credit_percentage, order_total, credit_amount, status
   const statuses = ['PENDING', 'AVAILABLE', 'APPLIED', 'EXPIRED'];
 
   for (let i = 0; i < count; i++) {
@@ -1714,7 +1714,7 @@ async function seedReferralCredits(connection: mysql.Connection, clientIds: numb
     const creditAmount = orderTotal * (creditPercent / 100);
 
     await connection.query(
-      `INSERT INTO referral_credits (referrer_client_id, referred_client_id, referred_order_id, credit_percentage, order_total, credit_amount, referralCreditStatus, notes, created_at, updated_at)
+      `INSERT INTO referral_credits (referrer_client_id, referred_client_id, referred_order_id, credit_percentage, order_total, credit_amount, status, notes, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         clientIds[i % clientIds.length],
