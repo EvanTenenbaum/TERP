@@ -399,13 +399,13 @@ async function seedWorkflowStatuses(connection: mysql.Connection) {
 async function seedPricingDefaults(connection: mysql.Connection) {
   console.log('💰 Seeding pricing defaults...');
 
-  // Production schema: product_category, default_margin_percent
+  // Production schema: category, default_margin_percent
   const categories = ['Flower', 'Pre-Roll', 'Concentrate', 'Edible', 'Vape', 'Topical', 'Tincture', 'Accessories'];
 
   for (const category of categories) {
     const defaultMargin = faker.number.float({ min: 20, max: 40, fractionDigits: 2 });
     await connection.query(
-      `INSERT INTO pricing_defaults (product_category, default_margin_percent, created_at, updated_at)
+      `INSERT INTO pricing_defaults (category, default_margin_percent, created_at, updated_at)
        VALUES (?, ?, NOW(), NOW())
        ON DUPLICATE KEY UPDATE default_margin_percent = VALUES(default_margin_percent)`,
       [category, defaultMargin]
