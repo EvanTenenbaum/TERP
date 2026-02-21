@@ -1061,8 +1061,10 @@ async function seedBatchStatusHistory(connection: mysql.Connection, batchIds: nu
   console.log('📜 Seeding batch status history...');
 
   // Production schema: batchId, fromStatusId, toStatusId, changedBy, notes, createdAt
-  let created = 0;
+  const allRecords = [];
+  const startTime = Date.now();
 
+  // Collect all records first
   for (const batchId of batchIds.slice(0, 200)) {
     const transitionCount = faker.number.int({ min: 1, max: 4 });
     let prevStatusId = workflowStatusIds[0];
@@ -1070,25 +1072,41 @@ async function seedBatchStatusHistory(connection: mysql.Connection, batchIds: nu
     for (let i = 0; i < transitionCount; i++) {
       const toStatusId = workflowStatusIds[Math.min(i + 1, workflowStatusIds.length - 1)];
 
-      await connection.query(
-        `INSERT INTO batch_status_history (batchId, fromStatusId, toStatusId, changedBy, notes, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          batchId,
-          prevStatusId,
-          toStatusId,
-          userIds[created % userIds.length],
-          faker.lorem.sentence(),
-          formatDateTime(faker.date.recent({ days: 120 - (transitionCount - i) * 25 })),
-        ]
-      );
+      allRecords.push([
+        batchId,
+        prevStatusId,
+        toStatusId,
+        userIds[allRecords.length % userIds.length],
+        faker.lorem.sentence(),
+        formatDateTime(faker.date.recent({ days: 120 - (transitionCount - i) * 25 })),
+      ]);
 
       prevStatusId = toStatusId;
-      created++;
     }
   }
 
-  console.log(`   ✓ Created ${created} batch status history entries`);
+  // Bulk insert in batches of 100
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < allRecords.length; i += BATCH_SIZE) {
+    const batch = allRecords.slice(i, i + BATCH_SIZE);
+    const placeholders = batch.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+    const values = batch.flat();
+
+    await connection.query(
+      `INSERT INTO batch_status_history (batchId, fromStatusId, toStatusId, changedBy, notes, createdAt)
+       VALUES ${placeholders}`,
+      values
+    );
+
+    // Progress logging
+    const elapsed = (Date.now() - startTime) / 1000;
+    const rate = Math.round((i + batch.length) / elapsed);
+    const remaining = Math.max(0, Math.round((allRecords.length - i - batch.length) / rate));
+    console.log(`   ⏳ Seeded ${i + batch.length}/${allRecords.length} status records (${rate}/sec, ~${remaining}s remaining)`);
+  }
+
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`   ✓ Created ${allRecords.length} batch status history entries in ${totalTime}s`);
 }
 
 // ============================================================================
