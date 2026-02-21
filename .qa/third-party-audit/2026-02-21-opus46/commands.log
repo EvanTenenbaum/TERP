@@ -1,0 +1,125 @@
+=== TERP QA AUDIT - 2026-02-21-opus46 ===
+Auditor: Claude Code Opus 4.6 (independent third-party)
+Target: codex/uiux-master-plan-v4-20260221
+Claimed commit: 0b65701e
+Actual HEAD: 0b65701ee7695fc42820dc4f5647964f9bd3368b
+Audit started: 2026-02-21T23:39:00Z
+
+--- PREFLIGHT ---
+$ git rev-parse HEAD
+0b65701ee7695fc42820dc4f5647964f9bd3368b
+✓ HEAD matches claimed commit
+
+$ git status -sb
+## codex/uiux-master-plan-v4-20260221...origin/codex/uiux-master-plan-v4-20260221
+✓ Clean working tree, tracking remote
+
+--- DIFF ANALYSIS ---
+$ git diff --name-status origin/main...HEAD | wc -l
+551
+
+File classification:
+  426 QA_ARTIFACTS (screenshots, zips, verification docs)
+   39 FRONTEND (React components, pages, styles)
+   39 DOCS (redesign documentation)
+   24 SCRIPTS (audit, seed, execution scripts)
+   13 TESTS (unit, integration, E2E specs)
+    4 OTHER (package.json, version.json, etc.)
+    4 BACKEND (server utilities, services)
+    2 SHARED (types, north star module)
+
+--- CORE VERIFICATION (A) ---
+$ pnpm install
+EXIT_CODE=0
+Notes: lockfile up to date, some build scripts ignored (expected)
+
+$ pnpm check
+EXIT_CODE=0
+Result: PASS - tsc --noEmit clean
+
+$ pnpm lint
+EXIT_CODE=0
+Result: PASS - zero errors, zero warnings
+
+$ pnpm test
+EXIT_CODE=0
+Result: PASS - 5,552 passed, 25 skipped, 7 todo (208 test files, 2 skipped)
+Duration: 254.19s
+
+$ pnpm build
+EXIT_CODE=0
+Result: PASS - 4,399 modules, built in 47.49s
+Warnings: %VITE_APP_TITLE% not defined, Sentry disabled (expected), chunks > 800KB
+
+--- REDESIGN GATES (B) ---
+$ pnpm gate:placeholder
+EXIT_CODE=0
+Result: PASS - No placeholders in critical paths
+
+$ pnpm gate:rbac
+EXIT_CODE=0
+Result: PASS - 700 mutations, 696 protected, 4 public (auth routes)
+
+$ pnpm gate:parity
+EXIT_CODE=0
+Result: PASS - 97 in-scope, 0 unresolved, all work-surface contracts valid
+
+$ pnpm gate:invariants
+EXIT_CODE=1
+Result: INCOMPLETE - Database connection error: connect ECONNREFUSED 127.0.0.1:3307
+
+$ pnpm exec node scripts/uiux/v4-route-audit.mjs
+EXIT_CODE=1
+Result: INCOMPLETE - No running app server for Playwright to connect to
+
+--- SCHEMA LANE (D) ---
+$ pnpm validate:schema
+EXIT_CODE=1
+Result: INCOMPLETE - DATABASE_URL environment variable is required
+
+$ pnpm audit:schema-drift:strict
+EXIT_CODE=1
+Result: INCOMPLETE - Database connection failed (ECONNREFUSED)
+
+$ SCHEMA_FINGERPRINT_OPTIONAL_CHECKS='cron_leader_lock.table' pnpm audit:schema-fingerprint:strict
+EXIT_CODE=1
+Result: INCOMPLETE - Database connection failed (ECONNREFUSED)
+
+--- STATIC ANALYSIS ---
+$ git diff --name-only origin/main...HEAD -- 'drizzle/**'
+(empty - no drizzle changes)
+
+$ git diff --name-only origin/main...HEAD -- 'server/db/schema/**'
+(empty - no schema changes)
+
+$ git diff origin/main...HEAD | grep -E '^\+.*(CREATE TABLE|ALTER TABLE|DROP TABLE|ADD COLUMN|DROP COLUMN)'
+Only match: markdown doc noting seed DDL was REMOVED (not introduced)
+
+$ git diff --unified=0 origin/main...HEAD -- '*.ts' '*.tsx' | grep '^+' | grep -v '^\+\+\+' | grep -cE '(: any|as any|@ts-ignore|@ts-expect-error|eslint-disable)'
+0 (zero new debt)
+
+$ Forbidden pattern checks:
+  ctx.user?.id || 1     : 0 new instances
+  ctx.user?.id ?? 1     : 0 new instances
+  input.createdBy       : 0 new instances
+  input.userId          : 0 new instances
+  db.delete(            : 0 new instances
+  vendors table usage   : 0 new instances
+
+--- CONTEXT FILE VERIFICATION ---
+35 required files checked: 35 PRESENT, 0 MISSING
+
+--- DOMAIN SUITES (C) - ALL INCOMPLETE ---
+$ pnpm qa:test:orders     - INCOMPLETE (requires running app + DB)
+$ pnpm qa:test:inventory  - INCOMPLETE (requires running app + DB)
+$ pnpm qa:test:accounting - INCOMPLETE (requires running app + DB)
+$ pnpm qa:test:smoke      - INCOMPLETE (requires running app + DB)
+
+--- E2E GOLDEN FLOWS (E) - ALL INCOMPLETE ---
+$ playwright test gf-001-direct-intake.spec.ts   - INCOMPLETE (no running app)
+$ playwright test gf-002-procure-to-pay.spec.ts  - INCOMPLETE (no running app)
+$ playwright test work-surface-keyboard.spec.ts  - INCOMPLETE (no running app)
+
+--- MANUAL ADVERSARIAL RUNTIME CHECKS ---
+All INCOMPLETE - No running application server available in this audit environment.
+Direct Intake stress path, excluded-route smoke, desktop/mobile snapshots could not be performed.
