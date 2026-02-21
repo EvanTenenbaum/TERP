@@ -16,18 +16,49 @@ function maskDatabaseUrl(rawUrl?: string): string {
   return rawUrl.replace(/:\/\/([^:]+):([^@]+)@/, "://$1:****@");
 }
 
+function parseOptionalChecks(args: string[]): Set<string> {
+  const argValue = args
+    .find(arg => arg.startsWith("--optional-checks="))
+    ?.split("=", 2)[1];
+  const envValue = process.env.SCHEMA_FINGERPRINT_OPTIONAL_CHECKS;
+
+  return new Set(
+    [argValue, envValue]
+      .filter((value): value is string => Boolean(value))
+      .flatMap(value => value.split(","))
+      .map(value => value.trim())
+      .filter(Boolean)
+  );
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const strict = args.includes("--strict");
+  // Keep strict behavior, but allow explicitly-configured optional checks for
+  // environment-specific canaries (for example ops-only tables not present locally).
+  const optionalChecks = parseOptionalChecks(args);
 
   const result = await checkSchemaFingerprint({ retries: 2 });
+  const requiredChecks = result.checks.filter(
+    check => !optionalChecks.has(check.key)
+  );
+  const missingRequiredChecks = requiredChecks
+    .filter(check => !check.passed)
+    .map(check => check.key);
+  const requiredPassedChecks = requiredChecks.filter(check => check.passed).length;
+  const complete = requiredChecks.length > 0 && missingRequiredChecks.length === 0;
+
   const report = {
     checkedAt: new Date().toISOString(),
     database: maskDatabaseUrl(process.env.DATABASE_URL),
-    complete: result.complete,
+    complete,
     passedChecks: result.count,
     totalChecks: result.checks.length,
     missingChecks: result.missingChecks,
+    requiredPassedChecks,
+    requiredTotalChecks: requiredChecks.length,
+    missingRequiredChecks,
+    optionalChecks: Array.from(optionalChecks).sort(),
     checks: result.checks,
     attempts: result.attempts,
     lastError: result.lastError ?? null,
@@ -43,8 +74,18 @@ async function main(): Promise<void> {
   console.info("Schema fingerprint report generated:");
   console.info(`- Output: ${DEFAULT_OUTPUT_PATH}`);
   console.info(
-    `- Result: ${report.passedChecks}/${report.totalChecks} checks passed (${report.complete ? "complete" : "incomplete"})`
+    `- Result: ${report.requiredPassedChecks}/${report.requiredTotalChecks} required checks passed (${report.complete ? "complete" : "incomplete"})`
   );
+  console.info(
+    `- Raw result: ${report.passedChecks}/${report.totalChecks} checks passed`
+  );
+
+  if (report.optionalChecks.length > 0) {
+    console.info("- Optional checks:");
+    for (const check of report.optionalChecks) {
+      console.info(`  - ${check}`);
+    }
+  }
 
   if (report.missingChecks.length > 0) {
     console.info("- Missing checks:");

@@ -195,12 +195,17 @@ export const cleanupBatchesByBrandName = async (
   page: Page,
   brandName: string
 ): Promise<BatchCleanupResult> => {
+  const isCleanupSkippable = (message: string): boolean =>
+    message.includes("status 401") ||
+    message.includes("status 403") ||
+    message.includes("status 500");
+
   let list: InventoryListResponse;
   try {
     list = await fetchInventoryByQuery(page, brandName);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("status 401") || message.includes("status 403")) {
+    if (isCleanupSkippable(message)) {
       return {
         batchIds: [],
         updatedCount: 0,
@@ -218,7 +223,7 @@ export const cleanupBatchesByBrandName = async (
     await closeInventoryBatches(page, batchIds);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!(message.includes("status 401") || message.includes("status 403"))) {
+    if (!isCleanupSkippable(message)) {
       throw error;
     }
   }

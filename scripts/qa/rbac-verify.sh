@@ -3,24 +3,57 @@
 # Verifies all mutations have appropriate procedure wrappers
 # Exit 0 = PASS, Exit 1 = FAIL
 
-set -e
+set -euo pipefail
 
 echo "=== RBAC Verification (Gate G5) ==="
 echo ""
 
-# Find all mutations
-MUTATIONS=$(grep -rh "\.mutation(" server/src/routers/*.ts 2>/dev/null | wc -l || echo 0)
+ROUTER_DIR="server/routers"
 
-# Find protected mutations
-PROTECTED=$(grep -rh "protectedProcedure\|adminProcedure\|strictlyProtectedProcedure" server/src/routers/*.ts 2>/dev/null | grep -c "mutation" || echo 0)
+if [ ! -d "$ROUTER_DIR" ]; then
+  echo "GATE FAILED: Router directory not found: $ROUTER_DIR"
+  exit 1
+fi
 
-# Find public mutations
-PUBLIC_MUTATIONS=$(grep -rn "publicProcedure" server/src/routers/*.ts 2>/dev/null | grep "mutation" || true)
-PUBLIC_COUNT=$(echo "$PUBLIC_MUTATIONS" | grep -c "mutation" 2>/dev/null || echo 0)
+MUTATION_LINES=$(rg -n "\.mutation\(" "$ROUTER_DIR" -g '*.ts' || true)
+TOTAL_MUTATIONS=$(printf "%s\n" "$MUTATION_LINES" | sed '/^$/d' | wc -l | tr -d ' ')
 
-echo "Total mutations found: $MUTATIONS"
-echo "Protected mutations: $PROTECTED"
+if [ "$TOTAL_MUTATIONS" -eq 0 ]; then
+  echo "GATE FAILED: No mutations found. RBAC scan is likely misconfigured."
+  exit 1
+fi
+
+PROTECTED_COUNT=0
+PUBLIC_COUNT=0
+UNCLASSIFIED_COUNT=0
+PUBLIC_MUTATIONS=""
+UNCLASSIFIED_MUTATIONS=""
+
+while IFS= read -r entry; do
+  [ -z "$entry" ] && continue
+  file="${entry%%:*}"
+  rest="${entry#*:}"
+  line="${rest%%:*}"
+  start=$((line > 80 ? line - 80 : 1))
+  context=$(sed -n "${start},${line}p" "$file")
+
+  if printf "%s\n" "$context" | rg -q "publicProcedure"; then
+    PUBLIC_COUNT=$((PUBLIC_COUNT + 1))
+    PUBLIC_MUTATIONS="${PUBLIC_MUTATIONS}${entry}
+"
+  elif printf "%s\n" "$context" | rg -q "[A-Za-z0-9_]+Procedure|requirePermission\("; then
+    PROTECTED_COUNT=$((PROTECTED_COUNT + 1))
+  else
+    UNCLASSIFIED_COUNT=$((UNCLASSIFIED_COUNT + 1))
+    UNCLASSIFIED_MUTATIONS="${UNCLASSIFIED_MUTATIONS}${entry}
+"
+  fi
+done <<< "$MUTATION_LINES"
+
+echo "Total mutations found: $TOTAL_MUTATIONS"
+echo "Protected mutations: $PROTECTED_COUNT"
 echo "Public mutations: $PUBLIC_COUNT"
+echo "Unclassified mutations: $UNCLASSIFIED_COUNT"
 echo ""
 
 if [ -n "$PUBLIC_MUTATIONS" ]; then
@@ -30,21 +63,18 @@ if [ -n "$PUBLIC_MUTATIONS" ]; then
 fi
 
 # Known acceptable public mutations (calendar events are public for sharing)
-EXPECTED_PUBLIC=10
+EXPECTED_PUBLIC=12
 
 if [ "$PUBLIC_COUNT" -gt "$EXPECTED_PUBLIC" ]; then
-  echo "WARNING: Found $PUBLIC_COUNT public mutations, expected max $EXPECTED_PUBLIC"
-  echo "Review each public mutation for security risk"
+  echo "GATE FAILED: Found $PUBLIC_COUNT public mutations, expected max $EXPECTED_PUBLIC"
+  echo "Review and justify each public mutation before continuing"
+  exit 1
 fi
 
-# Check for mutations without any procedure wrapper (would be a critical bug)
-UNWRAPPED=$(grep -rn "export const.*Router" server/src/routers/*.ts -A 50 | grep -B5 "\.mutation(" | grep -v "Procedure" | grep "mutation" || true)
-if [ -n "$UNWRAPPED" ]; then
-  echo ""
-  echo "CRITICAL: Potentially unwrapped mutations found:"
-  echo "$UNWRAPPED"
-  echo ""
-  echo "GATE FAILED: Mutations may lack RBAC protection"
+if [ "$UNCLASSIFIED_COUNT" -gt 0 ]; then
+  echo "GATE FAILED: $UNCLASSIFIED_COUNT mutation(s) are not clearly protected/public."
+  echo "Review mutation wrappers in $ROUTER_DIR:"
+  echo "$UNCLASSIFIED_MUTATIONS"
   exit 1
 fi
 

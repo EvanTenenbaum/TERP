@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-02-21T12:12:00.165Z",
+  "database": "mysql://root:****@127.0.0.1:3307/terp-test",
+  "complete": true,
+  "passedChecks": 6,
+  "totalChecks": 7,
+  "missingChecks": [
+    "cron_leader_lock.table"
+  ],
+  "requiredPassedChecks": 6,
+  "requiredTotalChecks": 6,
+  "missingRequiredChecks": [],
+  "optionalChecks": [
+    "cron_leader_lock.table"
+  ],
+  "checks": [
+    {
+      "key": "cron_leader_lock.table",
+      "passed": false
+    },
+    {
+      "key": "client_needs.strain_type.column",
+      "passed": true
+    },
+    {
+      "key": "products.nameCanonical.column",
+      "passed": true
+    },
+    {
+      "key": "admin_impersonation_sessions.table",
+      "passed": true
+    },
+    {
+      "key": "feature_flags.table",
+      "passed": true
+    },
+    {
+      "key": "time_entries.table",
+      "passed": true
+    },
+    {
+      "key": "lots.supplier_client_id.column",
+      "passed": true
+    }
+  ],
+  "attempts": 1,
+  "lastError": null
+}

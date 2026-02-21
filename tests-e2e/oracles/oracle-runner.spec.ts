@@ -22,7 +22,7 @@ import {
 
 // Configuration
 const DEFAULT_ORACLE_TIMEOUT_MS = Number(
-  process.env.ORACLE_TIMEOUT_MS || 120000
+  process.env.ORACLE_TIMEOUT_MS || 240000
 );
 const RUN_MODE = process.env.ORACLE_RUN_MODE || "tier1"; // tier1, tier2, all, domain, tags, single
 const ORACLE_DOMAIN = process.env.ORACLE_DOMAIN || "";

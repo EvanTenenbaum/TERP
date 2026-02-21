@@ -590,9 +590,9 @@ export function PickPackWorkSurface() {
     onMutate: () => setSaving(),
     onSuccess: () => {
       setSelectedItems([]);
-      refetchOrderDetails();
-      refetchPickList();
-      refetchStats();
+      void refetchOrderDetails();
+      void refetchPickList();
+      void refetchStats();
       setSaved();
       toast.success("Items packed successfully");
     },
@@ -608,9 +608,9 @@ export function PickPackWorkSurface() {
   const markAllPackedMutation = trpc.pickPack.markAllPacked.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
-      refetchOrderDetails();
-      refetchPickList();
-      refetchStats();
+      void refetchOrderDetails();
+      void refetchPickList();
+      void refetchStats();
       setSaved();
       toast.success("All items packed");
     },
@@ -627,8 +627,8 @@ export function PickPackWorkSurface() {
     onMutate: () => setSaving(),
     onSuccess: () => {
       setSelectedOrderId(null);
-      refetchPickList();
-      refetchStats();
+      void refetchPickList();
+      void refetchStats();
       setSaved();
       toast.success("Order marked ready for shipping");
     },
@@ -828,7 +828,34 @@ export function PickPackWorkSurface() {
     ]
   );
 
-  useWorkSurfaceKeyboard(keyboardConfig);
+  const { keyboardProps } = useWorkSurfaceKeyboard(keyboardConfig);
+
+  useEffect(() => {
+    const handleGlobalSearchShortcut = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (key !== "k" || (!event.metaKey && !event.ctrlKey)) return;
+
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName.toLowerCase();
+        const isTextInput =
+          target.isContentEditable ||
+          tag === "input" ||
+          tag === "textarea" ||
+          target.getAttribute("role") === "textbox";
+        if (isTextInput) return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      searchInputRef.current?.focus();
+    };
+
+    window.addEventListener("keydown", handleGlobalSearchShortcut, true);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalSearchShortcut, true);
+    };
+  }, []);
 
   // Get inspected item
   const inspectedItem = useMemo(() => {
@@ -850,9 +877,13 @@ export function PickPackWorkSurface() {
   );
 
   return (
-    <div ref={containerRef} className="flex h-full bg-gray-50" tabIndex={0}>
+    <div
+      {...keyboardProps}
+      ref={containerRef}
+      className="flex flex-col lg:flex-row h-full bg-gray-50"
+    >
       {/* Left Panel: Pick List */}
-      <div className="w-1/3 border-r bg-white flex flex-col min-w-[320px]">
+      <div className="w-full lg:w-1/3 border-b lg:border-b-0 lg:border-r bg-white flex flex-col min-w-0 lg:min-w-[320px]">
         {/* Header */}
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
@@ -863,20 +894,21 @@ export function PickPackWorkSurface() {
             <div className="flex items-center gap-2">
               {SaveStateIndicator}
               <Button
-                variant="ghost"
-                size="icon"
+                variant="outline"
+                size="sm"
                 onClick={() => {
-                  refetchPickList();
-                  refetchStats();
+                  void refetchPickList();
+                  void refetchStats();
                 }}
               >
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Queue
               </Button>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
             <div className="text-center p-2 bg-yellow-50 rounded-lg">
               <div className="text-lg font-bold text-yellow-600">
                 {statusCounts.pending}
@@ -904,7 +936,7 @@ export function PickPackWorkSurface() {
           </div>
 
           {/* Search & Filter */}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
@@ -921,7 +953,7 @@ export function PickPackWorkSurface() {
               value={statusFilter}
               onValueChange={v => setStatusFilter(v as PickPackStatus | "ALL")}
             >
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-full sm:w-[130px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -937,7 +969,7 @@ export function PickPackWorkSurface() {
 
         {/* Order List */}
         <div
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto max-h-[45vh] lg:max-h-none"
           role="listbox"
           data-testid="order-queue"
         >
@@ -971,7 +1003,7 @@ export function PickPackWorkSurface() {
       </div>
 
       {/* Right Panel: Order Details */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {!selectedOrderId ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
             <Box className="w-16 h-16 mb-4 text-gray-300" />

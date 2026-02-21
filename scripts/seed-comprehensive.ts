@@ -303,6 +303,27 @@ async function tableExists(connection: mysql.Connection, tableName: string): Pro
   }
 }
 
+async function tableHasColumn(
+  connection: mysql.Connection,
+  tableName: string,
+  columnName: string
+): Promise<boolean> {
+  try {
+    const [rows] = await connection.query(
+      `SELECT 1
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = ?
+         AND COLUMN_NAME = ?
+       LIMIT 1`,
+      [tableName, columnName]
+    );
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function clearTables(connection: mysql.Connection, dryRun: boolean) {
   console.log('🗑️  Clearing existing data...');
 
@@ -1208,6 +1229,8 @@ async function seedCalendarEvents(connection: mysql.Connection, userIds: number[
   const priorities = ['LOW', 'MEDIUM', 'HIGH'];
   const statuses = ['SCHEDULED', 'COMPLETED', 'CANCELLED'];
 
+  const hasCalendarId = await tableHasColumn(connection, 'calendar_events', 'calendar_id');
+
   for (let i = 0; i < count; i++) {
     const startDate = faker.date.soon({ days: 60 });
     const endDate = new Date(startDate);
@@ -1216,25 +1239,35 @@ async function seedCalendarEvents(connection: mysql.Connection, userIds: number[
     const eventType = eventTypes[i % eventTypes.length];
     const status = i < count * 0.8 ? 'SCHEDULED' : statuses[i % statuses.length];
 
+    const values = [
+      `${eventType.replace(/_/g, ' ')} - ${faker.company.buzzPhrase()}`,
+      faker.lorem.paragraph(),
+      formatDate(startDate),
+      formatDate(endDate),
+      `${String(faker.number.int({ min: 8, max: 17 })).padStart(2, '0')}:00:00`,
+      `${String(faker.number.int({ min: 9, max: 18 })).padStart(2, '0')}:00:00`,
+      module,
+      eventType,
+      priorities[i % priorities.length],
+      status,
+      userIds[i % userIds.length],
+      module === 'CLIENTS' || eventType === 'AR_COLLECTION' ? clientIds[i % clientIds.length] : null,
+      module === 'VENDORS' || eventType === 'AP_PAYMENT' ? vendorIds[i % vendorIds.length] : null,
+    ];
+
+    if (hasCalendarId) {
+      await connection.query(
+        `INSERT INTO calendar_events (title, description, start_date, end_date, start_time, end_time, timezone, module, event_type, priority, status, visibility, is_auto_generated, is_recurring, is_floating_time, created_by, client_id, vendor_id, calendar_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'America/Los_Angeles', ?, ?, ?, ?, 'COMPANY', 0, 0, 0, ?, ?, ?, ?, NOW(), NOW())`,
+        [...values, calendarIds.length > 0 ? calendarIds[i % calendarIds.length] : null]
+      );
+      continue;
+    }
+
     await connection.query(
-      `INSERT INTO calendar_events (title, description, start_date, end_date, start_time, end_time, timezone, module, event_type, priority, status, visibility, is_auto_generated, is_recurring, is_floating_time, created_by, client_id, vendor_id, calendar_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'America/Los_Angeles', ?, ?, ?, ?, 'COMPANY', 0, 0, 0, ?, ?, ?, ?, NOW(), NOW())`,
-      [
-        `${eventType.replace(/_/g, ' ')} - ${faker.company.buzzPhrase()}`,
-        faker.lorem.paragraph(),
-        formatDate(startDate),
-        formatDate(endDate),
-        `${String(faker.number.int({ min: 8, max: 17 })).padStart(2, '0')}:00:00`,
-        `${String(faker.number.int({ min: 9, max: 18 })).padStart(2, '0')}:00:00`,
-        module,
-        eventType,
-        priorities[i % priorities.length],
-        status,
-        userIds[i % userIds.length],
-        module === 'CLIENTS' || eventType === 'AR_COLLECTION' ? clientIds[i % clientIds.length] : null,
-        module === 'VENDORS' || eventType === 'AP_PAYMENT' ? vendorIds[i % vendorIds.length] : null,
-        calendarIds.length > 0 ? calendarIds[i % calendarIds.length] : null,
-      ]
+      `INSERT INTO calendar_events (title, description, start_date, end_date, start_time, end_time, timezone, module, event_type, priority, status, visibility, is_auto_generated, is_recurring, is_floating_time, created_by, client_id, vendor_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'America/Los_Angeles', ?, ?, ?, ?, 'COMPANY', 0, 0, 0, ?, ?, ?, NOW(), NOW())`,
+      values
     );
   }
 
@@ -1390,6 +1423,11 @@ async function seedInboxItems(connection: mysql.Connection, userIds: number[], c
 
 async function seedVipTiers(connection: mysql.Connection) {
   console.log('⭐ Seeding VIP tiers...');
+  const exists = await tableExists(connection, 'vip_tiers');
+  if (!exists) {
+    console.log('   - Skipped: vip_tiers table not exists');
+    return [];
+  }
 
   // Production schema: name, display_name, description, level, color, icon,
   // min_spend_ytd, min_orders_ytd, discount_percentage, is_active, is_default
@@ -1428,6 +1466,11 @@ async function seedVipTiers(connection: mysql.Connection) {
 
 async function seedVipPortalConfigurations(connection: mysql.Connection, clientIds: number[], count: number) {
   console.log('🌟 Seeding VIP portal configurations...');
+  const exists = await tableExists(connection, 'vip_portal_configurations');
+  if (!exists) {
+    console.log('   - Skipped: vip_portal_configurations table not exists');
+    return;
+  }
 
   // Production schema: client_id, module_dashboard_enabled, module_ar_enabled, module_ap_enabled,
   // module_transaction_history_enabled, module_vip_tier_enabled, module_credit_center_enabled,
@@ -1453,6 +1496,11 @@ async function seedVipPortalConfigurations(connection: mysql.Connection, clientI
 
 async function seedVipPortalAuth(connection: mysql.Connection, clientIds: number[], count: number) {
   console.log('🔐 Seeding VIP portal auth...');
+  const exists = await tableExists(connection, 'vip_portal_auth');
+  if (!exists) {
+    console.log('   - Skipped: vip_portal_auth table not exists');
+    return;
+  }
 
   // Production schema: client_id, email, password_hash, login_count
   const vipClientIds = clientIds.slice(0, count);
@@ -1480,6 +1528,11 @@ async function seedVipPortalAuth(connection: mysql.Connection, clientIds: number
 
 async function seedClientNeeds(connection: mysql.Connection, clientIds: number[], userIds: number[], count: number) {
   console.log('🎯 Seeding client needs...');
+  const exists = await tableExists(connection, 'client_needs');
+  if (!exists) {
+    console.log('   - Skipped: client_needs table not exists');
+    return;
+  }
 
   // Production schema: client_id, strain, product_name, strain_type, category, subcategory,
   // grade, quantity_min, quantity_max, price_max, status, priority, needed_by, notes, created_by
@@ -1518,6 +1571,11 @@ async function seedClientNeeds(connection: mysql.Connection, clientIds: number[]
 
 async function seedVendorSupply(connection: mysql.Connection, vendorIds: number[], userIds: number[], count: number) {
   console.log('📦 Seeding vendor supply...');
+  const exists = await tableExists(connection, 'vendor_supply');
+  if (!exists) {
+    console.log('   - Skipped: vendor_supply table not exists');
+    return;
+  }
 
   // Production schema: vendor_id, strain, product_name, strain_type, category, subcategory,
   // grade, quantity_available, unit_price, status, available_until, notes, created_by
@@ -1557,6 +1615,11 @@ async function seedVendorSupply(connection: mysql.Connection, vendorIds: number[
 
 async function seedSampleRequests(connection: mysql.Connection, clientIds: number[], productIds: number[], userIds: number[], count: number) {
   console.log('🧪 Seeding sample requests...');
+  const exists = await tableExists(connection, 'sampleRequests');
+  if (!exists) {
+    console.log('   - Skipped: sampleRequests table not exists');
+    return;
+  }
 
   // Production schema: clientId, requestedBy, requestDate, products (JSON), sampleRequestStatus,
   // fulfilledDate, fulfilledBy, notes, totalCost, relatedOrderId
@@ -1591,6 +1654,11 @@ async function seedSampleRequests(connection: mysql.Connection, clientIds: numbe
 
 async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds: number[], userIds: number[], count: number) {
   console.log('📥 Seeding intake sessions...');
+  const exists = await tableExists(connection, 'intake_sessions');
+  if (!exists) {
+    console.log('   - Skipped: intake_sessions table not exists');
+    return;
+  }
 
   // IMPORTANT: vendor_id in intake_sessions references clients.id (NOT vendors.id!)
   // The supplier must be a client with is_seller=1
@@ -1633,6 +1701,11 @@ async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds:
 
 async function seedRecurringOrders(connection: mysql.Connection, clientIds: number[], productIds: number[], userIds: number[], count: number) {
   console.log('🔄 Seeding recurring orders...');
+  const exists = await tableExists(connection, 'recurring_orders');
+  if (!exists) {
+    console.log('   - Skipped: recurring_orders table not exists');
+    return;
+  }
 
   // Production schema: client_id, frequency, day_of_week, day_of_month, order_template,
   // status, start_date, end_date, next_generation_date, notify_client, created_by
@@ -1674,9 +1747,31 @@ async function seedRecurringOrders(connection: mysql.Connection, clientIds: numb
 
 async function seedReferralCredits(connection: mysql.Connection, clientIds: number[], orderIds: number[], count: number) {
   console.log('🎁 Seeding referral credits...');
+  const exists = await tableExists(connection, 'referral_credits');
+  if (!exists) {
+    console.log('   - Skipped: referral_credits table not exists');
+    return;
+  }
+
+  // Compatibility handling for local/prod schema variants.
+  const hasStatus = await tableHasColumn(connection, 'referral_credits', 'status');
+  const hasLegacyStatus = await tableHasColumn(
+    connection,
+    'referral_credits',
+    'referralCreditStatus'
+  );
+
+  if (!hasStatus && !hasLegacyStatus) {
+    console.log(
+      '   - Skipped: referral_credits missing status/referralCreditStatus column'
+    );
+    return;
+  }
+
+  const statusColumn = hasStatus ? 'status' : 'referralCreditStatus';
 
   // Production schema: referrer_client_id, referred_client_id, referred_order_id,
-  // credit_percentage, order_total, credit_amount, referralCreditStatus (camelCase in DB)
+  // credit_percentage, order_total, credit_amount, status
   const statuses = ['PENDING', 'AVAILABLE', 'APPLIED', 'EXPIRED'];
 
   for (let i = 0; i < count; i++) {
@@ -1686,7 +1781,7 @@ async function seedReferralCredits(connection: mysql.Connection, clientIds: numb
     const creditAmount = orderTotal * (creditPercent / 100);
 
     await connection.query(
-      `INSERT INTO referral_credits (referrer_client_id, referred_client_id, referred_order_id, credit_percentage, order_total, credit_amount, referralCreditStatus, notes, created_at, updated_at)
+      `INSERT INTO referral_credits (referrer_client_id, referred_client_id, referred_order_id, credit_percentage, order_total, credit_amount, ${statusColumn}, notes, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         clientIds[i % clientIds.length],
@@ -1706,6 +1801,11 @@ async function seedReferralCredits(connection: mysql.Connection, clientIds: numb
 
 async function seedLeaderboardData(connection: mysql.Connection, clientIds: number[]) {
   console.log('🏆 Seeding leaderboard data...');
+  const exists = await tableExists(connection, 'leaderboard_metric_cache');
+  if (!exists) {
+    console.log('   - Skipped: leaderboard_metric_cache table not exists');
+    return;
+  }
 
   // Production schema: client_id, metric_type, metric_value, sample_size, is_significant, calculated_at, expires_at
   const metrics = ['ytd_revenue', 'avg_order_value', 'order_frequency', 'payment_speed', 'margin_performance'];
@@ -1877,13 +1977,21 @@ async function main() {
     // ==================== TIER 7: System Configuration ====================
     console.log('\n📌 TIER 7: System Configuration\n');
 
-    // DATA-004 FIX: Seed feature flags using the dedicated seeder
-    // This uses Drizzle ORM and is idempotent (won't duplicate flags)
-    console.log('🚩 Seeding feature flags...');
-    const featureFlagResult = await seedFeatureFlags('system');
-    console.log(`   ✓ Feature flags: ${featureFlagResult.created} created, ${featureFlagResult.skipped} skipped`);
-    if (featureFlagResult.errors.length > 0) {
-      console.log(`   ⚠️ ${featureFlagResult.errors.length} errors:`, featureFlagResult.errors);
+    const skipFeatureFlagSeed =
+      process.env.SKIP_FEATURE_FLAG_SEED === '1' ||
+      process.env.SKIP_FEATURE_FLAG_SEED === 'true';
+    if (skipFeatureFlagSeed) {
+      console.log('🚩 Seeding feature flags...');
+      console.log('   ↷ Skipped by SKIP_FEATURE_FLAG_SEED (no schema mutation mode)');
+    } else {
+      // DATA-004 FIX: Seed feature flags using the dedicated seeder
+      // This uses Drizzle ORM and is idempotent (won't duplicate flags)
+      console.log('🚩 Seeding feature flags...');
+      const featureFlagResult = await seedFeatureFlags('system');
+      console.log(`   ✓ Feature flags: ${featureFlagResult.created} created, ${featureFlagResult.skipped} skipped`);
+      if (featureFlagResult.errors.length > 0) {
+        console.log(`   ⚠️ ${featureFlagResult.errors.length} errors:`, featureFlagResult.errors);
+      }
     }
 
     // ==================== COMPLETE ====================
@@ -1924,7 +2032,11 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });

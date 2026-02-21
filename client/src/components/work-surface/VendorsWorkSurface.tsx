@@ -161,9 +161,14 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
 interface VendorInspectorProps {
   vendor: Vendor | null;
   onNavigate: (vendorId: number) => void;
+  onViewPurchaseOrders: (vendorId: number) => void;
 }
 
-function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
+function VendorInspectorContent({
+  vendor,
+  onNavigate,
+  onViewPurchaseOrders,
+}: VendorInspectorProps) {
   if (!vendor) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -304,7 +309,9 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
-              toast.info("View purchase orders functionality coming soon");
+              if (vendor?.id !== null && vendor?.id !== undefined) {
+                onViewPurchaseOrders(vendor.id);
+              }
             }}
           >
             <Package className="h-4 w-4 mr-2" />
@@ -486,6 +493,13 @@ export function VendorsWorkSurface() {
   const handleNavigate = useCallback(
     (vendorId: number) => {
       setLocation(`/clients/${vendorId}`);
+    },
+    [setLocation]
+  );
+
+  const handleViewPurchaseOrders = useCallback(
+    (vendorId: number) => {
+      setLocation(`/purchase-orders?supplierClientId=${vendorId}`);
     },
     [setLocation]
   );
@@ -747,6 +761,7 @@ export function VendorsWorkSurface() {
           <VendorInspectorContent
             vendor={selectedVendor}
             onNavigate={handleNavigate}
+            onViewPurchaseOrders={handleViewPurchaseOrders}
           />
         </InspectorPanel>
       </div>

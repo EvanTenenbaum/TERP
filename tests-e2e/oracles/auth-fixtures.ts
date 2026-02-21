@@ -675,6 +675,14 @@ async function tryFormLogin(
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       await page.goto("/login", { waitUntil: "domcontentloaded" });
+
+      // Local redesign runs can intentionally bypass login in dev mode.
+      // If /login immediately redirects into the app shell, treat as success.
+      if (!isLoginUrl(page.url())) {
+        const shellReady = await waitForAuthenticatedShell(page);
+        if (shellReady) return true;
+      }
+
       await page.waitForSelector('button[type="submit"]', { timeout: 10000 });
 
       await fillFirstVisible(
@@ -699,6 +707,11 @@ async function tryFormLogin(
       await page.click('button[type="submit"]');
       return waitForAuthenticatedShell(page);
     } catch (error) {
+      const shellReady = await waitForAuthenticatedShell(page).catch(
+        () => false
+      );
+      if (shellReady) return true;
+
       const canRetry =
         attempt < maxAttempts && isRetryableNavigationError(error);
       if (!canRetry) throw error;

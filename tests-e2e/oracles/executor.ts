@@ -1072,6 +1072,7 @@ async function selectFromCombobox(
       const boundedIndex = Math.min(optionIndex, count - 1);
       const candidate = group.nth(boundedIndex);
       if (await candidate.isVisible().catch(() => false)) {
+        await candidate.scrollIntoViewIfNeeded().catch(() => undefined);
         await candidate.click({ timeout: DEFAULT_ACTION_TIMEOUT });
         return;
       }
@@ -1086,6 +1087,7 @@ async function selectFromCombobox(
       for (let i = 0; i < Math.min(count, 40); i++) {
         const candidate = group.nth(i);
         if (await candidate.isVisible().catch(() => false)) {
+          await candidate.scrollIntoViewIfNeeded().catch(() => undefined);
           await candidate.click({ timeout: DEFAULT_ACTION_TIMEOUT });
           return;
         }
@@ -1114,6 +1116,7 @@ async function selectFromCombobox(
           text.includes(normalizedValue) ||
           normalizedValue.includes(text)
         ) {
+          await candidate.scrollIntoViewIfNeeded().catch(() => undefined);
           await candidate.click({ timeout: DEFAULT_ACTION_TIMEOUT });
           return;
         }
@@ -2678,6 +2681,11 @@ async function executeAction(
         const candidates = buildSelectorCandidates(action.for, context);
         const found = await waitForAnySelector(page, candidates, waitTimeout);
         if (!found) {
+          if (action.for.includes("{{temp:")) {
+            throw new Error(
+              `CANNOT_RESOLVE_ID for ${action.for}. Temp precondition data not resolvable in live UI state.`
+            );
+          }
           if (isRowLikeSelector(action.for) && (await detectEmptyState(page))) {
             throw new Error(
               `CANNOT_RESOLVE_ID for ${action.for}. Empty-state detected in live data.`

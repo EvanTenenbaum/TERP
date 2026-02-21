@@ -9,6 +9,36 @@ import { eq, and, type SQL } from "drizzle-orm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import type { MySqlTable, AnyMySqlColumn } from "drizzle-orm/mysql-core";
 
+type SqlErrorLike = {
+  code?: string;
+  errno?: number | string;
+  message?: string;
+  sqlMessage?: string;
+  cause?: unknown;
+};
+
+function isDuplicateEntryError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const sqlError = error as SqlErrorLike;
+  const code = (sqlError.code ?? "").toUpperCase();
+  const errno = String(sqlError.errno ?? "");
+  const message =
+    (typeof sqlError.message === "string" ? sqlError.message : "") +
+    " " +
+    (typeof sqlError.sqlMessage === "string" ? sqlError.sqlMessage : "");
+
+  if (
+    code === "ER_DUP_ENTRY" ||
+    errno === "1062" ||
+    message.toLowerCase().includes("duplicate entry")
+  ) {
+    return true;
+  }
+
+  return isDuplicateEntryError(sqlError.cause);
+}
+
 /**
  * Type for tables that have an id column
  * Used for generic database operations that need to access the id column
@@ -55,18 +85,38 @@ export async function findOrCreate<
   }
 
   // Create new entity
-  const [created] = await tx.insert(table).values(createValues).$returningId();
+  try {
+    const [created] = await tx.insert(table).values(createValues).$returningId();
 
-  // Fetch the created entity using the created id
-  // Cast to TableWithIdColumn to access the id column in a type-safe manner
-  const tableWithId = table as TTable & TableWithIdColumn;
-  const [newEntity] = await tx
-    .select()
-    .from(table)
-    .where(eq(tableWithId.id, (created as { id: number }).id))
-    .limit(1);
+    // Fetch the created entity using the created id
+    // Cast to TableWithIdColumn to access the id column in a type-safe manner
+    const tableWithId = table as TTable & TableWithIdColumn;
+    const [newEntity] = await tx
+      .select()
+      .from(table)
+      .where(eq(tableWithId.id, (created as { id: number }).id))
+      .limit(1);
 
-  return newEntity as TSelect;
+    return newEntity as TSelect;
+  } catch (insertError) {
+    if (!isDuplicateEntryError(insertError)) {
+      throw insertError;
+    }
+
+    // Concurrent find-or-create race: another transaction inserted the row first.
+    // Re-read with the original where clause and return the canonical existing row.
+    const [existingAfterConflict] = await tx
+      .select()
+      .from(table)
+      .where(whereClause)
+      .limit(1);
+
+    if (existingAfterConflict) {
+      return existingAfterConflict as TSelect;
+    }
+
+    throw insertError;
+  }
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  Command,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
@@ -65,9 +66,9 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   };
 
   return (
-    <header className="border-b border-border bg-background">
+    <header className="border-b border-border/80 bg-background/95 backdrop-blur-sm">
       {/* Main header row */}
-      <div className="flex items-center justify-between h-16 px-4 md:px-6">
+      <div className="flex items-center justify-between h-14 px-3 md:px-4">
         {/* Mobile menu button */}
         <Button
           variant="ghost"
@@ -85,14 +86,14 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         {/* Search bar */}
         <form
           onSubmit={handleSearch}
-          className="flex items-center flex-1 max-w-2xl"
+          className="flex items-center flex-1 max-w-3xl"
         >
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search quotes, customers, products..."
-              className="pl-10 w-full"
+              placeholder="Search across TERP..."
+              className="pl-10 w-full h-9 bg-background"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -102,6 +103,16 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 md:gap-2 ml-2">
+          <Button
+            variant="ghost"
+            className="hidden lg:flex h-8 rounded-full border border-border/70 bg-background px-2.5 text-[11px] font-medium text-muted-foreground"
+            title="Open command palette"
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          >
+            <Command className="h-3.5 w-3.5 mr-1.5" />
+            K
+          </Button>
+
           <NotificationBell className="hidden sm:flex relative" />
 
           {/* Theme Toggle */}
@@ -175,10 +186,10 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
       </div>
 
       {/* Breadcrumb row with version - CHAOS-027 */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-2">
+      <div className="flex items-center justify-between px-3 md:px-4 py-1.5 border-t border-border/40">
         <AppBreadcrumb />
         <span
-          className="text-xs text-muted-foreground hidden sm:inline-block"
+          className="text-[11px] text-muted-foreground hidden sm:inline-block"
           title={`Build: ${versionInfo.commit} (${versionInfo.date})`}
         >
           v{versionInfo.version}

@@ -142,11 +142,13 @@ async function seedQaAccounts(): Promise<void> {
     }
 
     console.info("Creating QA accounts...\n");
+    const qaPasswordHash = await bcrypt.hash(QA_PASSWORD, 10);
 
     let created = 0;
     let skipped = 0;
     let roleAssigned = 0;
     let roleUpdated = 0;
+    let passwordUpdated = 0;
 
     for (const account of QA_ACCOUNTS) {
       process.stdout.write(`  ${account.email.padEnd(35)}`);
@@ -164,6 +166,16 @@ async function seedQaAccounts(): Promise<void> {
         // User exists - use existing openId
         openId = existing[0].openId;
         skipped++;
+
+        // Keep QA credentials deterministic for E2E/oracle auth.
+        await db
+          .update(schema.users)
+          .set({
+            loginMethod: qaPasswordHash,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.users.openId, openId));
+        passwordUpdated++;
 
         // BUG-111 FIX: Check if user already has the RBAC role assigned
         const rbacRole = allRoles.find(r => r.name === account.rbacRoleName);
@@ -194,9 +206,6 @@ async function seedQaAccounts(): Promise<void> {
         continue;
       }
 
-      // Hash password
-      const passwordHash = await bcrypt.hash(QA_PASSWORD, 10);
-
       // Create user with unique openId
       openId = `qa-${account.rbacRoleName.toLowerCase().replace(/[\s/]+/g, "-")}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
@@ -204,7 +213,7 @@ async function seedQaAccounts(): Promise<void> {
         openId,
         email: account.email,
         name: account.name,
-        loginMethod: passwordHash,
+        loginMethod: qaPasswordHash,
         role: account.userRole,
       });
 
@@ -233,6 +242,7 @@ async function seedQaAccounts(): Promise<void> {
     console.info("=".repeat(80));
     console.info(`  Created:         ${created}`);
     console.info(`  Skipped:         ${skipped}`);
+    console.info(`  Password Reset:  ${passwordUpdated}`);
     console.info(`  Roles Assigned:  ${roleAssigned} (new users)`);
     console.info(`  Roles Updated:   ${roleUpdated} (existing users)`);
     console.info("");

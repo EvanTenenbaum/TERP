@@ -99,6 +99,27 @@ steps:
     network_idle: true
     timeout: 15000
 
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table"
+
+  - action: click
+    target: "button[role='tab']:has-text('Confirmed'), [role='tab']:has-text('Confirmed')"
+    wait_after: 500
+
+  - action: type
+    target: "[data-testid='orders-search-input']"
+    value: "{{temp:order_to_ship.orderNumber}}"
+    clear_first: true
+
+  - action: wait
+    for: "table tbody tr"
+    timeout: 10000
+
+  - action: wait
+    for: "table tbody tr:has-text('SHIPPED'), table tbody tr:has-text('Shipped')"
+    timeout: 15000
+
   - action: screenshot
     name: "order_shipped"
 

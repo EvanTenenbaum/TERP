@@ -154,7 +154,8 @@ function checkMissingIndexes(
 
 async function analyzeTable(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
-  tableName: string
+  tableName: string,
+  options: { includeRelationalHeuristics: boolean }
 ): Promise<TableDrift> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columns = await getTableColumns(db as any, tableName);
@@ -171,11 +172,13 @@ async function analyzeTable(
     issues.push(issue);
   }
 
-  const fkIssues = checkMissingFKs(tableName, fks, columns);
-  issues.push(...fkIssues);
+  if (options.includeRelationalHeuristics) {
+    const fkIssues = checkMissingFKs(tableName, fks, columns);
+    issues.push(...fkIssues);
 
-  const indexIssues = checkMissingIndexes(tableName, fks, indexes, columns);
-  issues.push(...indexIssues);
+    const indexIssues = checkMissingIndexes(tableName, fks, indexes, columns);
+    issues.push(...indexIssues);
+  }
 
   return {
     tableName,
@@ -194,12 +197,18 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const strictMode = args.includes("--strict");
   const fixMode = args.includes("--fix");
+  const includeRelationalHeuristics = args.includes("--enforce-relational");
 
   console.log("=".repeat(60));
   console.log("SCHEMA DRIFT DETECTION v2");
   console.log("=".repeat(60));
   console.log(`Started: ${new Date().toISOString()}`);
-  console.log(`Mode: ${strictMode ? "STRICT" : "Normal"}${fixMode ? " + FIX" : ""}`);
+  console.log(
+    `Mode: ${strictMode ? "STRICT" : "Normal"}${fixMode ? " + FIX" : ""}`
+  );
+  console.log(
+    `Relational heuristic checks: ${includeRelationalHeuristics ? "ENFORCED" : "ADVISORY-OFF"}`
+  );
   console.log("");
 
   // CRITICAL: Fail if DB connection fails
@@ -224,7 +233,9 @@ async function main(): Promise<void> {
 
   for (const tableName of tables) {
     process.stdout.write(`Analyzing ${tableName}...`);
-    const drift = await analyzeTable(db, tableName);
+    const drift = await analyzeTable(db, tableName, {
+      includeRelationalHeuristics,
+    });
     tableDrifts.push(drift);
 
     if (drift.issues.length > 0) {

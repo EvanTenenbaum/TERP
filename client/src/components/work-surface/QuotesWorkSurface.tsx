@@ -493,6 +493,22 @@ export function QuotesWorkSurface() {
     },
   });
 
+  const deleteQuoteMutation = trpc.orders.delete.useMutation({
+    onMutate: () => setSaving("Deleting quote..."),
+    onSuccess: () => {
+      toast.success("Quote deleted");
+      setSaved();
+      refetchQuotes();
+      setShowDeleteDialog(false);
+      setSelectedQuoteId(null);
+      inspector.close();
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to delete quote");
+      setError(err.message);
+    },
+  });
+
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: false,
@@ -553,8 +569,8 @@ export function QuotesWorkSurface() {
     setSelectedQuoteId(quoteId);
     setShowConvertDialog(true);
   };
-  const handleDuplicate = (_quoteId: number) =>
-    toast.info("Duplicate quote functionality coming soon");
+  const handleDuplicate = (quoteId: number) =>
+    setLocation(`/orders/create?quoteId=${quoteId}&mode=duplicate`);
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);
@@ -781,9 +797,12 @@ export function QuotesWorkSurface() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => toast.info("Delete functionality coming soon")}
+              onClick={() =>
+                selectedQuoteId && deleteQuoteMutation.mutate({ id: selectedQuoteId })
+              }
+              disabled={deleteQuoteMutation.isPending || !selectedQuoteId}
             >
-              Delete
+              {deleteQuoteMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

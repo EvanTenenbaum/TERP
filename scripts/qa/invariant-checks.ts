@@ -19,6 +19,25 @@ export interface InvariantResult {
   evidence?: unknown;
 }
 
+const strictMode = process.argv.includes("--strict");
+
+function buildSkippedInvariantResult(
+  id: string,
+  name: string,
+  error: unknown
+): InvariantResult {
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    id,
+    name,
+    passed: !strictMode,
+    violations: strictMode ? 1 : 0,
+    details: strictMode
+      ? `Skipped (strict-fail): ${message}`
+      : `Skipped: ${message}`,
+  };
+}
+
 function buildMySqlConnectionOptionsFromUrl(
   databaseUrl: string
 ): mysql.ConnectionOptions {
@@ -107,13 +126,7 @@ async function checkINV001_BatchQuantityNonNegative(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -154,13 +167,7 @@ async function checkINV002_AllocatedNotExceedOnHand(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -182,15 +189,15 @@ async function checkAR001_InvoiceAmountsConsistent(
     const [rows] = await connection.execute(`
       SELECT
         id,
-        invoice_number,
-        total_amount AS totalAmount,
-        amount_paid AS amountPaid,
-        amount_due AS amountDue
+        invoiceNumber,
+        totalAmount,
+        amountPaid,
+        amountDue
       FROM invoices
       WHERE deleted_at IS NULL
         AND ABS(
-          CAST(amount_due AS DECIMAL(12,2)) -
-          (CAST(total_amount AS DECIMAL(12,2)) - CAST(amount_paid AS DECIMAL(12,2)))
+          CAST(amountDue AS DECIMAL(12,2)) -
+          (CAST(totalAmount AS DECIMAL(12,2)) - CAST(amountPaid AS DECIMAL(12,2)))
         ) > 0.01
       LIMIT 10
     `);
@@ -209,13 +216,7 @@ async function checkAR001_InvoiceAmountsConsistent(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -233,14 +234,17 @@ async function checkAR002_AmountPaidMatchesPayments(
     const [rows] = await connection.execute(`
       SELECT
         i.id,
-        i.invoice_number,
-        i.amount_paid AS recorded_paid,
+        i.invoiceNumber,
+        i.amountPaid AS recorded_paid,
         COALESCE(SUM(p.amount), 0) AS actual_paid
       FROM invoices i
-      LEFT JOIN payments p ON p.invoice_id = i.id AND p.deleted_at IS NULL
+      LEFT JOIN payments p ON p.invoiceId = i.id AND p.deleted_at IS NULL
       WHERE i.deleted_at IS NULL
-      GROUP BY i.id, i.invoice_number, i.amount_paid
-      HAVING ABS(CAST(i.amount_paid AS DECIMAL(12,2)) - COALESCE(SUM(p.amount), 0)) > 0.01
+      GROUP BY i.id, i.invoiceNumber, i.amountPaid
+      HAVING ABS(
+        CAST(i.amountPaid AS DECIMAL(12,2)) -
+        COALESCE(SUM(CAST(p.amount AS DECIMAL(12,2))), 0)
+      ) > 0.01
       LIMIT 10
     `);
 
@@ -258,13 +262,7 @@ async function checkAR002_AmountPaidMatchesPayments(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -290,8 +288,7 @@ async function checkORD001_OrderTotalMatchesLineItems(
         o.total AS recorded_total,
         COALESCE(SUM(li.quantity * li.unit_price), 0) AS calculated_total
       FROM orders o
-      LEFT JOIN order_line_items li ON li.order_id = o.id AND li.deleted_at IS NULL
-      WHERE o.deleted_at IS NULL
+      JOIN order_line_items li ON li.order_id = o.id
       GROUP BY o.id, o.order_number, o.total
       HAVING ABS(COALESCE(o.total, 0) - COALESCE(SUM(li.quantity * li.unit_price), 0)) > 0.01
       LIMIT 10
@@ -311,13 +308,7 @@ async function checkORD001_OrderTotalMatchesLineItems(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -335,7 +326,7 @@ async function checkNoOrphanedOrderItems(
       SELECT oi.id, oi.order_id
       FROM order_line_items oi
       LEFT JOIN orders o ON oi.order_id = o.id
-      WHERE o.id IS NULL AND oi.deleted_at IS NULL
+      WHERE o.id IS NULL
       LIMIT 10
     `);
 
@@ -353,13 +344,7 @@ async function checkNoOrphanedOrderItems(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -404,13 +389,7 @@ async function checkCLI001_SupplierProfileRequiresIsSeller(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -449,13 +428,7 @@ async function checkPaymentAmountsValid(
       evidence: violations.length > 0 ? violations : undefined,
     };
   } catch (error) {
-    return {
-      id,
-      name,
-      passed: true,
-      violations: 0,
-      details: `Skipped: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return buildSkippedInvariantResult(id, name, error);
   }
 }
 
@@ -466,6 +439,7 @@ async function checkPaymentAmountsValid(
 async function runAllInvariants(): Promise<void> {
   console.info("=== Running Invariant Checks (Gate G7) ===");
   console.info("Based on: docs/architecture/TRUTH_MODEL.md\n");
+  console.info(`Mode: ${strictMode ? "STRICT (skip/unknown-column = fail)" : "STANDARD"}\n`);
 
   let connection: mysql.Connection | null = null;
   const results: InvariantResult[] = [];

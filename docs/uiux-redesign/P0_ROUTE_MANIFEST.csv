@@ -1,0 +1,104 @@
+route,source,is_redirect,in_navigation,navigation_name,navigation_group,workspace,notes
+/,app_route,false,true,Dashboard,sales,,
+/404,app_route,false,false,,,,hidden_or_workflow_route
+/account,app_route,false,false,,,,hidden_or_workflow_route
+/accounting,app_route,false,true,AR/AP,finance,,
+/accounting/bank-accounts,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/bank-transactions,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/bills,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/cash-locations,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/chart-of-accounts,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/dashboard,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/expenses,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/fiscal-periods,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/general-ledger,app_route,false,false,,,,hidden_or_workflow_route
+/accounting/invoices,app_route,false,true,Invoices,finance,,
+/accounting/payments,app_route,false,false,,,,hidden_or_workflow_route
+/admin-setup,app_route,false,false,,,,hidden_or_workflow_route
+/alerts,app_route,false,false,,,,hidden_or_workflow_route
+/analytics,app_route,false,true,Reports,finance,,
+/ar-ap,app_route,true,false,,,,hidden_or_workflow_route
+/calendar,app_route,false,true,Calendar,admin,,
+/client-ledger,app_route,false,true,Client Ledger,finance,,
+/client-needs,app_route,true,false,,,,hidden_or_workflow_route
+/clients,app_route,false,false,,,,hidden_or_workflow_route
+/clients/:clientId/ledger,app_route,false,false,,,,hidden_or_workflow_route
+/clients/:clientId/vip-portal-config,app_route,false,false,,,,hidden_or_workflow_route
+/clients/:id,app_route,false,false,,,,hidden_or_workflow_route
+/credit-settings,app_route,true,false,,,,hidden_or_workflow_route
+/credits,app_route,false,false,,,Credits,hidden_or_workflow_route
+/credits/manage,app_route,true,false,,,Credits,hidden_or_workflow_route
+/dashboard,app_route,false,false,,,,hidden_or_workflow_route
+/demand-supply,app_route,false,false,,,Demand & Supply,hidden_or_workflow_route
+/dev/showcase,app_route,false,false,,,,hidden_or_workflow_route
+/direct-intake,app_route,false,true,Direct Intake,inventory,,
+/feature-flags,app_route,true,false,,,,hidden_or_workflow_route
+/help,app_route,false,false,,,,hidden_or_workflow_route
+/inbox,app_route,false,true,Inbox,sales,,
+/intake-receipts,app_route,false,false,,,,hidden_or_workflow_route
+/intake/verify/:token,app_route,false,false,,,,hidden_or_workflow_route
+/interest-list,app_route,true,false,,,,hidden_or_workflow_route
+/inventory,app_route,false,false,,,Inventory,hidden_or_workflow_route
+/inventory-browse,app_route,true,false,,,,hidden_or_workflow_route
+/inventory/:id,app_route,false,false,,,Inventory,hidden_or_workflow_route
+/invoices,app_route,true,false,,,,hidden_or_workflow_route
+/leaderboard,app_route,false,true,Leaderboard,sales,,
+/live-shopping,app_route,false,true,Live Shopping,sales,,
+/locations,app_route,false,true,Locations,admin,,
+/login,app_route,false,false,,,,hidden_or_workflow_route
+/matchmaking,app_route,true,false,,,,hidden_or_workflow_route
+/needs,app_route,true,false,,,,hidden_or_workflow_route
+/notifications,app_route,false,false,,,,hidden_or_workflow_route
+/orders,app_route,false,false,,,,hidden_or_workflow_route
+/orders/create,app_route,false,false,,,,hidden_or_workflow_route
+/orders/new,app_route,false,false,,,,hidden_or_workflow_route
+/photography,app_route,false,true,Photography,inventory,,
+/pick-pack,app_route,false,true,Pick & Pack,inventory,,
+/pricing-rules,app_route,true,false,,,,hidden_or_workflow_route
+/pricing/profiles,app_route,false,false,,,,hidden_or_workflow_route
+/pricing/rules,app_route,false,true,Pricing Rules,finance,,
+/product-intake,app_route,true,false,,,,hidden_or_workflow_route
+/products,app_route,true,false,,,,hidden_or_workflow_route
+/purchase-orders,app_route,false,true,Purchase Orders,inventory,,
+/purchase-orders/classic,app_route,false,false,,,,hidden_or_workflow_route
+/quotes,app_route,true,false,,,,hidden_or_workflow_route
+/relationships,app_route,false,false,,,Relationships,hidden_or_workflow_route
+/reports,app_route,true,false,,,,hidden_or_workflow_route
+/reports/shrinkage,app_route,false,false,,,,hidden_or_workflow_route
+/returns,app_route,true,false,,,,hidden_or_workflow_route
+/sales,app_route,false,false,,,Sales,hidden_or_workflow_route
+/sales-portal,app_route,false,false,,,,hidden_or_workflow_route
+/sales-sheets,app_route,false,true,Sales Sheets,sales,,
+/samples,app_route,false,true,Samples,inventory,,
+/scheduling,app_route,false,true,Scheduling,admin,,
+/search,app_route,false,false,,,,hidden_or_workflow_route
+/settings,app_route,false,true,System Settings,admin,,
+/settings/cogs,app_route,false,false,,,,hidden_or_workflow_route
+/settings/feature-flags,app_route,false,true,Feature Flags,admin,,
+/settings/notifications,app_route,false,false,,,,hidden_or_workflow_route
+/shared/sales-sheet/:token,app_route,false,false,,,,hidden_or_workflow_route
+/slice-v1,app_route,true,false,,,,hidden_or_workflow_route
+/slice-v1-lab,app_route,true,false,,,,hidden_or_workflow_route
+/slice-v1-lab/inventory,app_route,false,false,,,,hidden_or_workflow_route
+/slice-v1-lab/product-intake,app_route,false,false,,,,hidden_or_workflow_route
+/slice-v1-lab/purchase-orders,app_route,false,false,,,,hidden_or_workflow_route
+/slice-v1/inventory,app_route,false,false,,,,hidden_or_workflow_route
+/slice-v1/product-intake,app_route,false,false,,,,hidden_or_workflow_route
+/slice-v1/purchase-orders,app_route,false,false,,,,hidden_or_workflow_route
+/spreadsheet-view,app_route,false,true,Spreadsheet View,inventory,,
+/system-settings,app_route,true,false,,,,hidden_or_workflow_route
+/time-clock,app_route,false,true,Time Clock,admin,,
+/todo,app_route,false,false,,,,hidden_or_workflow_route
+/todo-lists,app_route,true,false,,,,hidden_or_workflow_route
+/todos,app_route,false,true,Todo Lists,admin,,
+/todos/:listId,app_route,false,false,,,,hidden_or_workflow_route
+/users,app_route,false,true,Users,admin,,
+/vendor-supply,app_route,true,false,,,,hidden_or_workflow_route
+/vendors,app_route,true,false,,,,hidden_or_workflow_route
+/vendors/:id,app_route,false,false,,,,hidden_or_workflow_route
+/vip-portal,app_route,false,false,,,,hidden_or_workflow_route
+/vip-portal/auth/impersonate,app_route,false,false,,,,hidden_or_workflow_route
+/vip-portal/dashboard,app_route,false,false,,,,hidden_or_workflow_route
+/vip-portal/login,app_route,false,false,,,,hidden_or_workflow_route
+/vip-portal/session-ended,app_route,false,false,,,,hidden_or_workflow_route
+/workflow-queue,app_route,false,true,Workflow Queue,admin,,

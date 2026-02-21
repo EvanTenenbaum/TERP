@@ -1,0 +1,399 @@
+{
+  "baseUrl": "http://127.0.0.1:3015",
+  "routeCount": 10,
+  "viewportCount": 2,
+  "runAt": "2026-02-21T06:25:08.795Z",
+  "results": [
+    {
+      "viewport": "desktop",
+      "route": "/purchase-orders",
+      "path": "/purchase-orders",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 18,
+      "visibleActionCount": 18,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/direct-intake",
+      "path": "/direct-intake",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 12,
+      "visibleActionCount": 12,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/inventory",
+      "path": "/inventory",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 11,
+      "visibleActionCount": 11,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/sales",
+      "path": "/sales",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 15,
+      "visibleActionCount": 15,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/relationships",
+      "path": "/relationships",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 10,
+      "visibleActionCount": 10,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/demand-supply",
+      "path": "/demand-supply",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 11,
+      "visibleActionCount": 11,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/credits",
+      "path": "/credits",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 10,
+      "visibleActionCount": 10,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/orders",
+      "path": "/orders",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 15,
+      "visibleActionCount": 15,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/accounting/invoices",
+      "path": "/accounting/invoices",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 11,
+      "visibleActionCount": 11,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "/pick-pack",
+      "path": "/pick-pack",
+      "horizontalOverflow": false,
+      "viewportWidth": 1366,
+      "docWidth": 1366,
+      "mainWidth": 1090,
+      "headerWidth": 1090,
+      "candidateActionCount": 10,
+      "visibleActionCount": 10,
+      "visibleActions": [
+        "New Sale",
+        "New Intake",
+        "Sales",
+        "Relationships",
+        "Sales Sheets",
+        "Pick & Pack",
+        "Purchase Orders",
+        "Direct Intake"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/purchase-orders",
+      "path": "/purchase-orders",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 18,
+      "visibleActionCount": 8,
+      "visibleActions": [
+        "Purchase Orders",
+        "Product Intake",
+        "Purchase Orders",
+        "Product Intake",
+        "Direct Intake",
+        "Create PO",
+        "Place Order",
+        "Place Order (Bulk)"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/direct-intake",
+      "path": "/direct-intake",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 12,
+      "visibleActionCount": 3,
+      "visibleActions": [
+        "Add Row",
+        "Submit Selected",
+        "Submit All Pending"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/inventory",
+      "path": "/inventory",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 11,
+      "visibleActionCount": 2,
+      "visibleActions": [
+        "New Intake",
+        "Product Intake"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/sales",
+      "path": "/sales",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 15,
+      "visibleActionCount": 5,
+      "visibleActions": [
+        "Orders",
+        "Quotes",
+        "New Order",
+        "Jump to Quotes",
+        "Confirmed (50)"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/relationships",
+      "path": "/relationships",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 10,
+      "visibleActionCount": 1,
+      "visibleActions": [
+        "Add Client"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/demand-supply",
+      "path": "/demand-supply",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 11,
+      "visibleActionCount": 1,
+      "visibleActions": [
+        "Add Need"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/credits",
+      "path": "/credits",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 10,
+      "visibleActionCount": 1,
+      "visibleActions": [
+        "Issue Credit"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/orders",
+      "path": "/orders",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 15,
+      "visibleActionCount": 5,
+      "visibleActions": [
+        "Orders",
+        "Quotes",
+        "New Order",
+        "Jump to Quotes",
+        "Confirmed (50)"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/accounting/invoices",
+      "path": "/accounting/invoices",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 11,
+      "visibleActionCount": 2,
+      "visibleActions": [
+        "Show AR Aging",
+        "Refresh"
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "/pick-pack",
+      "path": "/pick-pack",
+      "horizontalOverflow": false,
+      "viewportWidth": 390,
+      "docWidth": 390,
+      "mainWidth": 390,
+      "headerWidth": 0,
+      "candidateActionCount": 10,
+      "visibleActionCount": 1,
+      "visibleActions": [
+        "Refresh Queue"
+      ]
+    }
+  ],
+  "failures": [],
+  "failureCount": 0
+}

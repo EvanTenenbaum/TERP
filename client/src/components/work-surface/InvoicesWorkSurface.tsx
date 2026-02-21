@@ -747,7 +747,7 @@ export function InvoicesWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
+      <div className="flex flex-col gap-3 px-4 py-4 border-b bg-background md:px-6 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <Receipt className="h-6 w-6" />
@@ -757,9 +757,9 @@ export function InvoicesWorkSurface() {
             Manage customer invoices and accounts receivable
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 md:gap-4">
           {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex gap-4">
+          <div className="text-sm text-muted-foreground flex flex-wrap gap-3 md:gap-4">
             <span>
               Total Billed:{" "}
               <span className="font-semibold text-foreground">
@@ -783,10 +783,10 @@ export function InvoicesWorkSurface() {
       </div>
 
       {/* Filters */}
-      <div className="px-6 py-3 border-b bg-muted/30">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex gap-4 items-center flex-1">
-            <div className="relative w-64">
+      <div className="px-4 py-3 border-b bg-muted/30 md:px-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center flex-1">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 ref={searchInputRef}
@@ -798,7 +798,7 @@ export function InvoicesWorkSurface() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full md:w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -810,7 +810,7 @@ export function InvoicesWorkSurface() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={() => setShowAging(!showAging)}

@@ -1,0 +1,104 @@
+route,source,in_navigation,navigation_group,workspace,feature_ids,feature_names,priority,scope,baseline_blocker,unresolved,notes
+/,app_route,true,sales,,DF-012,Advanced Dashboard System,Dashboard/Review Surface,in_scope,,false,
+/404,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/account,app_route,false,,,DF-076,Personal Account Settings,Panel + Forms,in_scope,,false,hidden_or_workflow_route
+/accounting,app_route,true,finance,,DF-003,Advanced Accounting Module,Work Surface + Inspector,in_scope,,false,
+/accounting/bank-accounts,app_route,false,,,DF-003|ACCT-013,Advanced Accounting Module|Bank Accounts CRUD,Work Surface + Inspector|Work Surface,in_scope,,false,hidden_or_workflow_route
+/accounting/bank-transactions,app_route,false,,,DF-003|ACCT-014,Advanced Accounting Module|Bank Transactions + Reconcile,Work Surface + Inspector,in_scope,,false,hidden_or_workflow_route
+/accounting/bills,app_route,false,,,DF-003|DF-033,Advanced Accounting Module|Service Billing,Work Surface + Inspector|Work Surface,in_scope,,false,hidden_or_workflow_route
+/accounting/cash-locations,app_route,false,,,DF-003|DF-042,Advanced Accounting Module|Cash Audit,Work Surface + Inspector|Work Surface,in_scope,,false,hidden_or_workflow_route
+/accounting/chart-of-accounts,app_route,false,,,DF-003|ACCT-016,Advanced Accounting Module|Chart of Accounts,Work Surface + Inspector,in_scope,,false,hidden_or_workflow_route
+/accounting/dashboard,app_route,false,,,DF-003|ACCT-007|ACCT-011|ACCT-012,Advanced Accounting Module|Invoice Summary|AR Summary + Aging|AP Summary + Aging,Work Surface + Inspector|Dashboard,in_scope,,false,hidden_or_workflow_route
+/accounting/expenses,app_route,false,,,DF-003,Advanced Accounting Module,Work Surface + Inspector,in_scope,,false,hidden_or_workflow_route
+/accounting/fiscal-periods,app_route,false,,,DF-003|ACCT-015,Advanced Accounting Module|Fiscal Periods,Work Surface + Inspector|Work Surface,in_scope,,false,hidden_or_workflow_route
+/accounting/general-ledger,app_route,false,,,DF-003|ACCT-017,Advanced Accounting Module|Post Journal Entry,Work Surface + Inspector,in_scope,,false,hidden_or_workflow_route
+/accounting/invoices,app_route,true,finance,,DF-003|ACCT-001,Advanced Accounting Module|List Invoices,Work Surface + Inspector|Work Surface + Filters,in_scope,,false,
+/accounting/payments,app_route,false,,,DF-003|ACCT-008|ACCT-009|ACCT-010,Advanced Accounting Module|Receive Client Payment|Pay Vendor|Record Payment,Work Surface + Inspector|Work Surface,in_scope,,false,hidden_or_workflow_route
+/admin-setup,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/alerts,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/analytics,app_route,true,finance,,DF-064,Analytics Engine,Review Surface,in_scope,,false,
+/ar-ap,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/calendar,app_route,true,admin,,DF-001,Calendar & Event Management,"Work Surface (review), Inspector",in_scope,,false,
+/client-ledger,app_route,true,finance,,DF-040|DF-060|DF-063,Referrals System|Client Ledger|Advanced Tags System,Panel + Form|Work Surface + Inspector,in_scope,,false,
+/client-needs,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/clients,app_route,false,,,DF-040|DF-063,Referrals System|Advanced Tags System,Panel + Form,in_scope,,false,hidden_or_workflow_route
+/clients/:clientId/ledger,app_route,false,,,DF-040|DF-060|DF-063,Referrals System|Client Ledger|Advanced Tags System,Panel + Form|Work Surface + Inspector,in_scope,,false,hidden_or_workflow_route
+/clients/:clientId/vip-portal-config,app_route,false,,,DF-040|DF-063,Referrals System|Advanced Tags System,Panel + Form,in_scope,,false,hidden_or_workflow_route
+/clients/:id,app_route,false,,,DF-026|DF-027|DF-040|DF-063,Client 360 View|Client Wants/Needs Tracking|Referrals System|Advanced Tags System,Panel + Review|Panel + Forms|Panel + Form,in_scope,,false,hidden_or_workflow_route
+/credit-settings,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/credits,app_route,false,,Credits,DF-014|DF-054,Customer Credit Management|Credits Management,Work Surface + Inspector|Work Surface + Panel,in_scope,,false,hidden_or_workflow_route
+/credits/manage,app_route,false,,Credits,DF-014|DF-054,Customer Credit Management|Credits Management,Work Surface + Inspector|Work Surface + Panel,in_scope,,false,hidden_or_workflow_route
+/dashboard,app_route,false,,,DF-012,Advanced Dashboard System,Dashboard/Review Surface,in_scope,,false,hidden_or_workflow_route
+/demand-supply,app_route,false,,Demand & Supply,DF-006|DF-007|DF-052|DF-065,Client Needs Management|Product-Client Matchmaking|Enhanced Matchmaking|Vendor Supply Matching,Work Surface (review)|Panel + Filters|Review Surface + Panel,in_scope,,false,hidden_or_workflow_route
+/dev/showcase,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/direct-intake,app_route,true,inventory,,DF-013|DF-050|DF-056|INV-003,Multi‑Location & Bin Tracking|Spreadsheet View|Low Stock Alerts|Inventory Movement History,Work Surface + Inspector|Work Surface + Grid|Notifications + Panel|Inspector,in_scope,,false,
+/feature-flags,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/help,app_route,false,,,DF-075,Help & Documentation System,Review Surface,in_scope,,false,hidden_or_workflow_route
+/inbox,app_route,true,sales,,DF-009,Inbox & Notification Center,Panel + List,in_scope,,false,
+/intake-receipts,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/intake/verify/:token,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/interest-list,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/inventory,app_route,false,,Inventory,DF-013|DF-056|INV-003,Multi‑Location & Bin Tracking|Low Stock Alerts|Inventory Movement History,Work Surface + Inspector|Notifications + Panel|Inspector,in_scope,golden-flow-blocker,false,hidden_or_workflow_route
+/inventory-browse,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/inventory/:id,app_route,false,,Inventory,DF-013|DF-056|INV-003,Multi‑Location & Bin Tracking|Low Stock Alerts|Inventory Movement History,Work Surface + Inspector|Notifications + Panel|Inspector,in_scope,,false,hidden_or_workflow_route
+/invoices,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/leaderboard,app_route,true,sales,,DF-017|DF-078,Leaderboard & Gamification|Gamification & Rewards,Dashboard/Review|Dashboard + Panel,in_scope,,false,
+/live-shopping,app_route,true,sales,,DF-016,Live Shopping System,Work Surface + Panel,excluded,,false,
+/locations,app_route,true,admin,,DF-013,Multi‑Location & Bin Tracking,Work Surface + Inspector,in_scope,,false,
+/login,app_route,false,,,DF-071,User Authentication & Login,Full Page Form,in_scope,,false,hidden_or_workflow_route
+/matchmaking,app_route,false,,,DF-007|DF-052,Product-Client Matchmaking|Enhanced Matchmaking,Panel + Filters,in_scope,,false,hidden_or_workflow_route
+/needs,app_route,false,,,DF-006,Client Needs Management,Work Surface (review),in_scope,,false,hidden_or_workflow_route
+/notifications,app_route,false,,,DF-009,Inbox & Notification Center,Panel + List,in_scope,,false,hidden_or_workflow_route
+/orders,app_route,false,,,SALE-001,Sales Orders,Work Surface + Grid,in_scope,golden-flow-blocker,false,hidden_or_workflow_route
+/orders/create,app_route,false,,,ACCT-003|SALE-001,Generate Invoice from Order|Sales Orders,Action + Inspector|Work Surface + Grid,in_scope,,false,hidden_or_workflow_route
+/orders/new,app_route,false,,,ACCT-003|SALE-001,Generate Invoice from Order|Sales Orders,Action + Inspector|Work Surface + Grid,in_scope,,false,hidden_or_workflow_route
+/photography,app_route,true,inventory,,DF-025,Photography Module,Panel + Gallery,in_scope,,false,
+/pick-pack,app_route,true,inventory,,DF-023|FUL-001,Pick & Pack Module|Pick & Pack,Work Surface + Bulk Action Bar|Work Surface + Bulk Actions,in_scope,,false,
+/pricing-rules,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/pricing/profiles,app_route,false,,,DF-008,Pricing Profiles & Rules,Work Surface + Inspector,in_scope,,false,hidden_or_workflow_route
+/pricing/rules,app_route,true,finance,,DF-008,Pricing Profiles & Rules,Work Surface + Inspector,in_scope,,false,
+/product-intake,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/products,app_route,false,,,DF-036|DF-037|DF-062|DF-063,Product Categories (Extended)|Product Grades|Strains Management|Advanced Tags System,Form|Form + Panel|Panel + Form,in_scope,,false,hidden_or_workflow_route
+/purchase-orders,app_route,true,inventory,,DF-018,Purchase Orders & Receiving,Work Surface + Grid,in_scope,golden-flow-blocker,false,
+/purchase-orders/classic,app_route,false,,,DF-018,Purchase Orders & Receiving,Work Surface + Grid,in_scope,,false,hidden_or_workflow_route
+/quotes,app_route,false,,,DF-020|SALE-002,Quotes Management|Quotes,Work Surface + Panel|Work Surface,in_scope,,false,hidden_or_workflow_route
+/relationships,app_route,false,,Relationships,DF-040|DF-063,Referrals System|Advanced Tags System,Panel + Form,in_scope,,false,hidden_or_workflow_route
+/reports,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/reports/shrinkage,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/returns,app_route,false,,,DF-019|SALE-003,Returns & Refunds|Returns,Work Surface + Inspector|Work Surface,in_scope,,false,hidden_or_workflow_route
+/sales,app_route,false,,Sales,DF-022,Unified Sales Portal,Work Surface,in_scope,,false,hidden_or_workflow_route
+/sales-portal,app_route,false,,,DF-077,Unified Sales Pipeline (Kanban),Review Surface + Drag/Drop,in_scope,,false,hidden_or_workflow_route
+/sales-sheets,app_route,true,sales,,DF-021,Sales Sheets,Review Surface + Panel,in_scope,,false,
+/samples,app_route,true,inventory,,DF-015|SALE-004,Sample Management System|Samples,Work Surface + Panel|Work Surface,in_scope,golden-flow-blocker,false,
+/scheduling,app_route,true,admin,,DF-001|DF-028|DF-029,Calendar & Event Management|Advanced Scheduling|Time Off & Hour Tracking,"Work Surface (review), Inspector|Review Surface + Panel|Panel + Form",in_scope,,false,
+/search,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/settings,app_route,true,admin,,DF-032|DF-066,Payment Terms Management|System Configuration,Form|Admin Forms,in_scope,,false,
+/settings/cogs,app_route,false,,,DF-032|DF-066,Payment Terms Management|System Configuration,Form|Admin Forms,in_scope,,false,hidden_or_workflow_route
+/settings/feature-flags,app_route,true,admin,,DF-032|DF-044|DF-066,Payment Terms Management|Feature Flags|System Configuration,Form|Admin Forms,in_scope,,false,
+/settings/notifications,app_route,false,,,DF-032|DF-066,Payment Terms Management|System Configuration,Form|Admin Forms,in_scope,,false,hidden_or_workflow_route
+/shared/sales-sheet/:token,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1-lab,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1-lab/inventory,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1-lab/product-intake,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1-lab/purchase-orders,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1/inventory,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1/product-intake,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/slice-v1/purchase-orders,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/spreadsheet-view,app_route,true,inventory,,DF-050,Spreadsheet View,Work Surface + Grid,in_scope,,false,
+/system-settings,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/time-clock,app_route,true,admin,,DF-001|DF-028|DF-029,Calendar & Event Management|Advanced Scheduling|Time Off & Hour Tracking,"Work Surface (review), Inspector|Review Surface + Panel|Panel + Form",in_scope,,false,
+/todo,app_route,false,,,DF-002,Task Management & Todo Lists,Panel/Form,in_scope,,false,hidden_or_workflow_route
+/todo-lists,app_route,false,,,DF-002,Task Management & Todo Lists,Panel/Form,in_scope,,false,hidden_or_workflow_route
+/todos,app_route,true,admin,,DF-002,Task Management & Todo Lists,Panel/Form,in_scope,,false,
+/todos/:listId,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/users,app_route,true,admin,,DF-032|DF-066|DF-070,Payment Terms Management|System Configuration|User Management,Form|Admin Forms,in_scope,,false,
+/vendor-supply,app_route,false,,,DF-065,Vendor Supply Matching,Review Surface + Panel,in_scope,,false,hidden_or_workflow_route
+/vendors,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/vendors/:id,app_route,false,,,,,,in_scope,,false,hidden_or_workflow_route
+/vip-portal,app_route,false,,,DF-005|DF-051|DF-072|DF-073|DF-074,VIP Customer Portal|VIP Tiers|VIP Appointment Booking|VIP Document Downloads|VIP Session Management,Dashboard + Panel|Dashboard|Calendar + Forms|Panel + List|Portal Shell,excluded,,false,hidden_or_workflow_route
+/vip-portal/auth/impersonate,app_route,false,,,DF-005|DF-051|DF-072|DF-073|DF-074,VIP Customer Portal|VIP Tiers|VIP Appointment Booking|VIP Document Downloads|VIP Session Management,Dashboard + Panel|Dashboard|Calendar + Forms|Panel + List|Portal Shell,excluded,,false,hidden_or_workflow_route
+/vip-portal/dashboard,app_route,false,,,DF-005|DF-051|DF-072|DF-073|DF-074,VIP Customer Portal|VIP Tiers|VIP Appointment Booking|VIP Document Downloads|VIP Session Management,Dashboard + Panel|Dashboard|Calendar + Forms|Panel + List|Portal Shell,excluded,,false,hidden_or_workflow_route
+/vip-portal/login,app_route,false,,,DF-005|DF-051|DF-072|DF-073|DF-074,VIP Customer Portal|VIP Tiers|VIP Appointment Booking|VIP Document Downloads|VIP Session Management,Dashboard + Panel|Dashboard|Calendar + Forms|Panel + List|Portal Shell,excluded,,false,hidden_or_workflow_route
+/vip-portal/session-ended,app_route,false,,,DF-005|DF-051|DF-072|DF-073|DF-074,VIP Customer Portal|VIP Tiers|VIP Appointment Booking|VIP Document Downloads|VIP Session Management,Dashboard + Panel|Dashboard|Calendar + Forms|Panel + List|Portal Shell,excluded,,false,hidden_or_workflow_route
+/workflow-queue,app_route,true,admin,,DF-039,Workflow Queue,Review Surface,in_scope,,false,

@@ -1,0 +1,127 @@
+{
+  "version": "1.0",
+  "module": "purchase-orders",
+  "reviewedAt": "2026-02-20T00:00:00.000Z",
+  "reviewedBy": "agent-or-owner-name",
+  "hypothesis": "Primary actions moved to sticky command strip will reduce click count and improve orientation.",
+  "baselineMetrics": {
+    "medianClicks": 0,
+    "medianTimeSeconds": 0,
+    "reversalLoopRate": 0,
+    "deadEndRate": 0
+  },
+  "entries": [
+    {
+      "criterion": "Primary action visibility at load",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/primary-action-visibility.png",
+      "notes": ""
+    },
+    {
+      "criterion": "Click efficiency vs baseline",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/click-efficiency.json",
+      "notes": ""
+    },
+    {
+      "criterion": "Time-to-complete vs baseline",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/time-to-complete.json",
+      "notes": ""
+    },
+    {
+      "criterion": "Reversal loop rate",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/reversal-loops.json",
+      "notes": ""
+    },
+    {
+      "criterion": "Dead-end event rate",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/dead-ends.json",
+      "notes": ""
+    },
+    {
+      "criterion": "Context continuity for edits/corrections",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/context-continuity.md",
+      "notes": ""
+    },
+    {
+      "criterion": "Grid dominance and density quality",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/grid-dominance.png",
+      "notes": ""
+    },
+    {
+      "criterion": "Drawer usage correctness",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/drawer-usage.mp4",
+      "notes": ""
+    },
+    {
+      "criterion": "Terminology compliance",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/terminology-audit.md",
+      "notes": ""
+    },
+    {
+      "criterion": "Functional parity",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/parity-matrix.csv",
+      "notes": ""
+    },
+    {
+      "criterion": "Mobile-safe behavior",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/mobile-safe.png",
+      "notes": ""
+    },
+    {
+      "criterion": "Visual discipline and consistency",
+      "score": 0,
+      "evidencePath": "qa-results/redesign/north-star/purchase-orders/visual-discipline.png",
+      "notes": ""
+    }
+  ],
+  "automaticFailChecks": [
+    {
+      "name": "card-heavy segmentation replacing core grid behavior",
+      "failed": false
+    },
+    {
+      "name": "wizard-style flow for core broker operations",
+      "failed": false
+    },
+    {
+      "name": "hidden primary actions behind multiple clicks or non-obvious menus",
+      "failed": false
+    },
+    {
+      "name": "required context switches for edits that should be inline/drawer-local",
+      "failed": false
+    },
+    {
+      "name": "engineering language in user-facing controls",
+      "failed": false
+    },
+    {
+      "name": "click/time regression on core paths without compensating gain",
+      "failed": false
+    }
+  ],
+  "gateResult": {
+    "module": "purchase-orders",
+    "totalScore": 0,
+    "passed": false,
+    "redLineFailures": [],
+    "timestamp": "2026-02-20T00:00:00.000Z"
+  },
+  "artifactIndex": {
+    "screenshots": [],
+    "traces": [],
+    "videos": [],
+    "flowMetrics": [],
+    "qaReports": []
+  }
+}

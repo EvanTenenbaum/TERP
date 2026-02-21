@@ -55,7 +55,6 @@ const db = drizzle(pool, { mode: "default" });
 import {
   getTableList,
   getTableColumns,
-  camelToSnake,
   snakeToCamel,
   normalizeDataType,
   type ColumnMetadata,
@@ -120,23 +119,70 @@ const CRITICAL_TABLES = [
  * Parse Drizzle schema files to extract table and column definitions
  * This is a simplified version that reads the actual schema structure
  */
+interface DrizzleColumnDefinition {
+  propertyKey: string;
+  columnName: string;
+  dataType?: string;
+  notNull: boolean;
+}
+
+interface DrizzleTableDefinition {
+  tableName: string;
+  columns: DrizzleColumnDefinition[];
+}
+
+function extractDrizzleColumns(
+  tableValue: Record<string | symbol, unknown>
+): DrizzleColumnDefinition[] {
+  const columnsValue = tableValue[Symbol.for("drizzle:Columns")];
+  if (!columnsValue || typeof columnsValue !== "object") {
+    return [];
+  }
+
+  const columnEntries = Object.entries(
+    columnsValue as Record<string, unknown>
+  );
+
+  return columnEntries.map(([propertyKey, rawColumn]) => {
+    const columnRecord =
+      rawColumn && typeof rawColumn === "object"
+        ? (rawColumn as Record<string, unknown>)
+        : {};
+
+    const rawColumnName = columnRecord.name;
+    const rawDataType = columnRecord.dataType;
+
+    return {
+      propertyKey,
+      columnName: typeof rawColumnName === "string" ? rawColumnName : propertyKey,
+      dataType: typeof rawDataType === "string" ? rawDataType : undefined,
+      notNull: Boolean(columnRecord.notNull),
+    };
+  });
+}
+
 async function parseDrizzleSchemas(): Promise<
-  Map<string, Record<string, unknown>>
+  Map<string, DrizzleTableDefinition>
 > {
   // Import the schema
   const schemaModule = await import("../drizzle/schema");
 
-  const tables = new Map<string, Record<string, unknown>>();
+  const tables = new Map<string, DrizzleTableDefinition>();
 
   // Extract table definitions from schema
   for (const [key, value] of Object.entries(schemaModule)) {
     if (value && typeof value === "object" && "getSQL" in value) {
+      const tableValue = value as Record<string | symbol, unknown>;
       // This is a Drizzle table
       const tableName =
-        ((value as Record<string, unknown>)[
+        (tableValue[
           Symbol.for("drizzle:Name") as unknown as string
         ] as string) || key;
-      tables.set(tableName, value as Record<string, unknown>);
+
+      tables.set(tableName, {
+        tableName,
+        columns: extractDrizzleColumns(tableValue),
+      });
     }
   }
 
@@ -153,22 +199,23 @@ async function parseDrizzleSchemas(): Promise<
 async function validateTable(
   tableName: string,
   dbColumns: ColumnMetadata[],
-  drizzleTable: Record<string, unknown> | undefined
+  drizzleTable: DrizzleTableDefinition | undefined
 ): Promise<ValidationIssue[]> {
   const issues: ValidationIssue[] = [];
 
   // Get Drizzle columns
-  const drizzleColumns = drizzleTable
-    ? Object.keys(drizzleTable).filter(k => k !== "getSQL")
-    : [];
+  const drizzleColumns = drizzleTable?.columns || [];
 
   // Check each database column
   for (const dbCol of dbColumns) {
-    const dbColCamel = snakeToCamel(dbCol.columnName);
+    const dbColName = dbCol.columnName.toLowerCase();
+    const dbColCamel = snakeToCamel(dbCol.columnName).toLowerCase();
 
-    // Find matching Drizzle column (try both snake_case and camelCase)
+    // Match by actual DB column name first, then by Drizzle property name fallback.
     const drizzleCol = drizzleColumns.find(
-      dc => dc === dbCol.columnName || dc === dbColCamel
+      dc =>
+        dc.columnName.toLowerCase() === dbColName ||
+        dc.propertyKey.toLowerCase() === dbColCamel
     );
 
     if (!drizzleCol) {
@@ -190,9 +237,7 @@ async function validateTable(
     }
 
     // Get Drizzle column definition
-    const drizzleColDef = drizzleTable?.[drizzleCol] as
-      | { dataType?: string; notNull?: boolean }
-      | undefined;
+    const drizzleColDef = drizzleCol;
 
     // Check data type
     const typeComparison = normalizeDataType(
@@ -231,10 +276,8 @@ async function validateTable(
 
   // Check for extra columns in Drizzle that don't exist in DB
   for (const drizzleCol of drizzleColumns) {
-    const drizzleColSnake = camelToSnake(drizzleCol);
-
     const dbCol = dbColumns.find(
-      dc => dc.columnName === drizzleCol || dc.columnName === drizzleColSnake
+      dc => dc.columnName.toLowerCase() === drizzleCol.columnName.toLowerCase()
     );
 
     if (!dbCol) {
@@ -242,10 +285,10 @@ async function validateTable(
         table: tableName,
         severity: "Medium",
         category: "Extra",
-        column: drizzleCol,
+        column: drizzleCol.columnName,
         dbValue: null,
         drizzleValue: "exists",
-        description: `Column "${drizzleCol}" exists in Drizzle schema but not in database`,
+        description: `Column "${drizzleCol.columnName}" exists in Drizzle schema but not in database`,
       });
     }
   }
