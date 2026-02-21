@@ -1189,6 +1189,16 @@ async function seedCalendarAvailability(connection: mysql.Connection, calendarId
     return;
   }
 
+  // Check if table has expected schema
+  const [columns] = await connection.query(
+    `DESCRIBE calendar_availability`
+  ) as any;
+  const hasCalendarId = columns.some((col: any) => col.Field === 'calendar_id');
+  if (!hasCalendarId) {
+    console.log('   - Skipped: calendar_availability schema mismatch (missing calendar_id column)');
+    return;
+  }
+
   // Production schema: calendar_id, day_of_week, start_time, end_time, is_available
   // dayOfWeek: 0 = Sunday, 6 = Saturday
   const businessHours = [
