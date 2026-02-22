@@ -80,12 +80,12 @@ To disable Papertrail log forwarding:
 
 The health check settings have been optimized for faster deployments (updated 2024-12-19):
 
-| Setting | Value | Rationale |
-|---------|-------|----------|
-| `http_path` | `/health/live` | Simple liveness probe, no DB dependency |
-| `initial_delay_seconds` | `60` | Server startup takes ~55s including migrations |
-| `period_seconds` | `15` | Reduced probe frequency to minimize noise |
-| `failure_threshold` | `5` | Allows temporary hiccups without restart |
+| Setting                 | Value          | Rationale                                      |
+| ----------------------- | -------------- | ---------------------------------------------- |
+| `http_path`             | `/health/live` | Simple liveness probe, no DB dependency        |
+| `initial_delay_seconds` | `60`           | Server startup takes ~55s including migrations |
+| `period_seconds`        | `15`           | Reduced probe frequency to minimize noise      |
+| `failure_threshold`     | `5`            | Allows temporary hiccups without restart       |
 
 ### Why These Values?
 
@@ -96,11 +96,14 @@ The health check settings have been optimized for faster deployments (updated 20
 ### Reverting (if needed)
 
 If deployments start failing health checks, increase `initial_delay_seconds` back to `90` or `120`. This could happen if:
+
 - A new migration is added that takes longer to run
 - Database connection becomes slower
 - Additional startup tasks are added to the server
 
 ## App Spec Reference
+
+This directory contains the app specs for both `production` (`app.yaml`) and `staging` (`app-staging.yaml`).
 
 The `app.yaml` file defines:
 

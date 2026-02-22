@@ -135,7 +135,7 @@ pnpm test:schema    # Requires DATABASE_URL - verifies schema matches DB
 # Deployment verification
 ./scripts/watch-deploy.sh
 ./scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 ./scripts/terp-logs.sh run 100 | grep -i "error"
 ```
 
@@ -488,14 +488,16 @@ Check for terp_session cookie
 **Linear Project:** https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d
 
 **After completing tasks or waves, sync the GitHub roadmap:**
+
 ```bash
 python3 scripts/sync_linear_to_github_roadmap.py
 git add docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md
 git commit -m "docs: sync roadmap from Linear"
-git push origin main
+git push origin staging
 ```
 
 **Documentation:**
+
 - `docs/LINEAR_INTEGRATION.md` - Complete Linear integration guide
 - `docs/LINEAR_ROADMAP_SYNC.md` - Roadmap sync protocol
 
@@ -738,7 +740,7 @@ echo "- $SESSION_ID: TASK-ID - Task Title" >> docs/ACTIVE_SESSIONS.md
 # 6. Commit registration
 git add docs/sessions/active/$SESSION_ID.md docs/ACTIVE_SESSIONS.md
 git commit -m "chore: register session $SESSION_ID"
-git push origin main
+git push origin staging
 ```
 
 ### Completing a Session
@@ -755,7 +757,7 @@ git add docs/roadmaps/MASTER_ROADMAP.md \
         docs/sessions/completed/$SESSION_ID.md \
         docs/ACTIVE_SESSIONS.md
 git commit -m "chore: complete TASK-ID and archive session"
-git push origin main
+git push origin staging
 
 # 6. VERIFY DEPLOYMENT
 ./scripts/watch-deploy.sh
@@ -820,18 +822,18 @@ pnpm validate:sessions  # Check sessions
 
 # Git
 git pull --rebase origin main
-git push origin main
+git push origin staging
 ```
 
 ### Essential Files
 
-| File                                      | Purpose                          |
-| ----------------------------------------- | -------------------------------- |
-| `docs/roadmaps/MASTER_ROADMAP.md`         | Single source of truth for tasks |
-| `docs/ACTIVE_SESSIONS.md`                 | Currently active agent work      |
-| `docs/protocols/CANONICAL_DICTIONARY.md`  | Term definitions                 |
-| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | How to run prod migrations   |
-| `.kiro/steering/07-deprecated-systems.md` | What NOT to use                  |
+| File                                            | Purpose                          |
+| ----------------------------------------------- | -------------------------------- |
+| `docs/roadmaps/MASTER_ROADMAP.md`               | Single source of truth for tasks |
+| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work      |
+| `docs/protocols/CANONICAL_DICTIONARY.md`        | Term definitions                 |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | How to run prod migrations       |
+| `.kiro/steering/07-deprecated-systems.md`       | What NOT to use                  |
 
 ### Valid Values Quick Reference
 
@@ -843,35 +845,16 @@ Estimate: 4h | 8h | 16h | 1d | 2d | 1w
 
 ---
 
-## 11. Deployment Workflow
+## 11.### Deployment Workflow: Staging-First
 
-### Standard Flow
+**The new workflow is:** `PR` → `main` → `staging` (auto-deploy) → verify → `production` (manual promote)
 
-```bash
-# 1. Make changes and verify
-pnpm check && pnpm lint && pnpm test && pnpm build
+1.  **Merge to `main`**: All feature branches are merged into `main` via Pull Requests.
+2.  **Auto-deploy to Staging**: A GitHub Action (`.github/workflows/sync-staging.yml`) automatically merges `main` into the `staging` branch and pushes. This push triggers a deployment to the staging environment.
+3.  **Verify on Staging**: All changes **must** be verified on the live staging URL: `https://terp-staging-yicld.ondigitalocean.app`.
+4.  **Promote to Production**: After verification, the production deployment is a manual step handled by the project owner (Evan). Agents do not deploy to production.
 
-# 2. Commit with conventional format
-git add .
-git commit -m "feat(calendar): add recurring events"
-
-# 3. Push (triggers auto-deploy)
-git push origin main
-
-# 4. Monitor deployment (via terp-qa)
-# Wait for Phase: ACTIVE and correct Commit SHA
-
-# 5. Verify health
-curl https://terp-app-b9s35.ondigitalocean.app/api/health
-
-# 6. Live QA (via terp-qa)
-# Perform browser verification of the feature
-
-# 7. Check for errors
-# Monitor logs for new errors compared to baseline
-
-# 8. Only then mark task complete
-```
+Your workflow as an agent ends after you have verified your changes on the staging environment.
 
 ### Production Migrations (One-Off Scripts)
 
@@ -880,6 +863,7 @@ For running migration scripts, backfills, or data fixes against the DigitalOcean
 **Full runbook**: `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md`
 
 Key rules:
+
 - **Never connect directly** from external environments (rotating IPs make firewall rules unreliable)
 - **Use temporary job components** that run inside the VPC with `${db.DATABASE_URL}` binding
 - **Run one script per job** (chained `&&` commands are unreliable in `run_command`)
@@ -899,7 +883,7 @@ git log --oneline -10
 git revert <bad-commit-hash>
 
 # 3. Push immediately
-git push origin main
+git push origin staging
 
 # 4. Monitor rollback
 ./scripts/watch-deploy.sh

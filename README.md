@@ -47,6 +47,7 @@ Below is the original README for the TERP application itself.
 A world-class, production-ready ERP system with intelligent needs matching, comprehensive accounting, and modern authentication.
 
 **🌐 Live Production:** https://terp-app-b9s35.ondigitalocean.app
+** staging:** https://terp-staging-yicld.ondigitalocean.app
 
 ---
 
@@ -60,11 +61,11 @@ pnpm install
 pnpm dev
 ```
 
-### Production Deployment
+### Deployment Workflow
 
-```bash
-git push origin main  # Auto-deploys to DigitalOcean
-```
+1. **Merge PR to `main`**: This integrates the code.
+2. **Auto-deploy to Staging**: Merging to `main` automatically triggers a deployment to the staging environment for verification.
+3. **Deploy to Production**: To deploy to production, promote the staging deployment or create a release branch.
 
 ### 🧪 Testing
 
@@ -408,13 +409,14 @@ NODE_ENV=development
 ### DigitalOcean App Platform
 
 **Live URL:** https://terp-app-b9s35.ondigitalocean.app
+** staging:** https://terp-staging-yicld.ondigitalocean.app
 
 **Auto-Deploy:**
 
 ```bash
 git add .
 git commit -m "Your changes"
-git push origin main  # Triggers automatic deployment
+git push origin staging # Triggers automatic deployment to staging
 ```
 
 **Manual Deployment via API:**
@@ -741,6 +743,7 @@ Proprietary - All rights reserved
 ## 🔗 Quick Links
 
 - **Live Application:** https://terp-app-b9s35.ondigitalocean.app
+  ** staging:** https://terp-staging-yicld.ondigitalocean.app
 - **GitHub Repository:** https://github.com/EvanTenenbaum/TERP
 - **DigitalOcean Dashboard:** https://cloud.digitalocean.com/apps/1fd40be5-b9af-4e71-ab1d-3af0864a7da4
 - **Clerk Dashboard:** https://dashboard.clerk.com
@@ -755,9 +758,11 @@ Proprietary - All rights reserved
 
 **Monthly Infrastructure:**
 
-- DigitalOcean App: $5/month
-- MySQL Database: $15/month
-- **Total: $20/month**
+- Production App: $5/month
+- Production DB: $15/month
+- Staging App: ~$5-12/month
+- Staging DB: ~$30/month
+- **Total: ~$55-62/month**
 
 **Free Tier Services:**
 

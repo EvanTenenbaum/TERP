@@ -13,14 +13,14 @@ This document covers deployment, database, and infrastructure management.
 ---
 
 > ⚠️ **IMPORTANT: CURRENT DEPLOYMENT PLATFORM**
-> 
+>
 > **TERP is deployed on DigitalOcean App Platform. NOT Railway.**
-> 
+>
 > We briefly migrated to Railway in December 2025 but have since migrated back to DigitalOcean.
 > Any documentation mentioning Railway as the "current" platform is outdated.
-> 
+>
 > - **Current Platform**: DigitalOcean App Platform
-> - **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+> - **Production URL**: https://terp-staging-yicld.ondigitalocean.app
 > - **Configuration**: `.do/app.yaml`
 
 ---
@@ -29,34 +29,20 @@ This document covers deployment, database, and infrastructure management.
 
 ### Overview
 
-TERP is deployed on **DigitalOcean App Platform**.
+TERP has two environments on **DigitalOcean App Platform**.
 
-**Production URL**: https://terp-app-b9s35.ondigitalocean.app
-**Deployment**: Automatic on push to `main`
-**Configuration**: `.do/app.yaml`
+| Environment | URL                                             | Deploys From        | Configuration          |
+| ----------- | ----------------------------------------------- | ------------------- | ---------------------- |
+| Staging     | `https://terp-staging-yicld.ondigitalocean.app` | `staging` branch    | `.do/app-staging.yaml` |
+| Production  | `https://terp-staging-yicld.ondigitalocean.app` | `production` branch | `.do/app.yaml`         |
 
-### Automatic Deployment Process
+### Staging-First Deployment Process
 
-```
-Push to main
-    ↓
-Post-push hook triggers
-    ↓
-Background monitor starts
-    ↓
-DigitalOcean checks changed files
-    ↓
-If only ignored paths changed → Skip deployment
-If code/config changed → Continue deployment
-    ↓
-Build starts (install deps, build)
-    ↓
-Deploy to production
-    ↓
-Health checks pass
-    ↓
-Traffic routed to new version
-```
+1.  **Merge to `main`**: A PR is merged into the `main` branch.
+2.  **Auto-sync to `staging`**: A GitHub Action automatically merges `main` into `staging` and pushes.
+3.  **Staging Deployment**: The push to the `staging` branch triggers an automatic deployment to the staging environment.
+4.  **Verification**: Changes are verified on the staging URL.
+5.  **Production Deployment**: The project owner manually promotes the verified build to production.
 
 **Ignored Paths** (no deployment triggered):
 
@@ -76,7 +62,7 @@ Traffic routed to new version
 
 ```bash
 # Just push - auto-heal monitors and fixes automatically
-git push origin main
+git push origin staging
 
 # Monitor progress
 tail -f .deployment-status-*.log
@@ -145,7 +131,7 @@ After every deployment:
 
 ```bash
 # Verify health
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 
 # Check for errors
 ./scripts/terp-logs.sh run 100 | grep -i "error"
@@ -166,13 +152,13 @@ git log --oneline -10
 git revert <bad-commit-hash>
 
 # 3. Push immediately
-git push origin main
+git push origin staging
 
 # 4. Monitor rollback
 bash scripts/watch-deploy.sh
 
 # 5. Verify rollback successful
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 ```
 
 ---
@@ -180,19 +166,21 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 ## Railway (DEPRECATED - DO NOT USE)
 
 > ⚠️ **Railway is NOT our current deployment platform.**
-> 
+>
 > We briefly used Railway in December 2025 but migrated back to DigitalOcean.
 > The `railway.json` file and Railway-related docs exist for historical reference only.
-> 
+>
 > **DO NOT**:
+>
 > - Deploy to Railway
 > - Use `railway` CLI commands
-> - Reference Railway URLs (https://terp-app-production.up.railway.app)
-> 
+> - Reference Railway URLs (https://terp-staging-yicld.ondigitalocean.app)
+>
 > **DO**:
+>
 > - Use DigitalOcean App Platform
 > - Use `doctl` CLI commands
-> - Reference DigitalOcean URL (https://terp-app-b9s35.ondigitalocean.app)
+> - Reference DigitalOcean URL (https://terp-staging-yicld.ondigitalocean.app)
 
 ---
 
@@ -250,7 +238,7 @@ git add drizzle/migrations/
 git commit -m "db: add calendar_events table"
 
 # 6. Push to main
-git push origin main
+git push origin staging
 
 # 7. Migration runs automatically on deployment
 # 8. Verify migration succeeded
@@ -275,6 +263,7 @@ npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM orders WHERE status = 'pe
 ```
 
 **Current Production Data Summary** (as of 2025-12-16):
+
 - 1 user, 10 clients, 15 vendors
 - 200 batches, 120 products, 400 orders
 - 50 invoices with 20,681 line items
@@ -282,6 +271,7 @@ npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM orders WHERE status = 'pe
 - 16,268 ledger entries
 
 **Use Cases**:
+
 - Verify data after migrations
 - Debug production issues
 - Check data integrity
@@ -289,6 +279,7 @@ npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM orders WHERE status = 'pe
 - Investigate user-reported bugs
 
 **⚠️ CAUTION**: This connects to the LIVE production database. Be careful with:
+
 - Large queries (add LIMIT)
 - UPDATE/DELETE statements (prefer read-only operations)
 - Sensitive data (don't log PII)
@@ -436,7 +427,7 @@ console.error("Order processing failed:", {
 
 ```bash
 # Application health endpoint
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 
 # Expected response
 {
@@ -525,7 +516,7 @@ pnpm build
 ```bash
 # Revert to last good commit
 git revert <bad-commit>
-git push origin main
+git push origin staging
 
 # Or rollback to specific commit
 git reset --hard <good-commit>
@@ -634,7 +625,7 @@ const user = await db.query.users.findFirst({
 pnpm install
 pnpm build
 git commit -am "fix: resolve build issue"
-git push origin main
+git push origin staging
 ```
 
 ### Application Crashes
@@ -715,7 +706,7 @@ doctl apps logs <APP_ID>
 doctl apps create-deployment <APP_ID>
 
 # Health checks
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 ```
 
 ---

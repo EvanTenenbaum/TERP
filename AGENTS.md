@@ -11,7 +11,8 @@
 **Key Characteristics:**
 
 - Production deployment on DigitalOcean App Platform
-- Auto-deploy on push to `main` branch
+- Auto-deploy to **staging** on push to `main` branch
+- Production deployment is a manual promotion step from staging
 - 80+ tRPC API endpoints
 - 20+ database tables
 - Mobile-first responsive design (100% mobile-optimized)
@@ -166,7 +167,14 @@ pnpm seed:edge      # Edge cases
 pnpm seed:chaos     # Chaos/random data
 ```
 
-### Production Database Access
+### Database Access
+
+**Staging Database (Primary for Agents):**
+
+- Use the staging database for all development, testing, and verification tasks.
+- **Staging DB URL:** `mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-staging-db-do-user-28175253-0.g.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED`
+
+**Production Database (DO NOT USE unless explicitly instructed for a hotfix):**
 
 - Default `DATABASE_URL` for TERP work:
   `mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED`
@@ -396,20 +404,23 @@ These files should NEVER be modified without explicit user approval:
 
 ## Deployment Process
 
-### Auto-Deploy Workflow
+### Staging-First Deployment Workflow
 
-1. Push to `main` branch triggers deployment
-2. DigitalOcean App Platform builds and deploys automatically
-3. Post-push hook monitors deployment status
-4. Health checks verify deployment success
+1. **Push/Merge to `main`**: All PRs are merged to `main`.
+2. **Auto-deploy to Staging**: A GitHub Action automatically merges `main` into `staging` and pushes, triggering a deployment to the staging environment.
+3. **Verify on Staging**: All changes MUST be verified on the staging URL (`https://terp-staging-yicld.ondigitalocean.app`) before they can be promoted to production.
+4. **Promote to Production**: Production deployment is a manual step, promoting the verified staging build to production. This is typically handled by the project owner (Evan).
 
 ### Deployment Commands
 
 ```bash
-# Deploy to production (push to main)
-git add .
-git commit -m "feat: your feature description"
-git push origin main
+# 1. Get your changes into the main branch (via PR merge)
+
+# 2. The rest is automatic!
+# Merging to main triggers an auto-deploy to the staging environment.
+
+# 3. Verify your changes on staging:
+# https://terp-staging-yicld.ondigitalocean.app
 
 # Check deployment status
 bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
