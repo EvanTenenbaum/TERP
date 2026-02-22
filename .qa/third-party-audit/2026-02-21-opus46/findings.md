@@ -93,3 +93,21 @@
 - **Expected:** All touched files under strict lint
 - **Evidence:** `.qa/runs/2026-02-21/phase-6/P6-direct-intake-remediation-37/notes.md`
 - **Fix recommendation:** Extend strict ESLint config to include `tests-e2e/**/*.ts`. Documented variance with mitigation (strict lint on app source + full lane rerun).
+
+---
+
+### Pre-Existing Issues (NOT regressions -- flagged for awareness)
+
+#### PRE-001: `input.userId` forbidden pattern in inventoryIntakeService.ts
+
+- **Severity:** P3 (pre-existing)
+- **File path:** `server/inventoryIntakeService.ts:342,361,408`
+- **Observed:** 3 instances of `input.userId` (forbidden: actor from input). These existed on `origin/main` at lines 283, 302, 336 and were shifted by the transaction-retry refactor -- NOT newly introduced.
+- **Fix recommendation:** Refactor to use `getAuthenticatedUserId(ctx)` in a dedicated remediation task.
+
+#### PRE-002: Duplicated `isDuplicateEntryError()` utility function
+
+- **Severity:** P3 (pre-existing pattern)
+- **File path:** `server/_core/dbUtils.ts` and `server/inventoryIntakeService.ts`
+- **Observed:** Identical helper function duplicated across two files.
+- **Fix recommendation:** Consolidate into single shared utility in `server/_core/dbUtils.ts` and import from `inventoryIntakeService.ts`.
