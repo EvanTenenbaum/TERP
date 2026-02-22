@@ -6,6 +6,11 @@ on:
     branches:
       - main
 
+# Grant write access so the workflow can push to staging
+permissions:
+  contents: write
+  issues: write
+
 # Prevent concurrent syncs
 concurrency:
   group: sync-staging
@@ -24,6 +29,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          persist-credentials: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
