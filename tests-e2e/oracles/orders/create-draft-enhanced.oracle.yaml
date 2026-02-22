@@ -53,11 +53,11 @@ steps:
     wait_after: 600
 
   - action: click
-    target: "button:has-text('Save')"
+    target: "[data-testid='order-save-menu-trigger'], button:has-text('Save')"
     wait_after: 300
 
   - action: click
-    target: "[role='menuitem']:has-text('Save as Draft'), [data-radix-collection-item]:has-text('Save as Draft')"
+    target: "[data-testid='order-save-draft-action'], [role='menuitem']:has-text('Save as Draft'), [data-radix-collection-item]:has-text('Save as Draft')"
     wait_after: 1000
 
   - action: wait

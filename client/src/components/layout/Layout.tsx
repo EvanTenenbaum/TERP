@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileNav } from "./MobileNav";
-import { ModuleFlowIntro } from "./ModuleFlowIntro";
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -20,7 +19,7 @@ export const Layout = React.memo(function Layout({
   const handleCloseSidebar = () => setSidebarOpen(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="terp-shell-root flex h-screen overflow-hidden bg-background">
       {showSidebar && (
         <Sidebar open={sidebarOpen} onClose={handleCloseSidebar} />
       )}
@@ -33,8 +32,7 @@ export const Layout = React.memo(function Layout({
             </div>
           </>
         )}
-        <main className={cn("flex-1 overflow-y-auto p-4 md:p-6")}>
-          <ModuleFlowIntro />
+        <main className={cn("terp-main-shell flex-1 overflow-y-auto p-3 md:p-4")}>
           {children}
         </main>
       </div>

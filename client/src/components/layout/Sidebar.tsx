@@ -94,14 +94,14 @@ export const Sidebar = React.memo(function Sidebar({
       )}
       <aside
         className={cn(
-          "flex flex-col bg-card border-r border-border transition-all duration-200 ease-in-out z-50",
+          "flex flex-col bg-background/96 border-r border-border/80 transition-all duration-200 ease-in-out z-50 backdrop-blur-sm",
           "md:relative md:translate-x-0",
           "fixed inset-y-0 left-0",
-          collapsed ? "w-16" : "w-72",
+          collapsed ? "w-16" : "w-[17.25rem]",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border">
+        <div className="flex items-center justify-between h-14 px-3 border-b border-border/80">
           {!collapsed && (
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 text-primary rounded-lg p-2">
@@ -129,7 +129,7 @@ export const Sidebar = React.memo(function Sidebar({
           </button>
           <button
             onClick={onClose}
-            className="md:hidden p-2 hover:bg-accent rounded-md"
+            className="md:hidden p-2 hover:bg-accent rounded-md max-md:size-11"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -137,49 +137,39 @@ export const Sidebar = React.memo(function Sidebar({
         </div>
 
         {/* TER-197: Quick Links — always visible */}
-        <div
-          className={cn(
-            "border-b border-border",
-            collapsed ? "px-2 py-2" : "px-4 py-3"
-          )}
-        >
+        <div className={cn("border-b border-border/70", collapsed ? "px-2 py-2" : "px-3 py-2.5")}>
           {!collapsed && (
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
               Quick Actions
             </p>
           )}
-          <div
-            className={cn(
-              "flex gap-1",
-              collapsed ? "flex-col items-center" : "flex-wrap"
-            )}
-          >
+          <div className={cn("flex gap-1", collapsed ? "flex-col items-center" : "flex-wrap")}>
             {quickLinks.map(link => {
               const Icon = link.icon;
               const isActive = isActivePath(link.path);
               return (
-                <Link key={link.path} href={link.path}>
-                  <a
-                    onClick={onClose}
-                    title={link.name}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md text-sm font-medium transition-colors",
-                      collapsed ? "p-2 justify-center" : "px-3 py-1.5",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                    {!collapsed && <span>{link.name}</span>}
-                  </a>
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  onClick={onClose}
+                  title={link.name}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md text-sm font-medium transition-colors max-md:min-h-11",
+                    collapsed ? "p-2 justify-center" : "px-3 py-1.5",
+                    isActive
+                      ? "bg-primary/90 text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  {!collapsed && <span>{link.name}</span>}
                 </Link>
               );
             })}
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4 space-y-3">
+        <nav className="flex-1 overflow-y-auto p-3 space-y-2.5">
           {groupedNavigation.map(group => {
             const hasActiveItem = group.items.some(item =>
               isActivePath(item.path)
@@ -190,13 +180,13 @@ export const Sidebar = React.memo(function Sidebar({
                 key={group.key}
                 className={cn(
                   "rounded-lg border border-transparent transition-colors",
-                  hasActiveItem && "border-primary/30 bg-primary/5"
+                  hasActiveItem && "border-border bg-muted/40"
                 )}
               >
                 {!collapsed && (
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors max-md:min-h-11"
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={isOpen}
                     data-testid="nav-group-label"
@@ -225,25 +215,24 @@ export const Sidebar = React.memo(function Sidebar({
                         const Icon = item.icon;
                         return (
                           <li key={item.path}>
-                            <Link href={item.path}>
-                              <a
-                                onClick={onClose}
-                                aria-label={item.ariaLabel ?? item.name}
-                                title={collapsed ? item.name : undefined}
-                                className={cn(
-                                  "flex items-center gap-3 rounded-md text-sm font-medium transition-colors",
-                                  collapsed
-                                    ? "px-2 py-2 justify-center"
-                                    : "px-3 py-2",
-                                  isActive
-                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                                )}
-                                aria-current={isActive ? "page" : undefined}
-                              >
-                                <Icon className="h-5 w-5" aria-hidden />
-                                {!collapsed && item.name}
-                              </a>
+                            <Link
+                              href={item.path}
+                              onClick={onClose}
+                              aria-label={item.ariaLabel ?? item.name}
+                              title={collapsed ? item.name : undefined}
+                              className={cn(
+                                "flex items-center gap-3 rounded-md text-sm font-medium transition-colors max-md:min-h-11",
+                                collapsed
+                                  ? "px-2 py-2 justify-center"
+                                  : "px-3 py-2",
+                                isActive
+                                  ? "bg-foreground text-background"
+                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              )}
+                              aria-current={isActive ? "page" : undefined}
+                            >
+                              <Icon className="h-5 w-5" aria-hidden />
+                              {!collapsed && item.name}
                             </Link>
                           </li>
                         );
@@ -266,7 +255,7 @@ export const Sidebar = React.memo(function Sidebar({
           })}
         </nav>
 
-        <div className="border-t border-border p-4">
+        <div className="border-t border-border/80 p-3">
           {!collapsed && (
             <div className="flex items-center gap-3">
               <Avatar>

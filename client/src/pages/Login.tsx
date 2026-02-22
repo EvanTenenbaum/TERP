@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,14 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
+  const localBypassEnabled =
+    import.meta.env.DEV && import.meta.env.VITE_SKIP_LOGIN_LOCAL === "true";
+
+  useEffect(() => {
+    if (localBypassEnabled) {
+      setLocation("/");
+    }
+  }, [localBypassEnabled, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +100,7 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading}
+                disabled={loading || localBypassEnabled}
               >
                 {loading ? (
                   <>
@@ -103,6 +111,13 @@ export default function Login() {
                   "Sign in"
                 )}
               </Button>
+              {localBypassEnabled && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Local login bypass is enabled via
+                  {" "}
+                  <code>VITE_SKIP_LOGIN_LOCAL=true</code>.
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -111,4 +126,3 @@ export default function Login() {
     </div>
   );
 }
-

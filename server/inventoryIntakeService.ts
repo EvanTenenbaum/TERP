@@ -19,6 +19,7 @@ import {
   batchLocations,
   productImages,
   auditLogs,
+  clients,
   type Vendor,
   type Brand,
   type Product,
@@ -29,8 +30,38 @@ import { eq } from "drizzle-orm";
 import * as inventoryUtils from "./inventoryUtils";
 import { findOrCreate } from "./_core/dbUtils";
 import { logger } from "./_core/logger";
+import { withRetryableTransaction } from "./dbTransaction";
 // MEET-005, MEET-006: Import payables service for consigned inventory tracking
 import * as payablesService from "./services/payablesService";
+
+type SqlErrorLike = {
+  code?: string;
+  errno?: number | string;
+  message?: string;
+  sqlMessage?: string;
+  cause?: unknown;
+};
+
+function isDuplicateEntryError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const sqlError = error as SqlErrorLike;
+  const code = (sqlError.code ?? "").toUpperCase();
+  const errno = String(sqlError.errno ?? "");
+  const message =
+    (typeof sqlError.message === "string" ? sqlError.message : "") +
+    " " +
+    (typeof sqlError.sqlMessage === "string" ? sqlError.sqlMessage : "");
+
+  if (
+    code === "ER_DUP_ENTRY" ||
+    errno === "1062" ||
+    message.toLowerCase().includes("duplicate entry")
+  ) {
+    return true;
+  }
+
+  return isDuplicateEntryError(sqlError.cause);
+}
 
 export interface IntakeInput {
   vendorName: string;
@@ -103,8 +134,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       throw new Error(cogsValidation.error);
     }
 
-    // Wrap entire intake operation in transaction
-    const result = await db.transaction(async tx => {
+    // Wrap entire intake operation in a retryable transaction to absorb transient
+    // lock waits/deadlocks under concurrent intake load.
+    const result = await withRetryableTransaction(
+      async tx => {
       // 1. Find or create vendor
       // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
       const vendor = await findOrCreate<typeof vendors, Vendor>(
@@ -178,14 +211,15 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       }
 
       // 5. Generate batch code and a collision-safe SKU
-      const batchCode = await inventoryUtils.generateBatchCode();
+      let batchCode = await inventoryUtils.generateBatchCode();
       const brandKey = inventoryUtils.normalizeToKey(brand.name);
       const productKey = inventoryUtils.normalizeToKey(product.nameCanonical);
+      const skuDate = new Date();
       let skuSequence = 1;
       let sku = inventoryUtils.generateSKU(
         brandKey,
         productKey,
-        new Date(),
+        skuDate,
         skuSequence
       );
 
@@ -211,7 +245,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         sku = inventoryUtils.generateSKU(
           brandKey,
           productKey,
-          new Date(),
+          skuDate,
           skuSequence
         );
       }
@@ -222,51 +256,76 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         input.ownershipType ||
         (input.paymentTerms === "CONSIGNMENT" ? "CONSIGNED" : "OFFICE_OWNED");
 
-      const [batchCreated] = await tx
-        .insert(batches)
-        .values({
-          code: batchCode,
-          sku: sku,
-          productId: product.id,
-          lotId: lot.id,
-          batchStatus: "AWAITING_INTAKE",
-          grade: input.grade,
-          isSample: 0,
-          sampleOnly: 0,
-          sampleAvailable: 0,
-          cogsMode: input.cogsMode,
-          unitCogs: input.unitCogs,
-          unitCogsMin: input.unitCogsMin,
-          unitCogsMax: input.unitCogsMax,
-          paymentTerms: input.paymentTerms,
-          ownershipType: ownershipType, // MEET-006
-          metadata: (() => {
-            const metadata = input.metadata || {};
-            if (input.mediaUrls && input.mediaUrls.length > 0) {
-              metadata.mediaFiles = input.mediaUrls;
-            }
-            return Object.keys(metadata).length > 0
-              ? inventoryUtils.stringifyMetadata(metadata)
-              : null;
-          })(),
-          onHandQty: inventoryUtils.formatQty(input.quantity),
-          sampleQty: "0",
-          reservedQty: "0",
-          quarantineQty: "0",
-          holdQty: "0",
-          defectiveQty: "0",
-          publishEcom: 0,
-          publishB2b: 0,
-        })
-        .$returningId();
+      let batch: Batch | undefined;
+      while (!batch) {
+        try {
+          const [batchCreated] = await tx
+            .insert(batches)
+            .values({
+              code: batchCode,
+              sku: sku,
+              productId: product.id,
+              lotId: lot.id,
+              batchStatus: "AWAITING_INTAKE",
+              grade: input.grade,
+              isSample: 0,
+              sampleOnly: 0,
+              sampleAvailable: 0,
+              cogsMode: input.cogsMode,
+              unitCogs: input.unitCogs,
+              unitCogsMin: input.unitCogsMin,
+              unitCogsMax: input.unitCogsMax,
+              paymentTerms: input.paymentTerms,
+              ownershipType: ownershipType, // MEET-006
+              metadata: (() => {
+                const metadata = input.metadata || {};
+                if (input.mediaUrls && input.mediaUrls.length > 0) {
+                  metadata.mediaFiles = input.mediaUrls;
+                }
+                return Object.keys(metadata).length > 0
+                  ? inventoryUtils.stringifyMetadata(metadata)
+                  : null;
+              })(),
+              onHandQty: inventoryUtils.formatQty(input.quantity),
+              sampleQty: "0",
+              reservedQty: "0",
+              quarantineQty: "0",
+              holdQty: "0",
+              defectiveQty: "0",
+              publishEcom: 0,
+              publishB2b: 0,
+            })
+            .$returningId();
 
-      const [batch] = await tx
-        .select()
-        .from(batches)
-        .where(eq(batches.id, batchCreated.id));
+          const [createdBatch] = await tx
+            .select()
+            .from(batches)
+            .where(eq(batches.id, batchCreated.id));
 
-      if (!batch) {
-        throw new Error("Failed to create batch");
+          if (!createdBatch) {
+            throw new Error("Failed to create batch");
+          }
+          batch = createdBatch;
+        } catch (insertError) {
+          if (!isDuplicateEntryError(insertError)) {
+            throw insertError;
+          }
+
+          // Any duplicate-key race (SKU/code) gets a fresh candidate and retries.
+          skuSequence += 1;
+          if (skuSequence > maxSkuAttempts) {
+            throw new Error(
+              `Failed to generate unique SKU for ${brandKey}/${productKey} after ${maxSkuAttempts} attempts`
+            );
+          }
+          sku = inventoryUtils.generateSKU(
+            brandKey,
+            productKey,
+            skuDate,
+            skuSequence
+          );
+          batchCode = await inventoryUtils.generateBatchCode();
+        }
       }
 
       // Persist intake-uploaded media as batch images (Photography source of truth)
@@ -307,68 +366,71 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         reason: "Initial intake",
       });
 
-      // 9. MEET-005: Create payable for consigned inventory
-      if (ownershipType === "CONSIGNED") {
-        try {
-          // Get COGS for payable calculation
-          const cogsPerUnit =
-            parseFloat(input.unitCogs || "0") ||
-            (parseFloat(input.unitCogsMin || "0") +
-              parseFloat(input.unitCogsMax || "0")) /
-              2;
+        return {
+          success: true,
+          batch,
+          vendor,
+          brand,
+          product,
+          lot,
+        };
+      },
+      // Intake can burst with parallel creates (vendor/brand/product SKU races).
+      // A few extra retries on fresh snapshots removes most transient collisions.
+      { maxRetries: 5, timeout: 30, retryOnDuplicateKey: true }
+    );
 
-          // Find supplier client ID for the vendor
-          const { clients } = await import("../drizzle/schema");
-          const [supplierClient] = await tx
-            .select()
-            .from(clients)
-            .where(eq(clients.name, input.vendorName))
-            .limit(1);
+    // 9. MEET-005: Create payable for consigned inventory after transaction commit.
+    // Running this outside the intake transaction avoids FK lock waits on the
+    // newly created batch/lot rows while preserving non-fatal behavior.
+    if (result.batch.ownershipType === "CONSIGNED") {
+      try {
+        const cogsPerUnit =
+          parseFloat(input.unitCogs || "0") ||
+          (parseFloat(input.unitCogsMin || "0") +
+            parseFloat(input.unitCogsMax || "0")) /
+            2;
 
-          if (supplierClient) {
-            await payablesService.createPayable(
-              {
-                batchId: batch.id,
-                lotId: lot.id,
-                vendorClientId: supplierClient.id,
-                cogsPerUnit,
-              },
-              input.userId
-            );
-            logger.info({
-              msg: "[MEET-005] Created payable for consigned batch",
-              batchId: batch.id,
+        const [supplierClient] = await db
+          .select()
+          .from(clients)
+          .where(eq(clients.name, input.vendorName))
+          .limit(1);
+
+        if (supplierClient) {
+          await payablesService.createPayable(
+            {
+              batchId: result.batch.id,
+              lotId: result.lot.id,
               vendorClientId: supplierClient.id,
               cogsPerUnit,
-            });
-          } else {
-            logger.warn({
-              msg: "[MEET-005] Supplier client not found, payable not created",
-              vendorName: input.vendorName,
-              batchId: batch.id,
-            });
-          }
-        } catch (payableError) {
-          logger.error({
-            msg: "[MEET-005] Failed to create payable (non-fatal)",
-            error:
-              payableError instanceof Error
-                ? payableError.message
-                : String(payableError),
-            batchId: batch.id,
+            },
+            input.userId
+          );
+          logger.info({
+            msg: "[MEET-005] Created payable for consigned batch",
+            batchId: result.batch.id,
+            vendorClientId: supplierClient.id,
+            cogsPerUnit,
+          });
+        } else {
+          logger.warn({
+            msg: "[MEET-005] Supplier client not found, payable not created",
+            vendorName: input.vendorName,
+            batchId: result.batch.id,
           });
         }
+      } catch (payableError) {
+        logger.error({
+          msg: "[MEET-005] Failed to create payable (non-fatal)",
+          error:
+            payableError instanceof Error
+              ? payableError.message
+              : String(payableError),
+          batchId: result.batch.id,
+        });
       }
-
-      return {
-        success: true,
-        batch,
-        vendor,
-        brand,
-        product,
-        lot,
-      };
-    });
+    }
 
     return result;
   } catch (error) {

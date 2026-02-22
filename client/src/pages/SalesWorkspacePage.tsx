@@ -1,10 +1,15 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import ReturnsPage from "@/pages/ReturnsPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
+import {
+  LinearWorkspacePanel,
+  LinearWorkspaceShell,
+} from "@/components/layout/LinearWorkspaceShell";
 
 type SalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 const SALES_TABS = SALES_WORKSPACE.tabs.map(
@@ -12,6 +17,7 @@ const SALES_TABS = SALES_WORKSPACE.tabs.map(
 ) as readonly SalesTab[];
 
 export default function SalesWorkspacePage() {
+  const [, setLocation] = useLocation();
   const { activeTab, setActiveTab } = useQueryTabState<SalesTab>({
     defaultTab: "orders",
     validTabs: SALES_TABS,
@@ -19,36 +25,36 @@ export default function SalesWorkspacePage() {
   useWorkspaceHomeTelemetry("sales", activeTab);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {SALES_WORKSPACE.title}
-        </h1>
-        <p className="text-muted-foreground">{SALES_WORKSPACE.description}</p>
-      </div>
-
-      <Tabs
-        value={activeTab}
-        onValueChange={value => setActiveTab(value as SalesTab)}
-      >
-        <TabsList className="grid w-full grid-cols-3 gap-1">
-          {SALES_WORKSPACE.tabs.map(tab => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="orders" className="mt-4">
-          <OrdersWorkSurface />
-        </TabsContent>
-        <TabsContent value="quotes" className="mt-4">
-          <QuotesWorkSurface />
-        </TabsContent>
-        <TabsContent value="returns" className="mt-4">
-          <ReturnsPage embedded />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <LinearWorkspaceShell
+      title={SALES_WORKSPACE.title}
+      description={SALES_WORKSPACE.description}
+      activeTab={activeTab}
+      tabs={SALES_WORKSPACE.tabs}
+      onTabChange={tab => setActiveTab(tab)}
+      meta={[
+        { label: "Primary flow", value: "Quote -> Order -> Fulfillment" },
+        { label: "Current view", value: SALES_WORKSPACE.tabs.find(tab => tab.value === activeTab)?.label ?? activeTab },
+      ]}
+      commandStrip={
+        <>
+          <Button size="sm" variant="outline" onClick={() => setLocation("/orders/create")}>
+            New Order
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setActiveTab("quotes")}>
+            Jump to Quotes
+          </Button>
+        </>
+      }
+    >
+      <LinearWorkspacePanel value="orders">
+        <OrdersWorkSurface />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="quotes">
+        <QuotesWorkSurface />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="returns">
+        <ReturnsPage embedded />
+      </LinearWorkspacePanel>
+    </LinearWorkspaceShell>
   );
 }

@@ -119,7 +119,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      "IBM Plex Sans",
+      "Avenir Next",
+      "Segoe UI",
+      "Helvetica Neue",
+      "Noto Sans",
+      sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -135,6 +142,199 @@
 }
 
 @layer components {
+  .terp-shell-root {
+    background:
+      radial-gradient(
+        circle at 8% -15%,
+        color-mix(in oklab, var(--primary) 10%, transparent),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 100% 0%,
+        color-mix(in oklab, var(--foreground) 3%, transparent),
+        transparent 45%
+      ),
+      var(--background);
+  }
+
+  .terp-main-shell {
+    max-width: 1800px;
+    margin: 0 auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .linear-workspace-shell {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--card) 96%, transparent);
+    overflow: hidden;
+  }
+
+  .linear-workspace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+    padding: 0.85rem 1rem;
+    background: color-mix(in oklab, var(--background) 85%, var(--card));
+  }
+
+  .linear-workspace-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .linear-workspace-eyebrow {
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: color-mix(in oklab, var(--muted-foreground) 80%, transparent);
+  }
+
+  .linear-workspace-title {
+    font-size: clamp(1.1rem, 1.9vw, 1.35rem);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .linear-workspace-description {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--muted-foreground);
+  }
+
+  .linear-workspace-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted-foreground);
+  }
+
+  .linear-workspace-shortcut-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.71rem;
+    font-weight: 500;
+    background: color-mix(in oklab, var(--background) 86%, var(--card));
+  }
+
+  .linear-workspace-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem 1.25rem;
+    flex-wrap: wrap;
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+    background: color-mix(in oklab, var(--muted) 65%, transparent);
+  }
+
+  .linear-workspace-meta-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .linear-workspace-meta-label {
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.67rem;
+    font-weight: 600;
+  }
+
+  .linear-workspace-meta-value {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  .linear-workspace-tabs {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .linear-workspace-tab-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+    background: color-mix(in oklab, var(--background) 92%, transparent);
+    min-height: 50px;
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    backdrop-filter: blur(10px);
+  }
+
+  .linear-workspace-tabs-list {
+    display: grid;
+    height: 34px;
+    border-radius: 9px;
+    padding: 2px;
+    border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+    background: color-mix(in oklab, var(--muted) 62%, transparent);
+  }
+
+  .linear-workspace-tabs-count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .linear-workspace-tabs-count-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .linear-workspace-tabs-count-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .linear-workspace-tabs-trigger {
+    min-width: 88px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    border-radius: 7px;
+  }
+
+  .linear-workspace-command-strip {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    row-gap: 0.4rem;
+    max-width: min(100%, 820px);
+  }
+
+  .linear-workspace-content {
+    margin-top: 0;
+    min-height: 0;
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0.55rem;
+  }
+
   /**
    * Hide scrollbar while maintaining scroll functionality.
    * Useful for horizontal tab lists and carousels.
@@ -254,6 +454,58 @@
    * Applied only below the md breakpoint (< 768px) to avoid affecting desktop.
    */
   @media (max-width: 767px) {
+    .terp-main-shell {
+      max-width: none;
+    }
+
+    .linear-workspace-shell {
+      border-radius: 10px;
+    }
+
+    .linear-workspace-header {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0.75rem;
+    }
+
+    .linear-workspace-shortcuts {
+      justify-content: flex-start;
+    }
+
+    .linear-workspace-meta,
+    .linear-workspace-tab-row {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .linear-workspace-tab-row {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      min-height: auto;
+    }
+
+    .linear-workspace-tabs-list {
+      width: 100%;
+    }
+
+    .linear-workspace-command-strip {
+      width: 100%;
+      margin-left: 0;
+      justify-content: stretch;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem;
+      max-width: none;
+    }
+
+    .linear-workspace-command-strip > * {
+      width: 100%;
+      justify-content: center;
+      min-height: 42px;
+    }
+
     /* Select triggers - ensure adequate touch area */
     [data-slot="select-trigger"] {
       min-height: 44px;

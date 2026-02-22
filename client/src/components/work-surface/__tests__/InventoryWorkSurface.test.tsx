@@ -23,6 +23,25 @@ vi.mock("wouter", () => ({
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     inventory: {
+      getEnhanced: {
+        useQuery: () => ({
+          data: {
+            items: [],
+            pagination: { hasMore: false },
+            summary: {
+              totalItems: 0,
+              byStockStatus: {
+                critical: 0,
+                low: 0,
+                optimal: 0,
+                outOfStock: 0,
+              },
+            },
+          },
+          isLoading: false,
+          refetch: vi.fn(),
+        }),
+      },
       list: {
         useQuery: () => ({
           data: { items: [], hasMore: false },
@@ -30,8 +49,29 @@ vi.mock("@/lib/trpc", () => ({
           refetch: vi.fn(),
         }),
       },
+      dashboardStats: {
+        useQuery: () => ({
+          data: {
+            totalUnits: 0,
+            totalInventoryValue: 0,
+            statusCounts: { LIVE: 0 },
+          },
+          refetch: vi.fn(),
+        }),
+      },
       updateStatus: {
-        useMutation: () => ({ mutate: vi.fn() }),
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      adjustQty: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      bulk: {
+        updateStatus: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        delete: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
     },
   },
@@ -103,9 +143,10 @@ describe("InventoryWorkSurface", () => {
     setupPermissionMock();
   });
 
-  // TER-220: Button renamed from "Add Batch" to "Intake" and navigates to /direct-intake
-  it("renders the Intake button", async () => {
+  it("renders the Product Intake button", async () => {
     render(<InventoryWorkSurface />);
-    expect(screen.getByRole("button", { name: /intake/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /product intake/i })
+    ).toBeInTheDocument();
   });
 });

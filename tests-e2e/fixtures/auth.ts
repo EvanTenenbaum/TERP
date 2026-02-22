@@ -95,6 +95,7 @@ export const AUTH_ROUTES = {
   signIn: "/sign-in", // Alias - should redirect to /login (legacy)
   vipPortal: "/vip-portal/login",
   apiLogin: "/api/auth/login",
+  apiQaLogin: "/api/qa-auth/login",
   apiLogout: "/api/auth/logout",
   apiMe: "/api/auth/me",
 } as const;
@@ -131,23 +132,57 @@ export async function loginViaApi(
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 
   try {
-    const response = await page.request.post(
-      `${baseUrl}${AUTH_ROUTES.apiLogin}`,
+    const attempts = [
       {
+        label: "auth.login",
+        url: `${baseUrl}${AUTH_ROUTES.apiLogin}`,
         data: { username: email, password },
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+      },
+      {
+        label: "qa-auth.login",
+        url: `${baseUrl}${AUTH_ROUTES.apiQaLogin}`,
+        data: { email, password },
+      },
+    ];
 
-    if (!response.ok()) {
-      console.error(
-        `API login failed: ${response.status()} ${await response.text()}`
-      );
-      return false;
+    for (const attempt of attempts) {
+      const response = await page.request.post(attempt.url, {
+        data: attempt.data,
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok()) {
+        console.error(
+          `${attempt.label} failed: ${response.status()} ${await response.text()}`
+        );
+        continue;
+      }
+
+      const contentType = response.headers()["content-type"] || "";
+      if (!contentType.toLowerCase().includes("application/json")) {
+        console.error(
+          `${attempt.label} failed: expected JSON response, received ${contentType || "unknown content-type"}`
+        );
+        continue;
+      }
+
+      try {
+        const data = (await response.json()) as {
+          success?: boolean;
+          token?: string;
+          user?: unknown;
+        };
+        if (typeof data.success === "boolean") {
+          if (data.success) return true;
+          continue;
+        }
+        if (data.token || data.user) return true;
+      } catch {
+        console.error(`${attempt.label} failed: could not parse JSON response`);
+        continue;
+      }
     }
 
-    const data = await response.json();
-    return data.success === true;
+    return false;
   } catch (error) {
     console.error("API login error:", error);
     return false;

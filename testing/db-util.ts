@@ -9,7 +9,7 @@
  * - Preflight connectivity check (local or remote)
  */
 
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 
@@ -20,6 +20,63 @@ const TEST_DB_CONFIG = {
   password: 'rootpassword',
   database: 'terp-test',
 };
+
+const TRANSIENT_DB_PATTERNS = [
+  /PROTOCOL_CONNECTION_LOST/i,
+  /Connection lost: The server closed the connection/i,
+  /server closed the connection/i,
+];
+
+function hasTransientDbFailure(output: string): boolean {
+  return TRANSIENT_DB_PATTERNS.some(pattern => pattern.test(output));
+}
+
+function runCommandWithRetry(
+  command: string,
+  options: {
+    env: NodeJS.ProcessEnv;
+    label: string;
+    maxAttempts?: number;
+  }
+): void {
+  const maxAttempts = options.maxAttempts ?? 3;
+  let attempt = 1;
+
+  while (attempt <= maxAttempts) {
+    const result = spawnSync(command, {
+      shell: true,
+      encoding: 'utf8',
+      env: options.env,
+    });
+
+    const stdout = result.stdout || '';
+    const stderr = result.stderr || '';
+    const combinedOutput = `${stdout}\n${stderr}`;
+
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
+
+    const transientFailure = hasTransientDbFailure(combinedOutput);
+    const commandFailed = result.status !== 0 || transientFailure;
+
+    if (!commandFailed) return;
+
+    if (!transientFailure || attempt === maxAttempts) {
+      throw new Error(
+        `${options.label} failed (attempt ${attempt}/${maxAttempts})` +
+          `${result.status !== 0 ? ` with exit code ${result.status}` : ''}`
+      );
+    }
+
+    const delaySeconds = attempt * 3;
+    console.warn(
+      `⚠️  ${options.label} hit transient DB disconnect ` +
+        `(attempt ${attempt}/${maxAttempts}). Retrying in ${delaySeconds}s...`
+    );
+    execSync(`sleep ${delaySeconds}`);
+    attempt += 1;
+  }
+}
 
 function isTruthy(value: string | undefined): boolean {
   return value === '1' || value === 'true' || value === 'yes';
@@ -149,12 +206,12 @@ export function runMigrations() {
     // Use test-schema push to keep test DB aligned with current code schema.
     // `push:mysql` is deprecated and can no-op in current drizzle-kit versions,
     // while migrate-only can lag behind newer schema columns expected by seeds.
-    execSync('pnpm drizzle-kit push --config drizzle.config.test.ts', {
-      stdio: 'inherit',
+    runCommandWithRetry('pnpm drizzle-kit push --config drizzle.config.test.ts', {
+      label: 'Migration push',
       env: {
         ...process.env,
         DATABASE_URL: databaseUrl,
-      },
+      } as NodeJS.ProcessEnv,
     });
     console.log('✅ Migrations completed successfully');
   } catch (error) {
@@ -171,12 +228,12 @@ export function seedDatabase(scenario: string = 'light') {
   try {
     const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
 
-    execSync(`pnpm seed:${scenario}`, {
-      stdio: 'inherit',
+    runCommandWithRetry(`pnpm seed:${scenario}`, {
+      label: `Seed (${scenario})`,
       env: {
         ...process.env,
         DATABASE_URL: databaseUrl,
-      },
+      } as NodeJS.ProcessEnv,
     });
     console.log('✅ Database seeded successfully');
   } catch (error) {

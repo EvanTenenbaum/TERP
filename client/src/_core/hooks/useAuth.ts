@@ -8,6 +8,19 @@ type UseAuthOptions = {
   redirectPath?: string;
 };
 
+const localBypassEnabled =
+  import.meta.env.DEV && import.meta.env.VITE_SKIP_LOGIN_LOCAL === "true";
+
+const localBypassUser = {
+  id: -1,
+  username: "local-dev",
+  role: "super_admin",
+  permissions: ["*"],
+  email: "local-dev@terp.local",
+  firstName: "Local",
+  lastName: "Developer",
+};
+
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
     options ?? {};
@@ -16,6 +29,7 @@ export function useAuth(options?: UseAuthOptions) {
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: !localBypassEnabled,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -25,6 +39,10 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    if (localBypassEnabled) {
+      return;
+    }
+
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -43,6 +61,15 @@ export function useAuth(options?: UseAuthOptions) {
 
   // FIXED: Moved side effect (localStorage) to useEffect instead of useMemo
   const state = useMemo(() => {
+    if (localBypassEnabled) {
+      return {
+        user: localBypassUser,
+        loading: false,
+        error: null,
+        isAuthenticated: true,
+      };
+    }
+
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
@@ -59,6 +86,14 @@ export function useAuth(options?: UseAuthOptions) {
 
   // Side effect for localStorage should be in useEffect, not useMemo
   useEffect(() => {
+    if (localBypassEnabled) {
+      localStorage.setItem(
+        "manus-runtime-user-info",
+        JSON.stringify(localBypassUser)
+      );
+      return;
+    }
+
     if (meQuery.data !== undefined) {
       localStorage.setItem(
         "manus-runtime-user-info",

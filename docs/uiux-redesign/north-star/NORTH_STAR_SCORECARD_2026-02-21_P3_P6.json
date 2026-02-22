@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "wave": "2026-02-21-p3-p6",
+  "reviewedAt": "2026-02-21T06:25:00.000Z",
+  "reviewedBy": "Codex execution",
+  "modules": [
+    {
+      "module": "purchase-orders",
+      "route": "/purchase-orders",
+      "score": 24,
+      "maxScore": 24,
+      "rating": 10.0,
+      "passed": true,
+      "redLineFailures": []
+    },
+    {
+      "module": "product-intake",
+      "route": "/purchase-orders?tab=product-intake",
+      "score": 23,
+      "maxScore": 24,
+      "rating": 9.58,
+      "passed": true,
+      "redLineFailures": []
+    },
+    {
+      "module": "inventory",
+      "route": "/inventory?tab=browse",
+      "score": 24,
+      "maxScore": 24,
+      "rating": 10.0,
+      "passed": true,
+      "redLineFailures": []
+    },
+    {
+      "module": "sales",
+      "route": "/sales",
+      "score": 23,
+      "maxScore": 24,
+      "rating": 9.58,
+      "passed": true,
+      "redLineFailures": []
+    }
+  ],
+  "evidence": {
+    "phase3": "qa-results/redesign/2026-02-21/metrics/north-star-evidence-2026-02-21T06-22-16-702Z.json",
+    "phase6": "qa-results/redesign/2026-02-21/metrics/north-star-evidence-2026-02-21T06-12-42-306Z.json"
+  },
+  "gateResult": {
+    "threshold": 22,
+    "adversarialThreshold": 9.0,
+    "passed": true
+  }
+}

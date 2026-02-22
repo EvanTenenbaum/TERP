@@ -23,10 +23,12 @@ import {
   batches,
   orders,
   invoices,
+  payments,
   brands,
   users,
   returns,
   vendors,
+  locations,
 } from "../../drizzle/schema.js";
 import { CONFIG, applyScenario } from "../generators/config.js";
 import { getScenario } from "../generators/scenarios.js";
@@ -58,6 +60,62 @@ const ALL_VENDORS = [
   { name: "Central Coast Growers", contactName: "Chris Martinez", contactEmail: "chris@centralcoast.com", contactPhone: "805-555-0107", notes: "SLO county specialist" },
   { name: "SoCal Premium Supply", contactName: "Jordan Taylor", contactEmail: "jordan@socalpremium.com", contactPhone: "619-555-0108", notes: "San Diego distributor" },
 ];
+
+function getErrorCode(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const maybeCode = (error as { code?: unknown }).code;
+  return typeof maybeCode === "string" ? maybeCode : undefined;
+}
+
+function getErrorCauseCode(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const cause = (error as { cause?: unknown }).cause;
+  if (typeof cause !== "object" || cause === null) {
+    return undefined;
+  }
+
+  const maybeCode = (cause as { code?: unknown }).code;
+  return typeof maybeCode === "string" ? maybeCode : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string" && maybeMessage.length > 0) {
+      return maybeMessage;
+    }
+  }
+  return "unknown error";
+}
+
+function extractQueryCount(result: unknown): number {
+  if (!Array.isArray(result) || result.length === 0) {
+    return 0;
+  }
+
+  const [firstChunk] = result;
+  if (!Array.isArray(firstChunk) || firstChunk.length === 0) {
+    return 0;
+  }
+
+  const [firstRow] = firstChunk;
+  if (typeof firstRow !== "object" || firstRow === null) {
+    return 0;
+  }
+
+  const value = (firstRow as { count?: unknown }).count;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 export async function seedRealisticData() {
   // Check if seeding is disabled via environment variable (case-insensitive)
@@ -113,14 +171,14 @@ export async function seedRealisticData() {
     await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
     
     // Clear in reverse dependency order using TRUNCATE for speed and ID reset
-    const tablesToClear = ['returns', 'invoices', 'orders', 'batches', 'lots', 'products', 'strains', 'clients', 'brands', 'vendors', 'users'];
+    const tablesToClear = ['payments', 'returns', 'invoices', 'orders', 'batches', 'lots', 'products', 'strains', 'clients', 'brands', 'vendors', 'locations', 'users'];
     for (const tableName of tablesToClear) {
       try {
         await db.execute(sql.raw(`TRUNCATE TABLE \`${tableName}\``));
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Table might not exist or be empty - continue
-        if (error?.code !== 'ER_NO_SUCH_TABLE') {
-          console.log(`   ⚠️  Warning clearing ${tableName}: ${error?.message || 'unknown error'}`);
+        if (getErrorCode(error) !== 'ER_NO_SUCH_TABLE') {
+          console.log(`   ⚠️  Warning clearing ${tableName}: ${getErrorMessage(error)}`);
         }
       }
     }
@@ -140,15 +198,42 @@ export async function seedRealisticData() {
         lastSignedIn: new Date(2023, 10, 1),
       });
       console.log("   ✓ Default user created\n");
-    } catch (error: any) {
-      if (error?.cause?.code === 'ER_DUP_ENTRY') {
+    } catch (error: unknown) {
+      if (getErrorCauseCode(error) === 'ER_DUP_ENTRY' || getErrorCode(error) === 'ER_DUP_ENTRY') {
         console.log("   ✓ Default user already exists, skipping\n");
       } else {
         throw error;
       }
     }
 
-    // Step 1: Generate Clients
+    // Step 2: Seed core locations required by direct intake and inventory flows
+    console.log("📍 Seeding locations...");
+    await db.insert(locations).values([
+      {
+        site: "Main Warehouse",
+        zone: "A",
+        rack: "R1",
+        shelf: "S1",
+        bin: "B1",
+      },
+      {
+        site: "Secondary Warehouse",
+        zone: "B",
+        rack: "R2",
+        shelf: "S1",
+        bin: "B1",
+      },
+      {
+        site: "Quarantine",
+        zone: "Q",
+        rack: "Q1",
+        shelf: "S1",
+        bin: "B1",
+      },
+    ]);
+    console.log("   ✓ 3 locations created\n");
+
+    // Step 3: Generate Clients
     console.log("👥 Generating clients...");
     const allClients = generateAllClients();
     const whaleClients = allClients.slice(0, CONFIG.whaleClients);
@@ -182,7 +267,7 @@ export async function seedRealisticData() {
       throw new Error(`Client insertion mismatch: expected ${allClients.length}, got ${insertedClients.length}`);
     }
 
-    // Step 2: Create Default Brand
+    // Step 4: Create Default Brand
     console.log("🏷️  Creating default brand...");
     await db.insert(brands).values({
       name: "TERP House Brand",
@@ -191,14 +276,14 @@ export async function seedRealisticData() {
     });
     console.log("   ✓ Default brand created\n");
 
-    // Step 3: Generate Strains
+    // Step 5: Generate Strains
     console.log("🌿 Generating strains...");
     const strainsData = generateStrains();
     console.log(`   ✓ ${strainsData.length} strains with normalized names\n`);
 
     await db.insert(strains).values(strainsData);
 
-    // Step 4: Generate Products
+    // Step 6: Generate Products
     console.log("📦 Generating products...");
     const productsData = generateProducts();
     const flowerProducts = productsData.filter(p => p.category === "Flower");
@@ -209,7 +294,7 @@ export async function seedRealisticData() {
 
     await db.insert(products).values(productsData);
 
-    // Step 5: Create Vendors (for lots FK relationship)
+    // Step 7: Create Vendors (for lots FK relationship)
     console.log("🏭 Creating vendors...");
     // Use CONFIG.totalVendors to determine how many vendors to create
     // Use raw SQL to avoid schema mismatch (paymentTerms column doesn't exist in production)
@@ -234,14 +319,14 @@ export async function seedRealisticData() {
     const vendorIds = insertedVendors.map(v => v.id);
     console.log(`   ✓ ${vendorData.length} vendors created\n`);
 
-    // Step 6: Generate Lots
+    // Step 8: Generate Lots
     console.log("📊 Generating lots...");
     const lotsData = generateLots(vendorIds);
     console.log(`   ✓ ${lotsData.length} lots created\n`);
 
     await db.insert(lots).values(lotsData);
 
-    // Step 7: Generate Batches
+    // Step 9: Generate Batches
     console.log("📦 Generating batches...");
     const productIds = Array.from(
       { length: productsData.length },
@@ -253,7 +338,7 @@ export async function seedRealisticData() {
 
     await db.insert(batches).values(batchesData);
 
-    // Step 7: Generate Orders
+    // Step 10: Generate Orders
     console.log("🛍️ Generating orders...");
     // Use actual inserted client IDs instead of assuming sequential IDs
     const whaleClientIds = insertedClients.slice(0, CONFIG.whaleClients).map(c => c.id);
@@ -300,7 +385,7 @@ export async function seedRealisticData() {
       id: dbOrder.id,
     }));
 
-    // Step 8: Generate Invoices
+    // Step 11: Generate Invoices
     console.log("💵 Generating invoices...");
     const invoicesData = generateInvoices(ordersWithIds);
     console.log(`   ✓ ${invoicesData.length} invoices created\n`);
@@ -310,7 +395,48 @@ export async function seedRealisticData() {
       await db.insert(invoices).values(batch);
     }
 
-    // Step 9: Generate Returns
+    // Step 11b: Generate AR payment rows to keep invoice amountPaid consistent with payments
+    console.log("💳 Generating payments...");
+    const insertedInvoices = await db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        customerId: invoices.customerId,
+        invoiceDate: invoices.invoiceDate,
+        amountPaid: invoices.amountPaid,
+      })
+      .from(invoices);
+
+    const paymentsData: Array<typeof payments.$inferInsert> = [];
+    for (const invoice of insertedInvoices) {
+      const paidAmount = Number.parseFloat(`${invoice.amountPaid ?? 0}`);
+      if (!Number.isFinite(paidAmount) || paidAmount <= 0) {
+        continue;
+      }
+
+      paymentsData.push({
+        paymentNumber: `PAY-${invoice.invoiceNumber}`,
+        paymentType: "RECEIVED",
+        paymentDate: invoice.invoiceDate ?? new Date(),
+        amount: paidAmount.toFixed(2),
+        paymentMethod: "ACH",
+        referenceNumber: invoice.invoiceNumber,
+        customerId: invoice.customerId,
+        invoiceId: invoice.id,
+        notes: "Seeded payment generated from invoice amountPaid",
+        createdBy: 1,
+      });
+    }
+
+    if (paymentsData.length > 0) {
+      for (let i = 0; i < paymentsData.length; i += batchSize) {
+        const batch = paymentsData.slice(i, i + batchSize);
+        await db.insert(payments).values(batch);
+      }
+    }
+    console.log(`   ✓ ${paymentsData.length} payments created\n`);
+
+    // Step 12: Generate Returns
     console.log("↩️  Generating returns...");
     const returnsData = generateReturns(ordersWithIds);
     console.log(`   ✓ ${returnsData.length} returns created\n`);
@@ -322,7 +448,7 @@ export async function seedRealisticData() {
       }
     }
 
-    // Step 10: Generate Refunds
+    // Step 13: Generate Refunds
     // TODO: Refunds should be inserted into transactions table, not orders
     // Commenting out for now until proper refunds implementation
     console.log("💸 Generating refunds...");
@@ -338,11 +464,11 @@ export async function seedRealisticData() {
     //   }
     // }
 
-    // Step 11: Calculate Summary Statistics
+    // Step 14: Calculate Summary Statistics
     console.log("📊 Calculating summary statistics...");
     const arSummary = calculateARAgingSummary(invoicesData);
 
-    // Step 12: Validate FK integrity
+    // Step 15: Validate FK integrity
     console.log("🔍 Validating data integrity...");
     const validationErrors: string[] = [];
 
@@ -352,7 +478,7 @@ export async function seedRealisticData() {
       LEFT JOIN vendors v ON l.vendorId = v.id
       WHERE v.id IS NULL
     `);
-    const orphanedLotsCount = (orphanedLots[0] as any)?.[0]?.count || 0;
+    const orphanedLotsCount = extractQueryCount(orphanedLots);
     if (orphanedLotsCount > 0) validationErrors.push(`${orphanedLotsCount} lots with invalid vendorId`);
 
     // Check invoices → orders FK (via referenceId)
@@ -361,7 +487,7 @@ export async function seedRealisticData() {
       LEFT JOIN orders o ON i.referenceId = o.id
       WHERE i.referenceType = 'ORDER' AND o.id IS NULL
     `);
-    const orphanedInvoicesCount = (orphanedInvoices[0] as any)?.[0]?.count || 0;
+    const orphanedInvoicesCount = extractQueryCount(orphanedInvoices);
     if (orphanedInvoicesCount > 0) validationErrors.push(`${orphanedInvoicesCount} invoices with invalid referenceId`);
 
     // Check batches → products FK
@@ -370,7 +496,7 @@ export async function seedRealisticData() {
       LEFT JOIN products p ON b.productId = p.id
       WHERE p.id IS NULL
     `);
-    const orphanedBatchesCount = (orphanedBatches[0] as any)?.[0]?.count || 0;
+    const orphanedBatchesCount = extractQueryCount(orphanedBatches);
     if (orphanedBatchesCount > 0) validationErrors.push(`${orphanedBatchesCount} batches with invalid productId`);
 
     if (validationErrors.length > 0) {
@@ -391,6 +517,7 @@ export async function seedRealisticData() {
     console.log(`📦 Batches: ${batchesData.length}`);
     console.log(`🛒 Orders: ${ordersData.length}`);
     console.log(`💵 Invoices: ${invoicesData.length}`);
+    console.log(`💳 Payments: ${paymentsData.length}`);
     console.log(`↩️  Returns: ${returnsData.length}`);
     console.log(`💸 Refunds: ${refundsData.length}`);
     console.log("\n💰 AR Aging Summary:");

@@ -19,6 +19,7 @@ import {
   useRef,
   useEffect,
   type ChangeEvent,
+  type SetStateAction,
 } from "react";
 import type {
   ColDef,
@@ -40,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -200,6 +202,21 @@ const createEmptyRow = (defaults?: {
   status: "pending",
 });
 
+const normalizeRowForValidation = (row: IntakeGridRow): IntakeGridRow => {
+  const vendorName = row.vendorName.trim();
+  const brandName = row.brandName.trim() || vendorName;
+  const item = row.item.trim();
+  const site = row.site.trim();
+
+  return {
+    ...row,
+    vendorName,
+    brandName,
+    item,
+    site,
+  };
+};
+
 // ============================================================================
 // STATUS CELL RENDERER
 // ============================================================================
@@ -308,64 +325,48 @@ function RowInspectorContent({
     <div className="space-y-6">
       <InspectorSection title="Supplier Information" defaultOpen>
         <InspectorField label="Vendor" required>
-          <Select
+          <Input
             value={row.vendorName}
-            onValueChange={value => {
-              // TER-219: Intercept create-new option
-              if (value === "__CREATE_NEW__") {
-                // Navigate to client creation with seller flag
-                // For now, prompt for quick name entry
-                const name = window.prompt("Enter new vendor name:");
-                if (name && name.trim()) {
-                  onUpdate({
-                    vendorName: name.trim(),
-                    vendorId: null,
-                    brandName: row.brandName || name.trim(),
-                  });
-                  validation.handleChange("vendorName", name.trim());
-                }
-                return;
-              }
-              const vendor = vendors.find(v => v.name === value);
+            list={`direct-intake-vendors-${row.id}`}
+            onChange={e => {
+              const value = e.target.value;
+              const trimmedValue = value.trim();
+              const vendor = vendors.find(v => v.name === trimmedValue);
+              const shouldBackfillBrand =
+                trimmedValue.length > 0 && !row.brandName.trim();
               onUpdate({
                 vendorName: value,
-                vendorId: vendor?.id || null,
-                brandName: row.brandName || value, // Auto-populate if empty
+                vendorId: vendor?.id ?? null,
+                ...(shouldBackfillBrand ? { brandName: trimmedValue } : {}),
               });
               validation.handleChange("vendorName", value);
             }}
-          >
-            <SelectTrigger
-              className={cn(
-                validation.getFieldState("vendorName").showError &&
-                  "border-red-500"
-              )}
-            >
-              <SelectValue placeholder="Select vendor" />
-            </SelectTrigger>
-            <SelectContent>
-              {vendors.length === 0 ? (
-                <SelectItem value="no-vendors" disabled>
-                  No vendors available
-                </SelectItem>
-              ) : (
-                <>
-                  {vendors.map(v => (
-                    <SelectItem key={v.id} value={v.name}>
-                      {v.name}
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              {/* TER-219: Inline create option for new vendor */}
-              <SelectItem
-                value="__CREATE_NEW__"
-                className="text-primary font-medium"
-              >
-                + Create New Vendor
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            onBlur={e => {
+              const trimmedValue = e.target.value.trim();
+              if (trimmedValue !== row.vendorName) {
+                const vendor = vendors.find(v => v.name === trimmedValue);
+                const shouldBackfillBrand =
+                  trimmedValue.length > 0 && !row.brandName.trim();
+                onUpdate({
+                  vendorName: trimmedValue,
+                  vendorId: vendor?.id ?? null,
+                  ...(shouldBackfillBrand ? { brandName: trimmedValue } : {}),
+                });
+                validation.handleChange("vendorName", trimmedValue);
+              }
+              validation.handleBlur("vendorName");
+            }}
+            className={cn(
+              validation.getFieldState("vendorName").showError &&
+                "border-red-500"
+            )}
+            placeholder="Type vendor or choose suggestion"
+          />
+          <datalist id={`direct-intake-vendors-${row.id}`}>
+            {vendors.map(vendor => (
+              <option key={vendor.id} value={vendor.name} />
+            ))}
+          </datalist>
           {validation.getFieldState("vendorName").showError && (
             <p className="text-xs text-red-500 mt-1">
               {validation.getFieldState("vendorName").error}
@@ -419,9 +420,11 @@ function RowInspectorContent({
 
         {/* TER-221 + TER-222: Combined product/strain field with match suggestions */}
         <InspectorField label="Product / Strain" required>
-          <Select
+          <Input
             value={row.item}
-            onValueChange={value => {
+            list={`direct-intake-products-${row.id}`}
+            onChange={e => {
+              const value = e.target.value;
               const product = products.find(p => p.name === value);
               const categoryValue = product?.category as
                 | IntakeRowData["category"]
@@ -434,28 +437,33 @@ function RowInspectorContent({
               });
               validation.handleChange("item", value);
             }}
-          >
-            <SelectTrigger
-              className={cn(
-                validation.getFieldState("item").showError && "border-red-500"
-              )}
-            >
-              <SelectValue placeholder="Select product" />
-            </SelectTrigger>
-            <SelectContent>
-              {products.length === 0 ? (
-                <SelectItem value="no-products" disabled>
-                  No products available
-                </SelectItem>
-              ) : (
-                products.map(product => (
-                  <SelectItem key={product.id} value={product.name}>
-                    {product.name}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
+            onBlur={e => {
+              const trimmedValue = e.target.value.trim();
+              if (trimmedValue !== row.item) {
+                const product = products.find(p => p.name === trimmedValue);
+                const categoryValue = product?.category as
+                  | IntakeRowData["category"]
+                  | undefined;
+                onUpdate({
+                  item: trimmedValue,
+                  productId: product?.id ?? null,
+                  strainId: product?.strainId ?? null,
+                  category: categoryValue ?? row.category,
+                });
+                validation.handleChange("item", trimmedValue);
+              }
+              validation.handleBlur("item");
+            }}
+            className={cn(
+              validation.getFieldState("item").showError && "border-red-500"
+            )}
+            placeholder="Type product or choose suggestion"
+          />
+          <datalist id={`direct-intake-products-${row.id}`}>
+            {products.map(product => (
+              <option key={product.id} value={product.name} />
+            ))}
+          </datalist>
           {validation.getFieldState("item").showError && (
             <p className="text-xs text-red-500 mt-1">
               {validation.getFieldState("item").error}
@@ -701,6 +709,33 @@ export function DirectIntakeWorkSurface() {
   const [rowMediaFilesById, setRowMediaFilesById] = useState<
     Record<string, File[]>
   >({});
+  const rowsRef = useRef<IntakeGridRow[]>(rows);
+  const rowMediaFilesByIdRef = useRef<Record<string, File[]>>(rowMediaFilesById);
+  const updateRows = useCallback((updater: SetStateAction<IntakeGridRow[]>) => {
+    setRows(prevRows => {
+      const nextRows =
+        typeof updater === "function"
+          ? (updater as (value: IntakeGridRow[]) => IntakeGridRow[])(prevRows)
+          : updater;
+      rowsRef.current = nextRows;
+      return nextRows;
+    });
+  }, []);
+  const updateRowMediaFilesById = useCallback(
+    (updater: SetStateAction<Record<string, File[]>>) => {
+      setRowMediaFilesById(prev => {
+        const nextFiles =
+          typeof updater === "function"
+            ? (updater as (
+                value: Record<string, File[]>
+              ) => Record<string, File[]>)(prev)
+            : updater;
+        rowMediaFilesByIdRef.current = nextFiles;
+        return nextFiles;
+      });
+    },
+    []
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
 
@@ -721,15 +756,35 @@ export function DirectIntakeWorkSurface() {
     [rows, selectedRowId]
   );
 
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
+
+  useEffect(() => {
+    rowMediaFilesByIdRef.current = rowMediaFilesById;
+  }, [rowMediaFilesById]);
+
+  useEffect(() => {
+    if (rows.length === 0) {
+      setSelectedRowId(null);
+      return;
+    }
+    if (selectedRowId && rows.some(row => row.id === selectedRowId)) {
+      return;
+    }
+    const firstPending = rows.find(row => row.status === "pending");
+    setSelectedRowId(firstPending?.id ?? rows[0].id);
+  }, [rows, selectedRowId]);
+
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: true, // Let AG Grid handle Tab navigation
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
-    onRowCommit: async () => {
+    onRowCommit: () => {
       // Commit current row on Enter
       if (selectedRow && selectedRow.status === "pending") {
-        await handleSubmitRow(selectedRow);
+        void handleSubmitRow(selectedRow);
       }
     },
     onRowCreate: () => {
@@ -811,14 +866,14 @@ export function DirectIntakeWorkSurface() {
   // Apply main warehouse default to initial rows when locations data loads
   useEffect(() => {
     if (!defaultLocationOverrides) return;
-    setRows(prev =>
+    updateRows(prev =>
       prev.map(row =>
         row.locationId === null && row.status === "pending"
           ? { ...row, ...defaultLocationOverrides }
           : row
       )
     );
-  }, [defaultLocationOverrides]);
+  }, [defaultLocationOverrides, updateRows]);
 
   const {
     data: productsData,
@@ -858,50 +913,25 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
-        // TER-217: Free-text + dropdown for rapid vendor entry
         headerName: "Vendor",
         field: "vendorName",
-        width: 160,
+        minWidth: 130,
+        flex: 1,
         editable: params => params.data?.status === "pending",
         cellEditor: "agTextCellEditor",
         cellEditorParams: {
           useFormatter: false,
         },
-        // Provide autocomplete suggestions via value setter
         tooltipValueGetter: () =>
           vendors.length > 0
             ? `Type to search ${vendors.length} vendors or enter new`
             : "Type vendor name",
       },
       {
-        headerName: "Brand/Farmer",
-        field: "brandName",
-        width: 140,
-        editable: params => params.data?.status === "pending",
-      },
-      {
-        // TER-223: Category defaults to Flower, subcategory is first-class
-        headerName: "Category",
-        field: "category",
-        width: 110,
-        editable: params => params.data?.status === "pending",
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: CATEGORY_OPTIONS.map(c => c.value) },
-      },
-      {
-        // TER-223: Subcategory prioritized per user feedback
-        headerName: "Subcategory",
-        field: "subcategory",
-        width: 120,
-        editable: params => params.data?.status === "pending",
-        cellEditor: "agTextCellEditor",
-      },
-      {
-        // TER-217 + TER-221: Combined product/strain field with free-text
         headerName: "Product / Strain",
         field: "item",
-        flex: 1,
         minWidth: 180,
+        flex: 2,
         editable: params => params.data?.status === "pending",
         cellEditor: "agTextCellEditor",
         cellEditorParams: {
@@ -915,7 +945,7 @@ export function DirectIntakeWorkSurface() {
       {
         headerName: "Qty",
         field: "qty",
-        width: 100,
+        width: 90,
         editable: params => params.data?.status === "pending",
         valueParser: params => {
           const val = Number(params.newValue);
@@ -925,7 +955,7 @@ export function DirectIntakeWorkSurface() {
       {
         headerName: "COGS",
         field: "cogs",
-        width: 120,
+        width: 100,
         editable: params => params.data?.status === "pending",
         valueFormatter: params => `$${(params.value ?? 0).toFixed(2)}`,
         valueParser: params => {
@@ -934,26 +964,18 @@ export function DirectIntakeWorkSurface() {
         },
       },
       {
-        headerName: "Payment",
-        field: "paymentTerms",
-        width: 120,
-        editable: params => params.data?.status === "pending",
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: PAYMENT_TERMS_OPTIONS.map(p => p.value) },
-      },
-      {
         headerName: "Location",
         field: "site",
-        width: 130,
+        minWidth: 120,
+        flex: 1,
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: locations.map(l => l.site) },
       },
       {
-        // TER-224: Notes indicator for traceability
         headerName: "Notes",
         field: "notes",
-        width: 60,
+        width: 70,
         editable: false,
         sortable: false,
         filter: false,
@@ -980,9 +1002,9 @@ export function DirectIntakeWorkSurface() {
         editable: false,
       },
       {
-        headerName: "",
+        headerName: "Edit",
         colId: "actions",
-        width: 50,
+        width: 64,
         cellRenderer: (params: ICellRendererParams<IntakeGridRow>) => (
           <Button
             variant="ghost"
@@ -1017,6 +1039,9 @@ export function DirectIntakeWorkSurface() {
   // Event handlers
   const handleGridReady = useCallback((event: GridReadyEvent) => {
     gridApiRef.current = event.api;
+    window.requestAnimationFrame(() => {
+      event.api.sizeColumnsToFit();
+    });
   }, []);
 
   const handleCellValueChanged = useCallback(
@@ -1025,61 +1050,74 @@ export function DirectIntakeWorkSurface() {
 
       setSaving(); // Mark as saving when changes occur
 
-      // Update vendor ID when vendor name changes
+      const nextRow: IntakeGridRow = {
+        ...event.data,
+      };
+
+      // Normalize vendor linkage (and auto-fill brand) when vendor name changes.
       if (event.colDef.field === "vendorName") {
-        const vendor = vendors.find(v => v.name === event.newValue);
+        const nextVendorName =
+          typeof event.newValue === "string" ? event.newValue.trim() : "";
+        nextRow.vendorName = nextVendorName;
+        if (!nextRow.brandName?.trim() && nextVendorName) {
+          nextRow.brandName = nextVendorName;
+        }
+
+        const vendor = vendors.find(v => v.name === nextVendorName);
         if (vendor) {
-          event.node.setDataValue("vendorId", vendor.id);
-          if (!event.data.brandName) {
-            event.node.setDataValue("brandName", vendor.name);
+          nextRow.vendorId = vendor.id;
+          if (!nextRow.brandName?.trim()) {
+            nextRow.brandName = vendor.name;
           }
         } else {
-          // Clear stale vendorId when text no longer matches an existing vendor
-          event.node.setDataValue("vendorId", null);
+          nextRow.vendorId = null;
         }
       }
 
-      // Update location ID and site when location name changes
+      // Normalize location linkage when site changes.
       if (event.colDef.field === "site") {
-        const location = locations.find(l => l.site === event.newValue);
+        const nextSite =
+          typeof event.newValue === "string" ? event.newValue.trim() : "";
+        nextRow.site = nextSite;
+        const location = locations.find(l => l.site === nextSite);
         if (location) {
-          event.node.setDataValue("locationId", location.id);
+          nextRow.locationId = location.id;
+          nextRow.locationName = location.site;
+        } else {
+          nextRow.locationId = null;
+          nextRow.locationName = "";
         }
       }
 
-      // Update product selection when item/product changes
+      // Normalize product linkage when item text changes.
       if (event.colDef.field === "item") {
-        const product = products.find(p => p.name === event.newValue);
+        const nextItem =
+          typeof event.newValue === "string" ? event.newValue.trim() : "";
+        nextRow.item = nextItem;
+        const product = products.find(p => p.name === nextItem);
         if (product) {
-          event.node.setDataValue("productId", product.id);
-          event.node.setDataValue("strainId", product.strainId ?? null);
-          event.node.setDataValue("category", product.category);
+          nextRow.productId = product.id;
+          nextRow.strainId = product.strainId ?? null;
+          nextRow.category = product.category as IntakeRowData["category"];
         } else {
-          // Clear stale IDs when product text no longer matches an existing product
-          event.node.setDataValue("productId", null);
-          event.node.setDataValue("strainId", null);
+          nextRow.productId = null;
+          nextRow.strainId = null;
         }
       }
 
       // Reset error status when editing after a validation failure
-      if (event.data.status === "error") {
-        event.node.setDataValue("status", "pending");
-        event.node.setDataValue("errorMessage", undefined);
+      if (nextRow.status === "error") {
+        nextRow.status = "pending";
+        nextRow.errorMessage = undefined;
       }
 
       // Update rows state
-      setRows(prevRows =>
+      updateRows(prevRows =>
         prevRows.map(row =>
-          row.id === event.data?.id
+          row.id === nextRow.id
             ? {
                 ...row,
-                ...event.data,
-                status:
-                  event.data.status === "error" ? "pending" : event.data.status,
-                errorMessage:
-                  event.data.status === "error"
-                    ? undefined
-                    : event.data.errorMessage,
+                ...nextRow,
               }
             : row
         )
@@ -1088,7 +1126,7 @@ export function DirectIntakeWorkSurface() {
       // Mark as saved after a short debounce (simulating auto-save)
       setTimeout(() => setSaved(), 500);
     },
-    [vendors, locations, products, setSaving, setSaved]
+    [vendors, locations, products, setSaving, setSaved, updateRows]
   );
 
   const handleRowSelected = useCallback(
@@ -1102,7 +1140,7 @@ export function DirectIntakeWorkSurface() {
 
   const handleAddRow = useCallback(() => {
     const newRow = createEmptyRow(defaultLocationOverrides);
-    setRows(prev => [...prev, newRow]);
+    updateRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
 
     // Focus the new row
@@ -1113,11 +1151,11 @@ export function DirectIntakeWorkSurface() {
         gridApiRef.current.setFocusedCell(rowIndex, "vendorName");
       }
     }, 50);
-  }, [rows.length, defaultLocationOverrides]);
+  }, [rows.length, defaultLocationOverrides, updateRows]);
 
   const handleRemoveRow = useCallback(
     (rowId: string) => {
-      setRows(prev => {
+      updateRows(prev => {
         const pendingRows = prev.filter(r => r.status === "pending");
         if (
           pendingRows.length <= 1 &&
@@ -1128,7 +1166,7 @@ export function DirectIntakeWorkSurface() {
         }
         return prev.filter(r => r.id !== rowId);
       });
-      setRowMediaFilesById(prev => {
+      updateRowMediaFilesById(prev => {
         const next = { ...prev };
         delete next[rowId];
         return next;
@@ -1137,7 +1175,7 @@ export function DirectIntakeWorkSurface() {
         setSelectedRowId(null);
       }
     },
-    [selectedRowId]
+    [selectedRowId, updateRows, updateRowMediaFilesById]
   );
 
   const uploadMediaFiles = useCallback(
@@ -1183,11 +1221,17 @@ export function DirectIntakeWorkSurface() {
 
   const handleSubmitRow = useCallback(
     async (row: IntakeGridRow) => {
+      const liveRow = rowsRef.current.find(r => r.id === row.id) ?? row;
+      const normalizedRow = normalizeRowForValidation(liveRow);
+      updateRows(prev =>
+        prev.map(r => (r.id === row.id ? { ...r, ...normalizedRow } : r))
+      );
+
       // Validate
-      const result = intakeRowSchema.safeParse(row);
+      const result = intakeRowSchema.safeParse(normalizedRow);
       if (!result.success) {
         const firstError = result.error.issues[0];
-        setRows(prev =>
+        updateRows(prev =>
           prev.map(r =>
             r.id === row.id
               ? {
@@ -1202,7 +1246,7 @@ export function DirectIntakeWorkSurface() {
         return;
       }
 
-      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      const mediaFiles = rowMediaFilesByIdRef.current[row.id] ?? [];
       let uploadedMediaUrls: UploadedMediaUrl[] = [];
 
       try {
@@ -1220,29 +1264,31 @@ export function DirectIntakeWorkSurface() {
 
         setSaving("Submitting intake...");
         await intakeMutation.mutateAsync({
-          vendorName: row.vendorName,
-          brandName: row.brandName,
-          productName: row.item,
-          category: row.category,
-          subcategory: row.subcategory || undefined,
-          strainId: row.strainId,
-          quantity: row.qty,
+          vendorName: normalizedRow.vendorName,
+          brandName: normalizedRow.brandName,
+          productName: normalizedRow.item,
+          category: normalizedRow.category,
+          subcategory: normalizedRow.subcategory || undefined,
+          strainId: normalizedRow.strainId,
+          quantity: normalizedRow.qty,
           cogsMode: "FIXED" as const,
-          unitCogs: row.cogs.toFixed(2),
-          paymentTerms: row.paymentTerms,
-          location: { site: row.site },
-          metadata: row.notes ? { notes: row.notes } : undefined,
+          unitCogs: normalizedRow.cogs.toFixed(2),
+          paymentTerms: normalizedRow.paymentTerms,
+          location: { site: normalizedRow.site },
+          metadata: normalizedRow.notes
+            ? { notes: normalizedRow.notes }
+            : undefined,
           mediaUrls:
             uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         // Mark as submitted
-        setRows(prev =>
+        updateRows(prev =>
           prev.map(r =>
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
-        setRowMediaFilesById(prev => {
+        updateRowMediaFilesById(prev => {
           const next = { ...prev };
           delete next[row.id];
           return next;
@@ -1267,7 +1313,7 @@ export function DirectIntakeWorkSurface() {
 
         const message =
           error instanceof Error ? error.message : "Failed to submit intake";
-        setRows(prev =>
+        updateRows(prev =>
           prev.map(r =>
             r.id === row.id
               ? { ...r, status: "error" as const, errorMessage: message }
@@ -1280,18 +1326,33 @@ export function DirectIntakeWorkSurface() {
     [
       deleteMediaMutation,
       intakeMutation,
-      rowMediaFilesById,
       setSaving,
       setSaved,
       setError,
+      updateRows,
+      updateRowMediaFilesById,
       uploadMediaFiles,
     ]
   );
 
   const handleSubmitAll = useCallback(async () => {
-    const validationResults = rows
+    const currentRows = rowsRef.current;
+    const normalizedPendingRows = currentRows
       .filter(row => row.status === "pending")
-      .map(row => ({ row, result: intakeRowSchema.safeParse(row) }));
+      .map(normalizeRowForValidation);
+
+    updateRows(prev =>
+      prev.map(row => {
+        if (row.status !== "pending") return row;
+        const normalized = normalizedPendingRows.find(r => r.id === row.id);
+        return normalized ? { ...row, ...normalized } : row;
+      })
+    );
+
+    const validationResults = normalizedPendingRows.map(row => ({
+      row,
+      result: intakeRowSchema.safeParse(row),
+    }));
 
     const invalidRows = validationResults.filter(
       ({ result }) => !result.success
@@ -1301,7 +1362,7 @@ export function DirectIntakeWorkSurface() {
       .map(({ row }) => row);
 
     if (invalidRows.length > 0) {
-      setRows(prev =>
+      updateRows(prev =>
         prev.map(row => {
           const invalid = invalidRows.find(item => item.row.id === row.id);
           if (!invalid) return row;
@@ -1331,7 +1392,7 @@ export function DirectIntakeWorkSurface() {
     let errorCount = 0;
 
     for (const row of pendingRows) {
-      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      const mediaFiles = rowMediaFilesByIdRef.current[row.id] ?? [];
       let uploadedMediaUrls: UploadedMediaUrl[] = [];
 
       try {
@@ -1365,12 +1426,12 @@ export function DirectIntakeWorkSurface() {
             uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
-        setRows(prev =>
+        updateRows(prev =>
           prev.map(r =>
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
-        setRowMediaFilesById(prev => {
+        updateRowMediaFilesById(prev => {
           const next = { ...prev };
           delete next[row.id];
           return next;
@@ -1391,7 +1452,7 @@ export function DirectIntakeWorkSurface() {
           }
         }
 
-        setRows(prev =>
+        updateRows(prev =>
           prev.map(r =>
             r.id === row.id
               ? {
@@ -1421,11 +1482,11 @@ export function DirectIntakeWorkSurface() {
   }, [
     deleteMediaMutation,
     intakeMutation,
-    rowMediaFilesById,
-    rows,
     setSaving,
     setSaved,
     setError,
+    updateRows,
+    updateRowMediaFilesById,
     uploadMediaFiles,
   ]);
 
@@ -1433,22 +1494,53 @@ export function DirectIntakeWorkSurface() {
     (updates: Partial<IntakeGridRow>) => {
       if (!selectedRowId) return;
       setSaving();
-      setRows(prev =>
+      updateRows(prev =>
         prev.map(r =>
           r.id === selectedRowId
-            ? {
-                ...r,
-                ...updates,
-                status: r.status === "error" ? "pending" : r.status,
-                errorMessage: r.status === "error" ? undefined : r.errorMessage,
-              }
+            ? (() => {
+                const nextVendorName =
+                  typeof updates.vendorName === "string"
+                    ? updates.vendorName.trim()
+                    : undefined;
+                const shouldBackfillBrand =
+                  typeof updates.brandName === "undefined" &&
+                  !!nextVendorName &&
+                  !r.brandName.trim();
+
+                return {
+                  ...r,
+                  ...updates,
+                  ...(typeof nextVendorName === "string"
+                    ? { vendorName: nextVendorName }
+                    : {}),
+                  ...(shouldBackfillBrand
+                    ? { brandName: nextVendorName }
+                    : {}),
+                  status: r.status === "error" ? "pending" : r.status,
+                  errorMessage:
+                    r.status === "error" ? undefined : r.errorMessage,
+                };
+              })()
             : r
         )
       );
       setTimeout(() => setSaved(), 500);
     },
-    [selectedRowId, setSaving, setSaved]
+    [selectedRowId, setSaving, setSaved, updateRows]
   );
+
+  useEffect(() => {
+    const fitGrid = () => {
+      if (!gridApiRef.current) return;
+      gridApiRef.current.sizeColumnsToFit();
+    };
+    const timer = window.setTimeout(fitGrid, 0);
+    window.addEventListener("resize", fitGrid);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", fitGrid);
+    };
+  }, [rows.length, inspector.isOpen]);
 
   // Summary calculation
   const summary = useMemo<IntakeSummary>(() => {
@@ -1460,59 +1552,222 @@ export function DirectIntakeWorkSurface() {
     };
   }, [rows]);
 
+  const pendingCount = rows.filter(r => r.status === "pending").length;
+  const submittedCount = rows.filter(r => r.status === "submitted").length;
+  const errorCount = rows.filter(r => r.status === "error").length;
+  const selectedRowEditable = !!selectedRow && selectedRow.status !== "submitted";
+
   // Render
   return (
-    <div
+    <section
       {...keyboardProps}
-      className="h-full min-h-[calc(100vh-8rem)] flex flex-col"
+      className="linear-workspace-shell h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <Package className="h-6 w-6" />
-            Direct Intake
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Add new inventory batches with full validation
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Save State Indicator */}
-          {SaveStateIndicator}
-
-          {/* Summary Stats */}
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Items:{" "}
-              <span className="font-semibold text-foreground">
-                {summary.totalItems}
-              </span>
-            </span>
-            <span>
-              Qty:{" "}
-              <span className="font-semibold text-foreground">
-                {summary.totalQty}
-              </span>
-            </span>
-            <span>
-              Value:{" "}
-              <span className="font-semibold text-foreground">
-                ${summary.totalValue.toFixed(2)}
-              </span>
-            </span>
+      <header className="linear-workspace-header">
+        <div className="linear-workspace-title-wrap">
+          <p className="linear-workspace-eyebrow">Inventory Intake</p>
+          <div>
+            <h2 className="linear-workspace-title flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Direct Intake
+            </h2>
+            <p className="linear-workspace-description">
+              Keep key fields front and center, then use row details for everything else.
+            </p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {SaveStateIndicator}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => inspector.open()}
+            disabled={!selectedRow}
+          >
+            Edit Selected Details
+          </Button>
+        </div>
+      </header>
+
+      <div className="linear-workspace-meta">
+        <div className="linear-workspace-meta-item">
+          <span className="linear-workspace-meta-label">Pending</span>
+          <span className="linear-workspace-meta-value">{pendingCount}</span>
+        </div>
+        <div className="linear-workspace-meta-item">
+          <span className="linear-workspace-meta-label">Submitted</span>
+          <span className="linear-workspace-meta-value">{submittedCount}</span>
+        </div>
+        <div className="linear-workspace-meta-item">
+          <span className="linear-workspace-meta-label">Errors</span>
+          <span className={cn("linear-workspace-meta-value", errorCount > 0 && "text-red-600")}>
+            {errorCount}
+          </span>
+        </div>
+        <div className="linear-workspace-meta-item">
+          <span className="linear-workspace-meta-label">Qty</span>
+          <span className="linear-workspace-meta-value">{summary.totalQty}</span>
+        </div>
+        <div className="linear-workspace-meta-item">
+          <span className="linear-workspace-meta-label">Value</span>
+          <span className="linear-workspace-meta-value">${summary.totalValue.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b bg-muted/30">
-        <div className="flex gap-2">
+      <div className="border-b border-border/70 bg-background px-3 py-3 md:px-4">
+        <div className="grid gap-2 md:grid-cols-5">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Vendor</Label>
+            <Input
+              list="direct-intake-top-vendors"
+              value={selectedRow?.vendorName ?? ""}
+              onChange={e => {
+                if (!selectedRow) return;
+                const value = e.target.value;
+                const trimmedValue = value.trim();
+                const vendor = vendors.find(v => v.name === trimmedValue);
+                const shouldBackfillBrand =
+                  trimmedValue.length > 0 && !selectedRow.brandName.trim();
+                handleUpdateSelectedRow({
+                  vendorName: value,
+                  vendorId: vendor?.id ?? null,
+                  ...(shouldBackfillBrand ? { brandName: trimmedValue } : {}),
+                });
+              }}
+              onBlur={e => {
+                if (!selectedRow) return;
+                const trimmedValue = e.target.value.trim();
+                if (trimmedValue === selectedRow.vendorName) return;
+                const vendor = vendors.find(v => v.name === trimmedValue);
+                const shouldBackfillBrand =
+                  trimmedValue.length > 0 && !selectedRow.brandName.trim();
+                handleUpdateSelectedRow({
+                  vendorName: trimmedValue,
+                  vendorId: vendor?.id ?? null,
+                  ...(shouldBackfillBrand ? { brandName: trimmedValue } : {}),
+                });
+              }}
+              disabled={!selectedRowEditable}
+              className="h-9"
+              placeholder="Type or select vendor"
+            />
+            <datalist id="direct-intake-top-vendors">
+              {vendors.map(vendor => (
+                <option key={vendor.id} value={vendor.name} />
+              ))}
+            </datalist>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Product / Strain</Label>
+            <Input
+              list="direct-intake-top-products"
+              value={selectedRow?.item ?? ""}
+              onChange={e => {
+                if (!selectedRow) return;
+                const value = e.target.value;
+                const product = products.find(p => p.name === value);
+                handleUpdateSelectedRow({
+                  item: value,
+                  productId: product?.id ?? null,
+                  strainId: product?.strainId ?? null,
+                  category:
+                    (product?.category as IntakeRowData["category"]) ??
+                    selectedRow.category,
+                });
+              }}
+              onBlur={e => {
+                if (!selectedRow) return;
+                const trimmedValue = e.target.value.trim();
+                if (trimmedValue === selectedRow.item) return;
+                const product = products.find(p => p.name === trimmedValue);
+                handleUpdateSelectedRow({
+                  item: trimmedValue,
+                  productId: product?.id ?? null,
+                  strainId: product?.strainId ?? null,
+                  category:
+                    (product?.category as IntakeRowData["category"]) ??
+                    selectedRow.category,
+                });
+              }}
+              disabled={!selectedRowEditable}
+              className="h-9"
+              placeholder="Type or select product"
+            />
+            <datalist id="direct-intake-top-products">
+              {products.map(product => (
+                <option key={product.id} value={product.name} />
+              ))}
+            </datalist>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Qty</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={selectedRow?.qty ?? ""}
+              onChange={e => {
+                const val = Number(e.target.value);
+                handleUpdateSelectedRow({ qty: Number.isFinite(val) ? val : 0 });
+              }}
+              disabled={!selectedRowEditable}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">COGS</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={selectedRow?.cogs ?? ""}
+              onChange={e => {
+                const val = Number(e.target.value);
+                handleUpdateSelectedRow({ cogs: Number.isFinite(val) ? val : 0 });
+              }}
+              disabled={!selectedRowEditable}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Location</Label>
+            <Select
+              value={selectedRow?.site ?? ""}
+              onValueChange={value => {
+                if (!selectedRow) return;
+                const location = locations.find(l => l.site === value);
+                handleUpdateSelectedRow({
+                  site: value,
+                  locationId: location?.id ?? null,
+                  locationName: value,
+                });
+              }}
+              disabled={!selectedRowEditable}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map(l => (
+                  <SelectItem key={l.id} value={l.site}>
+                    {l.site}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {selectedRow?.status === "error" && selectedRow.errorMessage && (
+          <p className="mt-2 text-xs font-medium text-red-600">{selectedRow.errorMessage}</p>
+        )}
+      </div>
+
+      <div className="linear-workspace-tab-row !min-h-0">
+        <div className="linear-workspace-command-strip !ml-0">
           <Button variant="outline" size="sm" onClick={handleAddRow}>
             <Plus className="mr-1 h-4 w-4" />
             Add Row
           </Button>
-          {/* TER-218: Quick add multiple rows */}
           <Button
             variant="outline"
             size="sm"
@@ -1520,12 +1775,24 @@ export function DirectIntakeWorkSurface() {
               const newRows = Array.from({ length: 5 }, () =>
                 createEmptyRow(defaultLocationOverrides)
               );
-              setRows(prev => [...prev, ...newRows]);
+              updateRows(prev => [...prev, ...newRows]);
             }}
           >
             <Plus className="mr-1 h-4 w-4" />
             +5 Rows
           </Button>
+          {selectedRow?.status === "pending" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void handleSubmitRow(selectedRow);
+              }}
+            >
+              <Send className="mr-1 h-4 w-4" />
+              Submit Selected
+            </Button>
+          )}
           {selectedRowId && selectedRow?.status === "pending" && (
             <Button
               variant="outline"
@@ -1536,38 +1803,31 @@ export function DirectIntakeWorkSurface() {
               Remove
             </Button>
           )}
+          <Button
+            size="sm"
+            onClick={() => {
+              void handleSubmitAll();
+            }}
+            disabled={isSubmitting || pendingCount === 0}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="mr-1 h-4 w-4" />
+                Submit All Pending
+              </>
+            )}
+          </Button>
         </div>
-        <Button
-          size="sm"
-          onClick={handleSubmitAll}
-          disabled={
-            isSubmitting ||
-            rows.filter(r => r.status === "pending").length === 0
-          }
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Send className="mr-1 h-4 w-4" />
-              Submit All
-            </>
-          )}
-        </Button>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Grid Area */}
-        <div
-          className={cn(
-            "flex-1 transition-all duration-200 min-h-0",
-            inspector.isOpen && "mr-96"
-          )}
-        >
+        <div className="flex-1 min-h-0 overflow-x-hidden">
           {isLoadingData ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -1590,9 +1850,9 @@ export function DirectIntakeWorkSurface() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    refetchVendors();
-                    refetchLocations();
-                    refetchProducts();
+                    void refetchVendors();
+                    void refetchLocations();
+                    void refetchProducts();
                   }}
                   className="mt-4"
                 >
@@ -1638,7 +1898,7 @@ export function DirectIntakeWorkSurface() {
             }
             onMediaFilesChange={files => {
               if (!selectedRow) return;
-              setRowMediaFilesById(prev => ({
+              updateRowMediaFilesById(prev => ({
                 ...prev,
                 [selectedRow.id]: files,
               }));
@@ -1656,7 +1916,11 @@ export function DirectIntakeWorkSurface() {
                 <Trash2 className="mr-2 h-4 w-4" />
                 Remove Row
               </Button>
-              <Button onClick={() => handleSubmitRow(selectedRow)}>
+              <Button
+                onClick={() => {
+                  void handleSubmitRow(selectedRow);
+                }}
+              >
                 <Send className="mr-2 h-4 w-4" />
                 Submit This Row
               </Button>
@@ -1664,7 +1928,7 @@ export function DirectIntakeWorkSurface() {
           )}
         </InspectorPanel>
       </div>
-    </div>
+    </section>
   );
 }
 

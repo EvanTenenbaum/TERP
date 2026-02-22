@@ -15,8 +15,18 @@ const mockSetLocation = vi.fn();
 
 vi.mock("wouter", () => ({
   useLocation: () => [mockLocation, mockSetLocation],
-  Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-    React.cloneElement(children as React.ReactElement, { href }),
+  Link: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 const featureFlagMock = vi.fn();

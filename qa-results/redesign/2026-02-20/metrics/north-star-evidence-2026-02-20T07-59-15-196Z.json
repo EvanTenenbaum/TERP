@@ -1,0 +1,625 @@
+{
+  "baseUrl": "http://127.0.0.1:3215",
+  "runAt": "2026-02-20T07:59:15.196Z",
+  "runStamp": "2026-02-20T07-59-15-196Z",
+  "modules": [
+    {
+      "module": "purchase-orders",
+      "route": "/purchase-orders",
+      "baseline": {
+        "medianClicks": 7,
+        "medianTimeSeconds": 52,
+        "reversalRate": 0.12,
+        "deadEndRate": 0.1
+      },
+      "primaryActions": [
+        "Create PO",
+        "Place Order",
+        "Create Product Intake",
+        "Activity Log"
+      ],
+      "desktop": {
+        "metrics": {
+          "path": "/purchase-orders?draftId=PI-1771574359169-TSIGSN&tab=product-intake",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "Activity Log"
+          ],
+          "visiblePrimaryCount": 1,
+          "hasGrid": true,
+          "gridAreaRatio": 0.20947189686025702,
+          "cardCount": 0,
+          "hasActivityLogButton": true,
+          "bannedTerms": []
+        },
+        "metricsBeforeFlow": {
+          "path": "/purchase-orders",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "Create PO",
+            "Place Order",
+            "Create Product Intake",
+            "Activity Log"
+          ],
+          "visiblePrimaryCount": 4,
+          "hasGrid": true,
+          "gridAreaRatio": 0.19511293618838457,
+          "cardCount": 0,
+          "hasActivityLogButton": true,
+          "bannedTerms": []
+        },
+        "flow": {
+          "success": true,
+          "clicks": 3,
+          "steps": [
+            "select-po-row",
+            "open-create-intake-drawer",
+            "set-intake-qty",
+            "create-intake-draft"
+          ],
+          "drawerOpened": true,
+          "routeChanges": 2,
+          "elapsedSeconds": 1.3
+        },
+        "friction": {
+          "events": 2,
+          "reversals": 0,
+          "deadEnds": 0
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/purchase-orders-desktop-2026-02-20T07-59-15-196Z.png",
+        "trace": "qa-results/redesign/2026-02-20/traces/purchase-orders-2026-02-20T07-59-15-196Z.zip"
+      },
+      "mobile": {
+        "metrics": {
+          "path": "/purchase-orders",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "Create PO",
+            "Place Order"
+          ],
+          "visiblePrimaryCount": 2,
+          "hasGrid": true,
+          "gridAreaRatio": 0.7743348599465306,
+          "cardCount": 0,
+          "hasActivityLogButton": true,
+          "bannedTerms": []
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/purchase-orders-mobile-2026-02-20T07-59-15-196Z.png"
+      },
+      "scorecard": {
+        "totalScore": 22,
+        "passed": false,
+        "redLineFailures": [
+          "primary actions not all visible at load"
+        ],
+        "entries": [
+          {
+            "criterion": "Primary action visibility at load",
+            "score": 0
+          },
+          {
+            "criterion": "Click efficiency vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Time-to-complete vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Reversal loop rate",
+            "score": 2
+          },
+          {
+            "criterion": "Dead-end event rate",
+            "score": 2
+          },
+          {
+            "criterion": "Context continuity for edits/corrections",
+            "score": 2
+          },
+          {
+            "criterion": "Grid dominance and density quality",
+            "score": 2
+          },
+          {
+            "criterion": "Drawer usage correctness",
+            "score": 2
+          },
+          {
+            "criterion": "Terminology compliance",
+            "score": 2
+          },
+          {
+            "criterion": "Functional parity",
+            "score": 2
+          },
+          {
+            "criterion": "Mobile-safe behavior",
+            "score": 2
+          },
+          {
+            "criterion": "Visual discipline and consistency",
+            "score": 2
+          }
+        ],
+        "metrics": {
+          "baselineClicks": 7,
+          "measuredClicks": 3,
+          "clicksImprovement": 0.5714,
+          "baselineSeconds": 52,
+          "measuredSeconds": 1.3,
+          "timeImprovement": 0.975,
+          "reversals": 0,
+          "deadEnds": 0,
+          "routeChanges": 2
+        }
+      }
+    },
+    {
+      "module": "product-intake",
+      "route": "/purchase-orders?tab=product-intake",
+      "baseline": {
+        "medianClicks": 6,
+        "medianTimeSeconds": 46,
+        "reversalRate": 0.1,
+        "deadEndRate": 0.12
+      },
+      "primaryActions": [
+        "Review",
+        "Receive",
+        "Activity Log"
+      ],
+      "desktop": {
+        "metrics": {
+          "path": "/purchase-orders?tab=product-intake",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "Review",
+            "Receive",
+            "Activity Log"
+          ],
+          "visiblePrimaryCount": 3,
+          "hasGrid": true,
+          "gridAreaRatio": 0.07517338234097934,
+          "cardCount": 0,
+          "hasActivityLogButton": true,
+          "bannedTerms": []
+        },
+        "metricsBeforeFlow": {
+          "path": "/purchase-orders?tab=product-intake",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "Review",
+            "Receive",
+            "Activity Log"
+          ],
+          "visiblePrimaryCount": 3,
+          "hasGrid": false,
+          "gridAreaRatio": 0,
+          "cardCount": 0,
+          "hasActivityLogButton": true,
+          "bannedTerms": []
+        },
+        "flow": {
+          "success": true,
+          "clicks": 2,
+          "steps": [
+            "bootstrap-local-draft",
+            "open-review",
+            "close-review"
+          ],
+          "drawerOpened": false,
+          "routeChanges": 0,
+          "elapsedSeconds": 1.85
+        },
+        "friction": {
+          "events": 1,
+          "reversals": 0,
+          "deadEnds": 0
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/product-intake-desktop-2026-02-20T07-59-15-196Z.png",
+        "trace": "qa-results/redesign/2026-02-20/traces/product-intake-2026-02-20T07-59-15-196Z.zip"
+      },
+      "mobile": {
+        "metrics": {
+          "path": "/purchase-orders?tab=product-intake",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "Review",
+            "Receive",
+            "Activity Log"
+          ],
+          "visiblePrimaryCount": 3,
+          "hasGrid": false,
+          "gridAreaRatio": 0,
+          "cardCount": 0,
+          "hasActivityLogButton": true,
+          "bannedTerms": []
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/product-intake-mobile-2026-02-20T07-59-15-196Z.png"
+      },
+      "scorecard": {
+        "totalScore": 21,
+        "passed": false,
+        "redLineFailures": [],
+        "entries": [
+          {
+            "criterion": "Primary action visibility at load",
+            "score": 2
+          },
+          {
+            "criterion": "Click efficiency vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Time-to-complete vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Reversal loop rate",
+            "score": 2
+          },
+          {
+            "criterion": "Dead-end event rate",
+            "score": 2
+          },
+          {
+            "criterion": "Context continuity for edits/corrections",
+            "score": 2
+          },
+          {
+            "criterion": "Grid dominance and density quality",
+            "score": 1
+          },
+          {
+            "criterion": "Drawer usage correctness",
+            "score": 1
+          },
+          {
+            "criterion": "Terminology compliance",
+            "score": 2
+          },
+          {
+            "criterion": "Functional parity",
+            "score": 2
+          },
+          {
+            "criterion": "Mobile-safe behavior",
+            "score": 2
+          },
+          {
+            "criterion": "Visual discipline and consistency",
+            "score": 1
+          }
+        ],
+        "metrics": {
+          "baselineClicks": 6,
+          "measuredClicks": 2,
+          "clicksImprovement": 0.6667,
+          "baselineSeconds": 46,
+          "measuredSeconds": 1.85,
+          "timeImprovement": 0.9598,
+          "reversals": 0,
+          "deadEnds": 0,
+          "routeChanges": 0
+        }
+      }
+    },
+    {
+      "module": "inventory",
+      "route": "/inventory?tab=browse",
+      "baseline": {
+        "medianClicks": 5,
+        "medianTimeSeconds": 30,
+        "reversalRate": 0.08,
+        "deadEndRate": 0.08
+      },
+      "primaryActions": [
+        "New Intake",
+        "Browse SKU Grid",
+        "Jump to Products"
+      ],
+      "desktop": {
+        "metrics": {
+          "path": "/inventory?tab=browse",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "New Intake",
+            "Browse SKU Grid",
+            "Jump to Products"
+          ],
+          "visiblePrimaryCount": 3,
+          "hasGrid": true,
+          "gridAreaRatio": 0.10895917215714983,
+          "cardCount": 0,
+          "hasActivityLogButton": false,
+          "bannedTerms": []
+        },
+        "metricsBeforeFlow": {
+          "path": "/inventory?tab=browse",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "New Intake",
+            "Browse SKU Grid",
+            "Jump to Products"
+          ],
+          "visiblePrimaryCount": 3,
+          "hasGrid": true,
+          "gridAreaRatio": 0.10895917215714983,
+          "cardCount": 0,
+          "hasActivityLogButton": false,
+          "bannedTerms": []
+        },
+        "flow": {
+          "success": true,
+          "clicks": 0,
+          "steps": [],
+          "drawerOpened": false,
+          "routeChanges": 0,
+          "elapsedSeconds": 1.23
+        },
+        "friction": {
+          "events": 0,
+          "reversals": 0,
+          "deadEnds": 0
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/inventory-desktop-2026-02-20T07-59-15-196Z.png",
+        "trace": "qa-results/redesign/2026-02-20/traces/inventory-2026-02-20T07-59-15-196Z.zip"
+      },
+      "mobile": {
+        "metrics": {
+          "path": "/inventory?tab=browse",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "New Intake",
+            "Browse SKU Grid",
+            "Jump to Products"
+          ],
+          "visiblePrimaryCount": 3,
+          "hasGrid": true,
+          "gridAreaRatio": 0.17899909998177177,
+          "cardCount": 0,
+          "hasActivityLogButton": false,
+          "bannedTerms": []
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/inventory-mobile-2026-02-20T07-59-15-196Z.png"
+      },
+      "scorecard": {
+        "totalScore": 23,
+        "passed": true,
+        "redLineFailures": [],
+        "entries": [
+          {
+            "criterion": "Primary action visibility at load",
+            "score": 2
+          },
+          {
+            "criterion": "Click efficiency vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Time-to-complete vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Reversal loop rate",
+            "score": 2
+          },
+          {
+            "criterion": "Dead-end event rate",
+            "score": 2
+          },
+          {
+            "criterion": "Context continuity for edits/corrections",
+            "score": 2
+          },
+          {
+            "criterion": "Grid dominance and density quality",
+            "score": 2
+          },
+          {
+            "criterion": "Drawer usage correctness",
+            "score": 1
+          },
+          {
+            "criterion": "Terminology compliance",
+            "score": 2
+          },
+          {
+            "criterion": "Functional parity",
+            "score": 2
+          },
+          {
+            "criterion": "Mobile-safe behavior",
+            "score": 2
+          },
+          {
+            "criterion": "Visual discipline and consistency",
+            "score": 2
+          }
+        ],
+        "metrics": {
+          "baselineClicks": 5,
+          "measuredClicks": 0,
+          "clicksImprovement": 1,
+          "baselineSeconds": 30,
+          "measuredSeconds": 1.23,
+          "timeImprovement": 0.959,
+          "reversals": 0,
+          "deadEnds": 0,
+          "routeChanges": 0
+        }
+      }
+    },
+    {
+      "module": "sales",
+      "route": "/sales",
+      "baseline": {
+        "medianClicks": 5,
+        "medianTimeSeconds": 35,
+        "reversalRate": 0.09,
+        "deadEndRate": 0.09
+      },
+      "primaryActions": [
+        "New Order",
+        "Jump to Quotes"
+      ],
+      "desktop": {
+        "metrics": {
+          "path": "/sales",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "New Order",
+            "Jump to Quotes"
+          ],
+          "visiblePrimaryCount": 2,
+          "hasGrid": false,
+          "gridAreaRatio": 0,
+          "cardCount": 0,
+          "hasActivityLogButton": false,
+          "bannedTerms": []
+        },
+        "metricsBeforeFlow": {
+          "path": "/sales",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "New Order",
+            "Jump to Quotes"
+          ],
+          "visiblePrimaryCount": 2,
+          "hasGrid": false,
+          "gridAreaRatio": 0,
+          "cardCount": 0,
+          "hasActivityLogButton": false,
+          "bannedTerms": []
+        },
+        "flow": {
+          "success": true,
+          "clicks": 2,
+          "steps": [
+            "open-quotes-tab",
+            "return-orders-tab"
+          ],
+          "drawerOpened": false,
+          "routeChanges": 2,
+          "elapsedSeconds": 16
+        },
+        "friction": {
+          "events": 0,
+          "reversals": 0,
+          "deadEnds": 0
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/sales-desktop-2026-02-20T07-59-15-196Z.png",
+        "trace": "qa-results/redesign/2026-02-20/traces/sales-2026-02-20T07-59-15-196Z.zip"
+      },
+      "mobile": {
+        "metrics": {
+          "path": "/sales",
+          "horizontalOverflow": false,
+          "visiblePrimaryActions": [
+            "New Order",
+            "Jump to Quotes"
+          ],
+          "visiblePrimaryCount": 2,
+          "hasGrid": false,
+          "gridAreaRatio": 0,
+          "cardCount": 0,
+          "hasActivityLogButton": false,
+          "bannedTerms": []
+        },
+        "screenshot": "qa-results/redesign/2026-02-20/screenshots/sales-mobile-2026-02-20T07-59-15-196Z.png"
+      },
+      "scorecard": {
+        "totalScore": 20,
+        "passed": false,
+        "redLineFailures": [],
+        "entries": [
+          {
+            "criterion": "Primary action visibility at load",
+            "score": 2
+          },
+          {
+            "criterion": "Click efficiency vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Time-to-complete vs baseline",
+            "score": 2
+          },
+          {
+            "criterion": "Reversal loop rate",
+            "score": 2
+          },
+          {
+            "criterion": "Dead-end event rate",
+            "score": 2
+          },
+          {
+            "criterion": "Context continuity for edits/corrections",
+            "score": 2
+          },
+          {
+            "criterion": "Grid dominance and density quality",
+            "score": 0
+          },
+          {
+            "criterion": "Drawer usage correctness",
+            "score": 1
+          },
+          {
+            "criterion": "Terminology compliance",
+            "score": 2
+          },
+          {
+            "criterion": "Functional parity",
+            "score": 2
+          },
+          {
+            "criterion": "Mobile-safe behavior",
+            "score": 2
+          },
+          {
+            "criterion": "Visual discipline and consistency",
+            "score": 1
+          }
+        ],
+        "metrics": {
+          "baselineClicks": 5,
+          "measuredClicks": 2,
+          "clicksImprovement": 0.6,
+          "baselineSeconds": 35,
+          "measuredSeconds": 16,
+          "timeImprovement": 0.5429,
+          "reversals": 0,
+          "deadEnds": 0,
+          "routeChanges": 2
+        }
+      }
+    }
+  ],
+  "summary": {
+    "moduleCount": 4,
+    "passedModules": [
+      "inventory"
+    ],
+    "failedModules": [
+      {
+        "module": "purchase-orders",
+        "totalScore": 22,
+        "redLineFailures": [
+          "primary actions not all visible at load"
+        ]
+      },
+      {
+        "module": "product-intake",
+        "totalScore": 21,
+        "redLineFailures": []
+      },
+      {
+        "module": "sales",
+        "totalScore": 20,
+        "redLineFailures": []
+      }
+    ]
+  }
+}

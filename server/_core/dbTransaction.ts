@@ -125,9 +125,16 @@ export async function withTransaction<T>(
  */
 export async function withRetryableTransaction<T>(
   callback: (tx: DbTransaction) => Promise<T>,
-  options: TransactionOptions & { maxRetries?: number } = {}
+  options: TransactionOptions & {
+    maxRetries?: number;
+    retryOnDuplicateKey?: boolean;
+  } = {}
 ): Promise<T> {
-  const { maxRetries = 3, ...transactionOptions } = options;
+  const {
+    maxRetries = 3,
+    retryOnDuplicateKey = false,
+    ...transactionOptions
+  } = options;
   let lastError: Error | undefined;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -135,13 +142,12 @@ export async function withRetryableTransaction<T>(
       return await withTransaction(callback, transactionOptions);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-
-      const errorMessage = lastError.message.toLowerCase();
-      const isRetryable =
-        errorMessage.includes("deadlock") ||
-        errorMessage.includes("lock wait timeout") ||
-        errorMessage.includes("try restarting transaction") ||
-        errorMessage.includes("serialization failure");
+      const errorCode =
+        getErrorCode(error) ?? getErrorCode(lastError.cause) ?? "UNKNOWN";
+      const isRetryable = isRetryableTransactionError(
+        error,
+        retryOnDuplicateKey
+      );
 
       if (!isRetryable || attempt === maxRetries) {
         throw lastError;
@@ -151,11 +157,76 @@ export async function withRetryableTransaction<T>(
       await new Promise(resolve => setTimeout(resolve, delay));
 
       logger.warn(
-        { attempt: attempt + 1, maxRetries, error: lastError.message },
+        {
+          attempt: attempt + 1,
+          maxRetries,
+          error: lastError.message,
+          errorCode,
+        },
         `Retrying transaction after ${delay}ms`
       );
     }
   }
 
   throw lastError;
+}
+
+function isRetryableTransactionError(
+  error: unknown,
+  retryOnDuplicateKey: boolean
+): boolean {
+  const errorMessage = getErrorMessage(error).toLowerCase();
+  const errorCode = (getErrorCode(error) ?? "").toUpperCase();
+
+  // Retry only transient transaction conflicts.
+  const transientConflict =
+    errorMessage.includes("deadlock") ||
+    errorMessage.includes("lock wait timeout") ||
+    errorMessage.includes("try restarting transaction") ||
+    errorMessage.includes("serialization failure") ||
+    errorCode === "ER_LOCK_DEADLOCK" ||
+    errorCode === "ER_LOCK_WAIT_TIMEOUT";
+
+  if (transientConflict) return true;
+
+  if (!retryOnDuplicateKey) return false;
+
+  return (
+    errorCode === "ER_DUP_ENTRY" ||
+    errorCode === "1062" ||
+    errorMessage.includes("duplicate entry")
+  );
+}
+
+function getErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+
+  const code =
+    "code" in error && typeof error.code === "string"
+      ? error.code
+      : "errno" in error &&
+          (typeof error.errno === "number" || typeof error.errno === "string")
+        ? String(error.errno)
+        : undefined;
+
+  if (code) return code;
+
+  if ("cause" in error) {
+    return getErrorCode(error.cause);
+  }
+
+  return undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const value = error.message;
+    if (typeof value === "string") return value;
+  }
+  if (error && typeof error === "object" && "cause" in error) {
+    return getErrorMessage(error.cause);
+  }
+  return "";
 }

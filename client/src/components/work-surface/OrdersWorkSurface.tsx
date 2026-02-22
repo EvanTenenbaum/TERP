@@ -195,6 +195,17 @@ const extractItems = <T,>(data: unknown): T[] => {
   return [];
 };
 
+const buildConfirmedQueryInput = (fulfillmentStatus?: string): {
+  isDraft: boolean;
+  fulfillmentStatus?: string;
+} =>
+  fulfillmentStatus && fulfillmentStatus !== "ALL"
+    ? { isDraft: false, fulfillmentStatus }
+    : { isDraft: false };
+
+const normalizeStatus = (status?: string | null): string =>
+  String(status ?? "").toUpperCase();
+
 // ============================================================================
 // STATUS BADGE
 // ============================================================================
@@ -488,6 +499,7 @@ function OrderInspectorContent({
 
 export function OrdersWorkSurface() {
   const [, setLocation] = useLocation();
+  const trpcUtils = trpc.useUtils();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State
@@ -548,17 +560,65 @@ export function OrdersWorkSurface() {
     [draftOrdersData]
   );
 
+  const confirmedQueryInput = useMemo(
+    () => buildConfirmedQueryInput(statusFilter),
+    [statusFilter]
+  );
+
   const {
     data: confirmedOrdersData,
     isLoading: loadingConfirmed,
     refetch: refetchConfirmed,
-  } = trpc.orders.getAll.useQuery({
-    isDraft: false,
-    fulfillmentStatus: statusFilter === "ALL" ? undefined : statusFilter,
-  });
+  } = trpc.orders.getAll.useQuery(confirmedQueryInput);
   const confirmedOrders = useMemo(
     () => extractItems<Order>(confirmedOrdersData),
     [confirmedOrdersData]
+  );
+
+  const patchConfirmedOrderStatus = useCallback(
+    (orderId: number) => {
+      const targetStatus = "SHIPPED" as const;
+      const statusFilters = FULFILLMENT_STATUSES.map(status =>
+        status.value === "ALL" ? undefined : status.value
+      );
+
+      for (const filter of statusFilters) {
+        trpcUtils.orders.getAll.setData(
+          buildConfirmedQueryInput(filter),
+          data => {
+            if (!data) return data;
+
+            const nextItems = data.items
+              .map(order =>
+                order.id === orderId
+                  ? {
+                      ...order,
+                      fulfillmentStatus: targetStatus,
+                    }
+                  : order
+              )
+              .filter(order => {
+                if (!filter) return true;
+                return normalizeStatus(order.fulfillmentStatus) === filter;
+              });
+
+            const nextPagination = data.pagination
+              ? {
+                  ...data.pagination,
+                  total: filter ? nextItems.length : data.pagination.total,
+                }
+              : data.pagination;
+
+            return {
+              ...data,
+              items: nextItems,
+              pagination: nextPagination,
+            };
+          }
+        );
+      }
+    },
+    [trpcUtils]
   );
 
   // Helpers
@@ -651,8 +711,8 @@ export function OrdersWorkSurface() {
     onSuccess: () => {
       toast.success("Order confirmed");
       setSaved();
-      refetchDrafts();
-      refetchConfirmed();
+      void refetchDrafts();
+      void refetchConfirmed();
       setShowConfirmDialog(false);
       inspector.close();
     },
@@ -670,7 +730,7 @@ export function OrdersWorkSurface() {
     onSuccess: () => {
       toast.success("Draft deleted");
       setSaved();
-      refetchDrafts();
+      void refetchDrafts();
       setShowDeleteDialog(false);
       setSelectedOrderId(null);
       inspector.close();
@@ -689,7 +749,7 @@ export function OrdersWorkSurface() {
     onSuccess: () => {
       toast.success("Order confirmed for fulfillment");
       setSaved();
-      refetchConfirmed();
+      void refetchConfirmed();
       setShowConfirmFulfillmentDialog(false);
       setConfirmFulfillmentNotes("");
       inspector.close();
@@ -704,10 +764,16 @@ export function OrdersWorkSurface() {
 
   const shipOrderMutation = trpc.orders.shipOrder.useMutation({
     onMutate: () => setSaving("Shipping order..."),
-    onSuccess: () => {
+    onSuccess: result => {
+      const shippedOrderId =
+        typeof result?.orderId === "number" ? result.orderId : selectedOrderId;
+      if (typeof shippedOrderId === "number") {
+        patchConfirmedOrderStatus(shippedOrderId);
+      }
+
       toast.success("Order shipped");
       setSaved();
-      refetchConfirmed();
+      void refetchConfirmed();
       setShowShipDialog(false);
       setShipTrackingNumber("");
       setShipCarrier("");
@@ -728,7 +794,7 @@ export function OrdersWorkSurface() {
     onSuccess: () => {
       toast.success("Order marked as returned");
       setSaved();
-      refetchConfirmed();
+      void refetchConfirmed();
       setShowReturnDialog(false);
       setReturnReason("");
     },
@@ -745,7 +811,7 @@ export function OrdersWorkSurface() {
     onSuccess: () => {
       toast.success("Inventory restocked successfully");
       setSaved();
-      refetchConfirmed();
+      void refetchConfirmed();
       setShowRestockDialog(false);
     },
     onError: err => {
@@ -762,7 +828,7 @@ export function OrdersWorkSurface() {
       onSuccess: () => {
         toast.success("Vendor return processed successfully");
         setSaved();
-        refetchConfirmed();
+        void refetchConfirmed();
         setShowVendorReturnDialog(false);
         setReturnReason("");
         setSelectedVendorId("");
@@ -784,8 +850,8 @@ export function OrdersWorkSurface() {
           : "Invoice generated"
       );
       setSaved();
-      refetchDrafts();
-      refetchConfirmed();
+      void refetchDrafts();
+      void refetchConfirmed();
     },
     onError: err => {
       toast.error(err.message || "Failed to generate invoice");
@@ -997,44 +1063,49 @@ export function OrdersWorkSurface() {
             inspector.isOpen && "mr-96"
           )}
         >
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : displayOrders.length === 0 ? (
-            <div
-              className="flex items-center justify-center h-64"
-              data-testid="orders-empty-state"
-            >
-              <div className="text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                {/* TER-229: Improved empty state with diagnostic context */}
-                <p className="font-medium">No orders found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {search
-                    ? "Try adjusting your search"
-                    : statusFilter !== "ALL"
-                      ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
-                      : activeTab === "draft"
-                        ? "No draft orders. Create a new order to get started."
-                        : "No confirmed orders yet. Confirm a draft order to see it here."}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <Table data-testid="orders-table">
-              <TableHeader>
+          <Table data-testid="orders-table" className="min-h-[420px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order #</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
                 <TableRow>
-                  <TableHead>Order #</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead></TableHead>
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Loading orders…</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayOrders.map((order: Order, index: number) => (
+              ) : displayOrders.length === 0 ? (
+                <TableRow data-testid="orders-empty-state">
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="mx-auto max-w-xl">
+                      <div className="flex items-center justify-center gap-2 text-foreground">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <p className="font-medium">No orders found</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {search
+                          ? "Try adjusting your search"
+                          : statusFilter !== "ALL"
+                            ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
+                            : activeTab === "draft"
+                              ? "No draft orders. Create a new order to get started."
+                              : "No confirmed orders yet. Confirm a draft order to see it here."}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                displayOrders.map((order: Order, index: number) => (
                   <TableRow
                     key={order.id}
                     data-testid={`order-row-${order.id}`}
@@ -1071,10 +1142,10 @@ export function OrdersWorkSurface() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
 
         {/* Inspector */}

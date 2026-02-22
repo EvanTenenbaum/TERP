@@ -13,7 +13,6 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -22,6 +21,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -37,6 +38,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -139,6 +149,19 @@ const STATUS_COLORS: Record<string, string> = {
   CLOSED: "bg-gray-200 text-gray-600",
 };
 
+type InventoryBatchStatus =
+  | "AWAITING_INTAKE"
+  | "LIVE"
+  | "PHOTOGRAPHY_COMPLETE"
+  | "ON_HOLD"
+  | "QUARANTINED"
+  | "SOLD_OUT"
+  | "CLOSED";
+
+const ACTIONABLE_BATCH_STATUSES = BATCH_STATUSES.filter(
+  status => status.value !== "ALL"
+) as Array<{ value: InventoryBatchStatus; label: string }>;
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -179,12 +202,14 @@ interface BatchInspectorProps {
   item: InventoryItem | null;
   onEdit: (batchId: number) => void;
   onStatusChange: (batchId: number, status: string) => void;
+  onAdjustQuantity: (batchId: number) => void;
 }
 
 function BatchInspectorContent({
   item,
   onEdit,
   onStatusChange,
+  onAdjustQuantity,
 }: BatchInspectorProps) {
   if (!item || !item.batch) {
     return (
@@ -317,6 +342,15 @@ function BatchInspectorContent({
           <Button
             variant="outline"
             className="w-full justify-start"
+            data-testid="adjust-qty-btn"
+            onClick={() => onAdjustQuantity(batch.id)}
+          >
+            Adjust Quantity
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            data-testid="edit-batch-btn"
             onClick={() => onEdit(batch.id)}
           >
             <Edit className="h-4 w-4 mr-2" />
@@ -333,7 +367,6 @@ function BatchInspectorContent({
 // ============================================================================
 
 export function InventoryWorkSurface() {
-  const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State
@@ -345,7 +378,21 @@ export function InventoryWorkSurface() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
+  const [selectedBatchIds, setSelectedBatchIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showQtyAdjust, setShowQtyAdjust] = useState(false);
+  const [qtyAdjustment, setQtyAdjustment] = useState("");
+  const [qtyReason, setQtyReason] = useState("");
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editBatchId, setEditBatchId] = useState<number | null>(null);
+  const [editRack, setEditRack] = useState("");
+  const [editStatus, setEditStatus] = useState<InventoryBatchStatus>("LIVE");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const pageSize = 50;
+  const useEnhancedApi = true;
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -359,58 +406,130 @@ export function InventoryWorkSurface() {
   } = useConcurrentEditDetection<BatchVersionEntity>({
     entityType: "Batch",
     onRefresh: async () => {
-      await refetch();
+      await Promise.all([
+        refetchEnhanced(),
+        refetchLegacy(),
+        refetchDashboardStats(),
+      ]);
     },
   });
 
-  // Data query
+  const enhancedSortBy = useMemo(() => {
+    switch (sortColumn) {
+      case "product":
+        return "productName";
+      case "onHandQty":
+        return "onHand";
+      case "unitCogs":
+        return "available";
+      default:
+        return "sku";
+    }
+  }, [sortColumn]);
+
+  // Data queries
   const {
-    data: inventoryData,
-    isLoading,
-    refetch,
+    data: enhancedData,
+    isLoading: isEnhancedLoading,
+    refetch: refetchEnhanced,
+  } = trpc.inventory.getEnhanced.useQuery(
+    {
+      page: page + 1,
+      pageSize,
+      cursor: page * pageSize,
+      search: search || undefined,
+      status:
+        statusFilter !== "ALL"
+          ? [statusFilter as InventoryBatchStatus]
+          : undefined,
+      category: categoryFilter !== "ALL" ? categoryFilter : undefined,
+      sortBy: enhancedSortBy,
+      sortOrder: sortDirection,
+    },
+    {
+      enabled: useEnhancedApi,
+    }
+  );
+
+  const {
+    data: legacyData,
+    isLoading: isLegacyLoading,
+    refetch: refetchLegacy,
   } = trpc.inventory.list.useQuery({
     query: search || undefined,
     status:
       statusFilter !== "ALL"
-        ? (statusFilter as
-            | "AWAITING_INTAKE"
-            | "LIVE"
-            | "PHOTOGRAPHY_COMPLETE"
-            | "ON_HOLD"
-            | "QUARANTINED"
-            | "SOLD_OUT"
-            | "CLOSED")
+        ? (statusFilter as InventoryBatchStatus)
         : undefined,
     category: categoryFilter !== "ALL" ? categoryFilter : undefined,
     limit: pageSize,
     cursor: page * pageSize,
+  }, {
+    enabled: !useEnhancedApi,
   });
 
-  // DEBUG: Log the raw data from tRPC
-  console.info("[InventoryWorkSurface] inventoryData:", inventoryData);
-  console.info(
-    "[InventoryWorkSurface] inventoryData type:",
-    typeof inventoryData
-  );
-  console.info(
-    "[InventoryWorkSurface] inventoryData keys:",
-    inventoryData ? Object.keys(inventoryData) : "null"
-  );
-  console.info(
-    "[InventoryWorkSurface] inventoryData.items:",
-    inventoryData?.items
-  );
-  console.info("[InventoryWorkSurface] isLoading:", isLoading);
+  const { data: dashboardStats, refetch: refetchDashboardStats } =
+    trpc.inventory.dashboardStats.useQuery();
 
-  const rawItems = inventoryData?.items ?? [];
-  console.info("[InventoryWorkSurface] rawItems length:", rawItems.length);
-  // Cast to our local interface type for easier manipulation
-  const items = rawItems as unknown as InventoryItem[];
-  // Note: inventory.list returns { items, hasMore, nextCursor }, not pagination.total
-  // Use items.length as approximation; hasMore indicates if there are additional pages
-  const hasMore = (inventoryData as { hasMore?: boolean })?.hasMore ?? false;
-  const totalCount = hasMore ? items.length + pageSize : items.length;
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const refreshInventory = useCallback(async () => {
+    await Promise.all([
+      refetchEnhanced(),
+      refetchLegacy(),
+      refetchDashboardStats(),
+    ]);
+  }, [refetchEnhanced, refetchLegacy, refetchDashboardStats]);
+
+  const normalizedItems = useMemo(() => {
+    if (useEnhancedApi) {
+      return (enhancedData?.items ?? []).map(
+        (item): InventoryItem => ({
+          batch: {
+            id: item.id,
+            sku: item.sku,
+            batchStatus: item.status,
+            grade: item.grade || undefined,
+            onHandQty: String(item.onHandQty ?? 0),
+            reservedQty: String(item.reservedQty ?? 0),
+            quarantineQty: String(item.quarantineQty ?? 0),
+            holdQty: String(item.holdQty ?? 0),
+            unitCogs:
+              item.unitCogs !== null && item.unitCogs !== undefined
+                ? String(item.unitCogs)
+                : undefined,
+            createdAt: item.receivedDate
+              ? new Date(item.receivedDate).toISOString()
+              : undefined,
+            intakeDate: item.receivedDate
+              ? new Date(item.receivedDate).toISOString()
+              : undefined,
+          },
+          product: {
+            id: 0,
+            nameCanonical: item.productName || "Unknown Product",
+            category: item.category || undefined,
+            subcategory: item.subcategory || undefined,
+          },
+          vendor: item.vendorName ? { id: 0, name: item.vendorName } : undefined,
+          brand: item.brandName ? { id: 0, name: item.brandName } : undefined,
+        })
+      );
+    }
+    return ((legacyData?.items ?? []) as unknown as InventoryItem[]) || [];
+  }, [useEnhancedApi, enhancedData?.items, legacyData?.items]);
+
+  const items = normalizedItems;
+  const hasMore = useEnhancedApi
+    ? (enhancedData?.pagination.hasMore ?? false)
+    : ((legacyData as { hasMore?: boolean } | undefined)?.hasMore ?? false);
+  const totalCount = useEnhancedApi
+    ? enhancedData?.summary.totalItems ?? items.length
+    : hasMore
+      ? items.length + pageSize
+      : items.length;
+  const totalPages = useEnhancedApi
+    ? Math.max(page + 1 + (hasMore ? 1 : 0), 1)
+    : Math.max(Math.ceil(totalCount / pageSize), 1);
+  const isLoading = useEnhancedApi ? isEnhancedLoading : isLegacyLoading;
 
   // Selected item
   const selectedItem = useMemo(
@@ -420,18 +539,23 @@ export function InventoryWorkSurface() {
 
   // Statistics
   const stats = useMemo(() => {
-    const totalQty = items.reduce(
+    const pageUnits = items.reduce(
       (sum, i) => sum + parseFloat(i.batch?.onHandQty || "0"),
       0
     );
-    const totalValue = items.reduce((sum, i) => {
+    const pageValue = items.reduce((sum, i) => {
       const qty = parseFloat(i.batch?.onHandQty || "0");
       const cost = parseFloat(i.batch?.unitCogs || "0");
       return sum + qty * cost;
     }, 0);
     const liveCount = items.filter(i => i.batch?.batchStatus === "LIVE").length;
-    return { total: items.length, totalQty, totalValue, liveCount };
-  }, [items]);
+    return {
+      total: items.length,
+      totalUnits: dashboardStats?.totalUnits ?? pageUnits,
+      totalValue: dashboardStats?.totalInventoryValue ?? pageValue,
+      liveCount: dashboardStats?.statusCounts?.LIVE ?? liveCount,
+    };
+  }, [items, dashboardStats]);
 
   // Sort items
   const displayItems = useMemo(() => {
@@ -463,7 +587,8 @@ export function InventoryWorkSurface() {
     onSuccess: () => {
       toast.success("Status updated");
       setSaved();
-      refetch();
+      setSuccessMessage("Batch updated successfully.");
+      refreshInventory();
     },
     onError: (err: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -471,6 +596,59 @@ export function InventoryWorkSurface() {
         toast.error(err.message || "Failed to update status");
         setError(err.message);
       }
+    },
+  });
+
+  const bulkUpdateStatusMutation = trpc.inventory.bulk.updateStatus.useMutation({
+    onMutate: () => setSaving("Updating selected batches..."),
+    onSuccess: result => {
+      const updatedCount =
+        typeof result?.updated === "number"
+          ? result.updated
+          : selectedBatchIds.size;
+      toast.success(`Updated ${updatedCount} batch${updatedCount === 1 ? "" : "es"}`);
+      setSelectedBatchIds(new Set());
+      setSaved();
+      refreshInventory();
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to update selected batches");
+      setError(err.message);
+    },
+  });
+
+  const bulkDeleteMutation = trpc.inventory.bulk.delete.useMutation({
+    onMutate: () => setSaving("Deleting selected batches..."),
+    onSuccess: result => {
+      const deletedCount =
+        typeof result?.deleted === "number"
+          ? result.deleted
+          : selectedBatchIds.size;
+      toast.success(`Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`);
+      setSelectedBatchIds(new Set());
+      setSaved();
+      refreshInventory();
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to delete selected batches");
+      setError(err.message);
+    },
+  });
+
+  const adjustQtyMutation = trpc.inventory.adjustQty.useMutation({
+    onMutate: () => setSaving("Adjusting quantity..."),
+    onSuccess: () => {
+      toast.success("Quantity adjusted");
+      setSaved();
+      setShowQtyAdjust(false);
+      setQtyAdjustment("");
+      setQtyReason("");
+      setSuccessMessage("Inventory adjusted successfully.");
+      refreshInventory();
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to adjust quantity");
+      setError(err.message);
     },
   });
 
@@ -483,6 +661,16 @@ export function InventoryWorkSurface() {
       });
     }
   }, [selectedItem, trackVersion]);
+
+  useEffect(() => {
+    setSelectedBatchIds(new Set());
+  }, [search, statusFilter, categoryFilter, page]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
@@ -539,9 +727,15 @@ export function InventoryWorkSurface() {
 
   const handleEdit = useCallback(
     (batchId: number): void => {
-      setLocation(`/inventory/${batchId}`);
+      const editingBatch = items.find(item => item.batch?.id === batchId)?.batch;
+      setEditBatchId(batchId);
+      setEditStatus(
+        (editingBatch?.batchStatus as InventoryBatchStatus | undefined) ?? "LIVE"
+      );
+      setEditRack("");
+      setShowEditDialog(true);
     },
-    [setLocation]
+    [items]
   );
 
   type BatchStatus =
@@ -562,6 +756,104 @@ export function InventoryWorkSurface() {
     [updateStatusMutation]
   );
 
+  const handleAdjustQuantity = useCallback((batchId: number) => {
+    setSelectedBatchId(batchId);
+    setShowQtyAdjust(true);
+  }, []);
+
+  const handleSubmitAdjustQuantity = useCallback(() => {
+    const adjustment = Number.parseFloat(qtyAdjustment);
+    if (!selectedBatchId || Number.isNaN(adjustment) || adjustment === 0) {
+      toast.error("Enter a valid adjustment amount");
+      return;
+    }
+    if (!qtyReason.trim()) {
+      toast.error("Enter an adjustment reason");
+      return;
+    }
+    adjustQtyMutation.mutate({
+      id: selectedBatchId,
+      field: "onHandQty",
+      adjustment,
+      reason: qtyReason.trim(),
+    });
+  }, [selectedBatchId, qtyAdjustment, qtyReason, adjustQtyMutation]);
+
+  const handleSubmitEditBatch = useCallback(() => {
+    if (!editBatchId) {
+      toast.error("No batch selected for update");
+      return;
+    }
+    updateStatusMutation.mutate({
+      id: editBatchId,
+      status: editStatus as BatchStatus,
+    });
+    setShowEditDialog(false);
+  }, [editBatchId, editStatus, updateStatusMutation]);
+
+  const visibleBatchIds = useMemo(
+    () =>
+      displayItems
+        .map(item => item.batch?.id)
+        .filter((id): id is number => typeof id === "number"),
+    [displayItems]
+  );
+
+  const allVisibleSelected =
+    visibleBatchIds.length > 0 &&
+    visibleBatchIds.every(id => selectedBatchIds.has(id));
+  const someVisibleSelected =
+    !allVisibleSelected && visibleBatchIds.some(id => selectedBatchIds.has(id));
+
+  const toggleBatchSelection = useCallback(
+    (batchId: number, checked: boolean | "indeterminate") => {
+      setSelectedBatchIds(prev => {
+        const next = new Set(prev);
+        if (checked) {
+          next.add(batchId);
+        } else {
+          next.delete(batchId);
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const toggleAllVisibleSelection = useCallback(
+    (checked: boolean | "indeterminate") => {
+      setSelectedBatchIds(prev => {
+        const next = new Set(prev);
+        if (checked) {
+          visibleBatchIds.forEach(id => next.add(id));
+        } else {
+          visibleBatchIds.forEach(id => next.delete(id));
+        }
+        return next;
+      });
+    },
+    [visibleBatchIds]
+  );
+
+  const handleApplyBulkStatus = useCallback(() => {
+    const batchIds = Array.from(selectedBatchIds);
+    if (!batchIds.length) return;
+    bulkUpdateStatusMutation.mutate({
+      batchIds,
+      newStatus: bulkStatus,
+    });
+  }, [selectedBatchIds, bulkStatus, bulkUpdateStatusMutation]);
+
+  const handleBulkDelete = useCallback(() => {
+    const batchIds = Array.from(selectedBatchIds);
+    if (!batchIds.length) return;
+    const confirmed = window.confirm(
+      `Delete ${batchIds.length} selected batch${batchIds.length === 1 ? "" : "es"}?`
+    );
+    if (!confirmed) return;
+    bulkDeleteMutation.mutate(batchIds);
+  }, [selectedBatchIds, bulkDeleteMutation]);
+
   const SortIcon = ({ column }: { column: string }) => {
     if (sortColumn !== column)
       return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
@@ -575,7 +867,7 @@ export function InventoryWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
+      <div className="flex flex-col gap-3 px-6 py-4 border-b bg-background md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <Package className="h-6 w-6" />
@@ -589,15 +881,15 @@ export function InventoryWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Batches:{" "}
+              Page Rows:{" "}
               <span className="font-semibold text-foreground">
                 {stats.total}
               </span>
             </span>
             <span>
-              Live:{" "}
+              Units:{" "}
               <span className="font-semibold text-foreground">
-                {stats.liveCount}
+                {formatQuantity(stats.totalUnits)}
               </span>
             </span>
             <span>
@@ -606,14 +898,20 @@ export function InventoryWorkSurface() {
                 {formatCurrency(stats.totalValue)}
               </span>
             </span>
+            <span>
+              Live:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.liveCount}
+              </span>
+            </span>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center justify-between px-6 py-3 border-b bg-muted/30">
-        <div className="flex gap-4 items-center flex-1">
-          <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col gap-3 px-6 py-3 border-b bg-muted/30">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               ref={searchInputRef}
@@ -633,7 +931,7 @@ export function InventoryWorkSurface() {
               setPage(0);
             }}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -651,7 +949,7 @@ export function InventoryWorkSurface() {
               setPage(0);
             }}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -662,13 +960,97 @@ export function InventoryWorkSurface() {
               ))}
             </SelectContent>
           </Select>
+          {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
+          <Button
+            data-testid="new-batch-btn"
+            onClick={() => setShowPurchaseModal(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Product Intake
+          </Button>
         </div>
-        {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
-        <Button onClick={() => setLocation("/direct-intake")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Intake
-        </Button>
       </div>
+
+      {successMessage && (
+        <div
+          data-testid="success-toast"
+          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+        >
+          {successMessage}
+        </div>
+      )}
+
+      {selectedBatchIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 px-6 py-2 border-b bg-muted/20">
+          <Badge variant="secondary">{selectedBatchIds.size} selected</Badge>
+          <Select
+            value={bulkStatus}
+            onValueChange={value => setBulkStatus(value as InventoryBatchStatus)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Bulk status" />
+            </SelectTrigger>
+            <SelectContent>
+              {ACTIONABLE_BATCH_STATUSES.map(status => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            onClick={handleApplyBulkStatus}
+            disabled={bulkUpdateStatusMutation.isPending}
+          >
+            Apply Status
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            Delete Selected
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setSelectedBatchIds(new Set())}
+          >
+            Clear Selection
+          </Button>
+        </div>
+      )}
+
+      {(dashboardStats?.statusCounts || enhancedData?.summary.byStockStatus) && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-3 border-b bg-muted/10">
+          <div className="rounded-md border p-2">
+            <div className="text-xs text-muted-foreground">Critical</div>
+            <div className="font-semibold">
+              {enhancedData?.summary.byStockStatus.critical ?? 0}
+            </div>
+          </div>
+          <div className="rounded-md border p-2">
+            <div className="text-xs text-muted-foreground">Low</div>
+            <div className="font-semibold">
+              {enhancedData?.summary.byStockStatus.low ?? 0}
+            </div>
+          </div>
+          <div className="rounded-md border p-2">
+            <div className="text-xs text-muted-foreground">Optimal</div>
+            <div className="font-semibold">
+              {enhancedData?.summary.byStockStatus.optimal ?? 0}
+            </div>
+          </div>
+          <div className="rounded-md border p-2">
+            <div className="text-xs text-muted-foreground">Out Of Stock</div>
+            <div className="font-semibold">
+              {enhancedData?.summary.byStockStatus.outOfStock ?? 0}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -691,9 +1073,22 @@ export function InventoryWorkSurface() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table data-testid="inventory-table" className="inventory-list">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={
+                          allVisibleSelected
+                            ? true
+                            : someVisibleSelected
+                              ? "indeterminate"
+                              : false
+                        }
+                        onCheckedChange={toggleAllVisibleSelection}
+                        aria-label="Select all visible rows"
+                      />
+                    </TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead
                       className="cursor-pointer"
@@ -728,6 +1123,7 @@ export function InventoryWorkSurface() {
                   {displayItems.map((item: InventoryItem, index: number) => (
                     <TableRow
                       key={item.batch?.id}
+                      data-testid={item.product?.nameCanonical ? "batch-row" : undefined}
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",
                         selectedBatchId === item.batch?.id && "bg-muted",
@@ -742,6 +1138,16 @@ export function InventoryWorkSurface() {
                         }
                       }}
                     >
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <Checkbox
+                          checked={item.batch ? selectedBatchIds.has(item.batch.id) : false}
+                          onCheckedChange={checked => {
+                            if (!item.batch) return;
+                            toggleBatchSelection(item.batch.id, checked);
+                          }}
+                          aria-label={`Select batch ${item.batch?.sku ?? ""}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {item.batch?.sku}
                       </TableCell>
@@ -809,16 +1215,120 @@ export function InventoryWorkSurface() {
           title={selectedItem?.batch?.sku || "Batch Details"}
           subtitle={selectedItem?.product?.nameCanonical}
         >
-          <BatchInspectorContent
-            item={selectedItem}
-            onEdit={handleEdit}
-            onStatusChange={handleStatusChange}
-          />
+          <div data-testid="batch-detail" className="batch-detail-panel">
+            <BatchInspectorContent
+              item={selectedItem}
+              onEdit={handleEdit}
+              onStatusChange={handleStatusChange}
+              onAdjustQuantity={handleAdjustQuantity}
+            />
+          </div>
         </InspectorPanel>
       </div>
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
+
+      <Dialog open={showQtyAdjust} onOpenChange={setShowQtyAdjust}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Quantity</DialogTitle>
+            <DialogDescription>
+              Enter a positive or negative value to adjust on-hand quantity.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="qty-adjustment">Adjustment Amount</Label>
+              <Input
+                id="qty-adjustment"
+                data-testid="qty-adjustment"
+                type="number"
+                placeholder="e.g., -5"
+                value={qtyAdjustment}
+                onChange={e => setQtyAdjustment(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qty-reason">Reason</Label>
+              <Input
+                id="qty-reason"
+                data-testid="qty-reason"
+                placeholder="Reason for adjustment"
+                value={qtyReason}
+                onChange={e => setQtyReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQtyAdjust(false)}>
+              Cancel
+            </Button>
+            <Button
+              data-testid="submit-adjustment"
+              onClick={handleSubmitAdjustQuantity}
+              disabled={adjustQtyMutation.isPending}
+            >
+              {adjustQtyMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update batch metadata and status.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rack">Rack</Label>
+              <Input
+                id="rack"
+                value={editRack}
+                onChange={e => setEditRack(e.target.value)}
+                placeholder="e.g., R2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={editStatus}
+                onValueChange={v => setEditStatus(v as InventoryBatchStatus)}
+              >
+                <SelectTrigger id="edit-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIONABLE_BATCH_STATUSES.map(status => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitEditBatch}>Update Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <PurchaseModal
+        open={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        onSuccess={() => {
+          setSuccessMessage("Product intake created successfully.");
+          refreshInventory();
+        }}
+      />
     </div>
   );
 }

@@ -241,10 +241,10 @@ export default function OrderCreatorPageV2() {
         // BUG-045 FIX: Pass version 1 for newly created drafts (optimistic locking)
         finalizeMutation.mutate({ orderId: data.orderId, version: 1 });
       } else {
-        // TER-216: After saving draft, navigate to orders list
+        // Keep the user in the create workspace after draft save for low-friction edits.
         toast.success(`Draft order #${data.orderId} saved successfully`);
         setHasUnsavedChanges(false);
-        setLocation("/orders");
+        setLocation(`/orders/create?draftId=${data.orderId}`);
       }
     },
     onError: error => {
@@ -259,13 +259,9 @@ export default function OrderCreatorPageV2() {
       // BUG-093 FIX: Reset finalization flag and form after successful finalization
       isFinalizingRef.current = false;
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
-      // TER-216: Navigate to appropriate destination after confirmation
+      // Keep creators in-place after finalize for quick follow-up edits/orders.
       setHasUnsavedChanges(false);
-      if (orderType === "QUOTE") {
-        setLocation("/quotes");
-      } else {
-        setLocation("/orders");
-      }
+      setLocation("/orders/create");
     },
     onError: error => {
       // BUG-093 FIX: Reset flag on error, but preserve form data so user can retry
@@ -557,7 +553,9 @@ export default function OrderCreatorPageV2() {
               <div className="flex items-center gap-3">
                 <ShoppingCart className="h-6 w-6" />
                 <div>
-                  <CardTitle className="text-2xl">Create Sale</CardTitle>
+                  <CardTitle className="text-2xl">
+                    Create Sales Order
+                  </CardTitle>
                   <CardDescription>
                     Build sale with COGS visibility and margin management
                   </CardDescription>
@@ -695,6 +693,7 @@ export default function OrderCreatorPageV2() {
               {/* Line Items */}
               <Card>
                 <CardContent className="pt-6">
+                  <h3 className="mb-3 text-base font-semibold">Line Items</h3>
                   <LineItemTable
                     items={items}
                     clientId={clientId}
@@ -823,6 +822,7 @@ export default function OrderCreatorPageV2() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
+                        data-testid="order-save-menu-trigger"
                         className="w-full"
                         variant="outline"
                         disabled={
@@ -837,11 +837,15 @@ export default function OrderCreatorPageV2() {
                     <DropdownMenuContent className="w-56">
                       <DropdownMenuLabel>Save Options</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleSaveDraft()}>
+                      <DropdownMenuItem
+                        data-testid="order-save-draft-action"
+                        onClick={() => handleSaveDraft()}
+                      >
                         <FileText className="h-4 w-4 mr-2" />
                         Save as Draft
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        data-testid="order-save-quote-action"
                         onClick={() => {
                           setOrderType("QUOTE");
                           handleSaveDraft("QUOTE");

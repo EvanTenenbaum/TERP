@@ -1,0 +1,138 @@
+{
+  "runAt": "2026-02-21T06:16:32.535Z",
+  "baseUrl": "http://127.0.0.1:3015",
+  "routes": [
+    "/vip-portal/login",
+    "/vip-portal/dashboard",
+    "/vip-portal/auth/impersonate",
+    "/vip-portal/session-ended",
+    "/live-shopping"
+  ],
+  "viewports": [
+    "desktop",
+    "mobile"
+  ],
+  "results": [
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/login",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/login",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/desktop-vip-portal-login.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/dashboard",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/dashboard",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/desktop-vip-portal-dashboard.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/auth/impersonate",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/auth/impersonate",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/auth/impersonate",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/desktop-vip-portal-auth-impersonate.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/session-ended",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/session-ended",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/session-ended",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/desktop-vip-portal-session-ended.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/live-shopping",
+      "targetUrl": "http://127.0.0.1:3015/live-shopping",
+      "finalUrl": "http://127.0.0.1:3015/live-shopping",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "Live Shopping",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/desktop-live-shopping.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/login",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/login",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/mobile-vip-portal-login.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/dashboard",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/dashboard",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/mobile-vip-portal-dashboard.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/auth/impersonate",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/auth/impersonate",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/auth/impersonate",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/mobile-vip-portal-auth-impersonate.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/session-ended",
+      "targetUrl": "http://127.0.0.1:3015/vip-portal/session-ended",
+      "finalUrl": "http://127.0.0.1:3015/vip-portal/session-ended",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/mobile-vip-portal-session-ended.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/live-shopping",
+      "targetUrl": "http://127.0.0.1:3015/live-shopping",
+      "finalUrl": "http://127.0.0.1:3015/live-shopping",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "%VITE_APP_TITLE%",
+      "heading": "Live Shopping",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-codex-calm-power/.qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/screens/mobile-live-shopping.png",
+      "pass": true
+    }
+  ],
+  "failures": []
+}

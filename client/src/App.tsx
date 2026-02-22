@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  type ComponentType,
   type FC,
   useLayoutEffect,
   useRef,
@@ -33,6 +34,7 @@ import DemandSupplyWorkspacePage from "@/pages/DemandSupplyWorkspacePage";
 import InventoryWorkspacePage from "@/pages/InventoryWorkspacePage";
 import RelationshipsWorkspacePage from "@/pages/RelationshipsWorkspacePage";
 import SalesWorkspacePage from "@/pages/SalesWorkspacePage";
+import ProcurementWorkspacePage from "@/pages/ProcurementWorkspacePage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -46,6 +48,10 @@ import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersW
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
 import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
+import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
+import ProductIntakeSlicePage from "@/components/uiux-slice/ProductIntakeSlicePage";
+import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
+import SliceV1WorkbenchLayout from "@/components/uiux-slice/SliceV1WorkbenchLayout";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
@@ -87,19 +93,30 @@ import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
-import { resolveRelationshipsTab } from "@/lib/navigation/consolidation";
 import { trackLegacyRouteRedirect } from "@/lib/navigation/routeUsageTelemetry";
-import { useLocation, Redirect, useSearch } from "wouter";
+import {
+  useLocation,
+  Redirect,
+  useSearch,
+  type RouteComponentProps as WouterRouteComponentProps,
+} from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 
+type AnyRouteParams = Record<string, string | undefined>;
+type AnyRouteProps = WouterRouteComponentProps<AnyRouteParams>;
+
 // Helper to wrap route components with error boundary
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const withErrorBoundary = (Component: FC<any>) => () => (
-  <PageErrorBoundary>
-    <Component />
-  </PageErrorBoundary>
-);
+const withErrorBoundary = (
+  Component: ComponentType<AnyRouteProps>
+): FC<AnyRouteProps> => {
+  const WrappedRoute: FC<AnyRouteProps> = props => (
+    <PageErrorBoundary>
+      <Component {...props} />
+    </PageErrorBoundary>
+  );
+  return WrappedRoute;
+};
 
 function useTrackLegacyRedirect(params: {
   from: string;
@@ -162,41 +179,38 @@ const RedirectWithTab = (from: string, to: string, tab: string) => {
   return RedirectComponent;
 };
 
-// Legacy compatibility: route old client/vendor list entry points into consolidated Relationships workspace.
-const RedirectClientsToRelationships: FC = () => {
-  const search = useSearch();
-  const params = new URLSearchParams(search);
-  const resolvedTab = resolveRelationshipsTab(search);
-  params.set("tab", resolvedTab);
-
-  const query = params.toString();
-  const destination = `/relationships${query ? `?${query}` : ""}`;
-
-  useTrackLegacyRedirect({
-    from: "/clients",
-    to: destination,
-    tab: resolvedTab,
-    search: search || undefined,
-  });
-
-  return <Redirect to={destination} />;
+// MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
+const withLazyErrorBoundary = (
+  Component: ComponentType<AnyRouteProps>
+): FC<AnyRouteProps> => {
+  const WrappedLazyRoute: FC<AnyRouteProps> = props => (
+    <PageErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-full p-8">
+            Loading...
+          </div>
+        }
+      >
+        <Component {...props} />
+      </Suspense>
+    </PageErrorBoundary>
+  );
+  return WrappedLazyRoute;
 };
 
-// MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const withLazyErrorBoundary = (Component: FC<any>) => () => (
-  <PageErrorBoundary>
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center h-full p-8">
-          Loading...
-        </div>
-      }
-    >
-      <Component />
-    </Suspense>
-  </PageErrorBoundary>
-);
+const withSliceLabLayout = (
+  Component: ComponentType<AnyRouteProps>
+): FC<AnyRouteProps> => {
+  const WrappedSliceRoute: FC<AnyRouteProps> = props => (
+    <PageErrorBoundary>
+      <SliceV1WorkbenchLayout>
+        <Component {...props} />
+      </SliceV1WorkbenchLayout>
+    </PageErrorBoundary>
+  );
+  return WrappedSliceRoute;
+};
 
 function Router() {
   return (
@@ -230,6 +244,25 @@ function Router() {
         component={withErrorBoundary(SessionEndedPage)}
       />
       <Route path="/vip-portal" component={withErrorBoundary(VIPDashboard)} />
+      <Route
+        path="/slice-v1-lab"
+        component={RedirectWithSearch(
+          "/slice-v1-lab",
+          "/slice-v1-lab/purchase-orders"
+        )}
+      />
+      <Route
+        path="/slice-v1-lab/purchase-orders"
+        component={withSliceLabLayout(PurchaseOrdersSlicePage)}
+      />
+      <Route
+        path="/slice-v1-lab/product-intake"
+        component={withSliceLabLayout(ProductIntakeSlicePage)}
+      />
+      <Route
+        path="/slice-v1-lab/inventory"
+        component={withSliceLabLayout(InventoryBrowseSlicePage)}
+      />
 
       {/* Protected routes - wrapped in AppShell and ProtectedRoute */}
       <Route>
@@ -325,7 +358,7 @@ function Router() {
                 />
                 <Route
                   path="/clients"
-                  component={RedirectClientsToRelationships}
+                  component={withErrorBoundary(RelationshipsWorkspacePage)}
                 />
                 <Route
                   path="/clients/:id"
@@ -358,7 +391,7 @@ function Router() {
                 />
                 <Route
                   path="/orders"
-                  component={RedirectWithTab("/orders", "/sales", "orders")}
+                  component={withErrorBoundary(SalesWorkspacePage)}
                 />
                 <Route
                   path="/pick-pack"
@@ -459,7 +492,46 @@ function Router() {
                 />
                 <Route
                   path="/purchase-orders"
+                  component={withErrorBoundary(ProcurementWorkspacePage)}
+                />
+                <Route
+                  path="/purchase-orders/classic"
                   component={withErrorBoundary(PurchaseOrdersWorkSurface)}
+                />
+                <Route
+                  path="/product-intake"
+                  component={RedirectWithTab(
+                    "/product-intake",
+                    "/purchase-orders",
+                    "product-intake"
+                  )}
+                />
+                <Route
+                  path="/inventory-browse"
+                  component={RedirectWithTab(
+                    "/inventory-browse",
+                    "/purchase-orders",
+                    "inventory-browse"
+                  )}
+                />
+                <Route
+                  path="/slice-v1"
+                  component={RedirectWithSearch(
+                    "/slice-v1",
+                    "/slice-v1/purchase-orders"
+                  )}
+                />
+                <Route
+                  path="/slice-v1/purchase-orders"
+                  component={withErrorBoundary(PurchaseOrdersSlicePage)}
+                />
+                <Route
+                  path="/slice-v1/product-intake"
+                  component={withErrorBoundary(ProductIntakeSlicePage)}
+                />
+                <Route
+                  path="/slice-v1/inventory"
+                  component={withErrorBoundary(InventoryBrowseSlicePage)}
                 />
                 <Route
                   path="/returns"

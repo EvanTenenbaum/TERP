@@ -11,12 +11,51 @@
  * Linear: TER-239
  */
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIResponse, type Page } from "@playwright/test";
+import superjson from "superjson";
 import { loginAsAdmin } from "../fixtures/auth";
 
 // ---------------------------------------------------------------------------
 // tRPC helper -- all API-backed steps go through this
 // ---------------------------------------------------------------------------
+
+async function parseTrpcResponse<T>(
+  response: APIResponse,
+  endpoint: string,
+  method: "GET" | "POST"
+): Promise<T> {
+  if (!response.ok()) {
+    throw new Error(
+      `tRPC ${method} call to ${endpoint} failed: ${response.status()} ${await response.text()}`
+    );
+  }
+
+  const rawBody = (await response.json()) as unknown;
+  const body = Array.isArray(rawBody) ? rawBody[0] : rawBody;
+  if (typeof body !== "object" || body === null) {
+    throw new Error(
+      `tRPC ${method} call to ${endpoint} returned unexpected payload`
+    );
+  }
+
+  const typedBody = body as {
+    result?: { data?: { json?: T } };
+    error?: unknown;
+  };
+  if (typedBody.error) {
+    throw new Error(
+      `tRPC error from ${endpoint}: ${JSON.stringify(typedBody.error)}`
+    );
+  }
+
+  if (!typedBody.result?.data || !("json" in typedBody.result.data)) {
+    throw new Error(
+      `tRPC ${method} call to ${endpoint} returned no result payload`
+    );
+  }
+
+  return typedBody.result.data.json as T;
+}
 
 async function callTrpc<T>(
   page: Page,
@@ -24,28 +63,23 @@ async function callTrpc<T>(
   input: Record<string, unknown>
 ): Promise<T> {
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
-  const response = await page.request.post(`${baseUrl}/api/trpc/${endpoint}`, {
+  const trpcUrl = `${baseUrl}/api/trpc/${endpoint}`;
+  const serializedInput = superjson.serialize(input);
+
+  const postResponse = await page.request.post(trpcUrl, {
     headers: { "Content-Type": "application/json" },
-    data: { json: input },
+    data: serializedInput,
   });
 
-  if (!response.ok()) {
-    throw new Error(
-      `tRPC call to ${endpoint} failed: ${response.status()} ${await response.text()}`
-    );
+  // Some routers enforce GET for queries; retry using query transport on 405.
+  if (postResponse.status() !== 405) {
+    return parseTrpcResponse<T>(postResponse, endpoint, "POST");
   }
 
-  const body = (await response.json()) as {
-    result?: { data?: { json?: T } };
-    error?: unknown;
-  };
-  if (body.error) {
-    throw new Error(
-      `tRPC error from ${endpoint}: ${JSON.stringify(body.error)}`
-    );
-  }
-
-  return body.result?.data?.json as T;
+  const getUrl = new URL(trpcUrl);
+  getUrl.searchParams.set("input", JSON.stringify(serializedInput));
+  const getResponse = await page.request.get(getUrl.toString());
+  return parseTrpcResponse<T>(getResponse, endpoint, "GET");
 }
 
 // ---------------------------------------------------------------------------
@@ -76,16 +110,25 @@ async function findFirstSupplierId(page: Page): Promise<number> {
  */
 async function findFirstProductId(page: Page): Promise<number> {
   const result = await callTrpc<{
-    items: Array<{ id: number; productId?: number }>;
+    items: Array<{
+      id?: number;
+      productId?: number;
+      batch?: { id?: number; productId?: number };
+      product?: { id?: number };
+    }>;
   }>(page, "inventory.list", { limit: 1 });
   if (!result?.items?.length) {
     throw new Error(
       "No inventory/products found -- seed data required (run pnpm seed:all-defaults)"
     );
   }
-  // inventory.list returns batches; each has a productId
+  // inventory.list payloads vary by route shape; normalize to product ID.
   const batch = result.items[0];
-  const productId = batch.productId ?? batch.id;
+  const productId =
+    batch.product?.id ?? batch.batch?.productId ?? batch.productId ?? batch.id;
+  if (!productId) {
+    throw new Error("Unable to derive productId from inventory.list response");
+  }
   return productId;
 }
 

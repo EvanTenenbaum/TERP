@@ -81,26 +81,33 @@ export function StrainInput({
 
   // Handle manual text input (create new strain)
   const handleCreateNew = async () => {
-    if (searchQuery.length < 2) return;
+    const strainName = searchQuery.trim();
+    if (strainName.length < 2) return;
+
+    // Optimistically surface the typed strain name so UI can immediately reflect selection.
+    setSelectedStrain({
+      id: -1,
+      name: strainName,
+      category: category || null,
+    });
+    setOpen(false);
 
     // Create new strain via getOrCreate endpoint
     const result = await createStrainMutation.mutateAsync({
-      name: searchQuery,
-      category: (category as "indica" | "sativa" | "hybrid" | undefined) || undefined,
+      name: strainName,
+      category:
+        (category as "indica" | "sativa" | "hybrid" | undefined) || undefined,
       autoAssignThreshold: 90, // 90% threshold
     });
 
-    if (result.strainId) {
-      // Use the search query as the name since we just created it
-      setSelectedStrain({
-        id: result.strainId,
-        name: searchQuery,
-        category: category || null,
-      });
-      onChange(result.strainId, searchQuery);
-      setSearchQuery("");
-      setOpen(false);
-    }
+    if (!result.strainId) return;
+    setSelectedStrain({
+      id: result.strainId,
+      name: strainName,
+      category: category || null,
+    });
+    onChange(result.strainId, strainName);
+    setSearchQuery("");
   };
 
   return (
@@ -129,22 +136,21 @@ export function StrainInput({
               <CommandEmpty>Searching...</CommandEmpty>
             )}
             
-            {!isLoading && searchQuery.length >= 2 && searchResults?.items && searchResults.items.length === 0 && (
-              <CommandEmpty>
-                <div className="text-center py-2">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    No matching strains found
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCreateNew}
+            {!isLoading &&
+              searchQuery.length >= 2 &&
+              searchResults?.items &&
+              searchResults.items.length === 0 && (
+                <CommandGroup>
+                  <CommandItem
+                    value="create-new-empty"
+                    onSelect={() => {
+                      void handleCreateNew();
+                    }}
                   >
-                    Create "{searchQuery}"
-                  </Button>
-                </div>
-              </CommandEmpty>
-            )}
+                    <span className="text-sm">Create new: "{searchQuery}"</span>
+                  </CommandItem>
+                </CommandGroup>
+              )}
 
             {searchResults?.items && searchResults.items.length > 0 && (
               <CommandGroup>
@@ -176,7 +182,9 @@ export function StrainInput({
                  !searchResults.items.find(s => s.name.toLowerCase() === searchQuery.toLowerCase()) && (
                   <CommandItem
                     value="create-new"
-                    onSelect={handleCreateNew}
+                    onSelect={() => {
+                      void handleCreateNew();
+                    }}
                     className="border-t"
                   >
                     <span className="text-sm">
@@ -196,4 +204,3 @@ export function StrainInput({
     </Popover>
   );
 }
-

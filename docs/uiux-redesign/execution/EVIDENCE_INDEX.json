@@ -1,0 +1,818 @@
+{
+  "generatedAt": "2026-02-21T12:14:01.975Z",
+  "sourceManifest": "docs/uiux-redesign/P0_CANONICAL_PARITY_MANIFEST.csv",
+  "abilities": [
+    {
+      "route": "/",
+      "featureIds": "DF-012",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/404",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/account",
+      "featureIds": "DF-076",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting",
+      "featureIds": "DF-003",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/bank-accounts",
+      "featureIds": "DF-003|ACCT-013",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/bank-transactions",
+      "featureIds": "DF-003|ACCT-014",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/bills",
+      "featureIds": "DF-003|DF-033",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/cash-locations",
+      "featureIds": "DF-003|DF-042",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/chart-of-accounts",
+      "featureIds": "DF-003|ACCT-016",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/dashboard",
+      "featureIds": "DF-003|ACCT-007|ACCT-011|ACCT-012",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/expenses",
+      "featureIds": "DF-003",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/fiscal-periods",
+      "featureIds": "DF-003|ACCT-015",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/general-ledger",
+      "featureIds": "DF-003|ACCT-017",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/invoices",
+      "featureIds": "DF-003|ACCT-001",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/accounting/payments",
+      "featureIds": "DF-003|ACCT-008|ACCT-009|ACCT-010",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/admin-setup",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/alerts",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/analytics",
+      "featureIds": "DF-064",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/ar-ap",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/calendar",
+      "featureIds": "DF-001",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/client-ledger",
+      "featureIds": "DF-040|DF-060|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/client-needs",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/clients",
+      "featureIds": "DF-040|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/clients/:clientId/ledger",
+      "featureIds": "DF-040|DF-060|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/clients/:clientId/vip-portal-config",
+      "featureIds": "DF-040|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/clients/:id",
+      "featureIds": "DF-026|DF-027|DF-040|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/credit-settings",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/credits",
+      "featureIds": "DF-014|DF-054",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/credits/manage",
+      "featureIds": "DF-014|DF-054",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/dashboard",
+      "featureIds": "DF-012",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/demand-supply",
+      "featureIds": "DF-006|DF-007|DF-052|DF-065",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/dev/showcase",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/direct-intake",
+      "featureIds": "DF-013|DF-050|DF-056|INV-003",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md; .qa/runs/2026-02-21/phase-6/P6-direct-intake-remediation-37/verification.md"
+    },
+    {
+      "route": "/feature-flags",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/help",
+      "featureIds": "DF-075",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/inbox",
+      "featureIds": "DF-009",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/intake-receipts",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/intake/verify/:token",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/interest-list",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/inventory",
+      "featureIds": "DF-013|DF-056|INV-003",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/inventory-browse",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/inventory/:id",
+      "featureIds": "DF-013|DF-056|INV-003",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/invoices",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/leaderboard",
+      "featureIds": "DF-017|DF-078",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/live-shopping",
+      "featureIds": "DF-016",
+      "scope": "excluded",
+      "status": "EXCLUDED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "route": "/locations",
+      "featureIds": "DF-013",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/login",
+      "featureIds": "DF-071",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/matchmaking",
+      "featureIds": "DF-007|DF-052",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/needs",
+      "featureIds": "DF-006",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/notifications",
+      "featureIds": "DF-009",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/orders",
+      "featureIds": "SALE-001",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/orders/create",
+      "featureIds": "ACCT-003|SALE-001",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/orders/new",
+      "featureIds": "ACCT-003|SALE-001",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/photography",
+      "featureIds": "DF-025",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/pick-pack",
+      "featureIds": "DF-023|FUL-001",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/pricing-rules",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/pricing/profiles",
+      "featureIds": "DF-008",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/pricing/rules",
+      "featureIds": "DF-008",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/product-intake",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/products",
+      "featureIds": "DF-036|DF-037|DF-062|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/purchase-orders",
+      "featureIds": "DF-018",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/purchase-orders/classic",
+      "featureIds": "DF-018",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/quotes",
+      "featureIds": "DF-020|SALE-002",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/relationships",
+      "featureIds": "DF-040|DF-063",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/reports",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/reports/shrinkage",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/returns",
+      "featureIds": "DF-019|SALE-003",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/sales",
+      "featureIds": "DF-022",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/sales-portal",
+      "featureIds": "DF-077",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/sales-sheets",
+      "featureIds": "DF-021",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/samples",
+      "featureIds": "DF-015|SALE-004",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/scheduling",
+      "featureIds": "DF-001|DF-028|DF-029",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/search",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/settings",
+      "featureIds": "DF-032|DF-066",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/settings/cogs",
+      "featureIds": "DF-032|DF-066",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/settings/feature-flags",
+      "featureIds": "DF-032|DF-044|DF-066",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/settings/notifications",
+      "featureIds": "DF-032|DF-066",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/shared/sales-sheet/:token",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1-lab",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1-lab/inventory",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1-lab/product-intake",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1-lab/purchase-orders",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1/inventory",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1/product-intake",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/slice-v1/purchase-orders",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/spreadsheet-view",
+      "featureIds": "DF-050",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/system-settings",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/time-clock",
+      "featureIds": "DF-001|DF-028|DF-029",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/todo",
+      "featureIds": "DF-002",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/todo-lists",
+      "featureIds": "DF-002",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/todos",
+      "featureIds": "DF-002",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/todos/:listId",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/users",
+      "featureIds": "DF-032|DF-066|DF-070",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/vendor-supply",
+      "featureIds": "DF-065",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/vendors",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/vendors/:id",
+      "featureIds": "",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "route": "/vip-portal",
+      "featureIds": "DF-005|DF-051|DF-072|DF-073|DF-074",
+      "scope": "excluded",
+      "status": "EXCLUDED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "route": "/vip-portal/auth/impersonate",
+      "featureIds": "DF-005|DF-051|DF-072|DF-073|DF-074",
+      "scope": "excluded",
+      "status": "EXCLUDED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "route": "/vip-portal/dashboard",
+      "featureIds": "DF-005|DF-051|DF-072|DF-073|DF-074",
+      "scope": "excluded",
+      "status": "EXCLUDED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "route": "/vip-portal/login",
+      "featureIds": "DF-005|DF-051|DF-072|DF-073|DF-074",
+      "scope": "excluded",
+      "status": "EXCLUDED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "route": "/vip-portal/session-ended",
+      "featureIds": "DF-005|DF-051|DF-072|DF-073|DF-074",
+      "scope": "excluded",
+      "status": "EXCLUDED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "route": "/workflow-queue",
+      "featureIds": "DF-039",
+      "scope": "in_scope",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md; .qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md; .qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    }
+  ],
+  "phaseGates": [
+    {
+      "phase": "phase-0",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-0/P0-core-control-plane-03/verification.md"
+    },
+    {
+      "phase": "phase-1",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-1/P1-seed-runtime-stability-01/verification.md"
+    },
+    {
+      "phase": "phase-2",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-2/P2-foundation-gates-and-schema-01/verification.md"
+    },
+    {
+      "phase": "phase-3",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-3/P3-priority-deep-pass-gate-01/verification.md"
+    },
+    {
+      "phase": "phase-4",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-4/P4-ability-ledger-closure-01/verification.md"
+    },
+    {
+      "phase": "phase-5-pass-a",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-5/P5-full-gates-passA-16/verification.md"
+    },
+    {
+      "phase": "phase-5-pass-b",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-5/P5-full-gates-passB-17/verification.md"
+    },
+    {
+      "phase": "phase-6-round2-fix",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-adversarial-fix2-21/verification.md"
+    },
+    {
+      "phase": "phase-6-excluded-smoke",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-excluded-smoke-22/verification.md"
+    },
+    {
+      "phase": "phase-6-schema-strict-rerun",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-schema-strict-rerun-23/verification.md"
+    },
+    {
+      "phase": "phase-6-direct-intake-remediation",
+      "status": "VERIFIED",
+      "evidencePath": ".qa/runs/2026-02-21/phase-6/P6-direct-intake-remediation-37/verification.md"
+    }
+  ],
+  "parEntries": [
+    "docs/uiux-redesign/par/PAR-PREBUILD-2026-02-21-P3-DEEP-PASS.md",
+    "docs/uiux-redesign/par/PAR-INFLIGHT-AMENDMENT-2026-02-21-P6-ROUND1-SEED-WARMUP.md",
+    "docs/uiux-redesign/par/PAR-POSTBUILD-2026-02-21-P3-DEEP-PASS.md",
+    "docs/uiux-redesign/par/PAR-POSTBUILD-2026-02-21-P6-ADVERSARIAL.md"
+  ],
+  "northStarEntries": [
+    "docs/uiux-redesign/north-star/NORTH_STAR_SCORECARD_2026-02-21_P3_P6.json",
+    "qa-results/redesign/2026-02-21/metrics/north-star-evidence-2026-02-21T06-22-16-702Z.json",
+    "qa-results/redesign/2026-02-21/metrics/north-star-evidence-2026-02-21T06-12-42-306Z.json"
+  ],
+  "adversarialFindings": [
+    {
+      "id": "ADV-2026-02-21-001",
+      "severity": "P2",
+      "wave": "phase-6-round1",
+      "issue": "North Star purchase-orders score dropped to 21/24 due drifted runtime data state",
+      "evidence": [
+        ".qa/runs/2026-02-21/phase-6/P6-adversarial-round1-18/verification.md",
+        "qa-results/redesign/2026-02-21/metrics/north-star-evidence-2026-02-21T05-50-37-503Z.json"
+      ],
+      "resolution": ".qa/runs/2026-02-21/phase-6/P6-adversarial-fix1-19/verification.md"
+    },
+    {
+      "id": "ADV-2026-02-21-002",
+      "severity": "P1",
+      "wave": "phase-6-remediation",
+      "issue": "Direct Intake top-controls submit intermittently showed stale Brand/Farmer/request-id failures under rapid edit-submit cadence",
+      "evidence": [
+        ".qa/runs/2026-02-21/phase-6/P6-direct-intake-remediation-37/verification.md"
+      ],
+      "resolution": ".qa/runs/2026-02-21/phase-6/P6-direct-intake-remediation-37/verification.md"
+    }
+  ]
+}

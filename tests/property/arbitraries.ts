@@ -194,24 +194,33 @@ export const batchArb = fc
     unitCogsMax: fc.option(moneyArb, { nil: null }),
   })
   .map(batch => {
-    // Ensure allocated quantities don't exceed onHand (valid state)
-    const onHand = parseFloat(batch.onHandQty);
-    const maxAllocatable = onHand * 0.9; // Leave some available
-    const reserved = Math.min(
-      parseFloat(batch.reservedQty),
-      maxAllocatable * 0.4
+    // Ensure allocated quantities never exceed on-hand after rounding.
+    const onHandCents = Math.max(0, Math.round(parseFloat(batch.onHandQty) * 100));
+    const maxAllocatableCents = Math.floor(onHandCents * 0.9); // Leave some available
+
+    const rawReservedCents = Math.max(
+      0,
+      Math.round(parseFloat(batch.reservedQty) * 100)
     );
-    const quarantine = Math.min(
-      parseFloat(batch.quarantineQty),
-      maxAllocatable * 0.3
+    const rawQuarantineCents = Math.max(
+      0,
+      Math.round(parseFloat(batch.quarantineQty) * 100)
     );
-    const hold = Math.min(parseFloat(batch.holdQty), maxAllocatable * 0.3);
+    const rawHoldCents = Math.max(0, Math.round(parseFloat(batch.holdQty) * 100));
+
+    const reservedCapCents = Math.floor(maxAllocatableCents * 0.4);
+    const quarantineCapCents = Math.floor(maxAllocatableCents * 0.3);
+    const holdCapCents = Math.floor(maxAllocatableCents * 0.3);
+
+    const reservedCents = Math.min(rawReservedCents, reservedCapCents);
+    const quarantineCents = Math.min(rawQuarantineCents, quarantineCapCents);
+    const holdCents = Math.min(rawHoldCents, holdCapCents);
 
     return {
       ...batch,
-      reservedQty: reserved.toFixed(2),
-      quarantineQty: quarantine.toFixed(2),
-      holdQty: hold.toFixed(2),
+      reservedQty: (reservedCents / 100).toFixed(2),
+      quarantineQty: (quarantineCents / 100).toFixed(2),
+      holdQty: (holdCents / 100).toFixed(2),
     };
   });
 
