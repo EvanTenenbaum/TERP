@@ -20,26 +20,15 @@ This document defines all operational workflows for TERP development.
 **Feature branches**: created via `pnpm start-task`  
 **Hotfix branches**: `hotfix/description` (emergency only)
 
-### Standard Development Flow
+### Staging-First Development Flow
 
-```bash
-# 1. Pull latest
-git pull origin main
-
-# 2. Start a task (creates branch + session + roadmap entry for ad-hoc)
-pnpm start-task "BUG-123"
-# or
-pnpm start-task --adhoc "Fix login timeout" --category bug
-
-# 3. Make changes, commit frequently
-git add .
-git commit -m "fix(auth): resolve login timeout issue"
-
-# 4. Push to remote (feature branch)
-git push
-
-# 5. Open a PR to main and let CI/deploy run
-```
+1.  **Create a feature branch** from `main`.
+2.  **Implement changes** and commit your work.
+3.  **Open a Pull Request** targeting the `main` branch.
+4.  **Merge the PR** to `main` after review and checks pass.
+5.  **Automatic Staging Deploy**: The merge to `main` triggers a GitHub Action that automatically deploys your changes to the staging environment.
+6.  **Verify on Staging**: Confirm your feature works as expected on the staging URL.
+7.  **Production Deploy**: The project owner will promote the verified changes to production.
 
 ### Commit Message Format
 
@@ -115,13 +104,11 @@ bash scripts/auto-resolve-conflicts.sh
 
 ## Deployment Workflow
 
-### Automatic Deployment
+### Staging-First Deployment
 
-TERP uses DigitalOcean App Platform with automatic deployment.
-
-**Trigger**: Push to `main` branch
-**Process**: Automatic via `.husky/post-push` hook
-**Monitoring**: Background process tracks deployment
+**Trigger**: Push to `staging` branch (automatically from `main`)
+**Process**: A GitHub Action automatically syncs `main` to `staging` on every merge to `main`, which then triggers the staging deployment.
+**Production**: Production is a manual promotion from a verified staging build.
 
 ### Deployment Process
 
@@ -131,7 +118,7 @@ git add .
 git commit -m "feat: add new feature"
 
 # 2. Push to main
-git push origin main
+git push origin staging
 
 # 3. Post-push hook automatically starts monitoring
 # (runs in background via nohup)
@@ -155,7 +142,7 @@ bash scripts/manage-deployment-monitors.sh status
 bash scripts/watch-deploy.sh
 
 # 2. Check application health
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 
 # 3. Test the deployed feature
 # (manual testing in production)
@@ -178,7 +165,7 @@ git log --oneline -10
 git revert <bad-commit-hash>
 
 # 3. Push immediately
-git push origin main
+git push origin staging
 
 # 4. Monitor rollback deployment
 bash scripts/watch-deploy.sh
@@ -296,7 +283,7 @@ echo "- $SESSION_ID: TASK-ID - Task Title" >> docs/ACTIVE_SESSIONS.md
 # 6. Commit and push registration
 git add docs/sessions/active/$SESSION_ID.md docs/ACTIVE_SESSIONS.md
 git commit -m "chore: register session $SESSION_ID"
-git push origin main
+git push origin staging
 ```
 
 ### During Task Execution
@@ -311,7 +298,7 @@ Update session file regularly:
 # Commit progress
 git add docs/sessions/active/$SESSION_ID.md
 git commit -m "chore: update session progress"
-git push origin main
+git push origin staging
 ```
 
 ### Completing a Task
@@ -332,7 +319,7 @@ git add docs/roadmaps/MASTER_ROADMAP.md \
         docs/sessions/completed/$SESSION_ID.md \
         docs/ACTIVE_SESSIONS.md
 git commit -m "chore: complete TASK-ID and archive session"
-git push origin main
+git push origin staging
 
 # 5. Verify deployment succeeded
 bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
@@ -371,7 +358,7 @@ pnpm roadmap:validate
 # 4. Commit
 git add docs/roadmaps/MASTER_ROADMAP.md
 git commit -m "roadmap: add TASK-ID - Task Title"
-git push origin main
+git push origin staging
 ```
 
 ### Updating Task Status
@@ -389,7 +376,7 @@ pnpm roadmap:validate
 
 # 4. Commit
 git commit -m "roadmap: update TASK-ID status to complete"
-git push origin main
+git push origin staging
 ```
 
 ### Checking Capacity
@@ -428,7 +415,7 @@ cat docs/ACTIVE_SESSIONS.md
 
 ```bash
 # Push frequently (after each phase)
-git push origin main
+git push origin staging
 
 # Pull before each new phase
 git pull --rebase origin main
@@ -472,7 +459,7 @@ pnpm test
 # 4. Push directly to main
 git checkout main
 git merge hotfix/critical-issue
-git push origin main
+git push origin staging
 
 # 5. Monitor deployment
 bash scripts/watch-deploy.sh
@@ -498,7 +485,7 @@ cat .deployment-status-*.log
 
 # 4. If unfixable, rollback
 git revert HEAD
-git push origin main
+git push origin staging
 
 # 5. Investigate root cause
 # Document in incident report
@@ -536,7 +523,7 @@ git push origin main
 
 ### End of Day
 
-- [ ] Push all work: `git push origin main`
+- [ ] Push all work: `git push origin staging`
 - [ ] Update session file with progress
 - [ ] Archive completed sessions
 - [ ] Update roadmap

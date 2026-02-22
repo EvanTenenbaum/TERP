@@ -1,0 +1,86 @@
+name: Sync Main → Staging
+
+# Triggers when code is pushed to main (i.e., a PR is merged)
+on:
+  push:
+    branches:
+      - main
+
+# Prevent concurrent syncs
+concurrency:
+  group: sync-staging
+  cancel-in-progress: false
+
+jobs:
+  sync-staging:
+    name: Merge main into staging
+    runs-on: ubuntu-latest
+    # Only run if the push is NOT from the sync workflow itself (prevent loops)
+    if: "!contains(github.event.head_commit.message, '[skip-staging-sync]')"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge main into staging
+        id: merge
+        run: |
+          echo "📥 Fetching all branches..."
+          git fetch origin main staging
+
+          echo "🔀 Checking out staging..."
+          git checkout staging
+
+          echo "🔄 Merging main into staging..."
+          if git merge origin/main --no-edit -m "chore: auto-sync main → staging [skip-staging-sync]"; then
+            echo "merge_status=success" >> $GITHUB_OUTPUT
+            echo "✅ Merge succeeded"
+          else
+            echo "merge_status=conflict" >> $GITHUB_OUTPUT
+            echo "❌ Merge conflict detected"
+            git merge --abort
+            exit 1
+          fi
+
+      - name: Push to staging
+        if: steps.merge.outputs.merge_status == 'success'
+        run: |
+          echo "🚀 Pushing to staging (triggers staging deployment)..."
+          git push origin staging
+          echo "✅ Staging branch updated — deployment will start automatically"
+
+      - name: Notify on conflict
+        if: failure() && steps.merge.outputs.merge_status == 'conflict'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Staging sync failed: merge conflict',
+              body: `## Staging Auto-Sync Failed\n\n` +
+                `The automatic merge of \`main\` → \`staging\` failed due to a merge conflict.\n\n` +
+                `**Commit:** \`${context.sha.substring(0, 7)}\`\n` +
+                `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
+                `### How to Fix\n\n` +
+                `\`\`\`bash\n` +
+                `git checkout staging\n` +
+                `git pull origin staging\n` +
+                `git merge origin/main\n` +
+                `# Resolve conflicts manually\n` +
+                `git add .\n` +
+                `git commit -m "chore: resolve staging sync conflict"\n` +
+                `git push origin staging\n` +
+                `\`\`\`\n\n` +
+                `Or ask an agent to resolve the conflict.`,
+              labels: ['ci/cd', 'staging']
+            });
+            console.log(`Created issue #${issue.data.number}`);

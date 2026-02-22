@@ -70,14 +70,14 @@ If you are an AI agent working on this codebase, you **must**:
 
 ---
 
-## 📝 Pull Request Process
+## 📝 Pull Request & Staging Workflow
 
-1. **Create a feature branch**: `git checkout -b feat/my-new-feature`
-2. **Make your changes** with accompanying tests
-3. **Push to your fork**: `git push origin feat/my-new-feature`
-4. **Open a Pull Request** with a clear description of your changes
-5. **Wait for CI checks** to pass (automated tests, linting, etc.)
-6. **Address review feedback** if requested
+1.  **Create a feature branch** from `main`.
+2.  **Make your changes** and commit your work.
+3.  **Open a Pull Request** targeting the `main` branch.
+4.  **Merge the PR** to `main` after review and checks pass.
+5.  **Automatic Staging Deploy**: The merge to `main` triggers a GitHub Action that automatically deploys your changes to the staging environment.
+6.  **Verify on Staging**: Confirm your feature works as expected on the staging URL (`https://terp-staging-yicld.ondigitalocean.app`).
 
 ---
 

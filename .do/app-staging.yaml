@@ -1,0 +1,104 @@
+name: terp-staging
+region: nyc
+
+databases:
+  - name: terp-staging-db
+    engine: MYSQL
+    production: false
+    cluster_name: terp-staging-db
+
+services:
+  - name: web
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: staging
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+
+    # STAGING: Use smaller instance (1 instance, no autoscaling)
+    instance_size_slug: apps-s-1vcpu-1gb
+    instance_count: 1
+
+    health_check:
+      http_path: /health/live
+      initial_delay_seconds: 120
+      period_seconds: 15
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 8
+
+    http_port: 3000
+
+    routes:
+      - path: /
+
+    envs:
+      # Core
+      - key: NODE_ENV
+        value: production
+        scope: RUN_AND_BUILD_TIME
+      - key: RATE_LIMIT_GET
+        value: "1000"
+        scope: RUN_AND_BUILD_TIME
+      - key: ENABLE_RBAC
+        value: "true"
+        scope: RUN_AND_BUILD_TIME
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+        scope: RUN_AND_BUILD_TIME
+      - key: NODE_MEMORY_LIMIT
+        value: "512000000"
+        scope: RUN_AND_BUILD_TIME
+
+      # Database (auto-injected from linked staging database)
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${terp-staging-db.DATABASE_URL}
+
+      # Auth - STAGING SPECIFIC
+      - key: JWT_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+
+      - key: DEMO_MODE
+        value: "true"
+        scope: RUN_AND_BUILD_TIME
+
+      - key: QA_AUTH_ENABLED
+        value: "true"
+        scope: RUN_AND_BUILD_TIME
+
+      - key: ENABLE_TEST_AUTH
+        value: "true"
+        scope: RUN_AND_BUILD_TIME
+
+      - key: FORCE_QA_AUTH
+        value: "true"
+        scope: RUN_AND_BUILD_TIME
+
+      - key: E2E_ADMIN_USERNAME
+        value: "admin@terp.test"
+        scope: RUN_AND_BUILD_TIME
+
+      - key: E2E_ADMIN_PASSWORD
+        value: "admin123"
+        scope: RUN_AND_BUILD_TIME
+
+      # Vite build vars
+      - key: VITE_APP_TITLE
+        value: "TERP [STAGING]"
+        scope: RUN_AND_BUILD_TIME
+      - key: VITE_APP_LOGO
+        value: /logo.png
+        scope: RUN_AND_BUILD_TIME
+      - key: VITE_APP_ID
+        value: terp-staging
+        scope: RUN_AND_BUILD_TIME
+
+      # Clerk (use test keys for staging)
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
+        scope: RUN_AND_BUILD_TIME
+      - key: CLERK_SECRET_KEY
+        value: sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD
+        scope: RUN_TIME
