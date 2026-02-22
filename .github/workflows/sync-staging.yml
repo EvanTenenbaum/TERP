@@ -19,10 +19,11 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip-staging-sync]')"
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (full history, all branches)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
@@ -33,11 +34,11 @@ jobs:
       - name: Merge main into staging
         id: merge
         run: |
-          echo "📥 Fetching all branches..."
-          git fetch origin main staging
+          echo "📥 Fetching all remote branches..."
+          git fetch origin
 
           echo "🔀 Checking out staging..."
-          git checkout staging
+          git checkout -B staging origin/staging
 
           echo "🔄 Merging main into staging..."
           if git merge origin/main --no-edit -m "chore: auto-sync main → staging [skip-staging-sync]"; then
