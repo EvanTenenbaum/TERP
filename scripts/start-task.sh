@@ -116,7 +116,10 @@ if [ -z "$TASK_ID" ]; then
 fi
 
 SESSION_ID=$(date +%Y%m%d)-$(openssl rand -hex 4)
-BRANCH_NAME="claude/${TASK_ID}-${SESSION_ID}"
+# Use AGENT_PREFIX env var if set, otherwise default to "agent"
+# Examples: AGENT_PREFIX=claude, AGENT_PREFIX=cursor, AGENT_PREFIX=manus
+BRANCH_PREFIX="${AGENT_PREFIX:-agent}"
+BRANCH_NAME="${BRANCH_PREFIX}/${TASK_ID}-${SESSION_ID}"
 SESSION_FILE="${SESSION_DIR}/Session-${SESSION_ID}.md"
 
 # --- Pre-flight Checks ---
@@ -170,7 +173,7 @@ cat > "$SESSION_FILE" << EOF
 **Task ID:** ${TASK_ID}  
 **Branch:** \`${BRANCH_NAME}\`  
 **Started:** $(date +"%Y-%m-%d %H:%M:%S")  
-**Agent:** Claude (Manus AI)  
+**Agent:** ${AGENT_PREFIX:-agent}  
 **Status:** 🟡 In Progress
 
 ---

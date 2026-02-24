@@ -32,7 +32,9 @@ fi
 # Check 2: Verify branch name format (for non-main branches only)
 if [[ ! "$CURRENT_BRANCH" =~ $BRANCH_NAME_REGEX ]]; then
   echo "❌ PUSH BLOCKED: Invalid branch name format: $CURRENT_BRANCH"
-  echo "   To fix: Use 'pnpm start-task' to create a proper branch."
+  echo "   Valid formats: <prefix>/<description> (e.g., feature/my-feature, fix/bug-123)"
+  echo "   Or flat names: my-branch-name"
+  echo "   Or use 'pnpm start-task' to create a branch automatically."
   exit 1
 fi
 
