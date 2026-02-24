@@ -9,8 +9,9 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure } from "../_core/trpc";
+import { router, adminProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
 
 // Pick & Pack status enum for validation
 const pickPackStatusSchema = z.enum(["PENDING", "PICKING", "PACKED", "READY"]);
@@ -164,7 +165,7 @@ export const pickPackRouter = router({
           };
         }
 
-        // Get packed item counts
+        // Get packed item counts (TER-297: exclude soft-deleted assignments)
         const packedCounts = await db
           .select({
             orderId: orderBags.orderId,
@@ -173,10 +174,13 @@ export const pickPackRouter = router({
           .from(orderItemBags)
           .innerJoin(orderBags, eq(orderItemBags.bagId, orderBags.id))
           .where(
-            sql`${orderBags.orderId} IN (${sql.join(
-              orderIds.map(id => sql`${id}`),
-              sql`, `
-            )})`
+            and(
+              sql`${orderBags.orderId} IN (${sql.join(
+                orderIds.map(id => sql`${id}`),
+                sql`, `
+              )})`,
+              isNull(orderItemBags.deletedAt)
+            )
           )
           .groupBy(orderBags.orderId);
 
@@ -231,7 +235,7 @@ export const pickPackRouter = router({
 
       const { orders, clients, orderBags, orderItemBags } =
         await import("../../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
+      const { eq, and, isNull } = await import("drizzle-orm");
 
       // Get order with client
       const [order] = await db
@@ -268,7 +272,7 @@ export const pickPackRouter = router({
         .from(orderBags)
         .where(eq(orderBags.orderId, input.orderId));
 
-      // Get item-to-bag assignments
+      // Get item-to-bag assignments (TER-297: exclude soft-deleted assignments)
       const itemBagAssignments = await db
         .select({
           id: orderItemBags.id,
@@ -279,7 +283,12 @@ export const pickPackRouter = router({
         })
         .from(orderItemBags)
         .innerJoin(orderBags, eq(orderItemBags.bagId, orderBags.id))
-        .where(eq(orderBags.orderId, input.orderId));
+        .where(
+          and(
+            eq(orderBags.orderId, input.orderId),
+            isNull(orderItemBags.deletedAt)
+          )
+        );
 
       // Create a map of item assignments
       const itemAssignments = new Map<
@@ -416,6 +425,9 @@ export const pickPackRouter = router({
         )
         .limit(1);
 
+      // TER-298: Use authenticated actor ID for all write operations
+      const actorId = getAuthenticatedUserId(ctx);
+
       if (existingBag) {
         bagId = existingBag.id;
       } else {
@@ -423,7 +435,7 @@ export const pickPackRouter = router({
           orderId: input.orderId,
           bagIdentifier,
           notes: input.notes,
-          createdBy: ctx.user?.id,
+          createdBy: actorId,
         });
         bagId = newBag.insertId;
       }
@@ -435,12 +447,40 @@ export const pickPackRouter = router({
           await db.insert(orderItemBags).values({
             orderItemId: itemId,
             bagId,
-            packedBy: ctx.user?.id,
+            packedBy: actorId,
           });
           packedCount++;
         } catch (err) {
-          // Item might already be packed - skip
-          console.warn(`Item ${itemId} already packed or error:`, err);
+          // TER-300: Only swallow known duplicate/conflict errors (item already packed)
+          const isKnownDuplicate =
+            err instanceof Error &&
+            (err.message.includes("ER_DUP_ENTRY") ||
+              err.message.toLowerCase().includes("duplicate entry") ||
+              (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
+              String(
+                (err as unknown as { errno?: number }).errno ?? ""
+              ) === "1062");
+
+          if (isKnownDuplicate) {
+            logger.warn(
+              { itemId, bagId, orderId: input.orderId },
+              "Item already packed in bag — skipping duplicate assignment"
+            );
+          } else {
+            logger.warn(
+              {
+                itemId,
+                bagId,
+                orderId: input.orderId,
+                error: err instanceof Error ? err.message : String(err),
+              },
+              "Unexpected error packing item"
+            );
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Failed to pack item ${itemId}: ${err instanceof Error ? err.message : String(err)}`,
+            });
+          }
         }
       }
 
@@ -480,7 +520,7 @@ export const pickPackRouter = router({
 
       const { orderBags, orderItemBags, auditLogs, orders } =
         await import("../../drizzle/schema");
-      const { eq, and, sql } = await import("drizzle-orm");
+      const { eq, and, isNull, sql } = await import("drizzle-orm");
 
       // Get bag IDs for this order
       const orderBagIds = await db
@@ -497,19 +537,23 @@ export const pickPackRouter = router({
 
       const bagIds = orderBagIds.map(b => b.id);
 
-      // Delete item-bag assignments
-      await db.delete(orderItemBags).where(
-        and(
-          sql`${orderItemBags.orderItemId} IN (${sql.join(
-            input.itemIds.map(id => sql`${id}`),
-            sql`, `
-          )})`,
-          sql`${orderItemBags.bagId} IN (${sql.join(
-            bagIds.map(id => sql`${id}`),
-            sql`, `
-          )})`
-        )
-      );
+      // TER-297: Soft delete item-bag assignments instead of hard delete
+      await db
+        .update(orderItemBags)
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            sql`${orderItemBags.orderItemId} IN (${sql.join(
+              input.itemIds.map(id => sql`${id}`),
+              sql`, `
+            )})`,
+            sql`${orderItemBags.bagId} IN (${sql.join(
+              bagIds.map(id => sql`${id}`),
+              sql`, `
+            )})`,
+            isNull(orderItemBags.deletedAt)
+          )
+        );
 
       // Log the unpack action with reason to audit log (WS-005)
       // Get order number for better audit trail
@@ -519,8 +563,10 @@ export const pickPackRouter = router({
         .where(eq(orders.id, input.orderId))
         .limit(1);
 
+      // TER-298: Use authenticated actor ID for audit attribution
+      const actorId = getAuthenticatedUserId(ctx);
       await db.insert(auditLogs).values({
-        actorId: ctx.user.id,
+        actorId,
         entity: "ORDER_ITEM_BAG",
         entityId: input.orderId,
         action: "UNPACK_ITEMS",
@@ -580,12 +626,15 @@ export const pickPackRouter = router({
       const items = (order.items as Array<{ id?: number }>) || [];
       const itemIds = items.map((item, index) => item.id || index);
 
+      // TER-298: Use authenticated actor ID for all write operations
+      const actorId = getAuthenticatedUserId(ctx);
+
       // Create bag
       const bagIdentifier = input.bagIdentifier || "BAG-001";
       const [newBag] = await db.insert(orderBags).values({
         orderId: input.orderId,
         bagIdentifier,
-        createdBy: ctx.user?.id,
+        createdBy: actorId,
       });
 
       // Pack all items
@@ -595,11 +644,11 @@ export const pickPackRouter = router({
           await db.insert(orderItemBags).values({
             orderItemId: itemId,
             bagId: newBag.insertId,
-            packedBy: ctx.user?.id,
+            packedBy: actorId,
           });
           packedCount++;
         } catch (_err) {
-          // Skip already packed items
+          // Skip already packed items (duplicate key — item already in a bag)
         }
       }
 
@@ -631,7 +680,7 @@ export const pickPackRouter = router({
 
       const { orders, orderBags, orderItemBags } =
         await import("../../drizzle/schema");
-      const { eq, sql } = await import("drizzle-orm");
+      const { eq, and, isNull, sql } = await import("drizzle-orm");
 
       // Get order with items
       const [order] = await db
@@ -647,14 +696,19 @@ export const pickPackRouter = router({
       const items = (order.items as Array<{ id?: number }>) || [];
       const totalItemCount = items.length;
 
-      // Count packed items
+      // Count packed items (TER-297: exclude soft-deleted assignments)
       const [packedCount] = await db
         .select({
           count: sql<number>`COUNT(DISTINCT ${orderItemBags.orderItemId})`,
         })
         .from(orderItemBags)
         .innerJoin(orderBags, eq(orderItemBags.bagId, orderBags.id))
-        .where(eq(orderBags.orderId, input.orderId));
+        .where(
+          and(
+            eq(orderBags.orderId, input.orderId),
+            isNull(orderItemBags.deletedAt)
+          )
+        );
 
       if ((packedCount?.count || 0) < totalItemCount) {
         throw new TRPCError({
@@ -663,13 +717,16 @@ export const pickPackRouter = router({
         });
       }
 
+      // TER-298: Use authenticated actor ID for all write operations
+      const actorId = getAuthenticatedUserId(ctx);
+
       // Update order status
       await db
         .update(orders)
         .set({
           pickPackStatus: "READY",
           packedAt: new Date(),
-          packedBy: ctx.user?.id,
+          packedBy: actorId,
         })
         .where(eq(orders.id, input.orderId));
 

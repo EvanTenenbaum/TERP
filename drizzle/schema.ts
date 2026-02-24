@@ -2989,6 +2989,7 @@ export const orderItemBags = mysqlTable(
       .references(() => orderBags.id, { onDelete: "cascade" }),
     packedAt: timestamp("packed_at").defaultNow(),
     packedBy: int("packed_by").references(() => users.id),
+    deletedAt: timestamp("deleted_at"), // TER-297: Soft delete support
   },
   table => ({
     bagIdIdx: index("idx_order_item_bags_bag_id").on(table.bagId),
