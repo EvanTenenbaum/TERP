@@ -174,7 +174,13 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Direct intake of inventory items",
   },
 
-  { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
+  {
+    name: "Accounting",
+    path: "/accounting",
+    icon: CreditCard,
+    group: "finance",
+    ariaLabel: "Accounts receivable and payable management",
+  },
   {
     name: CREDITS_WORKSPACE.title,
     path: "/credits",

@@ -16,7 +16,6 @@ import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -483,12 +482,9 @@ export function VendorsWorkSurface() {
   };
 
   const handleAddVendor = useCallback(() => {
-    // Navigate to client creation with isSeller pre-selected
-    toast.info(
-      "Add Vendor functionality - navigate to client wizard with supplier type pre-selected"
-    );
-    // Future: setLocation('/clients/new?type=seller');
-  }, []);
+    // TER-290: Navigate to client creation with seller type pre-selected
+    setLocation("/clients/new?type=seller");
+  }, [setLocation]);
 
   const handleNavigate = useCallback(
     (vendorId: number) => {

@@ -71,6 +71,34 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 
+// TER-289: Typed interfaces to replace `any` in transaction/activity callbacks
+interface ClientTransaction {
+  id: number;
+  transactionNumber?: string | null;
+  transactionType: string;
+  transactionDate?: string | Date | null;
+  amount?: string | number | null;
+  paymentAmount?: string | number | null;
+  paymentStatus?: string | null;
+  paymentDate?: string | Date | null;
+  notes?: string | null;
+}
+
+interface ClientActivity {
+  id: number;
+  activityType: string;
+  description?: string | null;
+  createdAt?: string | Date | null;
+}
+
+type TransactionType =
+  | "INVOICE"
+  | "PAYMENT"
+  | "QUOTE"
+  | "ORDER"
+  | "REFUND"
+  | "CREDIT";
+
 export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -79,8 +107,8 @@ export default function ClientProfilePage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<ClientTransaction | null>(null);
   const [transactionSearch, setTransactionSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
@@ -261,23 +289,20 @@ export default function ClientProfilePage() {
   // Filter paid transactions for payment history
   const paidTransactions =
     transactions?.filter(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (txn: any) => txn.paymentStatus === "PAID" && txn.paymentDate
+      (txn: ClientTransaction) =>
+        txn.paymentStatus === "PAID" && txn.paymentDate
     ) || [];
 
   // Filter by payment search
-  const filteredPayments = paidTransactions.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (txn: any) => {
-      if (!paymentSearch) return true;
-      return (
-        txn.transactionNumber
-          ?.toLowerCase()
-          .includes(paymentSearch.toLowerCase()) ||
-        txn.transactionType?.toLowerCase().includes(paymentSearch.toLowerCase())
-      );
-    }
-  );
+  const filteredPayments = paidTransactions.filter((txn: ClientTransaction) => {
+    if (!paymentSearch) return true;
+    return (
+      txn.transactionNumber
+        ?.toLowerCase()
+        .includes(paymentSearch.toLowerCase()) ||
+      txn.transactionType?.toLowerCase().includes(paymentSearch.toLowerCase())
+    );
+  });
 
   // Handle record payment
   const handleRecordPayment = async (
@@ -581,7 +606,10 @@ export default function ClientProfilePage() {
                     <Label className="text-sm font-medium text-muted-foreground">
                       Tags
                     </Label>
-                    <div className="flex flex-wrap gap-2 mt-1" data-testid="tags-list">
+                    <div
+                      className="flex flex-wrap gap-2 mt-1"
+                      data-testid="tags-list"
+                    >
                       {client.tags &&
                       Array.isArray(client.tags) &&
                       client.tags.length > 0 ? (
@@ -608,9 +636,13 @@ export default function ClientProfilePage() {
                             size="sm"
                             data-testid="save-tag-btn"
                             onClick={handleAddTag}
-                            disabled={addTagMutation.isPending || !newTag.trim()}
+                            disabled={
+                              addTagMutation.isPending || !newTag.trim()
+                            }
                           >
-                            {addTagMutation.isPending ? "Saving..." : "Save Tag"}
+                            {addTagMutation.isPending
+                              ? "Saving..."
+                              : "Save Tag"}
                           </Button>
                           <Button
                             size="sm"
@@ -647,8 +679,7 @@ export default function ClientProfilePage() {
               <CardContent>
                 {activities && activities.length > 0 ? (
                   <div className="space-y-3">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {activities.slice(0, 5).map((activity: any) => (
+                    {activities.slice(0, 5).map((activity: ClientActivity) => (
                       <div
                         key={activity.id}
                         className="flex items-start gap-3 text-sm"
@@ -660,7 +691,9 @@ export default function ClientProfilePage() {
                           </p>
                           <p className="text-muted-foreground">
                             by {activity.userName || "Unknown"} •{" "}
-                            {formatDate(activity.createdAt)}
+                            {activity.createdAt
+                              ? formatDate(activity.createdAt)
+                              : "-"}
                           </p>
                         </div>
                       </div>
@@ -721,7 +754,10 @@ export default function ClientProfilePage() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4" data-testid="transactions-list">
+              <CardContent
+                className="space-y-4"
+                data-testid="transactions-list"
+              >
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -761,8 +797,7 @@ export default function ClientProfilePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {transactions.map((txn: any) => (
+                        {transactions.map((txn: ClientTransaction) => (
                           <TableRow
                             key={txn.id}
                             data-testid={`transaction-row-${txn.id}`}
@@ -775,13 +810,19 @@ export default function ClientProfilePage() {
                               {getTransactionTypeBadge(txn.transactionType)}
                             </TableCell>
                             <TableCell>
-                              {formatDate(txn.transactionDate)}
+                              {txn.transactionDate
+                                ? formatDate(txn.transactionDate)
+                                : "-"}
                             </TableCell>
                             <TableCell className="text-right font-medium">
-                              {formatCurrency(txn.amount)}
+                              {txn.amount !== null && txn.amount !== undefined
+                                ? formatCurrency(txn.amount)
+                                : "-"}
                             </TableCell>
                             <TableCell>
-                              {getPaymentStatusBadge(txn.paymentStatus)}
+                              {getPaymentStatusBadge(
+                                txn.paymentStatus || "PENDING"
+                              )}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">
                               {txn.notes || "-"}
@@ -874,8 +915,7 @@ export default function ClientProfilePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {filteredPayments.map((txn: any) => (
+                        {filteredPayments.map((txn: ClientTransaction) => (
                           <TableRow key={txn.id}>
                             <TableCell className="font-medium">
                               {txn.transactionNumber || "-"}
@@ -884,16 +924,27 @@ export default function ClientProfilePage() {
                               {getTransactionTypeBadge(txn.transactionType)}
                             </TableCell>
                             <TableCell>
-                              {formatDate(txn.transactionDate)}
+                              {txn.transactionDate
+                                ? formatDate(txn.transactionDate)
+                                : "-"}
                             </TableCell>
                             <TableCell className="font-medium">
-                              {formatDate(txn.paymentDate)}
+                              {txn.paymentDate
+                                ? formatDate(txn.paymentDate)
+                                : "-"}
                             </TableCell>
                             <TableCell className="text-right font-medium text-green-600">
-                              {formatCurrency(txn.paymentAmount || txn.amount)}
+                              {(txn.paymentAmount ?? txn.amount) !== null &&
+                              (txn.paymentAmount ?? txn.amount) !== undefined
+                                ? formatCurrency(
+                                    txn.paymentAmount ?? txn.amount ?? 0
+                                  )
+                                : "-"}
                             </TableCell>
                             <TableCell className="text-right">
-                              {formatCurrency(txn.amount)}
+                              {txn.amount !== null && txn.amount !== undefined
+                                ? formatCurrency(txn.amount)
+                                : "-"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
@@ -1207,17 +1258,21 @@ export default function ClientProfilePage() {
                 const formData = new FormData(e.currentTarget);
                 createTransactionMutation.mutate({
                   clientId: client.id,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  transactionType: formData.get("transactionType") as any,
+                  transactionType: formData.get(
+                    "transactionType"
+                  ) as TransactionType,
                   transactionNumber:
                     (formData.get("transactionNumber") as string) || undefined,
                   transactionDate: new Date(
                     formData.get("transactionDate") as string
                   ),
-                  amount: parseFloat(formData.get("amount") as string),
+                  amount: Number(formData.get("amount") as string),
                   paymentStatus:
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (formData.get("paymentStatus") as any) || "PENDING",
+                    (formData.get("paymentStatus") as
+                      | "PENDING"
+                      | "PAID"
+                      | "PARTIAL"
+                      | "OVERDUE") || "PENDING",
                   notes: (formData.get("notes") as string) || undefined,
                 });
               }}
