@@ -71,4 +71,33 @@ describe("LineItemTable powersheet actions", () => {
     expect(nextItems[0].marginPercent).toBe(30);
     expect(nextItems[1].marginPercent).toBe(25);
   });
+
+  it("applies bulk COGS override only to selected rows and sets override reason", () => {
+    const onChange = vi.fn();
+    render(
+      <LineItemTable
+        clientId={123}
+        items={[
+          buildLineItem(),
+          buildLineItem({ batchId: 2002, productId: 22 }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Select line item 1"));
+    fireEvent.change(screen.getByPlaceholderText("COGS"), {
+      target: { value: "14.5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply COGS" }));
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].cogsPerUnit).toBe(14.5);
+    expect(nextItems[0].isCogsOverridden).toBe(true);
+    expect(nextItems[0].cogsOverrideReason).toBe("Bulk override");
+
+    expect(nextItems[1].cogsPerUnit).toBe(10);
+    expect(nextItems[1].isCogsOverridden).toBe(false);
+    expect(nextItems[1].cogsOverrideReason).toBeUndefined();
+  });
 });

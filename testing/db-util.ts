@@ -9,9 +9,9 @@
  * - Preflight connectivity check (local or remote)
  */
 
-/* eslint-disable no-console -- CLI utility, console output is intentional */
 import { execSync, spawnSync } from "child_process";
 import mysql from "mysql2/promise";
+import { seedDefaultChartOfAccounts } from "../server/services/seedDefaults";
 
 const TEST_DB_CONFIG = {
   host: "127.0.0.1",
@@ -26,6 +26,7 @@ const TRANSIENT_DB_PATTERNS = [
   /Connection lost: The server closed the connection/i,
   /server closed the connection/i,
 ];
+type CommandEnv = Record<string, string | undefined>;
 
 function hasTransientDbFailure(output: string): boolean {
   return TRANSIENT_DB_PATTERNS.some(pattern => pattern.test(output));
@@ -34,7 +35,7 @@ function hasTransientDbFailure(output: string): boolean {
 function runCommandWithRetry(
   command: string,
   options: {
-    env: Record<string, string | undefined>;
+    env: CommandEnv;
     label: string;
     maxAttempts?: number;
   }
@@ -166,18 +167,18 @@ function buildMySqlConnectionOptionsFromUrl(
  * Start the test database using Docker Compose
  */
 export function startTestDatabase() {
-  console.log("🚀 Starting test database...");
+  console.info("🚀 Starting test database...");
   try {
     const compose = getComposeCommand();
     execSync(`${compose} -f testing/docker-compose.yml up -d`, {
       stdio: "inherit",
     });
-    console.log("✅ Test database started successfully");
+    console.info("✅ Test database started successfully");
 
     // Wait for database to be ready
-    console.log("⏳ Waiting for database to be ready...");
+    console.info("⏳ Waiting for database to be ready...");
     execSync("sleep 5"); // Give MySQL time to initialize
-    console.log("✅ Database is ready");
+    console.info("✅ Database is ready");
   } catch (error) {
     console.error("❌ Failed to start test database:", error);
     throw error;
@@ -188,13 +189,13 @@ export function startTestDatabase() {
  * Stop the test database using Docker Compose
  */
 export function stopTestDatabase() {
-  console.log("🛑 Stopping test database...");
+  console.info("🛑 Stopping test database...");
   try {
     const compose = getComposeCommand();
     execSync(`${compose} -f testing/docker-compose.yml down`, {
       stdio: "inherit",
     });
-    console.log("✅ Test database stopped successfully");
+    console.info("✅ Test database stopped successfully");
   } catch (error) {
     console.error("❌ Failed to stop test database:", error);
     throw error;
@@ -205,7 +206,7 @@ export function stopTestDatabase() {
  * Run database migrations using Drizzle
  */
 export function runMigrations() {
-  console.log("📦 Running database migrations...");
+  console.info("📦 Running database migrations...");
   try {
     const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
 
@@ -219,10 +220,10 @@ export function runMigrations() {
         env: {
           ...process.env,
           DATABASE_URL: databaseUrl,
-        },
+        } as CommandEnv,
       }
     );
-    console.log("✅ Migrations completed successfully");
+    console.info("✅ Migrations completed successfully");
   } catch (error) {
     console.error("❌ Failed to run migrations:", error);
     throw error;
@@ -233,7 +234,7 @@ export function runMigrations() {
  * Seed the database with a specific scenario
  */
 export function seedDatabase(scenario: string = "light") {
-  console.log(`🌱 Seeding database with scenario: ${scenario}...`);
+  console.info(`🌱 Seeding database with scenario: ${scenario}...`);
   try {
     const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
 
@@ -242,9 +243,9 @@ export function seedDatabase(scenario: string = "light") {
       env: {
         ...process.env,
         DATABASE_URL: databaseUrl,
-      },
+      } as CommandEnv,
     });
-    console.log("✅ Database seeded successfully");
+    console.info("✅ Database seeded successfully");
   } catch (error) {
     console.error("❌ Failed to seed database:", error);
     throw error;
@@ -255,7 +256,7 @@ export function seedDatabase(scenario: string = "light") {
  * Ensure RBAC + QA role accounts exist for deterministic E2E/oracle auth.
  */
 export function seedQaAuthAccounts() {
-  console.log("🔐 Ensuring RBAC + QA auth accounts...");
+  console.info("🔐 Ensuring RBAC + QA auth accounts...");
   try {
     const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
     const seededEnv = {
@@ -275,7 +276,7 @@ export function seedQaAuthAccounts() {
       env: seededEnv,
     });
 
-    console.log("✅ QA auth accounts ready");
+    console.info("✅ QA auth accounts ready");
   } catch (error) {
     console.error("❌ Failed to seed QA auth accounts:", error);
     throw error;
@@ -283,11 +284,65 @@ export function seedQaAuthAccounts() {
 }
 
 /**
+ * Ensure baseline chart-of-accounts exists for accounting golden flows.
+ * Uses the canonical idempotent default seeder.
+ */
+export async function seedDefaultAccountingAccounts() {
+  console.info("📊 Ensuring default chart of accounts...");
+  try {
+    const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
+    process.env.DATABASE_URL = databaseUrl;
+    await seedDefaultChartOfAccounts();
+    console.info("✅ Default chart of accounts ready");
+  } catch (error) {
+    console.error("❌ Failed to seed default chart of accounts:", error);
+    throw error;
+  }
+}
+
+/**
+ * Ensure at least one OPEN fiscal period exists for ledger postings.
+ */
+export async function seedDefaultFiscalPeriod() {
+  console.info("📅 Ensuring default fiscal period...");
+  const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
+  const connection = await mysql.createConnection(
+    buildMySqlConnectionOptionsFromUrl(databaseUrl)
+  );
+
+  try {
+    const [existingRows] = await connection.execute(
+      "SELECT COUNT(*) as count FROM fiscalPeriods WHERE deleted_at IS NULL"
+    );
+    const existingCount = Number(
+      (existingRows as Array<{ count: number }>)[0]?.count || 0
+    );
+
+    if (existingCount > 0) {
+      console.info("✅ Fiscal period already present");
+      return;
+    }
+
+    await connection.execute(
+      `INSERT INTO fiscalPeriods (periodName, startDate, endDate, fiscalYear, status)
+       VALUES (?, ?, ?, ?, ?)`,
+      ["FY 2026 Open", "2026-01-01", "2026-12-31", 2026, "OPEN"]
+    );
+    console.info("✅ Default fiscal period created");
+  } catch (error) {
+    console.error("❌ Failed to seed default fiscal period:", error);
+    throw error;
+  } finally {
+    await connection.end();
+  }
+}
+
+/**
  * Reset the test database (drop, recreate, migrate, seed)
  */
 export async function resetTestDatabase(scenario: string = "light") {
-  console.log("\n🔄 Resetting test database...");
-  console.log("=".repeat(50));
+  console.info("\n🔄 Resetting test database...");
+  console.info("=".repeat(50));
 
   try {
     const databaseUrl = getTestDatabaseUrl();
@@ -308,29 +363,36 @@ export async function resetTestDatabase(scenario: string = "light") {
     });
 
     // 1. Drop and recreate the database
-    console.log("📊 Step 1: Dropping and recreating database...");
+    console.info("📊 Step 1: Dropping and recreating database...");
     await connection.execute("DROP DATABASE IF EXISTS `terp-test`;");
     await connection.execute("CREATE DATABASE `terp-test`;");
-    console.log("   ✓ Database recreated");
+    console.info("   ✓ Database recreated");
 
     await connection.end();
 
     // 2. Run migrations
-    console.log("\n📦 Step 2: Running migrations...");
+    console.info("\n📦 Step 2: Running migrations...");
     runMigrations();
 
     // 3. Seed data
-    console.log(`\n🌱 Step 3: Seeding data with scenario: ${scenario}...`);
+    console.info(`\n🌱 Step 3: Seeding data with scenario: ${scenario}...`);
     seedDatabase(scenario);
 
-    // 4. Ensure deterministic QA credentials and RBAC role mappings
+    // 4. Ensure baseline accounting chart for invoice/payment flows.
+    console.info("\n📊 Step 4: Seeding default chart of accounts...");
+    await seedDefaultAccountingAccounts();
+
+    console.info("\n📅 Step 5: Seeding default fiscal period...");
+    await seedDefaultFiscalPeriod();
+
+    // 6. Ensure deterministic QA credentials and RBAC role mappings
     // used by v4 oracle and E2E fixtures.
-    console.log("\n🔐 Step 4: Seeding QA auth accounts...");
+    console.info("\n🔐 Step 6: Seeding QA auth accounts...");
     seedQaAuthAccounts();
 
-    console.log("\n" + "=".repeat(50));
-    console.log("✅ Test database reset complete!");
-    console.log("=".repeat(50) + "\n");
+    console.info("\n" + "=".repeat(50));
+    console.info("✅ Test database reset complete!");
+    console.info("=".repeat(50) + "\n");
   } catch (error) {
     console.error("❌ Database reset failed:", error);
     throw error;
@@ -341,7 +403,7 @@ export async function resetTestDatabase(scenario: string = "light") {
  * Run preflight checks to verify database state
  */
 export async function runPreflight() {
-  console.log("🔍 Running preflight checks...");
+  console.info("🔍 Running preflight checks...");
 
   try {
     const connection = await mysql.createConnection({
@@ -361,16 +423,16 @@ export async function runPreflight() {
         const [rows] = await connection.execute(
           `SELECT COUNT(*) as count FROM \`${table}\``
         );
-        const resultRows = rows as Array<{ count: number }>;
-        const count = resultRows[0].count;
+        const typedRows = rows as Array<{ count: number }>;
+        const count = typedRows[0]?.count ?? 0;
 
         if (count > 0) {
-          console.log(`  ✅ ${table}: ${count} rows`);
+          console.info(`  ✅ ${table}: ${count} rows`);
         } else {
           console.error(`  ❌ ${table}: 0 rows (Expected > 0)`);
           allPassed = false;
         }
-      } catch (err: unknown) {
+      } catch (err) {
         // If table doesn't exist, it will throw
         const message = err instanceof Error ? err.message : String(err);
         console.error(`  ❌ ${table}: Error checking table - ${message}`);
@@ -386,7 +448,7 @@ export async function runPreflight() {
       );
     }
 
-    console.log("✅ Preflight checks passed!");
+    console.info("✅ Preflight checks passed!");
   } catch (error) {
     console.error("❌ Preflight checks failed:", error);
     throw error;
@@ -420,17 +482,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           await preflightTestDatabase();
           break;
         default:
-          console.log("Usage: tsx testing/db-util.ts <command> [scenario]");
-          console.log("Commands:");
-          console.log("  start         - Start test database");
-          console.log("  stop          - Stop test database");
-          console.log("  reset [scenario] - Reset database (default: light)");
-          console.log("  migrate       - Run migrations");
-          console.log("  seed [scenario]  - Seed database (default: light)");
-          console.log(
+          console.info("Usage: tsx testing/db-util.ts <command> [scenario]");
+          console.info("Commands:");
+          console.info("  start         - Start test database");
+          console.info("  stop          - Stop test database");
+          console.info("  reset [scenario] - Reset database (default: light)");
+          console.info("  migrate       - Run migrations");
+          console.info("  seed [scenario]  - Seed database (default: light)");
+          console.info(
             "  preflight     - Verify database connectivity (local or remote)"
           );
-          console.log("\nScenarios: light, full, edge, chaos");
+          console.info("\nScenarios: light, full, edge, chaos");
           process.exit(1);
       }
       process.exit(0);
@@ -453,19 +515,19 @@ export async function preflightTestDatabase(): Promise<void> {
 
   // Prefer URL-based connectivity if present (cloud / live DB)
   if (databaseUrl) {
-    console.log(
+    console.info(
       "🔍 Preflight: checking DB via DATABASE_URL/TEST_DATABASE_URL..."
     );
     const isRemote = isRemoteDatabaseUrl(databaseUrl);
-    console.log(`   Target: ${isRemote ? "remote" : "local"} url`);
+    console.info(`   Target: ${isRemote ? "remote" : "local"} url`);
     const masked = databaseUrl.replace(/:[^:@]+@/, ":****@");
-    console.log(`   URL:    ${masked}`);
+    console.info(`   URL:    ${masked}`);
     const conn = await mysql.createConnection(
       buildMySqlConnectionOptionsFromUrl(databaseUrl)
     );
     try {
       await conn.query("SELECT 1 as health_check");
-      console.log("✅ Database preflight passed");
+      console.info("✅ Database preflight passed");
     } finally {
       await conn.end();
     }
@@ -473,14 +535,14 @@ export async function preflightTestDatabase(): Promise<void> {
   }
 
   // Fallback to host/port defaults (local Docker)
-  console.log("🔍 Preflight: checking DB via host/port config...");
+  console.info("🔍 Preflight: checking DB via host/port config...");
   const conn = await mysql.createConnection({
     ...TEST_DB_CONFIG,
     connectTimeout: 15000,
   });
   try {
     await conn.query("SELECT 1 as health_check");
-    console.log("✅ Database preflight passed");
+    console.info("✅ Database preflight passed");
   } finally {
     await conn.end();
   }

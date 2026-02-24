@@ -10,7 +10,8 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { HelpCircle, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
-import { navigationItems } from "@/config/navigation";
+import { buildNavigationAccessModel } from "@/config/navigation";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -19,6 +20,16 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
+  const { flags, isLoading } = useFeatureFlags();
+  const navigationAccessModel = useMemo(
+    () =>
+      buildNavigationAccessModel({
+        flags,
+        flagsLoading: isLoading,
+        maxQuickLinks: 4,
+      }),
+    [flags, isLoading]
+  );
 
   const navigationCommands = useMemo(() => {
     const commands: Array<{
@@ -39,7 +50,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
     const seenPaths = new Set(commands.map(command => command.path));
 
-    for (const item of navigationItems) {
+    for (const item of navigationAccessModel.commandNavigationItems) {
       if (seenPaths.has(item.path)) {
         continue;
       }
@@ -53,7 +64,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     }
 
     return commands;
-  }, []);
+  }, [navigationAccessModel.commandNavigationItems]);
 
   const actionCommands = [
     {

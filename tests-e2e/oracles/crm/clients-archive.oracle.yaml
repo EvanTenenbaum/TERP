@@ -42,8 +42,8 @@ steps:
     timeout: 5000
 
   - action: click
-    target: "table tbody tr:first-child button, [data-testid='client-row']:first-child button"
-    wait_for: "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
+    target: "table tbody tr:first-child, [data-testid='client-row']:first-child"
+    wait_for: "button:has-text('View Full Profile'), button:has-text('Archive Client')"
 
   - action: click
     target: "button:has-text('Archive Client'), [data-testid='archive-client-btn']"
@@ -54,13 +54,13 @@ steps:
 
   - action: click
     target: "[role='dialog']:has-text('Archive Client') button:has-text('Cancel'), [role='dialog']:has-text('Archive Client') button:has-text('Close')"
-    wait_for: "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
+    wait_for: "button:has-text('View Full Profile'), button:has-text('Archive Client')"
 
 expected_ui:
   url_equals: "/clients"
   visible:
     - "table, [data-testid='clients-list'], main"
-    - "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
+    - "button:has-text('View Full Profile'), button:has-text('Archive Client')"
   not_visible:
     - "[role='dialog']:has-text('Archive Client')"
 

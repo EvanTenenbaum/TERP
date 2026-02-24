@@ -137,7 +137,7 @@ async function findFirstProductId(page: Page): Promise<number> {
 // ---------------------------------------------------------------------------
 
 test.describe("GF-002: Procure-to-Pay Golden Flow", () => {
-  test.describe.configure({ tag: "@tier1" });
+  test.describe.configure({ tag: "@tier1", timeout: 90_000 });
 
   // -------------------------------------------------------------------------
   // P2P-01: Page load
@@ -206,61 +206,45 @@ test.describe("GF-002: Procure-to-Pay Golden Flow", () => {
     page,
   }) => {
     await loginAsAdmin(page);
-    await findFirstSupplierId(page); // verify supplier exists
+    await findFirstSupplierId(page); // verify supplier seed exists
 
     await page.goto("/purchase-orders");
     await page.waitForLoadState("networkidle");
 
-    // Look for create/new PO button
-    const createBtn = page
-      .locator(
-        '[data-testid="create-po-btn"], button:has-text("New Purchase Order"), button:has-text("Create PO"), button:has-text("New PO")'
-      )
+    await page.getByRole("button", { name: "Create PO" }).first().click();
+    await expect(page.getByText("New Purchase Order")).toBeVisible({
+      timeout: 10000,
+    });
+
+    const rowCheckboxes = page.locator('[aria-label^="Select draft row "]');
+    const initialRowCount = await rowCheckboxes.count();
+    expect(initialRowCount).toBeGreaterThan(0);
+
+    await rowCheckboxes.first().click();
+    await expect(page.getByText(/1 selected/i)).toBeVisible({ timeout: 5000 });
+
+    const quantityBulkInput = page.getByPlaceholder("Qty");
+    await quantityBulkInput.fill("5");
+    await page.getByRole("button", { name: "Apply Qty" }).click();
+
+    const quantityCell = page
+      .locator('[data-po-draft-field="quantityOrdered"]')
       .first();
+    await expect(quantityCell).toHaveValue("5");
 
-    const createBtnVisible = await createBtn
-      .isVisible({ timeout: 10000 })
-      .catch(() => false);
+    const unitCostBulkInput = page.getByPlaceholder("Unit Cost");
+    await unitCostBulkInput.fill("12");
+    await page.getByRole("button", { name: "Apply Cost" }).click();
 
-    if (createBtnVisible) {
-      await createBtn.click();
+    const unitCostCell = page
+      .locator('[data-po-draft-field="unitCost"]')
+      .first();
+    await expect(unitCostCell).toHaveValue("12");
 
-      // Wait for dialog or navigation
-      await page
-        .waitForSelector(
-          '[data-testid="po-create-dialog"], [role="dialog"], .po-form, [data-testid="po-form"]',
-          { timeout: 10000 }
-        )
-        .catch(() => {
-          // May navigate to a new page instead of opening a dialog
-        });
-
-      // Take screenshot as evidence
-      await page.screenshot({
-        path: "test-results/gf-002-p2p-02-create-dialog.png",
-      });
-
-      // Check if a supplier select exists in the dialog
-      const supplierSelect = page
-        .locator(
-          '[data-testid="po-supplier-select"], select[name*="supplier"], [data-testid="supplier-select"]'
-        )
-        .first();
-
-      if (await supplierSelect.isVisible().catch(() => false)) {
-        // UI: select the supplier (first non-placeholder option)
-        await supplierSelect.selectOption({ index: 1 });
-      }
-
-      // Close dialog without submitting (creation tested via API in P2P-03 through P2P-07)
-      await page.keyboard.press("Escape");
-    }
-
-    // Whether or not the create button exists, the page must have loaded without errors
-    const pageLoaded = await page
-      .locator("body")
-      .evaluate(el => !!el.textContent);
-    expect(pageLoaded).toBe(true);
+    await page.getByRole("button", { name: "Duplicate" }).click();
+    await expect(rowCheckboxes).toHaveCount(initialRowCount + 1, {
+      timeout: 10000,
+    });
   });
 
   // -------------------------------------------------------------------------

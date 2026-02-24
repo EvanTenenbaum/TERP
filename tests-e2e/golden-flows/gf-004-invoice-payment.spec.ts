@@ -1,68 +1,135 @@
-/**
- * Golden Flow Test: GF-004 Invoice & Payment
- *
- * Flow: Invoice generation → send → receive payment
- */
-
 import { expect, test } from "@playwright/test";
-import { loginAsAccountant } from "../fixtures/auth";
+import { loginAsAdmin } from "../fixtures/auth";
+import { trpcMutation, trpcQuery } from "../utils/golden-flow-helpers";
+import {
+  cleanupOrder,
+  confirmSaleOrder,
+  createSaleOrder,
+  findBatchWithStock,
+  findBuyerClient,
+  toNumber,
+} from "../utils/e2e-business-helpers";
 
-test.describe("Golden Flow: GF-004 Invoice & Payment", (): void => {
-  test.beforeEach(async ({ page }): Promise<void> => {
-    await loginAsAccountant(page);
+type InvoiceRecord = {
+  id: number;
+  invoiceNumber?: string | null;
+  status?: string | null;
+  totalAmount?: string | number | null;
+  amountPaid?: string | number | null;
+  amountDue?: string | number | null;
+};
+
+type InvoicePaymentHistory = Array<{
+  paymentNumber?: string | null;
+  allocatedAmount?: string | number | null;
+}>;
+
+test.describe("Golden Flow: GF-004 Invoice & Payment", () => {
+  test.describe.configure({ tag: "@tier1" });
+
+  let createdOrderId: number | null = null;
+
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
   });
 
-  test("should access invoice list and payment actions", async ({
+  test.afterEach(async ({ page }) => {
+    await cleanupOrder(page, createdOrderId);
+    createdOrderId = null;
+  });
+
+  test("marks invoice sent, records partial payment, then completes invoice payment", async ({
     page,
-  }): Promise<void> => {
-    await page.goto("/accounting/invoices");
-    await page.waitForLoadState("networkidle");
+  }) => {
+    test.setTimeout(120_000);
 
-    const invoiceHeader = page
-      .getByRole("heading", { name: /invoices?/i })
-      .first();
-    const invoicesTable = page.locator('[data-testid="invoices-table"]');
+    const client = await findBuyerClient(page);
+    const batch = await findBatchWithStock(page);
 
-    if (await invoiceHeader.isVisible().catch(() => false)) {
-      await expect(invoiceHeader).toBeVisible({ timeout: 10000 });
-    } else {
-      await expect(invoicesTable).toBeVisible({ timeout: 10000 });
-    }
+    const order = await createSaleOrder(page, {
+      clientId: client.id,
+      batchId: batch.id,
+      quantity: 1,
+      unitPrice: Math.max(batch.unitCogs * 1.5, 1),
+    });
+    createdOrderId = order.id;
 
-    const prioritizedInvoiceRow = page.locator('[data-testid^="invoice-row-"]');
-    const fallbackInvoiceRow = page.locator('[role="row"], tr');
-    const invoiceRow =
-      (await prioritizedInvoiceRow.count()) > 0
-        ? prioritizedInvoiceRow.first()
-        : fallbackInvoiceRow.first();
+    await confirmSaleOrder(page, order.id);
 
-    if (await invoiceRow.isVisible().catch(() => false)) {
-      await invoiceRow.click();
-      await page.waitForTimeout(400);
+    const invoice = await trpcMutation<InvoiceRecord>(
+      page,
+      "invoices.generateFromOrder",
+      { orderId: order.id }
+    );
+    expect(invoice.id).toBeGreaterThan(0);
 
-      const sendButton = page.locator(
-        'button:has-text("Send"), button:has-text("Email")'
-      );
-      if (
-        await sendButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(sendButton.first()).toBeVisible();
+    await trpcMutation<{ success: boolean }>(page, "invoices.markSent", {
+      id: invoice.id,
+    });
+
+    const sentInvoice = await trpcQuery<InvoiceRecord>(
+      page,
+      "invoices.getById",
+      {
+        id: invoice.id,
       }
+    );
+    expect(sentInvoice.status).toBe("SENT");
 
-      const paymentButton = page.locator(
-        'button:has-text("Record Payment"), button:has-text("Payment")'
-      );
-      if (
-        await paymentButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(paymentButton.first()).toBeVisible();
+    const totalAmount = toNumber(sentInvoice.totalAmount);
+    expect(totalAmount).toBeGreaterThan(0);
+
+    const partialAmount = Number((totalAmount / 2).toFixed(2));
+    await trpcMutation(page, "payments.recordPayment", {
+      invoiceId: invoice.id,
+      amount: partialAmount,
+      paymentMethod: "CASH",
+      referenceNumber: `GF-004-P1-${Date.now()}`,
+    });
+
+    const partiallyPaid = await trpcQuery<InvoiceRecord>(
+      page,
+      "invoices.getById",
+      {
+        id: invoice.id,
       }
-    }
+    );
+    expect(partiallyPaid.status).toBe("PARTIAL");
+    expect(toNumber(partiallyPaid.amountPaid)).toBeGreaterThan(0);
+    const remainingDue = toNumber(partiallyPaid.amountDue);
+    expect(remainingDue).toBeGreaterThan(0);
+
+    await trpcMutation(page, "payments.recordPayment", {
+      invoiceId: invoice.id,
+      amount: remainingDue,
+      paymentMethod: "ACH",
+      referenceNumber: `GF-004-P2-${Date.now()}`,
+    });
+
+    const paidInvoice = await trpcQuery<InvoiceRecord>(
+      page,
+      "invoices.getById",
+      {
+        id: invoice.id,
+      }
+    );
+    expect(paidInvoice.status).toBe("PAID");
+    expect(toNumber(paidInvoice.amountDue)).toBeLessThanOrEqual(0.01);
+
+    const history = await trpcQuery<InvoicePaymentHistory>(
+      page,
+      "payments.getInvoicePaymentHistory",
+      { invoiceId: invoice.id }
+    );
+    expect(history.length).toBeGreaterThanOrEqual(2);
+    expect(
+      history.every(entry => typeof entry.paymentNumber === "string")
+    ).toBe(true);
+
+    await page.goto("/accounting/invoices", { waitUntil: "networkidle" });
+    const invoiceSurface = page
+      .locator('[data-testid="invoices-table"]')
+      .or(page.getByRole("heading", { name: /invoice/i }).first());
+    await expect(invoiceSurface.first()).toBeVisible({ timeout: 15000 });
   });
 });

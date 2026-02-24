@@ -173,8 +173,9 @@ export const clientLedgerRouter = router({
             eq(orders.clientId, input.clientId),
             eq(orders.orderType, "SALE"),
             isNull(orders.deletedAt),
-            // Only include confirmed/completed orders
-            sql`${orders.saleStatus} IN ('CONFIRMED', 'INVOICED', 'PAID', 'PARTIAL', 'SHIPPED', 'DELIVERED')`
+            // saleStatus tracks payment lifecycle; include all non-cancelled SALE orders
+            // to preserve order-to-cash traceability in the client ledger.
+            sql`(${orders.saleStatus} IS NULL OR ${orders.saleStatus} != 'CANCELLED')`
           )
         );
 

@@ -608,7 +608,7 @@ export const pickPackRouter = router({
           message: "Database not available",
         });
 
-      const { orders, orderBags, orderItemBags } =
+      const { orders, orderBags, orderItemBags, orderLineItems } =
         await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
 
@@ -623,8 +623,18 @@ export const pickPackRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
-      const items = (order.items as Array<{ id?: number }>) || [];
-      const itemIds = items.map((item, index) => item.id || index);
+      // Prefer persisted line-item IDs where available.
+      const lineItemRows = await db
+        .select({ id: orderLineItems.id })
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, input.orderId));
+      const lineItemIds = lineItemRows.map(row => row.id);
+
+      // Backward compatibility for legacy orders that only persisted JSON items.
+      const fallbackItemIds = normalizeOrderItems(order.items)
+        .map((item, index) => item.id ?? index)
+        .filter((itemId): itemId is number => Number.isInteger(itemId));
+      const itemIds = lineItemIds.length > 0 ? lineItemIds : fallbackItemIds;
 
       // TER-298: Use authenticated actor ID for all write operations
       const actorId = getAuthenticatedUserId(ctx);
@@ -729,7 +739,7 @@ export const pickPackRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
-      const items = (order.items as Array<{ id?: number }>) || [];
+      const items = normalizeOrderItems(order.items);
       const totalItemCount = items.length;
 
       // Count packed items (TER-297: exclude soft-deleted assignments)

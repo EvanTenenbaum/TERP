@@ -49,4 +49,24 @@ describe("usePowersheetSelection", () => {
     });
     expect(result.current.selectedRowIds).toEqual([]);
   });
+
+  it("reconciles selection after row deletion by retaining only valid row ids", () => {
+    const { result } = renderHook(() => usePowersheetSelection<string>());
+
+    act(() => {
+      result.current.setSelection(["row-1", "row-2", "row-3"]);
+    });
+    expect(result.current.selectedRowIds).toEqual(["row-1", "row-2", "row-3"]);
+
+    const remainingRows = ["row-2"];
+    act(() => {
+      const reconciled = result.current.selectedRowIds.filter(id =>
+        remainingRows.includes(id)
+      );
+      result.current.setSelection(reconciled);
+    });
+
+    expect(result.current.selectedRowIds).toEqual(["row-2"]);
+    expect(result.current.selectedCount).toBe(1);
+  });
 });

@@ -6,13 +6,14 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Sidebar } from "./Sidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 let mockLocation = "/";
 const mockSetLocation = vi.fn();
 const mockTogglePin = vi.fn();
+let mockSpreadsheetEnabled = true;
 
 vi.mock("wouter", () => ({
   useLocation: () => [mockLocation, mockSetLocation],
@@ -37,10 +38,11 @@ vi.mock("@/hooks/useFeatureFlag", () => ({
     error: null,
   }),
   useFeatureFlags: () => ({
-    flags: { "spreadsheet-view": true },
+    flags: { "spreadsheet-view": mockSpreadsheetEnabled },
     isLoading: false,
     error: null,
-    isEnabled: (key: string) => key === "spreadsheet-view",
+    isEnabled: (key: string) =>
+      key === "spreadsheet-view" && mockSpreadsheetEnabled,
     isModuleEnabled: () => true,
     refetch: vi.fn(),
   }),
@@ -74,6 +76,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
 
 beforeEach(() => {
   mockLocation = "/";
+  mockSpreadsheetEnabled = true;
   mockSetLocation.mockClear();
   mockTogglePin.mockClear();
 });
@@ -129,6 +132,28 @@ describe("AppSidebar navigation", () => {
     expect(salesLink).toHaveAttribute("aria-current", "page");
   });
 
+  it("treats /direct-intake and /receiving as the same active nav destination", () => {
+    mockLocation = "/direct-intake";
+    const { rerender } = render(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    const receivingLink = screen.getByRole("link", {
+      name: /Receive inventory into the system/i,
+    });
+    expect(receivingLink).toHaveAttribute("aria-current", "page");
+
+    mockLocation = "/receiving";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+    expect(receivingLink).toHaveAttribute("aria-current", "page");
+  });
+
   it("shows user actions", () => {
     render(
       <ThemeProvider>
@@ -137,5 +162,17 @@ describe("AppSidebar navigation", () => {
     );
 
     expect(screen.getByRole("button", { name: /Logout/i })).toBeInTheDocument();
+  });
+
+  it("hides feature-flagged routes from quicklink customization when disabled", () => {
+    mockSpreadsheetEnabled = false;
+    render(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Customize/i }));
+    expect(screen.queryByText("Spreadsheet View")).not.toBeInTheDocument();
   });
 });

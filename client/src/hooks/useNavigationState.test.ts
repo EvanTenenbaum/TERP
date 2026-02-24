@@ -181,5 +181,21 @@ describe("useNavigationState", () => {
       expect(result.current.pinnedPaths).toEqual(["/", "/orders/create"]);
       expect(result.current.isGroupCollapsed("sales")).toBe(false);
     });
+
+    it("isolates pinned quicklinks per scope key", () => {
+      const { result: userA } = renderHook(() =>
+        useNavigationState({ scopeKey: "user:A" })
+      );
+      const { result: userB } = renderHook(() =>
+        useNavigationState({ scopeKey: "user:B" })
+      );
+
+      act(() => {
+        userA.current.togglePin("/receiving");
+      });
+
+      expect(userA.current.isPinned("/receiving")).toBe(true);
+      expect(userB.current.isPinned("/receiving")).toBe(false);
+    });
   });
 });

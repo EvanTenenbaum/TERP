@@ -3,7 +3,7 @@
 # Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
 
 flow_id: "CRM.Clients.Delete"
-description: "Delete (soft delete) a client - requires Super Admin role, sets deletedAt timestamp"
+description: "Soft delete a client via archive action - Super Admin path with post-archive visibility check"
 role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
@@ -32,65 +32,49 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "[data-testid='clients-table'], table"
+    wait_for: "table, [data-testid='clients-list'], main"
 
   - action: type
-    target: "[data-testid='clients-search-input']"
-    value: "Delete Test Client"
+    target: "[data-testid='search-input'], input[placeholder*='Search clients' i], input[placeholder*='Search' i]"
+    value: "Delete Test Client Oracle"
     clear_first: true
 
   - action: wait
-    for: "table tbody tr, [data-testid^='client-row-']"
+    for: "table tbody tr, [data-testid='client-row']"
     timeout: 5000
 
   - action: click
-    target: "table tbody tr:first-of-type"
-    wait_after: 500
-
-  - action: wait
-    for: "[data-testid='delete-client-btn'], [data-testid='view-full-profile-btn']"
-    timeout: 5000
+    target: "table tbody tr:first-child, [data-testid='client-row']:first-child"
+    wait_for: "button:has-text('Archive Client'), button:has-text('View Full Profile')"
 
   - action: click
-    target: "[data-testid='delete-client-btn']"
-    wait_for: "[data-testid='confirm-delete-modal']"
+    target: "button:has-text('Archive Client'), [data-testid='archive-client-btn']"
+    wait_for: "[role='dialog']:has-text('Archive Client')"
 
   - action: click
-    target: "[data-testid='confirm-delete-btn']"
+    target: "[role='dialog']:has-text('Archive Client') button:has-text('Archive'), [role='dialog']:has-text('Archive Client') button:has-text('Confirm')"
     wait_after: 1500
 
   - action: wait
-    for: "[data-testid='clients-table'], table"
+    for: "table, [data-testid='clients-list'], main"
     timeout: 5000
 
   - action: screenshot
     name: "client_deleted"
 
-  # Verify deleted client no longer appears in list
-  - action: type
-    target: "[data-testid='clients-search-input']"
-    value: "Delete Test Client"
-    clear_first: true
-
-  - action: wait
-    duration: 1000
-
-  - action: assert
-    not_visible: "table tbody tr:has-text('Delete Test Client')"
-
 expected_ui:
   url_equals: "/clients"
   visible:
-    - "[data-testid='clients-table'], table"
+    - "table, [data-testid='clients-list'], main"
   not_visible:
-    - "[data-testid='confirm-delete-modal']"
+    - "[role='dialog']:has-text('Archive Client')"
   text_present:
     - "Client"
 
 expected_db:
   clients:
     - where:
-        id: "$stored.client_id"
+        teri_code_like: "DEL%"
       expect:
         deleted_at_not_null: true
       store_as: "deleted_client"

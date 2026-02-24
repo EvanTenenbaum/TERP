@@ -93,7 +93,7 @@ async function generatePaymentNumber(): Promise<string> {
     .select({ count: sql<number>`COUNT(*)` })
     .from(payments)
     .where(
-      sql`YEAR(payment_date) = ${year} AND MONTH(payment_date) = ${today.getMonth() + 1}`
+      sql`YEAR(${payments.paymentDate}) = ${year} AND MONTH(${payments.paymentDate}) = ${today.getMonth() + 1}`
     );
 
   const count = Number(result[0]?.count || 0) + 1;
@@ -428,6 +428,14 @@ export const paymentsRouter = router({
         if (error instanceof TRPCError) {
           throw error;
         }
+        logger.error({
+          msg: "[Payments] recordPayment transaction failed",
+          invoiceId: input.invoiceId,
+          amount: input.amount,
+          paymentMethod: input.paymentMethod,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         captureException(
           error instanceof Error ? error : new Error(String(error)),
           {
@@ -440,7 +448,12 @@ export const paymentsRouter = router({
         );
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Payment recording failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          message:
+            process.env.NODE_ENV === "production"
+              ? "Payment recording failed - transaction rolled back"
+              : `Payment recording failed - transaction rolled back: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
           cause: error,
         });
       }
@@ -451,7 +464,10 @@ export const paymentsRouter = router({
         await import("../services/clientBalanceService");
       await syncClientBalance(txResult.customerId);
 
-      return txResult;
+      return {
+        success: true as const,
+        ...txResult,
+      };
     }),
 
   /**

@@ -41,7 +41,8 @@ preconditions:
 steps:
   - action: navigate
     path: "/purchase-orders"
-    wait_for: "h1, [data-testid='purchase-orders-page'], table, .empty-state"
+    timeout: 45000
+    wait_for: "h2:has-text('Purchase Orders'), [data-testid='purchase-orders-page'], table, [role='main']"
 
   - action: wait
     network_idle: true

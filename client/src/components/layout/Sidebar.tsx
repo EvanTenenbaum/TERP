@@ -16,10 +16,8 @@ import {
 import { cn } from "@/lib/utils";
 import { APP_TITLE } from "@/const";
 import {
-  buildNavigationGroups,
-  buildQuickLinks,
+  buildNavigationAccessModel,
   defaultQuickLinkPaths,
-  quickLinkCandidates,
   type NavigationGroupKey,
 } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
@@ -72,19 +70,18 @@ export const Sidebar = React.memo(function Sidebar({
     defaultPinnedPaths: [...defaultQuickLinkPaths],
   });
 
-  const groupedNavigation = useMemo(
+  const navigationAccessModel = useMemo(
     () =>
-      buildNavigationGroups({
+      buildNavigationAccessModel({
         flags,
         flagsLoading: featureFlagsLoading,
+        pinnedPaths,
+        maxQuickLinks: 4,
       }),
-    [featureFlagsLoading, flags]
+    [featureFlagsLoading, flags, pinnedPaths]
   );
-
-  const quickLinks = useMemo(
-    () => buildQuickLinks({ pinnedPaths, maxLinks: 4 }),
-    [pinnedPaths]
-  );
+  const groupedNavigation = navigationAccessModel.groups;
+  const quickLinks = navigationAccessModel.quickLinks;
 
   const normalizePath = useCallback((path: string) => {
     if (path === "/direct-intake") {
@@ -228,7 +225,7 @@ export const Sidebar = React.memo(function Sidebar({
                 Pin up to 4 quick actions.
               </p>
               <div className="grid grid-cols-1 gap-1">
-                {quickLinkCandidates.map(link => {
+                {navigationAccessModel.quickLinkCandidates.map(link => {
                   const Icon = link.icon;
                   const pinned = isPinned(link.path);
                   return (

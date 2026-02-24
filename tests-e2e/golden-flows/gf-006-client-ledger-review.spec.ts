@@ -26,23 +26,10 @@ test.describe("Golden Flow: GF-006 Client Ledger Review", (): void => {
       .or(page.locator('h2:has-text("Client Ledger")'));
     await expect(ledgerHeader.first()).toBeVisible({ timeout: 10000 });
 
-    // Verify ledger tools exist (filter + export)
-    const filterControl = page
-      .locator('[data-testid="ledger-filter"]')
-      .or(page.getByText("Filters"));
-    const exportButton = page
-      .locator('[data-testid="ledger-export"]')
-      .or(page.locator('button:has-text("Export")'));
-
-    // At least one of filter or export must be present
-    const hasFilter = await filterControl
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasExport = await exportButton
-      .first()
-      .isVisible()
-      .catch(() => false);
-    expect(hasFilter || hasExport).toBeTruthy();
+    // Verify at least one ledger tool entry-point exists.
+    const toolCandidates = page.locator(
+      '[data-testid="ledger-filter"], [data-testid="ledger-export"], button:has-text("Export"), button:has-text("Filters")'
+    );
+    await expect(toolCandidates.first()).toBeVisible({ timeout: 10000 });
   });
 });

@@ -58,6 +58,13 @@ export interface QuickLinkItem {
   ariaLabel?: string;
 }
 
+export interface NavigationAccessModel {
+  groups: NavigationGroup[];
+  commandNavigationItems: NavigationItem[];
+  quickLinks: QuickLinkItem[];
+  quickLinkCandidates: QuickLinkItem[];
+}
+
 export const navigationGroups: Array<{
   key: NavigationGroupKey;
   label: string;
@@ -334,18 +341,20 @@ export const defaultQuickLinkPaths: readonly string[] = [
 export function buildQuickLinks(options?: {
   pinnedPaths?: string[];
   maxLinks?: number;
+  candidates?: readonly QuickLinkItem[];
 }): QuickLinkItem[] {
   const pinnedPaths = options?.pinnedPaths ?? [];
   const maxLinks = options?.maxLinks ?? 4;
+  const candidates = options?.candidates ?? quickLinkCandidates;
   const candidateMap = new Map(
-    quickLinkCandidates.map(link => [link.path, link] as const)
+    candidates.map(link => [link.path, link] as const)
   );
 
   const preferredPaths =
     pinnedPaths.length > 0 ? pinnedPaths : [...defaultQuickLinkPaths];
   const fallbackPaths = [
     ...defaultQuickLinkPaths,
-    ...quickLinkCandidates.map(link => link.path),
+    ...candidates.map(link => link.path),
   ];
 
   const selectedPaths: string[] = [];
@@ -420,4 +429,38 @@ export function buildNavigationGroups(options?: {
       loadingFeatureItems,
     };
   });
+}
+
+const QUICKLINK_ALWAYS_ALLOWED_PATHS = ["/", "/orders/create", "/clients"];
+
+export function buildNavigationAccessModel(options?: {
+  flags?: Record<string, boolean>;
+  flagsLoading?: boolean;
+  pinnedPaths?: string[];
+  maxQuickLinks?: number;
+}): NavigationAccessModel {
+  const groups = buildNavigationGroups({
+    flags: options?.flags,
+    flagsLoading: options?.flagsLoading,
+  });
+  const commandNavigationItems = groups.flatMap(group => group.items);
+  const accessiblePaths = new Set(
+    commandNavigationItems
+      .map(item => item.path)
+      .concat(QUICKLINK_ALWAYS_ALLOWED_PATHS)
+  );
+  const filteredQuickLinkCandidates = quickLinkCandidates.filter(link =>
+    accessiblePaths.has(link.path)
+  );
+
+  return {
+    groups,
+    commandNavigationItems,
+    quickLinks: buildQuickLinks({
+      pinnedPaths: options?.pinnedPaths,
+      maxLinks: options?.maxQuickLinks ?? 4,
+      candidates: filteredQuickLinkCandidates,
+    }),
+    quickLinkCandidates: filteredQuickLinkCandidates,
+  };
 }

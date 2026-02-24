@@ -11,7 +11,14 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+  type KeyboardEvent,
+} from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -23,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SupplierCombobox } from "@/components/ui/supplier-combobox";
 import { ProductCombobox } from "@/components/ui/product-combobox";
 import {
@@ -53,6 +61,7 @@ import { toast } from "sonner";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -394,7 +403,29 @@ export function PurchaseOrdersWorkSurface() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPOId, setSelectedPOId] = useState<number | null>(null);
   const [formData, setFormData] = useState<POFormData>(createEmptyForm());
+  const [bulkQuantityOrdered, setBulkQuantityOrdered] = useState("");
+  const [bulkUnitCost, setBulkUnitCost] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null); // WS-KB-001: Ref for Cmd+K focus
+  const poDraftRowsRef = useRef<HTMLDivElement>(null);
+  const poDraftSelection = usePowersheetSelection<string>();
+  const poDraftRowIds = useMemo(
+    () => formData.items.map(item => item.tempId),
+    [formData.items]
+  );
+  const selectedPoDraftRowSet = useMemo(
+    () => new Set(poDraftSelection.selectedRowIds),
+    [poDraftSelection.selectedRowIds]
+  );
+  const selectedPoDraftIndexes = useMemo(
+    () =>
+      poDraftRowIds
+        .map((rowId, index) => (selectedPoDraftRowSet.has(rowId) ? index : -1))
+        .filter(index => index >= 0),
+    [poDraftRowIds, selectedPoDraftRowSet]
+  );
+  const allPoDraftRowsSelected =
+    poDraftRowIds.length > 0 &&
+    poDraftSelection.selectedCount === poDraftRowIds.length;
 
   // Work Surface hooks
   const {
@@ -658,41 +689,200 @@ export function PurchaseOrdersWorkSurface() {
   const handleCancelCreate = () => {
     setIsCreateDialogOpen(false);
     setFormData(createEmptyForm());
+    poDraftSelection.clearSelection();
   };
 
+  const focusPoDraftCell = useCallback(
+    (
+      rowId: string,
+      field: "quantityOrdered" | "unitCost" = "quantityOrdered"
+    ) => {
+      const root = poDraftRowsRef.current;
+      if (!root) {
+        return;
+      }
+      const selector = `[data-po-draft-row-id="${rowId}"][data-po-draft-field="${field}"]`;
+      const node = root.querySelector(selector);
+      if (node instanceof HTMLElement) {
+        node.focus();
+      }
+    },
+    []
+  );
+
   const handleAddItem = () => {
-    setFormData({
-      ...formData,
-      items: [
-        ...formData.items,
-        {
-          tempId: generateTempId(),
-          productId: "",
-          quantityOrdered: "",
-          unitCost: "",
-        },
-      ],
+    const newItem: LineItem = {
+      tempId: generateTempId(),
+      productId: "",
+      quantityOrdered: "",
+      unitCost: "",
+    };
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, newItem],
+    }));
+    poDraftSelection.setSelection([newItem.tempId]);
+    requestAnimationFrame(() => {
+      focusPoDraftCell(newItem.tempId);
     });
   };
 
   const handleRemoveItem = (index: number) => {
-    if (formData.items.length > 1) {
-      setFormData({
-        ...formData,
-        items: formData.items.filter((_, i) => i !== index),
-      });
-    }
+    setFormData(prev => {
+      if (prev.items.length <= 1) {
+        return prev;
+      }
+      return {
+        ...prev,
+        items: prev.items.filter((_, i) => i !== index),
+      };
+    });
+    poDraftSelection.clearSelection();
   };
+
+  const duplicateSelectedDraftRows = useCallback(() => {
+    if (selectedPoDraftIndexes.length === 0) {
+      return;
+    }
+    const duplicatedRows = selectedPoDraftIndexes.map(index => ({
+      ...formData.items[index],
+      tempId: generateTempId(),
+    }));
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, ...duplicatedRows],
+    }));
+    poDraftSelection.setSelection(duplicatedRows.map(row => row.tempId));
+    requestAnimationFrame(() => {
+      const firstRow = duplicatedRows[0];
+      if (firstRow) {
+        focusPoDraftCell(firstRow.tempId);
+      }
+    });
+  }, [
+    focusPoDraftCell,
+    formData.items,
+    poDraftSelection,
+    selectedPoDraftIndexes,
+  ]);
+
+  const deleteSelectedDraftRows = useCallback(() => {
+    if (selectedPoDraftRowSet.size === 0) {
+      return;
+    }
+    setFormData(prev => {
+      const remainingRows = prev.items.filter(
+        item => !selectedPoDraftRowSet.has(item.tempId)
+      );
+      if (remainingRows.length === 0) {
+        toast.error("Keep at least one line item in the draft");
+        return prev;
+      }
+      return {
+        ...prev,
+        items: remainingRows,
+      };
+    });
+    poDraftSelection.clearSelection();
+  }, [poDraftSelection, selectedPoDraftRowSet]);
 
   const handleItemChange = (
     index: number,
     field: keyof LineItem,
     value: string
   ) => {
-    const newItems = [...formData.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setFormData({ ...formData, items: newItems });
+    setFormData(prev => {
+      const nextItems = [...prev.items];
+      nextItems[index] = { ...nextItems[index], [field]: value };
+      return {
+        ...prev,
+        items: nextItems,
+      };
+    });
   };
+
+  const applyBulkFieldToSelectedRows = useCallback(
+    (
+      field: keyof Pick<LineItem, "quantityOrdered" | "unitCost">,
+      value: string
+    ) => {
+      if (selectedPoDraftRowSet.size === 0) {
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        items: prev.items.map(item =>
+          selectedPoDraftRowSet.has(item.tempId)
+            ? { ...item, [field]: value }
+            : item
+        ),
+      }));
+    },
+    [selectedPoDraftRowSet]
+  );
+
+  const handleApplyBulkQuantity = useCallback(() => {
+    const parsed = Number(bulkQuantityOrdered);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      toast.error("Bulk quantity must be greater than 0");
+      return;
+    }
+    applyBulkFieldToSelectedRows("quantityOrdered", String(parsed));
+  }, [applyBulkFieldToSelectedRows, bulkQuantityOrdered]);
+
+  const handleApplyBulkUnitCost = useCallback(() => {
+    const parsed = Number(bulkUnitCost);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error("Bulk unit cost cannot be negative");
+      return;
+    }
+    applyBulkFieldToSelectedRows("unitCost", String(parsed));
+  }, [applyBulkFieldToSelectedRows, bulkUnitCost]);
+
+  const handleDraftFieldKeyDown = useCallback(
+    (
+      event: KeyboardEvent<HTMLInputElement>,
+      rowIndex: number,
+      field: "quantityOrdered" | "unitCost"
+    ) => {
+      if (event.key === "Escape") {
+        (event.currentTarget as HTMLInputElement).blur();
+        return;
+      }
+
+      if (
+        event.key !== "Enter" &&
+        event.key !== "ArrowDown" &&
+        event.key !== "ArrowUp"
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      const direction = event.key === "ArrowUp" ? -1 : 1;
+      const targetIndex = rowIndex + direction;
+      const targetRow = formData.items[targetIndex];
+      if (!targetRow) {
+        return;
+      }
+      requestAnimationFrame(() => {
+        focusPoDraftCell(targetRow.tempId, field);
+      });
+    },
+    [focusPoDraftCell, formData.items]
+  );
+
+  useEffect(() => {
+    if (poDraftSelection.selectedCount === 0) {
+      return;
+    }
+    const validSelection = poDraftSelection.selectedRowIds.filter(rowId =>
+      poDraftRowIds.includes(rowId)
+    );
+    if (validSelection.length !== poDraftSelection.selectedCount) {
+      poDraftSelection.setSelection(validSelection);
+    }
+  }, [poDraftRowIds, poDraftSelection]);
 
   const handleUpdateStatus = (poId: number, status: string) => {
     updateStatus.mutate({ id: poId, status: status as POStatus });
@@ -892,9 +1082,82 @@ export function PurchaseOrdersWorkSurface() {
                   Add Item
                 </Button>
               </div>
-              <div className="space-y-2 rounded-md border p-3">
+              {poDraftSelection.selectedCount > 0 && (
+                <div className="rounded-lg border bg-muted/40 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {poDraftSelection.selectedCount} selected
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={duplicateSelectedDraftRows}
+                    >
+                      Duplicate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={deleteSelectedDraftRows}
+                    >
+                      Delete
+                    </Button>
+                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                      <Input
+                        value={bulkQuantityOrdered}
+                        onChange={event =>
+                          setBulkQuantityOrdered(event.target.value)
+                        }
+                        placeholder="Qty"
+                        className="h-8 w-24 text-right"
+                        inputMode="decimal"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleApplyBulkQuantity}
+                      >
+                        Apply Qty
+                      </Button>
+                      <Input
+                        value={bulkUnitCost}
+                        onChange={event => setBulkUnitCost(event.target.value)}
+                        placeholder="Unit Cost"
+                        className="h-8 w-24 text-right"
+                        inputMode="decimal"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleApplyBulkUnitCost}
+                      >
+                        Apply Cost
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div
+                ref={poDraftRowsRef}
+                className="space-y-2 rounded-md border p-3"
+              >
                 <div className="grid grid-cols-12 gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  <span className="col-span-6">Product</span>
+                  <span className="col-span-1">
+                    <Checkbox
+                      aria-label="Select all draft rows"
+                      checked={
+                        allPoDraftRowsSelected
+                          ? true
+                          : poDraftSelection.selectedCount > 0
+                            ? "indeterminate"
+                            : false
+                      }
+                      onCheckedChange={() =>
+                        poDraftSelection.toggleAll(poDraftRowIds)
+                      }
+                    />
+                  </span>
+                  <span className="col-span-5">Product</span>
                   <span className="col-span-2 text-right">Qty</span>
                   <span className="col-span-2 text-right">Unit Cost</span>
                   <span className="col-span-1 text-right">Total</span>
@@ -908,9 +1171,26 @@ export function PurchaseOrdersWorkSurface() {
                   return (
                     <div
                       key={item.tempId}
-                      className="grid grid-cols-12 gap-2 items-center"
+                      className={cn(
+                        "grid grid-cols-12 gap-2 items-center rounded px-1 py-1",
+                        selectedPoDraftRowSet.has(item.tempId) && "bg-muted/50"
+                      )}
                     >
-                      <div className="col-span-6">
+                      <div className="col-span-1">
+                        <Checkbox
+                          aria-label={`Select draft row ${index + 1}`}
+                          checked={selectedPoDraftRowSet.has(item.tempId)}
+                          onCheckedChange={checked => {
+                            if (
+                              (checked === true) !==
+                              poDraftSelection.isSelected(item.tempId)
+                            ) {
+                              poDraftSelection.toggleRow(item.tempId);
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-5">
                         <ProductCombobox
                           value={item.productId ? Number(item.productId) : null}
                           onValueChange={productId =>
@@ -934,12 +1214,21 @@ export function PurchaseOrdersWorkSurface() {
                         placeholder="0"
                         min="0.01"
                         step="0.01"
+                        data-po-draft-row-id={item.tempId}
+                        data-po-draft-field="quantityOrdered"
                         value={item.quantityOrdered}
                         onChange={e =>
                           handleItemChange(
                             index,
                             "quantityOrdered",
                             e.target.value
+                          )
+                        }
+                        onKeyDown={event =>
+                          handleDraftFieldKeyDown(
+                            event,
+                            index,
+                            "quantityOrdered"
                           )
                         }
                       />
@@ -949,9 +1238,14 @@ export function PurchaseOrdersWorkSurface() {
                         placeholder="0.00"
                         min="0"
                         step="0.01"
+                        data-po-draft-row-id={item.tempId}
+                        data-po-draft-field="unitCost"
                         value={item.unitCost}
                         onChange={e =>
                           handleItemChange(index, "unitCost", e.target.value)
+                        }
+                        onKeyDown={event =>
+                          handleDraftFieldKeyDown(event, index, "unitCost")
                         }
                       />
                       <div className="col-span-1 text-right text-sm font-medium">
@@ -972,6 +1266,15 @@ export function PurchaseOrdersWorkSurface() {
                     </div>
                   );
                 })}
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  {formData.items.length} line item
+                  {formData.items.length === 1 ? "" : "s"} in draft
+                </span>
+                <span className="font-medium text-foreground">
+                  Running total: {formatCurrency(createDraftTotal)}
+                </span>
               </div>
             </div>
 

@@ -56,6 +56,10 @@ import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import {
+  createDirectIntakeRemovalPlan,
+  submitRowsWithGuaranteedCleanup,
+} from "./directIntakeSelection";
+import {
   InspectorPanel,
   InspectorSection,
   InspectorField,
@@ -1603,11 +1607,23 @@ export function DirectIntakeWorkSurface() {
   const handleSubmitSelected = useCallback(async () => {
     if (selectedPendingRows.length === 0) return;
     setIsSubmitting(true);
-    for (const row of selectedPendingRows) {
-      await handleSubmitRow(row);
+    try {
+      await submitRowsWithGuaranteedCleanup(
+        selectedPendingRows,
+        handleSubmitRow,
+        () => {
+          setIsSubmitting(false);
+        }
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit selected intake rows";
+      setError(message);
+      toast.error(message);
     }
-    setIsSubmitting(false);
-  }, [handleSubmitRow, selectedPendingRows]);
+  }, [handleSubmitRow, selectedPendingRows, setError]);
 
   const handleDuplicateSelected = useCallback(() => {
     if (selectedPendingRows.length === 0) return;
@@ -1626,28 +1642,38 @@ export function DirectIntakeWorkSurface() {
   const handleRemoveSelected = useCallback(() => {
     if (selectedPendingRows.length === 0) return;
 
-    updateRows(prev => {
-      const pendingRowsBefore = prev.filter(row => row.status === "pending");
-      if (pendingRowsBefore.length <= selectedPendingRows.length) {
-        toast.error("Cannot remove all pending rows. Keep at least one row.");
-        return prev;
-      }
+    const removalPlan = createDirectIntakeRemovalPlan(
+      rows,
+      selectedPendingRows.map(row => row.id)
+    );
+    if (removalPlan.blocked) {
+      toast.error("Cannot remove all pending rows. Keep at least one row.");
+      return;
+    }
 
-      const selectedSet = new Set(selectedPendingRows.map(row => row.id));
-      return prev.filter(row => !selectedSet.has(row.id));
-    });
+    if (removalPlan.removedIds.length === 0) {
+      return;
+    }
+
+    updateRows(removalPlan.nextRows);
 
     updateRowMediaFilesById(prev => {
       const next = { ...prev };
-      for (const row of selectedPendingRows) {
-        delete next[row.id];
+      for (const rowId of removalPlan.removedIds) {
+        delete next[rowId];
       }
       return next;
     });
 
     rowSelection.clearSelection();
     setSelectedRowId(null);
-  }, [rowSelection, selectedPendingRows, updateRowMediaFilesById, updateRows]);
+  }, [
+    rowSelection,
+    rows,
+    selectedPendingRows,
+    updateRowMediaFilesById,
+    updateRows,
+  ]);
 
   // Render
   return (
@@ -1661,7 +1687,7 @@ export function DirectIntakeWorkSurface() {
           <div>
             <h2 className="linear-workspace-title flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Direct Intake
+              Receiving
             </h2>
             <p className="linear-workspace-description">
               Keep key fields front and center, then use row details for
