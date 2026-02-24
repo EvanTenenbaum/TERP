@@ -27,7 +27,7 @@ import type {
   GridApi,
   GridReadyEvent,
   ICellRendererParams,
-  RowSelectedEvent,
+  SelectionChangedEvent,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { z } from "zod";
@@ -54,6 +54,7 @@ import {
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
+import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -706,11 +707,13 @@ export function DirectIntakeWorkSurface() {
     Array.from({ length: INITIAL_ROW_COUNT }, () => createEmptyRow())
   );
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const rowSelection = usePowersheetSelection<string>();
   const [rowMediaFilesById, setRowMediaFilesById] = useState<
     Record<string, File[]>
   >({});
   const rowsRef = useRef<IntakeGridRow[]>(rows);
-  const rowMediaFilesByIdRef = useRef<Record<string, File[]>>(rowMediaFilesById);
+  const rowMediaFilesByIdRef =
+    useRef<Record<string, File[]>>(rowMediaFilesById);
   const updateRows = useCallback((updater: SetStateAction<IntakeGridRow[]>) => {
     setRows(prevRows => {
       const nextRows =
@@ -726,9 +729,11 @@ export function DirectIntakeWorkSurface() {
       setRowMediaFilesById(prev => {
         const nextFiles =
           typeof updater === "function"
-            ? (updater as (
-                value: Record<string, File[]>
-              ) => Record<string, File[]>)(prev)
+            ? (
+                updater as (
+                  value: Record<string, File[]>
+                ) => Record<string, File[]>
+              )(prev)
             : updater;
         rowMediaFilesByIdRef.current = nextFiles;
         return nextFiles;
@@ -776,6 +781,14 @@ export function DirectIntakeWorkSurface() {
     setSelectedRowId(firstPending?.id ?? rows[0].id);
   }, [rows, selectedRowId]);
 
+  // Keep powersheet selection in sync with the currently focused row so
+  // top controls (Submit/Duplicate/Remove Selected) are always actionable.
+  useEffect(() => {
+    if (!selectedRowId) return;
+    if (rowSelection.selectedCount > 0) return;
+    rowSelection.setSelection([selectedRowId]);
+  }, [rowSelection, selectedRowId]);
+
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: true, // Let AG Grid handle Tab navigation
@@ -794,6 +807,7 @@ export function DirectIntakeWorkSurface() {
     onCancel: () => {
       // Clear selection on Escape
       setSelectedRowId(null);
+      rowSelection.clearSelection();
       if (inspector.isOpen) {
         inspector.close();
       }
@@ -1129,29 +1143,33 @@ export function DirectIntakeWorkSurface() {
     [vendors, locations, products, setSaving, setSaved, updateRows]
   );
 
-  const handleRowSelected = useCallback(
-    (event: RowSelectedEvent<IntakeGridRow>) => {
-      if (event.node.isSelected()) {
-        setSelectedRowId(event.data?.id ?? null);
-      }
+  const handleSelectionChanged = useCallback(
+    (event: SelectionChangedEvent<IntakeGridRow>) => {
+      const selectedRows = event.api.getSelectedRows();
+      const selectedIds = selectedRows.map(row => row.id);
+      rowSelection.setSelection(selectedIds);
+      setSelectedRowId(selectedIds[0] ?? null);
     },
-    []
+    [rowSelection]
   );
 
   const handleAddRow = useCallback(() => {
     const newRow = createEmptyRow(defaultLocationOverrides);
     updateRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
+    rowSelection.setSelection([newRow.id]);
 
     // Focus the new row
     setTimeout(() => {
       if (gridApiRef.current) {
         const rowIndex = rows.length;
         gridApiRef.current.ensureIndexVisible(rowIndex);
+        const rowNode = gridApiRef.current.getDisplayedRowAtIndex(rowIndex);
+        rowNode?.setSelected(true);
         gridApiRef.current.setFocusedCell(rowIndex, "vendorName");
       }
     }, 50);
-  }, [rows.length, defaultLocationOverrides, updateRows]);
+  }, [rows.length, defaultLocationOverrides, rowSelection, updateRows]);
 
   const handleRemoveRow = useCallback(
     (rowId: string) => {
@@ -1174,8 +1192,13 @@ export function DirectIntakeWorkSurface() {
       if (selectedRowId === rowId) {
         setSelectedRowId(null);
       }
+      if (rowSelection.isSelected(rowId)) {
+        rowSelection.setSelection(
+          rowSelection.selectedRowIds.filter(selectedId => selectedId !== rowId)
+        );
+      }
     },
-    [selectedRowId, updateRows, updateRowMediaFilesById]
+    [rowSelection, selectedRowId, updateRows, updateRowMediaFilesById]
   );
 
   const uploadMediaFiles = useCallback(
@@ -1513,9 +1536,7 @@ export function DirectIntakeWorkSurface() {
                   ...(typeof nextVendorName === "string"
                     ? { vendorName: nextVendorName }
                     : {}),
-                  ...(shouldBackfillBrand
-                    ? { brandName: nextVendorName }
-                    : {}),
+                  ...(shouldBackfillBrand ? { brandName: nextVendorName } : {}),
                   status: r.status === "error" ? "pending" : r.status,
                   errorMessage:
                     r.status === "error" ? undefined : r.errorMessage,
@@ -1552,10 +1573,81 @@ export function DirectIntakeWorkSurface() {
     };
   }, [rows]);
 
+  useEffect(() => {
+    if (rowSelection.selectedCount === 0) {
+      return;
+    }
+    const validSelection = rowSelection.selectedRowIds.filter(selectedId =>
+      rows.some(row => row.id === selectedId)
+    );
+    if (validSelection.length !== rowSelection.selectedCount) {
+      rowSelection.setSelection(validSelection);
+    }
+  }, [rowSelection, rows]);
+
   const pendingCount = rows.filter(r => r.status === "pending").length;
   const submittedCount = rows.filter(r => r.status === "submitted").length;
   const errorCount = rows.filter(r => r.status === "error").length;
-  const selectedRowEditable = !!selectedRow && selectedRow.status !== "submitted";
+  const selectedRows = useMemo(
+    () => rows.filter(row => rowSelection.selectedRowIds.includes(row.id)),
+    [rowSelection.selectedRowIds, rows]
+  );
+  const selectedPendingRows = useMemo(
+    () => selectedRows.filter(row => row.status === "pending"),
+    [selectedRows]
+  );
+  const selectedCount = rowSelection.selectedCount;
+  const selectedRowEditable =
+    !!selectedRow && selectedRow.status !== "submitted";
+
+  const handleSubmitSelected = useCallback(async () => {
+    if (selectedPendingRows.length === 0) return;
+    setIsSubmitting(true);
+    for (const row of selectedPendingRows) {
+      await handleSubmitRow(row);
+    }
+    setIsSubmitting(false);
+  }, [handleSubmitRow, selectedPendingRows]);
+
+  const handleDuplicateSelected = useCallback(() => {
+    if (selectedPendingRows.length === 0) return;
+    const timestamp = Date.now();
+    const duplicates = selectedPendingRows.map((row, index) => ({
+      ...row,
+      id: `new-${timestamp}-${index}-${Math.random().toString(36).slice(2, 9)}`,
+      status: "pending" as const,
+      errorMessage: undefined,
+    }));
+    updateRows(prev => [...prev, ...duplicates]);
+    rowSelection.setSelection(duplicates.map(row => row.id));
+    setSelectedRowId(duplicates[0]?.id ?? null);
+  }, [rowSelection, selectedPendingRows, updateRows]);
+
+  const handleRemoveSelected = useCallback(() => {
+    if (selectedPendingRows.length === 0) return;
+
+    updateRows(prev => {
+      const pendingRowsBefore = prev.filter(row => row.status === "pending");
+      if (pendingRowsBefore.length <= selectedPendingRows.length) {
+        toast.error("Cannot remove all pending rows. Keep at least one row.");
+        return prev;
+      }
+
+      const selectedSet = new Set(selectedPendingRows.map(row => row.id));
+      return prev.filter(row => !selectedSet.has(row.id));
+    });
+
+    updateRowMediaFilesById(prev => {
+      const next = { ...prev };
+      for (const row of selectedPendingRows) {
+        delete next[row.id];
+      }
+      return next;
+    });
+
+    rowSelection.clearSelection();
+    setSelectedRowId(null);
+  }, [rowSelection, selectedPendingRows, updateRowMediaFilesById, updateRows]);
 
   // Render
   return (
@@ -1572,7 +1664,8 @@ export function DirectIntakeWorkSurface() {
               Direct Intake
             </h2>
             <p className="linear-workspace-description">
-              Keep key fields front and center, then use row details for everything else.
+              Keep key fields front and center, then use row details for
+              everything else.
             </p>
           </div>
         </div>
@@ -1600,17 +1693,26 @@ export function DirectIntakeWorkSurface() {
         </div>
         <div className="linear-workspace-meta-item">
           <span className="linear-workspace-meta-label">Errors</span>
-          <span className={cn("linear-workspace-meta-value", errorCount > 0 && "text-red-600")}>
+          <span
+            className={cn(
+              "linear-workspace-meta-value",
+              errorCount > 0 && "text-red-600"
+            )}
+          >
             {errorCount}
           </span>
         </div>
         <div className="linear-workspace-meta-item">
           <span className="linear-workspace-meta-label">Qty</span>
-          <span className="linear-workspace-meta-value">{summary.totalQty}</span>
+          <span className="linear-workspace-meta-value">
+            {summary.totalQty}
+          </span>
         </div>
         <div className="linear-workspace-meta-item">
           <span className="linear-workspace-meta-label">Value</span>
-          <span className="linear-workspace-meta-value">${summary.totalValue.toFixed(2)}</span>
+          <span className="linear-workspace-meta-value">
+            ${summary.totalValue.toFixed(2)}
+          </span>
         </div>
       </div>
 
@@ -1658,7 +1760,9 @@ export function DirectIntakeWorkSurface() {
             </datalist>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Product / Strain</Label>
+            <Label className="text-xs text-muted-foreground">
+              Product / Strain
+            </Label>
             <Input
               list="direct-intake-top-products"
               value={selectedRow?.item ?? ""}
@@ -1708,7 +1812,9 @@ export function DirectIntakeWorkSurface() {
               value={selectedRow?.qty ?? ""}
               onChange={e => {
                 const val = Number(e.target.value);
-                handleUpdateSelectedRow({ qty: Number.isFinite(val) ? val : 0 });
+                handleUpdateSelectedRow({
+                  qty: Number.isFinite(val) ? val : 0,
+                });
               }}
               disabled={!selectedRowEditable}
               className="h-9"
@@ -1723,7 +1829,9 @@ export function DirectIntakeWorkSurface() {
               value={selectedRow?.cogs ?? ""}
               onChange={e => {
                 const val = Number(e.target.value);
-                handleUpdateSelectedRow({ cogs: Number.isFinite(val) ? val : 0 });
+                handleUpdateSelectedRow({
+                  cogs: Number.isFinite(val) ? val : 0,
+                });
               }}
               disabled={!selectedRowEditable}
               className="h-9"
@@ -1758,7 +1866,9 @@ export function DirectIntakeWorkSurface() {
           </div>
         </div>
         {selectedRow?.status === "error" && selectedRow.errorMessage && (
-          <p className="mt-2 text-xs font-medium text-red-600">{selectedRow.errorMessage}</p>
+          <p className="mt-2 text-xs font-medium text-red-600">
+            {selectedRow.errorMessage}
+          </p>
         )}
       </div>
 
@@ -1781,27 +1891,43 @@ export function DirectIntakeWorkSurface() {
             <Plus className="mr-1 h-4 w-4" />
             +5 Rows
           </Button>
-          {selectedRow?.status === "pending" && (
+          {selectedPendingRows.length > 0 && (
             <Button
               size="sm"
               variant="outline"
+              aria-label="Submit Selected"
               onClick={() => {
-                void handleSubmitRow(selectedRow);
+                void handleSubmitSelected();
               }}
+              disabled={isSubmitting}
             >
               <Send className="mr-1 h-4 w-4" />
-              Submit Selected
+              Submit Selected ({selectedPendingRows.length})
             </Button>
           )}
-          {selectedRowId && selectedRow?.status === "pending" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleRemoveRow(selectedRowId)}
-            >
-              <Trash2 className="mr-1 h-4 w-4" />
-              Remove
-            </Button>
+          {selectedPendingRows.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDuplicateSelected}
+              >
+                Duplicate Selected ({selectedPendingRows.length})
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveSelected}
+              >
+                <Trash2 className="mr-1 h-4 w-4" />
+                Remove Selected
+              </Button>
+            </>
+          )}
+          {selectedCount > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {selectedCount} row{selectedCount === 1 ? "" : "s"} selected
+            </span>
           )}
           <Button
             size="sm"
@@ -1869,10 +1995,15 @@ export function DirectIntakeWorkSurface() {
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
                 animateRows
-                rowSelection="single"
+                rowSelection={{
+                  mode: "multiRow",
+                  checkboxes: false,
+                  headerCheckbox: false,
+                  enableClickSelection: true,
+                }}
                 onGridReady={handleGridReady}
                 onCellValueChanged={handleCellValueChanged}
-                onRowSelected={handleRowSelected}
+                onSelectionChanged={handleSelectionChanged}
                 getRowId={params => params.data.id}
                 rowClassRules={{
                   "bg-green-50": params => params.data?.status === "submitted",

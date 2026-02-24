@@ -6,13 +6,12 @@ if (!connectionString) {
 }
 
 export default defineConfig({
-  // Use a single canonical schema source for test DB sync to avoid duplicate
-  // table/index definitions split across legacy schema modules.
-  schema: ["./drizzle/schema.ts"],
+  // Keep test DB sync lean while including required canary schemas used by
+  // strict drift/fingerprint gates.
+  schema: ["./drizzle/schema.ts", "./drizzle/schema-cron.ts"],
   out: "./drizzle",
   dialect: "mysql",
   dbCredentials: {
     url: connectionString,
   },
 });
-

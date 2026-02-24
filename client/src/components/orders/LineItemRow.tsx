@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { COGSInput } from "./COGSInput";
 import { MarginInput } from "./MarginInput";
 import {
@@ -38,6 +39,8 @@ interface LineItemRowProps {
   item: LineItem;
   index: number;
   clientId: number | null;
+  selected?: boolean;
+  onToggleSelected?: (selected: boolean) => void;
   onUpdate: (updates: Partial<LineItem>) => void;
   onRemove: () => void;
   onChangeLot?: () => void; // WSQA-002: Callback for lot selection
@@ -47,6 +50,8 @@ export const LineItemRow = memo(function LineItemRow({
   item,
   index,
   clientId: _clientId,
+  selected = false,
+  onToggleSelected,
   onUpdate,
   onRemove,
   onChangeLot, // WSQA-002: Flexible lot selection
@@ -84,19 +89,33 @@ export const LineItemRow = memo(function LineItemRow({
 
   // FEAT-003: Handle keyboard navigation for quick entry
   const handleQuantityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const focusQuantityInSiblingRow = (
+      sibling: Element | null | undefined
+    ): void => {
+      if (!sibling) return;
+      const trigger = sibling.querySelector(
+        "[data-line-item-quantity-trigger]"
+      );
+      if (trigger instanceof HTMLElement) {
+        trigger.focus();
+      }
+    };
+
     if (e.key === "Enter") {
       e.preventDefault();
       handleQuantityBlur();
       // Focus next editable quantity field for quick entry
       const currentRow = (e.target as HTMLElement).closest("tr");
       const nextRow = currentRow?.nextElementSibling;
-      if (nextRow) {
-        // Click the next row's quantity cell to enable editing
-        const nextQtyCell = nextRow.querySelector(
-          "td:nth-child(3) > div"
-        ) as HTMLElement;
-        nextQtyCell?.click();
-      }
+      focusQuantityInSiblingRow(nextRow);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentRow = (e.target as HTMLElement).closest("tr");
+      focusQuantityInSiblingRow(currentRow?.nextElementSibling);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentRow = (e.target as HTMLElement).closest("tr");
+      focusQuantityInSiblingRow(currentRow?.previousElementSibling);
     } else if (e.key === "Escape") {
       setQtyInput(item.quantity.toString());
       setIsEditingQty(false);
@@ -146,7 +165,19 @@ export const LineItemRow = memo(function LineItemRow({
   const hasNegativeMargin = item.marginPercent < 0;
 
   return (
-    <TableRow>
+    <TableRow
+      data-line-item-row-index={index}
+      className={selected ? "bg-muted/50" : undefined}
+    >
+      {/* Selection */}
+      <TableCell className="w-[40px]">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={checked => onToggleSelected?.(checked === true)}
+          aria-label={`Select line item ${index + 1}`}
+        />
+      </TableCell>
+
       {/* Index */}
       <TableCell className="font-medium text-muted-foreground">
         {index + 1}
@@ -188,9 +219,17 @@ export const LineItemRow = memo(function LineItemRow({
           </div>
         ) : (
           <div
+            tabIndex={0}
             className="cursor-pointer hover:bg-muted px-2 py-1 rounded"
             onClick={() => setIsEditingQty(true)}
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setIsEditingQty(true);
+              }
+            }}
             title="Click to edit quantity"
+            data-line-item-quantity-trigger
           >
             {item.quantity}
           </div>

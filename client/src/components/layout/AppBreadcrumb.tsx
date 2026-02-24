@@ -33,9 +33,10 @@ const customRouteNames: Record<string, string> = {
   edit: "Edit",
   new: "New",
   dashboard: "Dashboard",
+  receiving: "Receiving",
+  "direct-intake": "Receiving",
   rules: "Rules",
   profiles: "Profiles",
-  orders: "Sales", // TER-196: "Orders" → "Sales" terminology
 };
 
 /**

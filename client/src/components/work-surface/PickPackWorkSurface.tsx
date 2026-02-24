@@ -897,7 +897,10 @@ export function PickPackWorkSurface() {
         {/* Header */}
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2
+              className="text-xl font-bold text-gray-900 flex items-center gap-2"
+              data-testid="pick-pack-header"
+            >
               <Package className="w-6 h-6 text-blue-600" />
               Pick & Pack
             </h2>
@@ -1031,8 +1034,11 @@ export function PickPackWorkSurface() {
         ) : orderDetails ? (
           <>
             {/* Order Header */}
-            <div className="p-4 border-b bg-white">
-              <div className="flex items-center justify-between mb-2">
+            <div className="p-4 border-b bg-white" data-testid="order-details">
+              <div
+                className="flex items-center justify-between mb-2"
+                data-testid="pick-pack-order-summary"
+              >
                 <div className="flex items-center gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">
@@ -1125,7 +1131,11 @@ export function PickPackWorkSurface() {
               <h3 className="text-sm font-medium text-gray-700 mb-3">
                 Order Items ({orderDetails.items.length})
               </h3>
-              <div className="space-y-2" role="listbox">
+              <div
+                className="space-y-2"
+                role="listbox"
+                data-testid="pick-pack-items-list"
+              >
                 {orderDetails.items.map((item, index) => (
                   <ItemRow
                     key={item.id}

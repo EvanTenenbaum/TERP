@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SupplierCombobox } from "@/components/ui/supplier-combobox";
+import { ProductCombobox } from "@/components/ui/product-combobox";
 import {
   Table,
   TableBody,
@@ -66,6 +68,7 @@ import {
   Trash2,
   ShoppingCart,
   ChevronRight,
+  ChevronUp,
   Loader2,
   AlertCircle,
   RefreshCw,
@@ -603,6 +606,16 @@ export function PurchaseOrdersWorkSurface() {
     };
   }, [pos]);
 
+  const createDraftTotal = useMemo(
+    () =>
+      formData.items.reduce((sum, item) => {
+        const quantity = Number(item.quantityOrdered || 0);
+        const unitCost = Number(item.unitCost || 0);
+        return sum + quantity * unitCost;
+      }, 0),
+    [formData.items]
+  );
+
   // Handlers
   const getSupplierName = (supplierId: number | null | undefined) => {
     if (!supplierId) return "Unknown";
@@ -640,6 +653,11 @@ export function PurchaseOrdersWorkSurface() {
       vendorNotes: formData.supplierNotes || undefined,
       items,
     });
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreateDialogOpen(false);
+    setFormData(createEmptyForm());
   };
 
   const handleAddItem = () => {
@@ -751,11 +769,248 @@ export function PurchaseOrdersWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create PO
+        <Button
+          variant={isCreateDialogOpen ? "outline" : "default"}
+          onClick={() => setIsCreateDialogOpen(prev => !prev)}
+        >
+          {isCreateDialogOpen ? (
+            <ChevronUp className="h-4 w-4 mr-2" />
+          ) : (
+            <Plus className="h-4 w-4 mr-2" />
+          )}
+          {isCreateDialogOpen ? "Hide PO Draft" : "Create PO"}
         </Button>
       </div>
+
+      {isCreateDialogOpen && (
+        <div className="border-b bg-background px-6 py-4">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold">New Purchase Order</h3>
+                <p className="text-sm text-muted-foreground">
+                  Inline powersheet drafting with keyboard-friendly entry
+                </p>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Running total:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(createDraftTotal)}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="supplier">Supplier *</Label>
+                <SupplierCombobox
+                  value={
+                    formData.supplierClientId
+                      ? Number(formData.supplierClientId)
+                      : null
+                  }
+                  onValueChange={supplierId =>
+                    setFormData(prev => ({
+                      ...prev,
+                      supplierClientId:
+                        supplierId !== null ? String(supplierId) : "",
+                    }))
+                  }
+                  suppliers={suppliers}
+                  placeholder="Select supplier"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentTerms">Payment Terms</Label>
+                <Select
+                  value={formData.paymentTerms}
+                  onValueChange={value =>
+                    setFormData({ ...formData, paymentTerms: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment terms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_TERMS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div
+              className={cn(
+                "grid gap-4",
+                showExpectedDelivery ? "lg:grid-cols-2" : "lg:grid-cols-1"
+              )}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="orderDate">Order Date *</Label>
+                <Input
+                  id="orderDate"
+                  type="date"
+                  value={formData.orderDate}
+                  onChange={e =>
+                    setFormData({ ...formData, orderDate: e.target.value })
+                  }
+                />
+              </div>
+              {showExpectedDelivery && (
+                <div className="space-y-2">
+                  <Label htmlFor="expectedDeliveryDate">
+                    Expected Delivery
+                  </Label>
+                  <Input
+                    id="expectedDeliveryDate"
+                    type="date"
+                    value={formData.expectedDeliveryDate}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        expectedDeliveryDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Line Items *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddItem}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Item
+                </Button>
+              </div>
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="grid grid-cols-12 gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                  <span className="col-span-6">Product</span>
+                  <span className="col-span-2 text-right">Qty</span>
+                  <span className="col-span-2 text-right">Unit Cost</span>
+                  <span className="col-span-1 text-right">Total</span>
+                  <span className="col-span-1 text-right">Action</span>
+                </div>
+                {formData.items.map((item, index) => {
+                  const quantity = Number(item.quantityOrdered || 0);
+                  const unitCost = Number(item.unitCost || 0);
+                  const rowTotal = quantity * unitCost;
+
+                  return (
+                    <div
+                      key={item.tempId}
+                      className="grid grid-cols-12 gap-2 items-center"
+                    >
+                      <div className="col-span-6">
+                        <ProductCombobox
+                          value={item.productId ? Number(item.productId) : null}
+                          onValueChange={productId =>
+                            handleItemChange(
+                              index,
+                              "productId",
+                              productId !== null ? String(productId) : ""
+                            )
+                          }
+                          products={products.map(product => ({
+                            id: product.id,
+                            label: product.name,
+                          }))}
+                          isLoading={productsLoading}
+                          placeholder="Select product"
+                        />
+                      </div>
+                      <Input
+                        type="number"
+                        className="col-span-2 text-right"
+                        placeholder="0"
+                        min="0.01"
+                        step="0.01"
+                        value={item.quantityOrdered}
+                        onChange={e =>
+                          handleItemChange(
+                            index,
+                            "quantityOrdered",
+                            e.target.value
+                          )
+                        }
+                      />
+                      <Input
+                        type="number"
+                        className="col-span-2 text-right"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        value={item.unitCost}
+                        onChange={e =>
+                          handleItemChange(index, "unitCost", e.target.value)
+                        }
+                      />
+                      <div className="col-span-1 text-right text-sm font-medium">
+                        {formatCurrency(rowTotal)}
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        {formData.items.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveItem(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="notes">Internal Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={e =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supplierNotes">Supplier Notes</Label>
+                <Textarea
+                  id="supplierNotes"
+                  value={formData.supplierNotes}
+                  onChange={e =>
+                    setFormData({ ...formData, supplierNotes: e.target.value })
+                  }
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" onClick={handleCancelCreate}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreatePO} disabled={createPO.isPending}>
+                {createPO.isPending ? "Creating..." : "Create Purchase Order"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -922,222 +1177,6 @@ export function PurchaseOrdersWorkSurface() {
           )}
         </InspectorPanel>
       </div>
-
-      {/* Create PO Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create Purchase Order</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="supplier">Supplier *</Label>
-              <Select
-                value={formData.supplierClientId}
-                onValueChange={value =>
-                  setFormData({ ...formData, supplierClientId: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.map(supplier => (
-                    <SelectItem
-                      key={supplier.id}
-                      value={supplier.id.toString()}
-                    >
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div
-              className={cn(
-                "grid gap-4",
-                showExpectedDelivery ? "grid-cols-2" : "grid-cols-1"
-              )}
-            >
-              <div>
-                <Label htmlFor="orderDate">Order Date *</Label>
-                <Input
-                  id="orderDate"
-                  type="date"
-                  value={formData.orderDate}
-                  onChange={e =>
-                    setFormData({ ...formData, orderDate: e.target.value })
-                  }
-                />
-              </div>
-              {showExpectedDelivery && (
-                <div>
-                  <Label htmlFor="expectedDeliveryDate">
-                    Expected Delivery
-                  </Label>
-                  <Input
-                    id="expectedDeliveryDate"
-                    type="date"
-                    value={formData.expectedDeliveryDate}
-                    onChange={e =>
-                      setFormData({
-                        ...formData,
-                        expectedDeliveryDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="paymentTerms">Payment Terms</Label>
-              <Select
-                value={formData.paymentTerms}
-                onValueChange={value =>
-                  setFormData({ ...formData, paymentTerms: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select payment terms" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_TERMS_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label>Line Items *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddItem}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Item
-                </Button>
-              </div>
-              {formData.items.map((item, index) => (
-                <div key={item.tempId} className="grid grid-cols-12 gap-2 mb-2">
-                  <div className="col-span-5">
-                    <Select
-                      value={item.productId}
-                      onValueChange={value =>
-                        handleItemChange(index, "productId", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {productsLoading ? (
-                          <SelectItem value="loading-products" disabled>
-                            Loading products...
-                          </SelectItem>
-                        ) : products.length === 0 ? (
-                          <SelectItem value="no-products" disabled>
-                            No products available
-                          </SelectItem>
-                        ) : (
-                          products.map(p => (
-                            <SelectItem key={p.id} value={p.id.toString()}>
-                              {p.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-3">
-                    <Input
-                      type="number"
-                      placeholder="Quantity"
-                      min="0.01"
-                      step="0.01"
-                      value={item.quantityOrdered}
-                      onChange={e =>
-                        handleItemChange(
-                          index,
-                          "quantityOrdered",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <Input
-                      type="number"
-                      placeholder="Unit Cost"
-                      min="0"
-                      step="0.01"
-                      value={item.unitCost}
-                      onChange={e =>
-                        handleItemChange(index, "unitCost", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="col-span-1 flex items-center">
-                    {formData.items.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <Label htmlFor="notes">Internal Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={e =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                rows={2}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="supplierNotes">Supplier Notes</Label>
-              <Textarea
-                id="supplierNotes"
-                value={formData.supplierNotes}
-                onChange={e =>
-                  setFormData({ ...formData, supplierNotes: e.target.value })
-                }
-                rows={2}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreatePO} disabled={createPO.isPending}>
-              {createPO.isPending ? "Creating..." : "Create Purchase Order"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

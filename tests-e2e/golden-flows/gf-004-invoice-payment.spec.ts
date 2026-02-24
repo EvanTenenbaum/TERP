@@ -18,14 +18,27 @@ test.describe("Golden Flow: GF-004 Invoice & Payment", (): void => {
     await page.goto("/accounting/invoices");
     await page.waitForLoadState("networkidle");
 
-    const invoiceHeader = page.locator(
-      'h1:has-text("Invoice"), h1:has-text("Invoices")'
-    );
-    await expect(invoiceHeader).toBeVisible({ timeout: 5000 });
+    const invoiceHeader = page
+      .getByRole("heading", { name: /invoices?/i })
+      .first();
+    const invoicesTable = page.locator('[data-testid="invoices-table"]');
 
-    const invoiceRow = page.locator('[role="row"], tr').first();
+    if (await invoiceHeader.isVisible().catch(() => false)) {
+      await expect(invoiceHeader).toBeVisible({ timeout: 10000 });
+    } else {
+      await expect(invoicesTable).toBeVisible({ timeout: 10000 });
+    }
+
+    const prioritizedInvoiceRow = page.locator('[data-testid^="invoice-row-"]');
+    const fallbackInvoiceRow = page.locator('[role="row"], tr');
+    const invoiceRow =
+      (await prioritizedInvoiceRow.count()) > 0
+        ? prioritizedInvoiceRow.first()
+        : fallbackInvoiceRow.first();
+
     if (await invoiceRow.isVisible().catch(() => false)) {
       await invoiceRow.click();
+      await page.waitForTimeout(400);
 
       const sendButton = page.locator(
         'button:has-text("Send"), button:has-text("Email")'

@@ -7,22 +7,16 @@ import {
 } from "@/components/layout/LinearWorkspaceShell";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
-import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import ProductIntakeSlicePage from "@/components/uiux-slice/ProductIntakeSlicePage";
 import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
 import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
 
-type ProcurementTab =
-  | "purchase-orders"
-  | "product-intake"
-  | "inventory-browse"
-  | "classic";
+type ProcurementTab = "purchase-orders" | "product-intake" | "inventory-browse";
 
 const PROCUREMENT_TABS = [
   { value: "purchase-orders", label: "Purchase Orders" },
   { value: "product-intake", label: "Product Intake" },
   { value: "inventory-browse", label: "Inventory Browse" },
-  { value: "classic", label: "Classic" },
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
 export default function ProcurementWorkspacePage() {
@@ -87,16 +81,13 @@ export default function ProcurementWorkspacePage() {
       }
     >
       <LinearWorkspacePanel value="purchase-orders">
-        <PurchaseOrdersSlicePage />
+        <PurchaseOrdersWorkSurface />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="product-intake">
         <ProductIntakeSlicePage />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="inventory-browse">
         <InventoryBrowseSlicePage />
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="classic">
-        <PurchaseOrdersWorkSurface />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );
