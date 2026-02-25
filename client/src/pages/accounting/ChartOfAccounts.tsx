@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -60,6 +59,17 @@ type Account = {
 };
 
 type AccountSortField = "accountNumber" | "accountName" | "normalBalance";
+
+/** Shape emitted by CreateAccountDialog / EditAccountDialog onSubmit */
+type AccountFormData = {
+  accountNumber: string;
+  accountName: string;
+  accountType: AccountType;
+  normalBalance: "DEBIT" | "CREDIT";
+  description?: string;
+  parentAccountId?: number;
+  isActive?: boolean;
+};
 
 export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -457,7 +467,7 @@ export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {
       <CreateAccountDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSubmit={(data: any) => createAccount.mutate(data)}
+        onSubmit={(data) => createAccount.mutate(data as AccountFormData)}
         isSubmitting={createAccount.isPending}
       />
 
@@ -467,8 +477,8 @@ export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {
           account={editingAccount}
           open={!!editingAccount}
           onOpenChange={open => !open && setEditingAccount(null)}
-          onSubmit={(data: any) =>
-            updateAccount.mutate({ id: editingAccount.id, ...data })
+          onSubmit={(data) =>
+            updateAccount.mutate({ id: editingAccount.id, ...(data as AccountFormData) })
           }
           isSubmitting={updateAccount.isPending}
         />

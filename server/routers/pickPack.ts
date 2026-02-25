@@ -629,69 +629,76 @@ export const pickPackRouter = router({
       // TER-298: Use authenticated actor ID for all write operations
       const actorId = getAuthenticatedUserId(ctx);
 
-      // Create bag
       const bagIdentifier = input.bagIdentifier || "BAG-001";
-      const [newBag] = await db.insert(orderBags).values({
-        orderId: input.orderId,
-        bagIdentifier,
-        createdBy: actorId,
-      });
 
-      // Pack all items
-      let packedCount = 0;
-      for (const itemId of itemIds) {
-        try {
-          await db.insert(orderItemBags).values({
-            orderItemId: itemId,
-            bagId: newBag.insertId,
-            packedBy: actorId,
-          });
-          packedCount++;
-        } catch (err) {
-          // Only skip known duplicate/conflict errors (item already packed in a bag)
-          const isKnownDuplicate =
-            err instanceof Error &&
-            (err.message.includes("ER_DUP_ENTRY") ||
-              err.message.toLowerCase().includes("duplicate entry") ||
-              (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
-              String(
-                (err as unknown as { errno?: number }).errno ?? ""
-              ) === "1062");
+      // Wrap bag creation + item packing + status update in a transaction
+      // so partial failures don't leave orphaned orderItemBags rows
+      const result = await db.transaction(async (tx) => {
+        // Create bag
+        const [newBag] = await tx.insert(orderBags).values({
+          orderId: input.orderId,
+          bagIdentifier,
+          createdBy: actorId,
+        });
 
-          if (isKnownDuplicate) {
-            logger.warn(
-              { itemId, bagId: newBag.insertId, orderId: input.orderId },
-              "Item already packed in bag — skipping duplicate assignment"
-            );
-          } else {
-            logger.warn(
-              {
-                itemId,
-                bagId: newBag.insertId,
-                orderId: input.orderId,
-                error: err instanceof Error ? err.message : String(err),
-              },
-              "Unexpected error packing item in markAllPacked"
-            );
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: `Failed to pack item ${itemId}: ${err instanceof Error ? err.message : String(err)}`,
+        // Pack all items
+        let packedCount = 0;
+        for (const itemId of itemIds) {
+          try {
+            await tx.insert(orderItemBags).values({
+              orderItemId: itemId,
+              bagId: newBag.insertId,
+              packedBy: actorId,
             });
+            packedCount++;
+          } catch (err) {
+            // Only skip known duplicate/conflict errors (item already packed in a bag)
+            const isKnownDuplicate =
+              err instanceof Error &&
+              (err.message.includes("ER_DUP_ENTRY") ||
+                err.message.toLowerCase().includes("duplicate entry") ||
+                (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
+                String(
+                  (err as unknown as { errno?: number }).errno ?? ""
+                ) === "1062");
+
+            if (isKnownDuplicate) {
+              logger.warn(
+                { itemId, bagId: newBag.insertId, orderId: input.orderId },
+                "Item already packed in bag — skipping duplicate assignment"
+              );
+            } else {
+              logger.warn(
+                {
+                  itemId,
+                  bagId: newBag.insertId,
+                  orderId: input.orderId,
+                  error: err instanceof Error ? err.message : String(err),
+                },
+                "Unexpected error packing item in markAllPacked"
+              );
+              throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: `Failed to pack item ${itemId}: ${err instanceof Error ? err.message : String(err)}`,
+              });
+            }
           }
         }
-      }
 
-      // Update order status to PACKED
-      await db
-        .update(orders)
-        .set({ pickPackStatus: "PACKED" })
-        .where(eq(orders.id, input.orderId));
+        // Update order status to PACKED
+        await tx
+          .update(orders)
+          .set({ pickPackStatus: "PACKED" })
+          .where(eq(orders.id, input.orderId));
 
-      return {
-        bagId: newBag.insertId,
-        bagIdentifier,
-        packedItemCount: packedCount,
-      };
+        return {
+          bagId: newBag.insertId,
+          bagIdentifier,
+          packedItemCount: packedCount,
+        };
+      });
+
+      return result;
     }),
 
   /**

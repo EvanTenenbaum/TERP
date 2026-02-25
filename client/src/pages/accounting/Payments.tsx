@@ -61,7 +61,7 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
           break;
         case "amount":
           comparison =
-            parseFloat(a.amount as string) - parseFloat(b.amount as string);
+            parseFloat(a.amount) - parseFloat(b.amount);
           break;
         case "paymentType":
           comparison = String(a.paymentType || "").localeCompare(
@@ -83,10 +83,10 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
   const totalPayments = filteredPayments.length;
   const totalReceived = filteredPayments
     .filter((p: Payment) => p.paymentType === "RECEIVED")
-    .reduce((sum: number, p: Payment) => sum + parseFloat(p.amount as string), 0);
+    .reduce((sum: number, p: Payment) => sum + parseFloat(p.amount), 0);
   const totalSent = filteredPayments
     .filter((p: Payment) => p.paymentType === "SENT")
-    .reduce((sum: number, p: Payment) => sum + parseFloat(p.amount as string), 0);
+    .reduce((sum: number, p: Payment) => sum + parseFloat(p.amount), 0);
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -252,7 +252,7 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
                         />
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {formatCurrency(payment.amount as string)}
+                        {formatCurrency(payment.amount)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {payment.referenceNumber || "-"}

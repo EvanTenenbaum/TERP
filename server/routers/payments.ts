@@ -39,6 +39,7 @@ import { captureException } from "../_core/monitoring";
 const listPaymentsSchema = z.object({
   invoiceId: z.number().optional(),
   clientId: z.number().optional(),
+  paymentType: z.enum(["RECEIVED", "SENT"]).optional(),
   paymentMethod: z
     .enum([
       "CASH",
@@ -135,6 +136,10 @@ export const paymentsRouter = router({
 
       if (input.clientId) {
         conditions.push(eq(payments.customerId, input.clientId));
+      }
+
+      if (input.paymentType) {
+        conditions.push(eq(payments.paymentType, input.paymentType));
       }
 
       if (input.paymentMethod) {

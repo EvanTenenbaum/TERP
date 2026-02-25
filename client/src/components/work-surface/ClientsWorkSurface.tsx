@@ -465,40 +465,25 @@ function ClientInspectorContent({
             <ExternalLink className="h-4 w-4 mr-2" />
             View Full Profile
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-start text-red-600 hover:text-red-700"
-            data-testid="archive-client-btn"
-            onClick={e => {
-              e.stopPropagation();
-              e.preventDefault();
-              // QA-002 FIX: Added null check for client.id
-              if (client?.id !== null && client?.id !== undefined) {
-                onArchive(client.id);
-              }
-            }}
-          >
-            <Archive className="h-4 w-4 mr-2" />
-            Archive Client
-          </Button>
-          {/* delete-client-btn: alias for the soft-delete action used by the SuperAdmin oracle */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-start text-red-600 hover:text-red-700"
-            data-testid="delete-client-btn"
-            onClick={e => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (client?.id !== null && client?.id !== undefined) {
-                onArchive(client.id);
-              }
-            }}
-          >
-            <Archive className="h-4 w-4 mr-2" />
-            Delete Client
-          </Button>
+          {/* Single button serves both archive and delete oracle selectors (soft-delete) */}
+          <span data-testid="delete-client-btn">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start text-red-600 hover:text-red-700"
+              data-testid="archive-client-btn"
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (client?.id !== null && client?.id !== undefined) {
+                  onArchive(client.id);
+                }
+              }}
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Archive Client
+            </Button>
+          </span>
         </div>
       </InspectorSection>
     </div>
