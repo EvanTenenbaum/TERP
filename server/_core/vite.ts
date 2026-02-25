@@ -43,6 +43,11 @@ export async function setupVite(app: Express, server: Server) {
 
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
+    const acceptsHtml = req.headers.accept?.includes("text/html");
+    if (!acceptsHtml) {
+      return next();
+    }
+
     const url = req.originalUrl;
 
     try {
