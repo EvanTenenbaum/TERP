@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NeedForm } from "./NeedForm";
 import { MatchCard } from "./MatchCard";
+import type { NeedFormPayload } from "./needForm.types";
 import { Plus, Package, TrendingUp, Loader2 } from "lucide-react";
 
 /**
@@ -21,14 +22,33 @@ import { Plus, Package, TrendingUp, Loader2 } from "lucide-react";
  * Main component for displaying and managing client needs with matches
  */
 
+/** Match shape — mirrors server Match interface and MatchCard props */
+interface MatchEntry {
+  type: "EXACT" | "CLOSE" | "HISTORICAL";
+  confidence: number;
+  reasons: string[];
+  source: "INVENTORY" | "VENDOR" | "HISTORICAL";
+  sourceId: number;
+  sourceData: Record<string, unknown>;
+  calculatedPrice?: number;
+  availableQuantity?: number;
+}
+
+/** Selected need with its matches for display */
+interface SelectedNeedState {
+  id: number;
+  matches: MatchEntry[];
+}
+
 interface ClientNeedsTabProps {
   clientId: number;
 }
 
 export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const [needFormOpen, setNeedFormOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tRPC inferred need type varies between mutation result and manual construction
-  const [selectedNeed, setSelectedNeed] = useState<any>(null);
+  const [selectedNeed, setSelectedNeed] = useState<SelectedNeedState | null>(
+    null
+  );
   const [activeSubTab, setActiveSubTab] = useState("active");
   const { user } = useAuth();
 
@@ -50,11 +70,16 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const createNeedMutation = trpc.clientNeeds.createAndFindMatches.useMutation({
     onSuccess: result => {
       refetchNeeds();
-      if (result.success) {
-        // Show matches if found
-        if (result.matches && result.matches.matches.length > 0) {
-          setSelectedNeed(result.need);
-        }
+      if (
+        result.success &&
+        result.matches &&
+        result.matches.matches.length > 0 &&
+        result.need
+      ) {
+        setSelectedNeed({
+          id: result.need.id,
+          matches: result.matches.matches as MatchEntry[],
+        });
       }
     },
   });
@@ -79,29 +104,30 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
     }
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NeedFormPayload doesn't align with tRPC zod schema (number vs string for qty fields)
-  const handleCreateNeed = async (data: any) => {
+  const handleCreateNeed = async (data: NeedFormPayload) => {
     await createNeedMutation.mutateAsync(data);
   };
 
   const handleFindMatches = async (needId: number) => {
     setFindingMatchesForNeed(needId);
     const result = await refetchMatches();
-    if (result.data?.success) {
+    if (result.data?.success && result.data.data) {
       setSelectedNeed({
         id: needId,
-        matches: result.data.data,
+        matches: result.data.data.matches as MatchEntry[],
       });
     }
     setFindingMatchesForNeed(null);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- matches shape varies by tRPC inference
-  const handleCreateQuote = async (need: { id: number }, matches: any[]) => {
+  const handleCreateQuote = async (
+    need: { id: number },
+    matches: MatchEntry[]
+  ) => {
     await createQuoteMutation.mutateAsync({
       clientId,
       clientNeedId: need.id,
-      matches,
+      matches: matches as unknown as Record<string, unknown>[],
       userId: user?.id ?? 0,
     });
   };
@@ -244,18 +270,15 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                           Found {selectedNeed.matches.length} Matches
                         </h4>
                         <div className="grid gap-3">
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- selectedNeed.matches typed from tRPC mutation result */}
-                          {selectedNeed.matches
-                            .slice(0, 3)
-                            .map((match: any, idx: number) => (
-                              <MatchCard
-                                key={`match-${match.batchId || match.sku || idx}`}
-                                match={match}
-                                onCreateQuote={() =>
-                                  handleCreateQuote(need, [match])
-                                }
-                              />
-                            ))}
+                          {selectedNeed.matches.slice(0, 3).map(match => (
+                            <MatchCard
+                              key={`match-${match.source}-${match.sourceId}`}
+                              match={match}
+                              onCreateQuote={() =>
+                                handleCreateQuote(need, [match])
+                              }
+                            />
+                          ))}
                         </div>
                         {selectedNeed.matches.length > 3 && (
                           <p className="text-sm text-muted-foreground text-center">

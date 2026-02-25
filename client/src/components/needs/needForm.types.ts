@@ -25,10 +25,10 @@ export interface NeedFormPayload {
   category?: string;
   subcategory?: string;
   grade?: string;
-  quantityMin?: number;
-  quantityMax?: number;
-  priceMax?: number;
-  priority?: string;
+  quantityMin?: string;
+  quantityMax?: string;
+  priceMax?: string;
+  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   neededBy?: string;
   expiresAt?: string;
   notes?: string;
