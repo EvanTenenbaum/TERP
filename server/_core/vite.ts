@@ -18,10 +18,29 @@ export async function setupVite(app: Express, server: Server) {
   // This is critical for enabling --prod builds in production
   const { createServer: createViteServer } = await import("vite");
 
-  // Import vite config - works because esbuild processes this at build time
-  // The config file path is resolved relative to the source, not the bundle
+  // Import and resolve vite config. The config default export may be a function.
   const viteConfigModule = await import("../../vite.config.js");
-  const viteConfig = viteConfigModule.default;
+  const viteConfigExport = viteConfigModule.default as
+    | Record<string, unknown>
+    | ((env: {
+        command: "serve" | "build";
+        mode: string;
+        isSsrBuild?: boolean;
+        isPreview?: boolean;
+      }) => Record<string, unknown> | Promise<Record<string, unknown>>);
+
+  const viteConfig =
+    typeof viteConfigExport === "function"
+      ? await viteConfigExport({
+          command: "serve",
+          mode:
+            process.env.NODE_ENV === "production"
+              ? "production"
+              : "development",
+          isSsrBuild: false,
+          isPreview: false,
+        })
+      : viteConfigExport;
 
   const serverOptions = {
     middlewareMode: true,
@@ -38,6 +57,11 @@ export async function setupVite(app: Express, server: Server) {
 
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
+    const acceptsHtml = req.headers.accept?.includes("text/html");
+    if (!acceptsHtml) {
+      return next();
+    }
+
     const url = req.originalUrl;
 
     try {
