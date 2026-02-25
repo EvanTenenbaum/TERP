@@ -41,7 +41,9 @@ type BankTransaction = {
   isReconciled: boolean;
 };
 
-export default function BankTransactions() {
+export default function BankTransactions({
+  embedded,
+}: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedReconciled, setSelectedReconciled] = useState<string>("ALL");
@@ -143,7 +145,7 @@ export default function BankTransactions() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

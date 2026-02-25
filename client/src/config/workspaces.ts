@@ -69,3 +69,33 @@ export const CREDITS_WORKSPACE = {
     { value: "settings", label: "Settings" },
   ],
 } as const satisfies WorkspaceConfig<"credits" | "settings">;
+
+export const ACCOUNTING_WORKSPACE = {
+  title: "Accounting",
+  homePath: "/accounting",
+  description:
+    "Manage invoices, bills, payments, and the general ledger in one workspace.",
+  tabs: [
+    { value: "dashboard", label: "Dashboard" },
+    { value: "invoices", label: "Invoices" },
+    { value: "bills", label: "Bills" },
+    { value: "payments", label: "Payments" },
+    { value: "general-ledger", label: "General Ledger" },
+    { value: "chart-of-accounts", label: "Chart of Accounts" },
+    { value: "expenses", label: "Expenses" },
+    { value: "bank-accounts", label: "Bank Accounts" },
+    { value: "bank-transactions", label: "Bank Transactions" },
+    { value: "fiscal-periods", label: "Fiscal Periods" },
+  ],
+} as const satisfies WorkspaceConfig<
+  | "dashboard"
+  | "invoices"
+  | "bills"
+  | "payments"
+  | "general-ledger"
+  | "chart-of-accounts"
+  | "expenses"
+  | "bank-accounts"
+  | "bank-transactions"
+  | "fiscal-periods"
+>;

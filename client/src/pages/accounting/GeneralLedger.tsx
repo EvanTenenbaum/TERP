@@ -75,7 +75,9 @@ type TrialBalanceItem = {
   balance: number;
 };
 
-export default function GeneralLedger() {
+export default function GeneralLedger({
+  embedded,
+}: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<number | undefined>();
   const [selectedPeriod, setSelectedPeriod] = useState<number | undefined>();
@@ -192,7 +194,7 @@ export default function GeneralLedger() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -29,7 +29,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/accounting";
 
-export default function Payments() {
+export default function Payments({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("ALL");
 
@@ -86,7 +86,7 @@ export default function Payments() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

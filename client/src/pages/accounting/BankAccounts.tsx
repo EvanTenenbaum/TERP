@@ -24,7 +24,9 @@ type BankAccount = {
   isActive: boolean;
 };
 
-export default function BankAccounts() {
+export default function BankAccounts({
+  embedded,
+}: { embedded?: boolean } = {}) {
   // Fetch bank accounts
   const { data: accounts, isLoading } =
     trpc.accounting.bankAccounts.list.useQuery({});
@@ -63,7 +65,7 @@ export default function BankAccounts() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

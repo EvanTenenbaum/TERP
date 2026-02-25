@@ -60,7 +60,7 @@ type Bill = {
   status: BillStatus;
 };
 
-export default function Bills() {
+export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [showAging, setShowAging] = useState(false);
@@ -141,7 +141,7 @@ export default function Bills() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

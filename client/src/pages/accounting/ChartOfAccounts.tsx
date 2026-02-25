@@ -3,7 +3,13 @@ import React, { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -30,7 +36,14 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Edit, DollarSign, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Edit,
+  DollarSign,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
 import type { AccountType } from "@/components/accounting";
@@ -46,7 +59,9 @@ type Account = {
   description: string | null;
 };
 
-export default function ChartOfAccounts() {
+export default function ChartOfAccounts({
+  embedded,
+}: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<AccountType | "ALL">("ALL");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -56,7 +71,11 @@ export default function ChartOfAccounts() {
   );
 
   // Fetch accounts
-  const { data: accounts, isLoading, refetch } = trpc.accounting.accounts.list.useQuery({});
+  const {
+    data: accounts,
+    isLoading,
+    refetch,
+  } = trpc.accounting.accounts.list.useQuery({});
 
   const _utils = trpc.useUtils();
 
@@ -67,7 +86,7 @@ export default function ChartOfAccounts() {
       setShowCreateDialog(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to create account: ${error.message}`);
     },
   });
@@ -79,7 +98,7 @@ export default function ChartOfAccounts() {
       setEditingAccount(null);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update account: ${error.message}`);
     },
   });
@@ -105,24 +124,31 @@ export default function ChartOfAccounts() {
 
     // Apply type filter
     if (selectedType !== "ALL") {
-      filtered = filtered.filter((acc: Account) => acc.accountType === selectedType);
+      filtered = filtered.filter(
+        (acc: Account) => acc.accountType === selectedType
+      );
     }
 
     // Group by account type
-    const grouped = filtered.reduce((acc: Partial<Record<AccountType, Account[]>>, account: Account) => {
-      const type = account.accountType;
-      if (!acc[type]) {
-        acc[type] = [];
-      }
-      (acc[type] as Account[]).push(account);
-      return acc;
-    }, {} as Partial<Record<AccountType, Account[]>>);
+    const grouped = filtered.reduce(
+      (acc: Partial<Record<AccountType, Account[]>>, account: Account) => {
+        const type = account.accountType;
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        (acc[type] as Account[]).push(account);
+        return acc;
+      },
+      {} as Partial<Record<AccountType, Account[]>>
+    );
 
     // Sort accounts within each group by account number
-    Object.keys(grouped).forEach((type) => {
+    Object.keys(grouped).forEach(type => {
       const accounts = grouped[type as AccountType];
       if (accounts) {
-        accounts.sort((a: Account, b: Account) => a.accountNumber.localeCompare(b.accountNumber));
+        accounts.sort((a: Account, b: Account) =>
+          a.accountNumber.localeCompare(b.accountNumber)
+        );
       }
     });
 
@@ -137,10 +163,16 @@ export default function ChartOfAccounts() {
     EXPENSE: "Expenses",
   };
 
-  const accountTypeOrder: AccountType[] = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"];
+  const accountTypeOrder: AccountType[] = [
+    "ASSET",
+    "LIABILITY",
+    "EQUITY",
+    "REVENUE",
+    "EXPENSE",
+  ];
 
   const toggleTypeExpansion = (type: AccountType) => {
-    setExpandedTypes((prev) => {
+    setExpandedTypes(prev => {
       const newSet = new Set(prev);
       if (newSet.has(type)) {
         newSet.delete(type);
@@ -168,20 +200,27 @@ export default function ChartOfAccounts() {
 
   // PERF-003: Use pagination total or items length
   const totalAccounts = accounts?.pagination?.total ?? accountsList.length;
-  const activeAccounts = accountsList.filter((acc: Account) => acc.isActive).length;
+  const activeAccounts = accountsList.filter(
+    (acc: Account) => acc.isActive
+  ).length;
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header - mobile optimized */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Chart of Accounts</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Chart of Accounts
+          </h1>
           <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Manage your account structure and classifications
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
+        <Button
+          onClick={() => setShowCreateDialog(true)}
+          className="w-full sm:w-auto"
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Account
         </Button>
@@ -191,7 +230,9 @@ export default function ChartOfAccounts() {
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Accounts
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -200,7 +241,9 @@ export default function ChartOfAccounts() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Accounts
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -213,7 +256,9 @@ export default function ChartOfAccounts() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(groupedAccounts).length}</div>
+            <div className="text-2xl font-bold">
+              {Object.keys(groupedAccounts).length}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -231,14 +276,16 @@ export default function ChartOfAccounts() {
                 <Input
                   placeholder="Search accounts..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9 h-10 sm:h-9"
                 />
               </div>
             </div>
             <Select
               value={selectedType}
-              onValueChange={(value) => setSelectedType(value as AccountType | "ALL")}
+              onValueChange={value =>
+                setSelectedType(value as AccountType | "ALL")
+              }
             >
               <SelectTrigger className="w-full sm:w-[200px] h-10 sm:h-9">
                 <SelectValue placeholder="All Types" />
@@ -266,10 +313,12 @@ export default function ChartOfAccounts() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading accounts...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading accounts...
+            </div>
           ) : (
             <div className="space-y-4">
-              {accountTypeOrder.map((type) => {
+              {accountTypeOrder.map(type => {
                 const typeAccounts = groupedAccounts[type] || [];
                 if (typeAccounts.length === 0) return null;
 
@@ -288,7 +337,9 @@ export default function ChartOfAccounts() {
                         ) : (
                           <ChevronRight className="h-5 w-5" />
                         )}
-                        <span className="font-semibold text-lg">{accountTypeLabels[type]}</span>
+                        <span className="font-semibold text-lg">
+                          {accountTypeLabels[type]}
+                        </span>
                         <Badge variant="outline" className={getTypeColor(type)}>
                           {typeAccounts.length} accounts
                         </Badge>
@@ -301,11 +352,21 @@ export default function ChartOfAccounts() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="whitespace-nowrap">Account #</TableHead>
-                              <TableHead className="whitespace-nowrap">Name</TableHead>
-                              <TableHead className="whitespace-nowrap hidden sm:table-cell">Balance</TableHead>
-                              <TableHead className="whitespace-nowrap">Status</TableHead>
-                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                              <TableHead className="whitespace-nowrap">
+                                Account #
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap">
+                                Name
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap hidden sm:table-cell">
+                                Balance
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap">
+                                Status
+                              </TableHead>
+                              <TableHead className="text-right whitespace-nowrap">
+                                Actions
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -378,8 +439,10 @@ export default function ChartOfAccounts() {
         <EditAccountDialog
           account={editingAccount}
           open={!!editingAccount}
-          onOpenChange={(open) => !open && setEditingAccount(null)}
-          onSubmit={(data: any) => updateAccount.mutate({ id: editingAccount.id, ...data })}
+          onOpenChange={open => !open && setEditingAccount(null)}
+          onSubmit={(data: any) =>
+            updateAccount.mutate({ id: editingAccount.id, ...data })
+          }
           isSubmitting={updateAccount.isPending}
         />
       )}
@@ -428,7 +491,9 @@ function CreateAccountDialog({
               <Input
                 id="accountNumber"
                 value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, accountNumber: e.target.value })
+                }
                 placeholder="e.g., 1000"
                 required
               />
@@ -438,7 +503,9 @@ function CreateAccountDialog({
               <Input
                 id="accountName"
                 value={formData.accountName}
-                onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, accountName: e.target.value })
+                }
                 placeholder="e.g., Cash"
                 required
               />
@@ -447,8 +514,11 @@ function CreateAccountDialog({
               <Label htmlFor="accountType">Account Type</Label>
               <Select
                 value={formData.accountType}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, accountType: value as AccountType })
+                onValueChange={value =>
+                  setFormData({
+                    ...formData,
+                    accountType: value as AccountType,
+                  })
                 }
               >
                 <SelectTrigger>
@@ -467,8 +537,11 @@ function CreateAccountDialog({
               <Label htmlFor="normalBalance">Normal Balance</Label>
               <Select
                 value={formData.normalBalance}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, normalBalance: value as "DEBIT" | "CREDIT" })
+                onValueChange={value =>
+                  setFormData({
+                    ...formData,
+                    normalBalance: value as "DEBIT" | "CREDIT",
+                  })
                 }
               >
                 <SelectTrigger>
@@ -485,14 +558,20 @@ function CreateAccountDialog({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Enter account description..."
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -546,7 +625,9 @@ function EditAccountDialog({
               <Input
                 id="accountName"
                 value={formData.accountName}
-                onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, accountName: e.target.value })
+                }
                 required
               />
             </div>
@@ -555,7 +636,9 @@ function EditAccountDialog({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Enter account description..."
                 rows={3}
               />
@@ -565,7 +648,9 @@ function EditAccountDialog({
                 type="checkbox"
                 id="isActive"
                 checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                onChange={e =>
+                  setFormData({ ...formData, isActive: e.target.checked })
+                }
                 className="h-4 w-4"
               />
               <Label htmlFor="isActive" className="cursor-pointer">
@@ -574,7 +659,11 @@ function EditAccountDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -586,4 +675,3 @@ function EditAccountDialog({
     </Dialog>
   );
 }
-
