@@ -452,6 +452,7 @@ function ClientInspectorContent({
             type="button"
             variant="outline"
             className="w-full justify-start"
+            data-testid="view-full-profile-btn"
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
@@ -468,6 +469,7 @@ function ClientInspectorContent({
             type="button"
             variant="outline"
             className="w-full justify-start text-red-600 hover:text-red-700"
+            data-testid="archive-client-btn"
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
@@ -479,6 +481,23 @@ function ClientInspectorContent({
           >
             <Archive className="h-4 w-4 mr-2" />
             Archive Client
+          </Button>
+          {/* delete-client-btn: alias for the soft-delete action used by the SuperAdmin oracle */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start text-red-600 hover:text-red-700"
+            data-testid="delete-client-btn"
+            onClick={e => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (client?.id !== null && client?.id !== undefined) {
+                onArchive(client.id);
+              }
+            }}
+          >
+            <Archive className="h-4 w-4 mr-2" />
+            Delete Client
           </Button>
         </div>
       </InspectorSection>
@@ -831,6 +850,7 @@ export function ClientsWorkSurface() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               ref={searchInputRef}
+              data-testid="clients-search-input"
               placeholder="Search clients... (Cmd+K)"
               value={search}
               onChange={e => {
@@ -907,7 +927,7 @@ export function ClientsWorkSurface() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table data-testid="clients-table">
                 <TableHeader>
                   <TableRow>
                     <TableHead
@@ -951,6 +971,7 @@ export function ClientsWorkSurface() {
                   {displayClients.map((client: Client, index: number) => (
                     <TableRow
                       key={client.id}
+                      data-testid={`client-row-${client.id}`}
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",
                         selectedClientId === client.id && "bg-muted",
@@ -1058,7 +1079,7 @@ export function ClientsWorkSurface() {
 
       {/* Archive Confirmation Dialog */}
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
-        <DialogContent>
+        <DialogContent data-testid="confirm-delete-modal">
           <DialogHeader>
             <DialogTitle>Archive Client</DialogTitle>
           </DialogHeader>
@@ -1074,6 +1095,7 @@ export function ClientsWorkSurface() {
               Cancel
             </Button>
             <Button
+              data-testid="confirm-delete-btn"
               variant="destructive"
               onClick={confirmArchive}
               disabled={archiveClient.isPending}

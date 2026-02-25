@@ -15,7 +15,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import Decimal from "decimal.js";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import {
@@ -576,12 +576,8 @@ export const clientLedgerRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Authentication required",
-        });
-      }
+      // getAuthenticatedUserId throws UNAUTHORIZED for unauthenticated or demo users
+      const userId = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db)
@@ -595,7 +591,7 @@ export const clientLedgerRouter = router({
         clientId: input.clientId,
         type: input.transactionType,
         amount: input.amount,
-        userId: ctx.user.id,
+        userId,
       });
 
       // Verify client exists
@@ -616,7 +612,7 @@ export const clientLedgerRouter = router({
         amount: input.amount.toFixed(2),
         description: input.description,
         effectiveDate: effectiveDate,
-        createdBy: ctx.user.id,
+        createdBy: userId,
       });
 
       const adjustmentId = Number(result[0].insertId);
@@ -629,7 +625,7 @@ export const clientLedgerRouter = router({
         amount: input.amount,
         description: input.description,
         effectiveDate,
-        createdBy: ctx.user.id,
+        createdBy: userId,
       };
     }),
 

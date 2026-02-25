@@ -37,7 +37,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Search,
   Plus,
   Edit,
   DollarSign,
@@ -46,6 +45,7 @@ import {
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import type { AccountType } from "@/components/accounting";
 
 type Account = {
@@ -59,11 +59,13 @@ type Account = {
   description: string | null;
 };
 
-export default function ChartOfAccounts({
-  embedded,
-}: { embedded?: boolean } = {}) {
+type AccountSortField = "accountNumber" | "accountName" | "normalBalance";
+
+export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<AccountType | "ALL">("ALL");
+  const [sortField, setSortField] = useState<AccountSortField>("accountNumber");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<Set<AccountType>>(
@@ -146,14 +148,26 @@ export default function ChartOfAccounts({
     Object.keys(grouped).forEach(type => {
       const accounts = grouped[type as AccountType];
       if (accounts) {
-        accounts.sort((a: Account, b: Account) =>
-          a.accountNumber.localeCompare(b.accountNumber)
-        );
+        accounts.sort((a: Account, b: Account) => {
+          let comparison = 0;
+          switch (sortField) {
+            case "accountNumber":
+              comparison = a.accountNumber.localeCompare(b.accountNumber);
+              break;
+            case "accountName":
+              comparison = a.accountName.localeCompare(b.accountName);
+              break;
+            case "normalBalance":
+              comparison = a.normalBalance.localeCompare(b.normalBalance);
+              break;
+          }
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
       }
     });
 
     return grouped;
-  }, [accountsList, searchQuery, selectedType]);
+  }, [accountsList, searchQuery, selectedType, sortDirection, sortField]);
 
   const accountTypeLabels: Record<AccountType, string> = {
     ASSET: "Assets",
@@ -203,6 +217,18 @@ export default function ChartOfAccounts({
   const activeAccounts = accountsList.filter(
     (acc: Account) => acc.isActive
   ).length;
+
+  const visibleAccounts = Object.values(groupedAccounts).reduce(
+    (sum, accountsByType) => sum + (accountsByType?.length ?? 0),
+    0
+  );
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedType("ALL");
+    setSortField("accountNumber");
+    setSortDirection("asc");
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -263,45 +289,46 @@ export default function ChartOfAccounts({
         </Card>
       </div>
 
-      {/* Filters - mobile optimized */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search accounts..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9 h-10 sm:h-9"
-                />
-              </div>
-            </div>
-            <Select
-              value={selectedType}
-              onValueChange={value =>
-                setSelectedType(value as AccountType | "ALL")
-              }
-            >
-              <SelectTrigger className="w-full sm:w-[200px] h-10 sm:h-9">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Types</SelectItem>
-                <SelectItem value="ASSET">Assets</SelectItem>
-                <SelectItem value="LIABILITY">Liabilities</SelectItem>
-                <SelectItem value="EQUITY">Equity</SelectItem>
-                <SelectItem value="REVENUE">Revenue</SelectItem>
-                <SelectItem value="EXPENSE">Expenses</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search accounts..."
+        filters={[
+          {
+            id: "accountType",
+            label: "Type",
+            value: selectedType,
+            onChange: value => setSelectedType(value as AccountType | "ALL"),
+            allValue: "ALL",
+            allLabel: "All Types",
+            options: [
+              { value: "ASSET", label: "Assets" },
+              { value: "LIABILITY", label: "Liabilities" },
+              { value: "EQUITY", label: "Equity" },
+              { value: "REVENUE", label: "Revenue" },
+              { value: "EXPENSE", label: "Expenses" },
+            ],
+          },
+        ]}
+        sort={{
+          field: sortField,
+          onFieldChange: value => setSortField(value as AccountSortField),
+          fieldOptions: [
+            { value: "accountNumber", label: "Account Number" },
+            { value: "accountName", label: "Account Name" },
+            { value: "normalBalance", label: "Normal Balance" },
+          ],
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Ascending",
+            desc: "Descending",
+          },
+        }}
+        resultCount={visibleAccounts}
+        resultLabel={visibleAccounts === 1 ? "account" : "accounts"}
+        onClearAll={handleClearAllFilters}
+      />
 
       {/* Accounts Table */}
       <Card>

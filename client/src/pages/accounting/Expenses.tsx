@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import {
   Table,
   TableBody,
@@ -12,14 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Plus, Receipt, DollarSign, AlertCircle } from "lucide-react";
+import { Plus, Receipt, DollarSign, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 
@@ -46,16 +39,25 @@ type ExpenseBreakdown = {
   expenseCount: number;
 };
 
+type ExpenseSortField = "expenseDate" | "amount" | "expenseNumber";
+
+const EXPENSE_SORT_OPTIONS = [
+  { value: "expenseDate", label: "Expense Date" },
+  { value: "amount", label: "Amount" },
+  { value: "expenseNumber", label: "Expense #" },
+];
+
 export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<
-    number | undefined
-  >();
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [sortField, setSortField] = useState<ExpenseSortField>("expenseDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showReimbursable, setShowReimbursable] = useState(false);
 
   // Fetch expenses
   const { data: expenses, isLoading } = trpc.accounting.expenses.list.useQuery({
-    categoryId: selectedCategory,
+    categoryId:
+      selectedCategory === "ALL" ? undefined : parseInt(selectedCategory, 10),
   });
 
   // Fetch categories
@@ -77,17 +79,40 @@ export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
   const filteredExpenses = useMemo(() => {
     // BUG-034: expenses is now a UnifiedPaginatedResponse with items array
     const expenseList = expenses?.items ?? [];
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    if (!searchQuery) return expenseList;
+    const searched = normalizedQuery
+      ? expenseList.filter(
+          (exp: Expense) =>
+            (exp.expenseNumber &&
+              exp.expenseNumber.toLowerCase().includes(normalizedQuery)) ||
+            (exp.description &&
+              exp.description.toLowerCase().includes(normalizedQuery))
+        )
+      : expenseList;
 
-    const query = searchQuery.toLowerCase();
-    return expenseList.filter(
-      (exp: Expense) =>
-        (exp.expenseNumber &&
-          exp.expenseNumber.toLowerCase().includes(query)) ||
-        (exp.description && exp.description.toLowerCase().includes(query))
-    );
-  }, [expenses, searchQuery]);
+    const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+    return [...searched].sort((a: Expense, b: Expense) => {
+      let comparison = 0;
+
+      if (sortField === "expenseDate") {
+        comparison =
+          new Date(a.expenseDate).getTime() - new Date(b.expenseDate).getTime();
+      } else if (sortField === "amount") {
+        comparison = parseFloat(a.amount) - parseFloat(b.amount);
+      } else if (sortField === "expenseNumber") {
+        comparison = a.expenseNumber.localeCompare(b.expenseNumber);
+      }
+
+      if (comparison === 0) {
+        comparison =
+          new Date(a.expenseDate).getTime() - new Date(b.expenseDate).getTime();
+      }
+
+      return comparison * directionMultiplier;
+    });
+  }, [expenses, searchQuery, sortDirection, sortField]);
 
   // Calculate totals
   const totalExpenses = filteredExpenses.length;
@@ -114,6 +139,17 @@ export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
 
   // BUG-034: Extract from paginated response
   const categoryList = categories?.items ?? [];
+  const categoryOptions = categoryList.map((cat: ExpenseCategory) => ({
+    value: cat.id.toString(),
+    label: cat.categoryName,
+  }));
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("ALL");
+    setSortField("expenseDate");
+    setSortDirection("desc");
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -255,45 +291,36 @@ export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
           </Card>
         )}
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search expenses..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Select
-              value={selectedCategory?.toString() || "ALL"}
-              onValueChange={val =>
-                setSelectedCategory(val === "ALL" ? undefined : parseInt(val))
-              }
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Categories</SelectItem>
-                {categoryList.map((cat: ExpenseCategory) => (
-                  <SelectItem key={cat.id} value={cat.id.toString()}>
-                    {cat.categoryName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search expenses..."
+        filters={[
+          {
+            id: "category",
+            label: "Category",
+            value: selectedCategory,
+            options: categoryOptions,
+            onChange: setSelectedCategory,
+            allValue: "ALL",
+            allLabel: "All Categories",
+          },
+        ]}
+        sort={{
+          field: sortField,
+          fieldOptions: EXPENSE_SORT_OPTIONS,
+          onFieldChange: value => setSortField(value as ExpenseSortField),
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Lowest First",
+            desc: "Highest First",
+          },
+        }}
+        onClearAll={handleClearAllFilters}
+        resultCount={filteredExpenses.length}
+        resultLabel={filteredExpenses.length === 1 ? "expense" : "expenses"}
+      />
 
       {/* Expenses Table */}
       <Card>

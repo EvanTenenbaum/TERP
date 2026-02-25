@@ -6,9 +6,8 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -19,20 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Search,
   Heart,
   ShoppingCart,
   MoreHorizontal,
@@ -48,17 +39,53 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
 import {
   InterestDetailSheet,
   type InterestItem,
 } from "@/components/interest-list/InterestDetailSheet";
 
+type InterestSortField =
+  | "createdAt"
+  | "priority"
+  | "matchCount"
+  | "quantityNeeded";
+
+const PRIORITY_OPTIONS = [
+  { value: "URGENT", label: "Urgent" },
+  { value: "HIGH", label: "High" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "LOW", label: "Low" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "FULFILLED", label: "Fulfilled" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const SORT_OPTIONS = [
+  { value: "createdAt", label: "Created Date" },
+  { value: "priority", label: "Priority" },
+  { value: "matchCount", label: "Matches" },
+  { value: "quantityNeeded", label: "Quantity Needed" },
+];
+
+const PRIORITY_SCORE: Record<string, number> = {
+  URGENT: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
 export default function InterestListPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
+  const [sortField, setSortField] = useState<InterestSortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedItem, setSelectedItem] = useState<InterestItem | null>(null);
   // CHAOS-016: State for delete confirmation dialog (replaces window.confirm)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -154,8 +181,32 @@ export default function InterestListPage() {
           item.productCategory.toLowerCase().includes(query)
       );
     }
-    return result;
-  }, [items, searchQuery, priorityFilter]);
+
+    const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+    return [...result].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortField === "createdAt") {
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortField === "priority") {
+        comparison =
+          (PRIORITY_SCORE[a.priority] ?? 0) - (PRIORITY_SCORE[b.priority] ?? 0);
+      } else if (sortField === "matchCount") {
+        comparison = a.matchCount - b.matchCount;
+      } else if (sortField === "quantityNeeded") {
+        comparison = a.quantityNeeded - b.quantityNeeded;
+      }
+
+      if (comparison === 0) {
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+
+      return comparison * directionMultiplier;
+    });
+  }, [items, priorityFilter, searchQuery, sortDirection, sortField]);
 
   // Summary stats
   const totalActive = items.filter(i => i.status === "ACTIVE").length;
@@ -219,6 +270,14 @@ export default function InterestListPage() {
       "interest-list"
     );
     toast.success(`Exported ${filteredItems.length} interest items`);
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setPriorityFilter("ALL");
+    setStatusFilter("ACTIVE");
+    setSortField("createdAt");
+    setSortDirection("desc");
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -319,47 +378,45 @@ export default function InterestListPage() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search by client, product, or category..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Priorities</SelectItem>
-                <SelectItem value="URGENT">Urgent</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="MEDIUM">Medium</SelectItem>
-                <SelectItem value="LOW">Low</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Statuses</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="FULFILLED">Fulfilled</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search by client, product, or category..."
+        filters={[
+          {
+            id: "priority",
+            label: "Priority",
+            value: priorityFilter,
+            options: PRIORITY_OPTIONS,
+            onChange: setPriorityFilter,
+            allValue: "ALL",
+            allLabel: "All Priorities",
+          },
+          {
+            id: "status",
+            label: "Status",
+            value: statusFilter,
+            options: STATUS_OPTIONS,
+            onChange: setStatusFilter,
+            allValue: "ALL",
+            allLabel: "All Statuses",
+          },
+        ]}
+        sort={{
+          field: sortField,
+          fieldOptions: SORT_OPTIONS,
+          onFieldChange: value => setSortField(value as InterestSortField),
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Lowest First",
+            desc: "Highest First",
+          },
+        }}
+        onClearAll={handleClearAllFilters}
+        resultCount={filteredItems.length}
+        resultLabel={filteredItems.length === 1 ? "item" : "items"}
+      />
 
       {/* Interest List Table */}
       <Card>

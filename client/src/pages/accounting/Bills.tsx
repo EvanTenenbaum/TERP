@@ -10,7 +10,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -21,21 +20,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Search, Plus, FileText, DollarSign } from "lucide-react";
+import { Plus, FileText, DollarSign } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import {
   StatusBadge,
   AgingBadge,
@@ -60,9 +53,18 @@ type Bill = {
   status: BillStatus;
 };
 
+type BillSortField =
+  | "billDate"
+  | "dueDate"
+  | "totalAmount"
+  | "amountDue"
+  | "status";
+
 export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [sortField, setSortField] = useState<BillSortField>("billDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showAging, setShowAging] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
 
@@ -107,14 +109,39 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   // Filter bills - extract from paginated response { items: [], pagination: { total } }
   const filteredBills = useMemo(() => {
     const billList = (bills?.items ?? []) as Bill[];
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    if (!searchQuery) return billList;
+    const searched = normalizedQuery
+      ? billList.filter(bill =>
+          bill.billNumber.toLowerCase().includes(normalizedQuery)
+        )
+      : billList;
 
-    const query = searchQuery.toLowerCase();
-    return billList.filter(bill =>
-      bill.billNumber.toLowerCase().includes(query)
-    );
-  }, [bills, searchQuery]);
+    return [...searched].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "billDate":
+          comparison =
+            new Date(a.billDate).getTime() - new Date(b.billDate).getTime();
+          break;
+        case "dueDate":
+          comparison =
+            new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          break;
+        case "totalAmount":
+          comparison = parseFloat(a.totalAmount) - parseFloat(b.totalAmount);
+          break;
+        case "amountDue":
+          comparison = parseFloat(a.amountDue) - parseFloat(b.amountDue);
+          break;
+        case "status":
+          comparison = a.status.localeCompare(b.status);
+          break;
+      }
+
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [bills, searchQuery, sortDirection, sortField]);
 
   // Calculate totals
   const totalBills = filteredBills.length;
@@ -137,6 +164,13 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
 
   const handleStatusChange = (billId: number, newStatus: BillStatus) => {
     updateBillStatus.mutate({ id: billId, status: newStatus });
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedStatus("ALL");
+    setSortField("billDate");
+    setSortDirection("desc");
   };
 
   return (
@@ -214,41 +248,49 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
         </Card>
       )}
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search bills..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Statuses</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="PARTIAL">Partial</SelectItem>
-                <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="OVERDUE">Overdue</SelectItem>
-                <SelectItem value="VOID">Void</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search bills..."
+        filters={[
+          {
+            id: "status",
+            label: "Status",
+            value: selectedStatus,
+            onChange: setSelectedStatus,
+            allValue: "ALL",
+            allLabel: "All Statuses",
+            options: [
+              { value: "DRAFT", label: "Draft" },
+              { value: "PENDING", label: "Pending" },
+              { value: "PARTIAL", label: "Partial" },
+              { value: "PAID", label: "Paid" },
+              { value: "OVERDUE", label: "Overdue" },
+              { value: "VOID", label: "Void" },
+            ],
+          },
+        ]}
+        sort={{
+          field: sortField,
+          onFieldChange: value => setSortField(value as BillSortField),
+          fieldOptions: [
+            { value: "billDate", label: "Bill Date" },
+            { value: "dueDate", label: "Due Date" },
+            { value: "totalAmount", label: "Total Amount" },
+            { value: "amountDue", label: "Amount Due" },
+            { value: "status", label: "Status" },
+          ],
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Ascending",
+            desc: "Descending",
+          },
+        }}
+        resultCount={filteredBills.length}
+        resultLabel={filteredBills.length === 1 ? "bill" : "bills"}
+        onClearAll={handleClearAllFilters}
+      />
 
       {/* Bills Table */}
       <Card>

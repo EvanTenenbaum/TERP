@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import type { Payment } from "../../../../drizzle/schema";
 
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,26 +11,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Search,
-  DollarSign,
-  ArrowDownCircle,
-  ArrowUpCircle,
-} from "lucide-react";
+import { DollarSign, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/accounting";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
+
+type PaymentSortField =
+  | "paymentDate"
+  | "amount"
+  | "paymentType"
+  | "paymentNumber";
 
 export default function Payments({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("ALL");
+  const [selectedType, setSelectedType] = useState<"ALL" | "RECEIVED" | "SENT">(
+    "ALL"
+  );
+  const [sortField, setSortField] = useState<PaymentSortField>("paymentDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Fetch payments
   const { data: payments, isLoading } = trpc.accounting.payments.list.useQuery({
@@ -45,31 +43,50 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
   const filteredPayments = useMemo(() => {
     // BUG-034: Extract payments array from standardized paginated response
     const paymentList = (payments?.items ?? []) as Payment[];
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    if (!searchQuery) return paymentList;
+    const searched = normalizedQuery
+      ? paymentList.filter((payment: Payment) =>
+          payment.paymentNumber.toLowerCase().includes(normalizedQuery)
+        )
+      : paymentList;
 
-    const query = searchQuery.toLowerCase();
-    return paymentList.filter((payment: Payment) =>
-      payment.paymentNumber.toLowerCase().includes(query)
-    );
-  }, [payments, searchQuery]);
+    return [...searched].sort((a: Payment, b: Payment) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "paymentDate":
+          comparison =
+            new Date(a.paymentDate).getTime() -
+            new Date(b.paymentDate).getTime();
+          break;
+        case "amount":
+          comparison =
+            parseFloat(a.amount as string) - parseFloat(b.amount as string);
+          break;
+        case "paymentType":
+          comparison = String(a.paymentType || "").localeCompare(
+            String(b.paymentType || "")
+          );
+          break;
+        case "paymentNumber":
+          comparison = String(a.paymentNumber || "").localeCompare(
+            String(b.paymentNumber || "")
+          );
+          break;
+      }
+
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [payments, searchQuery, sortDirection, sortField]);
 
   // Calculate totals
   const totalPayments = filteredPayments.length;
-
   const totalReceived = filteredPayments
     .filter((p: Payment) => p.paymentType === "RECEIVED")
-    .reduce(
-      (sum: number, p: Payment) => sum + parseFloat(p.amount as string),
-      0
-    );
-
+    .reduce((sum: number, p: Payment) => sum + parseFloat(p.amount as string), 0);
   const totalSent = filteredPayments
     .filter((p: Payment) => p.paymentType === "SENT")
-    .reduce(
-      (sum: number, p: Payment) => sum + parseFloat(p.amount as string),
-      0
-    );
+    .reduce((sum: number, p: Payment) => sum + parseFloat(p.amount as string), 0);
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -82,6 +99,13 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
   const formatDate = (dateStr: Date | string) => {
     const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
     return format(date, "MMM dd, yyyy");
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedType("ALL");
+    setSortField("paymentDate");
+    setSortDirection("desc");
   };
 
   return (
@@ -136,37 +160,45 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search payments..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Types</SelectItem>
-                <SelectItem value="RECEIVED">Received</SelectItem>
-                <SelectItem value="SENT">Sent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search payments..."
+        filters={[
+          {
+            id: "type",
+            label: "Type",
+            value: selectedType,
+            onChange: value =>
+              setSelectedType(value as "ALL" | "RECEIVED" | "SENT"),
+            allValue: "ALL",
+            allLabel: "All Types",
+            options: [
+              { value: "RECEIVED", label: "Received" },
+              { value: "SENT", label: "Sent" },
+            ],
+          },
+        ]}
+        sort={{
+          field: sortField,
+          onFieldChange: value => setSortField(value as PaymentSortField),
+          fieldOptions: [
+            { value: "paymentDate", label: "Payment Date" },
+            { value: "amount", label: "Amount" },
+            { value: "paymentType", label: "Type" },
+            { value: "paymentNumber", label: "Payment #" },
+          ],
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Ascending",
+            desc: "Descending",
+          },
+        }}
+        resultCount={filteredPayments.length}
+        resultLabel={filteredPayments.length === 1 ? "payment" : "payments"}
+        onClearAll={handleClearAllFilters}
+      />
 
       {/* Payments Table */}
       <Card>
@@ -209,18 +241,18 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
                       <TableCell>{formatDate(payment.paymentDate)}</TableCell>
                       <TableCell>
                         <StatusBadge
-                          status={payment.paymentType}
+                          status={payment.paymentType ?? ""}
                           type="payment"
                         />
                       </TableCell>
                       <TableCell>
                         <StatusBadge
-                          status={payment.paymentMethod}
+                          status={payment.paymentMethod ?? ""}
                           type="paymentMethod"
                         />
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {formatCurrency(payment.amount)}
+                        {formatCurrency(payment.amount as string)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {payment.referenceNumber || "-"}

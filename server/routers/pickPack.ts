@@ -647,8 +647,37 @@ export const pickPackRouter = router({
             packedBy: actorId,
           });
           packedCount++;
-        } catch (_err) {
-          // Skip already packed items (duplicate key — item already in a bag)
+        } catch (err) {
+          // Only skip known duplicate/conflict errors (item already packed in a bag)
+          const isKnownDuplicate =
+            err instanceof Error &&
+            (err.message.includes("ER_DUP_ENTRY") ||
+              err.message.toLowerCase().includes("duplicate entry") ||
+              (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
+              String(
+                (err as unknown as { errno?: number }).errno ?? ""
+              ) === "1062");
+
+          if (isKnownDuplicate) {
+            logger.warn(
+              { itemId, bagId: newBag.insertId, orderId: input.orderId },
+              "Item already packed in bag — skipping duplicate assignment"
+            );
+          } else {
+            logger.warn(
+              {
+                itemId,
+                bagId: newBag.insertId,
+                orderId: input.orderId,
+                error: err instanceof Error ? err.message : String(err),
+              },
+              "Unexpected error packing item in markAllPacked"
+            );
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Failed to pack item ${itemId}: ${err instanceof Error ? err.message : String(err)}`,
+            });
+          }
         }
       }
 

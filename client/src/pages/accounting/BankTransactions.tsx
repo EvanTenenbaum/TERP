@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import {
   Table,
   TableBody,
@@ -13,14 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Search,
   Plus,
   ArrowDownCircle,
   ArrowUpCircle,
@@ -41,12 +33,36 @@ type BankTransaction = {
   isReconciled: boolean;
 };
 
-export default function BankTransactions({
-  embedded,
-}: { embedded?: boolean } = {}) {
+type BankTransactionSortField =
+  | "transactionDate"
+  | "amount"
+  | "referenceNumber";
+
+const TRANSACTION_TYPE_OPTIONS = [
+  { value: "DEPOSIT", label: "Deposit" },
+  { value: "WITHDRAWAL", label: "Withdrawal" },
+  { value: "TRANSFER", label: "Transfer" },
+  { value: "FEE", label: "Fee" },
+];
+
+const RECONCILED_OPTIONS = [
+  { value: "YES", label: "Reconciled" },
+  { value: "NO", label: "Unreconciled" },
+];
+
+const BANK_TRANSACTION_SORT_OPTIONS = [
+  { value: "transactionDate", label: "Transaction Date" },
+  { value: "amount", label: "Amount" },
+  { value: "referenceNumber", label: "Reference Number" },
+];
+
+export default function BankTransactions({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedReconciled, setSelectedReconciled] = useState<string>("ALL");
+  const [sortField, setSortField] =
+    useState<BankTransactionSortField>("transactionDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Fetch transactions
   const { data: transactions, isLoading } =
@@ -67,16 +83,44 @@ export default function BankTransactions({
   const filteredTransactions = useMemo(() => {
     // BUG-034: transactions is now a UnifiedPaginatedResponse with items array
     const txList = transactions?.items ?? [];
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    if (!searchQuery) return txList;
+    const searched = normalizedQuery
+      ? txList.filter(
+          (tx: BankTransaction) =>
+            (tx.description &&
+              tx.description.toLowerCase().includes(normalizedQuery)) ||
+            (tx.referenceNumber &&
+              tx.referenceNumber.toLowerCase().includes(normalizedQuery))
+        )
+      : txList;
 
-    const query = searchQuery.toLowerCase();
-    return txList.filter(
-      (tx: BankTransaction) =>
-        (tx.description && tx.description.toLowerCase().includes(query)) ||
-        (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(query))
-    );
-  }, [transactions, searchQuery]);
+    const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+    return [...searched].sort((a: BankTransaction, b: BankTransaction) => {
+      let comparison = 0;
+
+      if (sortField === "transactionDate") {
+        comparison =
+          new Date(a.transactionDate).getTime() -
+          new Date(b.transactionDate).getTime();
+      } else if (sortField === "amount") {
+        comparison = parseFloat(a.amount) - parseFloat(b.amount);
+      } else if (sortField === "referenceNumber") {
+        comparison = (a.referenceNumber || "").localeCompare(
+          b.referenceNumber || ""
+        );
+      }
+
+      if (comparison === 0) {
+        comparison =
+          new Date(a.transactionDate).getTime() -
+          new Date(b.transactionDate).getTime();
+      }
+
+      return comparison * directionMultiplier;
+    });
+  }, [searchQuery, sortDirection, sortField, transactions]);
 
   // Calculate totals
   const totalTransactions = filteredTransactions.length;
@@ -104,6 +148,14 @@ export default function BankTransactions({
   const formatDate = (dateStr: Date | string) => {
     const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
     return format(date, "MMM dd, yyyy");
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedType("ALL");
+    setSelectedReconciled("ALL");
+    setSortField("transactionDate");
+    setSortDirection("desc");
   };
 
   const getTransactionTypeBadge = (type: string) => {
@@ -203,52 +255,48 @@ export default function BankTransactions({
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search transactions..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Types</SelectItem>
-                <SelectItem value="DEPOSIT">Deposit</SelectItem>
-                <SelectItem value="WITHDRAWAL">Withdrawal</SelectItem>
-                <SelectItem value="TRANSFER">Transfer</SelectItem>
-                <SelectItem value="FEE">Fee</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedReconciled}
-              onValueChange={setSelectedReconciled}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="YES">Reconciled</SelectItem>
-                <SelectItem value="NO">Unreconciled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search transactions..."
+        filters={[
+          {
+            id: "transactionType",
+            label: "Type",
+            value: selectedType,
+            options: TRANSACTION_TYPE_OPTIONS,
+            onChange: setSelectedType,
+            allValue: "ALL",
+            allLabel: "All Types",
+          },
+          {
+            id: "reconciled",
+            label: "Reconciled",
+            value: selectedReconciled,
+            options: RECONCILED_OPTIONS,
+            onChange: setSelectedReconciled,
+            allValue: "ALL",
+            allLabel: "All Statuses",
+          },
+        ]}
+        sort={{
+          field: sortField,
+          fieldOptions: BANK_TRANSACTION_SORT_OPTIONS,
+          onFieldChange: value =>
+            setSortField(value as BankTransactionSortField),
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Lowest First",
+            desc: "Highest First",
+          },
+        }}
+        onClearAll={handleClearAllFilters}
+        resultCount={filteredTransactions.length}
+        resultLabel={
+          filteredTransactions.length === 1 ? "transaction" : "transactions"
+        }
+      />
 
       {/* Transactions Table */}
       <Card>
