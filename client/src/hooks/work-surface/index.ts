@@ -148,3 +148,10 @@ export type {
   SessionState,
   UseSessionTimeoutReturn,
 } from "./useSessionTimeout";
+
+// TER-283/284/285/286: Shared Powersheet Selection
+export { usePowersheetSelection } from "./usePowersheetSelection";
+export type {
+  UsePowersheetSelectionOptions,
+  UsePowersheetSelectionReturn,
+} from "./usePowersheetSelection";

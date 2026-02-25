@@ -37,7 +37,7 @@ export default function ProcurementWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title="Procurement"
-      description="Run the complete receiving spine from Purchase Order to Product Intake to Received corrections."
+      description="Run the complete procurement spine from Purchase Order to Product Intake to Received corrections."
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}
       onTabChange={setActiveTab}

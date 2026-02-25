@@ -79,6 +79,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { usePowersheetSelection } from "../hooks/work-surface";
 
 // ============================================================================
 // TYPES
@@ -1189,9 +1190,6 @@ export default function IntakeReceipts() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedReceiptId, setSelectedReceiptId] = useState<number | null>(
-    null
-  );
 
   // Fetch receipts
   const {
@@ -1214,6 +1212,14 @@ export default function IntakeReceipts() {
     [receiptsData]
   );
   const totalCount = receiptsData?.pagination?.total ?? receipts.length;
+
+  // Shared powersheet selection for receipts (TER-286)
+  const visibleReceiptIds = useMemo(() => receipts.map(r => r.id), [receipts]);
+  const receiptSelection = usePowersheetSelection<number>({
+    visibleIds: visibleReceiptIds,
+  });
+  const selectedReceiptId = receiptSelection.activeId;
+  const setSelectedReceiptId = receiptSelection.setActiveId;
 
   // Calculate statistics
   const stats = useMemo(() => {

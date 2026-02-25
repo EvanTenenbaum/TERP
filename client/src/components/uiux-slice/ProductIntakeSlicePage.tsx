@@ -67,6 +67,7 @@ import {
   type ProductIntakeDraftLine,
 } from "@/lib/productIntakeDrafts";
 import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
+import { usePowersheetSelection } from "../../hooks/work-surface";
 
 const defaultColumns: GridColumnOption[] = [
   { id: "brand", label: "Brand", visible: true },
@@ -93,18 +94,22 @@ function rowValidationErrors(line: ProductIntakeDraftLine): string[] {
   if (!line.strainName && !line.productName) errors.push("Strain is required");
   if (!line.brandName) errors.push("Brand is required");
   if (!line.category) errors.push("Category is required");
-  if (!line.packaging && !line.subcategory) errors.push("Packaging is required");
+  if (!line.packaging && !line.subcategory)
+    errors.push("Packaging is required");
   if (!(line.intakeQty > 0)) errors.push("Qty must be greater than 0");
-  if (line.intakeQty > remaining) errors.push("Qty exceeds remaining PO quantity");
+  if (line.intakeQty > remaining)
+    errors.push("Qty exceeds remaining PO quantity");
   if (!(line.unitCost >= 0)) errors.push("Cost must be 0 or more");
   if (!line.locationName) errors.push("Location is required");
-  if ((line.mediaUrls ?? []).length === 0) errors.push("Image evidence is required");
+  if ((line.mediaUrls ?? []).length === 0)
+    errors.push("Image evidence is required");
 
   return errors;
 }
 
 function calculateValidation(draft: ProductIntakeDraft | null) {
-  if (!draft) return { errorCount: 0, errorsByLine: new Map<string, string[]>() };
+  if (!draft)
+    return { errorCount: 0, errorsByLine: new Map<string, string[]>() };
 
   const errorsByLine = new Map<string, string[]>();
   draft.lines.forEach(line => {
@@ -113,7 +118,10 @@ function calculateValidation(draft: ProductIntakeDraft | null) {
   });
 
   return {
-    errorCount: Array.from(errorsByLine.values()).reduce((sum, errs) => sum + errs.length, 0),
+    errorCount: Array.from(errorsByLine.values()).reduce(
+      (sum, errs) => sum + errs.length,
+      0
+    ),
     errorsByLine,
   };
 }
@@ -157,7 +165,6 @@ export function ProductIntakeSlicePage() {
   const [drafts, setDrafts] = useState<ProductIntakeDraft[]>([]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
-  const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set());
 
   const [reviewOpen, setReviewOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
@@ -178,8 +185,8 @@ export function ProductIntakeSlicePage() {
 
   const [receivingDraftId, setReceivingDraftId] = useState<string | null>(null);
   const [activityItems, setActivityItems] = useState<ActivityMovement[]>([]);
-  const [labActivityItems, setLabActivityItems] = useState<ActivityMovement[]>(() =>
-    loadProductIntakeLabActivity(storageUserId)
+  const [labActivityItems, setLabActivityItems] = useState<ActivityMovement[]>(
+    () => loadProductIntakeLabActivity(storageUserId)
   );
   const [activityLoading, setActivityLoading] = useState(false);
   const [activityReloadToken, setActivityReloadToken] = useState(0);
@@ -219,15 +226,14 @@ export function ProductIntakeSlicePage() {
     const items = Array.isArray(payload) ? payload : (payload?.items ?? []);
     const list = items as PoListItem[];
     return (
-      list.find(po => po.purchaseOrderStatus !== "RECEIVED") ??
-      list[0] ??
-      null
+      list.find(po => po.purchaseOrderStatus !== "RECEIVED") ?? list[0] ?? null
     );
   }, [poListQuery.data]);
-  const bootstrapPoDetailsQuery = trpc.purchaseOrders.getByIdWithDetails.useQuery(
-    { id: bootstrapPo?.id ?? -1 },
-    { enabled: !!bootstrapPo?.id }
-  );
+  const bootstrapPoDetailsQuery =
+    trpc.purchaseOrders.getByIdWithDetails.useQuery(
+      { id: bootstrapPo?.id ?? -1 },
+      { enabled: !!bootstrapPo?.id }
+    );
   const productsQuery = trpc.purchaseOrders.products.useQuery({ limit: 50 });
   const bootstrapAttemptedRef = useRef(false);
 
@@ -339,7 +345,8 @@ export function ProductIntakeSlicePage() {
             productId: product.id,
             productName: product.nameCanonical ?? `Product #${product.id}`,
             brandName: product.brandName ?? "Seed Supplier",
-            strainName: product.strainName ?? product.nameCanonical ?? "Seed Strain",
+            strainName:
+              product.strainName ?? product.nameCanonical ?? "Seed Strain",
             category: product.category ?? "Flower",
             subcategory: product.subcategory ?? "Indoor",
             packaging: product.subcategory ?? "Indoor",
@@ -390,23 +397,36 @@ export function ProductIntakeSlicePage() {
     () =>
       selectedDraftId
         ? getProductIntakeDraft(selectedDraftId, storageUserId)
-        : drafts[0] ?? null,
+        : (drafts[0] ?? null),
     [drafts, selectedDraftId, storageUserId]
   );
+
+  // Shared powersheet selection for draft lines (TER-284)
+  const visibleLineIds = useMemo(
+    () => (selectedDraft?.lines ?? []).map(line => line.id),
+    [selectedDraft]
+  );
+  const lineSelection = usePowersheetSelection<string>({
+    visibleIds: visibleLineIds,
+  });
+  const selectedLineIds = lineSelection.selectedIds;
 
   useEffect(() => {
     if (!selectedDraft) {
       setSelectedLineId(null);
-      setSelectedLineIds(new Set());
+      lineSelection.clear();
       return;
     }
 
-    const stillValid = selectedDraft.lines.some(line => line.id === selectedLineId);
+    const stillValid = selectedDraft.lines.some(
+      line => line.id === selectedLineId
+    );
     if (!stillValid) {
       const firstId = selectedDraft.lines[0]?.id ?? null;
       setSelectedLineId(firstId);
-      setSelectedLineIds(firstId ? new Set([firstId]) : new Set());
+      lineSelection.clear();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDraft, selectedLineId]);
 
   const selectedLine = useMemo(() => {
@@ -485,10 +505,11 @@ export function ProductIntakeSlicePage() {
     const loadActivity = async () => {
       setActivityLoading(true);
       try {
-        const poReceiptMovements = (await utils.inventoryMovements.getByReference.fetch({
-          referenceType: "PO_RECEIPT",
-          referenceId: selectedDraft.poId,
-        })) as ActivityMovement[];
+        const poReceiptMovements =
+          (await utils.inventoryMovements.getByReference.fetch({
+            referenceType: "PO_RECEIPT",
+            referenceId: selectedDraft.poId,
+          })) as ActivityMovement[];
 
         const batchMovementLists = await Promise.all(
           receivedBatchIds.map(batchId =>
@@ -500,11 +521,13 @@ export function ProductIntakeSlicePage() {
         );
 
         const merged = new Map<number, ActivityMovement>();
-        [...poReceiptMovements, ...batchMovementLists.flat()].forEach(movement => {
-          if (!merged.has(movement.id)) {
-            merged.set(movement.id, movement as ActivityMovement);
+        [...poReceiptMovements, ...batchMovementLists.flat()].forEach(
+          movement => {
+            if (!merged.has(movement.id)) {
+              merged.set(movement.id, movement as ActivityMovement);
+            }
           }
-        });
+        );
 
         const localForDraft = labActivityItems.filter(
           item => item.draftId === selectedDraft.id
@@ -546,7 +569,9 @@ export function ProductIntakeSlicePage() {
     utils,
   ]);
 
-  const assertCurrentDraft = (draft: ProductIntakeDraft): ProductIntakeDraft | null => {
+  const assertCurrentDraft = (
+    draft: ProductIntakeDraft
+  ): ProductIntakeDraft | null => {
     const latest = getProductIntakeDraft(draft.id, storageUserId);
     if (!latest) {
       toast.error("Draft no longer exists. Reloaded current list.");
@@ -570,7 +595,9 @@ export function ProductIntakeSlicePage() {
       {
         viewMode: nextViewMode,
         columnOrder: nextColumns.map(c => c.id),
-        columnVisibility: Object.fromEntries(nextColumns.map(c => [c.id, c.visible])),
+        columnVisibility: Object.fromEntries(
+          nextColumns.map(c => [c.id, c.visible])
+        ),
       },
       storageUserId
     );
@@ -592,9 +619,13 @@ export function ProductIntakeSlicePage() {
     setViewMode("COMFORTABLE");
   };
 
-  const visibleColumnIds = new Set(columns.filter(c => c.visible).map(c => c.id));
+  const visibleColumnIds = new Set(
+    columns.filter(c => c.visible).map(c => c.id)
+  );
 
-  const updateDraft = (updater: (draft: ProductIntakeDraft) => ProductIntakeDraft) => {
+  const updateDraft = (
+    updater: (draft: ProductIntakeDraft) => ProductIntakeDraft
+  ) => {
     if (!selectedDraft) return;
     const latest = assertCurrentDraft(selectedDraft);
     if (!latest) return;
@@ -603,7 +634,10 @@ export function ProductIntakeSlicePage() {
     refreshDrafts(next.id);
   };
 
-  const updateLine = (lineId: string, patch: Partial<ProductIntakeDraftLine>) => {
+  const updateLine = (
+    lineId: string,
+    patch: Partial<ProductIntakeDraftLine>
+  ) => {
     updateDraft(draft => ({
       ...draft,
       lines: draft.lines.map(line =>
@@ -617,7 +651,10 @@ export function ProductIntakeSlicePage() {
     }));
   };
 
-  const validation = useMemo(() => calculateValidation(selectedDraft), [selectedDraft]);
+  const validation = useMemo(
+    () => calculateValidation(selectedDraft),
+    [selectedDraft]
+  );
 
   const summary = useMemo(() => {
     if (!selectedDraft) return { lines: 0, units: 0, cost: 0 };
@@ -627,7 +664,8 @@ export function ProductIntakeSlicePage() {
       0
     );
     const cost = selectedDraft.lines.reduce(
-      (sum, line) => sum + Number(line.intakeQty || 0) * Number(line.unitCost || 0),
+      (sum, line) =>
+        sum + Number(line.intakeQty || 0) * Number(line.unitCost || 0),
       0
     );
     return { lines, units, cost };
@@ -636,10 +674,7 @@ export function ProductIntakeSlicePage() {
   const canEdit =
     selectedDraft?.status === "DRAFT" && receivingDraftId !== selectedDraft.id;
 
-  const allLinesSelected =
-    !!selectedDraft &&
-    selectedDraft.lines.length > 0 &&
-    selectedDraft.lines.every(line => selectedLineIds.has(line.id));
+  const allLinesSelected = lineSelection.allSelected;
 
   const receiveDraft = async () => {
     if (!selectedDraft) return;
@@ -885,7 +920,9 @@ export function ProductIntakeSlicePage() {
       return;
     }
 
-    const destination = locations.find(l => String(l.id) === transferLocationId);
+    const destination = locations.find(
+      l => String(l.id) === transferLocationId
+    );
     if (!destination) {
       toast.error("Destination location not found.");
       return;
@@ -915,9 +952,10 @@ export function ProductIntakeSlicePage() {
       if (!selectedLine.batchId) {
         throw new Error("Batch not available for server transfer.");
       }
-      const existingLocations = await utils.warehouseTransfers.getBatchLocations.fetch({
-        batchId: selectedLine.batchId,
-      });
+      const existingLocations =
+        await utils.warehouseTransfers.getBatchLocations.fetch({
+          batchId: selectedLine.batchId,
+        });
       const from = existingLocations[0];
 
       await transferMutation.mutateAsync({
@@ -929,7 +967,8 @@ export function ProductIntakeSlicePage() {
         toShelf: destination.shelf ?? undefined,
         toBin: destination.bin ?? undefined,
         quantity: transferQtyNum.toString(),
-        notes: transferReason || `Change Location from Intake ${selectedDraft?.id}`,
+        notes:
+          transferReason || `Change Location from Intake ${selectedDraft?.id}`,
       });
 
       setActivityReloadToken(token => token + 1);
@@ -943,7 +982,9 @@ export function ProductIntakeSlicePage() {
         elapsedMs: Date.now() - startedAt,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Location change failed");
+      toast.error(
+        error instanceof Error ? error.message : "Location change failed"
+      );
       recordFrictionEvent({
         event: "dead_end",
         workflow: "GF-007",
@@ -986,7 +1027,9 @@ export function ProductIntakeSlicePage() {
         referenceId: selectedDraft.poId,
       });
 
-      const positive = (movements ?? []).filter(m => Number(m.quantityChange) > 0);
+      const positive = (movements ?? []).filter(
+        m => Number(m.quantityChange) > 0
+      );
       const byBatch = new Map<number, Array<(typeof positive)[number]>>();
       positive.forEach(movement => {
         if (!byBatch.has(movement.batchId)) {
@@ -1051,7 +1094,8 @@ export function ProductIntakeSlicePage() {
           const raw = typeof reader.result === "string" ? reader.result : "";
           resolve(raw.split(",")[1] ?? "");
         };
-        reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+        reader.onerror = () =>
+          reject(reader.error ?? new Error("File read failed"));
         reader.readAsDataURL(file);
       });
 
@@ -1180,7 +1224,10 @@ export function ProductIntakeSlicePage() {
           </SelectContent>
         </Select>
 
-        <Select value={viewMode} onValueChange={v => setViewModeAndPersist(v as GridViewMode)}>
+        <Select
+          value={viewMode}
+          onValueChange={v => setViewModeAndPersist(v as GridViewMode)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="View" />
           </SelectTrigger>
@@ -1191,10 +1238,16 @@ export function ProductIntakeSlicePage() {
           </SelectContent>
         </Select>
 
-        <GridColumnsPopover columns={columns} onChange={setColumnsAndPersist} onReset={resetColumns} />
+        <GridColumnsPopover
+          columns={columns}
+          onChange={setColumnsAndPersist}
+          onReset={resetColumns}
+        />
       </div>
 
-      <div className="px-6 py-2 border-b text-xs text-muted-foreground">{intakeContext}</div>
+      <div className="px-6 py-2 border-b text-xs text-muted-foreground">
+        {intakeContext}
+      </div>
 
       <div className="px-6 py-2 border-b flex items-center gap-2 flex-wrap text-sm">
         <Button
@@ -1286,7 +1339,11 @@ export function ProductIntakeSlicePage() {
               <Waypoints className="h-4 w-4 mr-1" />
               Change Location
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setVoidOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setVoidOpen(true)}
+            >
               <RotateCcw className="h-4 w-4 mr-1" />
               Void Intake
             </Button>
@@ -1330,7 +1387,7 @@ export function ProductIntakeSlicePage() {
           variant="ghost"
           size="sm"
           disabled={selectedLineIds.size === 0}
-          onClick={() => setSelectedLineIds(new Set())}
+          onClick={() => lineSelection.clear()}
         >
           Clear
         </Button>
@@ -1338,215 +1395,257 @@ export function ProductIntakeSlicePage() {
 
       <div className="flex-1 overflow-auto">
         <table className="w-full min-h-[420px]">
-            <thead className="sticky top-0 bg-background border-b z-10">
-              <tr className="text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="text-left p-2 w-10">
-                  <Checkbox
-                    checked={allLinesSelected}
-                    onCheckedChange={checked => {
-                      if (!selectedDraft) return;
-                      if (checked) {
-                        setSelectedLineIds(new Set(selectedDraft.lines.map(line => line.id)));
-                      } else {
-                        setSelectedLineIds(new Set());
-                      }
-                    }}
-                  />
-                </th>
-                <th className="text-left p-2 w-10"></th>
-                {visibleColumnIds.has("brand") && <th className="text-left p-2">Brand</th>}
-                {visibleColumnIds.has("strain") && <th className="text-left p-2">Strain</th>}
-                {visibleColumnIds.has("category") && <th className="text-left p-2">Category</th>}
-                {visibleColumnIds.has("packaging") && <th className="text-left p-2">Packaging</th>}
-                {visibleColumnIds.has("qty") && <th className="text-left p-2">Qty</th>}
-                {visibleColumnIds.has("cost") && <th className="text-left p-2">Cost</th>}
-                {visibleColumnIds.has("grade") && <th className="text-left p-2">Grade</th>}
-                {visibleColumnIds.has("location") && <th className="text-left p-2">Location</th>}
-                {viewMode === "VISUAL" && visibleColumnIds.has("images") && <th className="text-left p-2">Images</th>}
-                {selectedDraft?.status !== "DRAFT" && visibleColumnIds.has("sku") && <th className="text-left p-2">SKU</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {(selectedDraft?.lines ?? []).map(line => {
-                const isSelected = selectedLineId === line.id;
-                const isChecked = selectedLineIds.has(line.id);
-                const lineErrors = validation.errorsByLine.get(line.id) ?? [];
-                const hasError = selectedDraft?.status === "DRAFT" && lineErrors.length > 0;
+          <thead className="sticky top-0 bg-background border-b z-10">
+            <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="text-left p-2 w-10">
+                <Checkbox
+                  checked={allLinesSelected}
+                  onCheckedChange={checked => {
+                    lineSelection.toggleAll(!!checked);
+                  }}
+                />
+              </th>
+              <th className="text-left p-2 w-10"></th>
+              {visibleColumnIds.has("brand") && (
+                <th className="text-left p-2">Brand</th>
+              )}
+              {visibleColumnIds.has("strain") && (
+                <th className="text-left p-2">Strain</th>
+              )}
+              {visibleColumnIds.has("category") && (
+                <th className="text-left p-2">Category</th>
+              )}
+              {visibleColumnIds.has("packaging") && (
+                <th className="text-left p-2">Packaging</th>
+              )}
+              {visibleColumnIds.has("qty") && (
+                <th className="text-left p-2">Qty</th>
+              )}
+              {visibleColumnIds.has("cost") && (
+                <th className="text-left p-2">Cost</th>
+              )}
+              {visibleColumnIds.has("grade") && (
+                <th className="text-left p-2">Grade</th>
+              )}
+              {visibleColumnIds.has("location") && (
+                <th className="text-left p-2">Location</th>
+              )}
+              {viewMode === "VISUAL" && visibleColumnIds.has("images") && (
+                <th className="text-left p-2">Images</th>
+              )}
+              {selectedDraft?.status !== "DRAFT" &&
+                visibleColumnIds.has("sku") && (
+                  <th className="text-left p-2">SKU</th>
+                )}
+            </tr>
+          </thead>
+          <tbody>
+            {(selectedDraft?.lines ?? []).map(line => {
+              const isSelected = selectedLineId === line.id;
+              const isChecked = selectedLineIds.has(line.id);
+              const lineErrors = validation.errorsByLine.get(line.id) ?? [];
+              const hasError =
+                selectedDraft?.status === "DRAFT" && lineErrors.length > 0;
 
-                return (
-                  <tr
-                    key={line.id}
-                    className={`border-b ${rowClass} ${isSelected ? "bg-muted/20" : ""}`}
-                    onClick={() => setSelectedLineId(line.id)}
-                  >
-                    <td className="p-2" onClick={e => e.stopPropagation()}>
-                      <Checkbox
-                        checked={isChecked}
-                        onCheckedChange={checked => {
-                          setSelectedLineIds(prev => {
-                            const copy = new Set(prev);
-                            if (checked) copy.add(line.id);
-                            else copy.delete(line.id);
-                            return copy;
-                          });
-                        }}
+              return (
+                <tr
+                  key={line.id}
+                  className={`border-b ${rowClass} ${isSelected ? "bg-muted/20" : ""}`}
+                  onClick={() => setSelectedLineId(line.id)}
+                >
+                  <td className="p-2" onClick={e => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={checked => {
+                        lineSelection.toggle(line.id, !!checked);
+                      }}
+                    />
+                  </td>
+                  <td className="p-2">
+                    {hasError ? (
+                      <span
+                        className="inline-flex items-center text-red-600"
+                        title={lineErrors.join("; ")}
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center text-muted-foreground">
+                        •
+                      </span>
+                    )}
+                  </td>
+                  {visibleColumnIds.has("brand") && (
+                    <td className="p-2">
+                      <Input
+                        value={line.brandName ?? ""}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, { brandName: e.target.value })
+                        }
                       />
                     </td>
+                  )}
+                  {visibleColumnIds.has("strain") && (
                     <td className="p-2">
-                      {hasError ? (
-                        <span className="inline-flex items-center text-red-600" title={lineErrors.join("; ")}>
-                          <AlertTriangle className="h-4 w-4" />
-                        </span>
+                      <Input
+                        value={line.strainName ?? line.productName}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, {
+                            strainName: e.target.value,
+                            productName: e.target.value,
+                          })
+                        }
+                      />
+                    </td>
+                  )}
+                  {visibleColumnIds.has("category") && (
+                    <td className="p-2">
+                      <Input
+                        value={line.category ?? ""}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, { category: e.target.value })
+                        }
+                      />
+                    </td>
+                  )}
+                  {visibleColumnIds.has("packaging") && (
+                    <td className="p-2">
+                      <Input
+                        value={line.packaging ?? line.subcategory ?? ""}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, {
+                            packaging: e.target.value,
+                            subcategory: e.target.value,
+                          })
+                        }
+                      />
+                    </td>
+                  )}
+                  {visibleColumnIds.has("qty") && (
+                    <td className="p-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max={Math.max(
+                          0,
+                          line.quantityOrdered - line.quantityReceived
+                        )}
+                        step="0.01"
+                        value={line.intakeQty}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, {
+                            intakeQty: Number(e.target.value || 0),
+                          })
+                        }
+                      />
+                    </td>
+                  )}
+                  {visibleColumnIds.has("cost") && (
+                    <td className="p-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={line.unitCost}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, {
+                            unitCost: Number(e.target.value || 0),
+                          })
+                        }
+                      />
+                    </td>
+                  )}
+                  {visibleColumnIds.has("grade") && (
+                    <td className="p-2">
+                      <Input
+                        value={line.grade ?? ""}
+                        disabled={!canEdit}
+                        onChange={e =>
+                          updateLine(line.id, { grade: e.target.value })
+                        }
+                      />
+                    </td>
+                  )}
+                  {visibleColumnIds.has("location") && (
+                    <td className="p-2">
+                      <Select
+                        value={line.locationId ? String(line.locationId) : ""}
+                        onValueChange={value => {
+                          const location = locations.find(
+                            l => String(l.id) === value
+                          );
+                          updateLine(line.id, {
+                            locationId: location?.id,
+                            locationName: location?.site ?? "",
+                          });
+                        }}
+                        disabled={!canEdit}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.map(location => (
+                            <SelectItem
+                              key={location.id}
+                              value={String(location.id)}
+                            >
+                              {location.site}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  )}
+                  {viewMode === "VISUAL" && visibleColumnIds.has("images") && (
+                    <td className="p-2">
+                      {line.mediaUrls && line.mediaUrls.length > 0 ? (
+                        <div className="relative group w-fit">
+                          <img
+                            src={line.mediaUrls[0]?.url}
+                            alt={line.productName}
+                            className="h-12 w-12 rounded object-cover border"
+                          />
+                          <img
+                            src={line.mediaUrls[0]?.url}
+                            alt={`${line.productName} preview`}
+                            className="hidden group-hover:block absolute left-14 top-0 h-28 w-28 rounded border object-cover shadow-lg z-10 bg-background"
+                          />
+                        </div>
                       ) : (
-                        <span className="inline-flex items-center text-muted-foreground">•</span>
+                        <div className="h-12 w-12 rounded border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">
+                          No Image
+                        </div>
                       )}
                     </td>
-                    {visibleColumnIds.has("brand") && (
-                      <td className="p-2">
-                        <Input
-                          value={line.brandName ?? ""}
-                          disabled={!canEdit}
-                          onChange={e => updateLine(line.id, { brandName: e.target.value })}
-                        />
+                  )}
+                  {selectedDraft?.status !== "DRAFT" &&
+                    visibleColumnIds.has("sku") && (
+                      <td className="p-2 font-mono text-xs">
+                        {line.sku ?? "-"}
                       </td>
                     )}
-                    {visibleColumnIds.has("strain") && (
-                      <td className="p-2">
-                        <Input
-                          value={line.strainName ?? line.productName}
-                          disabled={!canEdit}
-                          onChange={e =>
-                            updateLine(line.id, {
-                              strainName: e.target.value,
-                              productName: e.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                    )}
-                    {visibleColumnIds.has("category") && (
-                      <td className="p-2">
-                        <Input
-                          value={line.category ?? ""}
-                          disabled={!canEdit}
-                          onChange={e => updateLine(line.id, { category: e.target.value })}
-                        />
-                      </td>
-                    )}
-                    {visibleColumnIds.has("packaging") && (
-                      <td className="p-2">
-                        <Input
-                          value={line.packaging ?? line.subcategory ?? ""}
-                          disabled={!canEdit}
-                          onChange={e =>
-                            updateLine(line.id, {
-                              packaging: e.target.value,
-                              subcategory: e.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                    )}
-                    {visibleColumnIds.has("qty") && (
-                      <td className="p-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          max={Math.max(0, line.quantityOrdered - line.quantityReceived)}
-                          step="0.01"
-                          value={line.intakeQty}
-                          disabled={!canEdit}
-                          onChange={e => updateLine(line.id, { intakeQty: Number(e.target.value || 0) })}
-                        />
-                      </td>
-                    )}
-                    {visibleColumnIds.has("cost") && (
-                      <td className="p-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.unitCost}
-                          disabled={!canEdit}
-                          onChange={e => updateLine(line.id, { unitCost: Number(e.target.value || 0) })}
-                        />
-                      </td>
-                    )}
-                    {visibleColumnIds.has("grade") && (
-                      <td className="p-2">
-                        <Input
-                          value={line.grade ?? ""}
-                          disabled={!canEdit}
-                          onChange={e => updateLine(line.id, { grade: e.target.value })}
-                        />
-                      </td>
-                    )}
-                    {visibleColumnIds.has("location") && (
-                      <td className="p-2">
-                        <Select
-                          value={line.locationId ? String(line.locationId) : ""}
-                          onValueChange={value => {
-                            const location = locations.find(l => String(l.id) === value);
-                            updateLine(line.id, {
-                              locationId: location?.id,
-                              locationName: location?.site ?? "",
-                            });
-                          }}
-                          disabled={!canEdit}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Location" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {locations.map(location => (
-                              <SelectItem key={location.id} value={String(location.id)}>
-                                {location.site}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                    )}
-                    {viewMode === "VISUAL" && visibleColumnIds.has("images") && (
-                      <td className="p-2">
-                        {line.mediaUrls && line.mediaUrls.length > 0 ? (
-                          <div className="relative group w-fit">
-                            <img
-                              src={line.mediaUrls[0]?.url}
-                              alt={line.productName}
-                              className="h-12 w-12 rounded object-cover border"
-                            />
-                            <img
-                              src={line.mediaUrls[0]?.url}
-                              alt={`${line.productName} preview`}
-                              className="hidden group-hover:block absolute left-14 top-0 h-28 w-28 rounded border object-cover shadow-lg z-10 bg-background"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-12 w-12 rounded border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
-                      </td>
-                    )}
-                    {selectedDraft?.status !== "DRAFT" && visibleColumnIds.has("sku") && (
-                      <td className="p-2 font-mono text-xs">{line.sku ?? "-"}</td>
-                    )}
-                  </tr>
-                );
-              })}
-              {!selectedDraft && (
-                <tr>
-                  <td
-                    className="p-8 text-center text-muted-foreground"
-                    colSpan={12}
-                  >
-                    Select a Product Intake draft.
-                  </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              );
+            })}
+            {!selectedDraft && (
+              <tr>
+                <td
+                  className="p-8 text-center text-muted-foreground"
+                  colSpan={12}
+                >
+                  Select a Product Intake draft.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
@@ -1564,7 +1663,8 @@ export function ProductIntakeSlicePage() {
 
             {validation.errorCount > 0 ? (
               <div className="rounded border border-red-200 bg-red-50 p-3 text-red-700">
-                {validation.errorCount} blocking error(s). Receive is disabled until fixed inline.
+                {validation.errorCount} blocking error(s). Receive is disabled
+                until fixed inline.
               </div>
             ) : (
               <div className="rounded border border-green-200 bg-green-50 p-3 text-green-700 flex items-center gap-2">
@@ -1581,7 +1681,11 @@ export function ProductIntakeSlicePage() {
         </DialogContent>
       </Dialog>
 
-      <Drawer open={activityOpen} onOpenChange={setActivityOpen} direction="right">
+      <Drawer
+        open={activityOpen}
+        onOpenChange={setActivityOpen}
+        direction="right"
+      >
         <DrawerContent className="w-[560px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>Activity Log</DrawerTitle>
@@ -1591,17 +1695,25 @@ export function ProductIntakeSlicePage() {
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-2">
             {activityLoading && (
-              <div className="text-sm text-muted-foreground">Loading activity...</div>
+              <div className="text-sm text-muted-foreground">
+                Loading activity...
+              </div>
             )}
             {activityRows.map(({ key, item }) => (
               <div key={key} className="border-b pb-2 text-sm">
                 <p className="font-medium">{item.inventoryMovementType}</p>
-                <p className="text-xs text-muted-foreground">Qty {item.quantityChange}</p>
-                <p className="text-xs text-muted-foreground">{item.notes ?? "-"}</p>
+                <p className="text-xs text-muted-foreground">
+                  Qty {item.quantityChange}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {item.notes ?? "-"}
+                </p>
               </div>
             ))}
             {!activityLoading && activityItems.length === 0 && (
-              <div className="text-sm text-muted-foreground">No activity yet.</div>
+              <div className="text-sm text-muted-foreground">
+                No activity yet.
+              </div>
             )}
           </div>
           <DrawerFooter>
@@ -1612,7 +1724,11 @@ export function ProductIntakeSlicePage() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={attachmentsOpen} onOpenChange={setAttachmentsOpen} direction="right">
+      <Drawer
+        open={attachmentsOpen}
+        onOpenChange={setAttachmentsOpen}
+        direction="right"
+      >
         <DrawerContent className="w-[520px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>Attachments</DrawerTitle>
@@ -1622,7 +1738,9 @@ export function ProductIntakeSlicePage() {
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-3">
             {!selectedLine && (
-              <p className="text-sm text-muted-foreground">Select a line first.</p>
+              <p className="text-sm text-muted-foreground">
+                Select a line first.
+              </p>
             )}
             {selectedLine && (
               <>
@@ -1633,22 +1751,32 @@ export function ProductIntakeSlicePage() {
                     multiple
                     accept="image/*"
                     onChange={e =>
-                      uploadAttachments(e.target.files ? Array.from(e.target.files) : null)
+                      uploadAttachments(
+                        e.target.files ? Array.from(e.target.files) : null
+                      )
                     }
                   />
                 </div>
 
                 <div className="space-y-2">
                   {(selectedLine.mediaUrls ?? []).map(file => (
-                    <div key={file.url} className="flex items-center justify-between border-b py-2 text-sm">
+                    <div
+                      key={file.url}
+                      className="flex items-center justify-between border-b py-2 text-sm"
+                    >
                       <span className="truncate mr-2">{file.fileName}</span>
-                      <Button variant="ghost" onClick={() => removeAttachment(file.url)}>
+                      <Button
+                        variant="ghost"
+                        onClick={() => removeAttachment(file.url)}
+                      >
                         Remove
                       </Button>
                     </div>
                   ))}
                   {(selectedLine.mediaUrls ?? []).length === 0 && (
-                    <p className="text-sm text-muted-foreground">No photos attached.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No photos attached.
+                    </p>
                   )}
                 </div>
               </>
@@ -1662,7 +1790,11 @@ export function ProductIntakeSlicePage() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={galleryOpen} onOpenChange={setGalleryOpen} direction="right">
+      <Drawer
+        open={galleryOpen}
+        onOpenChange={setGalleryOpen}
+        direction="right"
+      >
         <DrawerContent className="w-[520px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>SKU Gallery</DrawerTitle>
@@ -1680,7 +1812,9 @@ export function ProductIntakeSlicePage() {
               />
             ))}
             {galleryImages.length === 0 && (
-              <p className="text-sm text-muted-foreground">No SKU images available.</p>
+              <p className="text-sm text-muted-foreground">
+                No SKU images available.
+              </p>
             )}
           </div>
           <DrawerFooter>
@@ -1705,15 +1839,25 @@ export function ProductIntakeSlicePage() {
             </p>
             <div>
               <Label>Adjustment (+ / -)</Label>
-              <Input type="number" step="0.01" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} />
+              <Input
+                type="number"
+                step="0.01"
+                value={adjustAmount}
+                onChange={e => setAdjustAmount(e.target.value)}
+              />
             </div>
             <div>
               <Label>Reason</Label>
-              <Textarea value={adjustReason} onChange={e => setAdjustReason(e.target.value)} />
+              <Textarea
+                value={adjustReason}
+                onChange={e => setAdjustReason(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAdjustOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={submitAdjust} disabled={adjustMutation.isPending}>
               {adjustMutation.isPending ? "Saving..." : "Record Adjustment"}
             </Button>
@@ -1732,7 +1876,10 @@ export function ProductIntakeSlicePage() {
           <div className="space-y-3">
             <div>
               <Label>Destination Location</Label>
-              <Select value={transferLocationId} onValueChange={setTransferLocationId}>
+              <Select
+                value={transferLocationId}
+                onValueChange={setTransferLocationId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
@@ -1747,17 +1894,32 @@ export function ProductIntakeSlicePage() {
             </div>
             <div>
               <Label>Quantity</Label>
-              <Input type="number" step="0.01" value={transferQty} onChange={e => setTransferQty(e.target.value)} />
+              <Input
+                type="number"
+                step="0.01"
+                value={transferQty}
+                onChange={e => setTransferQty(e.target.value)}
+              />
             </div>
             <div>
               <Label>Reason</Label>
-              <Textarea value={transferReason} onChange={e => setTransferReason(e.target.value)} />
+              <Textarea
+                value={transferReason}
+                onChange={e => setTransferReason(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTransferOpen(false)}>Cancel</Button>
-            <Button onClick={submitTransfer} disabled={transferMutation.isPending}>
-              {transferMutation.isPending ? "Saving..." : "Record Location Change"}
+            <Button variant="outline" onClick={() => setTransferOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={submitTransfer}
+              disabled={transferMutation.isPending}
+            >
+              {transferMutation.isPending
+                ? "Saving..."
+                : "Record Location Change"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1773,16 +1935,26 @@ export function ProductIntakeSlicePage() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              This creates reversal movements. Original records remain in history.
+              This creates reversal movements. Original records remain in
+              history.
             </p>
             <div>
               <Label>Reason</Label>
-              <Textarea value={voidReason} onChange={e => setVoidReason(e.target.value)} />
+              <Textarea
+                value={voidReason}
+                onChange={e => setVoidReason(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setVoidOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={submitVoid} disabled={reverseMutation.isPending}>
+            <Button variant="outline" onClick={() => setVoidOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={submitVoid}
+              disabled={reverseMutation.isPending}
+            >
               {reverseMutation.isPending ? "Voiding..." : "Void Intake"}
             </Button>
           </DialogFooter>

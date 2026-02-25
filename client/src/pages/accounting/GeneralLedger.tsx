@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -10,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import {
   Table,
   TableBody,
@@ -25,20 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, Plus, BookOpen, CalendarIcon, FileText } from "lucide-react";
+import { Plus, BookOpen, CalendarIcon, FileText } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -75,11 +68,27 @@ type TrialBalanceItem = {
   balance: number;
 };
 
-export default function GeneralLedger() {
+type LedgerSortField = "entryDate" | "debit" | "credit" | "entryNumber";
+
+const LEDGER_STATUS_OPTIONS = [
+  { value: "POSTED", label: "Posted" },
+  { value: "DRAFT", label: "Draft" },
+];
+
+const LEDGER_SORT_OPTIONS = [
+  { value: "entryDate", label: "Entry Date" },
+  { value: "debit", label: "Debit Amount" },
+  { value: "credit", label: "Credit Amount" },
+  { value: "entryNumber", label: "Entry Number" },
+];
+
+export default function GeneralLedger({ embedded }: { embedded?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<number | undefined>();
   const [selectedPeriod, setSelectedPeriod] = useState<number | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [sortField, setSortField] = useState<LedgerSortField>("entryDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -128,16 +137,48 @@ export default function GeneralLedger() {
 
     // BUG-034: entries is now a UnifiedPaginatedResponse with items array
     const entryList = entries?.items ?? [];
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    if (!searchQuery) return entryList;
+    const searched = normalizedQuery
+      ? entryList.filter(
+          (entry: LedgerEntry) =>
+            entry.entryNumber.toLowerCase().includes(normalizedQuery) ||
+            (entry.description &&
+              entry.description.toLowerCase().includes(normalizedQuery))
+        )
+      : entryList;
 
-    const query = searchQuery.toLowerCase();
-    return entryList.filter(
-      (entry: LedgerEntry) =>
-        entry.entryNumber.toLowerCase().includes(query) ||
-        (entry.description && entry.description.toLowerCase().includes(query))
-    );
-  }, [entries, searchQuery]);
+    const statusFiltered =
+      selectedStatus === "ALL"
+        ? searched
+        : searched.filter((entry: LedgerEntry) =>
+            selectedStatus === "POSTED" ? entry.isPosted : !entry.isPosted
+          );
+
+    const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+    return [...statusFiltered].sort((a: LedgerEntry, b: LedgerEntry) => {
+      let comparison = 0;
+
+      if (sortField === "entryDate") {
+        comparison =
+          new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime();
+      } else if (sortField === "debit") {
+        comparison = parseFloat(a.debit) - parseFloat(b.debit);
+      } else if (sortField === "credit") {
+        comparison = parseFloat(a.credit) - parseFloat(b.credit);
+      } else if (sortField === "entryNumber") {
+        comparison = a.entryNumber.localeCompare(b.entryNumber);
+      }
+
+      if (comparison === 0) {
+        comparison =
+          new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime();
+      }
+
+      return comparison * directionMultiplier;
+    });
+  }, [entries, searchQuery, selectedStatus, sortDirection, sortField]);
 
   // Calculate summary statistics - BUG-034: Use debit/credit field names
   const totalDebits = useMemo(() => {
@@ -168,6 +209,16 @@ export default function GeneralLedger() {
     return format(new Date(dateStr), "MMM dd, yyyy");
   };
 
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedAccount(undefined);
+    setSelectedPeriod(undefined);
+    setSelectedStatus("ALL");
+    setDateRange({ from: undefined, to: undefined });
+    setSortField("entryDate");
+    setSortDirection("desc");
+  };
+
   // BUG-034: Updated to use isPosted boolean instead of status string
   const getStatusBadge = (isPosted: boolean) => {
     if (isPosted) {
@@ -192,7 +243,7 @@ export default function GeneralLedger() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -259,22 +310,43 @@ export default function GeneralLedger() {
         </Card>
       </div>
 
-      {/* Filters */}
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search entries..."
+        filters={[
+          {
+            id: "status",
+            label: "Status",
+            value: selectedStatus,
+            options: LEDGER_STATUS_OPTIONS,
+            onChange: setSelectedStatus,
+            allValue: "ALL",
+            allLabel: "All Statuses",
+          },
+        ]}
+        sort={{
+          field: sortField,
+          fieldOptions: LEDGER_SORT_OPTIONS,
+          onFieldChange: value => setSortField(value as LedgerSortField),
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Lowest First",
+            desc: "Highest First",
+          },
+        }}
+        onClearAll={handleClearAllFilters}
+        resultCount={filteredEntries.length}
+        resultLabel={filteredEntries.length === 1 ? "entry" : "entries"}
+      />
+
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>Additional Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search entries..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <AccountSelector
               value={selectedAccount}
               onChange={setSelectedAccount}
@@ -286,17 +358,6 @@ export default function GeneralLedger() {
               placeholder="All Periods"
               showStatus={false}
             />
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Statuses</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="POSTED">Posted</SelectItem>
-                <SelectItem value="VOID">Void</SelectItem>
-              </SelectContent>
-            </Select>
             <Popover>
               <PopoverTrigger asChild>
                 <Button

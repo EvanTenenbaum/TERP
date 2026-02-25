@@ -81,7 +81,9 @@ type CreatePeriodInput = {
   endDate: Date;
 };
 
-export default function FiscalPeriods() {
+export default function FiscalPeriods({
+  embedded,
+}: { embedded?: boolean } = {}) {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -281,7 +283,7 @@ export default function FiscalPeriods() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

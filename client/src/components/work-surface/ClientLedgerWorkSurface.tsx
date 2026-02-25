@@ -76,6 +76,7 @@ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeybo
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
+import { LEDGER_TYPE_TOKENS } from "../../lib/statusTokens";
 
 // ============================================================================
 // Types
@@ -122,7 +123,7 @@ const ITEMS_PER_PAGE = 50;
 function TransactionTypeBadge({ type }: { type: string }) {
   const variants: Record<string, { className: string; label: string }> = {
     SALE: {
-      className: "bg-blue-100 text-blue-700 border-blue-200",
+      className: LEDGER_TYPE_TOKENS.INVOICE,
       label: "Sale",
     },
     PURCHASE: {
@@ -130,19 +131,19 @@ function TransactionTypeBadge({ type }: { type: string }) {
       label: "Purchase",
     },
     PAYMENT_RECEIVED: {
-      className: "bg-green-100 text-green-700 border-green-200",
+      className: LEDGER_TYPE_TOKENS.PAYMENT,
       label: "Payment Received",
     },
     PAYMENT_SENT: {
-      className: "bg-orange-100 text-orange-700 border-orange-200",
+      className: LEDGER_TYPE_TOKENS.ADJUSTMENT,
       label: "Payment Sent",
     },
     CREDIT: {
-      className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      className: LEDGER_TYPE_TOKENS.CREDIT,
       label: "Credit",
     },
     DEBIT: {
-      className: "bg-red-100 text-red-700 border-red-200",
+      className: LEDGER_TYPE_TOKENS.REFUND,
       label: "Debit",
     },
   };

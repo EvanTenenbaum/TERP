@@ -55,9 +55,11 @@ export function NeedForm({
   const [isDuplicate, setIsDuplicate] = useState(false);
 
   // FEAT-012: Fetch display settings for grade field visibility
-  const { data: displaySettings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const showGradeField = displaySettings?.display?.showGradeField ?? true;
-  const gradeFieldRequired = displaySettings?.display?.gradeFieldRequired ?? false;
+  const gradeFieldRequired =
+    displaySettings?.display?.gradeFieldRequired ?? false;
 
   const [formData, setFormData] = useState<NeedFormState>({
     strain: initialData?.strain || "",
@@ -201,15 +203,16 @@ export function NeedForm({
       await onSubmit({
         clientId,
         ...formData,
-        // Convert empty strings to undefined
+        // Convert empty strings to undefined and narrow priority type
         strain: formData.strain || undefined,
         strainId: formData.strainId || undefined,
+        priority: formData.priority as NeedFormPayload["priority"],
         category: formData.category || undefined,
         subcategory: formData.subcategory || undefined,
         grade: formData.grade || undefined,
-        quantityMin: parsedValues.minQty ?? undefined,
-        quantityMax: parsedValues.maxQty ?? undefined,
-        priceMax: parsedValues.maxPrice ?? undefined,
+        quantityMin: formData.quantityMin || undefined,
+        quantityMax: formData.quantityMax || undefined,
+        priceMax: formData.priceMax || undefined,
         neededBy: formData.neededBy || undefined,
         expiresAt: formData.expiresAt || undefined,
         notes: formData.notes || undefined,
@@ -360,7 +363,10 @@ export function NeedForm({
               {showGradeField && (
                 <div className="space-y-2">
                   <Label htmlFor="grade">
-                    Grade{gradeFieldRequired && <span className="text-destructive"> *</span>}
+                    Grade
+                    {gradeFieldRequired && (
+                      <span className="text-destructive"> *</span>
+                    )}
                   </Label>
                   <Input
                     id="grade"

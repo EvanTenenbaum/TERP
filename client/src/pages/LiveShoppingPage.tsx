@@ -406,13 +406,8 @@ export default function LiveShoppingPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            // TODO: Implement session console/detail view
-                            toast({
-                              title: "Coming Soon",
-                              description: `Session ${session.id} - Console view coming soon`,
-                            });
-                          }}
+                          disabled
+                          title="Session detail view planned for post-MVP"
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
                           View Details

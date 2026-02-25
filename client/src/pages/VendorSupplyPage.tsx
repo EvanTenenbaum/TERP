@@ -29,9 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Loader2, Package } from "lucide-react";
+import { Plus, Loader2, Package } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { DataCardSection } from "@/components/data-cards";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 // UX-012: Import centralized date formatting utility
@@ -51,6 +52,23 @@ interface SupplyFormState {
   notes: string;
 }
 
+interface VendorSupplyItem {
+  id: number;
+  status?: string | null;
+  strain?: string | null;
+  productName?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  grade?: string | null;
+  vendorId?: number | null;
+  vendorName?: string | null;
+  quantityAvailable?: string | null;
+  unitPrice?: string | null;
+  availableUntil?: string | null;
+  createdAt?: string | null;
+  buyerCount?: number | null;
+}
+
 const initialFormState: SupplyFormState = {
   vendorId: "",
   strain: "",
@@ -63,6 +81,29 @@ const initialFormState: SupplyFormState = {
   availableUntil: "",
   notes: "",
 };
+
+type VendorSupplySortField =
+  | "createdAt"
+  | "quantityAvailable"
+  | "unitPrice"
+  | "buyerCount"
+  | "strain";
+
+const SUPPLY_STATUS_OPTIONS = [
+  { value: "AVAILABLE", label: "Available" },
+  { value: "RESERVED", label: "Reserved" },
+  { value: "SOLD", label: "Sold" },
+  { value: "PURCHASED", label: "Purchased" },
+  { value: "EXPIRED", label: "Expired" },
+];
+
+const SUPPLY_SORT_OPTIONS = [
+  { value: "createdAt", label: "Added Date" },
+  { value: "strain", label: "Strain / Name" },
+  { value: "quantityAvailable", label: "Quantity" },
+  { value: "unitPrice", label: "Unit Price" },
+  { value: "buyerCount", label: "Matching Buyers" },
+];
 
 /**
  * Vendor Supply Page
@@ -84,18 +125,21 @@ export default function VendorSupplyPage({
     const status = params.get("status");
     if (
       status &&
-      ["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"].includes(status)
+      ["AVAILABLE", "RESERVED", "SOLD", "PURCHASED", "EXPIRED"].includes(status)
     ) {
       return status;
     }
-    return null;
+    return "ALL";
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  // Status filter is initialized but UI for changing it is not yet implemented
-  const [statusFilter, _setStatusFilter] = useState<string | null>(
+  const [statusFilter, setStatusFilter] = useState<string>(
     getInitialStatusFilter
   );
+  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [sortField, setSortField] =
+    useState<VendorSupplySortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formState, setFormState] = useState<SupplyFormState>(initialFormState);
 
@@ -179,31 +223,111 @@ export default function VendorSupplyPage({
     setLocation(`/matchmaking?supplyId=${supplyId}`);
   };
 
-  const supplyItems = supplyData?.data || [];
+  const supplyItems = useMemo<VendorSupplyItem[]>(
+    () => (supplyData?.data as VendorSupplyItem[]) ?? [],
+    [supplyData]
+  );
 
-  // Filter supply items based on search and status
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filteredItems = supplyItems.filter((item: any) => {
-    const matchesSearch =
-      !searchQuery ||
-      item.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.vendorName?.toLowerCase().includes(searchQuery.toLowerCase());
+  const categoryOptions = useMemo(() => {
+    const categories = Array.from(
+      new Set(
+        supplyItems
+          .map(item => item.category)
+          .filter((category): category is string => Boolean(category))
+      )
+    ).sort((a, b) => a.localeCompare(b));
 
-    const matchesStatus = !statusFilter || item.status === statusFilter;
+    return categories.map(category => ({
+      value: category,
+      label: category,
+    }));
+  }, [supplyItems]);
 
-    return matchesSearch && matchesStatus;
-  });
+  // Filter and sort supply items for list rendering
+  const filteredItems = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const getStatusBadge = (status: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const variants: Record<string, any> = {
+    const filtered = supplyItems.filter(item => {
+      const matchesSearch =
+        !normalizedQuery ||
+        item.strain?.toLowerCase().includes(normalizedQuery) ||
+        item.productName?.toLowerCase().includes(normalizedQuery) ||
+        item.category?.toLowerCase().includes(normalizedQuery) ||
+        item.vendorName?.toLowerCase().includes(normalizedQuery);
+
+      const matchesStatus =
+        statusFilter === "ALL" ? true : item.status === statusFilter;
+      const matchesCategory =
+        categoryFilter === "ALL" ? true : item.category === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+    return [...filtered].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortField === "createdAt") {
+        comparison =
+          new Date(a.createdAt || 0).getTime() -
+          new Date(b.createdAt || 0).getTime();
+      } else if (sortField === "strain") {
+        const first = (a.strain || a.productName || "").toLowerCase();
+        const second = (b.strain || b.productName || "").toLowerCase();
+        comparison = first.localeCompare(second);
+      } else if (sortField === "quantityAvailable") {
+        comparison =
+          parseFloat(a.quantityAvailable || "0") -
+          parseFloat(b.quantityAvailable || "0");
+      } else if (sortField === "unitPrice") {
+        comparison =
+          parseFloat(a.unitPrice || "0") - parseFloat(b.unitPrice || "0");
+      } else if (sortField === "buyerCount") {
+        comparison = (a.buyerCount || 0) - (b.buyerCount || 0);
+      }
+
+      if (comparison === 0) {
+        comparison =
+          new Date(a.createdAt || 0).getTime() -
+          new Date(b.createdAt || 0).getTime();
+      }
+
+      return comparison * directionMultiplier;
+    });
+  }, [
+    categoryFilter,
+    searchQuery,
+    sortDirection,
+    sortField,
+    statusFilter,
+    supplyItems,
+  ]);
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("ALL");
+    setCategoryFilter("ALL");
+    setSortField("createdAt");
+    setSortDirection("desc");
+  };
+
+  const getStatusBadge = (status: string | null | undefined) => {
+    const normalizedStatus = status || "UNKNOWN";
+    const variants: Record<
+      string,
+      "default" | "secondary" | "outline" | "destructive"
+    > = {
       AVAILABLE: "default",
       RESERVED: "secondary",
       SOLD: "outline",
       EXPIRED: "destructive",
     };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+    return (
+      <Badge variant={variants[normalizedStatus] || "outline"}>
+        {normalizedStatus}
+      </Badge>
+    );
   };
 
   return (
@@ -420,20 +544,45 @@ export default function VendorSupplyPage({
       {/* Stats Cards */}
       <DataCardSection moduleId="vendor_supply" />
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by strain, category, or vendor..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search by strain, product, category, or vendor..."
+        filters={[
+          {
+            id: "status",
+            label: "Status",
+            value: statusFilter,
+            options: SUPPLY_STATUS_OPTIONS,
+            onChange: setStatusFilter,
+            allValue: "ALL",
+            allLabel: "All Statuses",
+          },
+          {
+            id: "category",
+            label: "Category",
+            value: categoryFilter,
+            options: categoryOptions,
+            onChange: setCategoryFilter,
+            allValue: "ALL",
+            allLabel: "All Categories",
+          },
+        ]}
+        sort={{
+          field: sortField,
+          fieldOptions: SUPPLY_SORT_OPTIONS,
+          onFieldChange: value => setSortField(value as VendorSupplySortField),
+          direction: sortDirection,
+          onDirectionChange: setSortDirection,
+          directionLabels: {
+            asc: "Lowest First",
+            desc: "Highest First",
+          },
+        }}
+        resultCount={filteredItems.length}
+        resultLabel={filteredItems.length === 1 ? "item" : "items"}
+        onClearAll={handleClearAllFilters}
+      />
 
       {/* Supply Items List */}
       {isLoading ? (
@@ -454,8 +603,7 @@ export default function VendorSupplyPage({
         </Card>
       ) : (
         <div className="grid gap-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {filteredItems.map((item: any) => (
+          {filteredItems.map(item => (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
