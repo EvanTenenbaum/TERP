@@ -53,6 +53,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 
@@ -517,7 +518,6 @@ function OrderInspector({
 export function PickPackWorkSurface() {
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
     "ALL"
   );
@@ -585,11 +585,38 @@ export function PickPackWorkSurface() {
     }
   }, [orderDetails, trackVersion]);
 
+  // Filter pick list
+  const filteredPickList = useMemo(() => {
+    if (!pickList) return [];
+    return pickList.filter(
+      order =>
+        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [pickList, searchQuery]);
+
+  // Get unpacked items for current order
+  const unpackedItems = useMemo(() => {
+    if (!orderDetails) return [];
+    return orderDetails.items.filter(item => !item.isPacked);
+  }, [orderDetails]);
+
+  // Shared powersheet selection for items (TER-285)
+  const unpackedItemIds = useMemo(
+    () => unpackedItems.map(item => item.id),
+    [unpackedItems]
+  );
+  const itemSelection = usePowersheetSelection<number>({
+    visibleIds: unpackedItemIds,
+    clearOnActiveChange: true,
+  });
+  const selectedItems = itemSelection.getSelectedArray();
+
   // Mutations
   const packItemsMutation = trpc.pickPack.packItems.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
-      setSelectedItems([]);
+      itemSelection.clear();
       void refetchOrderDetails();
       void refetchPickList();
       void refetchStats();
@@ -641,46 +668,27 @@ export function PickPackWorkSurface() {
     },
   });
 
-  // Filter pick list
-  const filteredPickList = useMemo(() => {
-    if (!pickList) return [];
-    return pickList.filter(
-      order =>
-        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.clientName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [pickList, searchQuery]);
-
-  // Get unpacked items for current order
-  const unpackedItems = useMemo(() => {
-    if (!orderDetails) return [];
-    return orderDetails.items.filter(item => !item.isPacked);
-  }, [orderDetails]);
-
   // Handlers
-  const handleSelectOrder = useCallback((orderId: number) => {
-    setSelectedOrderId(orderId);
-    setSelectedItems([]);
-    setFocusZone("items");
-    setFocusedItemIndex(0);
-  }, []);
+  const handleSelectOrder = useCallback(
+    (orderId: number) => {
+      setSelectedOrderId(orderId);
+      itemSelection.reset();
+      setFocusZone("items");
+      setFocusedItemIndex(0);
+    },
+    [itemSelection]
+  );
 
-  const toggleItemSelection = useCallback((itemId: number) => {
-    setSelectedItems(prev =>
-      prev.includes(itemId)
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
-  }, []);
+  const toggleItemSelection = useCallback(
+    (itemId: number) => {
+      itemSelection.toggle(itemId, !itemSelection.isSelected(itemId));
+    },
+    [itemSelection]
+  );
 
   const selectAllUnpacked = useCallback(() => {
-    if (orderDetails) {
-      const unpackedIds = orderDetails.items
-        .filter(item => !item.isPacked)
-        .map(item => item.id);
-      setSelectedItems(unpackedIds);
-    }
-  }, [orderDetails]);
+    itemSelection.toggleAll(true);
+  }, [itemSelection]);
 
   const handlePackSelected = useCallback(() => {
     if (selectedOrderId && selectedItems.length > 0) {
@@ -801,7 +809,7 @@ export function PickPackWorkSurface() {
           closeInspector();
         } else if (focusZone === "items") {
           setFocusZone("list");
-          setSelectedItems([]);
+          itemSelection.clear();
         } else {
           setSelectedOrderId(null);
         }
@@ -816,6 +824,7 @@ export function PickPackWorkSurface() {
       orderDetails,
       selectedOrderId,
       inspectorMode,
+      itemSelection,
       handleSelectOrder,
       toggleItemSelection,
       closeInspector,

@@ -52,6 +52,7 @@ import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { usePowersheetSelection } from "../../hooks/work-surface";
 import {
   InspectorPanel,
   InspectorSection,
@@ -373,14 +374,9 @@ export function InventoryWorkSurface() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
-  const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
-  const [selectedBatchIds, setSelectedBatchIds] = useState<Set<number>>(
-    new Set()
-  );
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
@@ -455,18 +451,21 @@ export function InventoryWorkSurface() {
     data: legacyData,
     isLoading: isLegacyLoading,
     refetch: refetchLegacy,
-  } = trpc.inventory.list.useQuery({
-    query: search || undefined,
-    status:
-      statusFilter !== "ALL"
-        ? (statusFilter as InventoryBatchStatus)
-        : undefined,
-    category: categoryFilter !== "ALL" ? categoryFilter : undefined,
-    limit: pageSize,
-    cursor: page * pageSize,
-  }, {
-    enabled: !useEnhancedApi,
-  });
+  } = trpc.inventory.list.useQuery(
+    {
+      query: search || undefined,
+      status:
+        statusFilter !== "ALL"
+          ? (statusFilter as InventoryBatchStatus)
+          : undefined,
+      category: categoryFilter !== "ALL" ? categoryFilter : undefined,
+      limit: pageSize,
+      cursor: page * pageSize,
+    },
+    {
+      enabled: !useEnhancedApi,
+    }
+  );
 
   const { data: dashboardStats, refetch: refetchDashboardStats } =
     trpc.inventory.dashboardStats.useQuery();
@@ -509,7 +508,9 @@ export function InventoryWorkSurface() {
             category: item.category || undefined,
             subcategory: item.subcategory || undefined,
           },
-          vendor: item.vendorName ? { id: 0, name: item.vendorName } : undefined,
+          vendor: item.vendorName
+            ? { id: 0, name: item.vendorName }
+            : undefined,
           brand: item.brandName ? { id: 0, name: item.brandName } : undefined,
         })
       );
@@ -522,7 +523,7 @@ export function InventoryWorkSurface() {
     ? (enhancedData?.pagination.hasMore ?? false)
     : ((legacyData as { hasMore?: boolean } | undefined)?.hasMore ?? false);
   const totalCount = useEnhancedApi
-    ? enhancedData?.summary.totalItems ?? items.length
+    ? (enhancedData?.summary.totalItems ?? items.length)
     : hasMore
       ? items.length + pageSize
       : items.length;
@@ -530,6 +531,22 @@ export function InventoryWorkSurface() {
     ? Math.max(page + 1 + (hasMore ? 1 : 0), 1)
     : Math.max(Math.ceil(totalCount / pageSize), 1);
   const isLoading = useEnhancedApi ? isEnhancedLoading : isLegacyLoading;
+
+  // Shared powersheet selection (TER-283)
+  const allBatchIds = useMemo(
+    () =>
+      items
+        .map(item => item.batch?.id)
+        .filter((id): id is number => typeof id === "number"),
+    [items]
+  );
+  const selection = usePowersheetSelection<number>({ visibleIds: allBatchIds });
+
+  // Backward-compatible aliases
+  const selectedBatchId = selection.activeId;
+  const setSelectedBatchId = selection.setActiveId;
+  const selectedIndex = selection.activeIndex;
+  const setSelectedIndex = selection.setActiveIndex;
 
   // Selected item
   const selectedItem = useMemo(
@@ -581,6 +598,12 @@ export function InventoryWorkSurface() {
     });
   }, [items, sortColumn, sortDirection]);
 
+  const selectedBatchIds = selection.selectedIds;
+  const allVisibleSelected = selection.allSelected;
+  const someVisibleSelected = selection.someSelected;
+  const toggleBatchSelection = selection.toggle;
+  const toggleAllVisibleSelection = selection.toggleAll;
+
   // Mutations
   const updateStatusMutation = trpc.inventory.updateStatus.useMutation({
     onMutate: () => setSaving("Updating status..."),
@@ -599,23 +622,27 @@ export function InventoryWorkSurface() {
     },
   });
 
-  const bulkUpdateStatusMutation = trpc.inventory.bulk.updateStatus.useMutation({
-    onMutate: () => setSaving("Updating selected batches..."),
-    onSuccess: result => {
-      const updatedCount =
-        typeof result?.updated === "number"
-          ? result.updated
-          : selectedBatchIds.size;
-      toast.success(`Updated ${updatedCount} batch${updatedCount === 1 ? "" : "es"}`);
-      setSelectedBatchIds(new Set());
-      setSaved();
-      refreshInventory();
-    },
-    onError: err => {
-      toast.error(err.message || "Failed to update selected batches");
-      setError(err.message);
-    },
-  });
+  const bulkUpdateStatusMutation = trpc.inventory.bulk.updateStatus.useMutation(
+    {
+      onMutate: () => setSaving("Updating selected batches..."),
+      onSuccess: result => {
+        const updatedCount =
+          typeof result?.updated === "number"
+            ? result.updated
+            : selectedBatchIds.size;
+        toast.success(
+          `Updated ${updatedCount} batch${updatedCount === 1 ? "" : "es"}`
+        );
+        selection.clear();
+        setSaved();
+        refreshInventory();
+      },
+      onError: err => {
+        toast.error(err.message || "Failed to update selected batches");
+        setError(err.message);
+      },
+    }
+  );
 
   const bulkDeleteMutation = trpc.inventory.bulk.delete.useMutation({
     onMutate: () => setSaving("Deleting selected batches..."),
@@ -624,8 +651,10 @@ export function InventoryWorkSurface() {
         typeof result?.deleted === "number"
           ? result.deleted
           : selectedBatchIds.size;
-      toast.success(`Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`);
-      setSelectedBatchIds(new Set());
+      toast.success(
+        `Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`
+      );
+      selection.clear();
       setSaved();
       refreshInventory();
     },
@@ -663,7 +692,8 @@ export function InventoryWorkSurface() {
   }, [selectedItem, trackVersion]);
 
   useEffect(() => {
-    setSelectedBatchIds(new Set());
+    selection.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, statusFilter, categoryFilter, page]);
 
   useEffect(() => {
@@ -727,10 +757,13 @@ export function InventoryWorkSurface() {
 
   const handleEdit = useCallback(
     (batchId: number): void => {
-      const editingBatch = items.find(item => item.batch?.id === batchId)?.batch;
+      const editingBatch = items.find(
+        item => item.batch?.id === batchId
+      )?.batch;
       setEditBatchId(batchId);
       setEditStatus(
-        (editingBatch?.batchStatus as InventoryBatchStatus | undefined) ?? "LIVE"
+        (editingBatch?.batchStatus as InventoryBatchStatus | undefined) ??
+          "LIVE"
       );
       setEditRack("");
       setShowEditDialog(true);
@@ -756,10 +789,13 @@ export function InventoryWorkSurface() {
     [updateStatusMutation]
   );
 
-  const handleAdjustQuantity = useCallback((batchId: number) => {
-    setSelectedBatchId(batchId);
-    setShowQtyAdjust(true);
-  }, []);
+  const handleAdjustQuantity = useCallback(
+    (batchId: number) => {
+      setSelectedBatchId(batchId);
+      setShowQtyAdjust(true);
+    },
+    [setSelectedBatchId]
+  );
 
   const handleSubmitAdjustQuantity = useCallback(() => {
     const adjustment = Number.parseFloat(qtyAdjustment);
@@ -790,50 +826,6 @@ export function InventoryWorkSurface() {
     });
     setShowEditDialog(false);
   }, [editBatchId, editStatus, updateStatusMutation]);
-
-  const visibleBatchIds = useMemo(
-    () =>
-      displayItems
-        .map(item => item.batch?.id)
-        .filter((id): id is number => typeof id === "number"),
-    [displayItems]
-  );
-
-  const allVisibleSelected =
-    visibleBatchIds.length > 0 &&
-    visibleBatchIds.every(id => selectedBatchIds.has(id));
-  const someVisibleSelected =
-    !allVisibleSelected && visibleBatchIds.some(id => selectedBatchIds.has(id));
-
-  const toggleBatchSelection = useCallback(
-    (batchId: number, checked: boolean | "indeterminate") => {
-      setSelectedBatchIds(prev => {
-        const next = new Set(prev);
-        if (checked) {
-          next.add(batchId);
-        } else {
-          next.delete(batchId);
-        }
-        return next;
-      });
-    },
-    []
-  );
-
-  const toggleAllVisibleSelection = useCallback(
-    (checked: boolean | "indeterminate") => {
-      setSelectedBatchIds(prev => {
-        const next = new Set(prev);
-        if (checked) {
-          visibleBatchIds.forEach(id => next.add(id));
-        } else {
-          visibleBatchIds.forEach(id => next.delete(id));
-        }
-        return next;
-      });
-    },
-    [visibleBatchIds]
-  );
 
   const handleApplyBulkStatus = useCallback(() => {
     const batchIds = Array.from(selectedBatchIds);
@@ -985,7 +977,9 @@ export function InventoryWorkSurface() {
           <Badge variant="secondary">{selectedBatchIds.size} selected</Badge>
           <Select
             value={bulkStatus}
-            onValueChange={value => setBulkStatus(value as InventoryBatchStatus)}
+            onValueChange={value =>
+              setBulkStatus(value as InventoryBatchStatus)
+            }
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Bulk status" />
@@ -1013,17 +1007,14 @@ export function InventoryWorkSurface() {
           >
             Delete Selected
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedBatchIds(new Set())}
-          >
+          <Button size="sm" variant="ghost" onClick={() => selection.clear()}>
             Clear Selection
           </Button>
         </div>
       )}
 
-      {(dashboardStats?.statusCounts || enhancedData?.summary.byStockStatus) && (
+      {(dashboardStats?.statusCounts ||
+        enhancedData?.summary.byStockStatus) && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-3 border-b bg-muted/10">
           <div className="rounded-md border p-2">
             <div className="text-xs text-muted-foreground">Critical</div>
@@ -1123,7 +1114,9 @@ export function InventoryWorkSurface() {
                   {displayItems.map((item: InventoryItem, index: number) => (
                     <TableRow
                       key={item.batch?.id}
-                      data-testid={item.product?.nameCanonical ? "batch-row" : undefined}
+                      data-testid={
+                        item.product?.nameCanonical ? "batch-row" : undefined
+                      }
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",
                         selectedBatchId === item.batch?.id && "bg-muted",
@@ -1140,7 +1133,11 @@ export function InventoryWorkSurface() {
                     >
                       <TableCell onClick={e => e.stopPropagation()}>
                         <Checkbox
-                          checked={item.batch ? selectedBatchIds.has(item.batch.id) : false}
+                          checked={
+                            item.batch
+                              ? selectedBatchIds.has(item.batch.id)
+                              : false
+                          }
                           onCheckedChange={checked => {
                             if (!item.batch) return;
                             toggleBatchSelection(item.batch.id, checked);

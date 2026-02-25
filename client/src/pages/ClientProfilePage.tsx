@@ -89,6 +89,7 @@ interface ClientActivity {
   activityType: string;
   description?: string | null;
   createdAt?: string | Date | null;
+  userName?: string | null;
 }
 
 type TransactionType =
@@ -1038,6 +1039,7 @@ export default function ClientProfilePage() {
                 const paymentDate = new Date(
                   formData.get("paymentDate") as string
                 );
+                if (!selectedTransaction) return;
                 handleRecordPayment(
                   selectedTransaction.id,
                   paymentAmount,
