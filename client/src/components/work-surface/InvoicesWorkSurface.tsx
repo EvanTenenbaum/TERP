@@ -55,6 +55,10 @@ import { Separator } from "@/components/ui/separator";
 import { InvoiceGLStatus } from "@/components/accounting/GLReversalStatus";
 
 // Work Surface Hooks
+import {
+  INVOICE_STATUS_TOKENS,
+  INVOICE_AGING_TOKENS,
+} from "../../lib/statusTokens";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useToastConfig } from "@/hooks/work-surface/useToastConfig";
@@ -144,15 +148,7 @@ const STATUS_ICONS: Record<string, ReactNode> = {
   VOID: <XCircle className="h-4 w-4" />,
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
-  SENT: "bg-blue-100 text-blue-800",
-  VIEWED: "bg-indigo-100 text-indigo-800",
-  PARTIAL: "bg-yellow-100 text-yellow-800",
-  PAID: "bg-green-100 text-green-800",
-  OVERDUE: "bg-red-100 text-red-800",
-  VOID: "bg-gray-200 text-gray-600",
-};
+const STATUS_COLORS = INVOICE_STATUS_TOKENS;
 
 // ============================================================================
 // HELPERS
@@ -217,14 +213,6 @@ function InvoiceStatusBadge({ status }: { status: string }) {
 // ============================================================================
 
 function AgingBadge({ bucket, amount }: { bucket: string; amount: number }) {
-  const colors: Record<string, string> = {
-    current: "bg-green-100 text-green-800 border-green-200",
-    "30": "bg-yellow-100 text-yellow-800 border-yellow-200",
-    "60": "bg-orange-100 text-orange-800 border-orange-200",
-    "90": "bg-red-100 text-red-800 border-red-200",
-    "90+": "bg-red-200 text-red-900 border-red-300",
-  };
-
   const labels: Record<string, string> = {
     current: "Current",
     "30": "1-30 Days",
@@ -234,7 +222,12 @@ function AgingBadge({ bucket, amount }: { bucket: string; amount: number }) {
   };
 
   return (
-    <div className={cn("px-3 py-2 rounded-lg border", colors[bucket])}>
+    <div
+      className={cn(
+        "px-3 py-2 rounded-lg border",
+        INVOICE_AGING_TOKENS[bucket]
+      )}
+    >
       <div className="text-xs font-medium">{labels[bucket]}</div>
       <div className="text-lg font-bold">{formatCurrency(amount)}</div>
     </div>

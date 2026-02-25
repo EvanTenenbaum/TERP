@@ -16,6 +16,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -141,11 +142,7 @@ const CATEGORIES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  AWAITING_INTAKE: "bg-yellow-100 text-yellow-800",
-  LIVE: "bg-green-100 text-green-800",
-  PHOTOGRAPHY_COMPLETE: "bg-blue-100 text-blue-800",
-  ON_HOLD: "bg-orange-100 text-orange-800",
-  QUARANTINED: "bg-red-100 text-red-800",
+  ...INVENTORY_STATUS_TOKENS,
   SOLD_OUT: "bg-gray-100 text-gray-800",
   CLOSED: "bg-gray-200 text-gray-600",
 };

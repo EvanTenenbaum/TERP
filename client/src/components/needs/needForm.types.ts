@@ -21,7 +21,7 @@ export interface NeedFormPayload {
   clientId: number;
   strain?: string;
   productName?: string;
-  strainId?: number | null;
+  strainId?: number;
   category?: string;
   subcategory?: string;
   grade?: string;

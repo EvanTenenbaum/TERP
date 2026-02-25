@@ -2,14 +2,18 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NeedForm } from "./NeedForm";
 import { MatchCard } from "./MatchCard";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus, Package, TrendingUp, Loader2 } from "lucide-react";
 
 /**
@@ -23,13 +27,17 @@ interface ClientNeedsTabProps {
 
 export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const [needFormOpen, setNeedFormOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tRPC inferred need type varies between mutation result and manual construction
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
   const [activeSubTab, setActiveSubTab] = useState("active");
   const { user } = useAuth();
 
   // Fetch active needs
-  const { data: activeNeedsData, isLoading: needsLoading, refetch: refetchNeeds } =
-    trpc.clientNeeds.getActiveByClient.useQuery({ clientId });
+  const {
+    data: activeNeedsData,
+    isLoading: needsLoading,
+    refetch: refetchNeeds,
+  } = trpc.clientNeeds.getActiveByClient.useQuery({ clientId });
 
   // Fetch purchase history patterns
   const { data: historyData, isLoading: historyLoading } =
@@ -40,7 +48,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
 
   // Create need mutation
   const createNeedMutation = trpc.clientNeeds.createAndFindMatches.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       refetchNeeds();
       if (result.success) {
         // Show matches if found
@@ -52,8 +60,10 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   });
 
   // State for finding matches
-  const [findingMatchesForNeed, setFindingMatchesForNeed] = useState<number | null>(null);
-  
+  const [findingMatchesForNeed, setFindingMatchesForNeed] = useState<
+    number | null
+  >(null);
+
   // Find matches for existing need
   const { refetch: refetchMatches } = trpc.clientNeeds.findMatches.useQuery(
     { needId: findingMatchesForNeed ?? 0 },
@@ -61,17 +71,17 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   );
 
   // Create quote from match
-  const createQuoteMutation = trpc.clientNeeds.createQuoteFromMatch.useMutation({
-    onSuccess: () => {
-      refetchNeeds();
-    },
-  });
+  const createQuoteMutation = trpc.clientNeeds.createQuoteFromMatch.useMutation(
+    {
+      onSuccess: () => {
+        refetchNeeds();
+      },
+    }
+  );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NeedFormPayload doesn't align with tRPC zod schema (number vs string for qty fields)
   const handleCreateNeed = async (data: any) => {
-    await createNeedMutation.mutateAsync({
-      ...data,
-      createdBy: user?.id ?? 0,
-    });
+    await createNeedMutation.mutateAsync(data);
   };
 
   const handleFindMatches = async (needId: number) => {
@@ -86,7 +96,8 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
     setFindingMatchesForNeed(null);
   };
 
-  const handleCreateQuote = async (need: any, matches: any[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- matches shape varies by tRPC inference
+  const handleCreateQuote = async (need: { id: number }, matches: any[]) => {
     await createQuoteMutation.mutateAsync({
       clientId,
       clientNeedId: need.id,
@@ -99,7 +110,10 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const purchasePatterns = historyData?.data || [];
 
   const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
+    const variants: Record<
+      string,
+      "default" | "destructive" | "secondary" | "outline"
+    > = {
       URGENT: "destructive",
       HIGH: "default",
       MEDIUM: "secondary",
@@ -130,9 +144,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
           <TabsTrigger value="active">
             Active Needs ({activeNeeds.length})
           </TabsTrigger>
-          <TabsTrigger value="history">
-            Purchase History
-          </TabsTrigger>
+          <TabsTrigger value="history">Purchase History</TabsTrigger>
         </TabsList>
 
         {/* Active Needs Tab */}
@@ -157,7 +169,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {activeNeeds.map((need: any) => (
+              {activeNeeds.map(need => (
                 <Card key={need.id}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -193,7 +205,9 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       {need.quantityMin && (
                         <div>
-                          <p className="text-muted-foreground">Quantity Range</p>
+                          <p className="text-muted-foreground">
+                            Quantity Range
+                          </p>
                           <p className="font-medium">
                             {need.quantityMin}
                             {need.quantityMax && ` - ${need.quantityMax}`} units
@@ -230,13 +244,18 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                           Found {selectedNeed.matches.length} Matches
                         </h4>
                         <div className="grid gap-3">
-                          {selectedNeed.matches.slice(0, 3).map((match: any, idx: number) => (
-                            <MatchCard
-                              key={`match-${match.batchId || match.sku || idx}`}
-                              match={match}
-                              onCreateQuote={() => handleCreateQuote(need, [match])}
-                            />
-                          ))}
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- selectedNeed.matches typed from tRPC mutation result */}
+                          {selectedNeed.matches
+                            .slice(0, 3)
+                            .map((match: any, idx: number) => (
+                              <MatchCard
+                                key={`match-${match.batchId || match.sku || idx}`}
+                                match={match}
+                                onCreateQuote={() =>
+                                  handleCreateQuote(need, [match])
+                                }
+                              />
+                            ))}
                         </div>
                         {selectedNeed.matches.length > 3 && (
                           <p className="text-sm text-muted-foreground text-center">
@@ -264,14 +283,17 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                 <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">No purchase history</p>
                 <p className="text-sm text-muted-foreground">
-                  Purchase patterns will appear here after the client makes purchases
+                  Purchase patterns will appear here after the client makes
+                  purchases
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {purchasePatterns.map((pattern: any, idx: number) => (
-                <Card key={`history-pattern-${pattern.strain || pattern.category || idx}`}>
+              {purchasePatterns.map((pattern, idx) => (
+                <Card
+                  key={`history-pattern-${pattern.strain || pattern.category || idx}`}
+                >
                   <CardHeader>
                     <CardTitle className="text-base">
                       {pattern.strain || pattern.category || "Unknown Product"}
@@ -279,7 +301,13 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                     <CardDescription>
                       Purchased {pattern.purchaseCount} times
                       {pattern.lastPurchaseDate && (
-                        <> • Last: {new Date(pattern.lastPurchaseDate).toLocaleDateString()}</>
+                        <>
+                          {" "}
+                          • Last:{" "}
+                          {new Date(
+                            pattern.lastPurchaseDate
+                          ).toLocaleDateString()}
+                        </>
                       )}
                     </CardDescription>
                   </CardHeader>
@@ -287,15 +315,21 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Total Quantity</p>
-                        <p className="font-medium">{pattern.totalQuantity} units</p>
+                        <p className="font-medium">
+                          {pattern.totalQuantity} units
+                        </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Avg Price</p>
-                        <p className="font-medium">${pattern.avgPrice?.toFixed(2)}/unit</p>
+                        <p className="font-medium">
+                          ${pattern.avgPrice?.toFixed(2)}/unit
+                        </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Days Since Last</p>
-                        <p className="font-medium">{pattern.daysSinceLastPurchase} days</p>
+                        <p className="font-medium">
+                          {pattern.daysSinceLastPurchase} days
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -316,4 +350,3 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
     </div>
   );
 }
-

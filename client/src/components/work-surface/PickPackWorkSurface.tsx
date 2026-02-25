@@ -56,6 +56,7 @@ import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEd
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
+import { PICK_PACK_STATUS_TOKENS } from "../../lib/statusTokens";
 
 // ============================================================================
 // Types
@@ -130,22 +131,22 @@ interface PickPackOrderEntity {
 function StatusBadge({ status }: { status: PickPackStatus }) {
   const config = {
     PENDING: {
-      color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      color: PICK_PACK_STATUS_TOKENS.PENDING,
       icon: Clock,
       label: "Pending",
     },
     PICKING: {
-      color: "bg-blue-100 text-blue-800 border-blue-200",
+      color: PICK_PACK_STATUS_TOKENS.PICKING,
       icon: Package,
       label: "Picking",
     },
     PACKED: {
-      color: "bg-green-100 text-green-800 border-green-200",
+      color: PICK_PACK_STATUS_TOKENS.PACKED,
       icon: CheckCircle,
       label: "Packed",
     },
     READY: {
-      color: "bg-purple-100 text-purple-800 border-purple-200",
+      color: PICK_PACK_STATUS_TOKENS.READY,
       icon: Truck,
       label: "Ready",
     },
