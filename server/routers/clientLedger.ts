@@ -193,7 +193,7 @@ export const clientLedgerRouter = router({
           description: `Order #${order.orderNumber}`,
           referenceType: "ORDER",
           referenceId: order.id,
-          debitAmount: Number(order.total),
+          debitAmount: new Decimal(String(order.total) || "0").toNumber(),
           creditAmount: 0,
           runningBalance: 0, // Will be calculated later
           createdBy: order.createdByName || "System",
@@ -234,7 +234,7 @@ export const clientLedgerRouter = router({
           referenceType: "PAYMENT",
           referenceId: payment.id,
           debitAmount: 0,
-          creditAmount: Number(payment.amount),
+          creditAmount: new Decimal(String(payment.amount) || "0").toNumber(),
           runningBalance: 0,
           createdBy: payment.createdByName || "System",
         });
@@ -273,7 +273,7 @@ export const clientLedgerRouter = router({
           description: `Payment sent #${payment.paymentNumber} (${payment.paymentMethod})`,
           referenceType: "PAYMENT",
           referenceId: payment.id,
-          debitAmount: Number(payment.amount),
+          debitAmount: new Decimal(String(payment.amount) || "0").toNumber(),
           creditAmount: 0,
           runningBalance: 0,
           createdBy: payment.createdByName || "System",
@@ -319,7 +319,7 @@ export const clientLedgerRouter = router({
           referenceType: "PURCHASE_ORDER",
           referenceId: po.id,
           debitAmount: 0,
-          creditAmount: Number(po.total || 0),
+          creditAmount: new Decimal(String(po.total) || "0").toNumber(),
           runningBalance: 0,
           createdBy: po.createdByName || "System",
         });
@@ -353,8 +353,8 @@ export const clientLedgerRouter = router({
           description: adj.description,
           referenceType: "ADJUSTMENT",
           referenceId: adj.id,
-          debitAmount: isDebit ? Number(adj.amount) : 0,
-          creditAmount: !isDebit ? Number(adj.amount) : 0,
+          debitAmount: isDebit ? new Decimal(String(adj.amount) || "0").toNumber() : 0,
+          creditAmount: !isDebit ? new Decimal(String(adj.amount) || "0").toNumber() : 0,
           runningBalance: 0,
           createdBy: adj.createdByName || "System",
         });
@@ -372,30 +372,29 @@ export const clientLedgerRouter = router({
       // Sort by date (oldest first for running balance calculation)
       filteredTransactions.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-      // Calculate running balance
-      let runningBalance = 0;
+      // Calculate running balance using Decimal-safe math
+      let runningBalanceD = new Decimal(0);
       for (const transaction of filteredTransactions) {
         // Debits increase balance (they owe more)
         // Credits decrease balance (they owe less)
         if (transaction.debitAmount) {
-          runningBalance += transaction.debitAmount;
+          runningBalanceD = runningBalanceD.plus(transaction.debitAmount);
         }
         if (transaction.creditAmount) {
-          runningBalance -= transaction.creditAmount;
+          runningBalanceD = runningBalanceD.minus(transaction.creditAmount);
         }
-        transaction.runningBalance = runningBalance;
+        transaction.runningBalance = runningBalanceD.toNumber();
       }
+      const runningBalance = runningBalanceD.toNumber();
 
       // Calculate summary from ALL filtered transactions (before pagination)
       const summary: LedgerSummary = {
-        totalDebits: filteredTransactions.reduce(
-          (sum, t) => sum + (t.debitAmount || 0),
-          0
-        ),
-        totalCredits: filteredTransactions.reduce(
-          (sum, t) => sum + (t.creditAmount || 0),
-          0
-        ),
+        totalDebits: filteredTransactions
+          .reduce((sum, t) => sum.plus(t.debitAmount || 0), new Decimal(0))
+          .toNumber(),
+        totalCredits: filteredTransactions
+          .reduce((sum, t) => sum.plus(t.creditAmount || 0), new Decimal(0))
+          .toNumber(),
         netChange: runningBalance,
       };
 
@@ -459,7 +458,7 @@ export const clientLedgerRouter = router({
       }
 
       const asOfDateStr = formatDateISO(input.asOfDate);
-      let balance = 0;
+      let balanceD = new Decimal(0);
 
       // Sum up orders (SALE - Debit)
       const ordersSum = await db
@@ -476,7 +475,7 @@ export const clientLedgerRouter = router({
             sql`DATE(COALESCE(${orders.confirmedAt}, ${orders.createdAt})) <= ${asOfDateStr}`
           )
         );
-      balance += Number(ordersSum[0]?.total || 0);
+      balanceD = balanceD.plus(new Decimal(String(ordersSum[0]?.total || 0)));
 
       // Sum up payments received (Credit - subtract)
       const paymentsReceivedSum = await db
@@ -492,7 +491,7 @@ export const clientLedgerRouter = router({
             sql`${payments.paymentDate} <= ${asOfDateStr}`
           )
         );
-      balance -= Number(paymentsReceivedSum[0]?.total || 0);
+      balanceD = balanceD.minus(new Decimal(String(paymentsReceivedSum[0]?.total || 0)));
 
       // Sum up payments sent (Debit - add)
       const paymentsSentSum = await db
@@ -508,7 +507,7 @@ export const clientLedgerRouter = router({
             sql`${payments.paymentDate} <= ${asOfDateStr}`
           )
         );
-      balance += Number(paymentsSentSum[0]?.total || 0);
+      balanceD = balanceD.plus(new Decimal(String(paymentsSentSum[0]?.total || 0)));
 
       // Sum up purchase orders (Credit - subtract)
       const poSum = await db
@@ -527,7 +526,7 @@ export const clientLedgerRouter = router({
             sql`DATE(COALESCE(${purchaseOrders.confirmedAt}, ${purchaseOrders.orderDate})) <= ${asOfDateStr}`
           )
         );
-      balance -= Number(poSum[0]?.total || 0);
+      balanceD = balanceD.minus(new Decimal(String(poSum[0]?.total || 0)));
 
       // Sum up adjustments
       const adjustmentsResult = await db
@@ -546,11 +545,12 @@ export const clientLedgerRouter = router({
 
       for (const adj of adjustmentsResult) {
         if (adj.transactionType === "DEBIT") {
-          balance += Number(adj.total || 0);
+          balanceD = balanceD.plus(new Decimal(String(adj.total || 0)));
         } else {
-          balance -= Number(adj.total || 0);
+          balanceD = balanceD.minus(new Decimal(String(adj.total || 0)));
         }
       }
+      const balance = balanceD.toNumber();
 
       return {
         clientId: client.id,
@@ -758,20 +758,22 @@ export const clientLedgerRouter = router({
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
-      let totalDebits = 0;
-      let totalCredits = 0;
+      let totalDebitsD = new Decimal(0);
+      let totalCreditsD = new Decimal(0);
       for (const t of allTransactions) {
-        totalDebits += t.debitAmount;
-        totalCredits += t.creditAmount;
+        totalDebitsD = totalDebitsD.plus(t.debitAmount);
+        totalCreditsD = totalCreditsD.plus(t.creditAmount);
       }
-      const currentBalance = totalDebits - totalCredits;
+      const totalDebits = totalDebitsD.toNumber();
+      const totalCredits = totalCreditsD.toNumber();
+      const currentBalance = totalDebitsD.minus(totalCreditsD).toNumber();
 
       // Calculate running balances (from oldest to newest)
       const sortedForBalance = [...allTransactions].reverse();
-      let runningBal = 0;
+      let runningBalD = new Decimal(0);
       for (const t of sortedForBalance) {
-        runningBal += t.debitAmount - t.creditAmount;
-        t.runningBalance = runningBal;
+        runningBalD = runningBalD.plus(t.debitAmount).minus(t.creditAmount);
+        t.runningBalance = runningBalD.toNumber();
       }
 
       // Build CSV content
