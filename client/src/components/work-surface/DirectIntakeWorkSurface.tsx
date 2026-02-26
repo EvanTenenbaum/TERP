@@ -89,7 +89,7 @@ import { themeAlpine } from "ag-grid-community";
 // ============================================================================
 
 const intakeRowSchema = z.object({
-  vendorName: z.string().min(1, "Vendor is required"),
+  vendorName: z.string().min(1, "Supplier is required"),
   brandName: z.string().min(1, "Brand/Farmer is required"),
   category: z.enum([
     "Flower",
@@ -329,7 +329,7 @@ function RowInspectorContent({
   return (
     <div className="space-y-6">
       <InspectorSection title="Supplier Information" defaultOpen>
-        <InspectorField label="Vendor" required>
+        <InspectorField label="Supplier" required>
           <Input
             value={row.vendorName}
             list={`direct-intake-vendors-${row.id}`}
@@ -931,7 +931,7 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
-        headerName: "Vendor",
+        headerName: "Supplier",
         field: "vendorName",
         minWidth: 130,
         flex: 1,
@@ -942,8 +942,8 @@ export function DirectIntakeWorkSurface() {
         },
         tooltipValueGetter: () =>
           vendors.length > 0
-            ? `Type to search ${vendors.length} vendors or enter new`
-            : "Type vendor name",
+            ? `Type to search ${vendors.length} suppliers or enter new`
+            : "Type supplier name",
       },
       {
         headerName: "Product / Strain",
@@ -1745,7 +1745,7 @@ export function DirectIntakeWorkSurface() {
       <div className="border-b border-border/70 bg-background px-3 py-3 md:px-4">
         <div className="grid gap-2 md:grid-cols-5">
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Vendor</Label>
+            <Label className="text-xs text-muted-foreground">Supplier</Label>
             <Input
               list="direct-intake-top-vendors"
               value={selectedRow?.vendorName ?? ""}

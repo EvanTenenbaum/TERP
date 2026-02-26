@@ -113,8 +113,8 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
                     <TableCell className="text-right font-mono">
                       $
                       {client.totalSales.toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}
                     </TableCell>
                   </TableRow>

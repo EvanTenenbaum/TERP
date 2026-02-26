@@ -191,8 +191,8 @@ describe("VIPDashboard", () => {
 
     render(<VIPDashboard />);
 
-    expect(screen.getByText("$12,500")).toBeInTheDocument();
-    expect(screen.getByText("$82,500")).toBeInTheDocument();
+    expect(screen.getByText("$12,500.00")).toBeInTheDocument();
+    expect(screen.getByText("$82,500.00")).toBeInTheDocument();
     expect(screen.getByText("32%")).toBeInTheDocument();
   });
 

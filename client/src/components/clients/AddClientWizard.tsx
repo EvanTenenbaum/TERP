@@ -242,7 +242,7 @@ export function AddClientWizard({
   const getSelectedClientTypes = useCallback(() => {
     const types: string[] = [];
     if (formData.isBuyer) types.push("Buyer");
-    if (formData.isSeller) types.push("Seller");
+    if (formData.isSeller) types.push("Supplier");
     if (formData.isBrand) types.push("Brand");
     if (formData.isReferee) types.push("Referee");
     if (formData.isContractor) types.push("Contractor");
@@ -681,7 +681,7 @@ export function AddClientWizard({
                       htmlFor="isSeller"
                       className="text-base font-medium cursor-pointer"
                     >
-                      Seller
+                      Supplier
                     </Label>
                     <p className="text-sm text-muted-foreground">
                       Client sells products or services to you

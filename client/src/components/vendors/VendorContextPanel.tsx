@@ -38,7 +38,6 @@ import {
 import { format } from "date-fns";
 import { VendorWithBrands } from "./VendorBrandInfo";
 
-
 interface VendorContextPanelProps {
   /**
    * The client ID of the vendor (must have isSeller=true)
@@ -114,7 +113,7 @@ function VendorInfoSection({
           )}
         </div>
         <div className="text-right">
-          <div className="text-sm text-muted-foreground">Lifetime Value</div>
+          <div className="text-sm text-muted-foreground">All Time Value</div>
           <div className="text-xl font-bold text-green-600">
             {formatCurrency(vendor.totalLifetimeValue)}
           </div>
@@ -203,8 +202,8 @@ function MetricsCards({
             metrics.overallSellThroughRate >= 70
               ? "text-green-600"
               : metrics.overallSellThroughRate >= 50
-              ? "text-yellow-600"
-              : "text-red-600"
+                ? "text-yellow-600"
+                : "text-red-600"
           }`}
         >
           {formatPercent(metrics.overallSellThroughRate)}
@@ -266,10 +265,12 @@ function ProductPerformanceTab({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => (
+          {products.map(product => (
             <TableRow
               key={product.productId}
-              className={onProductClick ? "cursor-pointer hover:bg-muted" : undefined}
+              className={
+                onProductClick ? "cursor-pointer hover:bg-muted" : undefined
+              }
               onClick={() => onProductClick?.(product.productId)}
             >
               <TableCell>
@@ -293,8 +294,8 @@ function ProductPerformanceTab({
                     product.sellThroughRate >= 70
                       ? "text-green-600"
                       : product.sellThroughRate >= 50
-                      ? "text-yellow-600"
-                      : "text-red-600"
+                        ? "text-yellow-600"
+                        : "text-red-600"
                   }
                 >
                   {formatPercent(product.sellThroughRate)}
@@ -363,10 +364,12 @@ function ActiveInventoryTab({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {inventory.map((item) => (
+          {inventory.map(item => (
             <TableRow
               key={item.batchId}
-              className={onBatchClick ? "cursor-pointer hover:bg-muted" : undefined}
+              className={
+                onBatchClick ? "cursor-pointer hover:bg-muted" : undefined
+              }
               onClick={() => onBatchClick?.(item.batchId)}
             >
               <TableCell>
@@ -390,8 +393,8 @@ function ActiveInventoryTab({
                     item.daysOld > 90
                       ? "text-red-600"
                       : item.daysOld > 60
-                      ? "text-yellow-600"
-                      : undefined
+                        ? "text-yellow-600"
+                        : undefined
                   }
                 >
                   {item.daysOld}d
@@ -438,7 +441,7 @@ function SupplyHistoryTab({
   const [expandedLots, setExpandedLots] = useState<Set<number>>(new Set());
 
   const toggleLot = (lotId: number) => {
-    setExpandedLots((prev) => {
+    setExpandedLots(prev => {
       const next = new Set(prev);
       if (next.has(lotId)) {
         next.delete(lotId);
@@ -459,7 +462,7 @@ function SupplyHistoryTab({
 
   return (
     <div className="space-y-2">
-      {history.map((lot) => (
+      {history.map(lot => (
         <Card key={lot.lotId}>
           <CardHeader
             className="py-3 px-4 cursor-pointer hover:bg-muted/50"
@@ -481,7 +484,9 @@ function SupplyHistoryTab({
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-medium">{formatCurrency(lot.totalValue)}</div>
+                <div className="font-medium">
+                  {formatCurrency(lot.totalValue)}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -497,11 +502,13 @@ function SupplyHistoryTab({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lot.products.map((product) => (
+                  {lot.products.map(product => (
                     <TableRow key={`lot-${lot.lotId}-${product.batchCode}`}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{product.productName}</div>
+                          <div className="font-medium">
+                            {product.productName}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {product.category} - {product.batchCode}
                           </div>
@@ -552,7 +559,7 @@ export function VendorContextPanel({
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-32" />
           <div className="grid grid-cols-4 gap-3">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4].map(i => (
               <Skeleton key={`vendor-skeleton-${i}`} className="h-20" />
             ))}
           </div>
@@ -623,7 +630,10 @@ export function VendorContextPanel({
 
         <Tabs defaultValue="performance" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="performance" className="flex items-center gap-1">
+            <TabsTrigger
+              value="performance"
+              className="flex items-center gap-1"
+            >
               <TrendingUp className="h-4 w-4" />
               Performance
             </TabsTrigger>

@@ -47,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 
 // Work Surface Hooks
@@ -256,7 +257,7 @@ function BatchInspectorContent({
 
         <div className="grid grid-cols-2 gap-4">
           {vendor && (
-            <InspectorField label="Vendor">
+            <InspectorField label="Supplier">
               <p>{vendor.name}</p>
             </InspectorField>
           )}
@@ -377,6 +378,7 @@ export function InventoryWorkSurface() {
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [qtyAdjustment, setQtyAdjustment] = useState("");
   const [qtyReason, setQtyReason] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -652,6 +654,7 @@ export function InventoryWorkSurface() {
         `Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`
       );
       selection.clear();
+      setShowBulkDeleteConfirm(false);
       setSaved();
       refreshInventory();
     },
@@ -834,12 +837,16 @@ export function InventoryWorkSurface() {
   }, [selectedBatchIds, bulkStatus, bulkUpdateStatusMutation]);
 
   const handleBulkDelete = useCallback(() => {
+    if (selectedBatchIds.size === 0) return;
+    setShowBulkDeleteConfirm(true);
+  }, [selectedBatchIds]);
+
+  const handleConfirmBulkDelete = useCallback(() => {
     const batchIds = Array.from(selectedBatchIds);
-    if (!batchIds.length) return;
-    const confirmed = window.confirm(
-      `Delete ${batchIds.length} selected batch${batchIds.length === 1 ? "" : "es"}?`
-    );
-    if (!confirmed) return;
+    if (batchIds.length === 0) {
+      setShowBulkDeleteConfirm(false);
+      return;
+    }
     bulkDeleteMutation.mutate(batchIds);
   }, [selectedBatchIds, bulkDeleteMutation]);
 
@@ -1222,6 +1229,19 @@ export function InventoryWorkSurface() {
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
+
+      <ConfirmDialog
+        open={showBulkDeleteConfirm}
+        onOpenChange={setShowBulkDeleteConfirm}
+        title="Delete selected batches?"
+        description={`Delete ${selectedBatchIds.size} selected batch${
+          selectedBatchIds.size === 1 ? "" : "es"
+        }? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleConfirmBulkDelete}
+        isLoading={bulkDeleteMutation.isPending}
+      />
 
       <Dialog open={showQtyAdjust} onOpenChange={setShowQtyAdjust}>
         <DialogContent>

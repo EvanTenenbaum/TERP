@@ -105,6 +105,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 // Pipeline stages configuration
 const PIPELINE_STAGES = [
@@ -277,7 +278,7 @@ function DraggablePipelineItemCard({
           <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-1 text-muted-foreground">
               <DollarSign className="h-3 w-3" />
-              <span>${item.totalValue.toLocaleString()}</span>
+              <span>{formatCurrency(item.totalValue)}</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground">
               <User className="h-3 w-3" />
@@ -359,7 +360,7 @@ function DroppablePipelineColumn({
         <div>
           <h3 className="font-semibold">{stage.label}</h3>
           <p className="text-sm text-muted-foreground">
-            {count} items · ${value.toLocaleString()}
+            {count} items · {formatCurrency(value)}
           </p>
         </div>
       </div>
@@ -420,7 +421,7 @@ function PipelineListRow({
         </div>
       </TableCell>
       <TableCell className="text-right">
-        ${item.totalValue.toLocaleString()}
+        {formatCurrency(item.totalValue)}
       </TableCell>
       <TableCell>{item.createdByName}</TableCell>
       <TableCell>{format(new Date(item.createdAt), "MMM d, yyyy")}</TableCell>
@@ -826,7 +827,7 @@ export default function UnifiedSalesPortalPage() {
                     </p>
                     <p className="text-2xl font-bold">{count}</p>
                     <p className="text-sm text-muted-foreground">
-                      ${value.toLocaleString()}
+                      {formatCurrency(value)}
                     </p>
                   </div>
                 </div>
@@ -988,7 +989,7 @@ export default function UnifiedSalesPortalPage() {
                     {activeItem.clientTeriCode}
                   </div>
                   <div className="mt-2 text-sm">
-                    ${activeItem.totalValue.toLocaleString()}
+                    {formatCurrency(activeItem.totalValue)}
                   </div>
                 </CardContent>
               </Card>
@@ -1068,8 +1069,8 @@ export default function UnifiedSalesPortalPage() {
               <div className="bg-muted p-3 rounded-lg">
                 <p className="text-sm font-medium">Converting:</p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedItem.clientName} - $
-                  {selectedItem.totalValue.toLocaleString()}
+                  {selectedItem.clientName} -{" "}
+                  {formatCurrency(selectedItem.totalValue)}
                 </p>
               </div>
             )}
@@ -1109,7 +1110,7 @@ export default function UnifiedSalesPortalPage() {
               )}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              {quoteCheckData?.warnings?.map((warning) => (
+              {quoteCheckData?.warnings?.map(warning => (
                 <div
                   key={`warning-${warning.substring(0, 30)}`}
                   className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800"
@@ -1132,8 +1133,8 @@ export default function UnifiedSalesPortalPage() {
                 <div className="bg-muted p-3 rounded-lg mt-3">
                   <p className="text-sm font-medium">Quote Details:</p>
                   <p className="text-sm">
-                    {selectedItem.clientName} - $
-                    {selectedItem.totalValue.toLocaleString()}
+                    {selectedItem.clientName} -{" "}
+                    {formatCurrency(selectedItem.totalValue)}
                   </p>
                   {selectedItem.orderNumber && (
                     <p className="text-sm text-muted-foreground">

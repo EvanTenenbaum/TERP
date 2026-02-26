@@ -59,8 +59,19 @@ export function QuickCreateClient({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [businessType, setBusinessType] = useState<"" | "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER">("");
-  const [preferredContact, setPreferredContact] = useState<"" | "EMAIL" | "PHONE" | "TEXT" | "ANY">("");
+  const [businessType, setBusinessType] = useState<
+    | ""
+    | "RETAIL"
+    | "WHOLESALE"
+    | "DISPENSARY"
+    | "DELIVERY"
+    | "MANUFACTURER"
+    | "DISTRIBUTOR"
+    | "OTHER"
+  >("");
+  const [preferredContact, setPreferredContact] = useState<
+    "" | "EMAIL" | "PHONE" | "TEXT" | "ANY"
+  >("");
   const [isBuyer, setIsBuyer] = useState(true);
   const [isSeller, setIsSeller] = useState(false);
   const [referrerId, setReferrerId] = useState<number | undefined>(
@@ -128,24 +139,36 @@ export function QuickCreateClient({
     },
     onError: error => {
       // BUG-071 FIX: Provide clear, user-friendly error messages
-      console.error('Quick create client error:', error);
+      console.error("Quick create client error:", error);
 
       // Handle specific error types
-      if (error.message.includes('unique') || error.message.includes('duplicate')) {
-        toast.error('Client already exists', {
-          description: 'A client with this name or email already exists. Please use different information.'
+      if (
+        error.message.includes("unique") ||
+        error.message.includes("duplicate")
+      ) {
+        toast.error("Client already exists", {
+          description:
+            "A client with this name or email already exists. Please use different information.",
         });
-      } else if (error.message.includes('validation') || error.message.includes('required')) {
-        toast.error('Invalid form data', {
-          description: 'Please check all required fields and try again.'
+      } else if (
+        error.message.includes("validation") ||
+        error.message.includes("required")
+      ) {
+        toast.error("Invalid form data", {
+          description: "Please check all required fields and try again.",
         });
-      } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        toast.error('Connection error', {
-          description: 'Unable to reach the server. Please check your connection and try again.'
+      } else if (
+        error.message.includes("network") ||
+        error.message.includes("fetch")
+      ) {
+        toast.error("Connection error", {
+          description:
+            "Unable to reach the server. Please check your connection and try again.",
         });
       } else {
-        toast.error('Failed to create client', {
-          description: error.message || 'An unexpected error occurred. Please try again.'
+        toast.error("Failed to create client", {
+          description:
+            error.message || "An unexpected error occurred. Please try again.",
         });
       }
     },
@@ -169,14 +192,14 @@ export function QuickCreateClient({
     // BUG-071 FIX: Enhanced validation with user feedback
     if (!name.trim()) {
       toast.error("Name is required", {
-        description: "Please provide a name for the client"
+        description: "Please provide a name for the client",
       });
       return;
     }
 
     if (!email.trim() && !phone.trim()) {
       toast.error("Contact information required", {
-        description: "Please provide either an email address or phone number"
+        description: "Please provide either an email address or phone number",
       });
       return;
     }
@@ -184,7 +207,7 @@ export function QuickCreateClient({
     // Validate email format if provided
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       toast.error("Invalid email format", {
-        description: "Please provide a valid email address"
+        description: "Please provide a valid email address",
       });
       return;
     }
@@ -192,7 +215,7 @@ export function QuickCreateClient({
     // Validate at least one client type is selected
     if (!isBuyer && !isSeller) {
       toast.error("Client type required", {
-        description: "Please select if this client is a buyer, seller, or both"
+        description: "Please select if this client is a buyer, seller, or both",
       });
       return;
     }
@@ -340,7 +363,9 @@ export function QuickCreateClient({
           <Label htmlFor="quick-businessType">Business Type</Label>
           <Select
             value={businessType}
-            onValueChange={(value) => setBusinessType(value as typeof businessType)}
+            onValueChange={value =>
+              setBusinessType(value as typeof businessType)
+            }
           >
             <SelectTrigger id="quick-businessType">
               <SelectValue placeholder="Select type (optional)" />
@@ -361,7 +386,9 @@ export function QuickCreateClient({
           <Label htmlFor="quick-preferredContact">Preferred Contact</Label>
           <Select
             value={preferredContact}
-            onValueChange={(value) => setPreferredContact(value as typeof preferredContact)}
+            onValueChange={value =>
+              setPreferredContact(value as typeof preferredContact)
+            }
           >
             <SelectTrigger id="quick-preferredContact">
               <SelectValue placeholder="Select method (optional)" />
@@ -395,7 +422,7 @@ export function QuickCreateClient({
             onCheckedChange={checked => setIsSeller(!!checked)}
           />
           <Label htmlFor="quick-seller" className="text-sm cursor-pointer">
-            Seller/Supplier
+            Supplier
           </Label>
         </div>
       </div>

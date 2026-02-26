@@ -120,6 +120,11 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
   const utilizationPercent =
     creditLimit > 0 ? (currentExposure / creditLimit) * 100 : 0;
   const isManualOverride = client?.creditLimitSource === "MANUAL";
+  const formatCurrency = (value: number): string =>
+    `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   // Determine status color
   const getStatusColor = (utilization: number): string => {
@@ -180,11 +185,7 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                   <p
                     className={`text-2xl font-bold ${getStatusColor(utilizationPercent)}`}
                   >
-                    $
-                    {availableCredit.toLocaleString(undefined, {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })}
+                    {formatCurrency(availableCredit)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -206,8 +207,8 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>${currentExposure.toLocaleString()} used</span>
-                  <span>${creditLimit.toLocaleString()} limit</span>
+                  <span>{formatCurrency(currentExposure)} used</span>
+                  <span>{formatCurrency(creditLimit)} limit</span>
                 </div>
               </div>
 
