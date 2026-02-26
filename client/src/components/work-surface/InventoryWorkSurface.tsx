@@ -53,6 +53,15 @@ import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
 import { FilterChips } from "@/components/inventory/FilterChips";
 import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { SaveViewModal } from "@/components/inventory/SaveViewModal";
+import {
+  AgingBadge,
+  getAgingRowClass,
+  type AgeBracket,
+} from "@/components/inventory/AgingBadge";
+import {
+  StockStatusBadge,
+  type StockStatus,
+} from "@/components/inventory/StockStatusBadge";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -104,6 +113,9 @@ interface InventoryItem {
     createdAt?: string;
     intakeDate?: string;
     version?: number;
+    ageDays?: number;
+    ageBracket?: AgeBracket;
+    stockStatus?: StockStatus;
   };
   product?: {
     id: number;
@@ -253,6 +265,23 @@ const normalizeSavedFilters = (
       ? savedFilters.paymentStatus
       : defaultFilters.paymentStatus,
   };
+};
+
+const calculateAvailable = (
+  batch:
+    | {
+        onHandQty?: string | number;
+        reservedQty?: string | number;
+        quarantineQty?: string | number;
+        holdQty?: string | number;
+      }
+    | undefined
+): number => {
+  const onHand = parseFloat(String(batch?.onHandQty ?? 0));
+  const reserved = parseFloat(String(batch?.reservedQty ?? 0));
+  const quarantine = parseFloat(String(batch?.quarantineQty ?? 0));
+  const hold = parseFloat(String(batch?.holdQty ?? 0));
+  return Math.max(0, onHand - reserved - quarantine - hold);
 };
 
 // ============================================================================
@@ -490,10 +519,24 @@ export function InventoryWorkSurface() {
 
   const enhancedSortBy = useMemo(() => {
     switch (sortColumn) {
+      case "sku":
+        return "sku";
       case "product":
         return "productName";
+      case "brand":
+        return "brand";
+      case "vendor":
+        return "vendor";
+      case "grade":
+        return "productName";
+      case "status":
+        return "status";
       case "onHandQty":
         return "onHand";
+      case "reservedQty":
+        return "available";
+      case "availableQty":
+        return "available";
       case "unitCogs":
         return "available";
       default:
@@ -584,6 +627,11 @@ export function InventoryWorkSurface() {
             intakeDate: item.receivedDate
               ? new Date(item.receivedDate).toISOString()
               : undefined,
+            ageDays: (item as typeof item & { ageDays?: number }).ageDays,
+            ageBracket: (item as typeof item & { ageBracket?: AgeBracket })
+              .ageBracket,
+            stockStatus: (item as typeof item & { stockStatus?: StockStatus })
+              .stockStatus,
           },
           product: {
             id: 0,
@@ -789,17 +837,49 @@ export function InventoryWorkSurface() {
     return [...filteredItems].sort((a, b) => {
       let aVal: string | number;
       let bVal: string | number;
-      if (sortColumn === "product") {
-        aVal = a.product?.nameCanonical || "";
-        bVal = b.product?.nameCanonical || "";
-      } else if (sortColumn === "onHandQty") {
-        aVal = parseFloat(a.batch?.onHandQty || "0");
-        bVal = parseFloat(b.batch?.onHandQty || "0");
-      } else if (sortColumn === "unitCogs") {
-        aVal = parseFloat(a.batch?.unitCogs || "0");
-        bVal = parseFloat(b.batch?.unitCogs || "0");
-      } else {
-        return 0;
+      switch (sortColumn) {
+        case "sku":
+          aVal = a.batch?.sku || "";
+          bVal = b.batch?.sku || "";
+          break;
+        case "product":
+          aVal = a.product?.nameCanonical || "";
+          bVal = b.product?.nameCanonical || "";
+          break;
+        case "brand":
+          aVal = a.brand?.name || "";
+          bVal = b.brand?.name || "";
+          break;
+        case "vendor":
+          aVal = a.vendor?.name || "";
+          bVal = b.vendor?.name || "";
+          break;
+        case "grade":
+          aVal = a.batch?.grade || "";
+          bVal = b.batch?.grade || "";
+          break;
+        case "status":
+          aVal = a.batch?.batchStatus || "";
+          bVal = b.batch?.batchStatus || "";
+          break;
+        case "onHandQty":
+          aVal = parseFloat(a.batch?.onHandQty || "0");
+          bVal = parseFloat(b.batch?.onHandQty || "0");
+          break;
+        case "reservedQty":
+          aVal = parseFloat(a.batch?.reservedQty || "0");
+          bVal = parseFloat(b.batch?.reservedQty || "0");
+          break;
+        case "availableQty":
+          aVal = calculateAvailable(a.batch);
+          bVal = calculateAvailable(b.batch);
+          break;
+        case "unitCogs":
+          aVal = parseFloat(a.batch?.unitCogs || "0");
+          bVal = parseFloat(b.batch?.unitCogs || "0");
+          break;
+        default:
+          return 0;
       }
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
@@ -1486,7 +1566,14 @@ export function InventoryWorkSurface() {
                         aria-label="Select all visible rows"
                       />
                     </TableHead>
-                    <TableHead>SKU</TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("sku")}
+                    >
+                      <span className="flex items-center">
+                        SKU <SortIcon column="sku" />
+                      </span>
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("product")}
@@ -1495,8 +1582,38 @@ export function InventoryWorkSurface() {
                         Product <SortIcon column="product" />
                       </span>
                     </TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("brand")}
+                    >
+                      <span className="flex items-center">
+                        Brand <SortIcon column="brand" />
+                      </span>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("vendor")}
+                    >
+                      <span className="flex items-center">
+                        Vendor <SortIcon column="vendor" />
+                      </span>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("grade")}
+                    >
+                      <span className="flex items-center">
+                        Grade <SortIcon column="grade" />
+                      </span>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("status")}
+                    >
+                      <span className="flex items-center">
+                        Status <SortIcon column="status" />
+                      </span>
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer text-right"
                       onClick={() => handleSort("onHandQty")}
@@ -1505,6 +1622,24 @@ export function InventoryWorkSurface() {
                         On Hand <SortIcon column="onHandQty" />
                       </span>
                     </TableHead>
+                    <TableHead
+                      className="cursor-pointer text-right"
+                      onClick={() => handleSort("reservedQty")}
+                    >
+                      <span className="flex items-center justify-end">
+                        Reserved <SortIcon column="reservedQty" />
+                      </span>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer text-right"
+                      onClick={() => handleSort("availableQty")}
+                    >
+                      <span className="flex items-center justify-end">
+                        Available <SortIcon column="availableQty" />
+                      </span>
+                    </TableHead>
+                    <TableHead>Stock Status</TableHead>
+                    <TableHead>Age</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"
                       onClick={() => handleSort("unitCogs")}
@@ -1517,65 +1652,118 @@ export function InventoryWorkSurface() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayItems.map((item: InventoryItem, index: number) => (
-                    <TableRow
-                      key={item.batch?.id}
-                      data-testid={
-                        item.product?.nameCanonical ? "batch-row" : undefined
-                      }
-                      className={cn(
-                        "cursor-pointer hover:bg-muted/50",
-                        selectedBatchId === item.batch?.id && "bg-muted",
-                        selectedIndex === index &&
-                          "ring-1 ring-inset ring-primary"
-                      )}
-                      onClick={() => {
-                        if (item.batch) {
-                          setSelectedBatchId(item.batch.id);
-                          setSelectedIndex(index);
-                          inspector.open();
+                  {displayItems.map((item: InventoryItem, index: number) => {
+                    const available = calculateAvailable(item.batch);
+                    const ageDays = item.batch?.ageDays ?? 0;
+                    const rowHighlightClass = getAgingRowClass(ageDays);
+
+                    return (
+                      <TableRow
+                        key={item.batch?.id}
+                        data-testid={
+                          item.product?.nameCanonical ? "batch-row" : undefined
                         }
-                      }}
-                    >
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        <Checkbox
-                          checked={
-                            item.batch
-                              ? selectedBatchIds.has(item.batch.id)
-                              : false
+                        className={cn(
+                          "cursor-pointer hover:bg-muted/50",
+                          rowHighlightClass,
+                          selectedBatchId === item.batch?.id && "bg-muted",
+                          selectedIndex === index &&
+                            "ring-1 ring-inset ring-primary"
+                        )}
+                        onClick={() => {
+                          if (item.batch) {
+                            setSelectedBatchId(item.batch.id);
+                            setSelectedIndex(index);
+                            inspector.open();
                           }
-                          onCheckedChange={checked => {
-                            if (!item.batch) return;
-                            toggleBatchSelection(item.batch.id, checked);
-                          }}
-                          aria-label={`Select batch ${item.batch?.sku ?? ""}`}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {item.batch?.sku}
-                      </TableCell>
-                      <TableCell>
-                        {item.product?.nameCanonical || "-"}
-                      </TableCell>
-                      <TableCell>{item.product?.category || "-"}</TableCell>
-                      <TableCell>
-                        <BatchStatusBadge
-                          status={item.batch?.batchStatus || "LIVE"}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatQuantity(item.batch?.onHandQty)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.batch?.unitCogs)}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        }}
+                      >
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Checkbox
+                            checked={
+                              item.batch
+                                ? selectedBatchIds.has(item.batch.id)
+                                : false
+                            }
+                            onCheckedChange={checked => {
+                              if (!item.batch) return;
+                              toggleBatchSelection(item.batch.id, checked);
+                            }}
+                            aria-label={`Select batch ${item.batch?.sku ?? ""}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {item.batch?.sku}
+                        </TableCell>
+                        <TableCell>
+                          {item.product?.nameCanonical || "-"}
+                        </TableCell>
+                        <TableCell>{item.brand?.name || "-"}</TableCell>
+                        <TableCell>{item.vendor?.name || "-"}</TableCell>
+                        <TableCell>
+                          {item.batch?.grade ? (
+                            <Badge variant="outline">{item.batch.grade}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <BatchStatusBadge
+                            status={item.batch?.batchStatus || "LIVE"}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatQuantity(item.batch?.onHandQty)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatQuantity(item.batch?.reservedQty)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span
+                            className={cn(
+                              available <= 100 &&
+                                "text-orange-600 font-semibold"
+                            )}
+                          >
+                            {formatQuantity(available)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {item.batch?.stockStatus ? (
+                            <StockStatusBadge
+                              status={item.batch.stockStatus}
+                              showIcon={false}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {ageDays > 0 ? (
+                            <AgingBadge
+                              ageDays={ageDays}
+                              ageBracket={item.batch?.ageBracket}
+                              variant="compact"
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.batch?.unitCogs)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
