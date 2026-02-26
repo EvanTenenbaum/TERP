@@ -55,7 +55,7 @@ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeybo
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { useUndo } from "@/hooks/work-surface/useUndo";
-import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
+import { usePowersheetSelection } from "@/hooks/work-surface";
 import {
   createDirectIntakeRemovalPlan,
   submitRowsWithGuaranteedCleanup,
@@ -711,8 +711,11 @@ export function DirectIntakeWorkSurface() {
   const [rows, setRows] = useState<IntakeGridRow[]>(() =>
     Array.from({ length: INITIAL_ROW_COUNT }, () => createEmptyRow())
   );
+  const visibleRowIds = useMemo(() => rows.map(row => row.id), [rows]);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const rowSelection = usePowersheetSelection<string>();
+  const rowSelection = usePowersheetSelection<string>({
+    visibleIds: visibleRowIds,
+  });
   const [rowMediaFilesById, setRowMediaFilesById] = useState<
     Record<string, File[]>
   >({});
@@ -745,6 +748,19 @@ export function DirectIntakeWorkSurface() {
       });
     },
     []
+  );
+  const selectedRowIds = useMemo(
+    () => Array.from(rowSelection.selectedIds),
+    [rowSelection.selectedIds]
+  );
+  const replaceSelection = useCallback(
+    (rowIds: string[]) => {
+      rowSelection.clear();
+      for (const rowId of Array.from(new Set(rowIds))) {
+        rowSelection.toggle(rowId, true);
+      }
+    },
+    [rowSelection]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
@@ -792,8 +808,8 @@ export function DirectIntakeWorkSurface() {
   useEffect(() => {
     if (!selectedRowId) return;
     if (rowSelection.selectedCount > 0) return;
-    rowSelection.setSelection([selectedRowId]);
-  }, [rowSelection, selectedRowId]);
+    replaceSelection([selectedRowId]);
+  }, [replaceSelection, rowSelection.selectedCount, selectedRowId]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
@@ -816,7 +832,7 @@ export function DirectIntakeWorkSurface() {
     onCancel: () => {
       // Clear selection on Escape
       setSelectedRowId(null);
-      rowSelection.clearSelection();
+      rowSelection.clear();
       if (inspector.isOpen) {
         inspector.close();
       }
@@ -1156,17 +1172,17 @@ export function DirectIntakeWorkSurface() {
     (event: SelectionChangedEvent<IntakeGridRow>) => {
       const selectedRows = event.api.getSelectedRows();
       const selectedIds = selectedRows.map(row => row.id);
-      rowSelection.setSelection(selectedIds);
+      replaceSelection(selectedIds);
       setSelectedRowId(selectedIds[0] ?? null);
     },
-    [rowSelection]
+    [replaceSelection]
   );
 
   const handleAddRow = useCallback(() => {
     const newRow = createEmptyRow(defaultLocationOverrides);
     updateRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
-    rowSelection.setSelection([newRow.id]);
+    replaceSelection([newRow.id]);
 
     // Focus the new row
     setTimeout(() => {
@@ -1178,7 +1194,7 @@ export function DirectIntakeWorkSurface() {
         gridApiRef.current.setFocusedCell(rowIndex, "vendorName");
       }
     }, 50);
-  }, [rows.length, defaultLocationOverrides, rowSelection, updateRows]);
+  }, [defaultLocationOverrides, replaceSelection, rows.length, updateRows]);
 
   const removeRowsWithUndo = useCallback(
     (rowIds: string[]) => {
@@ -1248,7 +1264,7 @@ export function DirectIntakeWorkSurface() {
             return next;
           });
 
-          rowSelection.setSelection(removedRows.map(row => row.id));
+          replaceSelection(removedRows.map(row => row.id));
           setSelectedRowId(removedRows[0]?.id ?? null);
         },
       });
@@ -1261,10 +1277,10 @@ export function DirectIntakeWorkSurface() {
         }
         return next;
       });
-      rowSelection.clearSelection();
+      rowSelection.clear();
       setSelectedRowId(null);
     },
-    [rowSelection, undo, updateRows, updateRowMediaFilesById]
+    [replaceSelection, rowSelection, undo, updateRows, updateRowMediaFilesById]
   );
 
   const handleRemoveRow = useCallback(
@@ -1650,20 +1666,20 @@ export function DirectIntakeWorkSurface() {
     if (rowSelection.selectedCount === 0) {
       return;
     }
-    const validSelection = rowSelection.selectedRowIds.filter(selectedId =>
+    const validSelection = selectedRowIds.filter(selectedId =>
       rows.some(row => row.id === selectedId)
     );
     if (validSelection.length !== rowSelection.selectedCount) {
-      rowSelection.setSelection(validSelection);
+      replaceSelection(validSelection);
     }
-  }, [rowSelection, rows]);
+  }, [replaceSelection, rowSelection.selectedCount, rows, selectedRowIds]);
 
   const pendingCount = rows.filter(r => r.status === "pending").length;
   const submittedCount = rows.filter(r => r.status === "submitted").length;
   const errorCount = rows.filter(r => r.status === "error").length;
   const selectedRows = useMemo(
-    () => rows.filter(row => rowSelection.selectedRowIds.includes(row.id)),
-    [rowSelection.selectedRowIds, rows]
+    () => rows.filter(row => rowSelection.selectedIds.has(row.id)),
+    [rowSelection.selectedIds, rows]
   );
   const selectedPendingRows = useMemo(
     () => selectedRows.filter(row => row.status === "pending"),
@@ -1704,9 +1720,9 @@ export function DirectIntakeWorkSurface() {
       errorMessage: undefined,
     }));
     updateRows(prev => [...prev, ...duplicates]);
-    rowSelection.setSelection(duplicates.map(row => row.id));
+    replaceSelection(duplicates.map(row => row.id));
     setSelectedRowId(duplicates[0]?.id ?? null);
-  }, [rowSelection, selectedPendingRows, updateRows]);
+  }, [replaceSelection, selectedPendingRows, updateRows]);
 
   const handleRemoveSelected = useCallback(() => {
     if (selectedPendingRows.length === 0) return;
