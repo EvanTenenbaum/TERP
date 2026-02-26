@@ -1,6 +1,6 @@
 # ============================================
 # TERP Optimized Multi-Stage Dockerfile
-# Version: 2.1 - Fixed memory settings for DigitalOcean App Platform
+# Version: 2.2 - Prod-only node_modules to reduce disk usage
 # ============================================
 
 # ============================================
@@ -31,6 +31,15 @@ COPY patches ./patches
 
 # Install ALL dependencies (need devDeps for build)
 RUN pnpm install --frozen-lockfile
+
+# ============================================
+# Stage 2b: Production-only dependencies (no devDeps)
+# Vite is dynamically imported in server/_core/vite.ts — dev-only path only.
+# The production server only needs the packages listed in "dependencies".
+# ============================================
+FROM deps AS prod-deps
+
+RUN pnpm prune --prod
 
 # ============================================
 # Stage 3: Build
@@ -67,10 +76,8 @@ FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Copy node_modules from deps stage (includes all deps)
-# NOTE: We can't use --prod because vite.config.js is imported at runtime
-# for dev mode detection. This is a known limitation.
-COPY --from=deps /app/node_modules ./node_modules
+# Copy production-only node_modules (no devDeps — saves ~200-400MB disk)
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml ./
 
 # Copy built artifacts from builder
