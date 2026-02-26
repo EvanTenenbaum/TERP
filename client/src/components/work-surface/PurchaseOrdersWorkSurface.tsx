@@ -61,6 +61,7 @@ import { toast } from "sonner";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { useUndo } from "@/hooks/work-surface/useUndo";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import {
   InspectorPanel,
@@ -437,6 +438,7 @@ export function PurchaseOrdersWorkSurface() {
     isDirty: _isDirty,
   } = useSaveState();
   const inspector = useInspectorPanel();
+  const { registerAction, undoLast } = useUndo({ enableKeyboard: false });
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -587,6 +589,9 @@ export function PurchaseOrdersWorkSurface() {
     gridMode: false,
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
+    onUndo: () => {
+      void undoLast();
+    },
     // WS-KB-001: Add Cmd+K to focus search
     customHandlers: {
       "cmd+k": e => {
@@ -728,16 +733,40 @@ export function PurchaseOrdersWorkSurface() {
   };
 
   const handleRemoveItem = (index: number) => {
+    const removedItem = formData.items[index];
+    if (!removedItem || formData.items.length <= 1) {
+      return;
+    }
+
     setFormData(prev => {
-      if (prev.items.length <= 1) {
-        return prev;
-      }
       return {
         ...prev,
         items: prev.items.filter((_, i) => i !== index),
       };
     });
     poDraftSelection.clearSelection();
+
+    registerAction({
+      description: "Removed draft line item",
+      undo: () => {
+        setFormData(prev => {
+          if (prev.items.some(item => item.tempId === removedItem.tempId)) {
+            return prev;
+          }
+          const nextItems = [...prev.items];
+          const insertAt = Math.min(index, nextItems.length);
+          nextItems.splice(insertAt, 0, removedItem);
+          return {
+            ...prev,
+            items: nextItems,
+          };
+        });
+        poDraftSelection.setSelection([removedItem.tempId]);
+        requestAnimationFrame(() => {
+          focusPoDraftCell(removedItem.tempId);
+        });
+      },
+    });
   };
 
   const duplicateSelectedDraftRows = useCallback(() => {
@@ -770,21 +799,66 @@ export function PurchaseOrdersWorkSurface() {
     if (selectedPoDraftRowSet.size === 0) {
       return;
     }
+
+    const removedRows = formData.items
+      .map((item, index) => ({ item: { ...item }, index }))
+      .filter(row => selectedPoDraftRowSet.has(row.item.tempId));
+
+    if (removedRows.length === 0) {
+      return;
+    }
+
+    if (removedRows.length === formData.items.length) {
+      toast.error("Keep at least one line item in the draft");
+      return;
+    }
+
     setFormData(prev => {
-      const remainingRows = prev.items.filter(
-        item => !selectedPoDraftRowSet.has(item.tempId)
-      );
-      if (remainingRows.length === 0) {
-        toast.error("Keep at least one line item in the draft");
-        return prev;
-      }
       return {
         ...prev,
-        items: remainingRows,
+        items: prev.items.filter(
+          item => !selectedPoDraftRowSet.has(item.tempId)
+        ),
       };
     });
     poDraftSelection.clearSelection();
-  }, [poDraftSelection, selectedPoDraftRowSet]);
+
+    registerAction({
+      description: `Removed ${removedRows.length} draft row${
+        removedRows.length === 1 ? "" : "s"
+      }`,
+      undo: () => {
+        setFormData(prev => {
+          const nextItems = [...prev.items];
+          removedRows.forEach(({ item, index }) => {
+            if (nextItems.some(existing => existing.tempId === item.tempId)) {
+              return;
+            }
+            const insertAt = Math.min(index, nextItems.length);
+            nextItems.splice(insertAt, 0, item);
+          });
+          return {
+            ...prev,
+            items: nextItems,
+          };
+        });
+        const restoredIds = removedRows.map(row => row.item.tempId);
+        poDraftSelection.setSelection(restoredIds);
+        const firstRestoredId = restoredIds[0];
+        if (firstRestoredId) {
+          requestAnimationFrame(() => {
+            focusPoDraftCell(firstRestoredId);
+          });
+        }
+      },
+    });
+  }, [
+    focusPoDraftCell,
+    formData.items,
+    poDraftSelection,
+    registerAction,
+    selectedPoDraftRowSet,
+  ]);
 
   const handleItemChange = (
     index: number,
@@ -885,7 +959,28 @@ export function PurchaseOrdersWorkSurface() {
   }, [poDraftRowIds, poDraftSelection]);
 
   const handleUpdateStatus = (poId: number, status: string) => {
-    updateStatus.mutate({ id: poId, status: status as POStatus });
+    const targetPO = (pos as PurchaseOrder[]).find(po => po.id === poId);
+    const previousStatus = targetPO?.purchaseOrderStatus ?? null;
+    const nextStatus = status as POStatus;
+    updateStatus.mutate(
+      { id: poId, status: nextStatus },
+      {
+        onSuccess: () => {
+          if (!previousStatus || previousStatus === nextStatus) {
+            return;
+          }
+          registerAction({
+            description: `Updated ${targetPO?.poNumber ?? "PO"} status to ${nextStatus}`,
+            undo: () => {
+              updateStatus.mutate({
+                id: poId,
+                status: previousStatus as POStatus,
+              });
+            },
+          });
+        },
+      }
+    );
   };
 
   const handleDelete = (poId: number) => {
