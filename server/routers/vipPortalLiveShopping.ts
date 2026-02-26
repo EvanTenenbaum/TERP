@@ -5,12 +5,8 @@ import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
-import {
-  batches,
-  products,
-  productMedia,
-} from "../../drizzle/schema";
-import { eq, and, or, like, gt, isNull, sql } from "drizzle-orm";
+import { batches, products } from "../../drizzle/schema";
+import { eq, and, or, like, gt, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
@@ -204,20 +200,20 @@ export const vipPortalLiveShoppingRouter = router({
               ORDER BY pi_visible.is_primary DESC, pi_visible.sort_order ASC, pi_visible.id ASC
               LIMIT 1
             ),
-            ${productMedia.url}
+            (
+              SELECT pm.url
+              FROM productMedia pm
+              WHERE pm.productId = ${products.id}
+                AND pm.type = 'image'
+                AND pm.deleted_at IS NULL
+              ORDER BY pm.createdAt DESC, pm.id DESC
+              LIMIT 1
+            )
           )`.as("imageUrl"),
           // Note: Price comes from pricing engine, not stored on products
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(
-          productMedia,
-          and(
-            eq(products.id, productMedia.productId),
-            eq(productMedia.type, "image"),
-            isNull(productMedia.deletedAt)
-          )
-        )
         .where(eq(batches.id, input.batchId))
         .limit(1);
 
