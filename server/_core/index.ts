@@ -159,7 +159,7 @@ async function startServer() {
       const fingerprint = await checkSchemaFingerprint({ retries: 2 });
       if (fingerprint.complete) {
         logger.info(
-          `✅ Schema fingerprint matched (${fingerprint.count}/7) - no migration changes needed`
+          `✅ Schema fingerprint matched (${fingerprint.count}/8) - no migration changes needed`
         );
       } else {
         const missingChecksSummary =
@@ -167,7 +167,7 @@ async function startServer() {
             ? ` Missing checks: ${fingerprint.missingChecks.join(", ")}`
             : "";
         logger.warn(
-          `⚠️ Schema fingerprint mismatch (${fingerprint.count}/7). Drift detected; migrations were NOT applied in detect-only mode.${missingChecksSummary}`
+          `⚠️ Schema fingerprint mismatch (${fingerprint.count}/8). Drift detected; migrations were NOT applied in detect-only mode.${missingChecksSummary}`
         );
         if (fingerprint.lastError) {
           logger.warn(`Fingerprint check warning: ${fingerprint.lastError}`);

@@ -76,6 +76,15 @@ const FINGERPRINT_CANARIES = [
         AND COLUMN_NAME = 'supplier_client_id'
     )`,
   },
+  {
+    key: "order_item_bags.deleted_at.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'order_item_bags'
+        AND COLUMN_NAME = 'deleted_at'
+    )`,
+  },
 ] as const;
 
 const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
@@ -2519,6 +2528,24 @@ export async function runAutoMigrations() {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       logger.error({ error: errMsg }, "ST-057: CHECK constraint creation failed");
+    }
+
+    // Add deleted_at column to order_item_bags table (TER-297 soft delete support)
+    try {
+      await db.execute(
+        sql`ALTER TABLE order_item_bags ADD COLUMN deleted_at TIMESTAMP NULL`
+      );
+      console.info("  ✅ Added deleted_at column to order_item_bags");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  order_item_bags.deleted_at already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "order_item_bags.deleted_at migration failed"
+        );
+      }
     }
 
     const duration = Date.now() - startTime;
