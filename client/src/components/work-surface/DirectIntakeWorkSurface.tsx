@@ -84,6 +84,11 @@ import {
 } from "lucide-react";
 
 import { themeAlpine } from "ag-grid-community";
+import {
+  deleteSelectedRows,
+  duplicateSelectedRows,
+  fillDownSelectedRows,
+} from "@/lib/powersheet/contracts";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -178,6 +183,17 @@ const CATEGORY_OPTIONS = [
   { value: "Vape", label: "Vape" },
   { value: "Other", label: "Other" },
 ] as const;
+
+const FILL_DOWN_FIELD_OPTIONS = [
+  { value: "category", label: "Category" },
+  { value: "subcategory", label: "Subcategory" },
+  { value: "qty", label: "Qty" },
+  { value: "cogs", label: "COGS" },
+  { value: "paymentTerms", label: "Payment Terms" },
+  { value: "notes", label: "Notes" },
+] as const;
+
+type FillDownField = (typeof FILL_DOWN_FIELD_OPTIONS)[number]["value"];
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -713,6 +729,7 @@ export function DirectIntakeWorkSurface() {
   );
   const visibleRowIds = useMemo(() => rows.map(row => row.id), [rows]);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [fillDownField, setFillDownField] = useState<FillDownField>("cogs");
   const rowSelection = usePowersheetSelection<string>({
     visibleIds: visibleRowIds,
   });
@@ -1199,7 +1216,24 @@ export function DirectIntakeWorkSurface() {
   const removeRowsWithUndo = useCallback(
     (rowIds: string[]) => {
       const currentRows = rowsRef.current;
-      const removalPlan = createDirectIntakeRemovalPlan(currentRows, rowIds);
+      const selectedRowIds = new Set(rowIds);
+      const nextRowsAfterDeleteContract = deleteSelectedRows({
+        rows: currentRows,
+        selectedRowIds,
+        getRowId: row => row.id,
+        minimumRows: 1,
+      });
+      const remainingIds = new Set(
+        nextRowsAfterDeleteContract.map(row => row.id)
+      );
+      const contractRemovedIds = currentRows
+        .filter(row => !remainingIds.has(row.id))
+        .map(row => row.id);
+
+      const removalPlan = createDirectIntakeRemovalPlan(
+        currentRows,
+        contractRemovedIds.length > 0 ? contractRemovedIds : rowIds
+      );
       if (removalPlan.blocked) {
         toast.error("Cannot remove all pending rows. Keep at least one row.");
         return;
@@ -1711,18 +1745,45 @@ export function DirectIntakeWorkSurface() {
   }, [handleSubmitRow, selectedPendingRows, setError]);
 
   const handleDuplicateSelected = useCallback(() => {
-    if (selectedPendingRows.length === 0) return;
+    const selectedPendingIds = new Set(selectedPendingRows.map(row => row.id));
+    if (selectedPendingIds.size === 0) return;
+    const currentRows = rowsRef.current;
     const timestamp = Date.now();
-    const duplicates = selectedPendingRows.map((row, index) => ({
-      ...row,
-      id: `new-${timestamp}-${index}-${Math.random().toString(36).slice(2, 9)}`,
-      status: "pending" as const,
-      errorMessage: undefined,
-    }));
-    updateRows(prev => [...prev, ...duplicates]);
+    let duplicateIndex = 0;
+
+    const nextRows = duplicateSelectedRows({
+      rows: currentRows,
+      selectedRowIds: selectedPendingIds,
+      getRowId: row => row.id,
+      duplicateRow: row => ({
+        ...row,
+        id: `new-${timestamp}-${duplicateIndex++}-${Math.random().toString(36).slice(2, 9)}`,
+        status: "pending" as const,
+        errorMessage: undefined,
+      }),
+    });
+
+    const duplicates = nextRows.slice(currentRows.length);
+    updateRows(nextRows);
     replaceSelection(duplicates.map(row => row.id));
     setSelectedRowId(duplicates[0]?.id ?? null);
   }, [replaceSelection, selectedPendingRows, updateRows]);
+
+  const handleFillDownSelected = useCallback(() => {
+    const selectedPendingIds = new Set(selectedPendingRows.map(row => row.id));
+    if (selectedPendingIds.size < 2) return;
+
+    const nextRows = fillDownSelectedRows({
+      rows: rowsRef.current,
+      selectedRowIds: selectedPendingIds,
+      getRowId: row => row.id,
+      field: fillDownField,
+    });
+
+    updateRows(nextRows);
+    setSaving();
+    setTimeout(() => setSaved(), 300);
+  }, [fillDownField, selectedPendingRows, setSaved, setSaving, updateRows]);
 
   const handleRemoveSelected = useCallback(() => {
     if (selectedPendingRows.length === 0) return;
@@ -1987,6 +2048,33 @@ export function DirectIntakeWorkSurface() {
           )}
           {selectedPendingRows.length > 0 && (
             <>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={fillDownField}
+                  onValueChange={value =>
+                    setFillDownField(value as FillDownField)
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[180px]">
+                    <SelectValue placeholder="Fill down field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FILL_DOWN_FIELD_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFillDownSelected}
+                  disabled={selectedPendingRows.length < 2}
+                >
+                  Fill Down
+                </Button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
