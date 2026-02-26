@@ -1,13 +1,13 @@
 /**
  * Tests for useNavigationState hook
- * ENH-001: Collapsible navigation groups
+ *
+ * @vitest-environment jsdom
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useNavigationState } from './useNavigationState';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useNavigationState } from "./useNavigationState";
 
-// Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -24,164 +24,178 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 });
 
-describe('useNavigationState', () => {
+describe("useNavigationState", () => {
   beforeEach(() => {
     localStorageMock.clear();
     vi.clearAllMocks();
   });
 
-  describe('group collapse state', () => {
-    it('should start with all groups expanded by default', () => {
+  describe("group collapse state", () => {
+    it("starts with all groups expanded", () => {
       const { result } = renderHook(() => useNavigationState());
 
-      expect(result.current.isGroupCollapsed('core')).toBe(false);
-      expect(result.current.isGroupCollapsed('sales')).toBe(false);
-      expect(result.current.isGroupCollapsed('fulfillment')).toBe(false);
-      expect(result.current.isGroupCollapsed('finance')).toBe(false);
-      expect(result.current.isGroupCollapsed('settings')).toBe(false);
+      expect(result.current.isGroupCollapsed("sales")).toBe(false);
+      expect(result.current.isGroupCollapsed("inventory")).toBe(false);
+      expect(result.current.isGroupCollapsed("finance")).toBe(false);
+      expect(result.current.isGroupCollapsed("admin")).toBe(false);
     });
 
-    it('should toggle group collapsed state', () => {
+    it("toggles group collapsed state", () => {
       const { result } = renderHook(() => useNavigationState());
 
-      // Initially expanded
-      expect(result.current.isGroupCollapsed('sales')).toBe(false);
-
-      // Collapse
       act(() => {
-        result.current.toggleGroup('sales');
+        result.current.toggleGroup("sales");
       });
-      expect(result.current.isGroupCollapsed('sales')).toBe(true);
+      expect(result.current.isGroupCollapsed("sales")).toBe(true);
 
-      // Expand again
       act(() => {
-        result.current.toggleGroup('sales');
+        result.current.toggleGroup("sales");
       });
-      expect(result.current.isGroupCollapsed('sales')).toBe(false);
+      expect(result.current.isGroupCollapsed("sales")).toBe(false);
     });
 
-    it('should collapse all groups', () => {
+    it("collapses and expands all groups", () => {
       const { result } = renderHook(() => useNavigationState());
 
       act(() => {
         result.current.collapseAll();
       });
 
-      expect(result.current.isGroupCollapsed('core')).toBe(true);
-      expect(result.current.isGroupCollapsed('sales')).toBe(true);
-      expect(result.current.isGroupCollapsed('fulfillment')).toBe(true);
-      expect(result.current.isGroupCollapsed('finance')).toBe(true);
-      expect(result.current.isGroupCollapsed('settings')).toBe(true);
-    });
+      expect(result.current.isGroupCollapsed("sales")).toBe(true);
+      expect(result.current.isGroupCollapsed("inventory")).toBe(true);
+      expect(result.current.isGroupCollapsed("finance")).toBe(true);
+      expect(result.current.isGroupCollapsed("admin")).toBe(true);
 
-    it('should expand all groups', () => {
-      const { result } = renderHook(() => useNavigationState());
-
-      // First collapse all
-      act(() => {
-        result.current.collapseAll();
-      });
-
-      // Then expand all
       act(() => {
         result.current.expandAll();
       });
 
-      expect(result.current.isGroupCollapsed('core')).toBe(false);
-      expect(result.current.isGroupCollapsed('sales')).toBe(false);
-      expect(result.current.isGroupCollapsed('fulfillment')).toBe(false);
-      expect(result.current.isGroupCollapsed('finance')).toBe(false);
-      expect(result.current.isGroupCollapsed('settings')).toBe(false);
+      expect(result.current.isGroupCollapsed("sales")).toBe(false);
+      expect(result.current.isGroupCollapsed("inventory")).toBe(false);
+      expect(result.current.isGroupCollapsed("finance")).toBe(false);
+      expect(result.current.isGroupCollapsed("admin")).toBe(false);
     });
   });
 
-  describe('pinned items', () => {
-    it('should start with no pinned items', () => {
+  describe("pinned paths", () => {
+    it("pins and unpins paths", () => {
       const { result } = renderHook(() => useNavigationState());
 
-      expect(result.current.pinnedPaths).toEqual([]);
-      expect(result.current.isPinned('/orders')).toBe(false);
+      act(() => {
+        result.current.togglePin("/orders");
+      });
+
+      expect(result.current.isPinned("/orders")).toBe(true);
+      expect(result.current.pinnedPaths).toContain("/orders");
+
+      act(() => {
+        result.current.togglePin("/orders");
+      });
+
+      expect(result.current.isPinned("/orders")).toBe(false);
+      expect(result.current.pinnedPaths).not.toContain("/orders");
     });
 
-    it('should toggle pinned state', () => {
-      const { result } = renderHook(() => useNavigationState());
+    it("keeps only max pinned paths and drops oldest", () => {
+      const { result } = renderHook(() =>
+        useNavigationState({ maxPinnedPaths: 3 })
+      );
 
-      // Pin an item
       act(() => {
-        result.current.togglePin('/orders');
+        result.current.togglePin("/one");
+        result.current.togglePin("/two");
+        result.current.togglePin("/three");
+        result.current.togglePin("/four");
       });
-      expect(result.current.isPinned('/orders')).toBe(true);
-      expect(result.current.pinnedPaths).toContain('/orders');
 
-      // Unpin the item
-      act(() => {
-        result.current.togglePin('/orders');
-      });
-      expect(result.current.isPinned('/orders')).toBe(false);
-      expect(result.current.pinnedPaths).not.toContain('/orders');
+      expect(result.current.pinnedPaths).toEqual(["/two", "/three", "/four"]);
     });
 
-    it('should allow multiple pinned items', () => {
-      const { result } = renderHook(() => useNavigationState());
+    it("supports setting pinned paths directly", () => {
+      const { result } = renderHook(() =>
+        useNavigationState({ maxPinnedPaths: 4 })
+      );
 
       act(() => {
-        result.current.togglePin('/orders');
-        result.current.togglePin('/clients');
-        result.current.togglePin('/inventory');
+        result.current.setPinnedPaths(["/a", "/b", "/b", "/c", "/d", "/e"]);
       });
 
-      expect(result.current.pinnedPaths).toHaveLength(3);
-      expect(result.current.isPinned('/orders')).toBe(true);
-      expect(result.current.isPinned('/clients')).toBe(true);
-      expect(result.current.isPinned('/inventory')).toBe(true);
+      expect(result.current.pinnedPaths).toEqual(["/a", "/b", "/c", "/d"]);
     });
   });
 
-  describe('localStorage persistence', () => {
-    it('should save state to localStorage', () => {
-      const { result } = renderHook(() => useNavigationState());
+  describe("localStorage scope", () => {
+    it("persists using scoped storage key", () => {
+      const { result } = renderHook(() =>
+        useNavigationState({ scopeKey: "user:42" })
+      );
 
       act(() => {
-        result.current.toggleGroup('sales');
-        result.current.togglePin('/orders');
+        result.current.toggleGroup("sales");
+        result.current.togglePin("/orders");
       });
 
       expect(localStorageMock.setItem).toHaveBeenCalled();
-      const savedState = JSON.parse(
-        localStorageMock.setItem.mock.calls[localStorageMock.setItem.mock.calls.length - 1][1]
+      const [storageKey, payload] =
+        localStorageMock.setItem.mock.calls[
+          localStorageMock.setItem.mock.calls.length - 1
+        ];
+      expect(storageKey).toBe("terp-navigation-state:user:42");
+
+      const savedState = JSON.parse(payload);
+      expect(savedState.collapsedGroups).toContain("sales");
+      expect(savedState.pinnedPaths).toContain("/orders");
+    });
+
+    it("loads scoped state from localStorage", () => {
+      localStorageMock.getItem.mockImplementation((key: string) => {
+        if (key === "terp-navigation-state:user:42") {
+          return JSON.stringify({
+            collapsedGroups: ["finance"],
+            pinnedPaths: ["/orders", "/clients"],
+          });
+        }
+        return null;
+      });
+
+      const { result } = renderHook(() =>
+        useNavigationState({ scopeKey: "user:42" })
       );
-      expect(savedState.collapsedGroups).toContain('sales');
-      expect(savedState.pinnedPaths).toContain('/orders');
+
+      expect(result.current.isGroupCollapsed("finance")).toBe(true);
+      expect(result.current.isPinned("/orders")).toBe(true);
+      expect(result.current.isPinned("/clients")).toBe(true);
     });
 
-    it('should load state from localStorage', () => {
-      const savedState = {
-        collapsedGroups: ['sales', 'finance'],
-        pinnedPaths: ['/orders', '/clients'],
-      };
-      localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(savedState));
+    it("handles invalid localStorage payload", () => {
+      localStorageMock.getItem.mockReturnValueOnce("invalid-json");
 
-      const { result } = renderHook(() => useNavigationState());
+      const { result } = renderHook(() =>
+        useNavigationState({ defaultPinnedPaths: ["/", "/orders/create"] })
+      );
 
-      expect(result.current.isGroupCollapsed('sales')).toBe(true);
-      expect(result.current.isGroupCollapsed('finance')).toBe(true);
-      expect(result.current.isGroupCollapsed('core')).toBe(false);
-      expect(result.current.isPinned('/orders')).toBe(true);
-      expect(result.current.isPinned('/clients')).toBe(true);
+      expect(result.current.pinnedPaths).toEqual(["/", "/orders/create"]);
+      expect(result.current.isGroupCollapsed("sales")).toBe(false);
     });
 
-    it('should handle invalid localStorage data gracefully', () => {
-      localStorageMock.getItem.mockReturnValueOnce('invalid json');
+    it("isolates pinned quicklinks per scope key", () => {
+      const { result: userA } = renderHook(() =>
+        useNavigationState({ scopeKey: "user:A" })
+      );
+      const { result: userB } = renderHook(() =>
+        useNavigationState({ scopeKey: "user:B" })
+      );
 
-      const { result } = renderHook(() => useNavigationState());
+      act(() => {
+        userA.current.togglePin("/receiving");
+      });
 
-      // Should fall back to defaults
-      expect(result.current.isGroupCollapsed('sales')).toBe(false);
-      expect(result.current.pinnedPaths).toEqual([]);
+      expect(userA.current.isPinned("/receiving")).toBe(true);
+      expect(userB.current.isPinned("/receiving")).toBe(false);
     });
   });
 });

@@ -292,8 +292,9 @@ function parseTemplateContextPath(
   if (source === "temp") {
     const parts = remainder.split(".");
     const key = parts[0];
-    const record = (context.temp[key] ||
-      context.temp[`temp:${key}`]) as Record<string, unknown> | undefined;
+    const record = (context.temp[key] || context.temp[`temp:${key}`]) as
+      | Record<string, unknown>
+      | undefined;
     if (!record) return "";
     if (parts.length === 1) return JSON.stringify(record);
     return getRecordPathValue(record, parts.slice(1).join("."));
@@ -857,6 +858,20 @@ async function findVisibleSelector(
   return undefined;
 }
 
+async function findAttachedSelector(
+  page: Page,
+  candidates: string[]
+): Promise<string | undefined> {
+  for (const candidate of candidates) {
+    const count = await page
+      .locator(candidate)
+      .count()
+      .catch(() => 0);
+    if (count > 0) return candidate;
+  }
+  return undefined;
+}
+
 async function isEditableCandidate(
   page: Page,
   candidate: string
@@ -868,7 +883,11 @@ async function isEditableCandidate(
       if (!(el instanceof HTMLElement)) return false;
 
       const tagName = el.tagName.toLowerCase();
-      if (tagName === "input" || tagName === "textarea" || tagName === "select") {
+      if (
+        tagName === "input" ||
+        tagName === "textarea" ||
+        tagName === "select"
+      ) {
         return true;
       }
 
@@ -913,18 +932,41 @@ async function waitForAnySelector(
   return undefined;
 }
 
+async function neutralizePointerInterceptionOverlays(
+  page: Page
+): Promise<void> {
+  await page
+    .evaluate(() => {
+      const blockingSelectors = [
+        "#manus-previewer-root",
+        "[data-manus-selector-input='true']",
+        "#manus-cursor-root",
+      ];
+      for (const selector of blockingSelectors) {
+        for (const node of Array.from(document.querySelectorAll(selector))) {
+          if (!(node instanceof HTMLElement)) continue;
+          node.style.pointerEvents = "none";
+        }
+      }
+    })
+    .catch(() => undefined);
+}
+
 async function clickWithFallback(
   page: Page,
   selector: string,
   timeout: number
 ): Promise<void> {
+  await neutralizePointerInterceptionOverlays(page);
   const locator = page.locator(selector).first();
   try {
     await locator.click({ timeout });
     return;
   } catch (initialError) {
     const message =
-      initialError instanceof Error ? initialError.message : String(initialError);
+      initialError instanceof Error
+        ? initialError.message
+        : String(initialError);
     const retryableClickFailure =
       /intercepts pointer events|did not receive pointer events|Timeout|not visible|not stable/i.test(
         message
@@ -934,6 +976,7 @@ async function clickWithFallback(
       throw initialError;
     }
 
+    await neutralizePointerInterceptionOverlays(page);
     await locator.scrollIntoViewIfNeeded().catch(() => undefined);
     await page.waitForTimeout(100);
 
@@ -1002,6 +1045,14 @@ async function resolveSelectorForAction(
     eventuallyVisible = await waitForAnySelector(page, candidates, timeout);
   }
   if (eventuallyVisible) return eventuallyVisible;
+
+  // Some controls (for example inside scrollable inspector panes) may be
+  // attached but initially outside the current viewport/scroll position.
+  // Returning an attached selector allows clickWithFallback() to scroll it in.
+  if (!options.requireEditable) {
+    const attached = await findAttachedSelector(page, candidates);
+    if (attached) return attached;
+  }
 
   if (isRowLikeSelector(rawSelector) && (await detectEmptyState(page))) {
     throw new Error(
@@ -2086,7 +2137,9 @@ async function executePreconditions(
         const createData = context.temp[createCondition.ref];
         const teriCode =
           String(
-            createData.teriCode || createData.teri_code || `ORACLE-${Date.now()}`
+            createData.teriCode ||
+              createData.teri_code ||
+              `ORACLE-${Date.now()}`
           ).trim() || `ORACLE-${Date.now()}`;
         const name =
           String(createData.name || createData.companyName || "").trim() ||
@@ -2095,11 +2148,11 @@ async function executePreconditions(
         const payload = {
           teriCode,
           name,
-          email: String(
-            createData.email || `oracle.${Date.now()}@example.com`
-          ),
+          email: String(createData.email || `oracle.${Date.now()}@example.com`),
           phone: String(createData.phone || "555-000-0000"),
-          businessType: String(createData.businessType || "WHOLESALE").toUpperCase(),
+          businessType: String(
+            createData.businessType || "WHOLESALE"
+          ).toUpperCase(),
           isBuyer:
             createData.isBuyer !== undefined
               ? Boolean(createData.isBuyer)
@@ -2122,7 +2175,11 @@ async function executePreconditions(
               : Boolean(createData.is_contractor),
         };
 
-        let createdClientId = await trpcMutation<number>(page, "clients.create", payload);
+        let createdClientId = await trpcMutation<number>(
+          page,
+          "clients.create",
+          payload
+        );
         if (createdClientId === null && allowPrivilegedFallback) {
           createdClientId = await runWithPreconditionRole(
             page,
@@ -2230,7 +2287,9 @@ async function executePreconditions(
         const createData = context.temp[createCondition.ref];
         const clientIdFromRef =
           typeof createData.client_id_ref === "string"
-            ? numericValue(parseTemplateContextPath(createData.client_id_ref, context))
+            ? numericValue(
+                parseTemplateContextPath(createData.client_id_ref, context)
+              )
             : null;
 
         const clientId =
@@ -2253,8 +2312,9 @@ async function executePreconditions(
             "{{date:YYYY-MM-DD}}"
         );
         const transactionDate =
-          parseDateValue(resolveTemplateString(transactionDateRaw, context, "value")) ||
-          new Date();
+          parseDateValue(
+            resolveTemplateString(transactionDateRaw, context, "value")
+          ) || new Date();
 
         let transaction = await trpcMutation<unknown>(
           page,
@@ -2460,6 +2520,7 @@ async function executeAction(
 
   switch (action.action) {
     case "navigate": {
+      const navigationTimeout = action.timeout || timeout;
       let targetPath = resolveTemplateString(action.path, context, "value");
       let attemptedStrategies: string[] = [];
 
@@ -2489,7 +2550,7 @@ async function executeAction(
         try {
           response = await page.goto(targetPath, {
             waitUntil: "domcontentloaded",
-            timeout,
+            timeout: navigationTimeout,
           });
           break;
         } catch (error) {
@@ -2506,7 +2567,7 @@ async function executeAction(
         const foundSelector = await waitForAnySelector(
           page,
           candidates,
-          timeout
+          navigationTimeout
         );
         if (!foundSelector && !(await isAppShellReady(page))) {
           throw new Error(

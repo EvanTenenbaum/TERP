@@ -70,8 +70,14 @@ const assertOk = async (
   context: string
 ): Promise<void> => {
   if (!response.ok()) {
+    const responseBody = await response
+      .text()
+      .then(text => text.trim())
+      .catch(() => "");
     throw new Error(
-      `${context} failed with status ${response.status()}: ${response.statusText()}`
+      `${context} failed with status ${response.status()}: ${response.statusText()}${
+        responseBody ? ` | body: ${responseBody}` : ""
+      }`
     );
   }
 };

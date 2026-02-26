@@ -172,7 +172,8 @@
     "gate:parity": "bash scripts/qa/feature-parity.sh",
     "gate:invariants": "tsx scripts/qa/invariant-checks.ts --strict",
     "gate:invariants:strict": "tsx scripts/qa/invariant-checks.ts --strict",
-    "gate:all": "npm run gate:placeholder && npm run gate:rbac && npm run gate:parity && npm run gate:invariants",
+    "gate:e2e-quality": "tsx scripts/qa/golden-flow-assertion-quality.ts",
+    "gate:all": "npm run gate:placeholder && npm run gate:rbac && npm run gate:parity && npm run gate:invariants && npm run gate:e2e-quality",
     "validate:accelerated": "bash scripts/validation/run-accelerated-validation.sh"
   },
   "dependencies": {

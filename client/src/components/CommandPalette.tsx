@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -8,31 +9,9 @@ import {
   CommandItem,
   CommandShortcut,
 } from "@/components/ui/command";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  Package,
-  Users,
-  Calendar,
-  Settings,
-  ListTodo,
-  HelpCircle,
-  Plus,
-  DollarSign,
-  Trophy, // NAV-014: Leaderboard
-  GitMerge, // Consolidated demand/supply workspace
-  Tag, // NAV-014: Pricing Rules
-  Workflow, // NAV-014: Workflow Queue
-  CreditCard, // NAV-017: Credits
-  Clock, // MEET-048: Time Clock
-} from "lucide-react";
-import {
-  CREDITS_WORKSPACE,
-  DEMAND_SUPPLY_WORKSPACE,
-  INVENTORY_WORKSPACE,
-  RELATIONSHIPS_WORKSPACE,
-  SALES_WORKSPACE,
-} from "@/config/workspaces";
+import { HelpCircle, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
+import { buildNavigationAccessModel } from "@/config/navigation";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -41,175 +20,82 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
+  const { flags, isLoading } = useFeatureFlags();
+  const navigationAccessModel = useMemo(
+    () =>
+      buildNavigationAccessModel({
+        flags,
+        flagsLoading: isLoading,
+        maxQuickLinks: 4,
+      }),
+    [flags, isLoading]
+  );
 
-  const commands = [
+  const navigationCommands = useMemo(() => {
+    const commands: Array<{
+      id: string;
+      label: string;
+      path: string;
+      icon: typeof LayoutDashboard;
+      shortcut?: string;
+    }> = [
+      {
+        id: "dashboard",
+        label: "Go to Dashboard",
+        path: "/",
+        icon: LayoutDashboard,
+        shortcut: "D",
+      },
+    ];
+
+    const seenPaths = new Set(commands.map(command => command.path));
+
+    for (const item of navigationAccessModel.commandNavigationItems) {
+      if (seenPaths.has(item.path)) {
+        continue;
+      }
+      seenPaths.add(item.path);
+      commands.push({
+        id: `nav:${item.path}`,
+        label: item.name,
+        path: item.path,
+        icon: item.icon,
+      });
+    }
+
+    return commands;
+  }, [navigationAccessModel.commandNavigationItems]);
+
+  const actionCommands = [
     {
-      group: "Navigation",
-      items: [
-        {
-          id: "dashboard",
-          label: "Go to Dashboard",
-          icon: LayoutDashboard,
-          shortcut: "D",
-          action: () => {
-            setLocation("/");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "sales",
-          label: `${SALES_WORKSPACE.title} Workspace`,
-          icon: ShoppingCart,
-          shortcut: "O",
-          action: () => {
-            setLocation("/sales");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "inventory",
-          label: `${INVENTORY_WORKSPACE.title} Workspace`,
-          icon: Package,
-          shortcut: "I",
-          action: () => {
-            setLocation("/inventory");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "relationships",
-          label: `${RELATIONSHIPS_WORKSPACE.title} Workspace`,
-          icon: Users,
-          shortcut: "C",
-          action: () => {
-            setLocation("/relationships");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "demand-supply",
-          label: `${DEMAND_SUPPLY_WORKSPACE.title} Workspace`,
-          icon: GitMerge,
-          action: () => {
-            setLocation("/demand-supply");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "calendar",
-          label: "Calendar",
-          icon: Calendar,
-          shortcut: "L",
-          action: () => {
-            setLocation("/calendar");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "todo-lists",
-          label: "Todo Lists",
-          icon: ListTodo,
-          shortcut: "T",
-          action: () => {
-            setLocation("/todos");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "invoices",
-          label: "Invoices",
-          icon: DollarSign,
-          action: () => {
-            setLocation("/accounting/invoices");
-            onOpenChange(false);
-          },
-        },
-        {
-          // UX-010: Renamed to "System Settings" for clarity
-          id: "settings",
-          label: "System Settings",
-          icon: Settings,
-          shortcut: "S",
-          action: () => {
-            setLocation("/settings");
-            onOpenChange(false);
-          },
-        },
-        // NAV-014: Add new routes to Command Palette
-        {
-          id: "leaderboard",
-          label: "Leaderboard",
-          icon: Trophy,
-          action: () => {
-            setLocation("/leaderboard");
-            onOpenChange(false);
-          },
-        },
-        {
-          // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules
-          id: "pricing-rules",
-          label: "Pricing Rules",
-          icon: Tag,
-          action: () => {
-            setLocation("/pricing/rules");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "workflow-queue",
-          label: "Workflow Queue",
-          icon: Workflow,
-          action: () => {
-            setLocation("/workflow-queue");
-            onOpenChange(false);
-          },
-        },
-        {
-          // NAV-017: Credits management page
-          id: "credits",
-          label: `${CREDITS_WORKSPACE.title} Workspace`,
-          icon: CreditCard,
-          action: () => {
-            setLocation("/credits");
-            onOpenChange(false);
-          },
-        },
-        {
-          // MEET-048: Time Clock for hour tracking
-          id: "time-clock",
-          label: "Time Clock",
-          icon: Clock,
-          action: () => {
-            setLocation("/time-clock");
-            onOpenChange(false);
-          },
-        },
-      ],
+      id: "new-sale",
+      label: "Create New Sale",
+      icon: Plus,
+      shortcut: "N",
+      action: () => {
+        setLocation("/orders/create");
+        onOpenChange(false);
+      },
     },
     {
-      group: "Actions",
-      items: [
-        {
-          id: "new-order",
-          label: "Create New Sale",
-          icon: Plus,
-          shortcut: "N",
-          action: () => {
-            setLocation("/orders/create");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "help",
-          label: "Help & Documentation",
-          icon: HelpCircle,
-          shortcut: "?",
-          action: () => {
-            setLocation("/help");
-            onOpenChange(false);
-          },
-        },
-      ],
+      id: "record-receipt",
+      label: "Record Receipt",
+      icon: ReceiptText,
+      shortcut: "R",
+      action: () => {
+        setLocation("/receiving");
+        onOpenChange(false);
+      },
+    },
+    {
+      id: "help",
+      label: "Help & Documentation",
+      icon: HelpCircle,
+      shortcut: "?",
+      action: () => {
+        setLocation("/help");
+        onOpenChange(false);
+      },
     },
   ];
 
@@ -218,26 +104,47 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       <CommandInput autoFocus placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        {commands.map(group => (
-          <CommandGroup key={group.group} heading={group.group}>
-            {group.items.map(item => {
-              const Icon = item.icon;
-              return (
-                <CommandItem
-                  key={item.id}
-                  value={`${item.label} ${group.group}`}
-                  onSelect={item.action}
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  <span>{item.label}</span>
-                  {item.shortcut && (
-                    <CommandShortcut>{item.shortcut}</CommandShortcut>
-                  )}
-                </CommandItem>
-              );
-            })}
-          </CommandGroup>
-        ))}
+
+        <CommandGroup heading="Navigation">
+          {navigationCommands.map(item => {
+            const Icon = item.icon;
+            return (
+              <CommandItem
+                key={item.id}
+                value={`${item.label} navigation`}
+                onSelect={() => {
+                  setLocation(item.path);
+                  onOpenChange(false);
+                }}
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                <span>{item.label}</span>
+                {item.shortcut && (
+                  <CommandShortcut>{item.shortcut}</CommandShortcut>
+                )}
+              </CommandItem>
+            );
+          })}
+        </CommandGroup>
+
+        <CommandGroup heading="Actions">
+          {actionCommands.map(item => {
+            const Icon = item.icon;
+            return (
+              <CommandItem
+                key={item.id}
+                value={`${item.label} action`}
+                onSelect={item.action}
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                <span>{item.label}</span>
+                {item.shortcut && (
+                  <CommandShortcut>{item.shortcut}</CommandShortcut>
+                )}
+              </CommandItem>
+            );
+          })}
+        </CommandGroup>
       </CommandList>
     </CommandDialog>
   );

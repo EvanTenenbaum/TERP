@@ -1,50 +1,98 @@
-/**
- * Golden Flow Test: GF-007 Inventory Management
- *
- * Flow: Inventory list → adjust quantity → confirm
- */
-
 import { expect, test } from "@playwright/test";
 import { loginAsInventoryManager } from "../fixtures/auth";
+import { trpcMutation, trpcQuery } from "../utils/golden-flow-helpers";
+import { findBatchWithStock, toNumber } from "../utils/e2e-business-helpers";
 
-test.describe("Golden Flow: GF-007 Inventory Management", (): void => {
-  test.beforeEach(async ({ page }): Promise<void> => {
+type InventoryListResponse = {
+  items?: Array<{
+    batch?: {
+      id?: number;
+      totalQty?: string | number | null;
+      onHandQty?: string | number | null;
+    };
+  }>;
+};
+
+function extractBatchSnapshot(
+  response: InventoryListResponse,
+  batchId: number
+): { totalQty: number; onHandQty: number } {
+  const batch = (response.items ?? []).find(
+    item => item.batch?.id === batchId
+  )?.batch;
+  if (!batch) {
+    throw new Error(`Batch ${batchId} not found in inventory.list response`);
+  }
+
+  return {
+    totalQty: toNumber(batch.totalQty),
+    onHandQty: toNumber(batch.onHandQty),
+  };
+}
+
+test.describe("Golden Flow: GF-007 Inventory Management", () => {
+  test.describe.configure({ tag: "@tier1" });
+
+  test.beforeEach(async ({ page }) => {
     await loginAsInventoryManager(page);
   });
 
-  test("should open inventory work surface and expose adjustments", async ({
+  test("adjusts on-hand quantity and persists the inventory change", async ({
     page,
-  }): Promise<void> => {
-    await page.goto("/inventory");
-    await page.waitForLoadState("networkidle");
+  }) => {
+    test.setTimeout(120_000);
 
-    const header = page
-      .locator('[data-testid="inventory-header"]')
-      .or(page.locator('h1:has-text("Inventory")').first());
-    await expect(header).toBeVisible({ timeout: 5000 });
+    const batch = await findBatchWithStock(page);
+    const adjustment = 2;
 
-    const batchRow = page
-      .locator('[role="row"]')
-      .or(page.locator("tr"))
-      .first();
-    if (!(await batchRow.isVisible().catch(() => false))) {
-      test.skip(true, "No inventory rows available — seed batch data first");
-      return;
-    }
+    const beforeList = await trpcQuery<InventoryListResponse>(
+      page,
+      "inventory.list",
+      {
+        limit: 200,
+      }
+    );
+    const before = extractBatchSnapshot(beforeList, batch.id);
 
-    await batchRow.click();
+    await trpcMutation<{ success: boolean }>(page, "inventory.adjustQty", {
+      id: batch.id,
+      field: "onHandQty",
+      adjustment,
+      reason: "GF-007 quantity adjustment validation",
+    });
 
-    const adjustButton = page
-      .locator('button:has-text("Adjust")')
-      .or(page.locator('button:has-text("Edit")'))
-      .or(page.locator('button:has-text("Update Qty")'));
-    if (
-      await adjustButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await expect(adjustButton.first()).toBeVisible();
-    }
+    const afterList = await trpcQuery<InventoryListResponse>(
+      page,
+      "inventory.list",
+      {
+        limit: 200,
+      }
+    );
+    const after = extractBatchSnapshot(afterList, batch.id);
+
+    expect(after.onHandQty).toBeCloseTo(before.onHandQty + adjustment, 6);
+    expect(after.totalQty).toBeCloseTo(before.totalQty + adjustment, 6);
+
+    await trpcMutation<{ success: boolean }>(page, "inventory.adjustQty", {
+      id: batch.id,
+      field: "onHandQty",
+      adjustment: -adjustment,
+      reason: "GF-007 cleanup rollback",
+    });
+
+    const rolledBackList = await trpcQuery<InventoryListResponse>(
+      page,
+      "inventory.list",
+      {
+        limit: 200,
+      }
+    );
+    const rolledBack = extractBatchSnapshot(rolledBackList, batch.id);
+    expect(rolledBack.onHandQty).toBeCloseTo(before.onHandQty, 6);
+
+    await page.goto("/inventory", { waitUntil: "networkidle" });
+    await expect(page.locator('[data-testid="inventory-header"]')).toBeVisible({
+      timeout: 10000,
+    });
   });
 });

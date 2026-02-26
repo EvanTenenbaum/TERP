@@ -41,8 +41,8 @@ steps:
     timeout: 5000
 
   - action: click
-    target: "table tbody tr:first-child button, [data-testid='client-row']:first-child button"
-    wait_for: "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
+    target: "table tbody tr:first-child, [data-testid='client-row']:first-child"
+    wait_for: "button:has-text('View Full Profile'), button:has-text('Archive Client')"
 
   - action: click
     target: "button:has-text('View Full Profile')"

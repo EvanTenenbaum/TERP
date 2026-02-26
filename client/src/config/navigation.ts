@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   ShoppingCart,
+  Plus,
   FileText,
   PackageCheck,
   Beaker,
@@ -26,7 +27,7 @@ import {
   Workflow, // NAV-013: Workflow Queue
   Clock, // MEET-048: Time Clock
   Inbox, // TERP-0005: Inbox navigation
-  Download, // TERP-0005: Direct Intake
+  Download, // TERP-0005: Receiving
   MapPin, // TERP-0005: Locations
   BookOpen, // TER-99: Client Ledger navigation
   type LucideIcon,
@@ -50,18 +51,31 @@ export interface NavigationItem {
   featureFlag?: string;
 }
 
+export interface QuickLinkItem {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+  ariaLabel?: string;
+}
+
+export interface NavigationAccessModel {
+  groups: NavigationGroup[];
+  commandNavigationItems: NavigationItem[];
+  quickLinks: QuickLinkItem[];
+  quickLinkCandidates: QuickLinkItem[];
+}
+
 export const navigationGroups: Array<{
   key: NavigationGroupKey;
   label: string;
 }> = [
-  { key: "sales", label: "Sales" },
-  { key: "inventory", label: "Inventory" },
+  { key: "sales", label: "Sell" },
+  { key: "inventory", label: "Buy" },
   { key: "finance", label: "Finance" },
   { key: "admin", label: "Admin" },
 ];
 
 export const navigationItems: NavigationItem[] = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard, group: "sales" },
   // TERP-0005: Add Inbox to top-level Sales group
   {
     name: "Inbox",
@@ -150,6 +164,14 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Product photography queue and workflow management",
   },
   { name: "Samples", path: "/samples", icon: Beaker, group: "inventory" },
+  // TERP-0005: Rename Direct Intake to Receiving while preserving route alias
+  {
+    name: "Receiving",
+    path: "/receiving",
+    icon: Download,
+    group: "inventory",
+    ariaLabel: "Receive inventory into the system",
+  },
   {
     name: "Purchase Orders",
     path: "/purchase-orders",
@@ -164,14 +186,6 @@ export const navigationItems: NavigationItem[] = [
     group: "inventory",
     ariaLabel: "Spreadsheet view for inventory and clients",
     featureFlag: "spreadsheet-view",
-  },
-  // TERP-0005: Add Direct Intake to Inventory group
-  {
-    name: "Direct Intake",
-    path: "/direct-intake",
-    icon: Download,
-    group: "inventory",
-    ariaLabel: "Direct intake of inventory items",
   },
 
   {
@@ -266,6 +280,107 @@ export const navigationItems: NavigationItem[] = [
   },
 ];
 
+export const quickLinkCandidates: readonly QuickLinkItem[] = [
+  {
+    name: "Dashboard",
+    path: "/",
+    icon: LayoutDashboard,
+    ariaLabel: "Go to dashboard",
+  },
+  {
+    name: "New Sale",
+    path: "/orders/create",
+    icon: Plus,
+    ariaLabel: "Create a new sale",
+  },
+  {
+    name: "Record Receipt",
+    path: "/receiving",
+    icon: Download,
+    ariaLabel: "Record a receiving intake",
+  },
+  {
+    name: "Clients",
+    path: "/clients",
+    icon: Users,
+    ariaLabel: "Open client workspace",
+  },
+  {
+    name: "Purchase Orders",
+    path: "/purchase-orders",
+    icon: Truck,
+    ariaLabel: "Open purchase orders",
+  },
+  {
+    name: "Invoices",
+    path: "/accounting/invoices",
+    icon: FileText,
+    ariaLabel: "Open invoices",
+  },
+  {
+    name: "Inventory",
+    path: "/inventory",
+    icon: PackageCheck,
+    ariaLabel: "Open inventory workspace",
+  },
+  {
+    name: SALES_WORKSPACE.title,
+    path: "/sales",
+    icon: ShoppingCart,
+    ariaLabel: SALES_WORKSPACE.description,
+  },
+];
+
+export const defaultQuickLinkPaths: readonly string[] = [
+  "/",
+  "/orders/create",
+  "/receiving",
+  "/clients",
+];
+
+export function buildQuickLinks(options?: {
+  pinnedPaths?: string[];
+  maxLinks?: number;
+  candidates?: readonly QuickLinkItem[];
+}): QuickLinkItem[] {
+  const pinnedPaths = options?.pinnedPaths ?? [];
+  const maxLinks = options?.maxLinks ?? 4;
+  const candidates = options?.candidates ?? quickLinkCandidates;
+  const candidateMap = new Map(
+    candidates.map(link => [link.path, link] as const)
+  );
+
+  const preferredPaths =
+    pinnedPaths.length > 0 ? pinnedPaths : [...defaultQuickLinkPaths];
+  const fallbackPaths = [
+    ...defaultQuickLinkPaths,
+    ...candidates.map(link => link.path),
+  ];
+
+  const selectedPaths: string[] = [];
+  const collect = (paths: string[]) => {
+    for (const path of paths) {
+      if (!candidateMap.has(path) || selectedPaths.includes(path)) {
+        continue;
+      }
+      selectedPaths.push(path);
+      if (selectedPaths.length >= maxLinks) {
+        break;
+      }
+    }
+  };
+
+  collect(preferredPaths);
+  if (selectedPaths.length < maxLinks) {
+    collect(fallbackPaths);
+  }
+
+  return selectedPaths
+    .slice(0, maxLinks)
+    .map(path => candidateMap.get(path))
+    .filter((link): link is QuickLinkItem => Boolean(link));
+}
+
 export type NavigationGroup = {
   key: NavigationGroupKey;
   label: string;
@@ -314,4 +429,38 @@ export function buildNavigationGroups(options?: {
       loadingFeatureItems,
     };
   });
+}
+
+const QUICKLINK_ALWAYS_ALLOWED_PATHS = ["/", "/orders/create", "/clients"];
+
+export function buildNavigationAccessModel(options?: {
+  flags?: Record<string, boolean>;
+  flagsLoading?: boolean;
+  pinnedPaths?: string[];
+  maxQuickLinks?: number;
+}): NavigationAccessModel {
+  const groups = buildNavigationGroups({
+    flags: options?.flags,
+    flagsLoading: options?.flagsLoading,
+  });
+  const commandNavigationItems = groups.flatMap(group => group.items);
+  const accessiblePaths = new Set(
+    commandNavigationItems
+      .map(item => item.path)
+      .concat(QUICKLINK_ALWAYS_ALLOWED_PATHS)
+  );
+  const filteredQuickLinkCandidates = quickLinkCandidates.filter(link =>
+    accessiblePaths.has(link.path)
+  );
+
+  return {
+    groups,
+    commandNavigationItems,
+    quickLinks: buildQuickLinks({
+      pinnedPaths: options?.pinnedPaths,
+      maxLinks: options?.maxQuickLinks ?? 4,
+      candidates: filteredQuickLinkCandidates,
+    }),
+    quickLinkCandidates: filteredQuickLinkCandidates,
+  };
 }

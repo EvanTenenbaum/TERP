@@ -1,165 +1,236 @@
 /**
- * Navigation State Management Hook
- * ENH-001: Collapsible navigation groups with localStorage persistence
- * 
- * Manages:
- * - Collapsed/expanded state for navigation groups
- * - Pinned items for quick access
- * - Persistence to localStorage
+ * Navigation state persisted per user scope.
+ *
+ * Stores:
+ * - collapsed navigation groups
+ * - pinned quick-link paths
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { NavigationGroupKey } from "@/config/navigation";
 
-export type NavigationGroup = 'core' | 'sales' | 'fulfillment' | 'finance' | 'settings';
+const STORAGE_PREFIX = "terp-navigation-state";
+const PATHS_KEY_SEPARATOR = "\u001f";
+const ALL_GROUPS: NavigationGroupKey[] = [
+  "sales",
+  "inventory",
+  "finance",
+  "admin",
+];
 
 interface NavigationState {
-  /** Groups that are currently collapsed */
-  collapsedGroups: NavigationGroup[];
-  /** Paths that are pinned to the top */
+  collapsedGroups: NavigationGroupKey[];
   pinnedPaths: string[];
 }
 
-const STORAGE_KEY = 'terp-navigation-state';
-
-const DEFAULT_STATE: NavigationState = {
-  collapsedGroups: [],
-  pinnedPaths: [],
-};
-
-/**
- * Load navigation state from localStorage
- */
-function loadState(): NavigationState {
-  if (typeof window === 'undefined') return DEFAULT_STATE;
-  
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return DEFAULT_STATE;
-    
-    const parsed = JSON.parse(stored) as Partial<NavigationState>;
-    return {
-      collapsedGroups: Array.isArray(parsed.collapsedGroups) ? parsed.collapsedGroups : [],
-      pinnedPaths: Array.isArray(parsed.pinnedPaths) ? parsed.pinnedPaths : [],
-    };
-  } catch {
-    return DEFAULT_STATE;
-  }
-}
-
-/**
- * Save navigation state to localStorage
- */
-function saveState(state: NavigationState): void {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Ignore storage errors (quota exceeded, etc.)
-  }
+export interface UseNavigationStateOptions {
+  scopeKey?: string;
+  maxPinnedPaths?: number;
+  defaultPinnedPaths?: string[];
 }
 
 export interface UseNavigationStateReturn {
-  /** Check if a group is collapsed */
-  isGroupCollapsed: (group: NavigationGroup) => boolean;
-  /** Toggle a group's collapsed state */
-  toggleGroup: (group: NavigationGroup) => void;
-  /** Check if a path is pinned */
-  isPinned: (path: string) => boolean;
-  /** Toggle a path's pinned state */
-  togglePin: (path: string) => void;
-  /** Get all pinned paths */
-  pinnedPaths: string[];
-  /** Expand all groups */
+  isGroupCollapsed: (group: NavigationGroupKey) => boolean;
+  toggleGroup: (group: NavigationGroupKey) => void;
   expandAll: () => void;
-  /** Collapse all groups */
   collapseAll: () => void;
+  isPinned: (path: string) => boolean;
+  togglePin: (path: string) => void;
+  setPinnedPaths: (paths: string[]) => void;
+  pinnedPaths: string[];
 }
 
-/**
- * Hook for managing collapsible navigation state
- * 
- * @example
- * ```tsx
- * const { isGroupCollapsed, toggleGroup, isPinned, togglePin } = useNavigationState();
- * 
- * // Check if sales group is collapsed
- * if (isGroupCollapsed('sales')) { ... }
- * 
- * // Toggle the sales group
- * toggleGroup('sales');
- * 
- * // Pin a navigation item
- * togglePin('/orders');
- * ```
- */
-export function useNavigationState(): UseNavigationStateReturn {
-  const [state, setState] = useState<NavigationState>(loadState);
+function dedupe(paths: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const path of paths) {
+    if (!path || seen.has(path)) {
+      continue;
+    }
+    seen.add(path);
+    result.push(path);
+  }
+  return result;
+}
 
-  // Persist state changes to localStorage
+function buildPathsKey(paths?: string[]): string {
+  const normalized = dedupe(paths ?? []);
+  if (normalized.length === 0) {
+    return "";
+  }
+  return normalized.join(PATHS_KEY_SEPARATOR);
+}
+
+function normalizeState(
+  state: Partial<NavigationState>,
+  maxPinnedPaths: number,
+  defaultPinnedPaths: string[]
+): NavigationState {
+  const collapsedGroups = Array.isArray(state.collapsedGroups)
+    ? state.collapsedGroups.filter((group): group is NavigationGroupKey =>
+        ALL_GROUPS.includes(group as NavigationGroupKey)
+      )
+    : [];
+
+  const pinnedPathsSource = Array.isArray(state.pinnedPaths)
+    ? state.pinnedPaths
+    : defaultPinnedPaths;
+  const pinnedPaths = dedupe(pinnedPathsSource).slice(0, maxPinnedPaths);
+
+  return {
+    collapsedGroups,
+    pinnedPaths,
+  };
+}
+
+function loadState(
+  storageKey: string,
+  maxPinnedPaths: number,
+  defaultPinnedPaths: string[]
+): NavigationState {
+  if (typeof window === "undefined") {
+    return normalizeState({}, maxPinnedPaths, defaultPinnedPaths);
+  }
+
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (!stored) {
+      return normalizeState({}, maxPinnedPaths, defaultPinnedPaths);
+    }
+
+    const parsed = JSON.parse(stored) as Partial<NavigationState>;
+    return normalizeState(parsed, maxPinnedPaths, defaultPinnedPaths);
+  } catch {
+    return normalizeState({}, maxPinnedPaths, defaultPinnedPaths);
+  }
+}
+
+function saveState(storageKey: string, state: NavigationState): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch {
+    // Ignore storage failures (private mode/quota exceeded).
+  }
+}
+
+export function useNavigationState(
+  options: UseNavigationStateOptions = {}
+): UseNavigationStateReturn {
+  const scopeKey = options.scopeKey ?? "anonymous";
+  const maxPinnedPaths = options.maxPinnedPaths ?? 4;
+  const defaultPinnedPathsKey = buildPathsKey(options.defaultPinnedPaths);
+  const defaultPinnedPaths = useMemo(
+    () =>
+      defaultPinnedPathsKey
+        ? defaultPinnedPathsKey.split(PATHS_KEY_SEPARATOR)
+        : [],
+    [defaultPinnedPathsKey]
+  );
+  const storageKey = `${STORAGE_PREFIX}:${scopeKey}`;
+
+  const [state, setState] = useState<NavigationState>(() =>
+    loadState(storageKey, maxPinnedPaths, defaultPinnedPaths)
+  );
+
   useEffect(() => {
-    saveState(state);
-  }, [state]);
+    setState(loadState(storageKey, maxPinnedPaths, defaultPinnedPaths));
+  }, [defaultPinnedPaths, maxPinnedPaths, storageKey]);
+
+  useEffect(() => {
+    saveState(storageKey, state);
+  }, [state, storageKey]);
 
   const isGroupCollapsed = useCallback(
-    (group: NavigationGroup): boolean => {
-      return state.collapsedGroups.includes(group);
-    },
+    (group: NavigationGroupKey): boolean =>
+      state.collapsedGroups.includes(group),
     [state.collapsedGroups]
   );
 
-  const toggleGroup = useCallback((group: NavigationGroup): void => {
+  const toggleGroup = useCallback((group: NavigationGroupKey): void => {
     setState(prev => {
-      const isCollapsed = prev.collapsedGroups.includes(group);
+      const collapsed = prev.collapsedGroups.includes(group);
       return {
         ...prev,
-        collapsedGroups: isCollapsed
-          ? prev.collapsedGroups.filter(g => g !== group)
+        collapsedGroups: collapsed
+          ? prev.collapsedGroups.filter(item => item !== group)
           : [...prev.collapsedGroups, group],
       };
     });
   }, []);
 
-  const isPinned = useCallback(
-    (path: string): boolean => {
-      return state.pinnedPaths.includes(path);
-    },
-    [state.pinnedPaths]
-  );
-
-  const togglePin = useCallback((path: string): void => {
-    setState(prev => {
-      const isPinnedPath = prev.pinnedPaths.includes(path);
-      return {
-        ...prev,
-        pinnedPaths: isPinnedPath
-          ? prev.pinnedPaths.filter(p => p !== path)
-          : [...prev.pinnedPaths, path],
-      };
-    });
-  }, []);
-
   const expandAll = useCallback((): void => {
-    setState(prev => ({
-      ...prev,
-      collapsedGroups: [],
-    }));
+    setState(prev => ({ ...prev, collapsedGroups: [] }));
   }, []);
 
   const collapseAll = useCallback((): void => {
-    setState(prev => ({
-      ...prev,
-      collapsedGroups: ['core', 'sales', 'fulfillment', 'finance', 'settings'],
-    }));
+    setState(prev => ({ ...prev, collapsedGroups: [...ALL_GROUPS] }));
   }, []);
 
-  return {
-    isGroupCollapsed,
-    toggleGroup,
-    isPinned,
-    togglePin,
-    pinnedPaths: state.pinnedPaths,
-    expandAll,
-    collapseAll,
-  };
+  const isPinned = useCallback(
+    (path: string): boolean => state.pinnedPaths.includes(path),
+    [state.pinnedPaths]
+  );
+
+  const setPinnedPaths = useCallback(
+    (paths: string[]): void => {
+      setState(prev => ({
+        ...prev,
+        pinnedPaths: dedupe(paths).slice(0, maxPinnedPaths),
+      }));
+    },
+    [maxPinnedPaths]
+  );
+
+  const togglePin = useCallback(
+    (path: string): void => {
+      setState(prev => {
+        if (prev.pinnedPaths.includes(path)) {
+          return {
+            ...prev,
+            pinnedPaths: prev.pinnedPaths.filter(item => item !== path),
+          };
+        }
+
+        if (prev.pinnedPaths.length >= maxPinnedPaths) {
+          return {
+            ...prev,
+            pinnedPaths: [...prev.pinnedPaths.slice(1), path],
+          };
+        }
+
+        return {
+          ...prev,
+          pinnedPaths: [...prev.pinnedPaths, path],
+        };
+      });
+    },
+    [maxPinnedPaths]
+  );
+
+  return useMemo(
+    () => ({
+      isGroupCollapsed,
+      toggleGroup,
+      expandAll,
+      collapseAll,
+      isPinned,
+      togglePin,
+      setPinnedPaths,
+      pinnedPaths: state.pinnedPaths,
+    }),
+    [
+      collapseAll,
+      expandAll,
+      isGroupCollapsed,
+      isPinned,
+      setPinnedPaths,
+      state.pinnedPaths,
+      toggleGroup,
+      togglePin,
+    ]
+  );
 }

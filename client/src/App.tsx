@@ -581,7 +581,11 @@ function Router() {
                   path="/intake-receipts"
                   component={withErrorBoundary(IntakeReceipts)}
                 />
-                {/* ROUTE-001: Direct Intake WorkSurface */}
+                {/* ROUTE-001: Receiving WorkSurface alias + legacy route */}
+                <Route
+                  path="/receiving"
+                  component={withErrorBoundary(DirectIntakeWorkSurface)}
+                />
                 <Route
                   path="/direct-intake"
                   component={withErrorBoundary(DirectIntakeWorkSurface)}

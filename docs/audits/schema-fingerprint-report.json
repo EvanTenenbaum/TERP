@@ -1,22 +1,18 @@
 {
-  "checkedAt": "2026-02-21T12:12:00.165Z",
+  "checkedAt": "2026-02-24T21:35:52.188Z",
   "database": "mysql://root:****@127.0.0.1:3307/terp-test",
   "complete": true,
-  "passedChecks": 6,
+  "passedChecks": 7,
   "totalChecks": 7,
-  "missingChecks": [
-    "cron_leader_lock.table"
-  ],
-  "requiredPassedChecks": 6,
-  "requiredTotalChecks": 6,
+  "missingChecks": [],
+  "requiredPassedChecks": 7,
+  "requiredTotalChecks": 7,
   "missingRequiredChecks": [],
-  "optionalChecks": [
-    "cron_leader_lock.table"
-  ],
+  "optionalChecks": [],
   "checks": [
     {
       "key": "cron_leader_lock.table",
-      "passed": false
+      "passed": true
     },
     {
       "key": "client_needs.strain_type.column",
