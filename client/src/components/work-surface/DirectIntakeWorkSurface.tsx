@@ -67,6 +67,7 @@ import {
   InspectorActions,
   useInspectorPanel,
 } from "./InspectorPanel";
+import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
 
 // Icons
 import {
@@ -2227,6 +2228,12 @@ export function DirectIntakeWorkSurface() {
           )}
         </InspectorPanel>
       </div>
+
+      <WorkSurfaceStatusBar
+        left={`${pendingCount} pending · ${submittedCount} submitted`}
+        center={selectedCount > 0 ? `${selectedCount} selected` : undefined}
+        right="Tab • Enter • Esc • ⌘Z"
+      />
     </section>
   );
 }
