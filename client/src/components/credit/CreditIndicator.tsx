@@ -4,7 +4,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AlertTriangle, CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  AlertCircle,
+  MinusCircle,
+} from "lucide-react";
 
 interface CreditIndicatorProps {
   creditLimit: number | string | null | undefined;
@@ -13,6 +18,12 @@ interface CreditIndicatorProps {
   showLabel?: boolean;
   size?: "sm" | "md" | "lg";
 }
+
+const formatCurrency = (value: number): string =>
+  `$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 export const CreditIndicator = React.memo(function CreditIndicator({
   creditLimit,
@@ -23,7 +34,7 @@ export const CreditIndicator = React.memo(function CreditIndicator({
 }: CreditIndicatorProps) {
   const limit = Number(creditLimit || 0);
   const owed = Number(totalOwed || 0);
-  
+
   // No credit limit set
   if (limit === 0) {
     return (
@@ -34,7 +45,15 @@ export const CreditIndicator = React.memo(function CreditIndicator({
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
             type="button"
           >
-            <MinusCircle className={size === "sm" ? "h-3 w-3" : size === "lg" ? "h-5 w-5" : "h-4 w-4"} />
+            <MinusCircle
+              className={
+                size === "sm"
+                  ? "h-3 w-3"
+                  : size === "lg"
+                    ? "h-5 w-5"
+                    : "h-4 w-4"
+              }
+            />
             {showLabel && <span className="text-xs">N/A</span>}
           </button>
         </TooltipTrigger>
@@ -50,26 +69,29 @@ export const CreditIndicator = React.memo(function CreditIndicator({
 
   // Determine status
   const getStatus = (utilization: number) => {
-    if (utilization >= 100) return { 
-      color: "text-red-600", 
-      bgColor: "bg-red-600",
-      label: "Over Limit",
-      icon: AlertTriangle,
-    };
-    if (utilization >= 90) return { 
-      color: "text-red-600", 
-      bgColor: "bg-red-600",
-      label: "Critical",
-      icon: AlertTriangle,
-    };
-    if (utilization >= 75) return { 
-      color: "text-yellow-600", 
-      bgColor: "bg-yellow-600",
-      label: "Warning",
-      icon: AlertCircle,
-    };
-    return { 
-      color: "text-green-600", 
+    if (utilization >= 100)
+      return {
+        color: "text-red-600",
+        bgColor: "bg-red-600",
+        label: "Over Limit",
+        icon: AlertTriangle,
+      };
+    if (utilization >= 90)
+      return {
+        color: "text-red-600",
+        bgColor: "bg-red-600",
+        label: "Critical",
+        icon: AlertTriangle,
+      };
+    if (utilization >= 75)
+      return {
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-600",
+        label: "Warning",
+        icon: AlertCircle,
+      };
+    return {
+      color: "text-green-600",
       bgColor: "bg-green-600",
       label: "Good",
       icon: CheckCircle,
@@ -116,16 +138,18 @@ export const CreditIndicator = React.memo(function CreditIndicator({
           <div className="space-y-1 text-xs">
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Credit Limit:</span>
-              <span className="font-medium">${limit.toLocaleString()}</span>
+              <span className="font-medium">{formatCurrency(limit)}</span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Amount Owed:</span>
-              <span className="font-medium">${owed.toLocaleString()}</span>
+              <span className="font-medium">{formatCurrency(owed)}</span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Available:</span>
-              <span className={`font-medium ${availableCredit < 0 ? "text-red-600" : "text-green-600"}`}>
-                ${availableCredit.toLocaleString()}
+              <span
+                className={`font-medium ${availableCredit < 0 ? "text-red-600" : "text-green-600"}`}
+              >
+                {formatCurrency(availableCredit)}
               </span>
             </div>
             <div className="flex justify-between gap-4">
@@ -137,7 +161,7 @@ export const CreditIndicator = React.memo(function CreditIndicator({
           </div>
           {/* Mini progress bar */}
           <div className="relative h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`absolute left-0 top-0 h-full transition-all ${status.bgColor}`}
               style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
             />
@@ -155,10 +179,13 @@ export const CreditIndicatorDot = React.memo(function CreditIndicatorDot({
 }: Pick<CreditIndicatorProps, "creditLimit" | "totalOwed">) {
   const limit = Number(creditLimit || 0);
   const owed = Number(totalOwed || 0);
-  
+
   if (limit === 0) {
     return (
-      <span className="inline-block w-2 h-2 rounded-full bg-gray-300" title="No credit limit" />
+      <span
+        className="inline-block w-2 h-2 rounded-full bg-gray-300"
+        title="No credit limit"
+      />
     );
   }
 
@@ -171,7 +198,7 @@ export const CreditIndicatorDot = React.memo(function CreditIndicatorDot({
   };
 
   return (
-    <span 
+    <span
       className={`inline-block w-2 h-2 rounded-full ${getColor(utilizationPercent)}`}
       title={`${utilizationPercent.toFixed(0)}% credit utilization`}
     />

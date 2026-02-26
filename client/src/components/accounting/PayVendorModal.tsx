@@ -1,6 +1,6 @@
 /**
  * WS-002: Quick Action - Pay Vendor Modal
- * 
+ *
  * A streamlined flow for recording vendor payments:
  * 1. Select Vendor
  * 2. Enter Amount
@@ -29,14 +29,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  DollarSign, 
-  Building2, 
-  CreditCard, 
+import {
+  DollarSign,
+  Building2,
+  CreditCard,
   FileText,
   CheckCircle,
   Loader2,
-  Send
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,15 +59,20 @@ export function PayVendorModal({
   preselectedBillId,
   onSuccess,
 }: PayVendorModalProps) {
-
   const utils = trpc.useUtils();
 
   // Form state
-  const [vendorId, setVendorId] = useState<number | null>(preselectedVendorId || null);
+  const [vendorId, setVendorId] = useState<number | null>(
+    preselectedVendorId || null
+  );
   const [amount, setAmount] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CHECK" | "WIRE" | "ACH" | "OTHER">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "CASH" | "CHECK" | "WIRE" | "ACH" | "OTHER"
+  >("CASH");
   const [note, setNote] = useState<string>("");
-  const [billId, setBillId] = useState<number | null>(preselectedBillId || null);
+  const [billId, setBillId] = useState<number | null>(
+    preselectedBillId || null
+  );
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -81,10 +86,11 @@ export function PayVendorModal({
   }, [open, preselectedVendorId, preselectedBillId]);
 
   // Fetch recent vendors for quick selection
-  const { data: recentVendors, isLoading: loadingVendors } = trpc.accounting.quickActions.getRecentVendors.useQuery(
-    { limit: 10 },
-    { enabled: open }
-  );
+  const { data: recentVendors, isLoading: loadingVendors } =
+    trpc.accounting.quickActions.getRecentVendors.useQuery(
+      { limit: 10 },
+      { enabled: open }
+    );
 
   // Fetch outstanding bills for selected vendor
   const { data: vendorBills } = trpc.accounting.bills.list.useQuery(
@@ -94,22 +100,32 @@ export function PayVendorModal({
 
   // Submit mutation
   const payVendor = trpc.accounting.quickActions.payVendor.useMutation({
-    onSuccess: (result) => {
-      toast.success(`Payment Sent: ${result.paymentNumber}: $${result.paymentAmount.toLocaleString()} paid to ${result.vendorName}`);
+    onSuccess: result => {
+      toast.success(
+        `Payment Sent: ${result.paymentNumber}: $${result.paymentAmount.toLocaleString(
+          undefined,
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }
+        )} paid to ${result.vendorName}`
+      );
       utils.accounting.payments.list.invalidate();
       utils.accounting.bills.list.invalidate();
       utils.accounting.quickActions.getRecentVendors.invalidate();
       onSuccess?.(result);
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Error: ${error.message}`);
     },
   });
 
   const handleSubmit = () => {
     if (!vendorId || !amount || parseFloat(amount) <= 0) {
-      toast.error("Validation Error: Please select a vendor and enter a valid amount");
+      toast.error(
+        "Validation Error: Please select a vendor and enter a valid amount"
+      );
       return;
     }
 
@@ -160,7 +176,7 @@ export function PayVendorModal({
             ) : (
               <Select
                 value={vendorId?.toString() || ""}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   setVendorId(parseInt(value));
                   setBillId(null); // Reset bill selection when vendor changes
                 }}
@@ -169,7 +185,7 @@ export function PayVendorModal({
                   <SelectValue placeholder="Select a vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {recentVendors?.map((vendor) => (
+                  {recentVendors?.map(vendor => (
                     <SelectItem key={vendor.id} value={vendor.id.toString()}>
                       {vendor.name}
                     </SelectItem>
@@ -188,7 +204,7 @@ export function PayVendorModal({
               </Label>
               <Select
                 value={billId?.toString() || "none"}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   if (value === "none") {
                     setBillId(null);
                   } else {
@@ -199,9 +215,13 @@ export function PayVendorModal({
                       amountDue?: string;
                       totalAmount: string;
                     }
-                    const selectedBill = billsList.find((b: Bill) => b.id === parseInt(value));
+                    const selectedBill = billsList.find(
+                      (b: Bill) => b.id === parseInt(value)
+                    );
                     if (selectedBill) {
-                      setAmount(selectedBill.amountDue || selectedBill.totalAmount);
+                      setAmount(
+                        selectedBill.amountDue || selectedBill.totalAmount
+                      );
                     }
                   }
                 }}
@@ -210,17 +230,28 @@ export function PayVendorModal({
                   <SelectValue placeholder="Select a bill to pay" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No bill - standalone payment</SelectItem>
-                  {billsList.map((bill: { id: number; billNumber: string; amountDue?: string; totalAmount: string }) => (
-                    <SelectItem key={bill.id} value={bill.id.toString()}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{bill.billNumber}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          (Due: {formatCurrency(bill.amountDue || bill.totalAmount)})
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="none">
+                    No bill - standalone payment
+                  </SelectItem>
+                  {billsList.map(
+                    (bill: {
+                      id: number;
+                      billNumber: string;
+                      amountDue?: string;
+                      totalAmount: string;
+                    }) => (
+                      <SelectItem key={bill.id} value={bill.id.toString()}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{bill.billNumber}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            (Due:{" "}
+                            {formatCurrency(bill.amountDue || bill.totalAmount)}
+                            )
+                          </span>
+                        </div>
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -245,7 +276,7 @@ export function PayVendorModal({
                   placeholder="0.00"
                   className="pl-7 text-lg font-mono"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={e => setAmount(e.target.value)}
                   autoFocus
                 />
               </div>
@@ -255,13 +286,18 @@ export function PayVendorModal({
           {/* Payment Method */}
           {parseFloat(amount) > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="paymentMethod" className="flex items-center gap-2">
+              <Label
+                htmlFor="paymentMethod"
+                className="flex items-center gap-2"
+              >
                 <CreditCard className="h-4 w-4" />
                 Payment Method
               </Label>
               <Select
                 value={paymentMethod}
-                onValueChange={(value) => setPaymentMethod(value as typeof paymentMethod)}
+                onValueChange={value =>
+                  setPaymentMethod(value as typeof paymentMethod)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -288,7 +324,7 @@ export function PayVendorModal({
                 id="note"
                 placeholder="Add a note about this payment..."
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={e => setNote(e.target.value)}
                 rows={2}
               />
             </div>
@@ -309,8 +345,17 @@ export function PayVendorModal({
               </div>
               {billId && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Applied to Bill:</span>
-                  <span>{billsList.find((b: { id: number; billNumber: string }) => b.id === billId)?.billNumber}</span>
+                  <span className="text-muted-foreground">
+                    Applied to Bill:
+                  </span>
+                  <span>
+                    {
+                      billsList.find(
+                        (b: { id: number; billNumber: string }) =>
+                          b.id === billId
+                      )?.billNumber
+                    }
+                  </span>
                 </div>
               )}
             </div>
@@ -323,7 +368,12 @@ export function PayVendorModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!vendorId || !amount || parseFloat(amount) <= 0 || payVendor.isPending}
+            disabled={
+              !vendorId ||
+              !amount ||
+              parseFloat(amount) <= 0 ||
+              payVendor.isPending
+            }
             className="gap-2"
             variant="destructive"
           >

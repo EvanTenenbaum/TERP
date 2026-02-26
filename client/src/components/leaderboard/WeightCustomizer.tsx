@@ -4,7 +4,13 @@
  */
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -19,25 +25,58 @@ interface WeightCustomizerProps {
 }
 
 const METRIC_LABELS: Record<string, { label: string; description: string }> = {
-  ytd_revenue: { label: "YTD Revenue", description: "Year-to-date revenue contribution" },
-  lifetime_value: { label: "Lifetime Value", description: "Total historical value" },
-  average_order_value: { label: "Avg Order Value", description: "Average order size" },
-  profit_margin: { label: "Profit Margin", description: "Profitability percentage" },
-  order_frequency: { label: "Order Frequency", description: "Orders per period" },
+  ytd_revenue: {
+    label: "YTD Revenue",
+    description: "Year-to-date revenue contribution",
+  },
+  lifetime_value: {
+    label: "All Time Value",
+    description: "Total historical value",
+  },
+  average_order_value: {
+    label: "Avg Order Value",
+    description: "Average order size",
+  },
+  profit_margin: {
+    label: "Profit Margin",
+    description: "Profitability percentage",
+  },
+  order_frequency: {
+    label: "Order Frequency",
+    description: "Orders per period",
+  },
   recency: { label: "Recency", description: "Days since last order" },
-  on_time_payment_rate: { label: "On-Time Payment", description: "Payment reliability" },
-  average_days_to_pay: { label: "Days to Pay", description: "Average payment speed" },
-  credit_utilization: { label: "Credit Utilization", description: "Credit line usage" },
-  yoy_growth: { label: "YoY Growth", description: "Year-over-year growth rate" },
+  on_time_payment_rate: {
+    label: "On-Time Payment",
+    description: "Payment reliability",
+  },
+  average_days_to_pay: {
+    label: "Days to Pay",
+    description: "Average payment speed",
+  },
+  credit_utilization: {
+    label: "Credit Utilization",
+    description: "Credit line usage",
+  },
+  yoy_growth: {
+    label: "YoY Growth",
+    description: "Year-over-year growth rate",
+  },
 };
 
-export function WeightCustomizer({ clientType, onClose, onSave }: WeightCustomizerProps) {
+export function WeightCustomizer({
+  clientType,
+  onClose,
+  onSave,
+}: WeightCustomizerProps) {
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
-  const { data: weightData, isLoading } = trpc.leaderboard.weights.get.useQuery({
-    clientType,
-  });
+  const { data: weightData, isLoading } = trpc.leaderboard.weights.get.useQuery(
+    {
+      clientType,
+    }
+  );
 
   const saveMutation = trpc.leaderboard.weights.save.useMutation({
     onSuccess: () => {
@@ -60,7 +99,7 @@ export function WeightCustomizer({ clientType, onClose, onSave }: WeightCustomiz
   }, [weightData]);
 
   const handleWeightChange = (metric: string, value: number) => {
-    setWeights((prev) => ({ ...prev, [metric]: value }));
+    setWeights(prev => ({ ...prev, [metric]: value }));
     setHasChanges(true);
   };
 
@@ -95,8 +134,8 @@ export function WeightCustomizer({ clientType, onClose, onSave }: WeightCustomiz
           </Button>
         </CardTitle>
         <CardDescription>
-          Adjust how different metrics contribute to the master score.
-          Weights must sum to 100%.
+          Adjust how different metrics contribute to the master score. Weights
+          must sum to 100%.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -130,10 +169,14 @@ export function WeightCustomizer({ clientType, onClose, onSave }: WeightCustomiz
                   max={50}
                   step={1}
                   value={[value]}
-                  onValueChange={([newValue]) => handleWeightChange(metric, newValue)}
+                  onValueChange={([newValue]) =>
+                    handleWeightChange(metric, newValue)
+                  }
                   className="w-full"
                 />
-                <p className="text-xs text-muted-foreground">{config.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {config.description}
+                </p>
               </div>
             );
           })}
@@ -141,7 +184,8 @@ export function WeightCustomizer({ clientType, onClose, onSave }: WeightCustomiz
 
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="text-sm">
-            Total: <span className={isValidTotal ? "text-green-600" : "text-red-600"}>
+            Total:{" "}
+            <span className={isValidTotal ? "text-green-600" : "text-red-600"}>
               {totalWeight.toFixed(0)}%
             </span>
             {weightData?.isCustom && (

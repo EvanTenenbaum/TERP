@@ -252,6 +252,11 @@ export function VipTierBadge({
 // Detailed tier information component
 function VipTierDetails({ vipStatus }: { vipStatus: VipStatusData }) {
   const tierColor = vipStatus.currentTier?.color || "#6B7280";
+  const formatCurrency = (value: number) =>
+    `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   return (
     <div className="space-y-6">
@@ -270,7 +275,7 @@ function VipTierDetails({ vipStatus }: { vipStatus: VipStatusData }) {
             icon={DollarSign}
             label="Volume"
             value={vipStatus.metrics?.volumeScore || 0}
-            description={`$${(vipStatus.metrics?.ytdSpend || 0).toLocaleString()} YTD`}
+            description={`${formatCurrency(vipStatus.metrics?.ytdSpend || 0)} YTD`}
             color="#10B981"
           />
           <MetricBar
@@ -349,7 +354,7 @@ function VipTierDetails({ vipStatus }: { vipStatus: VipStatusData }) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">YTD Spend</span>
             <span className="font-medium">
-              ${(vipStatus.metrics?.ytdSpend || 0).toLocaleString()}
+              {formatCurrency(vipStatus.metrics?.ytdSpend || 0)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -365,9 +370,9 @@ function VipTierDetails({ vipStatus }: { vipStatus: VipStatusData }) {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Lifetime Spend</span>
+            <span className="text-muted-foreground">All Time Spend</span>
             <span className="font-medium">
-              ${(vipStatus.metrics?.lifetimeSpend || 0).toLocaleString()}
+              {formatCurrency(vipStatus.metrics?.lifetimeSpend || 0)}
             </span>
           </div>
         </div>
