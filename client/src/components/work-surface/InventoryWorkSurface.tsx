@@ -48,6 +48,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -1219,6 +1221,25 @@ export function InventoryWorkSurface() {
           </div>
         </InspectorPanel>
       </div>
+
+      <WorkSurfaceStatusBar
+        left={`Page ${page + 1} of ${Math.max(totalPages, 1)} · ${totalCount} total`}
+        center={
+          selectedItem?.batch
+            ? `Selected: ${selectedItem.batch.sku}`
+            : `${selectedBatchIds.size} selected`
+        }
+        right={
+          <KeyboardHintBar
+            hints={[
+              { key: "Cmd/Ctrl+K", label: "Search" },
+              { key: "↑↓", label: "Navigate" },
+              { key: "Enter", label: "Inspect" },
+              { key: "Esc", label: "Close" },
+            ]}
+          />
+        }
+      />
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />

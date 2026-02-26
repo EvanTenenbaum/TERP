@@ -55,6 +55,7 @@ import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import { PICK_PACK_STATUS_TOKENS } from "../../lib/statusTokens";
 
@@ -1181,7 +1182,17 @@ export function PickPackWorkSurface() {
             <WorkSurfaceStatusBar
               left={`Zone: ${focusZone === "list" ? "Order List" : "Items"}`}
               center={`${selectedItems.length} items selected`}
-              right="↑↓ Navigate • Space Select • P Pack • R Ready • I Inspect"
+              right={
+                <KeyboardHintBar
+                  hints={[
+                    { key: "↑↓", label: "Navigate" },
+                    { key: "Space", label: "Select" },
+                    { key: "P", label: "Pack" },
+                    { key: "R", label: "Ready" },
+                    { key: "I", label: "Inspect" },
+                  ]}
+                />
+              }
             />
           </>
         ) : (
