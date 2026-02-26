@@ -69,6 +69,7 @@ import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   useOrderCalculations,
   calculateLineItem,
@@ -938,6 +939,12 @@ export default function OrderCreatorPageV2() {
 
         {/* CHAOS-007: Unsaved Changes Navigation Dialog */}
         <ConfirmNavigationDialog />
+
+        <WorkSurfaceStatusBar
+          left={`${items.length} items · ${orderType}`}
+          center={clientDetails?.name || "No client selected"}
+          right="Cmd+S: Save | Cmd+Enter: Finalize | Cmd+Z: Undo"
+        />
       </div>
     </PageErrorBoundary>
   );
