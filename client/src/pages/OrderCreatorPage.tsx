@@ -72,7 +72,7 @@ import {
   calculateLineItem,
 } from "@/hooks/orders/useOrderCalculations";
 import { useRetryableQuery } from "@/hooks/useRetryableQuery";
-import { useSaveState } from "@/hooks/work-surface";
+import { useSaveState, useUndo } from "@/hooks/work-surface";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -132,10 +132,12 @@ export default function OrderCreatorPageV2() {
 
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
     useSaveState();
+  const undo = useUndo({ enableKeyboard: false });
 
   // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
   // before finalization completes
   const isFinalizingRef = useRef(false);
+  const itemsRef = useRef<LineItem[]>([]);
 
   // TER-215: Import items from Sales Sheet when navigating with ?fromSalesSheet=true
   useEffect(() => {
@@ -175,6 +177,10 @@ export default function OrderCreatorPageV2() {
       saveState.status === "queued";
     setHasUnsavedChanges(hasItems || autoSavePending);
   }, [items.length, saveState.status, setHasUnsavedChanges]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
@@ -521,6 +527,91 @@ export default function OrderCreatorPageV2() {
     toast.success(`Added ${uniqueItems.length} item(s) to order`);
   };
 
+  const registerLineItemRemovalUndo = useCallback(
+    (previousItems: LineItem[], removedBatchIds: number[]) => {
+      const removedBatchIdSet = new Set(removedBatchIds);
+      const removedItems = previousItems.filter(item =>
+        removedBatchIdSet.has(item.batchId)
+      );
+
+      if (removedItems.length === 0) {
+        return;
+      }
+
+      const previousBatchIds = new Set(previousItems.map(item => item.batchId));
+
+      undo.registerAction({
+        description:
+          removedItems.length === 1
+            ? "Removed 1 item"
+            : `Removed ${removedItems.length} items`,
+        duration: 10000,
+        undo: () => {
+          setItems(currentItems => {
+            const currentById = new Map(
+              currentItems.map(item => [item.batchId, item])
+            );
+            const removedById = new Map(
+              removedItems.map(item => [item.batchId, item])
+            );
+            const restored: LineItem[] = [];
+
+            for (const previousItem of previousItems) {
+              const currentItem = currentById.get(previousItem.batchId);
+              if (currentItem) {
+                restored.push(currentItem);
+                continue;
+              }
+              const removedItem = removedById.get(previousItem.batchId);
+              if (removedItem) {
+                restored.push(removedItem);
+              }
+            }
+
+            for (const currentItem of currentItems) {
+              if (!previousBatchIds.has(currentItem.batchId)) {
+                restored.push(currentItem);
+              }
+            }
+
+            return restored;
+          });
+        },
+      });
+    },
+    [undo]
+  );
+
+  const handleLineItemsChange = useCallback(
+    (nextItems: LineItem[]) => {
+      const previousItems = itemsRef.current;
+      const nextBatchIds = new Set(nextItems.map(item => item.batchId));
+      const removedBatchIds = previousItems
+        .filter(item => !nextBatchIds.has(item.batchId))
+        .map(item => item.batchId);
+
+      if (removedBatchIds.length > 0) {
+        registerLineItemRemovalUndo(previousItems, removedBatchIds);
+      }
+
+      setItems(nextItems);
+    },
+    [registerLineItemRemovalUndo]
+  );
+
+  const handlePreviewRemoveItem = useCallback(
+    (batchId: number) => {
+      const previousItems = itemsRef.current;
+      if (!previousItems.some(item => item.batchId === batchId)) {
+        return;
+      }
+
+      registerLineItemRemovalUndo(previousItems, [batchId]);
+      setItems(previousItems.filter(item => item.batchId !== batchId));
+    },
+    [registerLineItemRemovalUndo]
+  );
+
   return (
     <PageErrorBoundary pageName="OrderCreator">
       <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -653,7 +744,7 @@ export default function OrderCreatorPageV2() {
                   <LineItemTable
                     items={items}
                     clientId={clientId}
-                    onChange={setItems}
+                    onChange={handleLineItemsChange}
                     onAddItem={() => {
                       // Scroll to InventoryBrowser section
                       const inventoryBrowser = document.getElementById(
@@ -744,11 +835,7 @@ export default function OrderCreatorPageV2() {
                       )
                     );
                   }}
-                  onRemoveItem={batchId => {
-                    setItems(prevItems =>
-                      prevItems.filter(item => item.batchId !== batchId)
-                    );
-                  }}
+                  onRemoveItem={handlePreviewRemoveItem}
                 />
               </details>
 
