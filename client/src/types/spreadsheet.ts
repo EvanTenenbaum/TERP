@@ -36,33 +36,6 @@ export interface ClientGridSummary {
   yearToDate: number;
 }
 
-// Intake Grid Types (TERP-SS-001)
-// Updated to match inventory.intake schema requirements
-export interface IntakeGridRow {
-  id: string; // Temporary ID for new rows
-  vendorId: number | null;
-  vendorName: string;
-  brandName: string; // Required by intakeSchema
-  category: string;
-  item: string; // Maps to productName in intakeSchema
-  strainId: number | null; // Optional strain reference
-  qty: number;
-  cogs: number;
-  paymentTerms: string;
-  locationId: number | null;
-  locationName: string; // Display name
-  site: string; // Location site code for intakeSchema
-  notes: string;
-  status: "pending" | "submitted" | "error";
-  errorMessage?: string;
-}
-
-export interface IntakeGridSummary {
-  totalItems: number;
-  totalQty: number;
-  totalValue: number;
-}
-
 // Pick & Pack Grid Types (TERP-SS-002)
 export interface PickPackGridRow {
   orderId: number;
