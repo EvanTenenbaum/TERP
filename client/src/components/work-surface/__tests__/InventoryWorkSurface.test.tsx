@@ -22,6 +22,15 @@ vi.mock("wouter", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      inventory: {
+        views: {
+          list: {
+            invalidate: vi.fn(),
+          },
+        },
+      },
+    }),
     inventory: {
       getEnhanced: {
         useQuery: () => ({
@@ -58,6 +67,21 @@ vi.mock("@/lib/trpc", () => ({
           },
           refetch: vi.fn(),
         }),
+      },
+      views: {
+        list: {
+          useQuery: () => ({
+            data: { items: [] },
+            isLoading: false,
+            refetch: vi.fn(),
+          }),
+        },
+        save: {
+          useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        },
+        delete: {
+          useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        },
       },
       updateStatus: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
