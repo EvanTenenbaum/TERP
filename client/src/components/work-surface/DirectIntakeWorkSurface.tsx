@@ -55,7 +55,7 @@ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeybo
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { useUndo } from "@/hooks/work-surface/useUndo";
-import { usePowersheetSelection } from "@/hooks/work-surface";
+import { useExport, usePowersheetSelection } from "@/hooks/work-surface";
 import {
   createDirectIntakeRemovalPlan,
   submitRowsWithGuaranteedCleanup,
@@ -79,6 +79,7 @@ import {
   Loader2,
   RefreshCw,
   Package,
+  Download,
   Upload,
   ChevronRight,
   X,
@@ -138,6 +139,8 @@ interface IntakeGridRow extends IntakeRowData {
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
 }
+
+type IntakeExportRow = IntakeGridRow & Record<string, unknown>;
 
 interface IntakeSummary {
   totalItems: number;
@@ -783,6 +786,7 @@ export function DirectIntakeWorkSurface() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
   const undo = useUndo({ enableKeyboard: false });
+  const { exportCSV, state: exportState } = useExport<IntakeExportRow>();
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState({
@@ -1637,6 +1641,38 @@ export function DirectIntakeWorkSurface() {
     uploadMediaFiles,
   ]);
 
+  const handleExportCsv = useCallback(async () => {
+    try {
+      await exportCSV(rowsRef.current as IntakeExportRow[], {
+        columns: [
+          { key: "vendorName", label: "Vendor" },
+          { key: "brandName", label: "Brand" },
+          { key: "item", label: "Product" },
+          { key: "category", label: "Category" },
+          { key: "subcategory", label: "Subcategory" },
+          { key: "qty", label: "Qty" },
+          { key: "cogs", label: "COGS" },
+          {
+            key: "lineTotal",
+            label: "Line Total",
+            formatter: (_value, row) =>
+              ((row.qty || 0) * (row.cogs || 0)).toFixed(2),
+          },
+          { key: "paymentTerms", label: "Payment Terms" },
+          { key: "site", label: "Location" },
+          { key: "status", label: "Status" },
+          { key: "notes", label: "Notes" },
+        ],
+        filename: "direct-intake-sessions",
+        addTimestamp: true,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to export intake CSV";
+      toast.error(message);
+    }
+  }, [exportCSV]);
+
   const handleUpdateSelectedRow = useCallback(
     (updates: Partial<IntakeGridRow>) => {
       if (!selectedRowId) return;
@@ -2098,6 +2134,26 @@ export function DirectIntakeWorkSurface() {
               {selectedCount} row{selectedCount === 1 ? "" : "s"} selected
             </span>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void handleExportCsv();
+            }}
+            disabled={rows.length === 0 || exportState.isExporting}
+          >
+            {exportState.isExporting ? (
+              <>
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                Exporting {Math.round(exportState.progress)}%
+              </>
+            ) : (
+              <>
+                <Download className="mr-1 h-4 w-4" />
+                Export CSV
+              </>
+            )}
+          </Button>
           <Button
             size="sm"
             onClick={() => {
