@@ -53,6 +53,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { useUndo } from "@/hooks/work-surface/useUndo";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
@@ -559,6 +560,7 @@ export function PickPackWorkSurface() {
 
   // Save state
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { registerAction, undoLast } = useUndo({ enableKeyboard: false });
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -651,6 +653,23 @@ export function PickPackWorkSurface() {
     },
   });
 
+  const unpackItemsMutation = trpc.pickPack.unpackItems.useMutation({
+    onMutate: () => setSaving(),
+    onSuccess: () => {
+      void refetchOrderDetails();
+      void refetchPickList();
+      void refetchStats();
+      setSaved();
+      toast.success("Items unpacked");
+    },
+    onError: (error: { message: string }) => {
+      if (!handleConflictError(error)) {
+        setError(error.message || "Failed to unpack items");
+        toast.error(`Failed to unpack items: ${error.message}`);
+      }
+    },
+  });
+
   const markReadyMutation = trpc.pickPack.markOrderReady.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
@@ -693,18 +712,71 @@ export function PickPackWorkSurface() {
 
   const handlePackSelected = useCallback(() => {
     if (selectedOrderId && selectedItems.length > 0) {
-      packItemsMutation.mutate({
-        orderId: selectedOrderId,
-        itemIds: selectedItems,
-      });
+      const orderId = selectedOrderId;
+      const itemIds = [...selectedItems];
+      packItemsMutation.mutate(
+        {
+          orderId,
+          itemIds,
+        },
+        {
+          onSuccess: () => {
+            registerAction({
+              description: `Packed ${itemIds.length} selected item${
+                itemIds.length === 1 ? "" : "s"
+              }`,
+              undo: () => {
+                unpackItemsMutation.mutate({
+                  orderId,
+                  itemIds,
+                  reason: "Undo pack selected action",
+                });
+              },
+            });
+          },
+        }
+      );
     }
-  }, [selectedOrderId, selectedItems, packItemsMutation]);
+  }, [
+    packItemsMutation,
+    registerAction,
+    selectedItems,
+    selectedOrderId,
+    unpackItemsMutation,
+  ]);
 
   const handleMarkAllPacked = useCallback(() => {
     if (selectedOrderId) {
-      markAllPackedMutation.mutate({ orderId: selectedOrderId });
+      const orderId = selectedOrderId;
+      const itemIds = unpackedItems.map(item => item.id);
+      if (itemIds.length === 0) {
+        return;
+      }
+      markAllPackedMutation.mutate(
+        { orderId },
+        {
+          onSuccess: () => {
+            registerAction({
+              description: `Packed all remaining items (${itemIds.length})`,
+              undo: () => {
+                unpackItemsMutation.mutate({
+                  orderId,
+                  itemIds,
+                  reason: "Undo pack all action",
+                });
+              },
+            });
+          },
+        }
+      );
     }
-  }, [selectedOrderId, markAllPackedMutation]);
+  }, [
+    markAllPackedMutation,
+    registerAction,
+    selectedOrderId,
+    unpackItemsMutation,
+    unpackedItems,
+  ]);
 
   const handleMarkReady = useCallback(() => {
     if (selectedOrderId) {
@@ -815,6 +887,9 @@ export function PickPackWorkSurface() {
           setSelectedOrderId(null);
         }
       },
+      onUndo: () => {
+        void undoLast();
+      },
       containerRef,
     }),
     [
@@ -834,6 +909,7 @@ export function PickPackWorkSurface() {
       handleMarkReady,
       openItemInspector,
       openOrderInspector,
+      undoLast,
       containerRef,
     ]
   );
