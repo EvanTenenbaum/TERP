@@ -49,12 +49,15 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
+import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
+import { FilterChips } from "@/components/inventory/FilterChips";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import { usePowersheetSelection } from "../../hooks/work-surface";
+import { useInventoryFilters } from "@/hooks/useInventoryFilters";
 import {
   InspectorPanel,
   InspectorSection,
@@ -130,16 +133,6 @@ const BATCH_STATUSES = [
   { value: "QUARANTINED", label: "Quarantined" },
   { value: "SOLD_OUT", label: "Sold Out" },
   { value: "CLOSED", label: "Closed" },
-];
-
-const CATEGORIES = [
-  { value: "ALL", label: "All Categories" },
-  { value: "Flower", label: "Flower" },
-  { value: "Concentrate", label: "Concentrate" },
-  { value: "Edible", label: "Edible" },
-  { value: "PreRoll", label: "Pre-Roll" },
-  { value: "Vape", label: "Vape" },
-  { value: "Deps", label: "Deps" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -370,8 +363,6 @@ export function InventoryWorkSurface() {
 
   // State
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
@@ -388,6 +379,8 @@ export function InventoryWorkSurface() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const pageSize = 50;
   const useEnhancedApi = true;
+  const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
+    useInventoryFilters();
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -433,11 +426,16 @@ export function InventoryWorkSurface() {
       pageSize,
       cursor: page * pageSize,
       search: search || undefined,
-      status:
-        statusFilter !== "ALL"
-          ? [statusFilter as InventoryBatchStatus]
-          : undefined,
-      category: categoryFilter !== "ALL" ? categoryFilter : undefined,
+      status: filters.status.length > 0 ? filters.status : undefined,
+      category: filters.category || undefined,
+      subcategory: filters.subcategory || undefined,
+      vendor: filters.vendor.length > 0 ? filters.vendor : undefined,
+      brand: filters.brand.length > 0 ? filters.brand : undefined,
+      grade: filters.grade.length > 0 ? filters.grade : undefined,
+      stockStatus:
+        filters.stockStatus !== "ALL" ? filters.stockStatus : undefined,
+      ageBracket: filters.ageBracket !== "ALL" ? filters.ageBracket : undefined,
+      batchId: filters.batchId || undefined,
       sortBy: enhancedSortBy,
       sortOrder: sortDirection,
     },
@@ -454,10 +452,10 @@ export function InventoryWorkSurface() {
     {
       query: search || undefined,
       status:
-        statusFilter !== "ALL"
-          ? (statusFilter as InventoryBatchStatus)
+        filters.status.length > 0
+          ? (filters.status[0] as InventoryBatchStatus)
           : undefined,
-      category: categoryFilter !== "ALL" ? categoryFilter : undefined,
+      category: filters.category || undefined,
       limit: pageSize,
       cursor: page * pageSize,
     },
@@ -518,65 +516,191 @@ export function InventoryWorkSurface() {
   }, [useEnhancedApi, enhancedData?.items, legacyData?.items]);
 
   const items = normalizedItems;
+  const clientSideFilterActive =
+    filters.stockLevel !== "all" ||
+    filters.cogsRange.min !== null ||
+    filters.cogsRange.max !== null ||
+    filters.dateRange.from !== null ||
+    filters.dateRange.to !== null ||
+    filters.location !== null;
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const batch = item.batch;
+      if (!batch) return false;
+
+      const onHand = parseFloat(batch.onHandQty || "0");
+      const reserved = parseFloat(batch.reservedQty || "0");
+      const quarantine = parseFloat(batch.quarantineQty || "0");
+      const hold = parseFloat(batch.holdQty || "0");
+      const available = onHand - reserved - quarantine - hold;
+      const unitCogs = parseFloat(batch.unitCogs || "0");
+
+      if (filters.stockLevel !== "all") {
+        if (filters.stockLevel === "in_stock" && available <= 0) return false;
+        if (filters.stockLevel === "low_stock" && available > 100) return false;
+        if (filters.stockLevel === "out_of_stock" && available > 0) {
+          return false;
+        }
+      }
+
+      if (filters.cogsRange.min !== null && unitCogs < filters.cogsRange.min) {
+        return false;
+      }
+      if (filters.cogsRange.max !== null && unitCogs > filters.cogsRange.max) {
+        return false;
+      }
+
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const receivedAt = batch.intakeDate || batch.createdAt;
+        if (!receivedAt) return false;
+        const receivedDate = new Date(receivedAt);
+        if (Number.isNaN(receivedDate.getTime())) return false;
+
+        if (filters.dateRange.from) {
+          const from = new Date(filters.dateRange.from);
+          from.setHours(0, 0, 0, 0);
+          if (receivedDate < from) return false;
+        }
+        if (filters.dateRange.to) {
+          const to = new Date(filters.dateRange.to);
+          to.setHours(23, 59, 59, 999);
+          if (receivedDate > to) return false;
+        }
+      }
+
+      if (filters.location) {
+        const locationQuery = filters.location.toLowerCase();
+        const fallbackLocationText = [batch.sku, batch.id, batch.grade]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!fallbackLocationText.includes(locationQuery)) return false;
+      }
+
+      return true;
+    });
+  }, [
+    items,
+    filters.stockLevel,
+    filters.cogsRange.min,
+    filters.cogsRange.max,
+    filters.dateRange.from,
+    filters.dateRange.to,
+    filters.location,
+  ]);
+
+  const vendorOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          items
+            .map(item => item.vendor?.name)
+            .filter((value): value is string => Boolean(value))
+        )
+      ).sort(),
+    [items]
+  );
+
+  const brandOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          items
+            .map(item => item.brand?.name)
+            .filter((value): value is string => Boolean(value))
+        )
+      ).sort(),
+    [items]
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          items
+            .map(item => item.product?.category)
+            .filter((value): value is string => Boolean(value))
+        )
+      ).sort(),
+    [items]
+  );
+
+  const subcategoryOptions = useMemo(() => {
+    const allSubcategories = Array.from(
+      new Set(
+        items
+          .map(item => item.product?.subcategory)
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort();
+
+    if (!filters.category) {
+      return allSubcategories;
+    }
+
+    return allSubcategories.filter(subcategory =>
+      items.some(
+        item =>
+          item.product?.subcategory === subcategory &&
+          item.product?.category === filters.category
+      )
+    );
+  }, [items, filters.category]);
+
+  const gradeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          items
+            .map(item => item.batch?.grade)
+            .filter((value): value is string => Boolean(value))
+        )
+      ).sort(),
+    [items]
+  );
+
   const hasMore = useEnhancedApi
     ? (enhancedData?.pagination.hasMore ?? false)
     : ((legacyData as { hasMore?: boolean } | undefined)?.hasMore ?? false);
   const totalCount = useEnhancedApi
-    ? (enhancedData?.summary.totalItems ?? items.length)
+    ? clientSideFilterActive
+      ? filteredItems.length
+      : (enhancedData?.summary.totalItems ?? filteredItems.length)
     : hasMore
-      ? items.length + pageSize
-      : items.length;
+      ? filteredItems.length + pageSize
+      : filteredItems.length;
   const totalPages = useEnhancedApi
     ? Math.max(page + 1 + (hasMore ? 1 : 0), 1)
     : Math.max(Math.ceil(totalCount / pageSize), 1);
   const isLoading = useEnhancedApi ? isEnhancedLoading : isLegacyLoading;
 
-  // Shared powersheet selection (TER-283)
-  const allBatchIds = useMemo(
-    () =>
-      items
-        .map(item => item.batch?.id)
-        .filter((id): id is number => typeof id === "number"),
-    [items]
-  );
-  const selection = usePowersheetSelection<number>({ visibleIds: allBatchIds });
-
-  // Backward-compatible aliases
-  const selectedBatchId = selection.activeId;
-  const setSelectedBatchId = selection.setActiveId;
-  const selectedIndex = selection.activeIndex;
-  const setSelectedIndex = selection.setActiveIndex;
-
-  // Selected item
-  const selectedItem = useMemo(
-    () => items.find(i => i.batch?.id === selectedBatchId) || null,
-    [items, selectedBatchId]
-  );
-
   // Statistics
   const stats = useMemo(() => {
-    const pageUnits = items.reduce(
+    const pageUnits = filteredItems.reduce(
       (sum, i) => sum + parseFloat(i.batch?.onHandQty || "0"),
       0
     );
-    const pageValue = items.reduce((sum, i) => {
+    const pageValue = filteredItems.reduce((sum, i) => {
       const qty = parseFloat(i.batch?.onHandQty || "0");
       const cost = parseFloat(i.batch?.unitCogs || "0");
       return sum + qty * cost;
     }, 0);
-    const liveCount = items.filter(i => i.batch?.batchStatus === "LIVE").length;
+    const liveCount = filteredItems.filter(
+      i => i.batch?.batchStatus === "LIVE"
+    ).length;
     return {
-      total: items.length,
+      total: filteredItems.length,
       totalUnits: dashboardStats?.totalUnits ?? pageUnits,
       totalValue: dashboardStats?.totalInventoryValue ?? pageValue,
       liveCount: dashboardStats?.statusCounts?.LIVE ?? liveCount,
     };
-  }, [items, dashboardStats]);
+  }, [filteredItems, dashboardStats]);
 
   // Sort items
   const displayItems = useMemo(() => {
-    if (!sortColumn) return items;
-    return [...items].sort((a, b) => {
+    if (!sortColumn) return filteredItems;
+    return [...filteredItems].sort((a, b) => {
       let aVal: string | number;
       let bVal: string | number;
       if (sortColumn === "product") {
@@ -595,7 +719,29 @@ export function InventoryWorkSurface() {
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [items, sortColumn, sortDirection]);
+  }, [filteredItems, sortColumn, sortDirection]);
+
+  // Shared powersheet selection (TER-283)
+  const allBatchIds = useMemo(
+    () =>
+      displayItems
+        .map(item => item.batch?.id)
+        .filter((id): id is number => typeof id === "number"),
+    [displayItems]
+  );
+  const selection = usePowersheetSelection<number>({ visibleIds: allBatchIds });
+
+  // Backward-compatible aliases
+  const selectedBatchId = selection.activeId;
+  const setSelectedBatchId = selection.setActiveId;
+  const selectedIndex = selection.activeIndex;
+  const setSelectedIndex = selection.setActiveIndex;
+
+  // Selected item
+  const selectedItem = useMemo(
+    () => displayItems.find(i => i.batch?.id === selectedBatchId) || null,
+    [displayItems, selectedBatchId]
+  );
 
   const selectedBatchIds = selection.selectedIds;
   const allVisibleSelected = selection.allSelected;
@@ -694,7 +840,7 @@ export function InventoryWorkSurface() {
   useEffect(() => {
     selection.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, categoryFilter, page]);
+  }, [search, filters, page]);
 
   useEffect(() => {
     if (!successMessage) return;
@@ -850,6 +996,65 @@ export function InventoryWorkSurface() {
     bulkDeleteMutation.mutate(batchIds);
   }, [selectedBatchIds, bulkDeleteMutation]);
 
+  const handleRemoveFilterChip = useCallback(
+    (key: Parameters<typeof updateFilter>[0], value?: string): void => {
+      if (key === "status" && value) {
+        updateFilter(
+          "status",
+          filters.status.filter(status => status !== value)
+        );
+        setPage(0);
+        return;
+      }
+      if (key === "vendor" && value) {
+        updateFilter(
+          "vendor",
+          filters.vendor.filter(vendor => vendor !== value)
+        );
+        setPage(0);
+        return;
+      }
+      if (key === "brand" && value) {
+        updateFilter(
+          "brand",
+          filters.brand.filter(brand => brand !== value)
+        );
+        setPage(0);
+        return;
+      }
+      if (key === "grade" && value) {
+        updateFilter(
+          "grade",
+          filters.grade.filter(grade => grade !== value)
+        );
+        setPage(0);
+        return;
+      }
+      if (key === "paymentStatus" && value) {
+        updateFilter(
+          "paymentStatus",
+          filters.paymentStatus.filter(status => status !== value)
+        );
+        setPage(0);
+        return;
+      }
+
+      if (key === "category") updateFilter("category", null);
+      if (key === "subcategory") updateFilter("subcategory", null);
+      if (key === "location") updateFilter("location", null);
+      if (key === "stockLevel") updateFilter("stockLevel", "all");
+      if (key === "dateRange")
+        updateFilter("dateRange", { from: null, to: null });
+      if (key === "cogsRange")
+        updateFilter("cogsRange", { min: null, max: null });
+      if (key === "stockStatus") updateFilter("stockStatus", "ALL");
+      if (key === "ageBracket") updateFilter("ageBracket", "ALL");
+      if (key === "batchId") updateFilter("batchId", null);
+      setPage(0);
+    },
+    [filters, updateFilter]
+  );
+
   const SortIcon = ({ column }: { column: string }) => {
     if (sortColumn !== column)
       return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
@@ -920,42 +1125,6 @@ export function InventoryWorkSurface() {
               className="pl-10"
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={v => {
-              setStatusFilter(v);
-              setPage(0);
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {BATCH_STATUSES.map(s => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={categoryFilter}
-            onValueChange={v => {
-              setCategoryFilter(v);
-              setPage(0);
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map(c => (
-                <SelectItem key={c.value} value={c.value}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
           <Button
             data-testid="new-batch-btn"
@@ -965,6 +1134,30 @@ export function InventoryWorkSurface() {
             Product Intake
           </Button>
         </div>
+
+        <AdvancedFilters
+          filters={filters}
+          onUpdateFilter={(key, value) => {
+            updateFilter(key, value);
+            setPage(0);
+          }}
+          vendors={vendorOptions}
+          brands={brandOptions}
+          categories={categoryOptions}
+          subcategories={subcategoryOptions}
+          grades={gradeOptions}
+        />
+
+        {hasActiveFilters ? (
+          <FilterChips
+            filters={filters}
+            onRemoveFilter={handleRemoveFilterChip}
+            onClearAll={() => {
+              clearAllFilters();
+              setPage(0);
+            }}
+          />
+        ) : null}
       </div>
 
       {successMessage && (
