@@ -50,13 +50,19 @@ import {
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
 import { FilterChips } from "@/components/inventory/FilterChips";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
+import { SaveViewModal } from "@/components/inventory/SaveViewModal";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import { usePowersheetSelection } from "../../hooks/work-surface";
-import { useInventoryFilters } from "@/hooks/useInventoryFilters";
+import {
+  defaultFilters,
+  useInventoryFilters,
+  type InventoryFilters,
+} from "@/hooks/useInventoryFilters";
 import {
   InspectorPanel,
   InspectorSection,
@@ -168,6 +174,60 @@ const formatCurrency = (value: string | number | null | undefined): string => {
 const formatQuantity = (value: string | number | null | undefined): string => {
   const num = typeof value === "string" ? parseFloat(value) : value || 0;
   return num.toFixed(2);
+};
+
+const parseSavedFilterDate = (value: unknown): Date | null => {
+  if (!value) return null;
+  const parsedDate = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+};
+
+const parseSavedFilterNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed =
+    typeof value === "number" ? value : Number.parseFloat(String(value));
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeSavedFilters = (
+  savedFilters: Partial<InventoryFilters>
+): InventoryFilters => {
+  const dateRange = (savedFilters.dateRange ?? {}) as {
+    from?: unknown;
+    to?: unknown;
+  };
+  const cogsRange = (savedFilters.cogsRange ?? {}) as {
+    min?: unknown;
+    max?: unknown;
+  };
+
+  return {
+    ...defaultFilters,
+    ...savedFilters,
+    dateRange: {
+      from: parseSavedFilterDate(dateRange.from),
+      to: parseSavedFilterDate(dateRange.to),
+    },
+    cogsRange: {
+      min: parseSavedFilterNumber(cogsRange.min),
+      max: parseSavedFilterNumber(cogsRange.max),
+    },
+    status: Array.isArray(savedFilters.status)
+      ? savedFilters.status
+      : defaultFilters.status,
+    vendor: Array.isArray(savedFilters.vendor)
+      ? savedFilters.vendor
+      : defaultFilters.vendor,
+    brand: Array.isArray(savedFilters.brand)
+      ? savedFilters.brand
+      : defaultFilters.brand,
+    grade: Array.isArray(savedFilters.grade)
+      ? savedFilters.grade
+      : defaultFilters.grade,
+    paymentStatus: Array.isArray(savedFilters.paymentStatus)
+      ? savedFilters.paymentStatus
+      : defaultFilters.paymentStatus,
+  };
 };
 
 // ============================================================================
@@ -367,6 +427,7 @@ export function InventoryWorkSurface() {
   const [page, setPage] = useState(0);
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
   const [qtyAdjustment, setQtyAdjustment] = useState("");
   const [qtyReason, setQtyReason] = useState("");
@@ -989,6 +1050,19 @@ export function InventoryWorkSurface() {
     bulkDeleteMutation.mutate(batchIds);
   }, [selectedBatchIds, bulkDeleteMutation]);
 
+  const handleApplySavedView = useCallback(
+    (savedFilters: Partial<InventoryFilters>): void => {
+      const normalizedFilters = normalizeSavedFilters(savedFilters);
+      (Object.keys(normalizedFilters) as Array<keyof InventoryFilters>).forEach(
+        key => {
+          updateFilter(key, normalizedFilters[key]);
+        }
+      );
+      setPage(0);
+    },
+    [updateFilter]
+  );
+
   const handleRemoveFilterChip = useCallback(
     (key: Parameters<typeof updateFilter>[0], value?: string): void => {
       if (key === "status" && value) {
@@ -1118,6 +1192,15 @@ export function InventoryWorkSurface() {
               className="pl-10"
             />
           </div>
+          <SavedViewsDropdown onApplyView={handleApplySavedView} />
+          <Button
+            variant="outline"
+            onClick={() => setShowSaveViewModal(true)}
+            disabled={!hasActiveFilters}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Save View
+          </Button>
           {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
           <Button
             data-testid="new-batch-btn"
@@ -1515,6 +1598,13 @@ export function InventoryWorkSurface() {
           setSuccessMessage("Product intake created successfully.");
           refreshInventory();
         }}
+      />
+
+      <SaveViewModal
+        open={showSaveViewModal}
+        onOpenChange={setShowSaveViewModal}
+        filters={filters}
+        onSuccess={() => void 0}
       />
     </div>
   );
