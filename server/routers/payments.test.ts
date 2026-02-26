@@ -44,6 +44,7 @@ vi.mock("../_core/accountLookup", () => ({
 }));
 
 vi.mock("../_core/fiscalPeriod", () => ({
+  getFiscalPeriodId: vi.fn().mockResolvedValue(1),
   getFiscalPeriodIdOrDefault: vi.fn().mockResolvedValue(1),
 }));
 

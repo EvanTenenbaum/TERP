@@ -817,7 +817,10 @@ export class OrderOrchestrator {
       const newStatus = allFullyPicked ? "PACKED" : "PENDING";
 
       // 6. Validate status transition using state machine (only if changing)
-      if (currentStatus !== newStatus && !canTransition(currentStatus, newStatus)) {
+      if (
+        currentStatus !== newStatus &&
+        !canTransition(currentStatus, newStatus)
+      ) {
         throw new Error(
           `Invalid status transition from ${currentStatus} to ${newStatus}`
         );
@@ -876,7 +879,9 @@ export class OrderOrchestrator {
    * 2. Creates a return record with items
    * 3. Updates order status to RETURNED
    */
-  async processReturn(input: ProcessReturnInput): Promise<OrderResult & { returnId: number }> {
+  async processReturn(
+    input: ProcessReturnInput
+  ): Promise<OrderResult & { returnId: number }> {
     const actorId = input.actorId;
     logger.info(
       { orderId: input.orderId, reason: input.reason },
@@ -920,7 +925,9 @@ export class OrderOrchestrator {
 
       // Calculate already returned quantities
       for (const existingReturn of existingReturns) {
-        const returnItems = JSON.parse(existingReturn.items as string) as Array<{
+        const returnItems = JSON.parse(
+          existingReturn.items as string
+        ) as Array<{
           batchId: number;
           quantity: number;
         }>;
@@ -932,7 +939,9 @@ export class OrderOrchestrator {
 
       // Validate return quantities
       for (const returnItem of input.items) {
-        const orderItem = orderItems.find(oi => oi.batchId === returnItem.batchId);
+        const orderItem = orderItems.find(
+          oi => oi.batchId === returnItem.batchId
+        );
         if (!orderItem) {
           throw new Error(`Batch ${returnItem.batchId} is not in this order`);
         }
@@ -1270,6 +1279,11 @@ export class OrderOrchestrator {
 
   /**
    * Create invoice with GL entries (AR debit, Revenue credit).
+   *
+   * DEPENDENCY: Requires chart of accounts seeded (seedDefaults.ts)
+   * Required accounts:
+   * - Accounts Receivable (#1100) - ASSET, DEBIT normal balance
+   * - Sales Revenue (#4000) - REVENUE, CREDIT normal balance
    */
   private async createInvoiceWithGL(
     tx: NonNullable<Awaited<ReturnType<typeof getDb>>>,
@@ -1484,10 +1498,7 @@ export class OrderOrchestrator {
       if (!item.isSample) {
         // ST-050: Errors propagate to rollback parent transaction
         // This ensures orders and payables remain consistent
-        await payablesService.updatePayableOnSale(
-          item.batchId,
-          item.quantity
-        );
+        await payablesService.updatePayableOnSale(item.batchId, item.quantity);
         await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }

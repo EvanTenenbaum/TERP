@@ -90,7 +90,9 @@ interface RecentPayment {
   paymentType: string;
 }
 
-export default function AccountingDashboard() {
+export default function AccountingDashboard({
+  embedded,
+}: { embedded?: boolean } = {}) {
   // WS-001 & WS-002: Quick Action Modal State
   const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
   const [payVendorOpen, setPayVendorOpen] = useState(false);
@@ -173,7 +175,7 @@ export default function AccountingDashboard() {
 
   return (
     <div className="flex flex-col gap-6 p-6" data-testid="accounting-dashboard">
-      <BackButton label="Back to Accounting" to="/accounting" />
+      {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">

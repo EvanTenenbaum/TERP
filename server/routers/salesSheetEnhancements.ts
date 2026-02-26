@@ -1,7 +1,11 @@
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  adminProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as salesSheetEnhancements from "../salesSheetEnhancements";
-
 
 export const salesSheetEnhancementsRouter = router({
   // Version control
@@ -9,14 +13,14 @@ export const salesSheetEnhancementsRouter = router({
     .input(
       z.object({
         templateId: z.number(),
-        userId: z.number(),
         changes: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await salesSheetEnhancements.createSalesSheetVersion(
         input.templateId,
-        input.userId,
+        userId,
         input.changes
       );
     }),
@@ -37,13 +41,13 @@ export const salesSheetEnhancementsRouter = router({
     .input(
       z.object({
         versionId: z.number(),
-        userId: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await salesSheetEnhancements.restoreSalesSheetVersion(
         input.versionId,
-        input.userId
+        userId
       );
     }),
 
@@ -52,15 +56,15 @@ export const salesSheetEnhancementsRouter = router({
     .input(
       z.object({
         templateId: z.number(),
-        userId: z.number(),
         newName: z.string(),
         clientId: z.number().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await salesSheetEnhancements.cloneSalesSheetTemplate(
         input.templateId,
-        input.userId,
+        userId,
         input.newName,
         input.clientId
       );
@@ -94,7 +98,6 @@ export const salesSheetEnhancementsRouter = router({
     .input(
       z.object({
         templateId: z.number(),
-        userId: z.number(),
         clientOrders: z.array(
           z.object({
             clientId: z.number(),
@@ -110,11 +113,12 @@ export const salesSheetEnhancementsRouter = router({
         ),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await salesSheetEnhancements.createBulkOrdersFromSalesSheet(
         input.templateId,
         input.clientOrders,
-        input.userId
+        userId
       );
     }),
 

@@ -26,9 +26,10 @@ import {
 } from "../../drizzle/schema";
 import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import Decimal from "decimal.js";
 import { logger } from "../_core/logger";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
-import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
+import { getFiscalPeriodId } from "../_core/fiscalPeriod";
 import { captureException } from "../_core/monitoring";
 
 // ============================================================================
@@ -38,6 +39,7 @@ import { captureException } from "../_core/monitoring";
 const listPaymentsSchema = z.object({
   invoiceId: z.number().optional(),
   clientId: z.number().optional(),
+  paymentType: z.enum(["RECEIVED", "SENT"]).optional(),
   paymentMethod: z
     .enum([
       "CASH",
@@ -108,6 +110,9 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+// Tolerance for floating-point rounding in payment comparisons (1 cent)
+const OVERPAYMENT_TOLERANCE = new Decimal("0.01");
+
 // ============================================================================
 // PAYMENTS ROUTER
 // ============================================================================
@@ -131,6 +136,10 @@ export const paymentsRouter = router({
 
       if (input.clientId) {
         conditions.push(eq(payments.customerId, input.clientId));
+      }
+
+      if (input.paymentType) {
+        conditions.push(eq(payments.paymentType, input.paymentType));
       }
 
       if (input.paymentMethod) {
@@ -282,32 +291,33 @@ export const paymentsRouter = router({
         });
       }
 
-      const amountDue = parseFloat(invoice.amountDue || "0");
+      const amountDueD = new Decimal(invoice.amountDue || "0");
+      const inputAmountD = new Decimal(input.amount);
 
       // TERP-0016: Validate payment amount doesn't exceed amount due
-      // Use tolerance (0.01) for floating point comparison consistency
-      // This matches the tolerance used in recordMultiInvoicePayment
-      if (input.amount > amountDue + 0.01) {
+      if (inputAmountD.greaterThan(amountDueD.plus(OVERPAYMENT_TOLERANCE))) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDue)}). Overpayments are not allowed.`,
+          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDueD.toNumber())}). Overpayments are not allowed.`,
         });
       }
 
-      // TERP-0016: Warn and cap payment if slightly over due to rounding
-      const effectiveAmount =
-        input.amount > amountDue ? amountDue : input.amount;
+      // TERP-0016: Cap payment if slightly over due to rounding
+      const effectiveAmountD = inputAmountD.greaterThan(amountDueD)
+        ? amountDueD
+        : inputAmountD;
 
-      // Resolve GL account IDs before the transaction so that missing accounts
-      // produce descriptive TRPCErrors rather than a generic INTERNAL_SERVER_ERROR
-      // from inside the transaction. getAccountIdByName throws TRPCError(NOT_FOUND)
-      // if the chart of accounts is not seeded, which would be re-thrown as-is from
-      // the catch block — but resolving here makes the failure point explicit.
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
+      // getAccountIdByName throws TRPCError(NOT_FOUND) if the chart of accounts
+      // is not seeded. getFiscalPeriodId throws TRPCError(NOT_FOUND) if no fiscal
+      // period exists for the payment date. Resolving here makes failures explicit.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
       );
-      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
       // REL-003: Wrap transaction in try/catch for Sentry logging
       let txResult;
@@ -317,7 +327,6 @@ export const paymentsRouter = router({
           const paymentNumber = await generatePaymentNumber();
 
           // Create payment record
-          // TERP-0016: Use effectiveAmount which is capped at amountDue
           const [payment] = await tx
             .insert(payments)
             .values({
@@ -328,7 +337,7 @@ export const paymentsRouter = router({
               paymentDate: input.paymentDate
                 ? new Date(input.paymentDate)
                 : new Date(),
-              amount: effectiveAmount.toFixed(2),
+              amount: effectiveAmountD.toFixed(2),
               paymentMethod: input.paymentMethod,
               referenceNumber: input.referenceNumber,
               notes: input.notes,
@@ -338,17 +347,15 @@ export const paymentsRouter = router({
 
           const paymentId = payment.id;
 
-          // Update invoice amounts
-          // TERP-0016: Use effectiveAmount for calculations
-          const currentPaid = parseFloat(invoice.amountPaid || "0");
-          const newPaid = currentPaid + effectiveAmount;
-          const totalAmount = parseFloat(invoice.totalAmount || "0");
-          const newDue = Math.max(0, totalAmount - newPaid);
+          // Update invoice amounts using Decimal-safe math
+          const currentPaidD = new Decimal(invoice.amountPaid || "0");
+          const newPaidD = currentPaidD.plus(effectiveAmountD);
+          const totalAmountD = new Decimal(invoice.totalAmount || "0");
+          const newDueD = Decimal.max(0, totalAmountD.minus(newPaidD));
 
           // Determine new status
           let newStatus: "PARTIAL" | "PAID";
-          if (newDue <= 0.01) {
-            // Allow for rounding
+          if (newDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
             newStatus = "PAID";
           } else {
             newStatus = "PARTIAL";
@@ -357,8 +364,8 @@ export const paymentsRouter = router({
           await tx
             .update(invoices)
             .set({
-              amountPaid: newPaid.toFixed(2),
-              amountDue: newDue.toFixed(2),
+              amountPaid: newPaidD.toFixed(2),
+              amountDue: newDueD.toFixed(2),
               status: newStatus,
             })
             .where(eq(invoices.id, input.invoiceId));
@@ -367,12 +374,11 @@ export const paymentsRouter = router({
           const entryNumber = `PMT-${paymentId}`;
 
           // Debit Cash
-          // TERP-0016: Use effectiveAmount for GL entries
           await tx.insert(ledgerEntries).values({
             entryNumber: `${entryNumber}-DR`,
             entryDate: new Date(),
             accountId: cashAccountId,
-            debit: effectiveAmount.toFixed(2),
+            debit: effectiveAmountD.toFixed(2),
             credit: "0.00",
             description: `Payment received - Invoice #${invoice.invoiceNumber}`,
             referenceType: "PAYMENT",
@@ -388,7 +394,7 @@ export const paymentsRouter = router({
             entryDate: new Date(),
             accountId: arAccountId,
             debit: "0.00",
-            credit: effectiveAmount.toFixed(2),
+            credit: effectiveAmountD.toFixed(2),
             description: `Payment received - Invoice #${invoice.invoiceNumber}`,
             referenceType: "PAYMENT",
             referenceId: paymentId,
@@ -402,9 +408,9 @@ export const paymentsRouter = router({
             paymentId,
             paymentNumber,
             invoiceId: input.invoiceId,
-            amount: effectiveAmount,
+            amount: effectiveAmountD.toNumber(),
             newInvoiceStatus: newStatus,
-            newAmountDue: newDue,
+            newAmountDue: newDueD.toNumber(),
           });
 
           return {
@@ -412,9 +418,9 @@ export const paymentsRouter = router({
             paymentNumber,
             invoiceId: input.invoiceId,
             customerId: invoice.customerId,
-            amount: effectiveAmount,
+            amount: effectiveAmountD.toNumber(),
             invoiceStatus: newStatus,
-            amountDue: newDue,
+            amountDue: newDueD.toNumber(),
           };
         });
       } catch (error) {
@@ -434,7 +440,7 @@ export const paymentsRouter = router({
         );
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Payment recording failed - transaction rolled back",
+          message: `Payment recording failed: ${error instanceof Error ? error.message : "Unknown error"}`,
           cause: error,
         });
       }
@@ -541,12 +547,14 @@ export const paymentsRouter = router({
 
       return {
         totalPayments: Number(paymentTotals?.totalPayments || 0),
-        totalAmount: parseFloat(paymentTotals?.totalAmount || "0"),
-        outstandingBalance: parseFloat(outstanding?.totalDue || "0"),
+        totalAmount: new Decimal(paymentTotals?.totalAmount || "0").toNumber(),
+        outstandingBalance: new Decimal(
+          outstanding?.totalDue || "0"
+        ).toNumber(),
         byMethod: byMethod.map(row => ({
           method: row.method,
           count: Number(row.count),
-          total: parseFloat(row.total || "0"),
+          total: new Decimal(row.total || "0").toNumber(),
         })),
       };
     }),
@@ -653,9 +661,9 @@ export const paymentsRouter = router({
       const today = new Date();
       return results.map(inv => ({
         ...inv,
-        totalAmount: parseFloat(String(inv.totalAmount) || "0"),
-        amountPaid: parseFloat(String(inv.amountPaid) || "0"),
-        amountDue: parseFloat(String(inv.amountDue) || "0"),
+        totalAmount: new Decimal(String(inv.totalAmount) || "0").toNumber(),
+        amountPaid: new Decimal(String(inv.amountPaid) || "0").toNumber(),
+        amountDue: new Decimal(String(inv.amountDue) || "0").toNumber(),
         isOverdue: inv.dueDate ? new Date(inv.dueDate) < today : false,
       }));
     }),
@@ -707,12 +715,14 @@ export const paymentsRouter = router({
         });
       }
 
-      // Get account IDs for GL entries
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
       );
-      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
       // REL-003: Wrap transaction in try/catch for Sentry logging
       let txResult;
@@ -784,8 +794,15 @@ export const paymentsRouter = router({
               });
             }
 
-            const amountDue = parseFloat(String(invoice.amountDue) || "0");
-            if (allocation.amount > amountDue + 0.01) {
+            const allocAmountDueD = new Decimal(
+              String(invoice.amountDue) || "0"
+            );
+            const allocAmountD = new Decimal(allocation.amount);
+            if (
+              allocAmountD.greaterThan(
+                allocAmountDueD.plus(OVERPAYMENT_TOLERANCE)
+              )
+            ) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
                 message: `Allocation for invoice #${invoice.invoiceNumber} exceeds amount due`,
@@ -796,20 +813,27 @@ export const paymentsRouter = router({
             await tx.insert(invoicePayments).values({
               paymentId,
               invoiceId: allocation.invoiceId,
-              allocatedAmount: allocation.amount.toFixed(2),
+              allocatedAmount: allocAmountD.toFixed(2),
               allocatedBy: userId,
             });
 
-            // Update invoice amounts
-            const currentPaid = parseFloat(String(invoice.amountPaid) || "0");
-            const newPaid = currentPaid + allocation.amount;
-            const totalAmount = parseFloat(String(invoice.totalAmount) || "0");
-            const newDue = Math.max(0, totalAmount - newPaid);
+            // Update invoice amounts using Decimal-safe math
+            const allocCurrentPaidD = new Decimal(
+              String(invoice.amountPaid) || "0"
+            );
+            const allocNewPaidD = allocCurrentPaidD.plus(allocAmountD);
+            const allocTotalAmountD = new Decimal(
+              String(invoice.totalAmount) || "0"
+            );
+            const allocNewDueD = Decimal.max(
+              0,
+              allocTotalAmountD.minus(allocNewPaidD)
+            );
 
             let newStatus: string;
-            if (newDue <= 0.01) {
+            if (allocNewDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
               newStatus = "PAID";
-            } else if (newPaid > 0) {
+            } else if (allocNewPaidD.greaterThan(0)) {
               newStatus = "PARTIAL";
             } else {
               newStatus = invoice.status;
@@ -818,8 +842,8 @@ export const paymentsRouter = router({
             await tx
               .update(invoices)
               .set({
-                amountPaid: newPaid.toFixed(2),
-                amountDue: newDue.toFixed(2),
+                amountPaid: allocNewPaidD.toFixed(2),
+                amountDue: allocNewDueD.toFixed(2),
                 status: newStatus as "PAID" | "PARTIAL",
               })
               .where(eq(invoices.id, allocation.invoiceId));
@@ -993,25 +1017,31 @@ export const paymentsRouter = router({
         });
       }
 
-      const amountDue = parseFloat(invoice.amountDue || "0");
+      const wireAmountDueD = new Decimal(invoice.amountDue || "0");
+      const wireInputAmountD = new Decimal(input.amount);
 
       // Validate payment amount doesn't exceed amount due
-      if (input.amount > amountDue + 0.01) {
+      if (
+        wireInputAmountD.greaterThan(wireAmountDueD.plus(OVERPAYMENT_TOLERANCE))
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDue)}). Overpayments are not allowed.`,
+          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(wireAmountDueD.toNumber())}). Overpayments are not allowed.`,
         });
       }
 
-      const effectiveAmount =
-        input.amount > amountDue ? amountDue : input.amount;
+      const wireEffectiveAmountD = wireInputAmountD.greaterThan(wireAmountDueD)
+        ? wireAmountDueD
+        : wireInputAmountD;
 
-      // Get account IDs for GL entries
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
       );
-      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
       // Build wire details for notes
       const wireDetails = [
@@ -1041,7 +1071,7 @@ export const paymentsRouter = router({
               paymentDate: input.paymentDate
                 ? new Date(input.paymentDate)
                 : new Date(),
-              amount: effectiveAmount.toFixed(2),
+              amount: wireEffectiveAmountD.toFixed(2),
               paymentMethod: "WIRE",
               referenceNumber: input.wireConfirmationNumber,
               notes: wireDetails,
@@ -1051,15 +1081,18 @@ export const paymentsRouter = router({
 
           const paymentId = payment.id;
 
-          // Update invoice amounts
-          const currentPaid = parseFloat(invoice.amountPaid || "0");
-          const newPaid = currentPaid + effectiveAmount;
-          const totalAmount = parseFloat(invoice.totalAmount || "0");
-          const newDue = Math.max(0, totalAmount - newPaid);
+          // Update invoice amounts using Decimal-safe math
+          const wireCurrentPaidD = new Decimal(invoice.amountPaid || "0");
+          const wireNewPaidD = wireCurrentPaidD.plus(wireEffectiveAmountD);
+          const wireTotalAmountD = new Decimal(invoice.totalAmount || "0");
+          const wireNewDueD = Decimal.max(
+            0,
+            wireTotalAmountD.minus(wireNewPaidD)
+          );
 
           // Determine new status
           let newStatus: "PARTIAL" | "PAID";
-          if (newDue <= 0.01) {
+          if (wireNewDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
             newStatus = "PAID";
           } else {
             newStatus = "PARTIAL";
@@ -1068,8 +1101,8 @@ export const paymentsRouter = router({
           await tx
             .update(invoices)
             .set({
-              amountPaid: newPaid.toFixed(2),
-              amountDue: newDue.toFixed(2),
+              amountPaid: wireNewPaidD.toFixed(2),
+              amountDue: wireNewDueD.toFixed(2),
               status: newStatus,
             })
             .where(eq(invoices.id, input.invoiceId));
@@ -1082,7 +1115,7 @@ export const paymentsRouter = router({
             entryNumber: `${entryNumber}-DR`,
             entryDate: new Date(),
             accountId: cashAccountId,
-            debit: effectiveAmount.toFixed(2),
+            debit: wireEffectiveAmountD.toFixed(2),
             credit: "0.00",
             description: `Wire payment received - Invoice #${invoice.invoiceNumber} - Conf: ${input.wireConfirmationNumber}`,
             referenceType: "PAYMENT",
@@ -1098,7 +1131,7 @@ export const paymentsRouter = router({
             entryDate: new Date(),
             accountId: arAccountId,
             debit: "0.00",
-            credit: effectiveAmount.toFixed(2),
+            credit: wireEffectiveAmountD.toFixed(2),
             description: `Wire payment received - Invoice #${invoice.invoiceNumber} - Conf: ${input.wireConfirmationNumber}`,
             referenceType: "PAYMENT",
             referenceId: paymentId,
@@ -1113,7 +1146,7 @@ export const paymentsRouter = router({
             paymentNumber,
             wireConfirmationNumber: input.wireConfirmationNumber,
             invoiceId: input.invoiceId,
-            amount: effectiveAmount,
+            amount: wireEffectiveAmountD.toNumber(),
             newInvoiceStatus: newStatus,
           });
 
@@ -1122,10 +1155,10 @@ export const paymentsRouter = router({
             paymentNumber,
             invoiceId: input.invoiceId,
             customerId: invoice.customerId,
-            amount: effectiveAmount,
+            amount: wireEffectiveAmountD.toNumber(),
             wireConfirmationNumber: input.wireConfirmationNumber,
             invoiceStatus: newStatus,
-            amountDue: newDue,
+            amountDue: wireNewDueD.toNumber(),
           };
         });
       } catch (error) {
@@ -1195,7 +1228,16 @@ export const paymentsRouter = router({
         });
       }
 
-      const paymentAmount = parseFloat(payment.amount || "0");
+      const paymentAmountD = new Decimal(payment.amount || "0");
+
+      // Resolve GL account IDs and fiscal period before the transaction so that
+      // missing accounts or periods produce descriptive TRPCErrors rather than a
+      // generic INTERNAL_SERVER_ERROR from inside the transaction.
+      const fiscalPeriodId = await getFiscalPeriodId(new Date());
+      const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+      const arAccountId = await getAccountIdByName(
+        ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+      );
 
       // REL-003: Wrap transaction in try/catch for Sentry logging
       let txResult;
@@ -1223,7 +1265,7 @@ export const paymentsRouter = router({
           if (allocations.length > 0) {
             // Handle multi-invoice payment: reverse each allocation
             for (const allocation of allocations) {
-              const allocatedAmount = parseFloat(
+              const allocatedAmountD = new Decimal(
                 allocation.allocatedAmount || "0"
               );
 
@@ -1234,20 +1276,28 @@ export const paymentsRouter = router({
                 .limit(1);
 
               if (invoice) {
-                const currentPaid = parseFloat(invoice.amountPaid || "0");
-                const newPaid = Math.max(0, currentPaid - allocatedAmount);
-                const totalAmount = parseFloat(invoice.totalAmount || "0");
-                const newDue = totalAmount - newPaid;
+                const voidCurrentPaidD = new Decimal(invoice.amountPaid || "0");
+                const voidNewPaidD = Decimal.max(
+                  0,
+                  voidCurrentPaidD.minus(allocatedAmountD)
+                );
+                const voidTotalAmountD = new Decimal(
+                  invoice.totalAmount || "0"
+                );
+                const voidNewDueD = voidTotalAmountD.minus(voidNewPaidD);
 
                 // Determine new status
-                const newStatus: "SENT" | "PARTIAL" =
-                  newPaid > 0 ? "PARTIAL" : "SENT";
+                const newStatus: "SENT" | "PARTIAL" = voidNewPaidD.greaterThan(
+                  0
+                )
+                  ? "PARTIAL"
+                  : "SENT";
 
                 await tx
                   .update(invoices)
                   .set({
-                    amountPaid: newPaid.toFixed(2),
-                    amountDue: newDue.toFixed(2),
+                    amountPaid: voidNewPaidD.toFixed(2),
+                    amountDue: voidNewDueD.toFixed(2),
                     status: newStatus,
                   })
                   .where(eq(invoices.id, allocation.invoiceId));
@@ -1268,20 +1318,28 @@ export const paymentsRouter = router({
               .limit(1);
 
             if (invoice) {
-              const currentPaid = parseFloat(invoice.amountPaid || "0");
-              const newPaid = Math.max(0, currentPaid - paymentAmount);
-              const totalAmount = parseFloat(invoice.totalAmount || "0");
-              const newDue = totalAmount - newPaid;
+              const legacyCurrentPaidD = new Decimal(invoice.amountPaid || "0");
+              const legacyNewPaidD = Decimal.max(
+                0,
+                legacyCurrentPaidD.minus(paymentAmountD)
+              );
+              const legacyTotalAmountD = new Decimal(
+                invoice.totalAmount || "0"
+              );
+              const legacyNewDueD = legacyTotalAmountD.minus(legacyNewPaidD);
 
               // Determine new status
-              const newStatus: "SENT" | "PARTIAL" =
-                newPaid > 0 ? "PARTIAL" : "SENT";
+              const newStatus: "SENT" | "PARTIAL" = legacyNewPaidD.greaterThan(
+                0
+              )
+                ? "PARTIAL"
+                : "SENT";
 
               await tx
                 .update(invoices)
                 .set({
-                  amountPaid: newPaid.toFixed(2),
-                  amountDue: newDue.toFixed(2),
+                  amountPaid: legacyNewPaidD.toFixed(2),
+                  amountDue: legacyNewDueD.toFixed(2),
                   status: newStatus,
                 })
                 .where(eq(invoices.id, payment.invoiceId));
@@ -1289,14 +1347,6 @@ export const paymentsRouter = router({
           }
 
           // Create reversing GL entries
-          const fiscalPeriodId = await getFiscalPeriodIdOrDefault(
-            new Date(),
-            1
-          );
-          const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
-          const arAccountId = await getAccountIdByName(
-            ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
-          );
           const reversalNumber = `PMT-REV-${input.id}`;
 
           // Credit Cash (reverse debit)
@@ -1305,7 +1355,7 @@ export const paymentsRouter = router({
             entryDate: new Date(),
             accountId: cashAccountId,
             debit: "0.00",
-            credit: paymentAmount.toFixed(2),
+            credit: paymentAmountD.toFixed(2),
             description: `Payment void reversal - ${input.reason}`,
             referenceType: "PAYMENT_VOID",
             referenceId: input.id,
@@ -1319,7 +1369,7 @@ export const paymentsRouter = router({
             entryNumber: `${reversalNumber}-DR`,
             entryDate: new Date(),
             accountId: arAccountId,
-            debit: paymentAmount.toFixed(2),
+            debit: paymentAmountD.toFixed(2),
             credit: "0.00",
             description: `Payment void reversal - ${input.reason}`,
             referenceType: "PAYMENT_VOID",
@@ -1333,7 +1383,7 @@ export const paymentsRouter = router({
             msg: "[Payments] Payment voided",
             paymentId: input.id,
             reason: input.reason,
-            amount: paymentAmount,
+            amount: paymentAmountD.toNumber(),
             allocationsReversed: allocations.length,
           });
 

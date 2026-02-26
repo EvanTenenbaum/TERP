@@ -529,6 +529,12 @@ export async function seedDefaultChartOfAccounts() {
       accountType: "EXPENSE" as const,
       normalBalance: "DEBIT" as const,
     },
+    {
+      accountNumber: "5200",
+      accountName: "Bad Debt Expense",
+      accountType: "EXPENSE" as const,
+      normalBalance: "DEBIT" as const,
+    },
   ];
 
   // Insert accounts with error handling (has unique constraint on accountNumber)

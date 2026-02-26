@@ -6,19 +6,18 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FilterSortSearchPanel } from "@/components/ui/filter-sort-search-panel";
 import {
   Table,
   TableBody,
@@ -31,7 +30,6 @@ import {
   Trophy,
   Medal,
   Award,
-  Search,
   RefreshCw,
   TrendingUp,
   TrendingDown,
@@ -45,14 +43,20 @@ import { ExportButton, WeightCustomizer } from "@/components/leaderboard";
 
 // Types
 type ClientType = "ALL" | "CUSTOMER" | "SUPPLIER" | "DUAL";
-type MetricCategory = "MASTER" | "FINANCIAL" | "ENGAGEMENT" | "RELIABILITY" | "GROWTH";
+type MetricCategory =
+  | "MASTER"
+  | "FINANCIAL"
+  | "ENGAGEMENT"
+  | "RELIABILITY"
+  | "GROWTH";
 type SortOrder = "asc" | "desc";
+type SortField = "master_score" | "ytd_revenue";
 
 interface LeaderboardFilters {
   clientType: ClientType;
   metricCategory: MetricCategory;
   search: string;
-  sortBy: string;
+  sortBy: SortField;
   sortOrder: SortOrder;
 }
 
@@ -64,12 +68,37 @@ const CLIENT_TYPE_OPTIONS: { value: ClientType; label: string }[] = [
   { value: "DUAL", label: "Dual (Both)" },
 ];
 
-const METRIC_CATEGORIES: { value: MetricCategory; label: string; description: string }[] = [
-  { value: "MASTER", label: "Master Score", description: "Overall weighted ranking" },
-  { value: "FINANCIAL", label: "Financial", description: "Revenue, LTV, margins" },
-  { value: "ENGAGEMENT", label: "Engagement", description: "Order frequency, recency" },
-  { value: "RELIABILITY", label: "Reliability", description: "Payment behavior" },
+const METRIC_CATEGORIES: {
+  value: MetricCategory;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "MASTER",
+    label: "Master Score",
+    description: "Overall weighted ranking",
+  },
+  {
+    value: "FINANCIAL",
+    label: "Financial",
+    description: "Revenue, LTV, margins",
+  },
+  {
+    value: "ENGAGEMENT",
+    label: "Engagement",
+    description: "Order frequency, recency",
+  },
+  {
+    value: "RELIABILITY",
+    label: "Reliability",
+    description: "Payment behavior",
+  },
   { value: "GROWTH", label: "Growth", description: "YoY trends" },
+];
+
+const SORT_FIELD_OPTIONS: { value: SortField; label: string }[] = [
+  { value: "master_score", label: "Master Score" },
+  { value: "ytd_revenue", label: "YTD Revenue" },
 ];
 
 const PAGE_SIZE = 25;
@@ -157,7 +186,7 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
     clientType: filters.clientType,
     metricCategory: filters.metricCategory,
     search: filters.search || undefined,
-    sortBy: filters.sortBy as "master_score" | "ytd_revenue",
+    sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
@@ -165,18 +194,14 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
 
   // Handlers
   const handleFilterChange = useCallback(
-    <K extends keyof LeaderboardFilters>(key: K, value: LeaderboardFilters[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
+    <K extends keyof LeaderboardFilters>(
+      key: K,
+      value: LeaderboardFilters[K]
+    ) => {
+      setFilters(prev => ({ ...prev, [key]: value }));
       setPage(0); // Reset to first page on filter change
     },
     []
-  );
-
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleFilterChange("search", e.target.value);
-    },
-    [handleFilterChange]
   );
 
   const handleClientClick = useCallback(
@@ -189,6 +214,17 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleClearAllFilters = useCallback(() => {
+    setFilters(prev => ({
+      ...prev,
+      clientType: "ALL",
+      search: "",
+      sortBy: "master_score",
+      sortOrder: "desc",
+    }));
+    setPage(0);
+  }, []);
 
   // Pagination
   const totalPages = useMemo(() => {
@@ -226,62 +262,39 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Client Type Filter */}
-            <div className="flex-1 min-w-[200px]">
-              <Select
-                value={filters.clientType}
-                onValueChange={(value) =>
-                  handleFilterChange("clientType", value as ClientType)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Client Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLIENT_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Search */}
-            <div className="flex-1 min-w-[300px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or TERI code..."
-                  value={filters.search}
-                  onChange={handleSearchChange}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Sort Order */}
-            <Select
-              value={filters.sortOrder}
-              onValueChange={(value) =>
-                handleFilterChange("sortOrder", value as SortOrder)
-              }
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Sort Order" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Highest First</SelectItem>
-                <SelectItem value="asc">Lowest First</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterSortSearchPanel
+        searchValue={filters.search}
+        onSearchChange={value => handleFilterChange("search", value)}
+        searchPlaceholder="Search by name or TERI code..."
+        filters={[
+          {
+            id: "clientType",
+            label: "Client Type",
+            value: filters.clientType,
+            options: CLIENT_TYPE_OPTIONS,
+            onChange: value =>
+              handleFilterChange("clientType", value as ClientType),
+            allValue: "ALL",
+            allLabel: "All Clients",
+          },
+        ]}
+        sort={{
+          field: filters.sortBy,
+          fieldOptions: SORT_FIELD_OPTIONS,
+          onFieldChange: value =>
+            handleFilterChange("sortBy", value as SortField),
+          direction: filters.sortOrder,
+          onDirectionChange: direction =>
+            handleFilterChange("sortOrder", direction),
+          directionLabels: {
+            asc: "Lowest First",
+            desc: "Highest First",
+          },
+        }}
+        onClearAll={handleClearAllFilters}
+        resultCount={leaderboardData?.totalCount}
+        resultLabel="clients"
+      />
 
       {/* Weight Customizer Panel */}
       {showWeightCustomizer && (
@@ -295,19 +308,19 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
       {/* Metric Category Tabs */}
       <Tabs
         value={filters.metricCategory}
-        onValueChange={(value) =>
+        onValueChange={value =>
           handleFilterChange("metricCategory", value as MetricCategory)
         }
       >
         <TabsList className="grid w-full grid-cols-5">
-          {METRIC_CATEGORIES.map((category) => (
+          {METRIC_CATEGORIES.map(category => (
             <TabsTrigger key={category.value} value={category.value}>
               {category.label}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {METRIC_CATEGORIES.map((category) => (
+        {METRIC_CATEGORIES.map(category => (
           <TabsContent key={category.value} value={category.value}>
             <Card>
               <CardHeader>
@@ -321,7 +334,9 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Skeleton
                         // eslint-disable-next-line react/no-array-index-key
-                        key={`lb-skeleton-${i}`} className="h-16 w-full" />
+                        key={`lb-skeleton-${i}`}
+                        className="h-16 w-full"
+                      />
                     ))}
                   </div>
                 )}
@@ -330,7 +345,11 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                 {error && (
                   <div className="text-center py-8 text-red-600">
                     <p>Error loading leaderboard: {error.message}</p>
-                    <Button variant="outline" onClick={handleRefresh} className="mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleRefresh}
+                      className="mt-4"
+                    >
                       Try Again
                     </Button>
                   </div>
@@ -345,13 +364,17 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                           <TableHead className="w-[80px]">Rank</TableHead>
                           <TableHead>Client</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead className="text-right">Master Score</TableHead>
-                          <TableHead className="text-right">Percentile</TableHead>
+                          <TableHead className="text-right">
+                            Master Score
+                          </TableHead>
+                          <TableHead className="text-right">
+                            Percentile
+                          </TableHead>
                           <TableHead className="text-center">Trend</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {leaderboardData.clients.map((client) => (
+                        {leaderboardData.clients.map(client => (
                           <TableRow
                             key={client.clientId}
                             className="cursor-pointer hover:bg-muted/50"
@@ -362,14 +385,18 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{client.clientName}</div>
+                                <div className="font-medium">
+                                  {client.clientName}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {client.teriCode}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{client.clientType}</Badge>
+                              <Badge variant="outline">
+                                {client.clientType}
+                              </Badge>
                             </TableCell>
                             <TableCell className="text-right font-mono">
                               {client.masterScore?.toFixed(1) ?? "N/A"}
@@ -380,8 +407,8 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                                   client.percentile >= 75
                                     ? "default"
                                     : client.percentile >= 50
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 Top {(100 - client.percentile).toFixed(0)}%
@@ -402,14 +429,17 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                     <div className="flex items-center justify-between mt-4">
                       <div className="text-sm text-muted-foreground">
                         Showing {page * PAGE_SIZE + 1} -{" "}
-                        {Math.min((page + 1) * PAGE_SIZE, leaderboardData.totalCount)} of{" "}
-                        {leaderboardData.totalCount} clients
+                        {Math.min(
+                          (page + 1) * PAGE_SIZE,
+                          leaderboardData.totalCount
+                        )}{" "}
+                        of {leaderboardData.totalCount} clients
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setPage((p) => p - 1)}
+                          onClick={() => setPage(p => p - 1)}
                           disabled={!canGoBack}
                         >
                           <ChevronLeft className="h-4 w-4" />
@@ -421,7 +451,7 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setPage((p) => p + 1)}
+                          onClick={() => setPage(p => p + 1)}
                           disabled={!canGoForward}
                         >
                           Next
@@ -434,7 +464,9 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                     {leaderboardData.metadata && (
                       <div className="mt-4 text-xs text-muted-foreground">
                         Last calculated:{" "}
-                        {new Date(leaderboardData.metadata.calculatedAt).toLocaleString()}
+                        {new Date(
+                          leaderboardData.metadata.calculatedAt
+                        ).toLocaleString()}
                         {leaderboardData.metadata.cacheHit && " (cached)"}
                       </div>
                     )}
@@ -442,11 +474,13 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
                 )}
 
                 {/* Empty State */}
-                {!isLoading && !error && leaderboardData?.clients.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No clients found matching your criteria.</p>
-                  </div>
-                )}
+                {!isLoading &&
+                  !error &&
+                  leaderboardData?.clients.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No clients found matching your criteria.</p>
+                    </div>
+                  )}
               </CardContent>
             </Card>
           </TabsContent>

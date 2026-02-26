@@ -18,15 +18,7 @@ import DashboardHomePage from "./pages/DashboardHomePage";
 import UsersPage from "@/pages/UsersPage";
 import { AppShell } from "./components/layout/AppShell";
 import Settings from "@/pages/Settings";
-import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
-import ChartOfAccounts from "@/pages/accounting/ChartOfAccounts";
-import GeneralLedger from "@/pages/accounting/GeneralLedger";
-import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
-import Bills from "@/pages/accounting/Bills";
-import Payments from "@/pages/accounting/Payments";
-import BankAccounts from "@/pages/accounting/BankAccounts";
-import BankTransactions from "@/pages/accounting/BankTransactions";
-import Expenses from "@/pages/accounting/Expenses";
+import AccountingWorkspacePage from "@/pages/AccountingWorkspacePage";
 import CashLocations from "@/pages/CashLocations";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import CreditsWorkspacePage from "@/pages/CreditsWorkspacePage";
@@ -42,7 +34,6 @@ import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 // Work Surface components - legacy pages removed, using WorkSurface directly
-import InvoicesWorkSurface from "@/components/work-surface/InvoicesWorkSurface";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
 import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
@@ -306,50 +297,90 @@ function Router() {
                     "products"
                   )}
                 />
-                {/* Accounting - redirect /accounting to /accounting/dashboard */}
+                {/* Accounting workspace — all sub-pages as tabs */}
                 <Route
                   path="/accounting"
-                  component={withErrorBoundary(AccountingDashboard)}
+                  component={withErrorBoundary(AccountingWorkspacePage)}
                 />
                 <Route
                   path="/accounting/dashboard"
-                  component={withErrorBoundary(AccountingDashboard)}
-                />
-                <Route
-                  path="/accounting/chart-of-accounts"
-                  component={withErrorBoundary(ChartOfAccounts)}
-                />
-                <Route
-                  path="/accounting/general-ledger"
-                  component={withErrorBoundary(GeneralLedger)}
-                />
-                <Route
-                  path="/accounting/fiscal-periods"
-                  component={withErrorBoundary(FiscalPeriods)}
+                  component={RedirectWithTab(
+                    "/accounting/dashboard",
+                    "/accounting",
+                    "dashboard"
+                  )}
                 />
                 <Route
                   path="/accounting/invoices"
-                  component={withErrorBoundary(InvoicesWorkSurface)}
+                  component={RedirectWithTab(
+                    "/accounting/invoices",
+                    "/accounting",
+                    "invoices"
+                  )}
                 />
                 <Route
                   path="/accounting/bills"
-                  component={withErrorBoundary(Bills)}
+                  component={RedirectWithTab(
+                    "/accounting/bills",
+                    "/accounting",
+                    "bills"
+                  )}
                 />
                 <Route
                   path="/accounting/payments"
-                  component={withErrorBoundary(Payments)}
+                  component={RedirectWithTab(
+                    "/accounting/payments",
+                    "/accounting",
+                    "payments"
+                  )}
                 />
                 <Route
-                  path="/accounting/bank-accounts"
-                  component={withErrorBoundary(BankAccounts)}
+                  path="/accounting/general-ledger"
+                  component={RedirectWithTab(
+                    "/accounting/general-ledger",
+                    "/accounting",
+                    "general-ledger"
+                  )}
                 />
                 <Route
-                  path="/accounting/bank-transactions"
-                  component={withErrorBoundary(BankTransactions)}
+                  path="/accounting/chart-of-accounts"
+                  component={RedirectWithTab(
+                    "/accounting/chart-of-accounts",
+                    "/accounting",
+                    "chart-of-accounts"
+                  )}
                 />
                 <Route
                   path="/accounting/expenses"
-                  component={withErrorBoundary(Expenses)}
+                  component={RedirectWithTab(
+                    "/accounting/expenses",
+                    "/accounting",
+                    "expenses"
+                  )}
+                />
+                <Route
+                  path="/accounting/bank-accounts"
+                  component={RedirectWithTab(
+                    "/accounting/bank-accounts",
+                    "/accounting",
+                    "bank-accounts"
+                  )}
+                />
+                <Route
+                  path="/accounting/bank-transactions"
+                  component={RedirectWithTab(
+                    "/accounting/bank-transactions",
+                    "/accounting",
+                    "bank-transactions"
+                  )}
+                />
+                <Route
+                  path="/accounting/fiscal-periods"
+                  component={RedirectWithTab(
+                    "/accounting/fiscal-periods",
+                    "/accounting",
+                    "fiscal-periods"
+                  )}
                 />
                 {/* FEAT-007: Cash Audit System */}
                 <Route
