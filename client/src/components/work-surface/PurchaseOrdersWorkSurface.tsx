@@ -61,6 +61,7 @@ import { toast } from "sonner";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import {
   InspectorPanel,
@@ -84,6 +85,7 @@ import {
   Package,
   Calendar,
   Building,
+  Download,
 } from "lucide-react";
 
 // ============================================================================
@@ -136,6 +138,19 @@ interface PurchaseOrder {
     quantityReceived?: number;
     unitCost: number;
   }>;
+}
+
+interface POLineExportRow extends Record<string, unknown> {
+  poNumber: string;
+  supplier: string;
+  product: string;
+  quantityOrdered: number;
+  quantityReceived: number;
+  unitCost: number;
+  lineTotal: number;
+  status: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
 }
 
 // ============================================================================
@@ -437,6 +452,8 @@ export function PurchaseOrdersWorkSurface() {
     isDirty: _isDirty,
   } = useSaveState();
   const inspector = useInspectorPanel();
+  const { exportCSV: exportPOCSV, state: poExportState } =
+    useExport<POLineExportRow>();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -646,6 +663,37 @@ export function PurchaseOrdersWorkSurface() {
       }, 0),
     [formData.items]
   );
+
+  const selectedPOLineItems = useMemo<POLineExportRow[]>(() => {
+    if (!selectedPO?.items?.length) {
+      return [];
+    }
+
+    const supplierId = selectedPO.supplierClientId ?? selectedPO.vendorId;
+    const supplierName = supplierId
+      ? suppliers.find(supplier => supplier.id === supplierId)?.name ||
+        "Unknown"
+      : "Unknown";
+    return selectedPO.items.map(item => {
+      const productName =
+        products.find(product => product.id === item.productId)?.name ||
+        `Product #${item.productId}`;
+      const quantityOrdered = Number(item.quantityOrdered || 0);
+      const unitCost = Number(item.unitCost || 0);
+      return {
+        poNumber: selectedPO.poNumber || `PO #${selectedPO.id}`,
+        supplier: supplierName,
+        product: productName,
+        quantityOrdered,
+        quantityReceived: Number(item.quantityReceived || 0),
+        unitCost,
+        lineTotal: quantityOrdered * unitCost,
+        status: selectedPO.purchaseOrderStatus || "DRAFT",
+        orderDate: formatDate(selectedPO.orderDate),
+        expectedDeliveryDate: formatDate(selectedPO.expectedDeliveryDate),
+      };
+    });
+  }, [products, selectedPO, suppliers]);
 
   // Handlers
   const getSupplierName = (supplierId: number | null | undefined) => {
@@ -893,6 +941,42 @@ export function PurchaseOrdersWorkSurface() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleExportSelectedPO = useCallback(() => {
+    if (!selectedPO || selectedPOLineItems.length === 0) {
+      toast.error("Select a purchase order with line items to export");
+      return;
+    }
+
+    const filenameBase = selectedPO.poNumber
+      ? `po_${selectedPO.poNumber.replace(/\s+/g, "_")}_line_items`
+      : `po_${selectedPO.id}_line_items`;
+
+    void exportPOCSV(selectedPOLineItems, {
+      filename: filenameBase,
+      addTimestamp: true,
+      columns: [
+        { key: "poNumber", label: "PO Number" },
+        { key: "supplier", label: "Supplier" },
+        { key: "product", label: "Product" },
+        { key: "quantityOrdered", label: "Qty Ordered" },
+        { key: "quantityReceived", label: "Qty Received" },
+        {
+          key: "unitCost",
+          label: "Unit Cost",
+          formatter: value => formatCurrency(Number(value || 0)),
+        },
+        {
+          key: "lineTotal",
+          label: "Line Total",
+          formatter: value => formatCurrency(Number(value || 0)),
+        },
+        { key: "status", label: "Status" },
+        { key: "orderDate", label: "Order Date" },
+        { key: "expectedDeliveryDate", label: "Expected Delivery" },
+      ],
+    });
+  }, [exportPOCSV, selectedPO, selectedPOLineItems]);
+
   // Render
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
@@ -959,17 +1043,34 @@ export function PurchaseOrdersWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          variant={isCreateDialogOpen ? "outline" : "default"}
-          onClick={() => setIsCreateDialogOpen(prev => !prev)}
-        >
-          {isCreateDialogOpen ? (
-            <ChevronUp className="h-4 w-4 mr-2" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          {isCreateDialogOpen ? "Hide PO Draft" : "Create PO"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportSelectedPO}
+            disabled={
+              poExportState.isExporting || selectedPOLineItems.length === 0
+            }
+            title={
+              selectedPOLineItems.length === 0
+                ? "Select a purchase order with line items to export"
+                : "Export selected PO line items to CSV"
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {poExportState.isExporting ? "Exporting..." : "Export CSV"}
+          </Button>
+          <Button
+            variant={isCreateDialogOpen ? "outline" : "default"}
+            onClick={() => setIsCreateDialogOpen(prev => !prev)}
+          >
+            {isCreateDialogOpen ? (
+              <ChevronUp className="h-4 w-4 mr-2" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            {isCreateDialogOpen ? "Hide PO Draft" : "Create PO"}
+          </Button>
+        </div>
       </div>
 
       {isCreateDialogOpen && (
