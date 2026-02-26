@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useSearch } from "wouter";
+import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
@@ -23,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClientCombobox } from "@/components/ui/client-combobox";
+import { cn } from "@/lib/utils";
 
 import { toast } from "sonner";
 import {
@@ -70,6 +72,7 @@ import { useRetryableQuery } from "@/hooks/useRetryableQuery";
 import {
   useSaveState,
   useUndo,
+  useValidationTiming,
   useWorkSurfaceKeyboard,
 } from "@/hooks/work-surface";
 
@@ -94,6 +97,11 @@ interface InventoryItemForOrder {
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
 }
+
+const orderValidationSchema = z.object({
+  clientId: z.number().positive("Select a client"),
+  orderType: z.enum(["SALE", "QUOTE"]),
+});
 
 export default function OrderCreatorPageV2() {
   // TER-216: Navigation after save/finalize
@@ -132,6 +140,20 @@ export default function OrderCreatorPageV2() {
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
     useSaveState();
   const undo = useUndo({ enableKeyboard: false });
+  const {
+    getFieldState: getOrderFieldState,
+    handleChange: handleOrderValidationChange,
+    handleBlur: handleOrderValidationBlur,
+    setValues: setOrderValidationValues,
+  } = useValidationTiming({
+    schema: orderValidationSchema,
+    initialValues: {
+      orderType: "SALE",
+    },
+  });
+
+  const clientFieldState = getOrderFieldState("clientId");
+  const orderTypeFieldState = getOrderFieldState("orderType");
 
   // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
   // before finalization completes
@@ -180,6 +202,13 @@ export default function OrderCreatorPageV2() {
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    setOrderValidationValues({
+      clientId: clientId ?? undefined,
+      orderType,
+    });
+  }, [clientId, orderType, setOrderValidationValues]);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
@@ -332,10 +361,32 @@ export default function OrderCreatorPageV2() {
     debouncedAutoSave,
   ]);
 
+  const validateOrderMetadata = (
+    effectiveOrderType: "QUOTE" | "SALE" = orderType
+  ): boolean => {
+    handleOrderValidationChange("clientId", clientId ?? undefined);
+    handleOrderValidationBlur("clientId");
+    handleOrderValidationChange("orderType", effectiveOrderType);
+    handleOrderValidationBlur("orderType");
+
+    const result = orderValidationSchema.safeParse({
+      clientId: clientId ?? undefined,
+      orderType: effectiveOrderType,
+    });
+
+    if (!result.success) {
+      toast.error("Please select a client before continuing");
+      return false;
+    }
+
+    return true;
+  };
+
   // Handlers
   const handleSaveDraft = (overrideOrderType?: "SALE" | "QUOTE") => {
-    if (!clientId) {
-      toast.error("Please select a client");
+    const effectiveOrderType = overrideOrderType ?? orderType;
+
+    if (!validateOrderMetadata(effectiveOrderType)) {
       return;
     }
 
@@ -345,8 +396,8 @@ export default function OrderCreatorPageV2() {
     }
 
     createDraftMutation.mutate({
-      orderType: overrideOrderType ?? orderType,
-      clientId,
+      orderType: effectiveOrderType,
+      clientId: clientId as number,
       lineItems: items.map(item => ({
         batchId: item.batchId,
         quantity: item.quantity,
@@ -363,13 +414,12 @@ export default function OrderCreatorPageV2() {
   };
 
   const handlePreviewAndFinalize = async () => {
-    if (!isValid) {
-      toast.error("Please fix validation errors before finalizing");
+    if (!validateOrderMetadata(orderType)) {
       return;
     }
 
-    if (!clientId) {
-      toast.error("Please select a client");
+    if (!isValid) {
+      toast.error("Please fix validation errors before finalizing");
       return;
     }
 
@@ -377,7 +427,7 @@ export default function OrderCreatorPageV2() {
     if (orderType === "SALE") {
       try {
         const result = await creditCheckMutation.mutateAsync({
-          clientId,
+          clientId: clientId as number,
           orderTotal: totals.total,
           overrideReason: pendingOverrideReason,
         });
@@ -664,16 +714,30 @@ export default function OrderCreatorPageV2() {
 
           <div className="linear-workspace-meta">
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-              <span className="linear-workspace-meta-label">Customer</span>
+              <span className="linear-workspace-meta-label flex items-center gap-1">
+                Customer
+                {clientFieldState.showSuccess ? (
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                ) : null}
+                {clientFieldState.showError ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                ) : null}
+              </span>
               <ClientCombobox
                 value={clientId}
                 onValueChange={id => {
+                  handleOrderValidationChange("clientId", id ?? undefined);
+                  handleOrderValidationBlur("clientId");
                   setClientId(id);
                   // Clear items when changing client
                   if (id !== clientId) {
                     setItems([]);
                   }
                 }}
+                className={cn(
+                  clientFieldState.showError && "border-red-500",
+                  clientFieldState.showSuccess && "border-emerald-500"
+                )}
                 clients={(clients || [])
                   .filter(c => c.isBuyer)
                   .map(client => ({
@@ -686,6 +750,11 @@ export default function OrderCreatorPageV2() {
                 placeholder="Search for a customer..."
                 emptyText="No customers found"
               />
+              {clientFieldState.showError ? (
+                <p className="text-xs text-destructive">
+                  {clientFieldState.error}
+                </p>
+              ) : null}
             </div>
 
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
@@ -878,14 +947,35 @@ export default function OrderCreatorPageV2() {
                     <CardContent className="pt-6 space-y-3">
                       {/* Order Type Selector */}
                       <div className="space-y-2">
-                        <Label>Order Type</Label>
+                        <Label className="flex items-center gap-1">
+                          Order Type
+                          {orderTypeFieldState.showSuccess ? (
+                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : null}
+                          {orderTypeFieldState.showError ? (
+                            <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                          ) : null}
+                        </Label>
                         <Select
                           value={orderType}
-                          onValueChange={value =>
-                            setOrderType(value as "QUOTE" | "SALE")
-                          }
+                          onValueChange={value => {
+                            const nextOrderType = value as "QUOTE" | "SALE";
+                            setOrderType(nextOrderType);
+                            handleOrderValidationChange(
+                              "orderType",
+                              nextOrderType
+                            );
+                            handleOrderValidationBlur("orderType");
+                          }}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger
+                            className={cn(
+                              "w-full",
+                              orderTypeFieldState.showError && "border-red-500",
+                              orderTypeFieldState.showSuccess &&
+                                "border-emerald-500"
+                            )}
+                          >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -893,6 +983,11 @@ export default function OrderCreatorPageV2() {
                             <SelectItem value="QUOTE">Quote</SelectItem>
                           </SelectContent>
                         </Select>
+                        {orderTypeFieldState.showError ? (
+                          <p className="text-xs text-destructive">
+                            {orderTypeFieldState.error}
+                          </p>
+                        ) : null}
                       </div>
 
                       {/* Unified Save Dropdown Menu */}
