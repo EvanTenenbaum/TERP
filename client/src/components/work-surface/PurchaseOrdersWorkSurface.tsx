@@ -64,6 +64,7 @@ import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEd
 import { useUndo } from "@/hooks/work-surface/useUndo";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   InspectorPanel,
   InspectorSection,
@@ -707,6 +708,23 @@ export function PurchaseOrdersWorkSurface() {
       totalValue: all.reduce((sum, p) => sum + parseFloat(p.total || "0"), 0),
     };
   }, [pos]);
+
+  const statusBarLeft = isCreateDialogOpen
+    ? `Draft mode • ${formData.items.length} line item${
+        formData.items.length === 1 ? "" : "s"
+      }`
+    : `POs • ${filteredPOs.length}/${stats.total} shown`;
+
+  const statusBarCenter = selectedPO
+    ? `Selected: ${selectedPO.poNumber || `PO #${selectedPO.id}`} • ${
+        selectedPO.purchaseOrderStatus || "DRAFT"
+      }`
+    : `${poDraftSelection.selectedCount} draft row${
+        poDraftSelection.selectedCount === 1 ? "" : "s"
+      } selected`;
+
+  const statusBarRight =
+    "Cmd/Ctrl+K Search • Esc Close • Enter/Up/Down Draft Nav";
 
   const createDraftTotal = useMemo(
     () =>
@@ -1874,6 +1892,12 @@ export function PurchaseOrdersWorkSurface() {
           )}
         </InspectorPanel>
       </div>
+
+      <WorkSurfaceStatusBar
+        left={statusBarLeft}
+        center={statusBarCenter}
+        right={statusBarRight}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
