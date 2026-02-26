@@ -68,6 +68,7 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
+import { KeyboardHintBar } from "./KeyboardHintBar";
 
 // Icons
 import {
@@ -2288,7 +2289,16 @@ export function DirectIntakeWorkSurface() {
       <WorkSurfaceStatusBar
         left={`${pendingCount} pending · ${submittedCount} submitted`}
         center={selectedCount > 0 ? `${selectedCount} selected` : undefined}
-        right="Tab • Enter • Esc • ⌘Z"
+        right={
+          <KeyboardHintBar
+            hints={[
+              { key: "Tab", label: "Next" },
+              { key: "Enter", label: "Submit" },
+              { key: "Esc", label: "Close" },
+              { key: "Cmd/Ctrl+Z", label: "Undo" },
+            ]}
+          />
+        }
       />
     </section>
   );

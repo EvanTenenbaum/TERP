@@ -63,6 +63,7 @@ import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   useOrderCalculations,
@@ -1092,7 +1093,15 @@ export default function OrderCreatorPageV2() {
           <WorkSurfaceStatusBar
             left={`${items.length} items · ${orderType}`}
             center={clientDetails?.name || "No client selected"}
-            right="Cmd+S: Save | Cmd+Enter: Finalize | Cmd+Z: Undo"
+            right={
+              <KeyboardHintBar
+                hints={[
+                  { key: "Cmd/Ctrl+S", label: "Save" },
+                  { key: "Cmd/Ctrl+Enter", label: "Finalize" },
+                  { key: "Cmd/Ctrl+Z", label: "Undo" },
+                ]}
+              />
+            }
           />
         </section>
 

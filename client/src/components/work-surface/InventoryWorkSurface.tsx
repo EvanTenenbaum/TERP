@@ -64,6 +64,7 @@ import {
   type StockStatus,
 } from "@/components/inventory/StockStatusBadge";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 
 // Work Surface Hooks
@@ -2037,9 +2038,23 @@ export function InventoryWorkSurface() {
       </div>
 
       <WorkSurfaceStatusBar
-        left={`Page ${page + 1} of ${totalPages} | ${totalCount} total batches`}
-        center={`${selectedBatchIds.size} selected${undo.state.canUndo ? " | Undo available" : ""}`}
-        right="Cmd/Ctrl+K Search | Arrows Navigate | Enter Inspect | Esc Close | Cmd/Ctrl+Z Undo"
+        left={`Page ${page + 1} of ${Math.max(totalPages, 1)} · ${totalCount} total`}
+        center={
+          selectedItem?.batch
+            ? `Selected: ${selectedItem.batch.sku}`
+            : `${selectedBatchIds.size} selected${undo.state.canUndo ? " · Undo available" : ""}`
+        }
+        right={
+          <KeyboardHintBar
+            hints={[
+              { key: "Cmd/Ctrl+K", label: "Search" },
+              { key: "↑↓", label: "Navigate" },
+              { key: "Enter", label: "Inspect" },
+              { key: "Esc", label: "Close" },
+              { key: "Cmd/Ctrl+Z", label: "Undo" },
+            ]}
+          />
+        }
       />
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}

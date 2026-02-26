@@ -65,6 +65,7 @@ import { useUndo } from "@/hooks/work-surface/useUndo";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   InspectorPanel,
@@ -740,8 +741,11 @@ export function PurchaseOrdersWorkSurface() {
         poDraftSelection.selectedCount === 1 ? "" : "s"
       } selected`;
 
-  const statusBarRight =
-    "Cmd/Ctrl+K Search • Esc Close • Enter/Up/Down Draft Nav";
+  const statusBarHints = [
+    { key: "Cmd/Ctrl+K", label: "Search" },
+    { key: "Esc", label: "Close" },
+    { key: "Enter/↑↓", label: "Draft Nav" },
+  ];
 
   const createDraftTotal = useMemo(
     () =>
@@ -1997,7 +2001,7 @@ export function PurchaseOrdersWorkSurface() {
       <WorkSurfaceStatusBar
         left={statusBarLeft}
         center={statusBarCenter}
-        right={statusBarRight}
+        right={<KeyboardHintBar hints={statusBarHints} />}
       />
 
       {/* Delete Confirmation Dialog */}
