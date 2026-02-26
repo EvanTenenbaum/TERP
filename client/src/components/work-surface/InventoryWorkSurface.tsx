@@ -62,6 +62,7 @@ import {
   StockStatusBadge,
   type StockStatus,
 } from "@/components/inventory/StockStatusBadge";
+import { InventoryCard } from "@/components/inventory/InventoryCard";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -1550,222 +1551,264 @@ export function InventoryWorkSurface() {
             </div>
           ) : (
             <>
-              <Table data-testid="inventory-table" className="inventory-list">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox
-                        checked={
-                          allVisibleSelected
-                            ? true
-                            : someVisibleSelected
-                              ? "indeterminate"
-                              : false
-                        }
-                        onCheckedChange={toggleAllVisibleSelection}
-                        aria-label="Select all visible rows"
-                      />
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("sku")}
-                    >
-                      <span className="flex items-center">
-                        SKU <SortIcon column="sku" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("product")}
-                    >
-                      <span className="flex items-center">
-                        Product <SortIcon column="product" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("brand")}
-                    >
-                      <span className="flex items-center">
-                        Brand <SortIcon column="brand" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("vendor")}
-                    >
-                      <span className="flex items-center">
-                        Vendor <SortIcon column="vendor" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("grade")}
-                    >
-                      <span className="flex items-center">
-                        Grade <SortIcon column="grade" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("status")}
-                    >
-                      <span className="flex items-center">
-                        Status <SortIcon column="status" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("onHandQty")}
-                    >
-                      <span className="flex items-center justify-end">
-                        On Hand <SortIcon column="onHandQty" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("reservedQty")}
-                    >
-                      <span className="flex items-center justify-end">
-                        Reserved <SortIcon column="reservedQty" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("availableQty")}
-                    >
-                      <span className="flex items-center justify-end">
-                        Available <SortIcon column="availableQty" />
-                      </span>
-                    </TableHead>
-                    <TableHead>Stock Status</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("unitCogs")}
-                    >
-                      <span className="flex items-center justify-end">
-                        Cost <SortIcon column="unitCogs" />
-                      </span>
-                    </TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayItems.map((item: InventoryItem, index: number) => {
-                    const available = calculateAvailable(item.batch);
-                    const ageDays = item.batch?.ageDays ?? 0;
-                    const rowHighlightClass = getAgingRowClass(ageDays);
-
-                    return (
-                      <TableRow
-                        key={item.batch?.id}
-                        data-testid={
-                          item.product?.nameCanonical ? "batch-row" : undefined
-                        }
-                        className={cn(
-                          "cursor-pointer hover:bg-muted/50",
-                          rowHighlightClass,
-                          selectedBatchId === item.batch?.id && "bg-muted",
-                          selectedIndex === index &&
-                            "ring-1 ring-inset ring-primary"
-                        )}
-                        onClick={() => {
-                          if (item.batch) {
-                            setSelectedBatchId(item.batch.id);
-                            setSelectedIndex(index);
-                            inspector.open();
-                          }
-                        }}
-                      >
-                        <TableCell onClick={e => e.stopPropagation()}>
-                          <Checkbox
-                            checked={
-                              item.batch
-                                ? selectedBatchIds.has(item.batch.id)
+              <div className="hidden md:block">
+                <Table data-testid="inventory-table" className="inventory-list">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40px]">
+                        <Checkbox
+                          checked={
+                            allVisibleSelected
+                              ? true
+                              : someVisibleSelected
+                                ? "indeterminate"
                                 : false
+                          }
+                          onCheckedChange={toggleAllVisibleSelection}
+                          aria-label="Select all visible rows"
+                        />
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort("sku")}
+                      >
+                        <span className="flex items-center">
+                          SKU <SortIcon column="sku" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort("product")}
+                      >
+                        <span className="flex items-center">
+                          Product <SortIcon column="product" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort("brand")}
+                      >
+                        <span className="flex items-center">
+                          Brand <SortIcon column="brand" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort("vendor")}
+                      >
+                        <span className="flex items-center">
+                          Vendor <SortIcon column="vendor" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort("grade")}
+                      >
+                        <span className="flex items-center">
+                          Grade <SortIcon column="grade" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort("status")}
+                      >
+                        <span className="flex items-center">
+                          Status <SortIcon column="status" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer text-right"
+                        onClick={() => handleSort("onHandQty")}
+                      >
+                        <span className="flex items-center justify-end">
+                          On Hand <SortIcon column="onHandQty" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer text-right"
+                        onClick={() => handleSort("reservedQty")}
+                      >
+                        <span className="flex items-center justify-end">
+                          Reserved <SortIcon column="reservedQty" />
+                        </span>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer text-right"
+                        onClick={() => handleSort("availableQty")}
+                      >
+                        <span className="flex items-center justify-end">
+                          Available <SortIcon column="availableQty" />
+                        </span>
+                      </TableHead>
+                      <TableHead>Stock Status</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead
+                        className="cursor-pointer text-right"
+                        onClick={() => handleSort("unitCogs")}
+                      >
+                        <span className="flex items-center justify-end">
+                          Cost <SortIcon column="unitCogs" />
+                        </span>
+                      </TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayItems.map((item: InventoryItem, index: number) => {
+                      const available = calculateAvailable(item.batch);
+                      const ageDays = item.batch?.ageDays ?? 0;
+                      const rowHighlightClass = getAgingRowClass(ageDays);
+
+                      return (
+                        <TableRow
+                          key={item.batch?.id}
+                          data-testid={
+                            item.product?.nameCanonical
+                              ? "batch-row"
+                              : undefined
+                          }
+                          className={cn(
+                            "cursor-pointer hover:bg-muted/50",
+                            rowHighlightClass,
+                            selectedBatchId === item.batch?.id && "bg-muted",
+                            selectedIndex === index &&
+                              "ring-1 ring-inset ring-primary"
+                          )}
+                          onClick={() => {
+                            if (item.batch) {
+                              setSelectedBatchId(item.batch.id);
+                              setSelectedIndex(index);
+                              inspector.open();
                             }
-                            onCheckedChange={checked => {
-                              if (!item.batch) return;
-                              toggleBatchSelection(item.batch.id, checked);
-                            }}
-                            aria-label={`Select batch ${item.batch?.sku ?? ""}`}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {item.batch?.sku}
-                        </TableCell>
-                        <TableCell>
-                          {item.product?.nameCanonical || "-"}
-                        </TableCell>
-                        <TableCell>{item.brand?.name || "-"}</TableCell>
-                        <TableCell>{item.vendor?.name || "-"}</TableCell>
-                        <TableCell>
-                          {item.batch?.grade ? (
-                            <Badge variant="outline">{item.batch.grade}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <BatchStatusBadge
-                            status={item.batch?.batchStatus || "LIVE"}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatQuantity(item.batch?.onHandQty)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatQuantity(item.batch?.reservedQty)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span
-                            className={cn(
-                              available <= 100 &&
-                                "text-orange-600 font-semibold"
+                          }}
+                        >
+                          <TableCell onClick={e => e.stopPropagation()}>
+                            <Checkbox
+                              checked={
+                                item.batch
+                                  ? selectedBatchIds.has(item.batch.id)
+                                  : false
+                              }
+                              onCheckedChange={checked => {
+                                if (!item.batch) return;
+                                toggleBatchSelection(item.batch.id, checked);
+                              }}
+                              aria-label={`Select batch ${item.batch?.sku ?? ""}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {item.batch?.sku}
+                          </TableCell>
+                          <TableCell>
+                            {item.product?.nameCanonical || "-"}
+                          </TableCell>
+                          <TableCell>{item.brand?.name || "-"}</TableCell>
+                          <TableCell>{item.vendor?.name || "-"}</TableCell>
+                          <TableCell>
+                            {item.batch?.grade ? (
+                              <Badge variant="outline">
+                                {item.batch.grade}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
                             )}
-                          >
-                            {formatQuantity(available)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {item.batch?.stockStatus ? (
-                            <StockStatusBadge
-                              status={item.batch.stockStatus}
-                              showIcon={false}
+                          </TableCell>
+                          <TableCell>
+                            <BatchStatusBadge
+                              status={item.batch?.batchStatus || "LIVE"}
                             />
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {ageDays > 0 ? (
-                            <AgingBadge
-                              ageDays={ageDays}
-                              ageBracket={item.batch?.ageBracket}
-                              variant="compact"
-                            />
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.batch?.unitCogs)}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatQuantity(item.batch?.onHandQty)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatQuantity(item.batch?.reservedQty)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span
+                              className={cn(
+                                available <= 100 &&
+                                  "text-orange-600 font-semibold"
+                              )}
+                            >
+                              {formatQuantity(available)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {item.batch?.stockStatus ? (
+                              <StockStatusBadge
+                                status={item.batch.stockStatus}
+                                showIcon={false}
+                              />
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {ageDays > 0 ? (
+                              <AgingBadge
+                                ageDays={ageDays}
+                                ageBracket={item.batch?.ageBracket}
+                                variant="compact"
+                              />
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(item.batch?.unitCogs)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="space-y-3 p-3 md:hidden">
+                {displayItems.map((item, index) => {
+                  if (!item.batch) return null;
+                  const available = calculateAvailable(item.batch);
+
+                  return (
+                    <InventoryCard
+                      key={item.batch.id}
+                      batch={{
+                        id: item.batch.id,
+                        sku: item.batch.sku,
+                        productName: item.product?.nameCanonical || "Unknown",
+                        brandName: item.brand?.name || "Unknown",
+                        vendorName: item.vendor?.name || "Unknown",
+                        category: item.product?.category,
+                        grade: item.batch.grade || "-",
+                        status: item.batch.batchStatus,
+                        onHandQty: item.batch.onHandQty,
+                        reservedQty: item.batch.reservedQty,
+                        availableQty: available.toString(),
+                      }}
+                      onView={batchId => {
+                        setSelectedBatchId(batchId);
+                        setSelectedIndex(index);
+                        inspector.open();
+                      }}
+                      onEdit={
+                        item.batch.batchStatus === "AWAITING_INTAKE"
+                          ? batchId => handleEdit(batchId)
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+              </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
