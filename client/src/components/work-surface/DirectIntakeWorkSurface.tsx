@@ -54,6 +54,7 @@ import {
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
+import { useUndo } from "@/hooks/work-surface/useUndo";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import {
   createDirectIntakeRemovalPlan,
@@ -747,6 +748,7 @@ export function DirectIntakeWorkSurface() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
+  const undo = useUndo({ enableKeyboard: false });
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState({
@@ -798,6 +800,9 @@ export function DirectIntakeWorkSurface() {
     gridMode: true, // Let AG Grid handle Tab navigation
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
+    onUndo: () => {
+      void undo.undoLast();
+    },
     onRowCommit: () => {
       // Commit current row on Enter
       if (selectedRow && selectedRow.status === "pending") {
@@ -1175,34 +1180,98 @@ export function DirectIntakeWorkSurface() {
     }, 50);
   }, [rows.length, defaultLocationOverrides, rowSelection, updateRows]);
 
-  const handleRemoveRow = useCallback(
-    (rowId: string) => {
-      updateRows(prev => {
-        const pendingRows = prev.filter(r => r.status === "pending");
-        if (
-          pendingRows.length <= 1 &&
-          prev.find(r => r.id === rowId)?.status === "pending"
-        ) {
-          toast.error("Cannot remove all rows. Keep at least one row.");
-          return prev;
+  const removeRowsWithUndo = useCallback(
+    (rowIds: string[]) => {
+      const currentRows = rowsRef.current;
+      const removalPlan = createDirectIntakeRemovalPlan(currentRows, rowIds);
+      if (removalPlan.blocked) {
+        toast.error("Cannot remove all pending rows. Keep at least one row.");
+        return;
+      }
+      if (removalPlan.removedIds.length === 0) {
+        return;
+      }
+
+      const previousRows = currentRows;
+      const previousRowIds = new Set(previousRows.map(row => row.id));
+      const removedRows = previousRows.filter(row =>
+        removalPlan.removedIds.includes(row.id)
+      );
+      const removedMediaById = removalPlan.removedIds.reduce<
+        Record<string, File[]>
+      >((acc, rowId) => {
+        const files = rowMediaFilesByIdRef.current[rowId];
+        if (files) {
+          acc[rowId] = files;
         }
-        return prev.filter(r => r.id !== rowId);
+        return acc;
+      }, {});
+
+      undo.registerAction({
+        description: `Removed ${removedRows.length} row(s)`,
+        undo: () => {
+          updateRows(current => {
+            const currentById = new Map(current.map(row => [row.id, row]));
+            const removedById = new Map(removedRows.map(row => [row.id, row]));
+            const restored: IntakeGridRow[] = [];
+
+            // Preserve original ordering, restoring removed rows where missing.
+            for (const previousRow of previousRows) {
+              const currentRow = currentById.get(previousRow.id);
+              if (currentRow) {
+                restored.push(currentRow);
+                continue;
+              }
+              const removedRow = removedById.get(previousRow.id);
+              if (removedRow) {
+                restored.push(removedRow);
+              }
+            }
+
+            // Keep rows created after deletion.
+            for (const currentRow of current) {
+              if (!previousRowIds.has(currentRow.id)) {
+                restored.push(currentRow);
+              }
+            }
+
+            return restored;
+          });
+
+          updateRowMediaFilesById(prev => {
+            const next = { ...prev };
+            for (const [rowId, files] of Object.entries(removedMediaById)) {
+              if (!next[rowId]) {
+                next[rowId] = files;
+              }
+            }
+            return next;
+          });
+
+          rowSelection.setSelection(removedRows.map(row => row.id));
+          setSelectedRowId(removedRows[0]?.id ?? null);
+        },
       });
+
+      updateRows(removalPlan.nextRows);
       updateRowMediaFilesById(prev => {
         const next = { ...prev };
-        delete next[rowId];
+        for (const rowId of removalPlan.removedIds) {
+          delete next[rowId];
+        }
         return next;
       });
-      if (selectedRowId === rowId) {
-        setSelectedRowId(null);
-      }
-      if (rowSelection.isSelected(rowId)) {
-        rowSelection.setSelection(
-          rowSelection.selectedRowIds.filter(selectedId => selectedId !== rowId)
-        );
-      }
+      rowSelection.clearSelection();
+      setSelectedRowId(null);
     },
-    [rowSelection, selectedRowId, updateRows, updateRowMediaFilesById]
+    [rowSelection, undo, updateRows, updateRowMediaFilesById]
+  );
+
+  const handleRemoveRow = useCallback(
+    (rowId: string) => {
+      removeRowsWithUndo([rowId]);
+    },
+    [removeRowsWithUndo]
   );
 
   const uploadMediaFiles = useCallback(
@@ -1641,39 +1710,8 @@ export function DirectIntakeWorkSurface() {
 
   const handleRemoveSelected = useCallback(() => {
     if (selectedPendingRows.length === 0) return;
-
-    const removalPlan = createDirectIntakeRemovalPlan(
-      rows,
-      selectedPendingRows.map(row => row.id)
-    );
-    if (removalPlan.blocked) {
-      toast.error("Cannot remove all pending rows. Keep at least one row.");
-      return;
-    }
-
-    if (removalPlan.removedIds.length === 0) {
-      return;
-    }
-
-    updateRows(removalPlan.nextRows);
-
-    updateRowMediaFilesById(prev => {
-      const next = { ...prev };
-      for (const rowId of removalPlan.removedIds) {
-        delete next[rowId];
-      }
-      return next;
-    });
-
-    rowSelection.clearSelection();
-    setSelectedRowId(null);
-  }, [
-    rowSelection,
-    rows,
-    selectedPendingRows,
-    updateRowMediaFilesById,
-    updateRows,
-  ]);
+    removeRowsWithUndo(selectedPendingRows.map(row => row.id));
+  }, [removeRowsWithUndo, selectedPendingRows]);
 
   // Render
   return (
