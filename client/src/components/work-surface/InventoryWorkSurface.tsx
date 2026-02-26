@@ -58,7 +58,7 @@ import { SaveViewModal } from "@/components/inventory/SaveViewModal";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
-import { usePowersheetSelection } from "../../hooks/work-surface";
+import { useExport, usePowersheetSelection } from "../../hooks/work-surface";
 import {
   defaultFilters,
   useInventoryFilters,
@@ -83,6 +83,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Download,
 } from "lucide-react";
 
 // ============================================================================
@@ -118,6 +119,29 @@ interface InventoryItem {
     id: number;
     name: string;
   };
+}
+
+interface InventoryExportRow {
+  [key: string]: string;
+  id: string;
+  sku: string;
+  productName: string;
+  category: string;
+  subcategory: string;
+  vendor: string;
+  brand: string;
+  grade: string;
+  status: string;
+  onHand: string;
+  reserved: string;
+  quarantine: string;
+  hold: string;
+  available: string;
+  unitCogs: string;
+  totalValue: string;
+  purchaseDate: string;
+  expirationDate: string;
+  location: string;
 }
 
 // Helper type for version tracking (batch contains id and version)
@@ -442,6 +466,7 @@ export function InventoryWorkSurface() {
   const useEnhancedApi = true;
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
     useInventoryFilters();
+  const { exportCSV, state: exportState } = useExport<InventoryExportRow>();
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -1057,6 +1082,88 @@ export function InventoryWorkSurface() {
     bulkDeleteMutation.mutate(batchIds);
   }, [selectedBatchIds, bulkDeleteMutation]);
 
+  const handleExportCsv = useCallback(async () => {
+    if (displayItems.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const rows: InventoryExportRow[] = displayItems.map(item => {
+      const batch = item.batch;
+      const product = item.product;
+      const vendor = item.vendor;
+      const brand = item.brand;
+
+      const onHand = parseFloat(batch?.onHandQty || "0");
+      const reserved = parseFloat(batch?.reservedQty || "0");
+      const quarantine = parseFloat(batch?.quarantineQty || "0");
+      const hold = parseFloat(batch?.holdQty || "0");
+      const available = onHand - reserved - quarantine - hold;
+      const unitCogs = parseFloat(batch?.unitCogs || "0");
+      const receivedAt = batch?.intakeDate || batch?.createdAt;
+      const purchaseDate =
+        receivedAt && !Number.isNaN(new Date(receivedAt).getTime())
+          ? new Date(receivedAt).toISOString().split("T")[0]
+          : "";
+
+      return {
+        id: String(batch?.id ?? ""),
+        sku: batch?.sku || "",
+        productName: product?.nameCanonical || "",
+        category: product?.category || "",
+        subcategory: product?.subcategory || "",
+        vendor: vendor?.name || "",
+        brand: brand?.name || "",
+        grade: batch?.grade || "",
+        status: batch?.batchStatus || "",
+        onHand: formatQuantity(onHand),
+        reserved: formatQuantity(reserved),
+        quarantine: formatQuantity(quarantine),
+        hold: formatQuantity(hold),
+        available: formatQuantity(available),
+        unitCogs: batch?.unitCogs ? formatQuantity(unitCogs) : "",
+        totalValue: batch?.unitCogs ? formatQuantity(unitCogs * onHand) : "",
+        purchaseDate,
+        expirationDate: "",
+        location: "",
+      };
+    });
+
+    try {
+      await exportCSV(rows, {
+        columns: [
+          { key: "id", label: "Batch ID" },
+          { key: "sku", label: "SKU" },
+          { key: "productName", label: "Product Name" },
+          { key: "category", label: "Category" },
+          { key: "subcategory", label: "Subcategory" },
+          { key: "vendor", label: "Vendor" },
+          { key: "brand", label: "Brand" },
+          { key: "grade", label: "Grade" },
+          { key: "status", label: "Status" },
+          { key: "onHand", label: "On Hand" },
+          { key: "reserved", label: "Reserved" },
+          { key: "quarantine", label: "Quarantine" },
+          { key: "hold", label: "On Hold" },
+          { key: "available", label: "Available" },
+          { key: "unitCogs", label: "Unit Cost" },
+          { key: "totalValue", label: "Total Value" },
+          { key: "purchaseDate", label: "Intake Date" },
+          { key: "expirationDate", label: "Expiration Date" },
+          { key: "location", label: "Location" },
+        ],
+        filename: "inventory",
+        addTimestamp: true,
+      });
+      toast.success(
+        `Exported ${rows.length} batch${rows.length === 1 ? "" : "es"}`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Export failed";
+      toast.error(message);
+    }
+  }, [displayItems, exportCSV]);
+
   const handleApplySavedView = useCallback(
     (savedFilters: Partial<InventoryFilters>): void => {
       const normalizedFilters = normalizeSavedFilters(savedFilters);
@@ -1207,6 +1314,25 @@ export function InventoryWorkSurface() {
           >
             <Plus className="h-4 w-4 mr-2" />
             Save View
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void handleExportCsv();
+            }}
+            disabled={displayItems.length === 0 || exportState.isExporting}
+          >
+            {exportState.isExporting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Exporting {Math.round(exportState.progress)}%
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </>
+            )}
           </Button>
           {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
           <Button
