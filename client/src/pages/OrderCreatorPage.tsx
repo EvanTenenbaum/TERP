@@ -36,8 +36,6 @@ import {
   Save,
   CheckCircle,
   AlertCircle,
-  Cloud,
-  CloudOff,
   Loader2,
   ChevronDown,
   FileText,
@@ -74,6 +72,7 @@ import {
   calculateLineItem,
 } from "@/hooks/orders/useOrderCalculations";
 import { useRetryableQuery } from "@/hooks/useRetryableQuery";
+import { useSaveState } from "@/hooks/work-surface";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -131,14 +130,8 @@ export default function OrderCreatorPageV2() {
     null
   );
 
-  // CHAOS-025: Auto-save state
-  type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
-  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
-  // QA-W2-006: lastSavedDraftId stores the ID of the auto-saved draft for potential
-  // future use (e.g., updating existing draft instead of creating new ones,
-  // showing link to saved draft). Currently stored but not actively used.
-  const [lastSavedDraftId, setLastSavedDraftId] = useState<number | null>(null);
-  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
+    useSaveState();
 
   // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
   // before finalization completes
@@ -177,9 +170,11 @@ export default function OrderCreatorPageV2() {
   useEffect(() => {
     const hasItems = items.length > 0;
     const autoSavePending =
-      autoSaveStatus === "saving" || autoSaveStatus === "error";
+      saveState.status === "saving" ||
+      saveState.status === "error" ||
+      saveState.status === "queued";
     setHasUnsavedChanges(hasItems || autoSavePending);
-  }, [items.length, autoSaveStatus, setHasUnsavedChanges]);
+  }, [items.length, saveState.status, setHasUnsavedChanges]);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
@@ -273,21 +268,13 @@ export default function OrderCreatorPageV2() {
   // Credit check mutation
   const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
 
-  // CHAOS-025: Auto-save mutation (silent, no toast notifications)
+  // Auto-save mutation (silent, no toast notifications)
   const autoSaveMutation = trpc.orders.createDraftEnhanced.useMutation({
-    onSuccess: data => {
-      setLastSavedDraftId(data.orderId);
-      setAutoSaveStatus("saved");
-      // Clear the "saved" indicator after 3 seconds
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        setAutoSaveStatus("idle");
-      }, 3000);
+    onSuccess: () => {
+      setSaved();
     },
-    onError: () => {
-      setAutoSaveStatus("error");
+    onError: error => {
+      setError("Auto-save failed", error);
     },
   });
 
@@ -297,7 +284,7 @@ export default function OrderCreatorPageV2() {
       return;
     }
 
-    setAutoSaveStatus("saving");
+    setSaving();
     autoSaveMutation.mutate({
       orderType,
       clientId,
@@ -321,6 +308,7 @@ export default function OrderCreatorPageV2() {
     adjustment,
     showAdjustmentOnDocument,
     autoSaveMutation,
+    setSaving,
   ]);
 
   const debouncedAutoSave = useDebounceCallback(performAutoSave, 2000);
@@ -338,15 +326,6 @@ export default function OrderCreatorPageV2() {
     showAdjustmentOnDocument,
     debouncedAutoSave,
   ]);
-
-  // Cleanup auto-save timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Handlers
   const handleSaveDraft = (overrideOrderType?: "SALE" | "QUOTE") => {
@@ -553,39 +532,16 @@ export default function OrderCreatorPageV2() {
               <div className="flex items-center gap-3">
                 <ShoppingCart className="h-6 w-6" />
                 <div>
-                  <CardTitle className="text-2xl">
-                    Create Sales Order
-                  </CardTitle>
+                  <CardTitle className="text-2xl">Create Sales Order</CardTitle>
                   <CardDescription>
                     Build sale with COGS visibility and margin management
                   </CardDescription>
                 </div>
               </div>
-              {/* CHAOS-025: Auto-save status indicator */}
+              {/* Auto-save status indicator */}
               {clientId && items.length > 0 && (
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  {autoSaveStatus === "saving" && (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  )}
-                  {autoSaveStatus === "saved" && (
-                    <>
-                      <Cloud className="h-4 w-4 text-green-600" />
-                      {/* QA-W2-006: Display saved draft ID for user reference */}
-                      <span className="text-green-600">
-                        Draft saved
-                        {lastSavedDraftId ? ` (#${lastSavedDraftId})` : ""}
-                      </span>
-                    </>
-                  )}
-                  {autoSaveStatus === "error" && (
-                    <>
-                      <CloudOff className="h-4 w-4 text-destructive" />
-                      <span className="text-destructive">Auto-save failed</span>
-                    </>
-                  )}
+                  {SaveStateIndicator}
                 </div>
               )}
             </div>
