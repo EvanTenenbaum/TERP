@@ -38,6 +38,7 @@ import {
   Loader2,
   CheckSquare,
   PackageCheck,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeybo
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import { useUndo } from "@/hooks/work-surface/useUndo";
+import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
@@ -117,6 +119,17 @@ interface OrderDetails {
     packedItems: number;
     bagCount: number;
   };
+}
+
+interface PickPackManifestRow extends Record<string, unknown> {
+  orderNumber: string;
+  clientName: string;
+  productName: string;
+  quantity: number;
+  location: string;
+  bagIdentifier: string;
+  packed: string;
+  packedAt: string;
 }
 
 // Helper type for version tracking
@@ -561,6 +574,8 @@ export function PickPackWorkSurface() {
   // Save state
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const { registerAction, undoLast } = useUndo({ enableKeyboard: false });
+  const { exportCSV: exportManifestCSV, state: manifestExportState } =
+    useExport<PickPackManifestRow>();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -602,6 +617,23 @@ export function PickPackWorkSurface() {
   const unpackedItems = useMemo(() => {
     if (!orderDetails) return [];
     return orderDetails.items.filter(item => !item.isPacked);
+  }, [orderDetails]);
+
+  const pickPackManifestRows = useMemo<PickPackManifestRow[]>(() => {
+    if (!orderDetails) {
+      return [];
+    }
+
+    return orderDetails.items.map(item => ({
+      orderNumber: orderDetails.order.orderNumber,
+      clientName: orderDetails.order.clientName,
+      productName: item.productName,
+      quantity: item.quantity,
+      location: item.location,
+      bagIdentifier: item.bagIdentifier || "UNASSIGNED",
+      packed: item.isPacked ? "Yes" : "No",
+      packedAt: item.packedAt ? new Date(item.packedAt).toLocaleString() : "",
+    }));
   }, [orderDetails]);
 
   // Shared powersheet selection for items (TER-285)
@@ -783,6 +815,29 @@ export function PickPackWorkSurface() {
       markReadyMutation.mutate({ orderId: selectedOrderId });
     }
   }, [selectedOrderId, markReadyMutation]);
+
+  const handleExportManifest = useCallback(() => {
+    if (!orderDetails || pickPackManifestRows.length === 0) {
+      toast.error("Select an order with items to export a manifest");
+      return;
+    }
+
+    const safeOrderNumber = orderDetails.order.orderNumber.replace(/\s+/g, "_");
+    void exportManifestCSV(pickPackManifestRows, {
+      filename: `pick_pack_manifest_${safeOrderNumber}`,
+      addTimestamp: true,
+      columns: [
+        { key: "orderNumber", label: "Order Number" },
+        { key: "clientName", label: "Client" },
+        { key: "productName", label: "Product" },
+        { key: "quantity", label: "Quantity" },
+        { key: "location", label: "Location" },
+        { key: "bagIdentifier", label: "Bag" },
+        { key: "packed", label: "Packed" },
+        { key: "packedAt", label: "Packed At" },
+      ],
+    });
+  }, [exportManifestCSV, orderDetails, pickPackManifestRows]);
 
   const openItemInspector = useCallback((itemId: number) => {
     setInspectedItemId(itemId);
@@ -1156,6 +1211,25 @@ export function PickPackWorkSurface() {
               >
                 <CheckSquare className="w-4 h-4 mr-2" />
                 Select All (A)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportManifest}
+                disabled={
+                  manifestExportState.isExporting ||
+                  pickPackManifestRows.length === 0
+                }
+                title={
+                  pickPackManifestRows.length === 0
+                    ? "Select an order with items to export"
+                    : "Export pick-pack manifest to CSV"
+                }
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {manifestExportState.isExporting
+                  ? "Exporting..."
+                  : "Export Manifest"}
               </Button>
               <Button
                 size="sm"
