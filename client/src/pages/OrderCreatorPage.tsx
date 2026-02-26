@@ -72,7 +72,11 @@ import {
   calculateLineItem,
 } from "@/hooks/orders/useOrderCalculations";
 import { useRetryableQuery } from "@/hooks/useRetryableQuery";
-import { useSaveState, useUndo } from "@/hooks/work-surface";
+import {
+  useSaveState,
+  useUndo,
+  useWorkSurfaceKeyboard,
+} from "@/hooks/work-surface";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -527,6 +531,31 @@ export default function OrderCreatorPageV2() {
     toast.success(`Added ${uniqueItems.length} item(s) to order`);
   };
 
+  const keyboard = useWorkSurfaceKeyboard({
+    gridMode: false,
+    onUndo: () => {
+      void undo.undoLast();
+    },
+    customHandlers: {
+      "cmd+s": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        performAutoSave();
+      },
+      "ctrl+s": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        performAutoSave();
+      },
+      "cmd+enter": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        void handlePreviewAndFinalize();
+      },
+      "ctrl+enter": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        void handlePreviewAndFinalize();
+      },
+    },
+  });
+
   const registerLineItemRemovalUndo = useCallback(
     (previousItems: LineItem[], removedBatchIds: number[]) => {
       const removedBatchIdSet = new Set(removedBatchIds);
@@ -614,7 +643,10 @@ export default function OrderCreatorPageV2() {
 
   return (
     <PageErrorBoundary pageName="OrderCreator">
-      <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <div
+        {...keyboard.keyboardProps}
+        className="container mx-auto p-4 md:p-6 space-y-6"
+      >
         {/* Header */}
         <BackButton label="Back to Orders" to="/orders" className="mb-4" />
         <Card>
