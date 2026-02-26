@@ -12,8 +12,8 @@
  * @see ATOMIC_UX_STRATEGY.md for export requirements
  */
 
-import { useState, useCallback, useRef, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useState, useCallback, useRef, useMemo } from "react";
+import { toast } from "sonner";
 
 // ============================================================================
 // Types
@@ -96,6 +96,19 @@ export const DEFAULT_EXPORT_LIMITS: ExportLimits = {
   maxFileSizeMB: 50,
 };
 
+function checkLimitByMaxRows(
+  rowCount: number,
+  maxRows: number
+): { exceeds: boolean; message?: string } {
+  if (rowCount > maxRows) {
+    return {
+      exceeds: true,
+      message: `Export limited to ${maxRows.toLocaleString()} rows. Current selection has ${rowCount.toLocaleString()} rows.`,
+    };
+  }
+  return { exceeds: false };
+}
+
 // ============================================================================
 // Utility Functions
 // ============================================================================
@@ -105,7 +118,7 @@ export const DEFAULT_EXPORT_LIMITS: ExportLimits = {
  */
 function escapeCSVField(value: unknown): string {
   if (value === null || value === undefined) {
-    return '';
+    return "";
   }
 
   let stringValue = String(value);
@@ -116,7 +129,11 @@ function escapeCSVField(value: unknown): string {
   }
 
   // Escape quotes and wrap if needed
-  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
 
@@ -128,32 +145,32 @@ function escapeCSVField(value: unknown): string {
  */
 function escapeHTML(value: unknown): string {
   if (value === null || value === undefined) {
-    return '';
+    return "";
   }
   return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 /**
  * Format timestamp for filename
  */
 function formatTimestamp(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 /**
  * Download blob as file
  */
 function downloadBlob(blob: Blob, filename: string): void {
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -164,8 +181,8 @@ function downloadBlob(blob: Blob, filename: string): void {
  * Get nested value from object
  */
 function getNestedValue<T>(obj: T, path: string): unknown {
-  return path.split('.').reduce((current: unknown, key) => {
-    if (current && typeof current === 'object' && key in current) {
+  return path.split(".").reduce((current: unknown, key) => {
+    if (current && typeof current === "object" && key in current) {
       return (current as Record<string, unknown>)[key];
     }
     return undefined;
@@ -227,13 +244,7 @@ export function useExport<T extends Record<string, unknown>>(
   // Check if data exceeds limits
   const checkLimits = useCallback(
     (rowCount: number): { exceeds: boolean; message?: string } => {
-      if (rowCount > limits.maxRows) {
-        return {
-          exceeds: true,
-          message: `Export limited to ${limits.maxRows.toLocaleString()} rows. Current selection has ${rowCount.toLocaleString()} rows.`,
-        };
-      }
-      return { exceeds: false };
+      return checkLimitByMaxRows(rowCount, limits.maxRows);
     },
     [limits.maxRows]
   );
@@ -260,9 +271,12 @@ export function useExport<T extends Record<string, unknown>>(
       const effectiveLimits = { ...limits, ...optionLimits };
 
       // Check limits
-      const limitCheck = checkLimits(data.length);
+      const limitCheck = checkLimitByMaxRows(
+        data.length,
+        effectiveLimits.maxRows
+      );
       if (limitCheck.exceeds) {
-        toast.warning(limitCheck.message || '');
+        toast.warning(limitCheck.message || "");
         data = data.slice(0, effectiveLimits.maxRows);
       }
 
@@ -280,32 +294,34 @@ export function useExport<T extends Record<string, unknown>>(
 
       try {
         // Create header row
-        const headerRow = columns.map((col) => escapeCSVField(col.label)).join(',');
+        const headerRow = columns
+          .map(col => escapeCSVField(col.label))
+          .join(",");
         const rows: string[] = [headerRow];
 
         // Process data in chunks
         for (let i = 0; i < data.length; i += effectiveLimits.chunkSize) {
           if (cancelRef.current) {
-            throw new Error('Export cancelled');
+            throw new Error("Export cancelled");
           }
 
           const chunk = data.slice(i, i + effectiveLimits.chunkSize);
 
           for (const row of chunk) {
             const csvRow = columns
-              .map((col) => {
+              .map(col => {
                 const value = getNestedValue(row, col.key as string);
                 const formattedValue = col.formatter
                   ? col.formatter(value, row)
                   : value;
                 return escapeCSVField(formattedValue);
               })
-              .join(',');
+              .join(",");
             rows.push(csvRow);
           }
 
           const progress = Math.round(((i + chunk.length) / data.length) * 100);
-          setState((prev) => ({
+          setState(prev => ({
             ...prev,
             progress,
             currentRow: i + chunk.length,
@@ -313,12 +329,12 @@ export function useExport<T extends Record<string, unknown>>(
           onProgress?.(progress);
 
           // Yield to UI thread
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          await new Promise(resolve => setTimeout(resolve, 0));
         }
 
         // Create and download file
-        const csv = rows.join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const csv = rows.join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 
         // Check file size
         const fileSizeMB = blob.size / (1024 * 1024);
@@ -337,19 +353,20 @@ export function useExport<T extends Record<string, unknown>>(
         toast.success(`Exported ${data.length.toLocaleString()} rows to CSV`);
         onComplete?.(data.length);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Export failed';
-        setState((prev) => ({ ...prev, error: message }));
+        const message =
+          error instanceof Error ? error.message : "Export failed";
+        setState(prev => ({ ...prev, error: message }));
         toast.error(message);
         onError?.(error instanceof Error ? error : new Error(message));
       } finally {
-        setState((prev) => ({
+        setState(prev => ({
           ...prev,
           isExporting: false,
           progress: 100,
         }));
       }
     },
-    [limits, checkLimits]
+    [limits]
   );
 
   // Export to Excel (HTML table format)
@@ -369,9 +386,12 @@ export function useExport<T extends Record<string, unknown>>(
       const effectiveLimits = { ...limits, ...optionLimits };
 
       // Check limits
-      const limitCheck = checkLimits(data.length);
+      const limitCheck = checkLimitByMaxRows(
+        data.length,
+        effectiveLimits.maxRows
+      );
       if (limitCheck.exceeds) {
-        toast.warning(limitCheck.message || '');
+        toast.warning(limitCheck.message || "");
         data = data.slice(0, effectiveLimits.maxRows);
       }
 
@@ -391,17 +411,17 @@ export function useExport<T extends Record<string, unknown>>(
         // Create header cells
         const headerCells = columns
           .map(
-            (col) =>
+            col =>
               `<th style="background-color:#4472C4;color:white;font-weight:bold;padding:8px;border:1px solid #ccc;">${escapeHTML(col.label)}</th>`
           )
-          .join('');
+          .join("");
 
         const dataRows: string[] = [];
 
         // Process data in chunks
         for (let i = 0; i < data.length; i += effectiveLimits.chunkSize) {
           if (cancelRef.current) {
-            throw new Error('Export cancelled');
+            throw new Error("Export cancelled");
           }
 
           const chunk = data.slice(i, i + effectiveLimits.chunkSize);
@@ -410,19 +430,19 @@ export function useExport<T extends Record<string, unknown>>(
             const row = chunk[j];
             const rowIndex = i + j;
             const cells = columns
-              .map((col) => {
+              .map(col => {
                 const value = getNestedValue(row, col.key as string);
                 const formattedValue = col.formatter
                   ? col.formatter(value, row)
                   : value;
-                return `<td style="padding:8px;border:1px solid #ccc;${rowIndex % 2 === 1 ? 'background-color:#f8f9fa;' : ''}">${escapeHTML(formattedValue)}</td>`;
+                return `<td style="padding:8px;border:1px solid #ccc;${rowIndex % 2 === 1 ? "background-color:#f8f9fa;" : ""}">${escapeHTML(formattedValue)}</td>`;
               })
-              .join('');
+              .join("");
             dataRows.push(`<tr>${cells}</tr>`);
           }
 
           const progress = Math.round(((i + chunk.length) / data.length) * 100);
-          setState((prev) => ({
+          setState(prev => ({
             ...prev,
             progress,
             currentRow: i + chunk.length,
@@ -430,7 +450,7 @@ export function useExport<T extends Record<string, unknown>>(
           onProgress?.(progress);
 
           // Yield to UI thread
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          await new Promise(resolve => setTimeout(resolve, 0));
         }
 
         // Create HTML document
@@ -460,14 +480,14 @@ export function useExport<T extends Record<string, unknown>>(
             <body>
               <table>
                 <thead><tr>${headerCells}</tr></thead>
-                <tbody>${dataRows.join('')}</tbody>
+                <tbody>${dataRows.join("")}</tbody>
               </table>
             </body>
           </html>
         `;
 
         const blob = new Blob([html], {
-          type: 'application/vnd.ms-excel;charset=utf-8;',
+          type: "application/vnd.ms-excel;charset=utf-8;",
         });
 
         // Check file size
@@ -487,19 +507,20 @@ export function useExport<T extends Record<string, unknown>>(
         toast.success(`Exported ${data.length.toLocaleString()} rows to Excel`);
         onComplete?.(data.length);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Export failed';
-        setState((prev) => ({ ...prev, error: message }));
+        const message =
+          error instanceof Error ? error.message : "Export failed";
+        setState(prev => ({ ...prev, error: message }));
         toast.error(message);
         onError?.(error instanceof Error ? error : new Error(message));
       } finally {
-        setState((prev) => ({
+        setState(prev => ({
           ...prev,
           isExporting: false,
           progress: 100,
         }));
       }
     },
-    [limits, checkLimits]
+    [limits]
   );
 
   return {

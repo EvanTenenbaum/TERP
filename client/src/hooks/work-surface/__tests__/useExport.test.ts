@@ -17,9 +17,15 @@ vi.mock("sonner", () => ({
   toast: Object.assign(
     vi.fn((_message: string, _options?: unknown) => `toast-${Date.now()}`),
     {
-      success: vi.fn((_message: string, _options?: unknown) => `success-${Date.now()}`),
-      error: vi.fn((_message: string, _options?: unknown) => `error-${Date.now()}`),
-      warning: vi.fn((_message: string, _options?: unknown) => `warning-${Date.now()}`),
+      success: vi.fn(
+        (_message: string, _options?: unknown) => `success-${Date.now()}`
+      ),
+      error: vi.fn(
+        (_message: string, _options?: unknown) => `error-${Date.now()}`
+      ),
+      warning: vi.fn(
+        (_message: string, _options?: unknown) => `warning-${Date.now()}`
+      ),
     }
   ),
 }));
@@ -33,9 +39,11 @@ const mockRevokeObjectURL = vi.fn();
 // Store original DOM methods before any mocking
 const originalCreateElement = document.createElement.bind(document);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const originalAppendChild = (globalThis as any).Node?.prototype?.appendChild || (() => {});
+const originalAppendChild =
+  (globalThis as any).Node?.prototype?.appendChild || (() => {});
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const originalRemoveChild = (globalThis as any).Node?.prototype?.removeChild || (() => {});
+const originalRemoveChild =
+  (globalThis as any).Node?.prototype?.removeChild || (() => {});
 
 describe("useExport", () => {
   let createElementSpy: ReturnType<typeof vi.spyOn>;
@@ -59,32 +67,38 @@ describe("useExport", () => {
       nodeType: 1,
     };
 
-    createElementSpy = vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
-      if (tagName.toLowerCase() === "a") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return mockLink as any;
-      }
-      // For all other elements (including React's internal container divs), use real implementation
-      return originalCreateElement(tagName);
-    });
+    createElementSpy = vi
+      .spyOn(document, "createElement")
+      .mockImplementation((tagName: string) => {
+        if (tagName.toLowerCase() === "a") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return mockLink as any;
+        }
+        // For all other elements (including React's internal container divs), use real implementation
+        return originalCreateElement(tagName);
+      });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(function(this: any, node: any) {
-      // Only mock for anchor elements, let others pass through
-      if ((node as HTMLElement).nodeName === "A") {
-        return node;
-      }
-      return originalAppendChild.call(this, node);
-    });
+    appendChildSpy = vi
+      .spyOn(document.body, "appendChild")
+      .mockImplementation(function (this: any, node: any) {
+        // Only mock for anchor elements, let others pass through
+        if ((node as HTMLElement).nodeName === "A") {
+          return node;
+        }
+        return originalAppendChild.call(this, node);
+      });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    removeChildSpy = vi.spyOn(document.body, "removeChild").mockImplementation(function(this: any, node: any) {
-      // Only mock for anchor elements, let others pass through
-      if ((node as HTMLElement).nodeName === "A") {
-        return node;
-      }
-      return originalRemoveChild.call(this, node);
-    });
+    removeChildSpy = vi
+      .spyOn(document.body, "removeChild")
+      .mockImplementation(function (this: any, node: any) {
+        // Only mock for anchor elements, let others pass through
+        if ((node as HTMLElement).nodeName === "A") {
+          return node;
+        }
+        return originalRemoveChild.call(this, node);
+      });
   });
 
   afterEach(() => {
@@ -190,9 +204,7 @@ describe("useExport", () => {
       expect(mockCreateObjectURL).toHaveBeenCalled();
 
       // Should show success toast
-      expect(toast.success).toHaveBeenCalledWith(
-        expect.stringContaining("3")
-      );
+      expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("3"));
     });
 
     it("should update progress during export", async () => {
@@ -239,9 +251,24 @@ describe("useExport", () => {
       expect(toast.warning).toHaveBeenCalled();
 
       // Should still succeed with truncated data
-      expect(toast.success).toHaveBeenCalledWith(
-        expect.stringContaining("2")
+      expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("2"));
+    });
+
+    it("should respect per-export maxRows override", async () => {
+      const { result } = renderHook(() => useExport());
+
+      await act(async () => {
+        await result.current.exportCSV(testData, {
+          columns: testColumns,
+          filename: "test-export",
+          limits: { maxRows: 1 },
+        });
+      });
+
+      expect(toast.warning).toHaveBeenCalledWith(
+        expect.stringContaining("1 rows")
       );
+      expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("1"));
     });
 
     it("should use formatter when provided", async () => {
@@ -272,10 +299,13 @@ describe("useExport", () => {
       const { result } = renderHook(() => useExport());
 
       await act(async () => {
-        await result.current.exportCSV(nestedData as Record<string, unknown>[], {
-          columns: nestedColumns,
-          filename: "test-export",
-        });
+        await result.current.exportCSV(
+          nestedData as Record<string, unknown>[],
+          {
+            columns: nestedColumns,
+            filename: "test-export",
+          }
+        );
       });
 
       expect(mockCreateObjectURL).toHaveBeenCalled();
@@ -310,6 +340,23 @@ describe("useExport", () => {
       expect(toast.success).toHaveBeenCalledWith(
         expect.stringContaining("Excel")
       );
+    });
+
+    it("should respect per-export maxRows override", async () => {
+      const { result } = renderHook(() => useExport());
+
+      await act(async () => {
+        await result.current.exportExcel(testData, {
+          columns: testColumns,
+          filename: "test-export",
+          limits: { maxRows: 1 },
+        });
+      });
+
+      expect(toast.warning).toHaveBeenCalledWith(
+        expect.stringContaining("1 rows")
+      );
+      expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("1"));
     });
   });
 
