@@ -13,6 +13,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -63,12 +64,18 @@ import {
   type StockStatus,
 } from "@/components/inventory/StockStatusBadge";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
-import { useExport, usePowersheetSelection } from "../../hooks/work-surface";
+import {
+  useExport,
+  usePowersheetSelection,
+  useUndo,
+  useValidationTiming,
+} from "../../hooks/work-surface";
 import {
   defaultFilters,
   useInventoryFilters,
@@ -196,6 +203,18 @@ type InventoryBatchStatus =
 const ACTIONABLE_BATCH_STATUSES = BATCH_STATUSES.filter(
   status => status.value !== "ALL"
 ) as Array<{ value: InventoryBatchStatus; label: string }>;
+
+type BatchStatus = InventoryBatchStatus;
+
+const qtyAdjustmentSchema = z.object({
+  adjustment: z
+    .string()
+    .trim()
+    .min(1, "Enter an adjustment amount")
+    .refine(value => !Number.isNaN(Number(value)), "Enter a valid number")
+    .refine(value => Number(value) !== 0, "Adjustment cannot be zero"),
+  reason: z.string().trim().min(1, "Enter an adjustment reason"),
+});
 
 // ============================================================================
 // HELPERS
@@ -501,6 +520,17 @@ export function InventoryWorkSurface() {
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
+  const undo = useUndo({ enableKeyboard: false });
+  const {
+    handleChange: handleQtyFieldChange,
+    handleBlur: handleQtyFieldBlur,
+    validateAll: validateQtyFields,
+    getFieldState: getQtyFieldState,
+    reset: resetQtyValidation,
+  } = useValidationTiming({
+    schema: qtyAdjustmentSchema,
+    initialValues: { adjustment: "", reason: "" },
+  });
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -917,6 +947,9 @@ export function InventoryWorkSurface() {
   const toggleAllVisibleSelection = selection.toggleAll;
 
   // Mutations
+  const undoStatusMutation = trpc.inventory.updateStatus.useMutation();
+  const undoAdjustQtyMutation = trpc.inventory.adjustQty.useMutation();
+
   const updateStatusMutation = trpc.inventory.updateStatus.useMutation({
     onMutate: () => setSaving("Updating status..."),
     onSuccess: () => {
@@ -985,6 +1018,7 @@ export function InventoryWorkSurface() {
       setShowQtyAdjust(false);
       setQtyAdjustment("");
       setQtyReason("");
+      resetQtyValidation();
       setSuccessMessage("Inventory adjusted successfully.");
       refreshInventory();
     },
@@ -1020,6 +1054,9 @@ export function InventoryWorkSurface() {
     gridMode: false,
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
+    onUndo: () => {
+      void undo.undoLast();
+    },
     customHandlers: {
       "cmd+k": (e?: ReactKeyboardEvent) => {
         e?.preventDefault();
@@ -1084,70 +1121,209 @@ export function InventoryWorkSurface() {
     [items]
   );
 
-  type BatchStatus =
-    | "AWAITING_INTAKE"
-    | "LIVE"
-    | "PHOTOGRAPHY_COMPLETE"
-    | "ON_HOLD"
-    | "QUARANTINED"
-    | "SOLD_OUT"
-    | "CLOSED";
   const handleStatusChange = useCallback(
     (batchId: number, newStatus: string): void => {
-      updateStatusMutation.mutate({
-        id: batchId,
-        status: newStatus as BatchStatus,
-      });
+      const previousStatus = items.find(item => item.batch?.id === batchId)
+        ?.batch?.batchStatus;
+      updateStatusMutation.mutate(
+        {
+          id: batchId,
+          status: newStatus as BatchStatus,
+        },
+        {
+          onSuccess: () => {
+            if (!previousStatus || previousStatus === newStatus) return;
+            undo.registerAction({
+              description: `Changed status to ${newStatus.replace(/_/g, " ")}`,
+              undo: async () => {
+                setSaving("Undoing status update...");
+                await undoStatusMutation.mutateAsync({
+                  id: batchId,
+                  status: previousStatus as BatchStatus,
+                });
+                await refreshInventory();
+                setSaved();
+              },
+              duration: 10000,
+            });
+          },
+        }
+      );
     },
-    [updateStatusMutation]
+    [
+      items,
+      undo,
+      undoStatusMutation,
+      updateStatusMutation,
+      refreshInventory,
+      setSaved,
+      setSaving,
+    ]
   );
 
   const handleAdjustQuantity = useCallback(
     (batchId: number) => {
       setSelectedBatchId(batchId);
+      setQtyAdjustment("");
+      setQtyReason("");
+      resetQtyValidation();
       setShowQtyAdjust(true);
     },
-    [setSelectedBatchId]
+    [resetQtyValidation, setSelectedBatchId]
   );
 
   const handleSubmitAdjustQuantity = useCallback(() => {
+    const validation = validateQtyFields();
+    if (!validation.isValid) {
+      toast.error(validation.errors.adjustment || validation.errors.reason);
+      return;
+    }
+
     const adjustment = Number.parseFloat(qtyAdjustment);
     if (!selectedBatchId || Number.isNaN(adjustment) || adjustment === 0) {
       toast.error("Enter a valid adjustment amount");
       return;
     }
-    if (!qtyReason.trim()) {
-      toast.error("Enter an adjustment reason");
-      return;
-    }
-    adjustQtyMutation.mutate({
-      id: selectedBatchId,
-      field: "onHandQty",
-      adjustment,
-      reason: qtyReason.trim(),
-    });
-  }, [selectedBatchId, qtyAdjustment, qtyReason, adjustQtyMutation]);
+    const batchId = selectedBatchId;
+    const reason = qtyReason.trim();
+    const sku = selectedItem?.batch?.sku;
+
+    adjustQtyMutation.mutate(
+      {
+        id: batchId,
+        field: "onHandQty",
+        adjustment,
+        reason,
+      },
+      {
+        onSuccess: () => {
+          undo.registerAction({
+            description: `Adjusted quantity by ${adjustment} for ${sku || `batch ${batchId}`}`,
+            undo: async () => {
+              setSaving("Undoing quantity adjustment...");
+              await undoAdjustQtyMutation.mutateAsync({
+                id: batchId,
+                field: "onHandQty",
+                adjustment: -adjustment,
+                reason: `Undo quantity adjustment: ${reason}`,
+              });
+              await refreshInventory();
+              setSaved();
+            },
+            duration: 10000,
+          });
+        },
+      }
+    );
+  }, [
+    validateQtyFields,
+    qtyAdjustment,
+    selectedBatchId,
+    qtyReason,
+    selectedItem,
+    adjustQtyMutation,
+    undo,
+    undoAdjustQtyMutation,
+    refreshInventory,
+    setSaved,
+    setSaving,
+  ]);
 
   const handleSubmitEditBatch = useCallback(() => {
     if (!editBatchId) {
       toast.error("No batch selected for update");
       return;
     }
-    updateStatusMutation.mutate({
-      id: editBatchId,
-      status: editStatus as BatchStatus,
-    });
+    const previousStatus = items.find(item => item.batch?.id === editBatchId)
+      ?.batch?.batchStatus;
+    updateStatusMutation.mutate(
+      {
+        id: editBatchId,
+        status: editStatus as BatchStatus,
+      },
+      {
+        onSuccess: () => {
+          if (!previousStatus || previousStatus === editStatus) return;
+          undo.registerAction({
+            description: `Edited status to ${editStatus.replace(/_/g, " ")}`,
+            undo: async () => {
+              setSaving("Undoing status update...");
+              await undoStatusMutation.mutateAsync({
+                id: editBatchId,
+                status: previousStatus as BatchStatus,
+              });
+              await refreshInventory();
+              setSaved();
+            },
+            duration: 10000,
+          });
+        },
+      }
+    );
     setShowEditDialog(false);
-  }, [editBatchId, editStatus, updateStatusMutation]);
+  }, [
+    editBatchId,
+    editStatus,
+    items,
+    undo,
+    undoStatusMutation,
+    updateStatusMutation,
+    refreshInventory,
+    setSaved,
+    setSaving,
+  ]);
 
   const handleApplyBulkStatus = useCallback(() => {
     const batchIds = Array.from(selectedBatchIds);
     if (!batchIds.length) return;
-    bulkUpdateStatusMutation.mutate({
-      batchIds,
-      newStatus: bulkStatus,
-    });
-  }, [selectedBatchIds, bulkStatus, bulkUpdateStatusMutation]);
+
+    const previousStatuses = batchIds
+      .map(id => ({
+        id,
+        status: items.find(item => item.batch?.id === id)?.batch?.batchStatus,
+      }))
+      .filter(
+        (entry): entry is { id: number; status: string } =>
+          Boolean(entry.status) && entry.status !== bulkStatus
+      );
+
+    bulkUpdateStatusMutation.mutate(
+      {
+        batchIds,
+        newStatus: bulkStatus,
+      },
+      {
+        onSuccess: () => {
+          if (!previousStatuses.length) return;
+          undo.registerAction({
+            description: `Updated status for ${previousStatuses.length} batch${previousStatuses.length === 1 ? "" : "es"}`,
+            undo: async () => {
+              setSaving("Undoing bulk status update...");
+              for (const entry of previousStatuses) {
+                await undoStatusMutation.mutateAsync({
+                  id: entry.id,
+                  status: entry.status as BatchStatus,
+                });
+              }
+              await refreshInventory();
+              setSaved();
+            },
+            duration: 10000,
+          });
+        },
+      }
+    );
+  }, [
+    selectedBatchIds,
+    items,
+    bulkStatus,
+    bulkUpdateStatusMutation,
+    undo,
+    undoStatusMutation,
+    refreshInventory,
+    setSaved,
+    setSaving,
+  ]);
 
   const handleBulkDelete = useCallback(() => {
     if (selectedBatchIds.size === 0) return;
@@ -1860,6 +2036,12 @@ export function InventoryWorkSurface() {
         </InspectorPanel>
       </div>
 
+      <WorkSurfaceStatusBar
+        left={`Page ${page + 1} of ${totalPages} | ${totalCount} total batches`}
+        center={`${selectedBatchIds.size} selected${undo.state.canUndo ? " | Undo available" : ""}`}
+        right="Cmd/Ctrl+K Search | Arrows Navigate | Enter Inspect | Esc Close | Cmd/Ctrl+Z Undo"
+      />
+
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
 
@@ -1876,7 +2058,17 @@ export function InventoryWorkSurface() {
         isLoading={bulkDeleteMutation.isPending}
       />
 
-      <Dialog open={showQtyAdjust} onOpenChange={setShowQtyAdjust}>
+      <Dialog
+        open={showQtyAdjust}
+        onOpenChange={open => {
+          setShowQtyAdjust(open);
+          if (!open) {
+            setQtyAdjustment("");
+            setQtyReason("");
+            resetQtyValidation();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adjust Quantity</DialogTitle>
@@ -1893,8 +2085,20 @@ export function InventoryWorkSurface() {
                 type="number"
                 placeholder="e.g., -5"
                 value={qtyAdjustment}
-                onChange={e => setQtyAdjustment(e.target.value)}
+                onChange={e => {
+                  setQtyAdjustment(e.target.value);
+                  handleQtyFieldChange("adjustment", e.target.value);
+                }}
+                onBlur={() => handleQtyFieldBlur("adjustment")}
+                className={cn(
+                  getQtyFieldState("adjustment").showError && "border-red-500"
+                )}
               />
+              {getQtyFieldState("adjustment").showError && (
+                <p className="text-xs text-red-500 mt-1">
+                  {getQtyFieldState("adjustment").error}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="qty-reason">Reason</Label>
@@ -1903,8 +2107,20 @@ export function InventoryWorkSurface() {
                 data-testid="qty-reason"
                 placeholder="Reason for adjustment"
                 value={qtyReason}
-                onChange={e => setQtyReason(e.target.value)}
+                onChange={e => {
+                  setQtyReason(e.target.value);
+                  handleQtyFieldChange("reason", e.target.value);
+                }}
+                onBlur={() => handleQtyFieldBlur("reason")}
+                className={cn(
+                  getQtyFieldState("reason").showError && "border-red-500"
+                )}
               />
+              {getQtyFieldState("reason").showError && (
+                <p className="text-xs text-red-500 mt-1">
+                  {getQtyFieldState("reason").error}
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
