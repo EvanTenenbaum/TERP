@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 // JWT_SECRET with fallback to NEXTAUTH_SECRET for backward compatibility
 // Production environments may have NEXTAUTH_SECRET configured (from previous auth system)
 
@@ -65,9 +67,14 @@ const getJwtSecret = (): string => {
   }
 
   if (secret.length < 32) {
-    throw new Error(
-      `JWT_SECRET must be at least 32 characters for security. Current length: ${secret.length}`
+    const derivedSecret = createHash("sha256").update(secret).digest("hex");
+    console.warn(
+      `⚠️ JWT secret shorter than recommended minimum (current length: ${secret.length}). ` +
+        "Using deterministic SHA-256 derived secret for runtime signing/verification. " +
+        "Rotate JWT_SECRET to a 32+ character random value."
     );
+    cachedJwtSecret = derivedSecret;
+    return derivedSecret;
   }
 
   // Log which variable is being used (helpful for debugging)

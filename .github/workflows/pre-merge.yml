@@ -288,10 +288,29 @@ jobs:
           fi
 
   # ================================================================
-  # JOB 3: Unit tests — vitest, no DB needed (~2 min)
+  # JOB 3: Unit tests — vitest with DB readiness for data-integrity suite
   # ================================================================
   unit-tests:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: terp_test
+          MYSQL_USER: terp_test
+          MYSQL_PASSWORD: terp_test_password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
     steps:
       - uses: actions/checkout@v4
 
@@ -306,6 +325,25 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          MAX_ATTEMPTS=30
+          ATTEMPTS=0
+          until mysqladmin ping -h 127.0.0.1 -P 3307 --silent 2>/dev/null; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "MySQL failed to start after $MAX_ATTEMPTS attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Push schema and seed
+        run: |
+          pnpm drizzle-kit push --force
+          pnpm seed:light
+          pnpm seed:qa-accounts
 
       - name: Unit tests
         run: pnpm test --run
@@ -374,6 +412,30 @@ jobs:
       - name: Push schema and seed
         run: pnpm drizzle-kit push --force && pnpm seed:light
 
+      - name: Start app server
+        run: |
+          JWT_SECRET="${JWT_SECRET:-terp-ci-jwt-secret-2026-000000000000}" \
+          DATABASE_URL="$DATABASE_URL" \
+          TEST_DATABASE_URL="$DATABASE_URL" \
+          PORT=5173 \
+          pnpm dev > /tmp/terp-dev.log 2>&1 &
+          echo $! > /tmp/terp-dev.pid
+
+      - name: Wait for app readiness
+        run: |
+          MAX_ATTEMPTS=60
+          ATTEMPTS=0
+          until curl -fsS http://127.0.0.1:5173/health >/dev/null 2>&1; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "App failed to start after $MAX_ATTEMPTS attempts"
+              echo "---- /tmp/terp-dev.log ----"
+              cat /tmp/terp-dev.log || true
+              exit 1
+            fi
+            sleep 2
+          done
+
       - name: Install Playwright
         run: pnpm exec playwright install --with-deps chromium
 
@@ -397,15 +459,17 @@ jobs:
               tests-e2e/critical-paths/inventory-intake.spec.ts \
               tests-e2e/critical-paths/accounting-quick-payment.spec.ts \
               tests-e2e/critical-paths/client-credit-workflow.spec.ts \
+              --project=chromium \
               --reporter=list
           else
             echo "Running targeted E2E specs: $SPECS"
             # shellcheck disable=SC2086
-            pnpm exec playwright test $SPECS --reporter=list
+            pnpm exec playwright test $SPECS --project=chromium --reporter=list
           fi
         env:
           CI: true
           E2E_USE_LIVE_DB: '1'
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
 
       - name: Upload Playwright report on failure
         uses: actions/upload-artifact@v4
@@ -414,3 +478,16 @@ jobs:
           name: targeted-e2e-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Print app server logs on failure
+        if: failure()
+        run: |
+          echo "---- /tmp/terp-dev.log ----"
+          cat /tmp/terp-dev.log || true
+
+      - name: Stop app server
+        if: always()
+        run: |
+          if [ -f /tmp/terp-dev.pid ]; then
+            kill "$(cat /tmp/terp-dev.pid)" 2>/dev/null || true
+          fi
