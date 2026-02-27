@@ -98,6 +98,11 @@ export default function VIPDashboard() {
   } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const formatCurrency = (value: number) =>
+    `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   // FE-QA-003: Only fetch data when auth is fully initialized
   // tRPC client now sends x-vip-session-token header automatically from main.tsx
@@ -291,7 +296,7 @@ export default function VIPDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-xl md:text-2xl font-bold">
-                            ${kpis.currentBalance.toLocaleString()}
+                            {formatCurrency(kpis.currentBalance)}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Amount owed
@@ -311,7 +316,7 @@ export default function VIPDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-xl md:text-2xl font-bold">
-                            ${kpis.ytdSpend.toLocaleString()}
+                            {formatCurrency(kpis.ytdSpend)}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Year to date

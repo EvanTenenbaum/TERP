@@ -116,7 +116,13 @@ export function ReceivePaymentModal({
       onSuccess: result => {
         toast({
           title: "Payment Recorded",
-          description: `${result.paymentNumber}: $${result.paymentAmount.toLocaleString()} received from ${result.clientName}`,
+          description: `${result.paymentNumber}: $${result.paymentAmount.toLocaleString(
+            undefined,
+            {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }
+          )} received from ${result.clientName}`,
         });
         utils.accounting.payments.list.invalidate();
         utils.accounting.quickActions.getRecentClients.invalidate();

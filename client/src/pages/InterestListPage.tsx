@@ -79,6 +79,13 @@ const PRIORITY_SCORE: Record<string, number> = {
   LOW: 1,
 };
 
+const formatCurrencyValue = (value: number | undefined): string => {
+  if (value === undefined || Number.isNaN(value)) {
+    return "-";
+  }
+  return `$${value.toFixed(2)}`;
+};
+
 export default function InterestListPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -461,74 +468,89 @@ export default function InterestListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredItems.map(item => (
-                    <TableRow
-                      key={item.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => setSelectedItem(item)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{item.clientName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {item.productCategory}
-                          </div>
-                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                            {item.productDescription}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {item.quantityNeeded}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {item.maxPrice ? `$${item.maxPrice}` : "-"}
-                      </TableCell>
-                      <TableCell>{getPriorityBadge(item.priority)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={item.matchCount > 0 ? "default" : "outline"}
-                          className="text-xs"
-                        >
-                          {item.matchCount}{" "}
-                          {item.matchCount === 1 ? "match" : "matches"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleConvertToOrder(item)}
-                            >
-                              <ShoppingCart className="h-4 w-4 mr-2" />
-                              Convert to Order
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteItem(item)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        No interest items match the current filters.
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredItems.map(item => (
+                      <TableRow
+                        key={item.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {item.clientName}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {item.productCategory}
+                            </div>
+                            <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                              {item.productDescription}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {item.quantityNeeded}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrencyValue(item.maxPrice)}
+                        </TableCell>
+                        <TableCell>{getPriorityBadge(item.priority)}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              item.matchCount > 0 ? "default" : "outline"
+                            }
+                            className="text-xs"
+                          >
+                            {item.matchCount}{" "}
+                            {item.matchCount === 1 ? "match" : "matches"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleConvertToOrder(item)}
+                              >
+                                <ShoppingCart className="h-4 w-4 mr-2" />
+                                Convert to Order
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteItem(item)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

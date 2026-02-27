@@ -74,11 +74,11 @@ describe("DashboardLayout navigation", () => {
     const groupLabels = screen.getAllByTestId("nav-group-label");
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
-    // Updated to match actual navigation groups from navigation.ts
-    expect(labelTexts).toEqual(["Sales", "Inventory", "Finance", "Admin"]);
+    // Labels come from navigation.ts navigationGroups
+    expect(labelTexts).toEqual(["Sell", "Buy", "Finance", "Admin"]);
   });
 
-  it("navigates to Spreadsheet view from the sidebar", () => {
+  it("navigates to canonical procurement spreadsheet destination from the sidebar", () => {
     render(
       <ThemeProvider>
         <DashboardLayout>
@@ -87,11 +87,10 @@ describe("DashboardLayout navigation", () => {
       </ThemeProvider>
     );
 
-    const spreadsheetButton = screen.getByRole("button", {
-      name: /Spreadsheet/i,
-    });
-    fireEvent.click(spreadsheetButton);
+    fireEvent.click(screen.getByText("Spreadsheet View"));
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/spreadsheet-view");
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/purchase-orders?tab=receiving&mode=spreadsheet"
+    );
   });
 });

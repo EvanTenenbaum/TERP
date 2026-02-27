@@ -127,7 +127,7 @@ export const Client360Pod = React.memo(function Client360Pod({
     if (data.client.isBuyer)
       badges.push({ label: "Buyer", variant: "default" });
     if (data.client.isSeller)
-      badges.push({ label: "Seller", variant: "secondary" });
+      badges.push({ label: "Supplier", variant: "secondary" });
     if (data.client.isBrand)
       badges.push({ label: "Brand", variant: "outline" });
     if (data.client.isReferee)
@@ -273,7 +273,11 @@ export const Client360Pod = React.memo(function Client360Pod({
                 Array.isArray(client.tags) &&
                 client.tags.length > 0 ? (
                   (client.tags as string[]).slice(0, 5).map((tag, _idx) => (
-                    <Badge key={`tag-${tag}`} variant="outline" className="text-xs">
+                    <Badge
+                      key={`tag-${tag}`}
+                      variant="outline"
+                      className="text-xs"
+                    >
                       {tag}
                     </Badge>
                   ))

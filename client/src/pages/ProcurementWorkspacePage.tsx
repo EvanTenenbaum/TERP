@@ -1,4 +1,3 @@
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   LinearWorkspacePanel,
@@ -10,17 +9,22 @@ import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import ProductIntakeSlicePage from "@/components/uiux-slice/ProductIntakeSlicePage";
 import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
 import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
+import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 
-type ProcurementTab = "purchase-orders" | "product-intake" | "inventory-browse";
+type ProcurementTab =
+  | "purchase-orders"
+  | "product-intake"
+  | "receiving"
+  | "inventory-browse";
 
 const PROCUREMENT_TABS = [
   { value: "purchase-orders", label: "Purchase Orders" },
   { value: "product-intake", label: "Product Intake" },
+  { value: "receiving", label: "Receiving" },
   { value: "inventory-browse", label: "Inventory Browse" },
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
 export default function ProcurementWorkspacePage() {
-  const [, setLocation] = useLocation();
   const { activeTab, setActiveTab } = useQueryTabState<ProcurementTab>({
     defaultTab: "purchase-orders",
     validTabs: PROCUREMENT_TABS.map(tab => tab.value),
@@ -72,10 +76,10 @@ export default function ProcurementWorkspacePage() {
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            onClick={() => setLocation("/direct-intake")}
+            variant={activeTab === "receiving" ? "default" : "outline"}
+            onClick={() => setActiveTab("receiving")}
           >
-            Direct Intake
+            Receiving
           </Button>
         </>
       }
@@ -85,6 +89,9 @@ export default function ProcurementWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="product-intake">
         <ProductIntakeSlicePage />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="receiving">
+        <DirectIntakeWorkSurface />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="inventory-browse">
         <InventoryBrowseSlicePage />

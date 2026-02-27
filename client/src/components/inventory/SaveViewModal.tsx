@@ -29,6 +29,7 @@ export function SaveViewModal({
 }: SaveViewModalProps) {
   const [name, setName] = useState("");
   const [isShared, setIsShared] = useState(false);
+  const utils = trpc.useUtils();
 
   const saveView = trpc.inventory.views.save.useMutation();
 
@@ -46,6 +47,8 @@ export function SaveViewModal({
         filters: filters as unknown as Record<string, unknown>,
         isShared,
       });
+
+      await utils.inventory.views.list.invalidate();
 
       toast.success("View saved successfully");
 

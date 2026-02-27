@@ -238,7 +238,7 @@ export function ReferrerLookup({ onSelectClient }: ReferrerLookupProps) {
                               <Badge variant="outline">Buyer</Badge>
                             )}
                             {referral.isSeller && (
-                              <Badge variant="secondary">Seller</Badge>
+                              <Badge variant="secondary">Supplier</Badge>
                             )}
                           </div>
                         </TableCell>

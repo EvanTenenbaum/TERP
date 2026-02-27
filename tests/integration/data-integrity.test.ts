@@ -1,29 +1,69 @@
 /**
  * WF-004: Data Integrity Tests
- * 
+ *
  * CRITICAL: These tests hit the REAL database to verify data integrity.
- * 
+ *
  * Purpose:
  * - Verify foreign key relationships are intact
  * - Verify financial calculations are consistent
  * - Verify audit trails exist for critical operations
  * - Verify soft deletes are working correctly
- * 
+ *
  * Run with:
  *   DATABASE_URL=mysql://... pnpm vitest run tests/integration/data-integrity.test.ts
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
 import { getDb } from "../../server/db";
-import { 
-  clients, orders, orderLineItems, batches, returns,
-  auditLogs, orderAuditLog
+import {
+  clients,
+  orders,
+  orderLineItems,
+  batches,
+  returns,
+  auditLogs,
+  orderAuditLog,
 } from "../../drizzle/schema";
 import { eq, sql, and, isNull, inArray } from "drizzle-orm";
 
 describe("Data Integrity Tests", () => {
   let db: Awaited<ReturnType<typeof getDb>> | null = null;
   let dbAvailable = false;
+  let dbInitError: unknown = null;
+  let dbNoticeLogged = false;
+  const requireIntegrityDb =
+    process.env.REQUIRE_INTEGRITY_DB === "1" || process.env.CI === "true";
+
+  const dbSetupMessage = () => {
+    const detail =
+      dbInitError instanceof Error
+        ? dbInitError.message
+        : dbInitError !== null && dbInitError !== undefined
+          ? String(dbInitError)
+          : "Unknown connectivity error";
+
+    return (
+      "Data integrity suite requires a reachable MySQL database. " +
+      "Set DATABASE_URL and rerun `pnpm vitest run tests/integration/data-integrity.test.ts`. " +
+      "Set REQUIRE_INTEGRITY_DB=1 to force hard failure when DB is unavailable. " +
+      `Last connection error: ${detail}`
+    );
+  };
+
+  const requireDbForTest = (): boolean => {
+    if (dbAvailable && db) return true;
+
+    const message = dbSetupMessage();
+    if (requireIntegrityDb) {
+      throw new Error(message);
+    }
+
+    if (!dbNoticeLogged) {
+      console.warn(message);
+      dbNoticeLogged = true;
+    }
+    return false;
+  };
 
   beforeAll(async () => {
     try {
@@ -31,8 +71,9 @@ describe("Data Integrity Tests", () => {
       // Test actual connectivity with a simple query
       await db.execute(sql`SELECT 1`);
       dbAvailable = true;
-    } catch {
-      console.warn("Skipping data integrity tests - database not available");
+      dbInitError = null;
+    } catch (error) {
+      dbInitError = error;
       dbAvailable = false;
     }
   });
@@ -40,8 +81,7 @@ describe("Data Integrity Tests", () => {
   describe("Foreign Key Relationships", () => {
     it("should have all orders linked to valid clients", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const orphanedOrders = await db
@@ -55,8 +95,7 @@ describe("Data Integrity Tests", () => {
 
     it("should have all order line items linked to valid orders", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const orphanedLineItems = await db
@@ -70,8 +109,7 @@ describe("Data Integrity Tests", () => {
 
     it("should have all order line items linked to valid batches", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const orphanedLineItems = await db
@@ -85,8 +123,7 @@ describe("Data Integrity Tests", () => {
 
     it("should have all returns linked to valid orders", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const orphanedReturns = await db
@@ -100,8 +137,7 @@ describe("Data Integrity Tests", () => {
 
     it("should have audit logs with actor IDs for most entries", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const totalAuditLogs = await db.select().from(auditLogs);
@@ -111,7 +147,7 @@ describe("Data Integrity Tests", () => {
 
       // actorId is NOT NULL in schema, so all entries should have it
       const logsWithActor = totalAuditLogs.filter(
-        (log) => log.actorId !== null && log.actorId !== undefined
+        log => log.actorId !== null && log.actorId !== undefined
       );
       const ratio = logsWithActor.length / totalAuditLogs.length;
       expect(ratio).toBeGreaterThan(0.9);
@@ -121,8 +157,7 @@ describe("Data Integrity Tests", () => {
   describe("Financial Calculations", () => {
     it("should have order totals match sum of line items", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const ordersResult = await db
@@ -150,7 +185,7 @@ describe("Data Integrity Tests", () => {
         }
 
         const calculatedTotal = lineItems.reduce(
-          (sum: number, item: { lineTotal: string | null }) => 
+          (sum: number, item: { lineTotal: string | null }) =>
             sum + parseFloat(item.lineTotal || "0"),
           0
         );
@@ -163,8 +198,7 @@ describe("Data Integrity Tests", () => {
 
     it("should have no negative quantities in batches", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       // Verify onHandQty is not negative for any batch
@@ -190,8 +224,7 @@ describe("Data Integrity Tests", () => {
   describe("Audit Trails", () => {
     it("should have audit logs for order creations", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const recentOrders = await db
@@ -253,8 +286,7 @@ describe("Data Integrity Tests", () => {
 
     it("should have actor IDs in most audit logs", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const recentAuditLogs = await db
@@ -269,7 +301,7 @@ describe("Data Integrity Tests", () => {
 
       // actorId is NOT NULL in schema, so all should have it
       const logsWithActorId = recentAuditLogs.filter(
-        (log) => log.actorId !== null && log.actorId !== undefined
+        log => log.actorId !== null && log.actorId !== undefined
       );
 
       const ratio = logsWithActorId.length / recentAuditLogs.length;
@@ -280,19 +312,16 @@ describe("Data Integrity Tests", () => {
   describe("Soft Deletes", () => {
     it("should have soft-deleted records excluded from normal queries", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const allOrders = await db.select().from(orders);
-      
+
       if (allOrders.length === 0) {
         return; // No orders yet - pass gracefully on fresh/seeded DB
       }
 
-      const activeOrders = allOrders.filter(
-        (order) => !order.deletedAt
-      );
+      const activeOrders = allOrders.filter(order => !order.deletedAt);
 
       const ratio = activeOrders.length / allOrders.length;
       expect(ratio).toBeGreaterThan(0.9);
@@ -302,8 +331,7 @@ describe("Data Integrity Tests", () => {
   describe("Batch Data Integrity", () => {
     it("should have consistent batch statuses", async () => {
       if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
+        if (!requireDbForTest()) return;
       }
 
       const batchesWithInvalidStatus = await db

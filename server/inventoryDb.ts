@@ -881,35 +881,50 @@ export async function getBatchesByIds(
   return batchMap;
 }
 
+export interface BatchDetailsFilters {
+  status?: string | string[];
+  category?: string;
+  subcategory?: string;
+  vendor?: string[];
+  brand?: string[];
+  grade?: string[];
+  search?: string;
+  stockLevel?: "all" | "in_stock" | "low_stock" | "out_of_stock";
+  lowStockThreshold?: number;
+  cogsMin?: number;
+  cogsMax?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
+  locationQuery?: string;
+}
+
+export interface BatchDetailsQueryOptions {
+  applyPagination?: boolean;
+}
+
 /**
- * Get batches with details using cursor-based pagination
- * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
- * ✅ ENHANCED: INV-FILTER-002 - Extended filter support for vendor, brand, grade, subcategory
- * @param limit - Maximum number of results to return
- * @param cursor - Optional cursor (batch ID) for pagination
- * @param filters - Optional filters (status, category, subcategory, vendor, brand, grade)
+ * Get batches with details using cursor pagination (default) or full-dataset retrieval.
+ * ✅ ENHANCED: INV-FILTER-002 - vendor, brand, grade, subcategory filters
+ * ✅ ENHANCED: RT-02 - stockLevel, COGS range, date range, semantic location filters
  */
 export async function getBatchesWithDetails(
   limit: number = 100,
   cursor?: number,
-  filters?: {
-    status?: string | string[]; // INV-FILTER-002: Support single or array
-    category?: string;
-    subcategory?: string; // INV-FILTER-002: New filter
-    vendor?: string[]; // INV-FILTER-002: Match against clients.businessName
-    brand?: string[]; // INV-FILTER-002: Match against brands.name
-    grade?: string[]; // INV-FILTER-002: Match against batches.grade
-  }
+  filters?: BatchDetailsFilters,
+  options?: BatchDetailsQueryOptions
 ) {
   const db = await getDb();
   // BUG-098 FIX: Include hasMore in early return to prevent frontend issues
   if (!db) return { items: [], nextCursor: null, hasMore: false };
 
+  const applyPagination = options?.applyPagination !== false;
+
   // Build where conditions
   const conditions = [];
-  if (cursor) {
+  if (applyPagination && typeof cursor === "number" && cursor > 0) {
     conditions.push(sql`${batches.id} < ${cursor}`);
   }
+
   // INV-FILTER-002: Support both single string and array for status
   if (filters?.status) {
     if (Array.isArray(filters.status) && filters.status.length > 0) {
@@ -921,49 +936,129 @@ export async function getBatchesWithDetails(
   if (filters?.category) {
     conditions.push(eq(products.category, filters.category));
   }
-  // INV-FILTER-002: New subcategory filter
   if (filters?.subcategory) {
     conditions.push(eq(products.subcategory, filters.subcategory));
   }
-  // INV-FILTER-002: New vendor filter (matches against clients.name)
   if (filters?.vendor && filters.vendor.length > 0) {
     conditions.push(safeInArray(clients.name, filters.vendor));
   }
-  // INV-FILTER-002: New brand filter
   if (filters?.brand && filters.brand.length > 0) {
     conditions.push(safeInArray(brands.name, filters.brand));
   }
-  // INV-FILTER-002: New grade filter
   if (filters?.grade && filters.grade.length > 0) {
     conditions.push(safeInArray(batches.grade, filters.grade));
   }
 
-  // Join batches with products, brands, lots, and vendors
-  // BUG-098 FIX: Also join clients table via supplierClientId for canonical supplier data
-  // This handles cases where vendorId may be empty but supplierClientId is set
-  const query = db
+  const search = filters?.search?.trim();
+  if (search) {
+    const pattern = `%${search}%`;
+    conditions.push(sql`(
+      ${batches.sku} LIKE ${pattern}
+      OR ${batches.code} LIKE ${pattern}
+      OR ${products.nameCanonical} LIKE ${pattern}
+      OR ${clients.name} LIKE ${pattern}
+      OR ${brands.name} LIKE ${pattern}
+    )`);
+  }
+
+  const availableQtyExpr = sql`(
+    CAST(COALESCE(${batches.onHandQty}, '0') AS DECIMAL(20,4))
+    - CAST(COALESCE(${batches.reservedQty}, '0') AS DECIMAL(20,4))
+    - CAST(COALESCE(${batches.quarantineQty}, '0') AS DECIMAL(20,4))
+    - CAST(COALESCE(${batches.holdQty}, '0') AS DECIMAL(20,4))
+  )`;
+  if (filters?.stockLevel && filters.stockLevel !== "all") {
+    const lowStockThreshold =
+      typeof filters.lowStockThreshold === "number" &&
+      Number.isFinite(filters.lowStockThreshold)
+        ? filters.lowStockThreshold
+        : 50;
+    if (filters.stockLevel === "in_stock") {
+      conditions.push(sql`${availableQtyExpr} > ${lowStockThreshold}`);
+    } else if (filters.stockLevel === "low_stock") {
+      conditions.push(
+        sql`${availableQtyExpr} > 0 AND ${availableQtyExpr} <= ${lowStockThreshold}`
+      );
+    } else if (filters.stockLevel === "out_of_stock") {
+      conditions.push(sql`${availableQtyExpr} <= 0`);
+    }
+  }
+
+  const effectiveUnitCogsExpr = sql`CAST(COALESCE(${batches.unitCogs}, ${batches.unitCogsMin}, ${batches.unitCogsMax}, '0') AS DECIMAL(20,4))`;
+  if (
+    typeof filters?.cogsMin === "number" &&
+    Number.isFinite(filters.cogsMin)
+  ) {
+    conditions.push(sql`${effectiveUnitCogsExpr} >= ${filters.cogsMin}`);
+  }
+  if (
+    typeof filters?.cogsMax === "number" &&
+    Number.isFinite(filters.cogsMax)
+  ) {
+    conditions.push(sql`${effectiveUnitCogsExpr} <= ${filters.cogsMax}`);
+  }
+
+  if (filters?.dateFrom) {
+    conditions.push(sql`${batches.createdAt} >= ${filters.dateFrom}`);
+  }
+  if (filters?.dateTo) {
+    conditions.push(sql`${batches.createdAt} <= ${filters.dateTo}`);
+  }
+
+  const semanticLocationQuery = filters?.locationQuery?.trim().toLowerCase();
+  if (semanticLocationQuery) {
+    const locationTerms = semanticLocationQuery.split(/\s+/).filter(Boolean);
+    if (locationTerms.length > 0) {
+      const locationTermConditions = locationTerms.map(
+        term => sql`
+          LOWER(
+            CONCAT_WS(
+              ' ',
+              COALESCE(${batchLocations.site}, ''),
+              COALESCE(${batchLocations.zone}, ''),
+              COALESCE(${batchLocations.rack}, ''),
+              COALESCE(${batchLocations.shelf}, ''),
+              COALESCE(${batchLocations.bin}, '')
+            )
+          ) LIKE ${`%${term}%`}
+        `
+      );
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1
+          FROM ${batchLocations}
+          WHERE ${batchLocations.batchId} = ${batches.id}
+            AND ${batchLocations.deletedAt} IS NULL
+            AND ${and(...locationTermConditions)}
+        )`
+      );
+    }
+  }
+
+  // Join batches with products, brands, lots, and canonical supplier client
+  const baseQuery = db
     .select({
       batch: batches,
       product: safeProductSelect,
       brand: brands,
       lot: lots,
-      // BUG-122: Removed deprecated vendor field - use supplierClient instead
       supplierClient: clients,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(lots, eq(batches.lotId, lots.id))
-    // BUG-122: Removed deprecated vendors join - using canonical clients table instead
-    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
-    .orderBy(desc(batches.id))
-    .limit(limit + 1); // Fetch one extra to determine if there are more results
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id));
 
-  // Apply conditions if any
-  const result =
-    conditions.length > 0 ? await query.where(and(...conditions)) : await query;
+  const filteredQuery =
+    conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-  // Determine next cursor
+  if (!applyPagination) {
+    const items = await filteredQuery.orderBy(desc(batches.id));
+    return { items, nextCursor: null, hasMore: false };
+  }
+
+  const result = await filteredQuery.orderBy(desc(batches.id)).limit(limit + 1);
   const hasMore = result.length > limit;
   const items = hasMore ? result.slice(0, limit) : result;
   const nextCursor =
@@ -1931,6 +2026,74 @@ export async function bulkDeleteBatches(
     }
 
     return { success: true, deleted };
+  });
+}
+
+/**
+ * Restore batches that were closed via bulk delete by returning them to their prior statuses.
+ */
+export async function bulkRestoreBatches(
+  batchesToRestore: Array<{
+    id: number;
+    previousStatus: BatchStatus;
+  }>,
+  _userId: number
+): Promise<{
+  success: boolean;
+  restored: number;
+  skipped: number;
+  errors: string[];
+}> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.transaction(async tx => {
+    let restored = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const restoreTarget of batchesToRestore) {
+      const [batch] = await tx
+        .select()
+        .from(batches)
+        .where(eq(batches.id, restoreTarget.id));
+
+      if (!batch) {
+        skipped++;
+        errors.push(`Batch ${restoreTarget.id} not found`);
+        continue;
+      }
+
+      if (batch.batchStatus !== "CLOSED") {
+        skipped++;
+        errors.push(
+          `Batch ${restoreTarget.id} is ${batch.batchStatus}; only CLOSED batches can be restored`
+        );
+        continue;
+      }
+
+      const targetStatus =
+        restoreTarget.previousStatus === "CLOSED"
+          ? "LIVE"
+          : restoreTarget.previousStatus;
+
+      await tx
+        .update(batches)
+        .set({
+          batchStatus: targetStatus,
+          updatedAt: new Date(),
+        })
+        .where(eq(batches.id, restoreTarget.id));
+
+      restored++;
+    }
+
+    return {
+      success: true,
+      restored,
+      skipped,
+      errors,
+    };
   });
 }
 

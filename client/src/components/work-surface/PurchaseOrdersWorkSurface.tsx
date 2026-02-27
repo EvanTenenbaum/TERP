@@ -61,7 +61,12 @@ import { toast } from "sonner";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { useUndo } from "@/hooks/work-surface/useUndo";
+import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
+import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   InspectorPanel,
   InspectorSection,
@@ -84,6 +89,7 @@ import {
   Package,
   Calendar,
   Building,
+  Download,
 } from "lucide-react";
 
 // ============================================================================
@@ -97,6 +103,36 @@ const _purchaseOrderSchema = z.object({
   paymentTerms: z.string().optional(),
   notes: z.string().optional(),
   supplierNotes: z.string().optional(),
+});
+
+const toValidationNumber = (value: unknown) => {
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? Number(trimmed) : 0;
+  }
+  return 0;
+};
+
+const poLineSchema = z.object({
+  supplierId: z.preprocess(
+    toValidationNumber,
+    z.number().positive("Select a supplier")
+  ),
+  productId: z.preprocess(
+    toValidationNumber,
+    z.number().positive("Select a product")
+  ),
+  quantity: z.preprocess(
+    toValidationNumber,
+    z.number().positive("Quantity must be > 0")
+  ),
+  unitCost: z.preprocess(
+    toValidationNumber,
+    z.number().nonnegative("Cost must be >= 0")
+  ),
 });
 
 interface LineItem {
@@ -115,6 +151,16 @@ interface POFormData {
   supplierNotes: string;
   items: LineItem[];
 }
+
+type PoLineValues = z.infer<typeof poLineSchema>;
+type PoDraftField = "productId" | "quantityOrdered" | "unitCost";
+type PoDraftFieldErrors = Partial<Record<PoDraftField, string>>;
+
+const poDraftFieldToSchemaField: Record<PoDraftField, keyof PoLineValues> = {
+  productId: "productId",
+  quantityOrdered: "quantity",
+  unitCost: "unitCost",
+};
 
 interface PurchaseOrder {
   id: number;
@@ -136,6 +182,19 @@ interface PurchaseOrder {
     quantityReceived?: number;
     unitCost: number;
   }>;
+}
+
+interface POLineExportRow extends Record<string, unknown> {
+  poNumber: string;
+  supplier: string;
+  product: string;
+  quantityOrdered: number;
+  quantityReceived: number;
+  unitCost: number;
+  lineTotal: number;
+  status: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
 }
 
 // ============================================================================
@@ -405,6 +464,12 @@ export function PurchaseOrdersWorkSurface() {
   const [formData, setFormData] = useState<POFormData>(createEmptyForm());
   const [bulkQuantityOrdered, setBulkQuantityOrdered] = useState("");
   const [bulkUnitCost, setBulkUnitCost] = useState("");
+  const [supplierValidationError, setSupplierValidationError] = useState<
+    string | null
+  >(null);
+  const [poDraftFieldErrors, setPoDraftFieldErrors] = useState<
+    Record<string, PoDraftFieldErrors>
+  >({});
   const searchInputRef = useRef<HTMLInputElement>(null); // WS-KB-001: Ref for Cmd+K focus
   const poDraftRowsRef = useRef<HTMLDivElement>(null);
   const poDraftSelection = usePowersheetSelection<string>();
@@ -437,6 +502,24 @@ export function PurchaseOrdersWorkSurface() {
     isDirty: _isDirty,
   } = useSaveState();
   const inspector = useInspectorPanel();
+  const { registerAction, undoLast } = useUndo({ enableKeyboard: false });
+  const {
+    handleChange: handlePoLineValidationChange,
+    handleBlur: handlePoLineValidationBlur,
+    validateAll: validatePoLineValues,
+    setValues: setPoLineValidationValues,
+    reset: resetPoLineValidation,
+  } = useValidationTiming({
+    schema: poLineSchema,
+    initialValues: {
+      supplierId: 0,
+      productId: 0,
+      quantity: 0,
+      unitCost: 0,
+    },
+  });
+  const { exportCSV: exportPOCSV, state: poExportState } =
+    useExport<POLineExportRow>();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -533,6 +616,10 @@ export function PurchaseOrdersWorkSurface() {
       refetch();
       setIsCreateDialogOpen(false);
       setFormData(createEmptyForm());
+      setSupplierValidationError(null);
+      setPoDraftFieldErrors({});
+      resetPoLineValidation();
+      poDraftSelection.clearSelection();
     },
     onError: error => {
       toast.error(error.message || "Failed to create purchase order");
@@ -540,10 +627,33 @@ export function PurchaseOrdersWorkSurface() {
     },
   });
 
+  const restorePO = trpc.purchaseOrders.restore.useMutation({
+    onError: error => {
+      toast.error(error.message || "Failed to restore purchase order");
+      setError(error.message);
+    },
+  });
+
   const deletePO = trpc.purchaseOrders.delete.useMutation({
     onMutate: () => setSaving("Deleting purchase order..."),
-    onSuccess: () => {
-      toast.success("Purchase order deleted successfully");
+    onSuccess: (_data, variables) => {
+      const deletedPO = (pos as PurchaseOrder[]).find(
+        po => po.id === variables.id
+      );
+      const deletedLabel = deletedPO?.poNumber
+        ? `PO ${deletedPO.poNumber}`
+        : `PO #${variables.id}`;
+
+      registerAction({
+        description: `Deleted ${deletedLabel}`,
+        undo: async () => {
+          await restorePO.mutateAsync({ id: variables.id });
+          setSaved();
+          await refetch();
+        },
+        duration: 10000,
+      });
+
       setSaved();
       refetch();
       setIsDeleteDialogOpen(false);
@@ -587,6 +697,9 @@ export function PurchaseOrdersWorkSurface() {
     gridMode: false,
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
+    onUndo: () => {
+      void undoLast();
+    },
     // WS-KB-001: Add Cmd+K to focus search
     customHandlers: {
       "cmd+k": e => {
@@ -637,6 +750,26 @@ export function PurchaseOrdersWorkSurface() {
     };
   }, [pos]);
 
+  const statusBarLeft = isCreateDialogOpen
+    ? `Draft mode • ${formData.items.length} line item${
+        formData.items.length === 1 ? "" : "s"
+      }`
+    : `POs • ${filteredPOs.length}/${stats.total} shown`;
+
+  const statusBarCenter = selectedPO
+    ? `Selected: ${selectedPO.poNumber || `PO #${selectedPO.id}`} • ${
+        selectedPO.purchaseOrderStatus || "DRAFT"
+      }`
+    : `${poDraftSelection.selectedCount} draft row${
+        poDraftSelection.selectedCount === 1 ? "" : "s"
+      } selected`;
+
+  const statusBarHints = [
+    { key: "Cmd/Ctrl+K", label: "Search" },
+    { key: "Esc", label: "Close" },
+    { key: "Enter/↑↓", label: "Draft Nav" },
+  ];
+
   const createDraftTotal = useMemo(
     () =>
       formData.items.reduce((sum, item) => {
@@ -647,6 +780,135 @@ export function PurchaseOrdersWorkSurface() {
     [formData.items]
   );
 
+  const clearPoDraftFieldError = useCallback(
+    (rowId: string, field: PoDraftField) => {
+      setPoDraftFieldErrors(prev => {
+        const rowErrors = prev[rowId];
+        if (!rowErrors || !rowErrors[field]) {
+          return prev;
+        }
+
+        const nextRowErrors = { ...rowErrors };
+        delete nextRowErrors[field];
+
+        if (Object.keys(nextRowErrors).length === 0) {
+          const next = { ...prev };
+          delete next[rowId];
+          return next;
+        }
+
+        return {
+          ...prev,
+          [rowId]: nextRowErrors,
+        };
+      });
+    },
+    []
+  );
+
+  const buildPoLineValues = useCallback(
+    (item: LineItem): PoLineValues => ({
+      supplierId: Number(formData.supplierClientId || 0),
+      productId: Number(item.productId || 0),
+      quantity: Number(item.quantityOrdered || 0),
+      unitCost: Number(item.unitCost || 0),
+    }),
+    [formData.supplierClientId]
+  );
+
+  const getPoDraftErrors = useCallback(
+    (item: LineItem) => {
+      const values = buildPoLineValues(item);
+      const result = poLineSchema.safeParse(values);
+      const rowErrors: PoDraftFieldErrors = {};
+      let nextSupplierError: string | null = null;
+
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          const field = issue.path[0];
+          if (field === "supplierId") {
+            nextSupplierError ??= issue.message;
+            continue;
+          }
+          if (field === "productId") {
+            rowErrors.productId = issue.message;
+          }
+          if (field === "quantity") {
+            rowErrors.quantityOrdered = issue.message;
+          }
+          if (field === "unitCost") {
+            rowErrors.unitCost = issue.message;
+          }
+        }
+      }
+
+      return {
+        values,
+        rowErrors,
+        supplierError: nextSupplierError,
+      };
+    },
+    [buildPoLineValues]
+  );
+
+  const validatePoDraftRow = useCallback(
+    (item: LineItem, field: PoDraftField) => {
+      const { values, rowErrors, supplierError } = getPoDraftErrors(item);
+      const schemaField = poDraftFieldToSchemaField[field];
+
+      setPoLineValidationValues(values);
+      handlePoLineValidationBlur(schemaField);
+
+      setSupplierValidationError(supplierError);
+      setPoDraftFieldErrors(prev => {
+        if (Object.keys(rowErrors).length === 0) {
+          if (!prev[item.tempId]) {
+            return prev;
+          }
+          const next = { ...prev };
+          delete next[item.tempId];
+          return next;
+        }
+        return {
+          ...prev,
+          [item.tempId]: rowErrors,
+        };
+      });
+    },
+    [getPoDraftErrors, handlePoLineValidationBlur, setPoLineValidationValues]
+  );
+
+  const selectedPOLineItems = useMemo<POLineExportRow[]>(() => {
+    if (!selectedPO?.items?.length) {
+      return [];
+    }
+
+    const supplierId = selectedPO.supplierClientId ?? selectedPO.vendorId;
+    const supplierName = supplierId
+      ? suppliers.find(supplier => supplier.id === supplierId)?.name ||
+        "Unknown"
+      : "Unknown";
+    return selectedPO.items.map(item => {
+      const productName =
+        products.find(product => product.id === item.productId)?.name ||
+        `Product #${item.productId}`;
+      const quantityOrdered = Number(item.quantityOrdered || 0);
+      const unitCost = Number(item.unitCost || 0);
+      return {
+        poNumber: selectedPO.poNumber || `PO #${selectedPO.id}`,
+        supplier: supplierName,
+        product: productName,
+        quantityOrdered,
+        quantityReceived: Number(item.quantityReceived || 0),
+        unitCost,
+        lineTotal: quantityOrdered * unitCost,
+        status: selectedPO.purchaseOrderStatus || "DRAFT",
+        orderDate: formatDate(selectedPO.orderDate),
+        expectedDeliveryDate: formatDate(selectedPO.expectedDeliveryDate),
+      };
+    });
+  }, [products, selectedPO, suppliers]);
+
   // Handlers
   const getSupplierName = (supplierId: number | null | undefined) => {
     if (!supplierId) return "Unknown";
@@ -654,29 +916,38 @@ export function PurchaseOrdersWorkSurface() {
   };
 
   const handleCreatePO = () => {
-    const items = formData.items
-      .filter(item => item.productId && item.quantityOrdered && item.unitCost)
-      .map(item => ({
-        productId: parseInt(item.productId),
-        quantityOrdered: parseFloat(item.quantityOrdered),
-        unitCost: parseFloat(item.unitCost),
-      }));
+    let nextSupplierError: string | null = null;
+    const nextRowErrors: Record<string, PoDraftFieldErrors> = {};
 
-    if (!formData.supplierClientId || items.length === 0) {
-      toast.error("Please fill in all required fields");
+    for (const item of formData.items) {
+      const { values, rowErrors, supplierError } = getPoDraftErrors(item);
+      setPoLineValidationValues(values);
+      validatePoLineValues();
+
+      if (!nextSupplierError && supplierError) {
+        nextSupplierError = supplierError;
+      }
+      if (Object.keys(rowErrors).length > 0) {
+        nextRowErrors[item.tempId] = rowErrors;
+      }
+    }
+
+    setSupplierValidationError(nextSupplierError);
+    setPoDraftFieldErrors(nextRowErrors);
+
+    if (nextSupplierError || Object.keys(nextRowErrors).length > 0) {
+      toast.error("Please resolve line item validation errors before creating");
       return;
     }
 
-    const invalidItems = items.filter(
-      item => item.quantityOrdered <= 0 || item.unitCost < 0
-    );
-    if (invalidItems.length > 0) {
-      toast.error("Quantity must be > 0 and cost cannot be negative");
-      return;
-    }
+    const items = formData.items.map(item => ({
+      productId: Number(item.productId),
+      quantityOrdered: Number(item.quantityOrdered),
+      unitCost: Number(item.unitCost),
+    }));
 
     createPO.mutate({
-      supplierClientId: parseInt(formData.supplierClientId),
+      supplierClientId: Number(formData.supplierClientId),
       orderDate: formData.orderDate,
       expectedDeliveryDate: formData.expectedDeliveryDate || undefined,
       paymentTerms: formData.paymentTerms || undefined,
@@ -689,6 +960,9 @@ export function PurchaseOrdersWorkSurface() {
   const handleCancelCreate = () => {
     setIsCreateDialogOpen(false);
     setFormData(createEmptyForm());
+    setSupplierValidationError(null);
+    setPoDraftFieldErrors({});
+    resetPoLineValidation();
     poDraftSelection.clearSelection();
   };
 
@@ -728,16 +1002,47 @@ export function PurchaseOrdersWorkSurface() {
   };
 
   const handleRemoveItem = (index: number) => {
+    const removedItem = formData.items[index];
+    if (!removedItem || formData.items.length <= 1) {
+      return;
+    }
     setFormData(prev => {
-      if (prev.items.length <= 1) {
-        return prev;
-      }
       return {
         ...prev,
         items: prev.items.filter((_, i) => i !== index),
       };
     });
+    setPoDraftFieldErrors(prev => {
+      if (!prev[removedItem.tempId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[removedItem.tempId];
+      return next;
+    });
     poDraftSelection.clearSelection();
+
+    registerAction({
+      description: "Removed draft line item",
+      undo: () => {
+        setFormData(prev => {
+          if (prev.items.some(item => item.tempId === removedItem.tempId)) {
+            return prev;
+          }
+          const nextItems = [...prev.items];
+          const insertAt = Math.min(index, nextItems.length);
+          nextItems.splice(insertAt, 0, removedItem);
+          return {
+            ...prev,
+            items: nextItems,
+          };
+        });
+        poDraftSelection.setSelection([removedItem.tempId]);
+        requestAnimationFrame(() => {
+          focusPoDraftCell(removedItem.tempId);
+        });
+      },
+    });
   };
 
   const duplicateSelectedDraftRows = useCallback(() => {
@@ -770,36 +1075,128 @@ export function PurchaseOrdersWorkSurface() {
     if (selectedPoDraftRowSet.size === 0) {
       return;
     }
+
+    const removedRows = formData.items
+      .map((item, index) => ({ item: { ...item }, index }))
+      .filter(row => selectedPoDraftRowSet.has(row.item.tempId));
+
+    if (removedRows.length === 0) {
+      return;
+    }
+
+    if (removedRows.length === formData.items.length) {
+      toast.error("Keep at least one line item in the draft");
+      return;
+    }
+
     setFormData(prev => {
-      const remainingRows = prev.items.filter(
-        item => !selectedPoDraftRowSet.has(item.tempId)
-      );
-      if (remainingRows.length === 0) {
-        toast.error("Keep at least one line item in the draft");
-        return prev;
-      }
       return {
         ...prev,
-        items: remainingRows,
+        items: prev.items.filter(
+          item => !selectedPoDraftRowSet.has(item.tempId)
+        ),
       };
+    });
+    setPoDraftFieldErrors(prev => {
+      let changed = false;
+      const next = { ...prev };
+      selectedPoDraftRowSet.forEach(rowId => {
+        if (next[rowId]) {
+          delete next[rowId];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
     });
     poDraftSelection.clearSelection();
-  }, [poDraftSelection, selectedPoDraftRowSet]);
 
-  const handleItemChange = (
-    index: number,
-    field: keyof LineItem,
-    value: string
-  ) => {
-    setFormData(prev => {
-      const nextItems = [...prev.items];
-      nextItems[index] = { ...nextItems[index], [field]: value };
-      return {
-        ...prev,
-        items: nextItems,
-      };
+    registerAction({
+      description: `Removed ${removedRows.length} draft row${
+        removedRows.length === 1 ? "" : "s"
+      }`,
+      undo: () => {
+        setFormData(prev => {
+          const nextItems = [...prev.items];
+          removedRows.forEach(({ item, index }) => {
+            if (nextItems.some(existing => existing.tempId === item.tempId)) {
+              return;
+            }
+            const insertAt = Math.min(index, nextItems.length);
+            nextItems.splice(insertAt, 0, item);
+          });
+          return {
+            ...prev,
+            items: nextItems,
+          };
+        });
+        const restoredIds = removedRows.map(row => row.item.tempId);
+        poDraftSelection.setSelection(restoredIds);
+        const firstRestoredId = restoredIds[0];
+        if (firstRestoredId) {
+          requestAnimationFrame(() => {
+            focusPoDraftCell(firstRestoredId);
+          });
+        }
+      },
     });
-  };
+  }, [
+    focusPoDraftCell,
+    formData.items,
+    poDraftSelection,
+    registerAction,
+    selectedPoDraftRowSet,
+  ]);
+
+  const handleItemChange = useCallback(
+    (index: number, field: keyof LineItem, value: string) => {
+      setFormData(prev => {
+        const nextItems = [...prev.items];
+        nextItems[index] = { ...nextItems[index], [field]: value };
+        return {
+          ...prev,
+          items: nextItems,
+        };
+      });
+    },
+    []
+  );
+
+  const handleLineItemFieldChange = useCallback(
+    (index: number, field: PoDraftField, value: string) => {
+      const currentItem = formData.items[index];
+      if (!currentItem) {
+        return;
+      }
+
+      handleItemChange(index, field, value);
+
+      const nextItem = {
+        ...currentItem,
+        [field]: value,
+      };
+      const values = buildPoLineValues(nextItem);
+      const schemaField = poDraftFieldToSchemaField[field];
+
+      setPoLineValidationValues(values);
+      handlePoLineValidationChange(schemaField, values[schemaField]);
+      clearPoDraftFieldError(currentItem.tempId, field);
+    },
+    [
+      buildPoLineValues,
+      clearPoDraftFieldError,
+      formData.items,
+      handleItemChange,
+      handlePoLineValidationChange,
+      setPoLineValidationValues,
+    ]
+  );
+
+  const handleLineItemFieldBlur = useCallback(
+    (item: LineItem, field: PoDraftField) => {
+      validatePoDraftRow(item, field);
+    },
+    [validatePoDraftRow]
+  );
 
   const applyBulkFieldToSelectedRows = useCallback(
     (
@@ -885,13 +1282,70 @@ export function PurchaseOrdersWorkSurface() {
   }, [poDraftRowIds, poDraftSelection]);
 
   const handleUpdateStatus = (poId: number, status: string) => {
-    updateStatus.mutate({ id: poId, status: status as POStatus });
+    const targetPO = (pos as PurchaseOrder[]).find(po => po.id === poId);
+    const previousStatus = targetPO?.purchaseOrderStatus ?? null;
+    const nextStatus = status as POStatus;
+    updateStatus.mutate(
+      { id: poId, status: nextStatus },
+      {
+        onSuccess: () => {
+          if (!previousStatus || previousStatus === nextStatus) {
+            return;
+          }
+          registerAction({
+            description: `Updated ${targetPO?.poNumber ?? "PO"} status to ${nextStatus}`,
+            undo: () => {
+              updateStatus.mutate({
+                id: poId,
+                status: previousStatus as POStatus,
+              });
+            },
+          });
+        },
+      }
+    );
   };
 
   const handleDelete = (poId: number) => {
     setSelectedPOId(poId);
     setIsDeleteDialogOpen(true);
   };
+
+  const handleExportSelectedPO = useCallback(() => {
+    if (!selectedPO || selectedPOLineItems.length === 0) {
+      toast.error("Select a purchase order with line items to export");
+      return;
+    }
+
+    const filenameBase = selectedPO.poNumber
+      ? `po_${selectedPO.poNumber.replace(/\s+/g, "_")}_line_items`
+      : `po_${selectedPO.id}_line_items`;
+
+    void exportPOCSV(selectedPOLineItems, {
+      filename: filenameBase,
+      addTimestamp: true,
+      columns: [
+        { key: "poNumber", label: "PO Number" },
+        { key: "supplier", label: "Supplier" },
+        { key: "product", label: "Product" },
+        { key: "quantityOrdered", label: "Qty Ordered" },
+        { key: "quantityReceived", label: "Qty Received" },
+        {
+          key: "unitCost",
+          label: "Unit Cost",
+          formatter: value => formatCurrency(Number(value || 0)),
+        },
+        {
+          key: "lineTotal",
+          label: "Line Total",
+          formatter: value => formatCurrency(Number(value || 0)),
+        },
+        { key: "status", label: "Status" },
+        { key: "orderDate", label: "Order Date" },
+        { key: "expectedDeliveryDate", label: "Expected Delivery" },
+      ],
+    });
+  }, [exportPOCSV, selectedPO, selectedPOLineItems]);
 
   // Render
   return (
@@ -959,17 +1413,34 @@ export function PurchaseOrdersWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          variant={isCreateDialogOpen ? "outline" : "default"}
-          onClick={() => setIsCreateDialogOpen(prev => !prev)}
-        >
-          {isCreateDialogOpen ? (
-            <ChevronUp className="h-4 w-4 mr-2" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          {isCreateDialogOpen ? "Hide PO Draft" : "Create PO"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportSelectedPO}
+            disabled={
+              poExportState.isExporting || selectedPOLineItems.length === 0
+            }
+            title={
+              selectedPOLineItems.length === 0
+                ? "Select a purchase order with line items to export"
+                : "Export selected PO line items to CSV"
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {poExportState.isExporting ? "Exporting..." : "Export CSV"}
+          </Button>
+          <Button
+            variant={isCreateDialogOpen ? "outline" : "default"}
+            onClick={() => setIsCreateDialogOpen(prev => !prev)}
+          >
+            {isCreateDialogOpen ? (
+              <ChevronUp className="h-4 w-4 mr-2" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            {isCreateDialogOpen ? "Hide PO Draft" : "Create PO"}
+          </Button>
+        </div>
       </div>
 
       {isCreateDialogOpen && (
@@ -999,16 +1470,29 @@ export function PurchaseOrdersWorkSurface() {
                       ? Number(formData.supplierClientId)
                       : null
                   }
-                  onValueChange={supplierId =>
+                  onValueChange={supplierId => {
+                    const nextSupplierId =
+                      supplierId !== null ? String(supplierId) : "";
                     setFormData(prev => ({
                       ...prev,
-                      supplierClientId:
-                        supplierId !== null ? String(supplierId) : "",
-                    }))
-                  }
+                      supplierClientId: nextSupplierId,
+                    }));
+                    handlePoLineValidationChange(
+                      "supplierId",
+                      Number(nextSupplierId || 0)
+                    );
+                    if (nextSupplierId) {
+                      setSupplierValidationError(null);
+                    }
+                  }}
                   suppliers={suppliers}
                   placeholder="Select supplier"
                 />
+                {supplierValidationError && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {supplierValidationError}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="paymentTerms">Payment Terms</Label>
@@ -1193,13 +1677,20 @@ export function PurchaseOrdersWorkSurface() {
                       <div className="col-span-5">
                         <ProductCombobox
                           value={item.productId ? Number(item.productId) : null}
-                          onValueChange={productId =>
-                            handleItemChange(
+                          onValueChange={productId => {
+                            const nextValue =
+                              productId !== null ? String(productId) : "";
+                            const nextItem = {
+                              ...item,
+                              productId: nextValue,
+                            };
+                            handleLineItemFieldChange(
                               index,
                               "productId",
-                              productId !== null ? String(productId) : ""
-                            )
-                          }
+                              nextValue
+                            );
+                            validatePoDraftRow(nextItem, "productId");
+                          }}
                           products={products.map(product => ({
                             id: product.id,
                             label: product.name,
@@ -1207,47 +1698,96 @@ export function PurchaseOrdersWorkSurface() {
                           isLoading={productsLoading}
                           placeholder="Select product"
                         />
+                        {poDraftFieldErrors[item.tempId]?.productId && (
+                          <p className="text-xs text-red-500 mt-1">
+                            {poDraftFieldErrors[item.tempId]?.productId}
+                          </p>
+                        )}
                       </div>
-                      <Input
-                        type="number"
-                        className="col-span-2 text-right"
-                        placeholder="0"
-                        min="0.01"
-                        step="0.01"
-                        data-po-draft-row-id={item.tempId}
-                        data-po-draft-field="quantityOrdered"
-                        value={item.quantityOrdered}
-                        onChange={e =>
-                          handleItemChange(
-                            index,
-                            "quantityOrdered",
-                            e.target.value
-                          )
-                        }
-                        onKeyDown={event =>
-                          handleDraftFieldKeyDown(
-                            event,
-                            index,
-                            "quantityOrdered"
-                          )
-                        }
-                      />
-                      <Input
-                        type="number"
-                        className="col-span-2 text-right"
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        data-po-draft-row-id={item.tempId}
-                        data-po-draft-field="unitCost"
-                        value={item.unitCost}
-                        onChange={e =>
-                          handleItemChange(index, "unitCost", e.target.value)
-                        }
-                        onKeyDown={event =>
-                          handleDraftFieldKeyDown(event, index, "unitCost")
-                        }
-                      />
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          className={cn(
+                            "text-right",
+                            poDraftFieldErrors[item.tempId]?.quantityOrdered &&
+                              "border-red-500"
+                          )}
+                          placeholder="0"
+                          min="0.01"
+                          step="0.01"
+                          data-po-draft-row-id={item.tempId}
+                          data-po-draft-field="quantityOrdered"
+                          value={item.quantityOrdered}
+                          onChange={e =>
+                            handleLineItemFieldChange(
+                              index,
+                              "quantityOrdered",
+                              e.target.value
+                            )
+                          }
+                          onBlur={e =>
+                            handleLineItemFieldBlur(
+                              {
+                                ...item,
+                                quantityOrdered: e.target.value,
+                              },
+                              "quantityOrdered"
+                            )
+                          }
+                          onKeyDown={event =>
+                            handleDraftFieldKeyDown(
+                              event,
+                              index,
+                              "quantityOrdered"
+                            )
+                          }
+                        />
+                        {poDraftFieldErrors[item.tempId]?.quantityOrdered && (
+                          <p className="text-xs text-red-500 mt-1 text-right">
+                            {poDraftFieldErrors[item.tempId]?.quantityOrdered}
+                          </p>
+                        )}
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          className={cn(
+                            "text-right",
+                            poDraftFieldErrors[item.tempId]?.unitCost &&
+                              "border-red-500"
+                          )}
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                          data-po-draft-row-id={item.tempId}
+                          data-po-draft-field="unitCost"
+                          value={item.unitCost}
+                          onChange={e =>
+                            handleLineItemFieldChange(
+                              index,
+                              "unitCost",
+                              e.target.value
+                            )
+                          }
+                          onBlur={e =>
+                            handleLineItemFieldBlur(
+                              {
+                                ...item,
+                                unitCost: e.target.value,
+                              },
+                              "unitCost"
+                            )
+                          }
+                          onKeyDown={event =>
+                            handleDraftFieldKeyDown(event, index, "unitCost")
+                          }
+                        />
+                        {poDraftFieldErrors[item.tempId]?.unitCost && (
+                          <p className="text-xs text-red-500 mt-1 text-right">
+                            {poDraftFieldErrors[item.tempId]?.unitCost}
+                          </p>
+                        )}
+                      </div>
                       <div className="col-span-1 text-right text-sm font-medium">
                         {formatCurrency(rowTotal)}
                       </div>
@@ -1481,6 +2021,12 @@ export function PurchaseOrdersWorkSurface() {
         </InspectorPanel>
       </div>
 
+      <WorkSurfaceStatusBar
+        left={statusBarLeft}
+        center={statusBarCenter}
+        right={<KeyboardHintBar hints={statusBarHints} />}
+      />
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
@@ -1488,8 +2034,8 @@ export function PurchaseOrdersWorkSurface() {
             <DialogTitle>Delete Purchase Order</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to delete PO {selectedPO?.poNumber}? This
-            action cannot be undone.
+            Are you sure you want to delete PO {selectedPO?.poNumber}? You can
+            undo this action for 10 seconds.
           </p>
           <DialogFooter>
             <Button

@@ -1,6 +1,6 @@
 /**
  * TER-228: Centralized intake defaults
- * All intake surfaces (DirectIntakeWorkSurface, PurchaseModal, IntakeGrid)
+ * All intake surfaces (DirectIntakeWorkSurface, PurchaseModal)
  * must share the same default values for payment terms and location.
  *
  * Business rule: Default to Consignment + Main Warehouse unless explicitly overridden.

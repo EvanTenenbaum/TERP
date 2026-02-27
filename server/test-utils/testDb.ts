@@ -159,6 +159,11 @@ export function createMockDb() {
                 const val = getColValue(rowCtx, cond.col);
                 return val == cond.val;
               });
+            } else if (cond.op === "isNull") {
+              currentRows = currentRows.filter(rowCtx => {
+                const val = getColValue(rowCtx, cond.col);
+                return val === null || val === undefined;
+              });
             } else if (cond.op === "and") {
               cond.args.forEach(applyCondition);
             } else if (cond.op === "inArray") {

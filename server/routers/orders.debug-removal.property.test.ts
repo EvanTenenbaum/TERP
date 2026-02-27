@@ -9,6 +9,8 @@
  */
 import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 // ============================================================================
 // DEBUG ROUTE DEFINITIONS
@@ -172,27 +174,32 @@ describe("Debug Route Removal - Property Tests", () => {
    * This is a static verification that the endpoint was removed.
    */
   describe("Static Verification: debugGetRaw endpoint removed", () => {
-    it("should not have debugGetRaw in the orders router exports", async () => {
-      // Import the orders router and verify debugGetRaw is not present
-      const { ordersRouter } = await import("./orders");
+    it("should not have debugGetRaw in the orders router exports", () => {
+      const ordersRouterSource = readFileSync(
+        path.resolve(__dirname, "orders.ts"),
+        "utf-8"
+      );
 
-      // Get the procedure names from the router
-      const procedureNames = Object.keys(ordersRouter._def.procedures);
+      // Prevent regressions where the removed debug endpoint is reintroduced.
+      expect(ordersRouterSource).not.toMatch(/\bdebugGetRaw\b/);
+    });
 
-      // Verify debugGetRaw is not in the list
-      expect(procedureNames).not.toContain("debugGetRaw");
-    }, 10000); // 10 second timeout for heavy import
-
-    it("should not have any debug-prefixed procedures in orders router", async () => {
-      const { ordersRouter } = await import("./orders");
-      const procedureNames = Object.keys(ordersRouter._def.procedures);
-
-      // Check that no procedure starts with "debug"
-      const debugProcedures = procedureNames.filter(name =>
-        name.toLowerCase().startsWith("debug")
+    it("should not have any debug-prefixed procedures in orders router", () => {
+      const ordersRouterSource = readFileSync(
+        path.resolve(__dirname, "orders.ts"),
+        "utf-8"
+      );
+      const procedureKeys = Array.from(
+        ordersRouterSource.matchAll(
+          /^\s*([a-zA-Z0-9_]+)\s*:\s*(?:protectedProcedure|publicProcedure)/gm
+        ),
+        match => match[1]
+      );
+      const debugProcedures = procedureKeys.filter(procedureName =>
+        procedureName.toLowerCase().startsWith("debug")
       );
 
       expect(debugProcedures).toHaveLength(0);
-    }, 10000); // 10 second timeout for heavy import
+    });
   });
 });

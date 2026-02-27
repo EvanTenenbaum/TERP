@@ -430,7 +430,8 @@ async function getCatalogInternal(
           eq(productMedia.type, "image"),
           isNull(productMedia.deletedAt)
         )
-      );
+      )
+      .orderBy(desc(productMedia.createdAt), desc(productMedia.id));
 
     for (const img of productImages) {
       if (!productFallbackImagesMap.has(img.productId)) {
