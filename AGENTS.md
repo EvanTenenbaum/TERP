@@ -309,6 +309,25 @@ When asked to verify a feature, test a change, or conduct QA, use the **terp-qa*
 
 **Core Principle:** _Verify, Don't Trust_ - Every claim must be backed by evidence (screenshots, logs, query results).
 
+### V4 QA Gate (Required for Medium/High-Risk Work)
+
+Before marking a task done, complete all four stages:
+
+1. **Requirements Coverage** - Map every acceptance criterion to evidence.
+2. **Functional Validation** - Run required checks and verify changed UX flows in-browser.
+3. **Blast Radius Review** - List affected modules/domains and run targeted regression checks.
+4. **Adversarial Deep Review** - Intentionally try likely failure paths and edge cases.
+
+### Completion Evidence Packet (Required)
+
+Task completion updates (Linear/roadmap) must include:
+
+- Commit SHA and PR link
+- Verification command outputs (`pnpm check`, `pnpm lint`, `pnpm test`, `pnpm build`, plus relevant E2E/manual checks)
+- Blast radius summary and regression coverage
+- Browser evidence (screenshots/recordings) for user-facing changes
+- Explicit PASS/BLOCKED verdict
+
 ---
 
 ## Git Workspace Discipline (Required)
@@ -336,8 +355,9 @@ To avoid repo drift, duplicate clones, and blocked pulls, all agents must follow
   ```bash
   cd /Users/evan/spec-erp-docker/TERP/TERP
   git fetch --prune origin
-  git worktree add ../TERP-<task-id> -b codex/<task-id> origin/main
+  git worktree add ../TERP-<task-id> -b agent/<task-id> origin/main
   ```
+- Branch naming should stay model-agnostic (for example: `agent/<task-id>` or `feature/<task-id>`).
 - Remove temporary worktrees when done:
   ```bash
   git worktree remove ../TERP-<task-id> --force
