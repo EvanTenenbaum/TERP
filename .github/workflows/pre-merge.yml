@@ -288,10 +288,29 @@ jobs:
           fi
 
   # ================================================================
-  # JOB 3: Unit tests — vitest, no DB needed (~2 min)
+  # JOB 3: Unit tests — vitest with DB readiness for data-integrity suite
   # ================================================================
   unit-tests:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: terp_test
+          MYSQL_USER: terp_test
+          MYSQL_PASSWORD: terp_test_password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
     steps:
       - uses: actions/checkout@v4
 
@@ -306,6 +325,22 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          MAX_ATTEMPTS=30
+          ATTEMPTS=0
+          until mysqladmin ping -h 127.0.0.1 -P 3307 --silent 2>/dev/null; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "MySQL failed to start after $MAX_ATTEMPTS attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Push schema and seed
+        run: pnpm drizzle-kit push --force && pnpm seed:light
 
       - name: Unit tests
         run: pnpm test --run
