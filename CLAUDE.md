@@ -1,8 +1,8 @@
 # TERP Agent Protocol
 
-**Version**: 1.1
+**Version**: 1.2
 **Status**: MANDATORY
-**Last Updated**: 2026-01-26
+**Last Updated**: 2026-02-27
 
 > **READ THIS FIRST**: Every agent (Claude, Cursor, ChatGPT, Kiro, or any other) MUST read this document in full before starting any TERP work. This is the single source of truth for how agents operate in this codebase.
 
@@ -29,6 +29,17 @@ When operating as a Manus agent, you have access to specialized skills that auto
 ### Prime Directive
 
 **Verification over persuasion.** Never convince yourself (or the user) that something works. _Prove it works_ through verification commands and evidence.
+
+### Platform Feature Policy (Model-Agnostic)
+
+If your agent platform supports higher-assurance features, use them by default for STRICT and RED mode work:
+
+- Parallel agents for scoped, independent subtasks
+- Isolated workspaces (worktrees/branches/sandboxes) per task
+- Eval/replay tooling for regression checks
+- Structured artifacts (logs, screenshots, test output) attached to task updates
+
+Do not assume a feature is unavailable without checking.
 
 ### Working with Evan
 
@@ -102,7 +113,7 @@ These areas require maximum caution:
 | Orders/Fulfillment   | Customer impact, inventory          |
 | Database Migrations  | Data integrity, rollback difficulty |
 
-### Definition of Done (9 Criteria)
+### Definition of Done (12 Criteria)
 
 A task is NOT complete until ALL pass:
 
@@ -115,6 +126,26 @@ A task is NOT complete until ALL pass:
 7. ✅ Deployment verified (if pushed to main)
 8. ✅ No new errors in production logs
 9. ✅ **Live Browser Verification** - Feature works in production (via `terp-qa`)
+10. ✅ Requirements traceability - every acceptance criterion mapped to evidence
+11. ✅ Blast radius reviewed - impacted modules verified with targeted regressions
+12. ✅ Evidence packet posted to Linear/roadmap task before marking complete
+
+### V4 QA Gate (Mandatory for STRICT/RED)
+
+Run this gate before claiming completion:
+
+1. **Requirements Coverage**
+   - Map each acceptance criterion to a test, screenshot, or command output
+   - Mark any unmet criterion explicitly as blocked (never silently defer)
+2. **Functional Validation**
+   - Run unit/integration/build checks
+   - Validate user-visible behavior in browser for changed flows
+3. **Blast Radius Assessment**
+   - List touched domains (UI, business logic, auth, DB, integrations)
+   - Execute targeted regression checks for each impacted domain
+4. **Adversarial Review**
+   - Try likely failure paths and edge cases
+   - Confirm rollback path and monitoring checks are documented
 
 ### Verification Commands
 
@@ -159,6 +190,9 @@ Lint:       ✅ PASS | ❌ FAIL (X warnings)
 Tests:      ✅ PASS | ❌ FAIL (X/Y passing)
 Build:      ✅ PASS | ❌ FAIL
 Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
+V4 QA Gate: ✅ PASS | ❌ FAIL
+Blast Radius: [areas reviewed]
+Linear Evidence: [ticket + links/artifacts]
 
 [If any failures, list specific errors and fixes applied]
 ```
@@ -234,7 +268,7 @@ git commit -m "roadmap: complete WAVE-[ID] ([task list]) ✓"
 6. **Never work on files another agent is editing** - Check ACTIVE_SESSIONS.md
 7. **Never invent task IDs** - Always check the roadmap file first
 8. **Never use the `vendors` table** - Use `clients` with `isSeller=true`
-9. **Never push without pulling** - Always `git pull origin main` first
+9. **Never push a stale branch** - Always sync with latest target branch before push
 10. **Never commit broken code** - All checks must pass
 
 ### Forbidden Code Patterns
@@ -295,8 +329,7 @@ function process(data: DataInput) { ... }
 
 ### Database
 
-- **snake_case columns** - `created_at`, not `createdAt` in DB
-- **camelCase in code** - Drizzle handles transformation
+- **Follow existing schema naming** - Most columns in this repo use camelCase (for example `createdAt`), with legacy exceptions (for example `deleted_at`). Match surrounding table conventions exactly.
 - **Soft deletes** - Add `deletedAt` column, never hard delete
 - **Indexes** - All FK columns must have indexes
 - **Migrations** - Use Drizzle migrations, never manual SQL
@@ -493,7 +526,7 @@ Check for terp_session cookie
 python3 scripts/sync_linear_to_github_roadmap.py
 git add docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md
 git commit -m "docs: sync roadmap from Linear"
-git push origin staging
+git push origin HEAD
 ```
 
 **Documentation:**
@@ -740,7 +773,7 @@ echo "- $SESSION_ID: TASK-ID - Task Title" >> docs/ACTIVE_SESSIONS.md
 # 6. Commit registration
 git add docs/sessions/active/$SESSION_ID.md docs/ACTIVE_SESSIONS.md
 git commit -m "chore: register session $SESSION_ID"
-git push origin staging
+git push origin HEAD
 ```
 
 ### Completing a Session
@@ -757,7 +790,7 @@ git add docs/roadmaps/MASTER_ROADMAP.md \
         docs/sessions/completed/$SESSION_ID.md \
         docs/ACTIVE_SESSIONS.md
 git commit -m "chore: complete TASK-ID and archive session"
-git push origin staging
+git push origin HEAD
 
 # 6. VERIFY DEPLOYMENT
 ./scripts/watch-deploy.sh
@@ -822,7 +855,7 @@ pnpm validate:sessions  # Check sessions
 
 # Git
 git pull --rebase origin main
-git push origin staging
+git push origin HEAD
 ```
 
 ### Essential Files
@@ -883,7 +916,7 @@ git log --oneline -10
 git revert <bad-commit-hash>
 
 # 3. Push immediately
-git push origin staging
+git push origin main
 
 # 4. Monitor rollback
 ./scripts/watch-deploy.sh
