@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import type { Request, Response } from "express";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
@@ -115,6 +115,29 @@ const createMockBatch = (overrides: Partial<Batch> = {}): Batch => ({
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
+});
+
+const createEnhancedRow = ({
+  batchOverrides = {},
+  productOverrides = {},
+  brandOverrides = {},
+  lotOverrides = {},
+  vendorName = "Evergreen Supply",
+}: {
+  batchOverrides?: Partial<Batch>;
+  productOverrides?: Partial<Product>;
+  brandOverrides?: Partial<Brand>;
+  lotOverrides?: Partial<Lot>;
+  vendorName?: string;
+} = {}) => ({
+  batch: createMockBatch(batchOverrides),
+  product: createMockProduct(productOverrides),
+  brand: createMockBrand(brandOverrides),
+  lot: createMockLot(lotOverrides),
+  supplierClient: {
+    id: 999,
+    name: vendorName,
+  },
 });
 
 // Create a test caller with mock context
@@ -255,6 +278,123 @@ describe("Inventory Router", () => {
         undefined,
         { status: "LIVE", category: undefined }
       );
+    });
+  });
+
+  describe("getEnhanced", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should calculate hasMore from filtered dataset, not raw source count", async () => {
+      const mockResponse: Awaited<
+        ReturnType<typeof inventoryDb.getBatchesWithDetails>
+      > = {
+        items: [
+          createEnhancedRow({
+            batchOverrides: {
+              id: 101,
+              sku: "SKU-MATCH-001",
+              code: "BATCH-MATCH-001",
+              createdAt: new Date("2026-01-01T10:00:00.000Z"),
+              onHandQty: "20.0000",
+            },
+            productOverrides: { nameCanonical: "Match Product" },
+          }),
+          createEnhancedRow({
+            batchOverrides: {
+              id: 102,
+              sku: "SKU-OTHER-001",
+              code: "BATCH-OTHER-001",
+              createdAt: new Date("2026-01-02T10:00:00.000Z"),
+              onHandQty: "20.0000",
+            },
+            productOverrides: { nameCanonical: "Other Product" },
+          }),
+          createEnhancedRow({
+            batchOverrides: {
+              id: 103,
+              sku: "SKU-OTHER-002",
+              code: "BATCH-OTHER-002",
+              createdAt: new Date("2026-01-03T10:00:00.000Z"),
+              onHandQty: "20.0000",
+            },
+            productOverrides: { nameCanonical: "Another Product" },
+          }),
+        ],
+        hasMore: false,
+        nextCursor: null,
+      };
+      vi.mocked(inventoryDb.getBatchesWithDetails).mockResolvedValue(
+        mockResponse
+      );
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("20.0000");
+
+      const result = await caller.inventory.getEnhanced({
+        page: 1,
+        pageSize: 1,
+        search: "match",
+        sortBy: "sku",
+        sortOrder: "asc",
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.summary.totalItems).toBe(1);
+      expect(result.pagination.hasMore).toBe(false);
+      expect(result.pagination.nextCursor).toBeNull();
+    });
+
+    it("should normalize and pass stock/cogs/date/location filters to DB", async () => {
+      const mockResponse: Awaited<
+        ReturnType<typeof inventoryDb.getBatchesWithDetails>
+      > = {
+        items: [createEnhancedRow()],
+        hasMore: false,
+        nextCursor: null,
+      };
+      vi.mocked(inventoryDb.getBatchesWithDetails).mockResolvedValue(
+        mockResponse
+      );
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("10.0000");
+
+      await caller.inventory.getEnhanced({
+        page: 1,
+        pageSize: 25,
+        stockLevel: "low_stock",
+        lowStockThreshold: 100,
+        cogsRange: { min: 5, max: 25 },
+        dateRange: {
+          from: new Date("2026-01-10T15:30:00.000Z"),
+          to: new Date("2026-01-20T06:45:00.000Z"),
+        },
+        location: "North Aisle Rack 7",
+        sortBy: "sku",
+        sortOrder: "asc",
+      });
+
+      const call = vi.mocked(inventoryDb.getBatchesWithDetails).mock.calls[0];
+      expect(call).toBeDefined();
+      if (!call) return;
+
+      const filters = call[2];
+      const options = call[3];
+
+      expect(options).toEqual({ applyPagination: false });
+      expect(filters).toMatchObject({
+        stockLevel: "low_stock",
+        lowStockThreshold: 100,
+        cogsMin: 5,
+        cogsMax: 25,
+        locationQuery: "North Aisle Rack 7",
+      });
+      expect(filters?.dateFrom).toBeInstanceOf(Date);
+      expect(filters?.dateTo).toBeInstanceOf(Date);
+      expect((filters?.dateFrom as Date).getHours()).toBe(0);
+      expect((filters?.dateFrom as Date).getMinutes()).toBe(0);
+      expect((filters?.dateTo as Date).getHours()).toBe(23);
+      expect((filters?.dateTo as Date).getMinutes()).toBe(59);
+      expect((filters?.dateTo as Date).getSeconds()).toBe(59);
+      expect((filters?.dateTo as Date).getMilliseconds()).toBe(999);
     });
   });
 
@@ -424,6 +564,31 @@ describe("Inventory Router", () => {
           reason: "Test",
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe("bulk.restore", () => {
+    it("restores recently deleted batches with prior statuses", async () => {
+      const payload = [
+        { id: 101, previousStatus: "LIVE" as const },
+        { id: 102, previousStatus: "QUARANTINED" as const },
+      ];
+      const mockResult = {
+        success: true,
+        restored: 2,
+        skipped: 0,
+        errors: [],
+      };
+
+      vi.mocked(inventoryDb.bulkRestoreBatches).mockResolvedValue(mockResult);
+
+      const result = await caller.inventory.bulk.restore(payload);
+
+      expect(inventoryDb.bulkRestoreBatches).toHaveBeenCalledWith(
+        payload,
+        mockUser.id
+      );
+      expect(result).toEqual(mockResult);
     });
   });
 

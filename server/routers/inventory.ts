@@ -20,7 +20,7 @@ import { storagePut, storageDelete, isStorageConfigured } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { getDb } from "../db";
 import { batches, inventoryMovements } from "../../drizzle/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { env } from "../_core/env";
 import {
@@ -81,6 +81,22 @@ function getAgeBracket(
   return "CRITICAL";
 }
 
+const optionalNumberInput = z
+  .preprocess(
+    value =>
+      value === null || value === undefined || value === "" ? undefined : value,
+    z.coerce.number().optional()
+  )
+  .optional();
+
+const optionalDateInput = z
+  .preprocess(
+    value =>
+      value === null || value === undefined || value === "" ? undefined : value,
+    z.coerce.date().optional()
+  )
+  .optional();
+
 const enhancedInventoryInputSchema = z
   .object({
     // Pagination
@@ -95,9 +111,11 @@ const enhancedInventoryInputSchema = z
         "productName",
         "vendor",
         "brand",
+        "grade",
         "status",
         "onHand",
         "available",
+        "unitCogs",
         "age",
         "receivedDate",
         "lastMovement",
@@ -123,6 +141,27 @@ const enhancedInventoryInputSchema = z
     minAge: z.number().optional(),
     maxAge: z.number().optional(),
     batchId: z.string().optional(),
+    stockLevel: z
+      .enum(["all", "in_stock", "low_stock", "out_of_stock"])
+      .optional(),
+    cogsRange: z
+      .object({
+        min: optionalNumberInput,
+        max: optionalNumberInput,
+      })
+      .optional(),
+    minCogs: optionalNumberInput,
+    maxCogs: optionalNumberInput,
+    dateRange: z
+      .object({
+        from: optionalDateInput,
+        to: optionalDateInput,
+      })
+      .optional(),
+    dateFrom: optionalDateInput,
+    dateTo: optionalDateInput,
+    location: z.string().optional(),
+    locationQuery: z.string().optional(),
 
     // Stock thresholds
     lowStockThreshold: z.number().default(50),
@@ -159,32 +198,97 @@ export const inventoryRouter = router({
       try {
         inventoryLogger.operationStart("getEnhanced", { input });
 
-        // Get base inventory data
-        // INV-FILTER-002: Pass all filters to database layer
+        const normalizedCogsMin = input.cogsRange?.min ?? input.minCogs;
+        const normalizedCogsMax = input.cogsRange?.max ?? input.maxCogs;
+
+        const dateFromInput = input.dateRange?.from ?? input.dateFrom;
+        const dateToInput = input.dateRange?.to ?? input.dateTo;
+        const normalizedDateFrom = dateFromInput
+          ? new Date(dateFromInput)
+          : undefined;
+        const normalizedDateTo = dateToInput
+          ? new Date(dateToInput)
+          : undefined;
+        if (normalizedDateFrom) normalizedDateFrom.setHours(0, 0, 0, 0);
+        if (normalizedDateTo) normalizedDateTo.setHours(23, 59, 59, 999);
+
+        const semanticLocationQuery =
+          input.locationQuery?.trim() || input.location?.trim() || undefined;
+
+        // RT-02: Request full filtered dataset from DB, then paginate after all filters.
         const result = await inventoryDb.getBatchesWithDetails(
-          input.pageSize + 1, // Fetch one extra to check for more pages
-          input.cursor,
+          input.pageSize,
+          undefined,
           {
-            status: input.status, // Array or undefined
+            status: input.status,
             category: input.category,
             subcategory: input.subcategory,
-            vendor: input.vendor, // Array of vendor names
-            brand: input.brand, // Array of brand names
-            grade: input.grade, // Array of grade values
-          }
+            vendor: input.vendor,
+            brand: input.brand,
+            grade: input.grade,
+            search: input.search,
+            stockLevel: input.stockLevel,
+            lowStockThreshold: input.lowStockThreshold,
+            cogsMin: normalizedCogsMin,
+            cogsMax: normalizedCogsMax,
+            dateFrom: normalizedDateFrom,
+            dateTo: normalizedDateTo,
+            locationQuery: semanticLocationQuery,
+          },
+          { applyPagination: false }
         );
 
-        // Get movement data if requested
-        const { inventoryMovements } = await import("../../drizzle/schema");
-        const { getDb } = await import("../db");
-        const { desc, eq } = await import("drizzle-orm");
-        const db = await getDb();
+        type MovementHistoryEntry = {
+          id: number;
+          type: string;
+          quantityChange: string;
+          timestamp: Date;
+          performedBy: number;
+          notes: string | null;
+        };
 
-        // Process and enhance each item
-        const enhancedItems = await Promise.all(
-          result.items.slice(0, input.pageSize).map(async item => {
+        type EnhancedInventoryItem = {
+          id: number;
+          sku: string;
+          code: string;
+          status: (typeof batches.$inferSelect)["batchStatus"];
+          grade: string | null;
+          productName: string;
+          category: string | null;
+          subcategory: string | null;
+          vendorName: string | null;
+          brandName: string | null;
+          onHandQty: number;
+          reservedQty: number;
+          quarantineQty: number;
+          holdQty: number;
+          availableQty: number;
+          totalQty: string;
+          unitCogs: number | null;
+          totalValue: number | null;
+          receivedDate: Date | null;
+          ageDays: number;
+          ageBracket: "FRESH" | "MODERATE" | "AGING" | "CRITICAL";
+          stockStatus: "CRITICAL" | "LOW" | "OPTIMAL" | "OUT_OF_STOCK";
+          stockThresholds: {
+            low: number;
+            critical: number;
+          };
+          batchInfo: {
+            batchId: string;
+            lotId: string | null;
+            receivedDate: Date | null;
+            intakeDate: Date;
+          };
+          lastMovementDate: Date | null;
+          movementHistory?: MovementHistoryEntry[];
+        };
+
+        // Build enhanced model for the full DB-filtered dataset.
+        let filteredItems: EnhancedInventoryItem[] = result.items.flatMap(
+          item => {
             const batch = item.batch;
-            if (!batch) return null;
+            if (!batch) return [];
 
             const onHand = parseFloat(batch.onHandQty || "0");
             const reserved = parseFloat(batch.reservedQty || "0");
@@ -195,12 +299,10 @@ export const inventoryRouter = router({
               onHand - reserved - quarantine - hold
             );
 
-            // Calculate aging from createdAt (intake date)
             const receivedDate = batch.createdAt;
             const ageDays = calculateAgeDays(receivedDate);
             const ageBracket = getAgeBracket(ageDays);
 
-            // Calculate stock status
             const stockStatus = calculateStockStatus(
               onHand,
               reserved + quarantine + hold,
@@ -208,49 +310,14 @@ export const inventoryRouter = router({
               input.criticalStockThreshold
             );
 
-            // Get last movement date
-            let lastMovementDate: Date | null = null;
-            let movementHistory: Array<{
-              id: number;
-              type: string;
-              quantityChange: string;
-              timestamp: Date;
-              performedBy: number;
-              notes: string | null;
-            }> = [];
+            const unitCogsRaw =
+              batch.unitCogs ?? batch.unitCogsMin ?? batch.unitCogsMax;
+            const parsedUnitCogs =
+              unitCogsRaw !== null ? parseFloat(unitCogsRaw) : NaN;
+            const unitCogs = Number.isFinite(parsedUnitCogs)
+              ? parsedUnitCogs
+              : null;
 
-            if (db) {
-              // Get last movement
-              const [lastMovement] = await db
-                .select()
-                .from(inventoryMovements)
-                .where(eq(inventoryMovements.batchId, batch.id))
-                .orderBy(desc(inventoryMovements.createdAt))
-                .limit(1);
-
-              lastMovementDate = lastMovement?.createdAt || null;
-
-              // Get movement history if requested
-              if (input.includeMovementHistory) {
-                const movements = await db
-                  .select()
-                  .from(inventoryMovements)
-                  .where(eq(inventoryMovements.batchId, batch.id))
-                  .orderBy(desc(inventoryMovements.createdAt))
-                  .limit(input.movementHistoryLimit);
-
-                movementHistory = movements.map(m => ({
-                  id: m.id,
-                  type: m.inventoryMovementType,
-                  quantityChange: m.quantityChange,
-                  timestamp: m.createdAt,
-                  performedBy: m.performedBy,
-                  notes: m.notes,
-                }));
-              }
-            }
-
-            // Parse batch code for batch tracking info
             const batchInfo = {
               batchId: batch.code,
               lotId: item.lot?.code || null,
@@ -258,66 +325,40 @@ export const inventoryRouter = router({
               intakeDate: batch.createdAt,
             };
 
-            return {
-              // Base batch data
-              id: batch.id,
-              sku: batch.sku,
-              code: batch.code,
-              status: batch.batchStatus,
-              grade: batch.grade,
-
-              // Product info
-              productName: item.product?.nameCanonical || "Unknown",
-              category: item.product?.category || null,
-              subcategory: item.product?.subcategory || null,
-
-              // Relationships
-              // BUG-122: Use supplierClient (canonical supplier data from clients table)
-              vendorName: item.supplierClient?.name || null,
-              brandName: item.brand?.name || null,
-
-              // Quantities
-              onHandQty: onHand,
-              reservedQty: reserved,
-              quarantineQty: quarantine,
-              holdQty: hold,
-              availableQty: available,
-              totalQty: inventoryUtils.computeTotalQty(batch),
-
-              // Costing
-              unitCogs: batch.unitCogs ? parseFloat(batch.unitCogs) : null,
-              totalValue: batch.unitCogs
-                ? onHand * parseFloat(batch.unitCogs)
-                : null,
-
-              // Aging (4.A.1)
-              receivedDate: receivedDate,
-              ageDays,
-              ageBracket,
-
-              // Stock status (4.A.1)
-              stockStatus,
-              stockThresholds: {
-                low: input.lowStockThreshold,
-                critical: input.criticalStockThreshold,
+            return [
+              {
+                id: batch.id,
+                sku: batch.sku,
+                code: batch.code,
+                status: batch.batchStatus,
+                grade: batch.grade,
+                productName: item.product?.nameCanonical || "Unknown",
+                category: item.product?.category || null,
+                subcategory: item.product?.subcategory || null,
+                vendorName: item.supplierClient?.name || null,
+                brandName: item.brand?.name || null,
+                onHandQty: onHand,
+                reservedQty: reserved,
+                quarantineQty: quarantine,
+                holdQty: hold,
+                availableQty: available,
+                totalQty: inventoryUtils.computeTotalQty(batch),
+                unitCogs,
+                totalValue: unitCogs !== null ? onHand * unitCogs : null,
+                receivedDate,
+                ageDays,
+                ageBracket,
+                stockStatus,
+                stockThresholds: {
+                  low: input.lowStockThreshold,
+                  critical: input.criticalStockThreshold,
+                },
+                batchInfo,
+                lastMovementDate: null,
               },
-
-              // Batch tracking (4.A.6)
-              batchInfo,
-
-              // Movement history (4.A.8)
-              lastMovementDate,
-              movementHistory: input.includeMovementHistory
-                ? movementHistory
-                : undefined,
-            };
-          })
+            ];
+          }
         );
-
-        // Filter out nulls and apply additional filters
-        let filteredItems = enhancedItems.filter(Boolean) as NonNullable<
-          (typeof enhancedItems)[0]
-        >[];
 
         // Apply search filter
         if (input.search) {
@@ -369,6 +410,89 @@ export const inventoryRouter = router({
           );
         }
 
+        const db = await getDb();
+
+        const parseDateValue = (value: Date | string | null): Date | null => {
+          if (!value) return null;
+          const parsed = new Date(value);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const loadLastMovementMap = async (batchIds: number[]) => {
+          const movementMap = new Map<number, Date>();
+          if (!db || batchIds.length === 0) return movementMap;
+
+          const movementRows = await db
+            .select({
+              batchId: inventoryMovements.batchId,
+              lastMovementDate: sql<
+                Date | string | null
+              >`MAX(${inventoryMovements.createdAt})`,
+            })
+            .from(inventoryMovements)
+            .where(inArray(inventoryMovements.batchId, batchIds))
+            .groupBy(inventoryMovements.batchId);
+
+          for (const row of movementRows) {
+            const parsedDate = parseDateValue(row.lastMovementDate);
+            if (parsedDate) {
+              movementMap.set(row.batchId, parsedDate);
+            }
+          }
+          return movementMap;
+        };
+
+        const loadMovementHistoryMap = async (batchIds: number[]) => {
+          const movementMap = new Map<number, MovementHistoryEntry[]>();
+          if (!db || !input.includeMovementHistory || batchIds.length === 0) {
+            return movementMap;
+          }
+
+          const movementRows = await db
+            .select({
+              batchId: inventoryMovements.batchId,
+              id: inventoryMovements.id,
+              type: inventoryMovements.inventoryMovementType,
+              quantityChange: inventoryMovements.quantityChange,
+              timestamp: inventoryMovements.createdAt,
+              performedBy: inventoryMovements.performedBy,
+              notes: inventoryMovements.notes,
+            })
+            .from(inventoryMovements)
+            .where(inArray(inventoryMovements.batchId, batchIds))
+            .orderBy(desc(inventoryMovements.createdAt));
+
+          for (const row of movementRows) {
+            const timestamp = parseDateValue(row.timestamp);
+            if (!timestamp) continue;
+
+            const existing = movementMap.get(row.batchId) || [];
+            if (existing.length < input.movementHistoryLimit) {
+              existing.push({
+                id: row.id,
+                type: row.type,
+                quantityChange: row.quantityChange,
+                timestamp,
+                performedBy: row.performedBy,
+                notes: row.notes,
+              });
+              movementMap.set(row.batchId, existing);
+            }
+          }
+
+          return movementMap;
+        };
+
+        if (input.sortBy === "lastMovement") {
+          const lastMovementMap = await loadLastMovementMap(
+            filteredItems.map(item => item.id)
+          );
+          filteredItems = filteredItems.map(item => ({
+            ...item,
+            lastMovementDate: lastMovementMap.get(item.id) || null,
+          }));
+        }
+
         // Apply sorting
         filteredItems.sort((a, b) => {
           let comparison = 0;
@@ -387,6 +511,9 @@ export const inventoryRouter = router({
             case "brand":
               comparison = (a.brandName || "").localeCompare(b.brandName || "");
               break;
+            case "grade":
+              comparison = (a.grade || "").localeCompare(b.grade || "");
+              break;
             case "status":
               comparison = a.status.localeCompare(b.status);
               break;
@@ -395,6 +522,9 @@ export const inventoryRouter = router({
               break;
             case "available":
               comparison = a.availableQty - b.availableQty;
+              break;
+            case "unitCogs":
+              comparison = (a.unitCogs ?? 0) - (b.unitCogs ?? 0);
               break;
             case "age":
               comparison = a.ageDays - b.ageDays;
@@ -435,12 +565,34 @@ export const inventoryRouter = router({
           return input.sortOrder === "desc" ? -comparison : comparison;
         });
 
-        // Determine if there are more pages
-        const hasMore = result.items.length > input.pageSize;
-        const nextCursor =
-          hasMore && filteredItems.length > 0
-            ? filteredItems[filteredItems.length - 1].id
-            : null;
+        const fallbackOffset = Math.max(0, (input.page - 1) * input.pageSize);
+        const startIndex =
+          input.cursor !== undefined
+            ? Math.max(0, Math.floor(input.cursor))
+            : fallbackOffset;
+        const endIndex = startIndex + input.pageSize;
+        let pagedItems = filteredItems.slice(startIndex, endIndex);
+
+        const pageBatchIds = pagedItems.map(item => item.id);
+        if (input.sortBy !== "lastMovement") {
+          const pageLastMovementMap = await loadLastMovementMap(pageBatchIds);
+          pagedItems = pagedItems.map(item => ({
+            ...item,
+            lastMovementDate: pageLastMovementMap.get(item.id) || null,
+          }));
+        }
+
+        if (input.includeMovementHistory) {
+          const pageMovementHistoryMap =
+            await loadMovementHistoryMap(pageBatchIds);
+          pagedItems = pagedItems.map(item => ({
+            ...item,
+            movementHistory: pageMovementHistoryMap.get(item.id) || [],
+          }));
+        }
+
+        const hasMore = endIndex < filteredItems.length;
+        const nextCursor = hasMore ? endIndex : null;
 
         // Calculate summary stats
         const summaryStats = {
@@ -478,12 +630,13 @@ export const inventoryRouter = router({
         };
 
         inventoryLogger.operationSuccess("getEnhanced", {
-          itemCount: filteredItems.length,
+          itemCount: pagedItems.length,
+          totalFilteredItems: filteredItems.length,
           hasMore,
         });
 
         return {
-          items: filteredItems,
+          items: pagedItems,
           pagination: {
             page: input.page,
             pageSize: input.pageSize,
@@ -1531,6 +1684,36 @@ export const inventoryRouter = router({
           return await inventoryDb.bulkDeleteBatches(input, userId);
         } catch (error) {
           handleError(error, "inventory.bulk.delete");
+          throw error;
+        }
+      }),
+
+    // Bulk restore for recently deleted batches
+    restore: protectedProcedure
+      .use(requirePermission("inventory:update"))
+      .input(
+        z.array(
+          z.object({
+            id: z.number(),
+            previousStatus: z.enum([
+              "AWAITING_INTAKE",
+              "LIVE",
+              "PHOTOGRAPHY_COMPLETE",
+              "ON_HOLD",
+              "QUARANTINED",
+              "SOLD_OUT",
+              "CLOSED",
+            ]),
+          })
+        )
+      )
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const userId = ctx.user?.id;
+          if (!userId) throw new Error("User not authenticated");
+          return await inventoryDb.bulkRestoreBatches(input, userId);
+        } catch (error) {
+          handleError(error, "inventory.bulk.restore");
           throw error;
         }
       }),

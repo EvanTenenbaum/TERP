@@ -34,6 +34,12 @@ interface AdvancedFiltersProps {
   grades: string[];
 }
 
+const parseOptionalNumber = (value: string): number | null => {
+  if (value === "") return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 export function AdvancedFilters({
   filters,
   onUpdateFilter,
@@ -159,10 +165,10 @@ export function AdvancedFilters({
             </Select>
           </div>
 
-          {/* Subcategory Filter */}
+          {/* Strain/Subcategory Filter */}
           {subcategories.length > 0 && (
             <div className="space-y-2">
-              <Label>Subcategory</Label>
+              <Label>Strain / Subcategory</Label>
               <Select
                 value={filters.subcategory || "all"}
                 onValueChange={value =>
@@ -276,6 +282,80 @@ export function AdvancedFilters({
               </div>
             </div>
           )}
+
+          {/* Date Range Filter */}
+          <div className="space-y-2">
+            <Label>Date Range</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                value={
+                  filters.dateRange.from
+                    ? filters.dateRange.from.toISOString().split("T")[0]
+                    : ""
+                }
+                onChange={e =>
+                  onUpdateFilter("dateRange", {
+                    from: e.target.value ? new Date(e.target.value) : null,
+                    to: filters.dateRange.to,
+                  })
+                }
+              />
+              <Input
+                type="date"
+                value={
+                  filters.dateRange.to
+                    ? filters.dateRange.to.toISOString().split("T")[0]
+                    : ""
+                }
+                onChange={e =>
+                  onUpdateFilter("dateRange", {
+                    from: filters.dateRange.from,
+                    to: e.target.value ? new Date(e.target.value) : null,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Location Filter */}
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <Input
+              placeholder="Rack / Shelf / Bin"
+              value={filters.location || ""}
+              onChange={e => onUpdateFilter("location", e.target.value || null)}
+            />
+          </div>
+
+          {/* Price/COGS Range Filter */}
+          <div className="space-y-2">
+            <Label>Price Range (Unit COGS)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                placeholder="Min"
+                value={filters.cogsRange.min ?? ""}
+                onChange={e =>
+                  onUpdateFilter("cogsRange", {
+                    min: parseOptionalNumber(e.target.value),
+                    max: filters.cogsRange.max,
+                  })
+                }
+              />
+              <Input
+                type="number"
+                placeholder="Max"
+                value={filters.cogsRange.max ?? ""}
+                onChange={e =>
+                  onUpdateFilter("cogsRange", {
+                    min: filters.cogsRange.min,
+                    max: parseOptionalNumber(e.target.value),
+                  })
+                }
+              />
+            </div>
+          </div>
 
           {/* Payment Status Filter */}
           <div className="space-y-2">

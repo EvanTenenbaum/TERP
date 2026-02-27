@@ -7,18 +7,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useSearch } from "wouter";
+import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useDebounceCallback } from "@/hooks/useDebounceCallback";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClientCombobox } from "@/components/ui/client-combobox";
+import { cn } from "@/lib/utils";
 
 import { toast } from "sonner";
 import {
@@ -36,8 +32,6 @@ import {
   Save,
   CheckCircle,
   AlertCircle,
-  Cloud,
-  CloudOff,
   Loader2,
   ChevronDown,
   FileText,
@@ -69,11 +63,19 @@ import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   useOrderCalculations,
   calculateLineItem,
 } from "@/hooks/orders/useOrderCalculations";
 import { useRetryableQuery } from "@/hooks/useRetryableQuery";
+import {
+  useSaveState,
+  useUndo,
+  useValidationTiming,
+  useWorkSurfaceKeyboard,
+} from "@/hooks/work-surface";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -96,6 +98,11 @@ interface InventoryItemForOrder {
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
 }
+
+const orderValidationSchema = z.object({
+  clientId: z.number().positive("Select a client"),
+  orderType: z.enum(["SALE", "QUOTE"]),
+});
 
 export default function OrderCreatorPageV2() {
   // TER-216: Navigation after save/finalize
@@ -131,18 +138,28 @@ export default function OrderCreatorPageV2() {
     null
   );
 
-  // CHAOS-025: Auto-save state
-  type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
-  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
-  // QA-W2-006: lastSavedDraftId stores the ID of the auto-saved draft for potential
-  // future use (e.g., updating existing draft instead of creating new ones,
-  // showing link to saved draft). Currently stored but not actively used.
-  const [lastSavedDraftId, setLastSavedDraftId] = useState<number | null>(null);
-  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
+    useSaveState();
+  const undo = useUndo({ enableKeyboard: false });
+  const {
+    getFieldState: getOrderFieldState,
+    handleChange: handleOrderValidationChange,
+    handleBlur: handleOrderValidationBlur,
+    setValues: setOrderValidationValues,
+  } = useValidationTiming({
+    schema: orderValidationSchema,
+    initialValues: {
+      orderType: "SALE",
+    },
+  });
+
+  const clientFieldState = getOrderFieldState("clientId");
+  const orderTypeFieldState = getOrderFieldState("orderType");
 
   // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
   // before finalization completes
   const isFinalizingRef = useRef(false);
+  const itemsRef = useRef<LineItem[]>([]);
 
   // TER-215: Import items from Sales Sheet when navigating with ?fromSalesSheet=true
   useEffect(() => {
@@ -177,9 +194,22 @@ export default function OrderCreatorPageV2() {
   useEffect(() => {
     const hasItems = items.length > 0;
     const autoSavePending =
-      autoSaveStatus === "saving" || autoSaveStatus === "error";
+      saveState.status === "saving" ||
+      saveState.status === "error" ||
+      saveState.status === "queued";
     setHasUnsavedChanges(hasItems || autoSavePending);
-  }, [items.length, autoSaveStatus, setHasUnsavedChanges]);
+  }, [items.length, saveState.status, setHasUnsavedChanges]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  useEffect(() => {
+    setOrderValidationValues({
+      clientId: clientId ?? undefined,
+      orderType,
+    });
+  }, [clientId, orderType, setOrderValidationValues]);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
@@ -273,21 +303,13 @@ export default function OrderCreatorPageV2() {
   // Credit check mutation
   const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
 
-  // CHAOS-025: Auto-save mutation (silent, no toast notifications)
+  // Auto-save mutation (silent, no toast notifications)
   const autoSaveMutation = trpc.orders.createDraftEnhanced.useMutation({
-    onSuccess: data => {
-      setLastSavedDraftId(data.orderId);
-      setAutoSaveStatus("saved");
-      // Clear the "saved" indicator after 3 seconds
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        setAutoSaveStatus("idle");
-      }, 3000);
+    onSuccess: () => {
+      setSaved();
     },
-    onError: () => {
-      setAutoSaveStatus("error");
+    onError: error => {
+      setError("Auto-save failed", error);
     },
   });
 
@@ -297,7 +319,7 @@ export default function OrderCreatorPageV2() {
       return;
     }
 
-    setAutoSaveStatus("saving");
+    setSaving();
     autoSaveMutation.mutate({
       orderType,
       clientId,
@@ -321,6 +343,7 @@ export default function OrderCreatorPageV2() {
     adjustment,
     showAdjustmentOnDocument,
     autoSaveMutation,
+    setSaving,
   ]);
 
   const debouncedAutoSave = useDebounceCallback(performAutoSave, 2000);
@@ -339,19 +362,32 @@ export default function OrderCreatorPageV2() {
     debouncedAutoSave,
   ]);
 
-  // Cleanup auto-save timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, []);
+  const validateOrderMetadata = (
+    effectiveOrderType: "QUOTE" | "SALE" = orderType
+  ): boolean => {
+    handleOrderValidationChange("clientId", clientId ?? undefined);
+    handleOrderValidationBlur("clientId");
+    handleOrderValidationChange("orderType", effectiveOrderType);
+    handleOrderValidationBlur("orderType");
+
+    const result = orderValidationSchema.safeParse({
+      clientId: clientId ?? undefined,
+      orderType: effectiveOrderType,
+    });
+
+    if (!result.success) {
+      toast.error("Please select a client before continuing");
+      return false;
+    }
+
+    return true;
+  };
 
   // Handlers
   const handleSaveDraft = (overrideOrderType?: "SALE" | "QUOTE") => {
-    if (!clientId) {
-      toast.error("Please select a client");
+    const effectiveOrderType = overrideOrderType ?? orderType;
+
+    if (!validateOrderMetadata(effectiveOrderType)) {
       return;
     }
 
@@ -361,8 +397,8 @@ export default function OrderCreatorPageV2() {
     }
 
     createDraftMutation.mutate({
-      orderType: overrideOrderType ?? orderType,
-      clientId,
+      orderType: effectiveOrderType,
+      clientId: clientId as number,
       lineItems: items.map(item => ({
         batchId: item.batchId,
         quantity: item.quantity,
@@ -379,13 +415,12 @@ export default function OrderCreatorPageV2() {
   };
 
   const handlePreviewAndFinalize = async () => {
-    if (!isValid) {
-      toast.error("Please fix validation errors before finalizing");
+    if (!validateOrderMetadata(orderType)) {
       return;
     }
 
-    if (!clientId) {
-      toast.error("Please select a client");
+    if (!isValid) {
+      toast.error("Please fix validation errors before finalizing");
       return;
     }
 
@@ -393,7 +428,7 @@ export default function OrderCreatorPageV2() {
     if (orderType === "SALE") {
       try {
         const result = await creditCheckMutation.mutateAsync({
-          clientId,
+          clientId: clientId as number,
           orderTotal: totals.total,
           overrideReason: pendingOverrideReason,
         });
@@ -542,67 +577,168 @@ export default function OrderCreatorPageV2() {
     toast.success(`Added ${uniqueItems.length} item(s) to order`);
   };
 
+  const keyboard = useWorkSurfaceKeyboard({
+    gridMode: false,
+    onUndo: () => {
+      void undo.undoLast();
+    },
+    customHandlers: {
+      "cmd+s": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        performAutoSave();
+      },
+      "ctrl+s": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        performAutoSave();
+      },
+      "cmd+enter": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        void handlePreviewAndFinalize();
+      },
+      "ctrl+enter": (e: React.KeyboardEvent) => {
+        e.preventDefault();
+        void handlePreviewAndFinalize();
+      },
+    },
+  });
+
+  const registerLineItemRemovalUndo = useCallback(
+    (previousItems: LineItem[], removedBatchIds: number[]) => {
+      const removedBatchIdSet = new Set(removedBatchIds);
+      const removedItems = previousItems.filter(item =>
+        removedBatchIdSet.has(item.batchId)
+      );
+
+      if (removedItems.length === 0) {
+        return;
+      }
+
+      const previousBatchIds = new Set(previousItems.map(item => item.batchId));
+
+      undo.registerAction({
+        description:
+          removedItems.length === 1
+            ? "Removed 1 item"
+            : `Removed ${removedItems.length} items`,
+        duration: 10000,
+        undo: () => {
+          setItems(currentItems => {
+            const currentById = new Map(
+              currentItems.map(item => [item.batchId, item])
+            );
+            const removedById = new Map(
+              removedItems.map(item => [item.batchId, item])
+            );
+            const restored: LineItem[] = [];
+
+            for (const previousItem of previousItems) {
+              const currentItem = currentById.get(previousItem.batchId);
+              if (currentItem) {
+                restored.push(currentItem);
+                continue;
+              }
+              const removedItem = removedById.get(previousItem.batchId);
+              if (removedItem) {
+                restored.push(removedItem);
+              }
+            }
+
+            for (const currentItem of currentItems) {
+              if (!previousBatchIds.has(currentItem.batchId)) {
+                restored.push(currentItem);
+              }
+            }
+
+            return restored;
+          });
+        },
+      });
+    },
+    [undo]
+  );
+
+  const handleLineItemsChange = useCallback(
+    (nextItems: LineItem[]) => {
+      const previousItems = itemsRef.current;
+      const nextBatchIds = new Set(nextItems.map(item => item.batchId));
+      const removedBatchIds = previousItems
+        .filter(item => !nextBatchIds.has(item.batchId))
+        .map(item => item.batchId);
+
+      if (removedBatchIds.length > 0) {
+        registerLineItemRemovalUndo(previousItems, removedBatchIds);
+      }
+
+      setItems(nextItems);
+    },
+    [registerLineItemRemovalUndo]
+  );
+
+  const handlePreviewRemoveItem = useCallback(
+    (batchId: number) => {
+      const previousItems = itemsRef.current;
+      if (!previousItems.some(item => item.batchId === batchId)) {
+        return;
+      }
+
+      registerLineItemRemovalUndo(previousItems, [batchId]);
+      setItems(previousItems.filter(item => item.batchId !== batchId));
+    },
+    [registerLineItemRemovalUndo]
+  );
+
   return (
     <PageErrorBoundary pageName="OrderCreator">
-      <div className="container mx-auto p-4 md:p-6 space-y-6">
-        {/* Header */}
+      <div
+        {...keyboard.keyboardProps}
+        className="container mx-auto p-4 md:p-6 space-y-6"
+      >
         <BackButton label="Back to Orders" to="/orders" className="mb-4" />
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="h-6 w-6" />
-                <div>
-                  <CardTitle className="text-2xl">
-                    Create Sales Order
-                  </CardTitle>
-                  <CardDescription>
-                    Build sale with COGS visibility and margin management
-                  </CardDescription>
-                </div>
+        <section className="linear-workspace-shell">
+          <header className="linear-workspace-header">
+            <div className="linear-workspace-title-wrap">
+              <p className="linear-workspace-eyebrow">Order Workspace</p>
+              <div>
+                <h2 className="linear-workspace-title flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Create Sales Order
+                </h2>
+                <p className="linear-workspace-description">
+                  Build sale with COGS visibility and margin management
+                </p>
               </div>
-              {/* CHAOS-025: Auto-save status indicator */}
-              {clientId && items.length > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  {autoSaveStatus === "saving" && (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  )}
-                  {autoSaveStatus === "saved" && (
-                    <>
-                      <Cloud className="h-4 w-4 text-green-600" />
-                      {/* QA-W2-006: Display saved draft ID for user reference */}
-                      <span className="text-green-600">
-                        Draft saved
-                        {lastSavedDraftId ? ` (#${lastSavedDraftId})` : ""}
-                      </span>
-                    </>
-                  )}
-                  {autoSaveStatus === "error" && (
-                    <>
-                      <CloudOff className="h-4 w-4 text-destructive" />
-                      <span className="text-destructive">Auto-save failed</span>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
-          </CardHeader>
-          <CardContent>
-            {/* Client Selector - UX-013: Searchable dropdown */}
-            <div className="space-y-2">
-              <Label htmlFor="client-select">Select Customer *</Label>
+            <div className="flex items-center gap-2">
+              {clientId && items.length > 0 ? SaveStateIndicator : null}
+            </div>
+          </header>
+
+          <div className="linear-workspace-meta">
+            <div className="flex min-w-[260px] flex-1 flex-col gap-1">
+              <span className="linear-workspace-meta-label flex items-center gap-1">
+                Customer
+                {clientFieldState.showSuccess ? (
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                ) : null}
+                {clientFieldState.showError ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                ) : null}
+              </span>
               <ClientCombobox
                 value={clientId}
                 onValueChange={id => {
+                  handleOrderValidationChange("clientId", id ?? undefined);
+                  handleOrderValidationBlur("clientId");
                   setClientId(id);
                   // Clear items when changing client
                   if (id !== clientId) {
                     setItems([]);
                   }
                 }}
+                className={cn(
+                  clientFieldState.showError && "border-red-500",
+                  clientFieldState.showSuccess && "border-emerald-500"
+                )}
                 clients={(clients || [])
                   .filter(c => c.isBuyer)
                   .map(client => ({
@@ -615,304 +751,359 @@ export default function OrderCreatorPageV2() {
                 placeholder="Search for a customer..."
                 emptyText="No customers found"
               />
+              {clientFieldState.showError ? (
+                <p className="text-xs text-destructive">
+                  {clientFieldState.error}
+                </p>
+              ) : null}
             </div>
 
-            {/* Referral Tracking (WS-004) */}
-            {clientId && (
-              <div className="mt-4">
+            <div className="flex min-w-[260px] flex-1 flex-col gap-1">
+              <span className="linear-workspace-meta-label">Referred By</span>
+              {clientId ? (
                 <ReferredBySelector
                   excludeClientId={clientId}
                   selectedReferrerId={referredByClientId}
                   onSelect={referrerId => setReferredByClientId(referrerId)}
                 />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Main Content */}
-        {clientId ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Inventory Browser */}
-              <Card id="inventory-browser-section">
-                <CardContent className="pt-6">
-                  {inventoryError ? (
-                    <div className="text-center py-8">
-                      <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-                      <p className="text-destructive mb-2 font-medium">
-                        Failed to load inventory
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {inventoryError.message}
-                      </p>
-                      {inventoryQuery.canRetry ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={inventoryQuery.handleRetry}
-                          disabled={inventoryQuery.isLoading}
-                        >
-                          {inventoryQuery.isLoading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Retrying...
-                            </>
-                          ) : (
-                            <>
-                              Retry ({inventoryQuery.remainingRetries} attempts
-                              remaining)
-                            </>
-                          )}
-                        </Button>
-                      ) : (
-                        <div className="text-sm text-muted-foreground">
-                          <p className="mb-2">
-                            Maximum retries reached. Please try:
-                          </p>
-                          <ul className="list-disc text-left inline-block">
-                            <li>Selecting a different customer</li>
-                            <li>Refreshing the page</li>
-                            <li>Contacting support if the issue persists</li>
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <InventoryBrowser
-                      inventory={inventory || []}
-                      isLoading={inventoryLoading}
-                      onAddItems={handleAddItem}
-                      selectedItems={items.map(item => ({ id: item.batchId }))}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Line Items */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="mb-3 text-base font-semibold">Line Items</h3>
-                  <LineItemTable
-                    items={items}
-                    clientId={clientId}
-                    onChange={setItems}
-                    onAddItem={() => {
-                      // Scroll to InventoryBrowser section
-                      const inventoryBrowser = document.getElementById(
-                        "inventory-browser-section"
-                      );
-                      if (inventoryBrowser) {
-                        inventoryBrowser.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                        // Focus on search input for better UX
-                        setTimeout(() => {
-                          const searchInput = inventoryBrowser.querySelector(
-                            'input[type="text"]'
-                          ) as HTMLInputElement;
-                          if (searchInput) {
-                            searchInput.focus();
-                          }
-                        }, 300);
-                      } else {
-                        toast.info(
-                          "Please use the inventory browser above to add items"
-                        );
-                      }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Order Adjustment */}
-              <OrderAdjustmentPanel
-                value={adjustment}
-                subtotal={totals.subtotal}
-                onChange={setAdjustment}
-                showOnDocument={showAdjustmentOnDocument}
-                onShowOnDocumentChange={setShowAdjustmentOnDocument}
-              />
-            </div>
-
-            {/* Right Column: Totals & Preview (1/3) */}
-            <div className="space-y-6">
-              {/* Credit Limit Banner */}
-              {clientDetails && orderType === "SALE" && (
-                <CreditLimitBanner
-                  client={clientDetails}
-                  orderTotal={totals.total}
-                />
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Select a customer to set referral details
+                </span>
               )}
-
-              {/* Referral Credits Panel (WS-004) */}
-              {clientId && (
-                <ReferralCreditsPanel
-                  clientId={clientId}
-                  orderTotal={totals.total}
-                />
-              )}
-
-              {/* Totals */}
-              <OrderTotalsPanel
-                totals={totals}
-                warnings={warnings}
-                isValid={isValid}
-              />
-
-              {/* TER-206: Collapsible order preview */}
-              <details open>
-                <summary className="cursor-pointer text-sm font-medium text-muted-foreground mb-2 select-none">
-                  Order Preview
-                </summary>
-                <FloatingOrderPreview
-                  clientName={clientDetails?.name || "Client"}
-                  items={items}
-                  subtotal={totals.subtotal}
-                  adjustmentAmount={totals.adjustmentAmount}
-                  adjustmentLabel={
-                    adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
-                  }
-                  showAdjustment={showAdjustmentOnDocument}
-                  total={totals.total}
-                  orderType={orderType}
-                  showInternalMetrics={true}
-                  onUpdateItem={(batchId, updates) => {
-                    setItems(prevItems =>
-                      prevItems.map(item =>
-                        item.batchId === batchId
-                          ? { ...item, ...updates }
-                          : item
-                      )
-                    );
-                  }}
-                  onRemoveItem={batchId => {
-                    setItems(prevItems =>
-                      prevItems.filter(item => item.batchId !== batchId)
-                    );
-                  }}
-                />
-              </details>
-
-              {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
-              <Card>
-                <CardContent className="pt-6 space-y-3">
-                  {/* Order Type Selector */}
-                  <div className="space-y-2">
-                    <Label>Order Type</Label>
-                    <Select
-                      value={orderType}
-                      onValueChange={value =>
-                        setOrderType(value as "QUOTE" | "SALE")
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SALE">Sale Order</SelectItem>
-                        <SelectItem value="QUOTE">Quote</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Unified Save Dropdown Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        data-testid="order-save-menu-trigger"
-                        className="w-full"
-                        variant="outline"
-                        disabled={
-                          items.length === 0 || createDraftMutation.isPending
-                        }
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save
-                        <ChevronDown className="h-4 w-4 ml-auto" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
-                      <DropdownMenuLabel>Save Options</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        data-testid="order-save-draft-action"
-                        onClick={() => handleSaveDraft()}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Save as Draft
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        data-testid="order-save-quote-action"
-                        onClick={() => {
-                          setOrderType("QUOTE");
-                          handleSaveDraft("QUOTE");
-                        }}
-                      >
-                        <Send className="h-4 w-4 mr-2" />
-                        Save & Send as Quote
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Primary Finalize/Confirm Button */}
-                  <Button
-                    className="w-full"
-                    onClick={handlePreviewAndFinalize}
-                    disabled={
-                      !isValid ||
-                      finalizeMutation.isPending ||
-                      (createDraftMutation.isPending && isFinalizingRef.current)
-                    }
-                  >
-                    {finalizeMutation.isPending ||
-                    (createDraftMutation.isPending &&
-                      isFinalizingRef.current) ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {orderType === "QUOTE"
-                          ? "Creating Quote..."
-                          : "Confirming Order..."}
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        {orderType === "QUOTE"
-                          ? "Confirm Quote"
-                          : "Confirm Order"}
-                      </>
-                    )}
-                  </Button>
-
-                  {!isValid && items.length > 0 && (
-                    <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm">
-                      <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-                      <p className="text-destructive">
-                        Fix validation errors before confirming
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </div>
-        ) : (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">
-                  Select a customer to begin
-                </p>
-                <p className="text-sm">
-                  Choose a customer from the dropdown above
-                </p>
+
+          <div className="linear-workspace-content">
+            {clientId ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Inventory Browser */}
+                  <Card id="inventory-browser-section">
+                    <CardContent className="pt-6">
+                      {inventoryError ? (
+                        <div className="text-center py-8">
+                          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                          <p className="text-destructive mb-2 font-medium">
+                            Failed to load inventory
+                          </p>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {inventoryError.message}
+                          </p>
+                          {inventoryQuery.canRetry ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={inventoryQuery.handleRetry}
+                              disabled={inventoryQuery.isLoading}
+                            >
+                              {inventoryQuery.isLoading ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Retrying...
+                                </>
+                              ) : (
+                                <>
+                                  Retry ({inventoryQuery.remainingRetries}{" "}
+                                  attempts remaining)
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              <p className="mb-2">
+                                Maximum retries reached. Please try:
+                              </p>
+                              <ul className="list-disc text-left inline-block">
+                                <li>Selecting a different customer</li>
+                                <li>Refreshing the page</li>
+                                <li>
+                                  Contacting support if the issue persists
+                                </li>
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <InventoryBrowser
+                          inventory={inventory || []}
+                          isLoading={inventoryLoading}
+                          onAddItems={handleAddItem}
+                          selectedItems={items.map(item => ({
+                            id: item.batchId,
+                          }))}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Line Items */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <h3 className="mb-3 text-base font-semibold">
+                        Line Items
+                      </h3>
+                      <LineItemTable
+                        items={items}
+                        clientId={clientId}
+                        onChange={handleLineItemsChange}
+                        onAddItem={() => {
+                          // Scroll to InventoryBrowser section
+                          const inventoryBrowser = document.getElementById(
+                            "inventory-browser-section"
+                          );
+                          if (inventoryBrowser) {
+                            inventoryBrowser.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                            // Focus on search input for better UX
+                            setTimeout(() => {
+                              const searchInput =
+                                inventoryBrowser.querySelector(
+                                  'input[type="text"]'
+                                ) as HTMLInputElement;
+                              if (searchInput) {
+                                searchInput.focus();
+                              }
+                            }, 300);
+                          } else {
+                            toast.info(
+                              "Please use the inventory browser above to add items"
+                            );
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Order Adjustment */}
+                  <OrderAdjustmentPanel
+                    value={adjustment}
+                    subtotal={totals.subtotal}
+                    onChange={setAdjustment}
+                    showOnDocument={showAdjustmentOnDocument}
+                    onShowOnDocumentChange={setShowAdjustmentOnDocument}
+                  />
+                </div>
+
+                {/* Right Column: Totals & Preview (1/3) */}
+                <div className="space-y-6">
+                  {/* Credit Limit Banner */}
+                  {clientDetails && orderType === "SALE" && (
+                    <CreditLimitBanner
+                      client={clientDetails}
+                      orderTotal={totals.total}
+                    />
+                  )}
+
+                  {/* Referral Credits Panel (WS-004) */}
+                  {clientId && (
+                    <ReferralCreditsPanel
+                      clientId={clientId}
+                      orderTotal={totals.total}
+                    />
+                  )}
+
+                  {/* Totals */}
+                  <OrderTotalsPanel
+                    totals={totals}
+                    warnings={warnings}
+                    isValid={isValid}
+                  />
+
+                  {/* TER-206: Collapsible order preview */}
+                  <details open>
+                    <summary className="cursor-pointer text-sm font-medium text-muted-foreground mb-2 select-none">
+                      Order Preview
+                    </summary>
+                    <FloatingOrderPreview
+                      clientName={clientDetails?.name || "Client"}
+                      items={items}
+                      subtotal={totals.subtotal}
+                      adjustmentAmount={totals.adjustmentAmount}
+                      adjustmentLabel={
+                        adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
+                      }
+                      showAdjustment={showAdjustmentOnDocument}
+                      total={totals.total}
+                      orderType={orderType}
+                      showInternalMetrics={true}
+                      onUpdateItem={(batchId, updates) => {
+                        setItems(prevItems =>
+                          prevItems.map(item =>
+                            item.batchId === batchId
+                              ? { ...item, ...updates }
+                              : item
+                          )
+                        );
+                      }}
+                      onRemoveItem={handlePreviewRemoveItem}
+                    />
+                  </details>
+
+                  {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
+                  <Card>
+                    <CardContent className="pt-6 space-y-3">
+                      {/* Order Type Selector */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1">
+                          Order Type
+                          {orderTypeFieldState.showSuccess ? (
+                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : null}
+                          {orderTypeFieldState.showError ? (
+                            <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                          ) : null}
+                        </Label>
+                        <Select
+                          value={orderType}
+                          onValueChange={value => {
+                            const nextOrderType = value as "QUOTE" | "SALE";
+                            setOrderType(nextOrderType);
+                            handleOrderValidationChange(
+                              "orderType",
+                              nextOrderType
+                            );
+                            handleOrderValidationBlur("orderType");
+                          }}
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              "w-full",
+                              orderTypeFieldState.showError && "border-red-500",
+                              orderTypeFieldState.showSuccess &&
+                                "border-emerald-500"
+                            )}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SALE">Sale Order</SelectItem>
+                            <SelectItem value="QUOTE">Quote</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {orderTypeFieldState.showError ? (
+                          <p className="text-xs text-destructive">
+                            {orderTypeFieldState.error}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {/* Unified Save Dropdown Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            data-testid="order-save-menu-trigger"
+                            className="w-full"
+                            variant="outline"
+                            disabled={
+                              items.length === 0 ||
+                              createDraftMutation.isPending
+                            }
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Save
+                            <ChevronDown className="h-4 w-4 ml-auto" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56">
+                          <DropdownMenuLabel>Save Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            data-testid="order-save-draft-action"
+                            onClick={() => handleSaveDraft()}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Save as Draft
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            data-testid="order-save-quote-action"
+                            onClick={() => {
+                              setOrderType("QUOTE");
+                              handleSaveDraft("QUOTE");
+                            }}
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            Save & Send as Quote
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Primary Finalize/Confirm Button */}
+                      <Button
+                        className="w-full"
+                        onClick={handlePreviewAndFinalize}
+                        disabled={
+                          !isValid ||
+                          finalizeMutation.isPending ||
+                          (createDraftMutation.isPending &&
+                            isFinalizingRef.current)
+                        }
+                      >
+                        {finalizeMutation.isPending ||
+                        (createDraftMutation.isPending &&
+                          isFinalizingRef.current) ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {orderType === "QUOTE"
+                              ? "Creating Quote..."
+                              : "Confirming Order..."}
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            {orderType === "QUOTE"
+                              ? "Confirm Quote"
+                              : "Confirm Order"}
+                          </>
+                        )}
+                      </Button>
+
+                      {!isValid && items.length > 0 && (
+                        <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm">
+                          <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                          <p className="text-destructive">
+                            Fix validation errors before confirming
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center text-muted-foreground">
+                    <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">
+                      Select a customer to begin
+                    </p>
+                    <p className="text-sm">
+                      Choose a customer from the dropdown above
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <WorkSurfaceStatusBar
+            left={`${items.length} items · ${orderType}`}
+            center={clientDetails?.name || "No client selected"}
+            right={
+              <KeyboardHintBar
+                hints={[
+                  { key: "Cmd/Ctrl+S", label: "Save" },
+                  { key: "Cmd/Ctrl+Enter", label: "Finalize" },
+                  { key: "Cmd/Ctrl+Z", label: "Undo" },
+                ]}
+              />
+            }
+          />
+        </section>
 
         {/* Credit Warning Dialog */}
         <CreditWarningDialog

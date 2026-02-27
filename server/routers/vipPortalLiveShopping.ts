@@ -5,13 +5,8 @@ import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
-import {
-  batches,
-  products,
-  productImages,
-  productMedia,
-} from "../../drizzle/schema";
-import { eq, and, or, like, gt, isNull, sql } from "drizzle-orm";
+import { batches, products } from "../../drizzle/schema";
+import { eq, and, or, like, gt, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
@@ -185,36 +180,40 @@ export const vipPortalLiveShoppingRouter = router({
           code: batches.code,
           productName: products.nameCanonical,
           description: products.description,
-          imageUrl: sql<
-            string | null
-          >`COALESCE(${productImages.imageUrl}, ${productMedia.url})`.as(
-            "imageUrl"
-          ),
+          imageUrl: sql<string | null>`COALESCE(
+            (
+              SELECT pi_primary.image_url
+              FROM product_images pi_primary
+              WHERE pi_primary.batch_id = ${batches.id}
+                AND pi_primary.deleted_at IS NULL
+                AND (pi_primary.status IS NULL OR pi_primary.status IN ('APPROVED', 'PENDING'))
+                AND pi_primary.is_primary = 1
+              ORDER BY pi_primary.sort_order ASC, pi_primary.id ASC
+              LIMIT 1
+            ),
+            (
+              SELECT pi_visible.image_url
+              FROM product_images pi_visible
+              WHERE pi_visible.batch_id = ${batches.id}
+                AND pi_visible.deleted_at IS NULL
+                AND (pi_visible.status IS NULL OR pi_visible.status IN ('APPROVED', 'PENDING'))
+              ORDER BY pi_visible.is_primary DESC, pi_visible.sort_order ASC, pi_visible.id ASC
+              LIMIT 1
+            ),
+            (
+              SELECT pm.url
+              FROM productMedia pm
+              WHERE pm.productId = ${products.id}
+                AND pm.type = 'image'
+                AND pm.deleted_at IS NULL
+              ORDER BY pm.createdAt DESC, pm.id DESC
+              LIMIT 1
+            )
+          )`.as("imageUrl"),
           // Note: Price comes from pricing engine, not stored on products
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(
-          productImages,
-          and(
-            eq(productImages.batchId, batches.id),
-            eq(productImages.isPrimary, true),
-            or(
-              isNull(productImages.status),
-              eq(productImages.status, "APPROVED"),
-              eq(productImages.status, "PENDING")
-            ),
-            isNull(productImages.deletedAt)
-          )
-        )
-        .leftJoin(
-          productMedia,
-          and(
-            eq(products.id, productMedia.productId),
-            eq(productMedia.type, "image"),
-            isNull(productMedia.deletedAt)
-          )
-        )
         .where(eq(batches.id, input.batchId))
         .limit(1);
 

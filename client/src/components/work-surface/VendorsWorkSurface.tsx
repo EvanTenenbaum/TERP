@@ -230,7 +230,7 @@ function VendorInspectorContent({
       <InspectorSection title="Business Summary" defaultOpen>
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-muted/50 rounded-lg">
-            <p className="text-xs text-muted-foreground">Lifetime Value</p>
+            <p className="text-xs text-muted-foreground">All Time Value</p>
             <p className="font-semibold text-green-600">
               {formatCurrency(vendor.lifetimeValue)}
             </p>

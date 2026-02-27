@@ -38,6 +38,7 @@ import {
   Loader2,
   CheckSquare,
   PackageCheck,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,8 +54,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { useUndo } from "@/hooks/work-surface/useUndo";
+import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import { PICK_PACK_STATUS_TOKENS } from "../../lib/statusTokens";
 
@@ -116,6 +120,17 @@ interface OrderDetails {
     packedItems: number;
     bagCount: number;
   };
+}
+
+interface PickPackManifestRow extends Record<string, unknown> {
+  orderNumber: string;
+  clientName: string;
+  productName: string;
+  quantity: number;
+  location: string;
+  bagIdentifier: string;
+  packed: string;
+  packedAt: string;
 }
 
 // Helper type for version tracking
@@ -559,6 +574,9 @@ export function PickPackWorkSurface() {
 
   // Save state
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { registerAction, undoLast } = useUndo({ enableKeyboard: false });
+  const { exportCSV: exportManifestCSV, state: manifestExportState } =
+    useExport<PickPackManifestRow>();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -600,6 +618,23 @@ export function PickPackWorkSurface() {
   const unpackedItems = useMemo(() => {
     if (!orderDetails) return [];
     return orderDetails.items.filter(item => !item.isPacked);
+  }, [orderDetails]);
+
+  const pickPackManifestRows = useMemo<PickPackManifestRow[]>(() => {
+    if (!orderDetails) {
+      return [];
+    }
+
+    return orderDetails.items.map(item => ({
+      orderNumber: orderDetails.order.orderNumber,
+      clientName: orderDetails.order.clientName,
+      productName: item.productName,
+      quantity: item.quantity,
+      location: item.location,
+      bagIdentifier: item.bagIdentifier || "UNASSIGNED",
+      packed: item.isPacked ? "Yes" : "No",
+      packedAt: item.packedAt ? new Date(item.packedAt).toLocaleString() : "",
+    }));
   }, [orderDetails]);
 
   // Shared powersheet selection for items (TER-285)
@@ -651,6 +686,23 @@ export function PickPackWorkSurface() {
     },
   });
 
+  const unpackItemsMutation = trpc.pickPack.unpackItems.useMutation({
+    onMutate: () => setSaving(),
+    onSuccess: () => {
+      void refetchOrderDetails();
+      void refetchPickList();
+      void refetchStats();
+      setSaved();
+      toast.success("Items unpacked");
+    },
+    onError: (error: { message: string }) => {
+      if (!handleConflictError(error)) {
+        setError(error.message || "Failed to unpack items");
+        toast.error(`Failed to unpack items: ${error.message}`);
+      }
+    },
+  });
+
   const markReadyMutation = trpc.pickPack.markOrderReady.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
@@ -693,24 +745,100 @@ export function PickPackWorkSurface() {
 
   const handlePackSelected = useCallback(() => {
     if (selectedOrderId && selectedItems.length > 0) {
-      packItemsMutation.mutate({
-        orderId: selectedOrderId,
-        itemIds: selectedItems,
-      });
+      const orderId = selectedOrderId;
+      const itemIds = [...selectedItems];
+      packItemsMutation.mutate(
+        {
+          orderId,
+          itemIds,
+        },
+        {
+          onSuccess: () => {
+            registerAction({
+              description: `Packed ${itemIds.length} selected item${
+                itemIds.length === 1 ? "" : "s"
+              }`,
+              undo: () => {
+                unpackItemsMutation.mutate({
+                  orderId,
+                  itemIds,
+                  reason: "Undo pack selected action",
+                });
+              },
+            });
+          },
+        }
+      );
     }
-  }, [selectedOrderId, selectedItems, packItemsMutation]);
+  }, [
+    packItemsMutation,
+    registerAction,
+    selectedItems,
+    selectedOrderId,
+    unpackItemsMutation,
+  ]);
 
   const handleMarkAllPacked = useCallback(() => {
     if (selectedOrderId) {
-      markAllPackedMutation.mutate({ orderId: selectedOrderId });
+      const orderId = selectedOrderId;
+      const itemIds = unpackedItems.map(item => item.id);
+      if (itemIds.length === 0) {
+        return;
+      }
+      markAllPackedMutation.mutate(
+        { orderId },
+        {
+          onSuccess: () => {
+            registerAction({
+              description: `Packed all remaining items (${itemIds.length})`,
+              undo: () => {
+                unpackItemsMutation.mutate({
+                  orderId,
+                  itemIds,
+                  reason: "Undo pack all action",
+                });
+              },
+            });
+          },
+        }
+      );
     }
-  }, [selectedOrderId, markAllPackedMutation]);
+  }, [
+    markAllPackedMutation,
+    registerAction,
+    selectedOrderId,
+    unpackItemsMutation,
+    unpackedItems,
+  ]);
 
   const handleMarkReady = useCallback(() => {
     if (selectedOrderId) {
       markReadyMutation.mutate({ orderId: selectedOrderId });
     }
   }, [selectedOrderId, markReadyMutation]);
+
+  const handleExportManifest = useCallback(() => {
+    if (!orderDetails || pickPackManifestRows.length === 0) {
+      toast.error("Select an order with items to export a manifest");
+      return;
+    }
+
+    const safeOrderNumber = orderDetails.order.orderNumber.replace(/\s+/g, "_");
+    void exportManifestCSV(pickPackManifestRows, {
+      filename: `pick_pack_manifest_${safeOrderNumber}`,
+      addTimestamp: true,
+      columns: [
+        { key: "orderNumber", label: "Order Number" },
+        { key: "clientName", label: "Client" },
+        { key: "productName", label: "Product" },
+        { key: "quantity", label: "Quantity" },
+        { key: "location", label: "Location" },
+        { key: "bagIdentifier", label: "Bag" },
+        { key: "packed", label: "Packed" },
+        { key: "packedAt", label: "Packed At" },
+      ],
+    });
+  }, [exportManifestCSV, orderDetails, pickPackManifestRows]);
 
   const openItemInspector = useCallback((itemId: number) => {
     setInspectedItemId(itemId);
@@ -815,6 +943,9 @@ export function PickPackWorkSurface() {
           setSelectedOrderId(null);
         }
       },
+      onUndo: () => {
+        void undoLast();
+      },
       containerRef,
     }),
     [
@@ -834,6 +965,7 @@ export function PickPackWorkSurface() {
       handleMarkReady,
       openItemInspector,
       openOrderInspector,
+      undoLast,
       containerRef,
     ]
   );
@@ -1082,6 +1214,25 @@ export function PickPackWorkSurface() {
                 Select All (A)
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportManifest}
+                disabled={
+                  manifestExportState.isExporting ||
+                  pickPackManifestRows.length === 0
+                }
+                title={
+                  pickPackManifestRows.length === 0
+                    ? "Select an order with items to export"
+                    : "Export pick-pack manifest to CSV"
+                }
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {manifestExportState.isExporting
+                  ? "Exporting..."
+                  : "Export Manifest"}
+              </Button>
+              <Button
                 size="sm"
                 onClick={handlePackSelected}
                 disabled={
@@ -1181,7 +1332,17 @@ export function PickPackWorkSurface() {
             <WorkSurfaceStatusBar
               left={`Zone: ${focusZone === "list" ? "Order List" : "Items"}`}
               center={`${selectedItems.length} items selected`}
-              right="↑↓ Navigate • Space Select • P Pack • R Ready • I Inspect"
+              right={
+                <KeyboardHintBar
+                  hints={[
+                    { key: "↑↓", label: "Navigate" },
+                    { key: "Space", label: "Select" },
+                    { key: "P", label: "Pack" },
+                    { key: "R", label: "Ready" },
+                    { key: "I", label: "Inspect" },
+                  ]}
+                />
+              }
             />
           </>
         ) : (

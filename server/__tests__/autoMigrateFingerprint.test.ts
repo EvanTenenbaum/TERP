@@ -17,7 +17,8 @@ vi.mock("../_core/logger", () => ({
 describe("checkSchemaFingerprint", () => {
   const mockedGetDb = vi.mocked(getDb);
   const mockExecute = vi.fn();
-  const canaryCount = 7;
+  // Keep in sync with FINGERPRINT_CANARIES in server/autoMigrate.ts
+  const canaryCount = 8;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,7 +37,7 @@ describe("checkSchemaFingerprint", () => {
     const result = await checkSchemaFingerprint({ retries: 1 });
 
     expect(result.complete).toBe(true);
-    expect(result.count).toBe(7);
+    expect(result.count).toBe(canaryCount);
     expect(result.attempts).toBe(1);
     expect(result.missingChecks).toEqual([]);
     expect(result.checks).toHaveLength(canaryCount);
@@ -54,12 +55,13 @@ describe("checkSchemaFingerprint", () => {
       .mockResolvedValueOnce([[{ passed: 1 }]])
       .mockResolvedValueOnce([[{ passed: 1 }]])
       .mockResolvedValueOnce([[{ passed: 1 }]])
+      .mockResolvedValueOnce([[{ passed: 1 }]])
       .mockResolvedValueOnce([[{ passed: 1 }]]);
 
     const result = await checkSchemaFingerprint({ retries: 1 });
 
     expect(result.complete).toBe(false);
-    expect(result.count).toBe(6);
+    expect(result.count).toBe(7);
     expect(result.attempts).toBe(1);
     expect(result.missingChecks).toEqual(["products.nameCanonical.column"]);
     expect(result.checks).toHaveLength(canaryCount);

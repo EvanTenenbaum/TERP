@@ -13,31 +13,29 @@ import { db } from "../db";
 
 function mockSelectSequence(resultSets: unknown[][]): void {
   let i = 0;
-  vi.mocked(db.select).mockImplementation(
-    (() => {
-      const rows = resultSets[i++] ?? [];
-      const builder: {
-        from: ReturnType<typeof vi.fn>;
-        leftJoin: ReturnType<typeof vi.fn>;
-        where: ReturnType<typeof vi.fn>;
-        orderBy: ReturnType<typeof vi.fn>;
-        groupBy: ReturnType<typeof vi.fn>;
-        limit: ReturnType<typeof vi.fn>;
-        offset: ReturnType<typeof vi.fn>;
-        then: (resolve: (value: unknown[]) => unknown) => unknown;
-      } = {
-        from: vi.fn(() => builder),
-        leftJoin: vi.fn(() => builder),
-        where: vi.fn(() => builder),
-        orderBy: vi.fn(() => builder),
-        groupBy: vi.fn(() => builder),
-        limit: vi.fn(() => builder),
-        offset: vi.fn(() => builder),
-        then: resolve => resolve(rows),
-      };
-      return builder;
-    }) as never
-  );
+  vi.mocked(db.select).mockImplementation((() => {
+    const rows = resultSets[i++] ?? [];
+    const builder: {
+      from: ReturnType<typeof vi.fn>;
+      leftJoin: ReturnType<typeof vi.fn>;
+      where: ReturnType<typeof vi.fn>;
+      orderBy: ReturnType<typeof vi.fn>;
+      groupBy: ReturnType<typeof vi.fn>;
+      limit: ReturnType<typeof vi.fn>;
+      offset: ReturnType<typeof vi.fn>;
+      then: (resolve: (value: unknown[]) => unknown) => unknown;
+    } = {
+      from: vi.fn(() => builder),
+      leftJoin: vi.fn(() => builder),
+      where: vi.fn(() => builder),
+      orderBy: vi.fn(() => builder),
+      groupBy: vi.fn(() => builder),
+      limit: vi.fn(() => builder),
+      offset: vi.fn(() => builder),
+      then: resolve => resolve(rows),
+    };
+    return builder;
+  }) as never);
 }
 
 const now = new Date();
@@ -115,7 +113,9 @@ describe("photographyRouter media behavior", () => {
 
     // Soft delete: first update sets deletedAt, then primary reassignment
     expect(updateSet).toHaveBeenCalledTimes(3);
-    expect(updateSet.mock.calls[0][0]).toMatchObject({ deletedAt: expect.any(Date) });
+    expect(updateSet.mock.calls[0][0]).toMatchObject({
+      deletedAt: expect.any(Date),
+    });
     expect(updateSet).toHaveBeenNthCalledWith(2, { isPrimary: false });
     expect(updateSet).toHaveBeenNthCalledWith(3, { isPrimary: true });
   });
@@ -134,7 +134,9 @@ describe("photographyRouter media behavior", () => {
 
     // Soft delete: first update sets deletedAt, then primary reassignment
     expect(updateSet).toHaveBeenCalledTimes(3);
-    expect(updateSet.mock.calls[0][0]).toMatchObject({ deletedAt: expect.any(Date) });
+    expect(updateSet.mock.calls[0][0]).toMatchObject({
+      deletedAt: expect.any(Date),
+    });
     expect(updateSet).toHaveBeenNthCalledWith(2, { isPrimary: false });
     expect(updateSet).toHaveBeenNthCalledWith(3, { isPrimary: true });
   });
@@ -153,6 +155,23 @@ describe("photographyRouter media behavior", () => {
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: "At least one photo is required to complete photography",
+    });
+  });
+
+  it("computes coverage from visible-image counts", async () => {
+    mockSelectSequence([
+      [{ count: 12 }], // total visible images
+      [{ count: 3 }], // live batches without visible photos
+      [{ count: 15 }], // total live batches
+    ]);
+
+    const stats = await createAdminCaller().getStats();
+
+    expect(stats).toEqual({
+      totalImages: 12,
+      batchesWithPhotos: 12,
+      batchesWithoutPhotos: 3,
+      coveragePercent: 80,
     });
   });
 });

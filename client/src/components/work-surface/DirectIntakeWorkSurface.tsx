@@ -54,7 +54,8 @@ import {
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
-import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
+import { useUndo } from "@/hooks/work-surface/useUndo";
+import { useExport, usePowersheetSelection } from "@/hooks/work-surface";
 import {
   createDirectIntakeRemovalPlan,
   submitRowsWithGuaranteedCleanup,
@@ -66,6 +67,8 @@ import {
   InspectorActions,
   useInspectorPanel,
 } from "./InspectorPanel";
+import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
+import { KeyboardHintBar } from "./KeyboardHintBar";
 
 // Icons
 import {
@@ -77,19 +80,25 @@ import {
   Loader2,
   RefreshCw,
   Package,
+  Download,
   Upload,
   ChevronRight,
   X,
 } from "lucide-react";
 
 import { themeAlpine } from "ag-grid-community";
+import {
+  deleteSelectedRows,
+  duplicateSelectedRows,
+  fillDownSelectedRows,
+} from "@/lib/powersheet/contracts";
 
 // ============================================================================
 // TYPES & SCHEMAS
 // ============================================================================
 
 const intakeRowSchema = z.object({
-  vendorName: z.string().min(1, "Vendor is required"),
+  vendorName: z.string().min(1, "Supplier is required"),
   brandName: z.string().min(1, "Brand/Farmer is required"),
   category: z.enum([
     "Flower",
@@ -131,6 +140,8 @@ interface IntakeGridRow extends IntakeRowData {
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
 }
+
+type IntakeExportRow = IntakeGridRow & Record<string, unknown>;
 
 interface IntakeSummary {
   totalItems: number;
@@ -177,6 +188,17 @@ const CATEGORY_OPTIONS = [
   { value: "Vape", label: "Vape" },
   { value: "Other", label: "Other" },
 ] as const;
+
+const FILL_DOWN_FIELD_OPTIONS = [
+  { value: "category", label: "Category" },
+  { value: "subcategory", label: "Subcategory" },
+  { value: "qty", label: "Qty" },
+  { value: "cogs", label: "COGS" },
+  { value: "paymentTerms", label: "Payment Terms" },
+  { value: "notes", label: "Notes" },
+] as const;
+
+type FillDownField = (typeof FILL_DOWN_FIELD_OPTIONS)[number]["value"];
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -329,7 +351,7 @@ function RowInspectorContent({
   return (
     <div className="space-y-6">
       <InspectorSection title="Supplier Information" defaultOpen>
-        <InspectorField label="Vendor" required>
+        <InspectorField label="Supplier" required>
           <Input
             value={row.vendorName}
             list={`direct-intake-vendors-${row.id}`}
@@ -710,8 +732,12 @@ export function DirectIntakeWorkSurface() {
   const [rows, setRows] = useState<IntakeGridRow[]>(() =>
     Array.from({ length: INITIAL_ROW_COUNT }, () => createEmptyRow())
   );
+  const visibleRowIds = useMemo(() => rows.map(row => row.id), [rows]);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const rowSelection = usePowersheetSelection<string>();
+  const [fillDownField, setFillDownField] = useState<FillDownField>("cogs");
+  const rowSelection = usePowersheetSelection<string>({
+    visibleIds: visibleRowIds,
+  });
   const [rowMediaFilesById, setRowMediaFilesById] = useState<
     Record<string, File[]>
   >({});
@@ -745,8 +771,23 @@ export function DirectIntakeWorkSurface() {
     },
     []
   );
+  const selectedRowIds = useMemo(
+    () => Array.from(rowSelection.selectedIds),
+    [rowSelection.selectedIds]
+  );
+  const replaceSelection = useCallback(
+    (rowIds: string[]) => {
+      rowSelection.clear();
+      for (const rowId of Array.from(new Set(rowIds))) {
+        rowSelection.toggle(rowId, true);
+      }
+    },
+    [rowSelection]
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
+  const undo = useUndo({ enableKeyboard: false });
+  const { exportCSV, state: exportState } = useExport<IntakeExportRow>();
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState({
@@ -790,14 +831,17 @@ export function DirectIntakeWorkSurface() {
   useEffect(() => {
     if (!selectedRowId) return;
     if (rowSelection.selectedCount > 0) return;
-    rowSelection.setSelection([selectedRowId]);
-  }, [rowSelection, selectedRowId]);
+    replaceSelection([selectedRowId]);
+  }, [replaceSelection, rowSelection.selectedCount, selectedRowId]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: true, // Let AG Grid handle Tab navigation
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
+    onUndo: () => {
+      void undo.undoLast();
+    },
     onRowCommit: () => {
       // Commit current row on Enter
       if (selectedRow && selectedRow.status === "pending") {
@@ -811,7 +855,7 @@ export function DirectIntakeWorkSurface() {
     onCancel: () => {
       // Clear selection on Escape
       setSelectedRowId(null);
-      rowSelection.clearSelection();
+      rowSelection.clear();
       if (inspector.isOpen) {
         inspector.close();
       }
@@ -931,7 +975,7 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
-        headerName: "Vendor",
+        headerName: "Supplier",
         field: "vendorName",
         minWidth: 130,
         flex: 1,
@@ -942,8 +986,8 @@ export function DirectIntakeWorkSurface() {
         },
         tooltipValueGetter: () =>
           vendors.length > 0
-            ? `Type to search ${vendors.length} vendors or enter new`
-            : "Type vendor name",
+            ? `Type to search ${vendors.length} suppliers or enter new`
+            : "Type supplier name",
       },
       {
         headerName: "Product / Strain",
@@ -1151,17 +1195,17 @@ export function DirectIntakeWorkSurface() {
     (event: SelectionChangedEvent<IntakeGridRow>) => {
       const selectedRows = event.api.getSelectedRows();
       const selectedIds = selectedRows.map(row => row.id);
-      rowSelection.setSelection(selectedIds);
+      replaceSelection(selectedIds);
       setSelectedRowId(selectedIds[0] ?? null);
     },
-    [rowSelection]
+    [replaceSelection]
   );
 
   const handleAddRow = useCallback(() => {
     const newRow = createEmptyRow(defaultLocationOverrides);
     updateRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
-    rowSelection.setSelection([newRow.id]);
+    replaceSelection([newRow.id]);
 
     // Focus the new row
     setTimeout(() => {
@@ -1173,36 +1217,117 @@ export function DirectIntakeWorkSurface() {
         gridApiRef.current.setFocusedCell(rowIndex, "vendorName");
       }
     }, 50);
-  }, [rows.length, defaultLocationOverrides, rowSelection, updateRows]);
+  }, [defaultLocationOverrides, replaceSelection, rows.length, updateRows]);
+
+  const removeRowsWithUndo = useCallback(
+    (rowIds: string[]) => {
+      const currentRows = rowsRef.current;
+      const selectedRowIds = new Set(rowIds);
+      const nextRowsAfterDeleteContract = deleteSelectedRows({
+        rows: currentRows,
+        selectedRowIds,
+        getRowId: row => row.id,
+        minimumRows: 1,
+      });
+      const remainingIds = new Set(
+        nextRowsAfterDeleteContract.map(row => row.id)
+      );
+      const contractRemovedIds = currentRows
+        .filter(row => !remainingIds.has(row.id))
+        .map(row => row.id);
+
+      const removalPlan = createDirectIntakeRemovalPlan(
+        currentRows,
+        contractRemovedIds.length > 0 ? contractRemovedIds : rowIds
+      );
+      if (removalPlan.blocked) {
+        toast.error("Cannot remove all pending rows. Keep at least one row.");
+        return;
+      }
+      if (removalPlan.removedIds.length === 0) {
+        return;
+      }
+
+      const previousRows = currentRows;
+      const previousRowIds = new Set(previousRows.map(row => row.id));
+      const removedRows = previousRows.filter(row =>
+        removalPlan.removedIds.includes(row.id)
+      );
+      const removedMediaById = removalPlan.removedIds.reduce<
+        Record<string, File[]>
+      >((acc, rowId) => {
+        const files = rowMediaFilesByIdRef.current[rowId];
+        if (files) {
+          acc[rowId] = files;
+        }
+        return acc;
+      }, {});
+
+      undo.registerAction({
+        description: `Removed ${removedRows.length} row(s)`,
+        undo: () => {
+          updateRows(current => {
+            const currentById = new Map(current.map(row => [row.id, row]));
+            const removedById = new Map(removedRows.map(row => [row.id, row]));
+            const restored: IntakeGridRow[] = [];
+
+            // Preserve original ordering, restoring removed rows where missing.
+            for (const previousRow of previousRows) {
+              const currentRow = currentById.get(previousRow.id);
+              if (currentRow) {
+                restored.push(currentRow);
+                continue;
+              }
+              const removedRow = removedById.get(previousRow.id);
+              if (removedRow) {
+                restored.push(removedRow);
+              }
+            }
+
+            // Keep rows created after deletion.
+            for (const currentRow of current) {
+              if (!previousRowIds.has(currentRow.id)) {
+                restored.push(currentRow);
+              }
+            }
+
+            return restored;
+          });
+
+          updateRowMediaFilesById(prev => {
+            const next = { ...prev };
+            for (const [rowId, files] of Object.entries(removedMediaById)) {
+              if (!next[rowId]) {
+                next[rowId] = files;
+              }
+            }
+            return next;
+          });
+
+          replaceSelection(removedRows.map(row => row.id));
+          setSelectedRowId(removedRows[0]?.id ?? null);
+        },
+      });
+
+      updateRows(removalPlan.nextRows);
+      updateRowMediaFilesById(prev => {
+        const next = { ...prev };
+        for (const rowId of removalPlan.removedIds) {
+          delete next[rowId];
+        }
+        return next;
+      });
+      rowSelection.clear();
+      setSelectedRowId(null);
+    },
+    [replaceSelection, rowSelection, undo, updateRows, updateRowMediaFilesById]
+  );
 
   const handleRemoveRow = useCallback(
     (rowId: string) => {
-      updateRows(prev => {
-        const pendingRows = prev.filter(r => r.status === "pending");
-        if (
-          pendingRows.length <= 1 &&
-          prev.find(r => r.id === rowId)?.status === "pending"
-        ) {
-          toast.error("Cannot remove all rows. Keep at least one row.");
-          return prev;
-        }
-        return prev.filter(r => r.id !== rowId);
-      });
-      updateRowMediaFilesById(prev => {
-        const next = { ...prev };
-        delete next[rowId];
-        return next;
-      });
-      if (selectedRowId === rowId) {
-        setSelectedRowId(null);
-      }
-      if (rowSelection.isSelected(rowId)) {
-        rowSelection.setSelection(
-          rowSelection.selectedRowIds.filter(selectedId => selectedId !== rowId)
-        );
-      }
+      removeRowsWithUndo([rowId]);
     },
-    [rowSelection, selectedRowId, updateRows, updateRowMediaFilesById]
+    [removeRowsWithUndo]
   );
 
   const uploadMediaFiles = useCallback(
@@ -1517,6 +1642,38 @@ export function DirectIntakeWorkSurface() {
     uploadMediaFiles,
   ]);
 
+  const handleExportCsv = useCallback(async () => {
+    try {
+      await exportCSV(rowsRef.current as IntakeExportRow[], {
+        columns: [
+          { key: "vendorName", label: "Vendor" },
+          { key: "brandName", label: "Brand" },
+          { key: "item", label: "Product" },
+          { key: "category", label: "Category" },
+          { key: "subcategory", label: "Subcategory" },
+          { key: "qty", label: "Qty" },
+          { key: "cogs", label: "COGS" },
+          {
+            key: "lineTotal",
+            label: "Line Total",
+            formatter: (_value, row) =>
+              ((row.qty || 0) * (row.cogs || 0)).toFixed(2),
+          },
+          { key: "paymentTerms", label: "Payment Terms" },
+          { key: "site", label: "Location" },
+          { key: "status", label: "Status" },
+          { key: "notes", label: "Notes" },
+        ],
+        filename: "direct-intake-sessions",
+        addTimestamp: true,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to export intake CSV";
+      toast.error(message);
+    }
+  }, [exportCSV]);
+
   const handleUpdateSelectedRow = useCallback(
     (updates: Partial<IntakeGridRow>) => {
       if (!selectedRowId) return;
@@ -1581,20 +1738,20 @@ export function DirectIntakeWorkSurface() {
     if (rowSelection.selectedCount === 0) {
       return;
     }
-    const validSelection = rowSelection.selectedRowIds.filter(selectedId =>
+    const validSelection = selectedRowIds.filter(selectedId =>
       rows.some(row => row.id === selectedId)
     );
     if (validSelection.length !== rowSelection.selectedCount) {
-      rowSelection.setSelection(validSelection);
+      replaceSelection(validSelection);
     }
-  }, [rowSelection, rows]);
+  }, [replaceSelection, rowSelection.selectedCount, rows, selectedRowIds]);
 
   const pendingCount = rows.filter(r => r.status === "pending").length;
   const submittedCount = rows.filter(r => r.status === "submitted").length;
   const errorCount = rows.filter(r => r.status === "error").length;
   const selectedRows = useMemo(
-    () => rows.filter(row => rowSelection.selectedRowIds.includes(row.id)),
-    [rowSelection.selectedRowIds, rows]
+    () => rows.filter(row => rowSelection.selectedIds.has(row.id)),
+    [rowSelection.selectedIds, rows]
   );
   const selectedPendingRows = useMemo(
     () => selectedRows.filter(row => row.status === "pending"),
@@ -1626,54 +1783,50 @@ export function DirectIntakeWorkSurface() {
   }, [handleSubmitRow, selectedPendingRows, setError]);
 
   const handleDuplicateSelected = useCallback(() => {
-    if (selectedPendingRows.length === 0) return;
+    const selectedPendingIds = new Set(selectedPendingRows.map(row => row.id));
+    if (selectedPendingIds.size === 0) return;
+    const currentRows = rowsRef.current;
     const timestamp = Date.now();
-    const duplicates = selectedPendingRows.map((row, index) => ({
-      ...row,
-      id: `new-${timestamp}-${index}-${Math.random().toString(36).slice(2, 9)}`,
-      status: "pending" as const,
-      errorMessage: undefined,
-    }));
-    updateRows(prev => [...prev, ...duplicates]);
-    rowSelection.setSelection(duplicates.map(row => row.id));
+    let duplicateIndex = 0;
+
+    const nextRows = duplicateSelectedRows({
+      rows: currentRows,
+      selectedRowIds: selectedPendingIds,
+      getRowId: row => row.id,
+      duplicateRow: row => ({
+        ...row,
+        id: `new-${timestamp}-${duplicateIndex++}-${Math.random().toString(36).slice(2, 9)}`,
+        status: "pending" as const,
+        errorMessage: undefined,
+      }),
+    });
+
+    const duplicates = nextRows.slice(currentRows.length);
+    updateRows(nextRows);
+    replaceSelection(duplicates.map(row => row.id));
     setSelectedRowId(duplicates[0]?.id ?? null);
-  }, [rowSelection, selectedPendingRows, updateRows]);
+  }, [replaceSelection, selectedPendingRows, updateRows]);
+
+  const handleFillDownSelected = useCallback(() => {
+    const selectedPendingIds = new Set(selectedPendingRows.map(row => row.id));
+    if (selectedPendingIds.size < 2) return;
+
+    const nextRows = fillDownSelectedRows({
+      rows: rowsRef.current,
+      selectedRowIds: selectedPendingIds,
+      getRowId: row => row.id,
+      field: fillDownField,
+    });
+
+    updateRows(nextRows);
+    setSaving();
+    setTimeout(() => setSaved(), 300);
+  }, [fillDownField, selectedPendingRows, setSaved, setSaving, updateRows]);
 
   const handleRemoveSelected = useCallback(() => {
     if (selectedPendingRows.length === 0) return;
-
-    const removalPlan = createDirectIntakeRemovalPlan(
-      rows,
-      selectedPendingRows.map(row => row.id)
-    );
-    if (removalPlan.blocked) {
-      toast.error("Cannot remove all pending rows. Keep at least one row.");
-      return;
-    }
-
-    if (removalPlan.removedIds.length === 0) {
-      return;
-    }
-
-    updateRows(removalPlan.nextRows);
-
-    updateRowMediaFilesById(prev => {
-      const next = { ...prev };
-      for (const rowId of removalPlan.removedIds) {
-        delete next[rowId];
-      }
-      return next;
-    });
-
-    rowSelection.clearSelection();
-    setSelectedRowId(null);
-  }, [
-    rowSelection,
-    rows,
-    selectedPendingRows,
-    updateRowMediaFilesById,
-    updateRows,
-  ]);
+    removeRowsWithUndo(selectedPendingRows.map(row => row.id));
+  }, [removeRowsWithUndo, selectedPendingRows]);
 
   // Render
   return (
@@ -1745,7 +1898,7 @@ export function DirectIntakeWorkSurface() {
       <div className="border-b border-border/70 bg-background px-3 py-3 md:px-4">
         <div className="grid gap-2 md:grid-cols-5">
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Vendor</Label>
+            <Label className="text-xs text-muted-foreground">Supplier</Label>
             <Input
               list="direct-intake-top-vendors"
               value={selectedRow?.vendorName ?? ""}
@@ -1933,6 +2086,33 @@ export function DirectIntakeWorkSurface() {
           )}
           {selectedPendingRows.length > 0 && (
             <>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={fillDownField}
+                  onValueChange={value =>
+                    setFillDownField(value as FillDownField)
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[180px]">
+                    <SelectValue placeholder="Fill down field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FILL_DOWN_FIELD_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFillDownSelected}
+                  disabled={selectedPendingRows.length < 2}
+                >
+                  Fill Down
+                </Button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -1955,6 +2135,26 @@ export function DirectIntakeWorkSurface() {
               {selectedCount} row{selectedCount === 1 ? "" : "s"} selected
             </span>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void handleExportCsv();
+            }}
+            disabled={rows.length === 0 || exportState.isExporting}
+          >
+            {exportState.isExporting ? (
+              <>
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                Exporting {Math.round(exportState.progress)}%
+              </>
+            ) : (
+              <>
+                <Download className="mr-1 h-4 w-4" />
+                Export CSV
+              </>
+            )}
+          </Button>
           <Button
             size="sm"
             onClick={() => {
@@ -2085,6 +2285,21 @@ export function DirectIntakeWorkSurface() {
           )}
         </InspectorPanel>
       </div>
+
+      <WorkSurfaceStatusBar
+        left={`${pendingCount} pending · ${submittedCount} submitted`}
+        center={selectedCount > 0 ? `${selectedCount} selected` : undefined}
+        right={
+          <KeyboardHintBar
+            hints={[
+              { key: "Tab", label: "Next" },
+              { key: "Enter", label: "Submit" },
+              { key: "Esc", label: "Close" },
+              { key: "Cmd/Ctrl+Z", label: "Undo" },
+            ]}
+          />
+        }
+      />
     </section>
   );
 }

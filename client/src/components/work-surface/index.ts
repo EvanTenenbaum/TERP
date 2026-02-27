@@ -53,6 +53,7 @@ export {
 
 // Status Bar
 export { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
+export { KeyboardHintBar } from "./KeyboardHintBar";
 
 // Inspector Replacements (UXS-601)
 export { PaymentInspector } from "./PaymentInspector";

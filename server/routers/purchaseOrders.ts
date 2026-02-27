@@ -11,7 +11,7 @@ import {
   products,
   clients,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
 import { resolveOrCreateLegacyVendorId } from "../services/vendorMappingService";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -81,8 +81,8 @@ export const purchaseOrdersRouter = router({
       const limit = input?.limit ?? 50;
       const offset = input?.offset ?? 0;
 
-      // Build conditions array
-      const conditions = [];
+      // Build conditions array (exclude soft-deleted records by default)
+      const conditions = [isNull(purchaseOrders.deletedAt)];
 
       // Filter by supplier
       if (input?.supplierClientId) {
@@ -306,8 +306,8 @@ export const purchaseOrdersRouter = router({
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
 
-      // Build conditions array
-      const conditions = [];
+      // Build conditions array (exclude soft-deleted records by default)
+      const conditions = [isNull(purchaseOrders.deletedAt)];
 
       // Filter by supplier (canonical) or vendor (deprecated)
       if (input?.supplierClientId) {
@@ -372,7 +372,9 @@ export const purchaseOrdersRouter = router({
       const [po] = await db
         .select()
         .from(purchaseOrders)
-        .where(eq(purchaseOrders.id, input.id));
+        .where(
+          and(eq(purchaseOrders.id, input.id), isNull(purchaseOrders.deletedAt))
+        );
 
       if (!po) {
         throw new Error("Purchase order not found");
@@ -465,6 +467,20 @@ export const purchaseOrdersRouter = router({
       await db
         .update(purchaseOrders)
         .set({ deletedAt: new Date() })
+        .where(eq(purchaseOrders.id, input.id));
+      return { success: true };
+    }),
+
+  // Restore soft-deleted purchase order
+  restore: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      await db
+        .update(purchaseOrders)
+        .set({ deletedAt: null })
         .where(eq(purchaseOrders.id, input.id));
       return { success: true };
     }),

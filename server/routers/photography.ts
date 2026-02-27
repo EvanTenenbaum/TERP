@@ -27,6 +27,11 @@ const visibleImageStatusWhere = or(
   eq(productImages.status, "APPROVED"),
   eq(productImages.status, "PENDING")
 );
+const visibleImageJoinOnBatch = and(
+  eq(batches.id, productImages.batchId),
+  visibleImageStatusWhere,
+  isNull(productImages.deletedAt)
+);
 
 export function isVisibleImageStatus(
   status: string | null | undefined
@@ -291,13 +296,7 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(
-            productImages,
-            and(
-              eq(batches.id, productImages.batchId),
-              isNull(productImages.deletedAt)
-            )
-          )
+          .leftJoin(productImages, visibleImageJoinOnBatch)
           .where(
             and(
               eq(batches.batchStatus, "LIVE"),
@@ -673,11 +672,11 @@ export const photographyRouter = router({
    * Get photography stats
    */
   getStats: adminProcedure.query(async () => {
-    // Count total images (excluding soft-deleted)
+    // Count total visible images (excluding hidden and soft-deleted)
     const totalImages = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(productImages)
-      .where(isNull(productImages.deletedAt));
+      .where(and(visibleImageStatusWhere, isNull(productImages.deletedAt)));
 
     // Count batches without photos
     const batchesWithoutPhotos = await db

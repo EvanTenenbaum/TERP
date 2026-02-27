@@ -224,7 +224,8 @@ export default function ClientProfilePage() {
       variant: "default" | "secondary" | "outline";
     }[] = [];
     if (client.isBuyer) badges.push({ label: "Buyer", variant: "default" });
-    if (client.isSeller) badges.push({ label: "Seller", variant: "secondary" });
+    if (client.isSeller)
+      badges.push({ label: "Supplier", variant: "secondary" });
     if (client.isBrand) badges.push({ label: "Brand", variant: "outline" });
     if (client.isReferee)
       badges.push({ label: "Referee", variant: "secondary" });
@@ -1176,7 +1177,7 @@ export default function ClientProfilePage() {
                         htmlFor="edit-isSeller"
                         className="font-normal cursor-pointer"
                       >
-                        Seller
+                        Supplier
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
