@@ -340,7 +340,10 @@ jobs:
           done
 
       - name: Push schema and seed
-        run: pnpm drizzle-kit push --force && pnpm seed:light
+        run: |
+          pnpm drizzle-kit push --force
+          pnpm seed:light
+          pnpm seed:qa-accounts
 
       - name: Unit tests
         run: pnpm test --run
