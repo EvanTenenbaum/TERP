@@ -422,7 +422,7 @@ jobs:
         run: |
           MAX_ATTEMPTS=60
           ATTEMPTS=0
-          until curl -fsS http://127.0.0.1:5173 >/dev/null 2>&1; do
+          until curl -fsS http://127.0.0.1:5173/health >/dev/null 2>&1; do
             ATTEMPTS=$((ATTEMPTS + 1))
             if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
               echo "App failed to start after $MAX_ATTEMPTS attempts"
