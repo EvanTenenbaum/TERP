@@ -6,6 +6,7 @@
 import { eq, and, or, like, desc, asc, sql, isNull } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
+import { AppError } from "./_core/errors";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { safeJsonParse } from "./_core/logger";
 import { generateStrainULID } from "./ulid";
@@ -2007,9 +2008,12 @@ export async function bulkDeleteBatches(
       // Skip if has remaining inventory
       const onHand = parseFloat(batch.onHandQty);
       if (onHand > 0) {
-        throw new Error(
+        throw new AppError(
           `Cannot delete batch ${batchId}: Still has ${onHand} units in stock. ` +
-            `Please move or sell inventory before deleting.`
+            `Please move or sell inventory before deleting.`,
+          "BAD_REQUEST",
+          400,
+          { batchId, onHandQty: onHand }
         );
       }
 
