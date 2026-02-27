@@ -18,6 +18,7 @@ Execution topology: Supervisor + specialist atomic lanes
 4. Ran full release gate pass sequence.
 5. Ran targeted evidence suite pack (91 tests, 0 failures) for RT-01/02/04/08/09 plus flake regressions.
 6. Synced Linear states/evidence comments (RT-00..RT-09 Done, RT-10 In Progress blocked).
+7. Re-ran the full gate at HEAD `5cf49be0`; all core checks remained green and prod-smoke remained blocked on webServer timeout.
 
 ## Verification Command Evidence
 
