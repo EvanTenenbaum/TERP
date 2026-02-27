@@ -456,11 +456,12 @@ jobs:
               tests-e2e/critical-paths/inventory-intake.spec.ts \
               tests-e2e/critical-paths/accounting-quick-payment.spec.ts \
               tests-e2e/critical-paths/client-credit-workflow.spec.ts \
+              --project=chromium \
               --reporter=list
           else
             echo "Running targeted E2E specs: $SPECS"
             # shellcheck disable=SC2086
-            pnpm exec playwright test $SPECS --reporter=list
+            pnpm exec playwright test $SPECS --project=chromium --reporter=list
           fi
         env:
           CI: true
