@@ -78,7 +78,7 @@ describe("DashboardLayout navigation", () => {
     expect(labelTexts).toEqual(["Sell", "Buy", "Finance", "Admin"]);
   });
 
-  it("navigates to Spreadsheet view from the sidebar", () => {
+  it("navigates to canonical procurement spreadsheet destination from the sidebar", () => {
     render(
       <ThemeProvider>
         <DashboardLayout>
@@ -89,6 +89,8 @@ describe("DashboardLayout navigation", () => {
 
     fireEvent.click(screen.getByText("Spreadsheet View"));
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/spreadsheet-view");
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/purchase-orders?tab=receiving&mode=spreadsheet"
+    );
   });
 });

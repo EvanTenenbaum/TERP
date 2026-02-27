@@ -32,13 +32,8 @@ import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
-import OrderCreatorPage from "@/pages/OrderCreatorPage";
 // Work Surface components - legacy pages removed, using WorkSurface directly
-import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
-import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
-import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
-import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import ProductIntakeSlicePage from "@/components/uiux-slice/ProductIntakeSlicePage";
 import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
@@ -170,6 +165,49 @@ const RedirectWithTab = (from: string, to: string, tab: string) => {
   return RedirectComponent;
 };
 
+const RedirectToProcurementSpreadsheet: FC = () => {
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+
+  params.set("tab", "receiving");
+  params.set("mode", "spreadsheet");
+
+  const query = params.toString();
+  const destination = `/purchase-orders${query ? `?${query}` : ""}`;
+
+  useTrackLegacyRedirect({
+    from: "/spreadsheet-view",
+    to: destination,
+    tab: params.get("tab") ?? undefined,
+    search: search || undefined,
+  });
+
+  return <Redirect to={destination} />;
+};
+
+const RedirectInventoryDetailToWorkspace: FC<AnyRouteProps> = props => {
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const inventoryId = props.params.id;
+
+  params.set("tab", "inventory");
+  if (inventoryId) {
+    params.set("batchId", inventoryId);
+  }
+
+  const query = params.toString();
+  const destination = `/inventory${query ? `?${query}` : ""}`;
+
+  useTrackLegacyRedirect({
+    from: "/inventory/:id",
+    to: destination,
+    tab: params.get("tab") ?? undefined,
+    search: search || undefined,
+  });
+
+  return <Redirect to={destination} />;
+};
+
 // MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
 const withLazyErrorBoundary = (
   Component: ComponentType<AnyRouteProps>
@@ -287,7 +325,9 @@ function Router() {
                 />
                 <Route
                   path="/inventory/:id"
-                  component={withErrorBoundary(InventoryWorkSurface)}
+                  component={withErrorBoundary(
+                    RedirectInventoryDetailToWorkspace
+                  )}
                 />
                 <Route
                   path="/products"
@@ -426,7 +466,11 @@ function Router() {
                 />
                 <Route
                   path="/pick-pack"
-                  component={withErrorBoundary(PickPackWorkSurface)}
+                  component={RedirectWithTab(
+                    "/pick-pack",
+                    "/sales",
+                    "pick-pack"
+                  )}
                 />
                 <Route
                   path="/photography"
@@ -434,11 +478,19 @@ function Router() {
                 />
                 <Route
                   path="/orders/create"
-                  component={withErrorBoundary(OrderCreatorPage)}
+                  component={RedirectWithTab(
+                    "/orders/create",
+                    "/sales",
+                    "create-order"
+                  )}
                 />
                 <Route
                   path="/orders/new"
-                  component={withErrorBoundary(OrderCreatorPage)}
+                  component={RedirectWithTab(
+                    "/orders/new",
+                    "/sales",
+                    "create-order"
+                  )}
                 />
                 <Route
                   path="/quotes"
@@ -527,7 +579,11 @@ function Router() {
                 />
                 <Route
                   path="/purchase-orders/classic"
-                  component={withErrorBoundary(PurchaseOrdersWorkSurface)}
+                  component={RedirectWithTab(
+                    "/purchase-orders/classic",
+                    "/purchase-orders",
+                    "purchase-orders"
+                  )}
                 />
                 <Route
                   path="/product-intake"
@@ -581,14 +637,22 @@ function Router() {
                   path="/intake-receipts"
                   component={withErrorBoundary(IntakeReceipts)}
                 />
-                {/* ROUTE-001: Receiving WorkSurface alias + legacy route */}
+                {/* RT-05/RT-06: Route compatibility aliases to procurement workspace tab */}
                 <Route
                   path="/receiving"
-                  component={withErrorBoundary(DirectIntakeWorkSurface)}
+                  component={RedirectWithTab(
+                    "/receiving",
+                    "/purchase-orders",
+                    "receiving"
+                  )}
                 />
                 <Route
                   path="/direct-intake"
-                  component={withErrorBoundary(DirectIntakeWorkSurface)}
+                  component={RedirectWithTab(
+                    "/direct-intake",
+                    "/purchase-orders",
+                    "receiving"
+                  )}
                 />
                 <Route
                   path="/matchmaking"
@@ -604,7 +668,7 @@ function Router() {
                 />
                 <Route
                   path="/spreadsheet-view"
-                  component={withErrorBoundary(DirectIntakeWorkSurface)}
+                  component={RedirectToProcurementSpreadsheet}
                 />
                 <Route path="/help" component={withErrorBoundary(Help)} />
                 <Route
@@ -759,7 +823,7 @@ function App() {
     {
       key: "n",
       ctrl: true,
-      callback: () => setLocation("/orders/create"),
+      callback: () => setLocation("/sales?tab=create-order"),
       description: "Create new sale",
     },
     {

@@ -65,7 +65,7 @@ test.describe("Error Handling", () => {
     await page.waitForLoadState("networkidle");
 
     // Should show 404 UI (not a blank page)
-    const notFoundText = page.locator('text=/page not found|404/i');
+    const notFoundText = page.locator("text=/page not found|404/i");
     await expect(notFoundText).toBeVisible();
 
     // Should have a "Go Home" or similar link
@@ -94,7 +94,8 @@ test.describe("Error Handling", () => {
     // Filter out known non-critical errors
     const criticalErrors = errors.filter(
       error =>
-        !error.includes("ResizeObserver") && !error.includes("Non-Error promise")
+        !error.includes("ResizeObserver") &&
+        !error.includes("Non-Error promise")
     );
 
     expect(criticalErrors).toHaveLength(0);
@@ -207,7 +208,9 @@ test.describe("Critical Flows", () => {
     await page.waitForLoadState("networkidle");
 
     // Should load order creator page
-    await expect(page.locator('text=/create.*order|new.*order/i')).toBeVisible();
+    await expect(
+      page.locator("text=/create.*order|new.*order/i")
+    ).toBeVisible();
   });
 
   test("can view inventory list", async ({ page, dashboardPage }) => {
@@ -228,7 +231,7 @@ test.describe("Critical Flows", () => {
     await page.waitForLoadState("networkidle");
 
     // Should have settings content
-    await expect(page.locator('text=/settings/i').first()).toBeVisible();
+    await expect(page.locator("text=/settings/i").first()).toBeVisible();
   });
 });
 
@@ -318,7 +321,7 @@ test.describe("Form Validation", () => {
         // Check for required field indicators
         const hasValidationUI =
           (await page.locator('[aria-invalid="true"]').count()) > 0 ||
-          (await page.locator('text=/required/i').count()) > 0 ||
+          (await page.locator("text=/required/i").count()) > 0 ||
           (await page.locator(".text-destructive, .text-red").count()) > 0;
 
         // Note: Form might actually submit if mocked, so we just verify
@@ -350,7 +353,7 @@ test.describe("Keyboard Accessibility", () => {
 
     // Test ? for keyboard shortcuts modal
     await page.keyboard.press("?");
-    const shortcutsModal = page.locator(
+    page.locator(
       'text=/keyboard shortcuts/i, [data-testid="keyboard-shortcuts-modal"]'
     );
     // This may or may not be implemented, so we just check it doesn't crash
@@ -378,7 +381,7 @@ test.describe("Keyboard Accessibility", () => {
 // ============================================================================
 
 test.describe("Spreadsheet View (BUG-070 Fix)", () => {
-  test("spreadsheet view route does not 404", async ({
+  test("spreadsheet view route redirects to canonical procurement tab", async ({
     page,
     dashboardPage,
   }) => {
@@ -389,15 +392,10 @@ test.describe("Spreadsheet View (BUG-070 Fix)", () => {
     // Should NOT show 404
     await expect(page.locator('text="Page not found"')).not.toBeVisible();
 
-    // Should show either:
-    // 1. The spreadsheet view content (if feature flag enabled)
-    // 2. A "feature disabled" message (if feature flag disabled)
-    const hasContent =
-      (await page.locator('text=/spreadsheet/i').count()) > 0 ||
-      (await page.locator('text=/feature.*disabled/i').count()) > 0 ||
-      (await page.locator('[data-testid="spreadsheet-view"]').count()) > 0;
-
-    expect(hasContent).toBeTruthy();
+    const currentUrl = new URL(page.url());
+    expect(currentUrl.pathname).toBe("/purchase-orders");
+    expect(currentUrl.searchParams.get("tab")).toBe("receiving");
+    expect(currentUrl.searchParams.get("mode")).toBe("spreadsheet");
   });
 
   test("spreadsheet view shows proper UI when enabled", async ({
@@ -408,17 +406,13 @@ test.describe("Spreadsheet View (BUG-070 Fix)", () => {
     await page.goto("/spreadsheet-view");
     await page.waitForLoadState("networkidle");
 
-    // Look for tabs or content indicating the spreadsheet view is working
-    const hasTabs =
-      (await page.locator('[role="tablist"]').count()) > 0 ||
-      (await page.locator('text=/inventory|intake|pick.*pack|clients/i').count()) >
-        0;
-
-    const hasFeatureDisabled =
-      (await page.locator('text=/feature.*disabled/i').count()) > 0;
-
-    // Either tabs are visible (feature enabled) or disabled message shown
-    expect(hasTabs || hasFeatureDisabled).toBeTruthy();
+    // Canonical destination should render procurement workspace tabs.
+    await expect(page.locator('[role="tablist"]')).toBeVisible();
+    const tabLabels = page.locator('[role="tab"]');
+    await expect(tabLabels.filter({ hasText: /purchase orders/i })).toHaveCount(
+      1
+    );
+    await expect(tabLabels.filter({ hasText: /receiving/i })).toHaveCount(1);
   });
 });
 
@@ -427,7 +421,10 @@ test.describe("Spreadsheet View (BUG-070 Fix)", () => {
 // ============================================================================
 
 test.describe("Calendar Event Dialog", () => {
-  test("calendar page loads without errors", async ({ page, dashboardPage }) => {
+  test("calendar page loads without errors", async ({
+    page,
+    dashboardPage,
+  }) => {
     const errors: string[] = [];
     page.on("pageerror", error => {
       errors.push(error.message);
@@ -438,7 +435,7 @@ test.describe("Calendar Event Dialog", () => {
     await page.waitForLoadState("networkidle");
 
     // Should load calendar
-    await expect(page.locator('text=/calendar/i').first()).toBeVisible();
+    await expect(page.locator("text=/calendar/i").first()).toBeVisible();
 
     // No critical errors
     const criticalErrors = errors.filter(

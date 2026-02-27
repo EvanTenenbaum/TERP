@@ -110,7 +110,7 @@ export const navigationItems: NavigationItem[] = [
   // TERP-0005: Moved from Sales to Inventory group
   {
     name: "Pick & Pack",
-    path: "/pick-pack",
+    path: "/sales?tab=pick-pack",
     icon: PackageOpen,
     group: "inventory",
     ariaLabel: "Order fulfillment and packing workflow",
@@ -167,7 +167,7 @@ export const navigationItems: NavigationItem[] = [
   // TERP-0005: Rename Direct Intake to Receiving while preserving route alias
   {
     name: "Receiving",
-    path: "/receiving",
+    path: "/purchase-orders?tab=receiving",
     icon: Download,
     group: "inventory",
     ariaLabel: "Receive inventory into the system",
@@ -181,7 +181,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: "Spreadsheet View",
-    path: "/spreadsheet-view",
+    path: "/purchase-orders?tab=receiving&mode=spreadsheet",
     icon: Table,
     group: "inventory",
     ariaLabel: "Spreadsheet view for inventory and clients",
@@ -289,13 +289,13 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
   },
   {
     name: "New Sale",
-    path: "/orders/create",
+    path: "/sales?tab=create-order",
     icon: Plus,
     ariaLabel: "Create a new sale",
   },
   {
     name: "Record Receipt",
-    path: "/receiving",
+    path: "/purchase-orders?tab=receiving",
     icon: Download,
     ariaLabel: "Record a receiving intake",
   },
@@ -333,8 +333,8 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
 
 export const defaultQuickLinkPaths: readonly string[] = [
   "/",
-  "/orders/create",
-  "/receiving",
+  "/sales?tab=create-order",
+  "/purchase-orders?tab=receiving",
   "/clients",
 ];
 
@@ -431,7 +431,11 @@ export function buildNavigationGroups(options?: {
   });
 }
 
-const QUICKLINK_ALWAYS_ALLOWED_PATHS = ["/", "/orders/create", "/clients"];
+const QUICKLINK_ALWAYS_ALLOWED_PATHS = [
+  "/",
+  "/sales?tab=create-order",
+  "/clients",
+];
 
 export function buildNavigationAccessModel(options?: {
   flags?: Record<string, boolean>;

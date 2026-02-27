@@ -251,8 +251,8 @@ describe("getBatchesWithDetails", () => {
       from: vi.fn().mockReturnThis(),
       leftJoin: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      where: vi.fn().mockResolvedValue(mockResult),
+      limit: vi.fn().mockResolvedValue(mockResult),
+      where: vi.fn().mockReturnThis(),
     };
 
     const mockDb = {

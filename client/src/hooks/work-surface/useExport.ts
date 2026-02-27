@@ -54,8 +54,21 @@ export interface ExportOptions<T> {
   onProgress?: (progress: number) => void;
   /** Callback on export complete */
   onComplete?: (rowCount: number) => void;
+  /** Optional confirmation when export would be truncated by maxRows */
+  confirmTruncation?: (
+    context: ExportTruncationContext
+  ) => boolean | Promise<boolean>;
   /** Callback on error */
   onError?: (error: Error) => void;
+}
+
+export interface ExportTruncationContext {
+  /** Rows requested by the caller before truncation */
+  requestedRows: number;
+  /** Max rows allowed for this export */
+  maxRows: number;
+  /** Rows that would be omitted */
+  truncatedRows: number;
 }
 
 export interface ExportState {
@@ -107,6 +120,16 @@ function checkLimitByMaxRows(
     };
   }
   return { exceeds: false };
+}
+
+async function getTruncationConsent(
+  context: ExportTruncationContext,
+  confirmTruncation?: (
+    context: ExportTruncationContext
+  ) => boolean | Promise<boolean>
+): Promise<boolean> {
+  if (!confirmTruncation) return true;
+  return await Promise.resolve(confirmTruncation(context));
 }
 
 // ============================================================================
@@ -265,6 +288,7 @@ export function useExport<T extends Record<string, unknown>>(
         onStart,
         onProgress,
         onComplete,
+        confirmTruncation,
         onError,
       } = options;
 
@@ -276,6 +300,23 @@ export function useExport<T extends Record<string, unknown>>(
         effectiveLimits.maxRows
       );
       if (limitCheck.exceeds) {
+        const truncationContext: ExportTruncationContext = {
+          requestedRows: data.length,
+          maxRows: effectiveLimits.maxRows,
+          truncatedRows: data.length - effectiveLimits.maxRows,
+        };
+        const hasConsent = await getTruncationConsent(
+          truncationContext,
+          confirmTruncation
+        );
+        if (!hasConsent) {
+          const message =
+            "Export cancelled. Truncation was not approved for this export.";
+          setState(prev => ({ ...prev, error: message }));
+          toast.warning(message);
+          onError?.(new Error(message));
+          return;
+        }
         toast.warning(limitCheck.message || "");
         data = data.slice(0, effectiveLimits.maxRows);
       }
@@ -380,6 +421,7 @@ export function useExport<T extends Record<string, unknown>>(
         onStart,
         onProgress,
         onComplete,
+        confirmTruncation,
         onError,
       } = options;
 
@@ -391,6 +433,23 @@ export function useExport<T extends Record<string, unknown>>(
         effectiveLimits.maxRows
       );
       if (limitCheck.exceeds) {
+        const truncationContext: ExportTruncationContext = {
+          requestedRows: data.length,
+          maxRows: effectiveLimits.maxRows,
+          truncatedRows: data.length - effectiveLimits.maxRows,
+        };
+        const hasConsent = await getTruncationConsent(
+          truncationContext,
+          confirmTruncation
+        );
+        if (!hasConsent) {
+          const message =
+            "Export cancelled. Truncation was not approved for this export.";
+          setState(prev => ({ ...prev, error: message }));
+          toast.warning(message);
+          onError?.(new Error(message));
+          return;
+        }
         toast.warning(limitCheck.message || "");
         data = data.slice(0, effectiveLimits.maxRows);
       }

@@ -3,18 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
 
-// TEST-022: These tests are temporarily skipped due to Radix UI + jsdom compatibility issues.
-// The @radix-ui/react-presence and @radix-ui/react-compose-refs modules cause infinite loops
-// ("Maximum update depth exceeded") when running in jsdom environment.
-//
-// This is a known issue: https://github.com/radix-ui/primitives/issues/1822
-//
-// Workaround options for future:
-// 1. Use Playwright/Cypress for E2E testing of this component
-// 2. Wait for Radix UI to fix jsdom compatibility
-// 3. Create a comprehensive mock of all Radix primitives
-//
-// The component itself works correctly in the browser - only the test environment is affected.
+// TEST-022: Radix primitives are mocked in this suite to avoid jsdom rendering
+// instability while preserving behavior-level form coverage.
 
 // Mock all UI components to avoid Radix UI ref issues
 vi.mock("@/components/ui/dialog", () => ({
@@ -146,8 +136,17 @@ const {
   mockCreateMutation,
   mockUpdateMutation,
   mockGetEventById,
+  mockListUsersQuery,
+  mockListClientsQuery,
+  mockListCalendarsQuery,
 } = vi.hoisted(() => {
   const mockMutateAsync = vi.fn();
+  const usersQueryResult = { data: [], isLoading: false };
+  const clientsQueryResult = { data: { items: [] }, isLoading: false };
+  const calendarsQueryResult = {
+    data: [{ id: 1, name: "Default Calendar", isDefault: true }],
+    isLoading: false,
+  };
   return {
     mockMutateAsync,
     mockCreateMutation: vi.fn(() => ({
@@ -165,6 +164,9 @@ const {
       isLoading: false,
       isError: false,
     })),
+    mockListUsersQuery: vi.fn(() => usersQueryResult),
+    mockListClientsQuery: vi.fn(() => clientsQueryResult),
+    mockListCalendarsQuery: vi.fn(() => calendarsQueryResult),
   };
 });
 
@@ -176,22 +178,20 @@ vi.mock("../../lib/trpc", () => ({
       getEventById: { useQuery: mockGetEventById },
     },
     userManagement: {
-      listUsers: { useQuery: () => ({ data: [], isLoading: false }) },
+      listUsers: { useQuery: mockListUsersQuery },
     },
     clients: {
-      list: { useQuery: () => ({ data: [], isLoading: false }) },
+      list: { useQuery: mockListClientsQuery },
     },
     calendarsManagement: {
-      list: { useQuery: () => ({ data: [], isLoading: false }) },
+      list: { useQuery: mockListCalendarsQuery },
     },
   },
 }));
 
 import EventFormDialog from "./EventFormDialog";
 
-// Skip the entire test suite due to Radix UI + jsdom infinite loop issue
-// TODO: Re-enable when Radix UI fixes jsdom compatibility or move to E2E tests
-describe.skip("EventFormDialog", () => {
+describe("EventFormDialog", () => {
   const mockOnClose = vi.fn();
   const mockOnSaved = vi.fn();
 
@@ -225,7 +225,9 @@ describe.skip("EventFormDialog", () => {
       />
     );
 
-    expect(screen.getByText("Create Event")).toBeInTheDocument();
+    expect(screen.getByTestId("dialog-title")).toHaveTextContent(
+      "Create Event"
+    );
     expect(
       screen.getByRole("button", { name: /create event/i })
     ).toBeInTheDocument();
@@ -272,9 +274,7 @@ describe.skip("EventFormDialog", () => {
       />
     );
 
-    const titleInput =
-      screen.getByLabelText(/event title/i) ||
-      screen.getByPlaceholderText(/event title/i);
+    const titleInput = screen.getByPlaceholderText(/event title/i);
     if (titleInput) {
       fireEvent.change(titleInput, { target: { value: "Test Event" } });
     }

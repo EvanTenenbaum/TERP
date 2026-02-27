@@ -38,12 +38,8 @@ const mockRevokeObjectURL = vi.fn();
 
 // Store original DOM methods before any mocking
 const originalCreateElement = document.createElement.bind(document);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const originalAppendChild =
-  (globalThis as any).Node?.prototype?.appendChild || (() => {});
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const originalRemoveChild =
-  (globalThis as any).Node?.prototype?.removeChild || (() => {});
+const originalAppendChild = document.body.appendChild.bind(document.body);
+const originalRemoveChild = document.body.removeChild.bind(document.body);
 
 describe("useExport", () => {
   let createElementSpy: ReturnType<typeof vi.spyOn>;
@@ -60,8 +56,7 @@ describe("useExport", () => {
     const mockLink = {
       setAttribute: vi.fn(),
       click: vi.fn(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      style: {} as any,
+      style: {},
       // Add minimal properties needed for DOM operations
       nodeName: "A",
       nodeType: 1,
@@ -71,33 +66,34 @@ describe("useExport", () => {
       .spyOn(document, "createElement")
       .mockImplementation((tagName: string) => {
         if (tagName.toLowerCase() === "a") {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockLink as any;
+          return mockLink as unknown as HTMLElement;
         }
         // For all other elements (including React's internal container divs), use real implementation
         return originalCreateElement(tagName);
       });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     appendChildSpy = vi
       .spyOn(document.body, "appendChild")
-      .mockImplementation(function (this: any, node: any) {
+      .mockImplementation((node: unknown) => {
         // Only mock for anchor elements, let others pass through
-        if ((node as HTMLElement).nodeName === "A") {
-          return node;
+        if ((node as { nodeName?: string }).nodeName === "A") {
+          return node as ReturnType<typeof originalAppendChild>;
         }
-        return originalAppendChild.call(this, node);
+        return originalAppendChild(
+          node as Parameters<typeof originalAppendChild>[0]
+        );
       });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     removeChildSpy = vi
       .spyOn(document.body, "removeChild")
-      .mockImplementation(function (this: any, node: any) {
+      .mockImplementation((node: unknown) => {
         // Only mock for anchor elements, let others pass through
-        if ((node as HTMLElement).nodeName === "A") {
-          return node;
+        if ((node as { nodeName?: string }).nodeName === "A") {
+          return node as ReturnType<typeof originalRemoveChild>;
         }
-        return originalRemoveChild.call(this, node);
+        return originalRemoveChild(
+          node as Parameters<typeof originalRemoveChild>[0]
+        );
       });
   });
 
@@ -254,6 +250,32 @@ describe("useExport", () => {
       expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("2"));
     });
 
+    it("should cancel export when truncation is not approved", async () => {
+      const { result } = renderHook(() => useExport({ maxRows: 2 }));
+      const confirmTruncation = vi.fn().mockResolvedValue(false);
+      const onError = vi.fn();
+
+      await act(async () => {
+        await result.current.exportCSV(testData, {
+          columns: testColumns,
+          filename: "test-export",
+          confirmTruncation,
+          onError,
+        });
+      });
+
+      expect(confirmTruncation).toHaveBeenCalledWith({
+        requestedRows: 3,
+        maxRows: 2,
+        truncatedRows: 1,
+      });
+      expect(mockCreateObjectURL).not.toHaveBeenCalled();
+      expect(toast.warning).toHaveBeenCalledWith(
+        expect.stringContaining("cancelled")
+      );
+      expect(onError).toHaveBeenCalled();
+    });
+
     it("should respect per-export maxRows override", async () => {
       const { result } = renderHook(() => useExport());
 
@@ -357,6 +379,27 @@ describe("useExport", () => {
         expect.stringContaining("1 rows")
       );
       expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("1"));
+    });
+
+    it("should request truncation confirmation for Excel exports", async () => {
+      const { result } = renderHook(() => useExport());
+      const confirmTruncation = vi.fn().mockResolvedValue(true);
+
+      await act(async () => {
+        await result.current.exportExcel(testData, {
+          columns: testColumns,
+          filename: "test-export",
+          limits: { maxRows: 1 },
+          confirmTruncation,
+        });
+      });
+
+      expect(confirmTruncation).toHaveBeenCalledWith({
+        requestedRows: 2,
+        maxRows: 1,
+        truncatedRows: 1,
+      });
+      expect(mockCreateObjectURL).toHaveBeenCalled();
     });
   });
 

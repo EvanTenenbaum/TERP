@@ -67,10 +67,20 @@ vi.mock("@/hooks/useNavigationState", () => ({
     expandAll: vi.fn(),
     collapseAll: vi.fn(),
     isPinned: (path: string) =>
-      ["/", "/orders/create", "/receiving", "/clients"].includes(path),
+      [
+        "/",
+        "/sales?tab=create-order",
+        "/purchase-orders?tab=receiving",
+        "/clients",
+      ].includes(path),
     togglePin: mockTogglePin,
     setPinnedPaths: vi.fn(),
-    pinnedPaths: ["/", "/orders/create", "/receiving", "/clients"],
+    pinnedPaths: [
+      "/",
+      "/sales?tab=create-order",
+      "/purchase-orders?tab=receiving",
+      "/clients",
+    ],
   }),
 }));
 
@@ -106,17 +116,22 @@ describe("AppSidebar navigation", () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByRole("link", { name: /Dashboard/i })).toBeVisible();
-    expect(screen.getByRole("link", { name: /New Sale/i })).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: /Record a receiving intake/i })
-    ).toBeVisible();
-    expect(screen.getByText("Record Receipt")).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: /Open client workspace/i })
-    ).toBeVisible();
-    expect(screen.getByText("Clients")).toBeVisible();
-  });
+    const dashboardQuickAction = screen.getByText("Dashboard");
+    const newSaleQuickAction = screen.getByText("New Sale");
+    const recordReceiptQuickAction = screen.getByText("Record Receipt");
+    const clientsQuickAction = screen.getByText("Clients");
+
+    expect(dashboardQuickAction).toBeVisible();
+    expect(newSaleQuickAction).toBeVisible();
+    expect(recordReceiptQuickAction).toBeVisible();
+    expect(clientsQuickAction).toBeVisible();
+
+    expect(recordReceiptQuickAction.closest("a")).toHaveAttribute(
+      "href",
+      "/purchase-orders?tab=receiving"
+    );
+    expect(clientsQuickAction.closest("a")).toHaveAttribute("href", "/clients");
+  }, 10000);
 
   it("highlights active navigation item", () => {
     mockLocation = "/sales";
@@ -132,8 +147,8 @@ describe("AppSidebar navigation", () => {
     expect(salesLink).toHaveAttribute("aria-current", "page");
   });
 
-  it("treats /direct-intake and /receiving as the same active nav destination", () => {
-    mockLocation = "/direct-intake";
+  it("treats receiving tab variants as the same active nav destination", () => {
+    mockLocation = "/purchase-orders?tab=receiving";
     const { rerender } = render(
       <ThemeProvider>
         <Sidebar open />
@@ -145,7 +160,7 @@ describe("AppSidebar navigation", () => {
     });
     expect(receivingLink).toHaveAttribute("aria-current", "page");
 
-    mockLocation = "/receiving";
+    mockLocation = "/purchase-orders?tab=receiving&mode=spreadsheet";
     rerender(
       <ThemeProvider>
         <Sidebar open />

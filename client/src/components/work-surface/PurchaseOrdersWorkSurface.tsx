@@ -627,10 +627,33 @@ export function PurchaseOrdersWorkSurface() {
     },
   });
 
+  const restorePO = trpc.purchaseOrders.restore.useMutation({
+    onError: error => {
+      toast.error(error.message || "Failed to restore purchase order");
+      setError(error.message);
+    },
+  });
+
   const deletePO = trpc.purchaseOrders.delete.useMutation({
     onMutate: () => setSaving("Deleting purchase order..."),
-    onSuccess: () => {
-      toast.success("Purchase order deleted successfully");
+    onSuccess: (_data, variables) => {
+      const deletedPO = (pos as PurchaseOrder[]).find(
+        po => po.id === variables.id
+      );
+      const deletedLabel = deletedPO?.poNumber
+        ? `PO ${deletedPO.poNumber}`
+        : `PO #${variables.id}`;
+
+      registerAction({
+        description: `Deleted ${deletedLabel}`,
+        undo: async () => {
+          await restorePO.mutateAsync({ id: variables.id });
+          setSaved();
+          await refetch();
+        },
+        duration: 10000,
+      });
+
       setSaved();
       refetch();
       setIsDeleteDialogOpen(false);
@@ -2011,8 +2034,8 @@ export function PurchaseOrdersWorkSurface() {
             <DialogTitle>Delete Purchase Order</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to delete PO {selectedPO?.poNumber}? This
-            action cannot be undone.
+            Are you sure you want to delete PO {selectedPO?.poNumber}? You can
+            undo this action for 10 seconds.
           </p>
           <DialogFooter>
             <Button

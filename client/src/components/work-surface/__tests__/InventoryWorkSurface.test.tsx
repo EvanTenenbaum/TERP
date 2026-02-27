@@ -96,6 +96,17 @@ vi.mock("@/lib/trpc", () => ({
         delete: {
           useMutation: () => ({ mutate: vi.fn(), isPending: false }),
         },
+        restore: {
+          useMutation: () => ({
+            mutateAsync: vi.fn().mockResolvedValue({
+              success: true,
+              restored: 0,
+              skipped: 0,
+              errors: [],
+            }),
+            isPending: false,
+          }),
+        },
       },
     },
   },

@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   render,
   screen,
@@ -59,6 +59,10 @@ const data: Person[] = [
 ];
 
 describe("DataTable", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const renderTable = (
     overrideProps: Partial<React.ComponentProps<typeof DataTable<Person>>> = {}
   ) =>
@@ -120,19 +124,22 @@ describe("DataTable", () => {
 
   it("applies global search across visible columns", () => {
     vi.useFakeTimers();
-    renderTable();
+    try {
+      renderTable();
 
-    const searchInput = screen.getByPlaceholderText(/Search/i);
-    fireEvent.change(searchInput, { target: { value: "Charlie" } });
+      const searchInput = screen.getByPlaceholderText(/Search/i);
+      fireEvent.change(searchInput, { target: { value: "Charlie" } });
 
-    act(() => {
-      vi.runAllTimers();
-    });
+      act(() => {
+        vi.runAllTimers();
+      });
 
-    const rows = screen.getAllByRole("row").slice(1);
-    expect(rows).toHaveLength(1);
-    expect(within(rows[0]).getByText("Charlie")).toBeInTheDocument();
-    vi.useRealTimers();
+      const rows = screen.getAllByRole("row").slice(1);
+      expect(rows).toHaveLength(1);
+      expect(within(rows[0]).getByText("Charlie")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("handles pagination and page size changes", async () => {
@@ -162,7 +169,11 @@ describe("DataTable", () => {
     });
     fireEvent.click(ageToggle);
 
-    expect(screen.queryByText(/Age/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /^Age$/ })
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("supports row selection via checkboxes", () => {

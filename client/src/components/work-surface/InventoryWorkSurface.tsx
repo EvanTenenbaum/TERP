@@ -494,6 +494,12 @@ function BatchInspectorContent({
 
 export function InventoryWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const pendingBulkDeleteRef = useRef<
+    Array<{
+      id: number;
+      previousStatus: InventoryBatchStatus;
+    }>
+  >([]);
 
   // State
   const [search, setSearch] = useState("");
@@ -560,7 +566,7 @@ export function InventoryWorkSurface() {
       case "vendor":
         return "vendor";
       case "grade":
-        return "productName";
+        return "grade";
       case "status":
         return "status";
       case "onHandQty":
@@ -570,7 +576,7 @@ export function InventoryWorkSurface() {
       case "availableQty":
         return "available";
       case "unitCogs":
-        return "available";
+        return "unitCogs";
       default:
         return "sku";
     }
@@ -593,6 +599,12 @@ export function InventoryWorkSurface() {
       vendor: filters.vendor.length > 0 ? filters.vendor : undefined,
       brand: filters.brand.length > 0 ? filters.brand : undefined,
       grade: filters.grade.length > 0 ? filters.grade : undefined,
+      stockLevel: filters.stockLevel !== "all" ? filters.stockLevel : undefined,
+      minCogs: filters.cogsRange.min ?? undefined,
+      maxCogs: filters.cogsRange.max ?? undefined,
+      dateFrom: filters.dateRange.from ?? undefined,
+      dateTo: filters.dateRange.to ?? undefined,
+      location: filters.location ?? undefined,
       stockStatus:
         filters.stockStatus !== "ALL" ? filters.stockStatus : undefined,
       ageBracket: filters.ageBracket !== "ALL" ? filters.ageBracket : undefined,
@@ -683,14 +695,19 @@ export function InventoryWorkSurface() {
 
   const items = normalizedItems;
   const clientSideFilterActive =
-    filters.stockLevel !== "all" ||
-    filters.cogsRange.min !== null ||
-    filters.cogsRange.max !== null ||
-    filters.dateRange.from !== null ||
-    filters.dateRange.to !== null ||
-    filters.location !== null;
+    !useEnhancedApi &&
+    (filters.stockLevel !== "all" ||
+      filters.cogsRange.min !== null ||
+      filters.cogsRange.max !== null ||
+      filters.dateRange.from !== null ||
+      filters.dateRange.to !== null ||
+      filters.location !== null);
 
   const filteredItems = useMemo(() => {
+    if (useEnhancedApi) {
+      return items;
+    }
+
     return items.filter(item => {
       const batch = item.batch;
       if (!batch) return false;
@@ -704,7 +721,7 @@ export function InventoryWorkSurface() {
 
       if (filters.stockLevel !== "all") {
         if (filters.stockLevel === "in_stock" && available <= 0) return false;
-        if (filters.stockLevel === "low_stock" && available > 100) return false;
+        if (filters.stockLevel === "low_stock" && available > 50) return false;
         if (filters.stockLevel === "out_of_stock" && available > 0) {
           return false;
         }
@@ -747,6 +764,7 @@ export function InventoryWorkSurface() {
       return true;
     });
   }, [
+    useEnhancedApi,
     items,
     filters.stockLevel,
     filters.cogsRange.min,
@@ -950,6 +968,7 @@ export function InventoryWorkSurface() {
   // Mutations
   const undoStatusMutation = trpc.inventory.updateStatus.useMutation();
   const undoAdjustQtyMutation = trpc.inventory.adjustQty.useMutation();
+  const restoreBulkDeleteMutation = trpc.inventory.bulk.restore.useMutation();
 
   const updateStatusMutation = trpc.inventory.updateStatus.useMutation({
     onMutate: () => setSaving("Updating status..."),
@@ -991,21 +1010,59 @@ export function InventoryWorkSurface() {
   );
 
   const bulkDeleteMutation = trpc.inventory.bulk.delete.useMutation({
-    onMutate: () => setSaving("Deleting selected batches..."),
-    onSuccess: result => {
+    onMutate: batchIds => {
+      setSaving("Deleting selected batches...");
+      pendingBulkDeleteRef.current = batchIds.flatMap(batchId => {
+        const currentStatus = items.find(item => item.batch?.id === batchId)
+          ?.batch?.batchStatus;
+        if (!currentStatus || currentStatus === "CLOSED") {
+          return [];
+        }
+        return [
+          {
+            id: batchId,
+            previousStatus: currentStatus as InventoryBatchStatus,
+          },
+        ];
+      });
+    },
+    onSuccess: (result, batchIds) => {
       const deletedCount =
-        typeof result?.deleted === "number"
-          ? result.deleted
-          : selectedBatchIds.size;
-      toast.success(
-        `Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`
+        typeof result?.deleted === "number" ? result.deleted : batchIds.length;
+      const restorePayload = pendingBulkDeleteRef.current.filter(batch =>
+        batchIds.includes(batch.id)
       );
+
+      if (deletedCount > 0 && restorePayload.length > 0) {
+        undo.registerAction({
+          description: `Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`,
+          undo: async () => {
+            const restoreResult =
+              await restoreBulkDeleteMutation.mutateAsync(restorePayload);
+            if (restoreResult.restored < restorePayload.length) {
+              throw new Error(
+                "One or more deleted batches could not be restored."
+              );
+            }
+            await refreshInventory();
+            setSaved();
+          },
+          duration: 10000,
+        });
+      } else if (deletedCount > 0) {
+        toast.success(
+          `Deleted ${deletedCount} batch${deletedCount === 1 ? "" : "es"}`
+        );
+      }
+
+      pendingBulkDeleteRef.current = [];
       selection.clear();
       setShowBulkDeleteConfirm(false);
       setSaved();
       refreshInventory();
     },
     onError: err => {
+      pendingBulkDeleteRef.current = [];
       toast.error(err.message || "Failed to delete selected batches");
       setError(err.message);
     },
@@ -1412,6 +1469,11 @@ export function InventoryWorkSurface() {
         ],
         filename: "inventory",
         addTimestamp: true,
+        confirmTruncation: ({ requestedRows, maxRows, truncatedRows }) =>
+          window.confirm(
+            `Export ${requestedRows.toLocaleString()} rows? ` +
+              `This export is capped at ${maxRows.toLocaleString()} rows, so ${truncatedRows.toLocaleString()} row${truncatedRows === 1 ? "" : "s"} will be omitted.`
+          ),
       });
       toast.success(
         `Exported ${rows.length} batch${rows.length === 1 ? "" : "es"}`
@@ -2066,7 +2128,7 @@ export function InventoryWorkSurface() {
         title="Delete selected batches?"
         description={`Delete ${selectedBatchIds.size} selected batch${
           selectedBatchIds.size === 1 ? "" : "es"
-        }? This action cannot be undone.`}
+        }? You'll be able to undo this action for 10 seconds.`}
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleConfirmBulkDelete}
