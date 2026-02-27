@@ -10,6 +10,8 @@ PR context: https://github.com/EvanTenenbaum/TERP/pull/446
 - Functional proof: PASS for RT-00..RT-09 (code/test/browser-evidence set).
 - Blast radius checks: PASS for RT-00..RT-09.
 - Adversarial review: PASS for RT-00..RT-09.
+- Final verification head: `e65e6eaf`.
+- Observed one non-repro timeout-only `pnpm test` run at final head; targeted rerun + full-suite rerun passed.
 - RT-10 overall release package: BLOCKED pending prod-smoke/staging webServer readiness.
 
 ## Per-Task V4 Matrix

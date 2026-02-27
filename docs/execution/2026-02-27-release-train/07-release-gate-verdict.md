@@ -25,13 +25,15 @@ Release is blocked because staging/prod-smoke gate is not passing, despite all c
 
 1. Staging/prod smoke environment startup path is not healthy (`config.webServer` timeout), so critical live-flow verification is incomplete.
 2. Release confidence is high for unit/integration scope but not yet complete for staging webServer boot + end-to-end live walkthrough.
-3. Build warnings remain (`%VITE_APP_TITLE%` undefined in env; large bundle chunk warning) and should be tracked, though not release blockers by themselves.
+3. One timeout-only `pnpm test` run was observed at final head but did not reproduce in targeted rerun or full-suite rerun; keep this as a flake-watch item.
+4. Build warnings remain (`%VITE_APP_TITLE%` undefined in env; large bundle chunk warning) and should be tracked, though not release blockers by themselves.
 
 ## Owner-Tagged Next Actions
 
 1. Owner: Platform/DevOps. Fix staging/prod-smoke webServer startup path and re-run `pnpm test:e2e:prod-smoke`.
 2. Owner: Release Supervisor. After prod-smoke pass, rerun final gate package and move TER-462 to `Done`.
-3. Owner: Frontend Platform. Triage build warnings (env placeholder and chunk size warning) and define follow-up optimization ticket if needed.
+3. Owner: QA/Infra. Monitor for recurrence of timeout-only full-suite flakes and quarantine if recurrence rises.
+4. Owner: Frontend Platform. Triage build warnings (env placeholder and chunk size warning) and define follow-up optimization ticket if needed.
 
 ## Rollback Posture
 
