@@ -43,9 +43,6 @@ services:
       - key: ENABLE_RBAC
         value: "true"
         scope: RUN_AND_BUILD_TIME
-      - key: UPLOAD_DIR
-        value: /tmp/uploads
-        scope: RUN_AND_BUILD_TIME
       - key: NODE_MEMORY_LIMIT
         value: "512000000"
         scope: RUN_AND_BUILD_TIME
