@@ -1,42 +1,39 @@
 # Phase 4 - Linear Mapping
 
-Date: 2026-02-27
+Date: 2026-02-28
 Team: Terpcorp (`d88bb32f-ea0a-4809-aac1-fde6ec81bad3`)
 Project: TERP - Golden Flows Beta (`79882db1-0cac-448b-b73c-5dd9307c85c8`)
 
-Roadmap tasks were created as Linear issues and execution-state sync was updated based on verified evidence.
+Release-train blocker tickets were updated with post-merge evidence. A later live-health recheck re-opened TER-462.
 
-## Issue Map (Post-Execution Sync)
+## Issue Map (Latest Sync)
 
-| Roadmap Task | Linear ID | Title                                                                                | State       | Priority | Dependencies (blockedBy)                                                                 |
-| ------------ | --------- | ------------------------------------------------------------------------------------ | ----------- | -------- | ---------------------------------------------------------------------------------------- |
-| RT-00        | TER-452   | RT-00 Supervisor control + evidence scaffold                                         | Done        | High     | None                                                                                     |
-| RT-01        | TER-453   | RT-01 Exclude soft-deleted POs from list/getAll/getById + add restore API            | Done        | Urgent   | TER-452                                                                                  |
-| RT-02        | TER-454   | RT-02 Inventory enhanced API full-dataset filter contract (stock/cogs/date/location) | Done        | Urgent   | TER-452                                                                                  |
-| RT-03        | TER-455   | RT-03 Inventory UI filter wiring to server contract + accurate totals/pagination     | Done        | High     | TER-454                                                                                  |
-| RT-04        | TER-456   | RT-04 Inventory sort contract correction (grade + unit COGS) end-to-end              | Done        | Medium   | TER-454                                                                                  |
-| RT-05        | TER-457   | RT-05 Workspace-shell route unification for sales/procurement/receiving              | Done        | High     | TER-452                                                                                  |
-| RT-06        | TER-458   | RT-06 Legacy route deprecation/redirect cleanup (classic + spreadsheet)              | Done        | Medium   | TER-457                                                                                  |
-| RT-07        | TER-459   | RT-07 Recoverable delete UX for inventory + purchase orders (undo/restore)           | Done        | High     | TER-453, TER-455                                                                         |
-| RT-08        | TER-460   | RT-08 Export UX hardening (truncation consent + progress model + large-job strategy) | Done        | Medium   | TER-455                                                                                  |
-| RT-09        | TER-461   | RT-09 QA debt reduction (skip/todo removal + DB integrity gate hardening)            | Done        | High     | TER-452                                                                                  |
-| RT-10        | TER-462   | RT-10 Integration regression + adversarial sweep + release gate package              | In Progress | Urgent   | TER-452, TER-453, TER-454, TER-455, TER-456, TER-457, TER-458, TER-459, TER-460, TER-461 |
+| Ticket | Title | Final State | Evidence Comment ID | Updated At (UTC) |
+| --- | --- | --- | --- | --- |
+| TER-459 | RT-07 Recoverable delete UX for inventory + purchase orders | Done | `cfce4cc8-c0ca-4205-9591-706eb9e9fa62` | 2026-02-28T00:15:53Z |
+| TER-463 | BUG: Inventory blocked-delete path generic error | Done | `e46bde5b-0f29-4a27-af75-83d84fad8639` | 2026-02-28T00:15:53Z |
+| TER-464 | CI: Schema validation fails on main (MySQL reachability) | Done | `d2cb18da-8a12-4dde-8b4d-77028dfcbcf9` | 2026-02-28T00:15:55Z |
+| TER-462 | RT-10 Integration regression + release gate package | In Progress | `7622a247-32eb-40ec-bd3f-e8e8cc6a3e06` | 2026-02-28T05:44:49Z |
 
-## Evidence Notes
+## Evidence Snapshot Used For Sync
 
-- RT-00..RT-09 were moved to `Done` only after code/test evidence checks and per-issue evidence comments were added.
-- RT-10 remains `In Progress` because production-smoke/staging readiness is blocked by `pnpm test:e2e:prod-smoke` timing out on Playwright `config.webServer` startup.
+- PR merged: https://github.com/EvanTenenbaum/TERP/pull/447
+- Merge commit on `main`: `14b4cf325b633295fab46c23846a72e50f6b583c`
+- Main checks (same head SHA):
+  - Schema Validation success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410090
+  - Main Branch CI/CD success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410102
+  - TypeScript Baseline Check success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410087
+  - Sync Main → Staging success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410119
+- Live staging proof pack:
+  - `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/route-final-urls-post-merge.txt`
+  - `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/inventory-api-proof-post-merge.json`
+  - `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/inventory-ui-proof-post-merge.json`
+- Live blocker proof (re-opened TER-462):
+  - `curl https://terp-staging-yicld.ondigitalocean.app/health` => `status: degraded`, `checks.disk.usedPercent: 81`
 
-## URLs
+## Linear URLs
 
-- TER-452: https://linear.app/terpcorp/issue/TER-452/rt-00-supervisor-control-evidence-scaffold
-- TER-453: https://linear.app/terpcorp/issue/TER-453/rt-01-exclude-soft-deleted-pos-from-listgetallgetbyid-add-restore-api
-- TER-454: https://linear.app/terpcorp/issue/TER-454/rt-02-inventory-enhanced-api-full-dataset-filter-contract
-- TER-455: https://linear.app/terpcorp/issue/TER-455/rt-03-inventory-ui-filter-wiring-to-server-contract-accurate
-- TER-456: https://linear.app/terpcorp/issue/TER-456/rt-04-inventory-sort-contract-correction-grade-unit-cogs-end-to-end
-- TER-457: https://linear.app/terpcorp/issue/TER-457/rt-05-workspace-shell-route-unification-for-salesprocurementreceiving
-- TER-458: https://linear.app/terpcorp/issue/TER-458/rt-06-legacy-route-deprecationredirect-cleanup-classic-spreadsheet
 - TER-459: https://linear.app/terpcorp/issue/TER-459/rt-07-recoverable-delete-ux-for-inventory-purchase-orders-undorestore
-- TER-460: https://linear.app/terpcorp/issue/TER-460/rt-08-export-ux-hardening-truncation-consent-progress-model-large-job
-- TER-461: https://linear.app/terpcorp/issue/TER-461/rt-09-qa-debt-reduction-skiptodo-removal-db-integrity-gate-hardening
 - TER-462: https://linear.app/terpcorp/issue/TER-462/rt-10-integration-regression-adversarial-sweep-release-gate-package
+- TER-463: https://linear.app/terpcorp/issue/TER-463/bug-inventory-blocked-delete-path-shows-generic-unexpected-error
+- TER-464: https://linear.app/terpcorp/issue/TER-464/ci-schema-validation-workflow-fails-on-main-due-missing-mysql
