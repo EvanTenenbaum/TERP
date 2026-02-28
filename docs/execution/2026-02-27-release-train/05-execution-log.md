@@ -1,66 +1,70 @@
 # Phase 5 - Execution Log
 
-Date: 2026-02-27
-Integration branch: `codex/release-train-20260227`
-Baseline branch: `origin/codex/consolidated-ux-media-20260226`
-Execution topology: Supervisor + specialist atomic lanes
+Date: 2026-02-28
+Execution worktree: `/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227`
+Release fix branch merged via PR: `codex/ter464-rt07-fixes` → `main`
 
-## Execution Timeline
+## Timeline
 
-1. Verified and repaired RT-09 QA debt gaps.
-2. Resolved full-suite blockers discovered during release-gate runs:
+1. Confirmed PR merge state.
+- Command: `gh pr view 447 --repo EvanTenenbaum/TERP --json state,mergeCommit,mergedAt,url`
+- Result: `MERGED`, merge commit `14b4cf325b633295fab46c23846a72e50f6b583c` at `2026-02-27T23:52:24Z`.
 
-- `server/routers/orders.debug-removal.property.test.ts` timeout risk removed by static source verification.
-- `client/src/components/ui/DataTable.test.tsx` stabilized around timer cleanup and visibility assertion.
-- `client/src/components/layout/AppSidebar.test.tsx` quick-action assertion made deterministic.
+2. Verified required main-branch CI gates for merged head SHA.
+- Command: `gh run list --repo EvanTenenbaum/TERP --branch main --limit 20 --json headSha,name,conclusion,url`
+- Result for `14b4cf...`: `Main Branch CI/CD`, `Schema Validation`, `TypeScript Baseline Check`, and `Sync Main → Staging` all `success`.
 
-3. Fixed session-gate blocker (`duplicate_session` for `TYPE-001`) by archiving duplicate active session file and updating active-session index.
-4. Ran full release gate pass sequence.
-5. Ran targeted evidence suite pack (91 tests, 0 failures) for RT-01/02/04/08/09 plus flake regressions.
-6. Synced Linear states/evidence comments (RT-00..RT-09 Done, RT-10 In Progress blocked).
-7. Re-ran the full gate at HEAD `5cf49be0`; all core checks remained green and prod-smoke remained blocked on webServer timeout.
-8. Re-ran at HEAD `e65e6eaf`; one transient timeout-only `pnpm test` run was followed by a passing targeted rerun and a passing full-suite rerun.
+3. Verified live staging deployment identity.
+- Command: `curl -sS https://terp-staging-yicld.ondigitalocean.app/version.json`
+- Result: build `build-mm5juzk6` (`2026-02-27T23:55:10.868Z`).
 
-## Verification Command Evidence
+4. Route canonicalization verified on live staging with screenshot artifacts.
+- Artifact index: `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/route-final-urls-post-merge.txt`
+- Captured routes:
+  - `/spreadsheet-view` → `/purchase-orders?tab=receiving&mode=spreadsheet`
+  - `/purchase-orders/classic` → `/purchase-orders?tab=purchase-orders`
+  - `/inventory/1` → `/inventory?tab=inventory&batchId=1`
+  - `/orders/create` → `/sales?tab=create-order`
+  - `/receiving` → `/purchase-orders?tab=receiving`
 
-| Command                           | Result | Evidence Summary                                            |
-| --------------------------------- | ------ | ----------------------------------------------------------- |
-| `pnpm check`                      | PASS   | `tsc --noEmit` completed with exit 0.                       |
-| `pnpm lint`                       | PASS   | `eslint client/src server --ext .ts,.tsx` exit 0.           |
-| `pnpm test`                       | PASS   | 215 files passed, 5613 tests passed, 19 skipped.            |
-| `pnpm build`                      | PASS   | Vite + server bundle built successfully.                    |
-| `pnpm roadmap:validate`           | PASS   | 11 tasks validated; warnings only.                          |
-| `pnpm validate:sessions`          | PASS   | Session cleanup validation successful after duplicate fix.  |
-| `pnpm vitest run <targeted pack>` | PASS   | 8 files passed, 91 tests passed (0 failed).                 |
-| `pnpm test:e2e:prod-smoke`        | FAIL   | Blocker: `Timed out waiting 60000ms from config.webServer`. |
+5. RT-07 destructive flow closure and TER-463 blocked-delete UX check completed.
+- API proof: `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/inventory-api-proof-post-merge.json`
+- UI proof:
+  - `rt07-ui-01-selected-row.png`
+  - `rt07-ui-02-delete-confirm.png`
+  - `rt07-ui-03-after-delete.png`
+  - `rt07-ui-04-after-undo.png`
+  - `ter463-ui-01-selected-blocked-row.png`
+  - `ter463-ui-02-blocked-delete-error.png`
+- Result:
+  - Deletable row (`onHandQty=0`) delete/undo/restore confirmed.
+  - Blocked-delete path shows explicit business-rule guidance (`BAD_REQUEST`) and not generic fallback.
 
-Final verification at HEAD `e65e6eaf`:
+6. Investigated available seeding capabilities for deterministic test preconditions.
+- Evidence command: `node -e "...package.json scripts filter includes('seed')..."`
+- Found extensive seed surface (`seed:new`, `seed:qa-data`, `seed:qa-accounts`, `seed:comprehensive`, etc.).
+- Decision for live staging verification: avoid broad reseed on shared environment; instead enforce minimal deterministic precondition with targeted inventory row selection and quantity adjustment to `0` before delete/undo proof.
 
-- `pnpm check` PASS
-- `pnpm lint` PASS
-- `pnpm test` PASS on rerun after non-repro timeout-only run
-- `pnpm build` PASS
-- `pnpm roadmap:validate` PASS
-- `pnpm validate:sessions` PASS
+7. Updated tracker and final release docs.
+- Linear comments created for TER-459/462/463/464 with evidence.
+- TER-459/463/464 in `Done`; TER-462 re-opened to `In Progress` after health degradation evidence.
 
-## Task Status Ledger (Execution-End)
+8. Final health re-check introduced a release blocker.
+- Command: `curl -sS https://terp-staging-yicld.ondigitalocean.app/health` (3 consecutive checks)
+- Result: `status: degraded` each time, with `checks.disk.status: warning` and `checks.disk.usedPercent: 81`.
 
-| Task  | Linear  | Owner Role | Status      | V4 Gate                                |
-| ----- | ------- | ---------- | ----------- | -------------------------------------- |
-| RT-00 | TER-452 | Supervisor | Completed   | PASS                                   |
-| RT-01 | TER-453 | Specialist | Completed   | PASS                                   |
-| RT-02 | TER-454 | Specialist | Completed   | PASS                                   |
-| RT-03 | TER-455 | Specialist | Completed   | PASS                                   |
-| RT-04 | TER-456 | Specialist | Completed   | PASS                                   |
-| RT-05 | TER-457 | Specialist | Completed   | PASS                                   |
-| RT-06 | TER-458 | Specialist | Completed   | PASS                                   |
-| RT-07 | TER-459 | Specialist | Completed   | PASS                                   |
-| RT-08 | TER-460 | Specialist | Completed   | PASS                                   |
-| RT-09 | TER-461 | Specialist | Completed   | PASS                                   |
-| RT-10 | TER-462 | Supervisor | In progress | BLOCKED (prod-smoke webServer timeout) |
+## Command Evidence Summary
 
-## Artifact Paths
+| Command | Result |
+| --- | --- |
+| `gh pr view 447 --repo EvanTenenbaum/TERP --json ...` | MERGED at `2026-02-27T23:52:24Z`, commit `14b4cf...` |
+| `gh run list --repo EvanTenenbaum/TERP --branch main ...` | Required CI gates green for `14b4cf...` |
+| `curl .../version.json` | `build-mm5juzk6` |
+| `curl .../health` | `degraded` (disk warning at 81%) |
+| `doctl apps list ...` | `401 Unable to authenticate` (non-blocking for code validation, blocking for direct DO introspection) |
 
-- Execution folder: `docs/execution/2026-02-27-release-train/`
-- UI evidence: `docs/execution/2026-02-27-release-train/ui-evidence/`
-- Roadmap: `docs/roadmaps/2026-02-27-parallel-release-train-atomic.md`
+## Open Blockers
+
+- Staging health gate is not green:
+  - Proof: `/health` returns `status: degraded` with disk warning (`usedPercent: 81`).
+  - Owner: Infra/Platform.
