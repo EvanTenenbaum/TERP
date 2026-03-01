@@ -1,0 +1,263 @@
+{
+  "zeroCandidate": {
+    "id": 479,
+    "code": "BATCH-000199",
+    "previousStatus": "LIVE"
+  },
+  "blockedCandidate": {
+    "id": 480,
+    "code": "BATCH-000200",
+    "onHandQty": "221.0200"
+  },
+  "zeroBefore": {
+    "result": {
+      "data": {
+        "json": {
+          "batch": {
+            "id": 479,
+            "code": "BATCH-000199",
+            "deletedAt": null,
+            "version": 2,
+            "sku": "SKU-0115-0128-199",
+            "productId": 115,
+            "lotId": 128,
+            "batchStatus": "LIVE",
+            "statusId": null,
+            "grade": null,
+            "isSample": 0,
+            "sampleOnly": 0,
+            "sampleAvailable": 0,
+            "cogsMode": "FIXED",
+            "unitCogs": "1537.6800",
+            "unitCogsMin": null,
+            "unitCogsMax": null,
+            "paymentTerms": "NET_15",
+            "ownershipType": "CONSIGNED",
+            "amountPaid": "87939.92",
+            "metadata": null,
+            "photoSessionEventId": null,
+            "onHandQty": "0.0000",
+            "sampleQty": "0.0000",
+            "reservedQty": "0.0000",
+            "quarantineQty": "0.0000",
+            "holdQty": "0.0000",
+            "defectiveQty": "0.0000",
+            "publishEcom": 0,
+            "publishB2b": 1,
+            "createdAt": "2026-02-22T21:40:42.000Z",
+            "updatedAt": "2026-02-28T00:08:38.000Z",
+            "totalQty": "0.0000"
+          },
+          "locations": [],
+          "auditLogs": [
+            {
+              "id": 2,
+              "actorId": 1,
+              "entity": "Batch",
+              "deletedAt": null,
+              "entityId": 479,
+              "action": "QTY_ADJUST",
+              "before": "{\"id\":479,\"code\":\"BATCH-000199\",\"deletedAt\":null,\"version\":1,\"sku\":\"SKU-0115-0128-199\",\"productId\":115,\"lotId\":128,\"batchStatus\":\"LIVE\",\"statusId\":null,\"grade\":null,\"isSample\":0,\"sampleOnly\":0,\"sampleAvailable\":0,\"cogsMode\":\"FIXED\",\"unitCogs\":\"1537.6800\",\"unitCogsMin\":null,\"unitCogsMax\":null,\"paymentTerms\":\"NET_15\",\"ownershipType\":\"CONSIGNED\",\"amountPaid\":\"87939.92\",\"metadata\":null,\"photoSessionEventId\":null,\"onHandQty\":\"57.1900\",\"sampleQty\":\"0.0000\",\"reservedQty\":\"0.0000\",\"quarantineQty\":\"0.0000\",\"holdQty\":\"0.0000\",\"defectiveQty\":\"0.0000\",\"publishEcom\":0,\"publishB2b\":1,\"createdAt\":\"2026-02-22T21:40:42.000Z\",\"updatedAt\":\"2026-02-22T21:40:42.000Z\"}",
+              "after": "{\"id\":479,\"code\":\"BATCH-000199\",\"deletedAt\":null,\"version\":2,\"sku\":\"SKU-0115-0128-199\",\"productId\":115,\"lotId\":128,\"batchStatus\":\"LIVE\",\"statusId\":null,\"grade\":null,\"isSample\":0,\"sampleOnly\":0,\"sampleAvailable\":0,\"cogsMode\":\"FIXED\",\"unitCogs\":\"1537.6800\",\"unitCogsMin\":null,\"unitCogsMax\":null,\"paymentTerms\":\"NET_15\",\"ownershipType\":\"CONSIGNED\",\"amountPaid\":\"87939.92\",\"metadata\":null,\"photoSessionEventId\":null,\"onHandQty\":\"0.0000\",\"sampleQty\":\"0.0000\",\"reservedQty\":\"0.0000\",\"quarantineQty\":\"0.0000\",\"holdQty\":\"0.0000\",\"defectiveQty\":\"0.0000\",\"publishEcom\":0,\"publishB2b\":1,\"createdAt\":\"2026-02-22T21:40:42.000Z\",\"updatedAt\":\"2026-02-28T00:08:38.000Z\"}",
+              "reason": "RT-07 deterministic delete test setup (set onHand to 0)",
+              "createdAt": "2026-02-28T00:08:38.000Z"
+            }
+          ],
+          "availableQty": 0
+        },
+        "meta": {
+          "values": {
+            "batch.createdAt": [
+              "Date"
+            ],
+            "batch.updatedAt": [
+              "Date"
+            ],
+            "auditLogs.0.createdAt": [
+              "Date"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "deleteZero": {
+    "result": {
+      "data": {
+        "json": {
+          "success": true,
+          "deleted": 1
+        }
+      }
+    }
+  },
+  "afterDelete": {
+    "result": {
+      "data": {
+        "json": {
+          "batch": {
+            "id": 479,
+            "code": "BATCH-000199",
+            "deletedAt": null,
+            "version": 2,
+            "sku": "SKU-0115-0128-199",
+            "productId": 115,
+            "lotId": 128,
+            "batchStatus": "CLOSED",
+            "statusId": null,
+            "grade": null,
+            "isSample": 0,
+            "sampleOnly": 0,
+            "sampleAvailable": 0,
+            "cogsMode": "FIXED",
+            "unitCogs": "1537.6800",
+            "unitCogsMin": null,
+            "unitCogsMax": null,
+            "paymentTerms": "NET_15",
+            "ownershipType": "CONSIGNED",
+            "amountPaid": "87939.92",
+            "metadata": null,
+            "photoSessionEventId": null,
+            "onHandQty": "0.0000",
+            "sampleQty": "0.0000",
+            "reservedQty": "0.0000",
+            "quarantineQty": "0.0000",
+            "holdQty": "0.0000",
+            "defectiveQty": "0.0000",
+            "publishEcom": 0,
+            "publishB2b": 1,
+            "createdAt": "2026-02-22T21:40:42.000Z",
+            "updatedAt": "2026-02-28T00:08:39.000Z",
+            "totalQty": "0.0000"
+          },
+          "locations": [],
+          "auditLogs": [
+            {
+              "id": 2,
+              "actorId": 1,
+              "entity": "Batch",
+              "deletedAt": null,
+              "entityId": 479,
+              "action": "QTY_ADJUST",
+              "before": "{\"id\":479,\"code\":\"BATCH-000199\",\"deletedAt\":null,\"version\":1,\"sku\":\"SKU-0115-0128-199\",\"productId\":115,\"lotId\":128,\"batchStatus\":\"LIVE\",\"statusId\":null,\"grade\":null,\"isSample\":0,\"sampleOnly\":0,\"sampleAvailable\":0,\"cogsMode\":\"FIXED\",\"unitCogs\":\"1537.6800\",\"unitCogsMin\":null,\"unitCogsMax\":null,\"paymentTerms\":\"NET_15\",\"ownershipType\":\"CONSIGNED\",\"amountPaid\":\"87939.92\",\"metadata\":null,\"photoSessionEventId\":null,\"onHandQty\":\"57.1900\",\"sampleQty\":\"0.0000\",\"reservedQty\":\"0.0000\",\"quarantineQty\":\"0.0000\",\"holdQty\":\"0.0000\",\"defectiveQty\":\"0.0000\",\"publishEcom\":0,\"publishB2b\":1,\"createdAt\":\"2026-02-22T21:40:42.000Z\",\"updatedAt\":\"2026-02-22T21:40:42.000Z\"}",
+              "after": "{\"id\":479,\"code\":\"BATCH-000199\",\"deletedAt\":null,\"version\":2,\"sku\":\"SKU-0115-0128-199\",\"productId\":115,\"lotId\":128,\"batchStatus\":\"LIVE\",\"statusId\":null,\"grade\":null,\"isSample\":0,\"sampleOnly\":0,\"sampleAvailable\":0,\"cogsMode\":\"FIXED\",\"unitCogs\":\"1537.6800\",\"unitCogsMin\":null,\"unitCogsMax\":null,\"paymentTerms\":\"NET_15\",\"ownershipType\":\"CONSIGNED\",\"amountPaid\":\"87939.92\",\"metadata\":null,\"photoSessionEventId\":null,\"onHandQty\":\"0.0000\",\"sampleQty\":\"0.0000\",\"reservedQty\":\"0.0000\",\"quarantineQty\":\"0.0000\",\"holdQty\":\"0.0000\",\"defectiveQty\":\"0.0000\",\"publishEcom\":0,\"publishB2b\":1,\"createdAt\":\"2026-02-22T21:40:42.000Z\",\"updatedAt\":\"2026-02-28T00:08:38.000Z\"}",
+              "reason": "RT-07 deterministic delete test setup (set onHand to 0)",
+              "createdAt": "2026-02-28T00:08:38.000Z"
+            }
+          ],
+          "availableQty": 0
+        },
+        "meta": {
+          "values": {
+            "batch.createdAt": [
+              "Date"
+            ],
+            "batch.updatedAt": [
+              "Date"
+            ],
+            "auditLogs.0.createdAt": [
+              "Date"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "restoreZero": {
+    "result": {
+      "data": {
+        "json": {
+          "success": true,
+          "restored": 1,
+          "skipped": 0,
+          "errors": []
+        }
+      }
+    }
+  },
+  "afterRestore": {
+    "result": {
+      "data": {
+        "json": {
+          "batch": {
+            "id": 479,
+            "code": "BATCH-000199",
+            "deletedAt": null,
+            "version": 2,
+            "sku": "SKU-0115-0128-199",
+            "productId": 115,
+            "lotId": 128,
+            "batchStatus": "LIVE",
+            "statusId": null,
+            "grade": null,
+            "isSample": 0,
+            "sampleOnly": 0,
+            "sampleAvailable": 0,
+            "cogsMode": "FIXED",
+            "unitCogs": "1537.6800",
+            "unitCogsMin": null,
+            "unitCogsMax": null,
+            "paymentTerms": "NET_15",
+            "ownershipType": "CONSIGNED",
+            "amountPaid": "87939.92",
+            "metadata": null,
+            "photoSessionEventId": null,
+            "onHandQty": "0.0000",
+            "sampleQty": "0.0000",
+            "reservedQty": "0.0000",
+            "quarantineQty": "0.0000",
+            "holdQty": "0.0000",
+            "defectiveQty": "0.0000",
+            "publishEcom": 0,
+            "publishB2b": 1,
+            "createdAt": "2026-02-22T21:40:42.000Z",
+            "updatedAt": "2026-02-28T00:08:39.000Z",
+            "totalQty": "0.0000"
+          },
+          "locations": [],
+          "auditLogs": [
+            {
+              "id": 2,
+              "actorId": 1,
+              "entity": "Batch",
+              "deletedAt": null,
+              "entityId": 479,
+              "action": "QTY_ADJUST",
+              "before": "{\"id\":479,\"code\":\"BATCH-000199\",\"deletedAt\":null,\"version\":1,\"sku\":\"SKU-0115-0128-199\",\"productId\":115,\"lotId\":128,\"batchStatus\":\"LIVE\",\"statusId\":null,\"grade\":null,\"isSample\":0,\"sampleOnly\":0,\"sampleAvailable\":0,\"cogsMode\":\"FIXED\",\"unitCogs\":\"1537.6800\",\"unitCogsMin\":null,\"unitCogsMax\":null,\"paymentTerms\":\"NET_15\",\"ownershipType\":\"CONSIGNED\",\"amountPaid\":\"87939.92\",\"metadata\":null,\"photoSessionEventId\":null,\"onHandQty\":\"57.1900\",\"sampleQty\":\"0.0000\",\"reservedQty\":\"0.0000\",\"quarantineQty\":\"0.0000\",\"holdQty\":\"0.0000\",\"defectiveQty\":\"0.0000\",\"publishEcom\":0,\"publishB2b\":1,\"createdAt\":\"2026-02-22T21:40:42.000Z\",\"updatedAt\":\"2026-02-22T21:40:42.000Z\"}",
+              "after": "{\"id\":479,\"code\":\"BATCH-000199\",\"deletedAt\":null,\"version\":2,\"sku\":\"SKU-0115-0128-199\",\"productId\":115,\"lotId\":128,\"batchStatus\":\"LIVE\",\"statusId\":null,\"grade\":null,\"isSample\":0,\"sampleOnly\":0,\"sampleAvailable\":0,\"cogsMode\":\"FIXED\",\"unitCogs\":\"1537.6800\",\"unitCogsMin\":null,\"unitCogsMax\":null,\"paymentTerms\":\"NET_15\",\"ownershipType\":\"CONSIGNED\",\"amountPaid\":\"87939.92\",\"metadata\":null,\"photoSessionEventId\":null,\"onHandQty\":\"0.0000\",\"sampleQty\":\"0.0000\",\"reservedQty\":\"0.0000\",\"quarantineQty\":\"0.0000\",\"holdQty\":\"0.0000\",\"defectiveQty\":\"0.0000\",\"publishEcom\":0,\"publishB2b\":1,\"createdAt\":\"2026-02-22T21:40:42.000Z\",\"updatedAt\":\"2026-02-28T00:08:38.000Z\"}",
+              "reason": "RT-07 deterministic delete test setup (set onHand to 0)",
+              "createdAt": "2026-02-28T00:08:38.000Z"
+            }
+          ],
+          "availableQty": 0
+        },
+        "meta": {
+          "values": {
+            "batch.createdAt": [
+              "Date"
+            ],
+            "batch.updatedAt": [
+              "Date"
+            ],
+            "auditLogs.0.createdAt": [
+              "Date"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "blockedDelete": {
+    "error": {
+      "json": {
+        "message": "Cannot delete batch 480: Still has 221.02 units in stock. Please move or sell inventory before deleting. (Request ID: REQ-mm5kcbnm-97758d09)",
+        "code": -32600,
+        "data": {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "path": "inventory.bulk.delete"
+        }
+      }
+    }
+  }
+}

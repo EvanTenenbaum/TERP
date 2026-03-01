@@ -1,0 +1,226 @@
+{
+  "meta": {
+    "runId": "live-qa-20260228-lane-b",
+    "lane": "B",
+    "startedAt": "2026-03-01T21:39:18.646Z",
+    "baseUrl": "https://terp-staging-yicld.ondigitalocean.app",
+    "script": "live-inventory-destructive-qa.spec.cjs",
+    "credentialsUsed": "qa.superadmin@terp.test",
+    "finishedAt": "2026-03-01T21:39:44.533Z",
+    "overallPass": true
+  },
+  "steps": [
+    {
+      "id": "auth",
+      "pass": true,
+      "details": {
+        "pass": true,
+        "method": "api:auth.login",
+        "attempts": [
+          {
+            "label": "auth.login",
+            "status": 200,
+            "ok": true,
+            "success": true,
+            "preview": "{\"success\":true,\"user\":{\"name\":\"QA Super Admin\",\"email\":\"qa.superadmin@terp.test\"}}"
+          }
+        ],
+        "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/dashboard"
+      },
+      "artifacts": [],
+      "timestamp": "2026-03-01T21:39:21.208Z"
+    },
+    {
+      "id": "route:/spreadsheet-view",
+      "pass": true,
+      "details": {
+        "route": "/spreadsheet-view",
+        "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/purchase-orders?tab=receiving&mode=spreadsheet",
+        "pass": true,
+        "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-spreadsheet-view.png"
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-spreadsheet-view.png"
+      ],
+      "timestamp": "2026-03-01T21:39:24.046Z"
+    },
+    {
+      "id": "route:/purchase-orders/classic",
+      "pass": true,
+      "details": {
+        "route": "/purchase-orders/classic",
+        "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/purchase-orders?tab=purchase-orders",
+        "pass": true,
+        "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-purchase-orders-classic.png"
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-purchase-orders-classic.png"
+      ],
+      "timestamp": "2026-03-01T21:39:25.623Z"
+    },
+    {
+      "id": "route:/inventory/1",
+      "pass": true,
+      "details": {
+        "route": "/inventory/1",
+        "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/inventory?tab=inventory&batchId=1",
+        "pass": true,
+        "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-inventory-1.png"
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-inventory-1.png"
+      ],
+      "timestamp": "2026-03-01T21:39:27.589Z"
+    },
+    {
+      "id": "route:/orders/create",
+      "pass": true,
+      "details": {
+        "route": "/orders/create",
+        "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=create-order",
+        "pass": true,
+        "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-orders-create.png"
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-orders-create.png"
+      ],
+      "timestamp": "2026-03-01T21:39:29.065Z"
+    },
+    {
+      "id": "route:/receiving",
+      "pass": true,
+      "details": {
+        "route": "/receiving",
+        "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/purchase-orders?tab=receiving",
+        "pass": true,
+        "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-receiving.png"
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-receiving.png"
+      ],
+      "timestamp": "2026-03-01T21:39:30.921Z"
+    },
+    {
+      "id": "blocked-delete-guidance",
+      "pass": true,
+      "details": {
+        "candidateSku": "SKU-0215-0049-171",
+        "message": "Cannot delete batch 451: Still has 366.39 units in stock. Please move or sell inventory before deleting. (Request ID: REQ-mm89wc3e-22744d12)",
+        "includesBusinessRule": true,
+        "unexpectedErrorMentions": 0
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/inventory-baseline-before-blocked-delete.png",
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/blocked-delete-selected-row.png",
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/blocked-delete-guidance-message.png"
+      ],
+      "timestamp": "2026-03-01T21:39:37.164Z"
+    },
+    {
+      "id": "delete-undo-flow",
+      "pass": true,
+      "details": {
+        "candidateSku": "SKU-0115-0128-199",
+        "previousStatus": "LIVE",
+        "restoredStatus": "LIVE",
+        "restoredOnHandText": "0.00",
+        "statusRestoredExactly": true
+      },
+      "artifacts": [
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/inventory-baseline-before-delete-undo.png",
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-selected-row.png",
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-after-delete.png",
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-clicked-undo.png",
+        "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-restored.png"
+      ],
+      "timestamp": "2026-03-01T21:39:44.533Z"
+    }
+  ],
+  "routes": [
+    {
+      "route": "/spreadsheet-view",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/purchase-orders?tab=receiving&mode=spreadsheet",
+      "pass": true,
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-spreadsheet-view.png"
+    },
+    {
+      "route": "/purchase-orders/classic",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/purchase-orders?tab=purchase-orders",
+      "pass": true,
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-purchase-orders-classic.png"
+    },
+    {
+      "route": "/inventory/1",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/inventory?tab=inventory&batchId=1",
+      "pass": true,
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-inventory-1.png"
+    },
+    {
+      "route": "/orders/create",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=create-order",
+      "pass": true,
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-orders-create.png"
+    },
+    {
+      "route": "/receiving",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/purchase-orders?tab=receiving",
+      "pass": true,
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-receiving.png"
+    }
+  ],
+  "blockedDelete": {
+    "pass": true,
+    "candidate": {
+      "index": 49,
+      "sku": "SKU-0215-0049-171",
+      "status": "LIVE",
+      "onHandText": "366.39",
+      "onHand": 366.39
+    },
+    "message": "Cannot delete batch 451: Still has 366.39 units in stock. Please move or sell inventory before deleting. (Request ID: REQ-mm89wc3e-22744d12)",
+    "includesBusinessRule": true,
+    "unexpectedErrorMentions": 0,
+    "screenshots": [
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/inventory-baseline-before-blocked-delete.png",
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/blocked-delete-selected-row.png",
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/blocked-delete-guidance-message.png"
+    ]
+  },
+  "deleteUndo": {
+    "pass": true,
+    "candidate": {
+      "sku": "SKU-0115-0128-199",
+      "status": "LIVE",
+      "onHand": 0,
+      "onHandText": "0"
+    },
+    "previousStatus": "LIVE",
+    "restoredStatus": "LIVE",
+    "restoredOnHandText": "0.00",
+    "restoredOnHand": 0,
+    "statusRestoredExactly": true,
+    "screenshots": [
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/inventory-baseline-before-delete-undo.png",
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-selected-row.png",
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-after-delete.png",
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-clicked-undo.png",
+      "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-restored.png"
+    ]
+  },
+  "artifacts": [
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-spreadsheet-view.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-purchase-orders-classic.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-inventory-1.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-orders-create.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/route-receiving.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/inventory-baseline-before-blocked-delete.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/blocked-delete-selected-row.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/blocked-delete-guidance-message.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/inventory-baseline-before-delete-undo.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-selected-row.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-after-delete.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-clicked-undo.png",
+    "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-b/screenshots/delete-undo-restored.png"
+  ],
+  "errors": []
+}

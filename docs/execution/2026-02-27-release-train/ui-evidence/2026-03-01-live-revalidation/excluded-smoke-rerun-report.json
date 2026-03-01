@@ -1,0 +1,135 @@
+{
+  "runAt": "2026-03-01T21:41:21.978Z",
+  "baseUrl": "https://terp-staging-yicld.ondigitalocean.app",
+  "routes": [
+    "/vip-portal/login",
+    "/vip-portal/dashboard",
+    "/vip-portal/auth/impersonate",
+    "/vip-portal/session-ended",
+    "/live-shopping"
+  ],
+  "viewports": ["desktop", "mobile"],
+  "results": [
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/login",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/login",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/desktop-vip-portal-login.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/dashboard",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/dashboard",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/desktop-vip-portal-dashboard.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/auth/impersonate",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/auth/impersonate",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/auth/impersonate",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/desktop-vip-portal-auth-impersonate.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/vip-portal/session-ended",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/session-ended",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/session-ended",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/desktop-vip-portal-session-ended.png",
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "route": "/live-shopping",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/live-shopping",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/live-shopping",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "Live Shopping",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/desktop-live-shopping.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/login",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/login",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/mobile-vip-portal-login.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/dashboard",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/dashboard",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/login",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/mobile-vip-portal-dashboard.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/auth/impersonate",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/auth/impersonate",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/auth/impersonate",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/mobile-vip-portal-auth-impersonate.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/vip-portal/session-ended",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/session-ended",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/vip-portal/session-ended",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/mobile-vip-portal-session-ended.png",
+      "pass": true
+    },
+    {
+      "viewport": "mobile",
+      "route": "/live-shopping",
+      "targetUrl": "https://terp-staging-yicld.ondigitalocean.app/live-shopping",
+      "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/live-shopping",
+      "status": 200,
+      "authOk": true,
+      "pageTitle": "TERP [STAGING]",
+      "heading": "Live Shopping",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-release-train-20260227/qa-results/live-qa-20260228/lane-a/excluded-smoke-rerun/mobile-live-shopping.png",
+      "pass": true
+    }
+  ],
+  "failures": []
+}
