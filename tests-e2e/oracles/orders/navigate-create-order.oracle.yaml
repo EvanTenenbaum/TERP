@@ -31,6 +31,6 @@ steps:
     name: "order_form"
 
 expected_ui:
-  url_contains: "/orders"
+  url_equals: "/sales?tab=create-order"
   visible:
     - "form, [data-testid='order-form'], [data-testid='order-creator'], main"

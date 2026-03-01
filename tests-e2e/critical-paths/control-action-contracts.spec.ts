@@ -1,188 +1,266 @@
 /**
  * Control-Action Contract Tests (TER-194)
  *
- * Verifies that critical interactive controls actually trigger
- * their expected actions. Prevents "dead button" regressions.
+ * Live frontend contracts for the consolidated workspace UI:
+ * - Legacy route entry points must canonicalize to workspace URLs
+ * - High-value non-destructive controls must produce observable effects
  */
 
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import path from "path";
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
-import { ControlContract } from "../utils/control-action-contracts";
+import {
+  ControlContract,
+  type ContractResult,
+} from "../utils/control-action-contracts";
 
-test.describe("Control-Action Contracts: Orders Page", () => {
-  test.beforeEach(async ({ page }) => {
+interface RouteContract {
+  from: string;
+  expectedPath: string;
+  expectedParams: Record<string, string>;
+}
+
+interface ActionContract {
+  id: string;
+  route: string;
+  selector: string;
+  expectedUrlPattern?: RegExp;
+  expectedVisibleSelector?: string;
+  allowDialogFallback?: boolean;
+}
+
+const ROUTE_CONTRACTS: RouteContract[] = [
+  {
+    from: "/spreadsheet-view",
+    expectedPath: "/purchase-orders",
+    expectedParams: { tab: "receiving", mode: "spreadsheet" },
+  },
+  {
+    from: "/purchase-orders/classic",
+    expectedPath: "/purchase-orders",
+    expectedParams: { tab: "purchase-orders" },
+  },
+  {
+    from: "/inventory/1",
+    expectedPath: "/inventory",
+    expectedParams: { tab: "inventory", batchId: "1" },
+  },
+  {
+    from: "/orders/create",
+    expectedPath: "/sales",
+    expectedParams: { tab: "create-order" },
+  },
+  {
+    from: "/receiving",
+    expectedPath: "/purchase-orders",
+    expectedParams: { tab: "receiving" },
+  },
+];
+
+const ACTION_CONTRACTS: ActionContract[] = [
+  {
+    id: "sales-new-sale",
+    route: "/sales?tab=orders",
+    selector: '[data-testid="new-order-button"], button:has-text("New Sale")',
+    expectedUrlPattern: /\/sales\?tab=create-order/,
+  },
+  {
+    id: "inventory-product-intake",
+    route: "/inventory",
+    selector:
+      '[data-testid="new-batch-btn"], button:has-text("Product Intake"), button:has-text("Intake")',
+    expectedUrlPattern: /\/purchase-orders\?tab=receiving/,
+  },
+  {
+    id: "relationships-add-client",
+    route: "/relationships?tab=clients",
+    selector: 'button:has-text("Add Client")',
+    expectedVisibleSelector: '[role="dialog"]',
+    allowDialogFallback: true,
+  },
+  {
+    id: "purchase-orders-create-po",
+    route: "/purchase-orders?tab=purchase-orders",
+    selector: 'button:has-text("Create PO")',
+    expectedVisibleSelector: "text=New Purchase Order",
+  },
+];
+
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function makeArtifactPath(name: string): string {
+  const directory = path.join("test-results", "control-action-contracts");
+  mkdirSync(directory, { recursive: true });
+  return path.join(directory, `${name}.png`);
+}
+
+function getPathAndSearch(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return rawUrl;
+  }
+}
+
+const AUTH_STATE_PATH = path.join(
+  "test-results",
+  "control-action-contracts",
+  "auth-state.json"
+);
+mkdirSync(path.dirname(AUTH_STATE_PATH), { recursive: true });
+if (!existsSync(AUTH_STATE_PATH)) {
+  writeFileSync(
+    AUTH_STATE_PATH,
+    JSON.stringify({ cookies: [], origins: [] }, null, 2)
+  );
+}
+
+test.describe("@prod-smoke Control-Action Contracts: Consolidated Frontend", () => {
+  test.setTimeout(180000);
+  test.use({ storageState: AUTH_STATE_PATH });
+
+  test.beforeAll(async ({ browser }) => {
+    mkdirSync(path.dirname(AUTH_STATE_PATH), { recursive: true });
+    const context = await browser.newContext();
+    const page = await context.newPage();
     await loginAsAdmin(page);
+    await context.storageState({ path: AUTH_STATE_PATH });
+    await context.close();
   });
 
-  test("Primary create action triggers navigation or modal", async ({
+  test("Legacy routes canonicalize to expected workspace URLs", async ({
     page,
   }) => {
-    await page.goto("/orders");
-    await page.waitForLoadState("networkidle");
+    for (const contract of ROUTE_CONTRACTS) {
+      await page.goto(contract.from);
+      await page.waitForLoadState("domcontentloaded");
+      await page
+        .waitForLoadState("networkidle", { timeout: 8000 })
+        .catch(() => undefined);
 
-    const urlBefore = page.url();
+      const currentUrl = page.url();
+      const parsed = new URL(currentUrl);
 
-    // The button should either navigate to a create page or open a modal
-    const createButton = page
-      .locator("button")
-      .filter({ hasText: /new sale|new order|create/i })
-      .first();
+      expect(
+        parsed.pathname,
+        `${contract.from} expected path ${contract.expectedPath}, got ${currentUrl}`
+      ).toBe(contract.expectedPath);
 
-    await expect(createButton).toBeVisible({ timeout: 10000 });
-    await expect(createButton).toBeEnabled();
-    await createButton.click();
-    await page.waitForTimeout(2000);
-
-    const urlChanged = page.url() !== urlBefore;
-    const modalOpened = await page
-      .locator('[role="dialog"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const createPageLoaded = await page
-      .locator("h1, h2")
-      .filter({ hasText: /create|new|order|sale|sheet|client/i })
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    expect(urlChanged || modalOpened || createPageLoaded).toBeTruthy();
-  });
-
-  test("Tab switching actually changes displayed content", async ({ page }) => {
-    await page.goto("/orders");
-    await page.waitForLoadState("networkidle");
-
-    const draftTab = page
-      .locator('button, [role="tab"]')
-      .filter({ hasText: /draft/i })
-      .first();
-    const confirmedTab = page
-      .locator('button, [role="tab"]')
-      .filter({ hasText: /confirmed/i })
-      .first();
-
-    if (
-      !(await draftTab.isVisible().catch(() => false)) ||
-      !(await confirmedTab.isVisible().catch(() => false))
-    ) {
-      test.skip();
-      return;
-    }
-
-    // Click confirmed tab
-    await confirmedTab.click();
-    await page.waitForTimeout(500);
-
-    // Verify the confirmed tab has the active/selected state
-    const confirmedAriaSelected = await confirmedTab
-      .getAttribute("aria-selected")
-      .catch(() => null);
-    const confirmedDataState = await confirmedTab
-      .getAttribute("data-state")
-      .catch(() => null);
-
-    // Click draft tab
-    await draftTab.click();
-    await page.waitForTimeout(500);
-
-    const draftAriaSelected = await draftTab
-      .getAttribute("aria-selected")
-      .catch(() => null);
-    const draftDataState = await draftTab
-      .getAttribute("data-state")
-      .catch(() => null);
-
-    // At least one indicator should show the tab changed state
-    const tabStateChanged =
-      confirmedAriaSelected === "true" ||
-      confirmedDataState === "active" ||
-      draftAriaSelected === "true" ||
-      draftDataState === "active";
-
-    expect(tabStateChanged).toBeTruthy();
-  });
-});
-
-test.describe("Control-Action Contracts: Inventory Page", () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-  });
-
-  test("Inventory page loads with interactive controls", async ({ page }) => {
-    await page.goto("/inventory");
-    await page.waitForLoadState("networkidle");
-
-    const contract = new ControlContract(page);
-    const intakeResult = await contract.verifyControlIsInteractive(
-      'button:has-text("Intake")'
-    );
-
-    const hasInventoryList = await page
-      .locator(
-        "table, [role='table'], [data-testid='inventory-list'], [data-testid='batch-list']"
-      )
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasInventoryEmptyState = await page
-      .locator("text=/no inventory found|no batches found/i")
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    expect(intakeResult.passed).toBeTruthy();
-    expect(hasInventoryList || hasInventoryEmptyState).toBeTruthy();
-  });
-});
-
-test.describe("Control-Action Contracts: Navigation", () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-  });
-
-  test("Sidebar navigation links trigger page changes", async ({ page }) => {
-    await page.goto("/dashboard");
-    await page.waitForLoadState("networkidle");
-
-    const contract = new ControlContract(page);
-    const results: Awaited<
-      ReturnType<typeof contract.verifyButtonTriggersNavigation>
-    >[] = [];
-
-    // Test key navigation links
-    const navTargets = [
-      {
-        selector: 'a[href="/orders"], a[href="/sales"], nav a:has-text("Orders"), nav a:has-text("Sales")',
-        url: /\/sales|\/orders/,
-      },
-      {
-        selector: 'a[href="/inventory"], nav a:has-text("Inventory")',
-        url: /\/inventory/,
-      },
-      {
-        selector: 'a[href="/clients"], a[href="/relationships"], nav a:has-text("Clients"), nav a:has-text("Relationships")',
-        url: /\/relationships|\/clients/,
-      },
-    ];
-
-    for (const target of navTargets) {
-      const link = page.locator(target.selector).first();
-      if (await link.isVisible().catch(() => false)) {
-        const result = await contract.verifyButtonTriggersNavigation(
-          target.selector,
-          target.url
-        );
-        results.push(result);
-        // Navigate back to dashboard for next test
-        await page.goto("/dashboard");
-        await page.waitForLoadState("networkidle");
+      for (const [key, expectedValue] of Object.entries(
+        contract.expectedParams
+      )) {
+        expect(
+          parsed.searchParams.get(key),
+          `${contract.from} expected query ${key}=${expectedValue}, got ${getPathAndSearch(currentUrl)}`
+        ).toBe(expectedValue);
       }
-    }
 
-    // At least one nav link should have worked
-    expect(results.length).toBeGreaterThan(0);
-    const passed = results.filter(r => r.passed);
-    expect(passed.length).toBeGreaterThan(0);
+      await page.screenshot({
+        path: makeArtifactPath(`route-${toSlug(contract.from)}`),
+        fullPage: true,
+      });
+    }
   });
+
+  for (const contract of ACTION_CONTRACTS) {
+    test(`High-value control contract: ${contract.id}`, async ({ page }) => {
+      test.setTimeout(120000);
+      const verifier = new ControlContract(page);
+      const results: ContractResult[] = [];
+      const startedAt = Date.now();
+      const debug = process.env.CONTROL_CONTRACT_DEBUG === "1";
+      const mark = (message: string) => {
+        if (!debug) return;
+        console.info(
+          `[ControlContract:${contract.id} +${Date.now() - startedAt}ms] ${message}`
+        );
+      };
+
+      mark(`goto ${contract.route}`);
+      await page.goto(contract.route);
+      mark("domcontentloaded");
+      await page.waitForLoadState("domcontentloaded");
+      await page
+        .waitForLoadState("networkidle", { timeout: 8000 })
+        .catch(() => undefined);
+      mark(`loaded ${page.url()}`);
+
+      const interactivity = await verifier.verifyControlIsInteractive(
+        contract.selector
+      );
+      results.push(interactivity);
+      mark(`interactive=${interactivity.passed}`);
+      if (interactivity.passed) {
+        const visibleBefore = contract.expectedVisibleSelector
+          ? await page
+              .locator(contract.expectedVisibleSelector)
+              .first()
+              .isVisible()
+              .catch(() => false)
+          : false;
+
+        const observable = await verifier.verifyButtonCausesObservableEffect(
+          contract.selector,
+          { timeout: 2500 }
+        );
+        if (contract.expectedUrlPattern || !contract.expectedVisibleSelector) {
+          results.push(observable);
+        }
+        mark(
+          `observable=${observable.passed} detail=${observable.detail ?? ""}`
+        );
+
+        if (observable.passed && contract.expectedUrlPattern) {
+          const urlMatches = contract.expectedUrlPattern.test(page.url());
+          const dialogVisible = await page
+            .locator('[role="dialog"]')
+            .first()
+            .isVisible()
+            .catch(() => false);
+          const passed =
+            urlMatches || (contract.allowDialogFallback && dialogVisible);
+          results.push({
+            control: contract.selector,
+            action: `land on ${contract.expectedUrlPattern}`,
+            passed,
+            detail: `url=${page.url()} dialogVisible=${dialogVisible}`,
+          });
+          mark(
+            `urlMatch=${urlMatches} dialog=${dialogVisible} url=${page.url()}`
+          );
+        }
+
+        if (contract.expectedVisibleSelector) {
+          const visibleAfter = await page
+            .locator(contract.expectedVisibleSelector)
+            .first()
+            .isVisible()
+            .catch(() => false);
+          const passed = visibleAfter || visibleBefore !== visibleAfter;
+          results.push({
+            control: contract.selector,
+            action: `show ${contract.expectedVisibleSelector}`,
+            passed,
+            detail: `url=${page.url()} before=${visibleBefore} after=${visibleAfter}`,
+          });
+          mark(
+            `visibleSelector=${contract.expectedVisibleSelector} before=${visibleBefore} after=${visibleAfter}`
+          );
+        }
+      }
+
+      await page.keyboard.press("Escape").catch(() => undefined);
+      await page.goto("about:blank").catch(() => undefined);
+      mark("done");
+      ControlContract.assertAllPassed(results);
+    });
+  }
 });

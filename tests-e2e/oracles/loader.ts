@@ -34,6 +34,25 @@ export function loadOracle(filePath: string): TestOracle {
  * Load all oracles from a directory
  */
 export function loadOraclesFromDir(dir: string): TestOracle[] {
+  const loadErrors: string[] = [];
+  const oracles = loadOraclesFromDirInternal(dir, loadErrors);
+
+  if (loadErrors.length > 0) {
+    throw new Error(
+      [
+        `Oracle loading failed for ${loadErrors.length} file(s) under ${dir}:`,
+        ...loadErrors.map(error => `- ${error}`),
+      ].join("\n")
+    );
+  }
+
+  return oracles;
+}
+
+function loadOraclesFromDirInternal(
+  dir: string,
+  loadErrors: string[]
+): TestOracle[] {
   const oracles: TestOracle[] = [];
 
   if (!fs.existsSync(dir)) {
@@ -46,12 +65,13 @@ export function loadOraclesFromDir(dir: string): TestOracle[] {
     const filePath = path.join(dir, file.name);
 
     if (file.isDirectory()) {
-      oracles.push(...loadOraclesFromDir(filePath));
+      oracles.push(...loadOraclesFromDirInternal(filePath, loadErrors));
     } else if (file.name.endsWith(ORACLE_EXTENSION)) {
       try {
         oracles.push(loadOracle(filePath));
       } catch (error) {
-        console.error(`Failed to load oracle ${filePath}:`, error);
+        const message = error instanceof Error ? error.message : String(error);
+        loadErrors.push(`${filePath}: ${message}`);
       }
     }
   }
