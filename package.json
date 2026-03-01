@@ -154,6 +154,7 @@
     "qa:test:clients": "ORACLE_RUN_MODE=domain ORACLE_DOMAIN=clients playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
     "qa:test:inventory": "ORACLE_RUN_MODE=domain ORACLE_DOMAIN=inventory playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
     "qa:test:accounting": "ORACLE_RUN_MODE=domain ORACLE_DOMAIN=accounting playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
+    "qa:test:control-actions": "playwright test tests-e2e/critical-paths/control-action-contracts.spec.ts --project=prod-smoke",
     "qa:test:flow": "playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
     "qa:test:headed": "ORACLE_RUN_MODE=tier1 playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle --headed",
     "qa:coverage": "tsx scripts/qa/oracle-coverage-report.ts",

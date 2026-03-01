@@ -29,37 +29,72 @@ const ORACLE_DOMAIN = process.env.ORACLE_DOMAIN || "";
 const ORACLE_TAGS = process.env.ORACLE_TAGS || "";
 const ORACLE_FLOW_ID = process.env.ORACLE_FLOW_ID || "";
 
+function dedupeByFlowId(oracles: TestOracle[]): TestOracle[] {
+  const deduped = new Map<string, TestOracle>();
+  for (const oracle of oracles) {
+    deduped.set(oracle.flow_id, oracle);
+  }
+  return Array.from(deduped.values());
+}
+
 /**
  * Get oracles based on run mode
  */
 function getOracles(): TestOracle[] {
+  let selected: TestOracle[];
+
   switch (RUN_MODE) {
     case "tier1":
-      return loadTier1Oracles();
+      selected = loadTier1Oracles();
+      break;
     case "tier2":
-      return loadTier2Oracles();
+      selected = loadTier2Oracles();
+      break;
     case "all":
-      return [...loadTier1Oracles(), ...loadTier2Oracles()];
+      selected = [...loadTier1Oracles(), ...loadTier2Oracles()];
+      break;
     case "domain":
       if (!ORACLE_DOMAIN) {
         throw new Error("ORACLE_DOMAIN env var required for domain mode");
       }
-      return loadOraclesByDomain(ORACLE_DOMAIN);
+      selected = loadOraclesByDomain(ORACLE_DOMAIN);
+      break;
     case "tags":
       if (!ORACLE_TAGS) {
         throw new Error("ORACLE_TAGS env var required for tags mode");
       }
-      return loadOraclesByTags(ORACLE_TAGS.split(","));
+      selected = loadOraclesByTags(ORACLE_TAGS.split(","));
+      break;
     case "single": {
       if (!ORACLE_FLOW_ID) {
         throw new Error("ORACLE_FLOW_ID env var required for single mode");
       }
       const oracle = findOracleById(ORACLE_FLOW_ID);
-      return oracle ? [oracle] : [];
+      if (!oracle) {
+        throw new Error(
+          `ORACLE_FLOW_ID not found: ${ORACLE_FLOW_ID}. Use generateOracleSummary/getAllOracleIds to inspect available IDs.`
+        );
+      }
+      selected = [oracle];
+      break;
     }
     default:
-      return loadTier1Oracles();
+      selected = loadTier1Oracles();
+      break;
   }
+
+  const deduped = dedupeByFlowId(selected);
+  if (deduped.length === 0) {
+    throw new Error(
+      [
+        `No oracles loaded for run mode "${RUN_MODE}".`,
+        `domain="${ORACLE_DOMAIN}" tags="${ORACLE_TAGS}" flow_id="${ORACLE_FLOW_ID}"`,
+        "Refusing to pass with empty oracle set.",
+      ].join(" ")
+    );
+  }
+
+  return deduped;
 }
 
 // Load oracles for test generation
@@ -71,15 +106,9 @@ const results: OracleResult[] = [];
 test.describe("Oracle-Based E2E Tests", () => {
   test.setTimeout(DEFAULT_ORACLE_TIMEOUT_MS);
 
-  // Generate tests dynamically from oracles
-  if (oracles.length === 0) {
-    test("No oracles loaded", async () => {
-      console.info(`No oracles found for mode: ${RUN_MODE}`);
-      console.info("Check that oracle YAML files exist in tests-e2e/oracles/");
-      // Don't fail - just note that no oracles were found
-      expect(true).toBeTruthy();
-    });
-  }
+  test("Oracle selection is non-empty", async () => {
+    expect(oracles.length).toBeGreaterThan(0);
+  });
 
   for (const oracle of oracles) {
     test(oracle.flow_id, async ({ page }) => {
