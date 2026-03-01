@@ -1090,7 +1090,8 @@ async function selectFromCombobox(
   page: Page,
   selector: string,
   value: string,
-  optionIndex?: number
+  optionIndex?: number,
+  typeToSearch = true
 ): Promise<void> {
   const trigger = page.locator(selector).first();
   const expanded = await trigger
@@ -1103,7 +1104,7 @@ async function selectFromCombobox(
   }
   await page.waitForTimeout(150);
 
-  if (value) {
+  if (typeToSearch && value) {
     await page.keyboard.type(value, { delay: 20 }).catch(() => undefined);
     await page.waitForTimeout(150);
   }
@@ -2656,6 +2657,7 @@ async function executeAction(
         ? resolveTemplateString(action.option_value, context, "value")
         : "";
       const desired = optionValue || value;
+      const typeToSearch = action.type_to_search ?? true;
       const isNativeSelect = await isNativeSelectElement(page, selector);
 
       if (isNativeSelect) {
@@ -2671,7 +2673,13 @@ async function executeAction(
           await page.locator(selector).first().selectOption({ label: value });
         }
       } else {
-        await selectFromCombobox(page, selector, desired, action.option_index);
+        await selectFromCombobox(
+          page,
+          selector,
+          desired,
+          action.option_index,
+          typeToSearch
+        );
       }
       return {};
     }
@@ -2873,13 +2881,27 @@ async function assertUIState(
   };
 
   const timeout = 5000;
+  const currentUrl = page.url();
+  const currentPathWithSearch = (() => {
+    try {
+      const parsed = new URL(currentUrl);
+      return `${parsed.pathname}${parsed.search}`;
+    } catch {
+      return currentUrl;
+    }
+  })();
 
   if (expected.url_contains) {
     try {
-      expect(page.url()).toContain(expected.url_contains);
+      const resolved = resolveTemplateString(
+        expected.url_contains,
+        context,
+        "value"
+      );
+      expect(currentUrl).toContain(resolved);
       result.passed++;
       result.details.push({
-        assertion: `URL contains "${expected.url_contains}"`,
+        assertion: `URL contains "${resolved}"`,
         passed: true,
       });
     } catch {
@@ -2887,28 +2909,25 @@ async function assertUIState(
       result.details.push({
         assertion: `URL contains "${expected.url_contains}"`,
         passed: false,
-        error: `Actual: ${page.url()}`,
+        error: `Actual: ${currentUrl}`,
       });
     }
   }
 
   if (expected.url_matches) {
     try {
-      const currentUrl = page.url();
-      const currentPath = (() => {
-        try {
-          const parsed = new URL(currentUrl);
-          return `${parsed.pathname}${parsed.search}`;
-        } catch {
-          return currentUrl;
-        }
-      })();
-      const pattern = new RegExp(expected.url_matches);
-      const matches = pattern.test(currentUrl) || pattern.test(currentPath);
+      const resolved = resolveTemplateString(
+        expected.url_matches,
+        context,
+        "value"
+      );
+      const pattern = new RegExp(resolved);
+      const matches =
+        pattern.test(currentUrl) || pattern.test(currentPathWithSearch);
       expect(matches).toBeTruthy();
       result.passed++;
       result.details.push({
-        assertion: `URL matches "${expected.url_matches}"`,
+        assertion: `URL matches "${resolved}"`,
         passed: true,
       });
     } catch {
@@ -2916,7 +2935,34 @@ async function assertUIState(
       result.details.push({
         assertion: `URL matches "${expected.url_matches}"`,
         passed: false,
-        error: `Actual: ${page.url()}`,
+        error: `Actual: ${currentUrl}`,
+      });
+    }
+  }
+
+  if (expected.url_equals) {
+    try {
+      const resolved = resolveTemplateString(
+        expected.url_equals,
+        context,
+        "value"
+      );
+      const compareAgainst =
+        /^https?:\/\//i.test(resolved) || resolved.startsWith("www.")
+          ? currentUrl
+          : currentPathWithSearch;
+      expect(compareAgainst).toBe(resolved);
+      result.passed++;
+      result.details.push({
+        assertion: `URL equals "${resolved}"`,
+        passed: true,
+      });
+    } catch {
+      result.failed++;
+      result.details.push({
+        assertion: `URL equals "${expected.url_equals}"`,
+        passed: false,
+        error: `Actual: ${currentPathWithSearch} (${currentUrl})`,
       });
     }
   }
@@ -3051,6 +3097,129 @@ async function assertUIState(
           error: error instanceof Error ? error.message : String(error),
         });
       }
+    }
+  }
+
+  if (expected.table) {
+    const tableSelector = resolveTemplateString(
+      expected.table.selector,
+      context,
+      "selector"
+    );
+
+    try {
+      const table = page.locator(tableSelector).first();
+      await expect(table).toBeVisible({ timeout });
+
+      const bodyRows = table.locator("tbody tr");
+      const rowCount = await bodyRows.count();
+
+      if (
+        expected.table.min_rows !== undefined &&
+        rowCount < expected.table.min_rows
+      ) {
+        throw new Error(
+          `Expected at least ${expected.table.min_rows} rows, found ${rowCount}`
+        );
+      }
+
+      if (
+        expected.table.max_rows !== undefined &&
+        rowCount > expected.table.max_rows
+      ) {
+        throw new Error(
+          `Expected at most ${expected.table.max_rows} rows, found ${rowCount}`
+        );
+      }
+
+      if (expected.table.columns && expected.table.columns.length > 0) {
+        const headers = table.locator("thead th, [role='columnheader']");
+        const headerCount = await headers.count();
+        if (headerCount === 0) {
+          throw new Error(
+            "Column assertions require table headers, but none were found"
+          );
+        }
+
+        const headerTexts: string[] = [];
+        for (let i = 0; i < headerCount; i++) {
+          const text = ((await headers.nth(i).textContent()) || "")
+            .trim()
+            .toLowerCase();
+          headerTexts.push(text);
+        }
+
+        for (const column of expected.table.columns) {
+          const columnHeader = resolveTemplateString(
+            column.header,
+            context,
+            "value"
+          ).toLowerCase();
+
+          const columnIndex = headerTexts.findIndex(header =>
+            header.includes(columnHeader)
+          );
+          if (columnIndex === -1) {
+            throw new Error(
+              `Column header not found: "${column.header}". headers=${headerTexts.join(
+                ", "
+              )}`
+            );
+          }
+
+          const cellTexts: string[] = [];
+          const cellLocator = table.locator(
+            `tbody tr td:nth-child(${columnIndex + 1})`
+          );
+          const cellCount = await cellLocator.count();
+          for (let i = 0; i < cellCount; i++) {
+            cellTexts.push(
+              ((await cellLocator.nth(i).textContent()) || "").trim()
+            );
+          }
+
+          if (column.contains !== undefined) {
+            const contains = resolveTemplateString(
+              column.contains,
+              context,
+              "value"
+            );
+            const matched = cellTexts.some(text => text.includes(contains));
+            if (!matched) {
+              throw new Error(
+                `No cell in column "${column.header}" contained "${contains}"`
+              );
+            }
+          }
+
+          if (column.equals !== undefined) {
+            const equals = resolveTemplateString(
+              column.equals,
+              context,
+              "value"
+            );
+            const matched = cellTexts.some(text => text === equals);
+            if (!matched) {
+              throw new Error(
+                `No cell in column "${column.header}" equaled "${equals}"`
+              );
+            }
+          }
+        }
+      }
+
+      result.passed++;
+      result.details.push({
+        assertion: `Table assertion passed: ${tableSelector}`,
+        passed: true,
+      });
+    } catch (error) {
+      result.failed++;
+      result.details.push({
+        assertion: `Table assertion passed: ${tableSelector}`,
+        passed: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

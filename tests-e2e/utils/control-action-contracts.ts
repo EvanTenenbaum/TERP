@@ -15,7 +15,7 @@
  *   );
  */
 
-import { type Page, expect } from "@playwright/test";
+import { type Locator, type Page, expect } from "@playwright/test";
 
 export interface ContractResult {
   control: string;
@@ -27,6 +27,24 @@ export interface ContractResult {
 export class ControlContract {
   constructor(private page: Page) {}
 
+  private async findFirstVisibleControl(
+    controlSelector: string,
+    timeout = 5000
+  ): Promise<Locator> {
+    const controls = this.page.locator(controlSelector);
+    await expect(controls.first()).toBeVisible({ timeout });
+
+    const count = await controls.count();
+    for (let i = 0; i < Math.min(count, 30); i++) {
+      const candidate = controls.nth(i);
+      if (await candidate.isVisible().catch(() => false)) {
+        return candidate;
+      }
+    }
+
+    return controls.first();
+  }
+
   /**
    * Verify a button click triggers navigation to a specific URL pattern.
    */
@@ -36,8 +54,7 @@ export class ControlContract {
     options: { timeout?: number } = {}
   ): Promise<ContractResult> {
     const { timeout = 10000 } = options;
-    const control = this.page.locator(controlSelector).first();
-    await expect(control).toBeVisible({ timeout: 5000 });
+    const control = await this.findFirstVisibleControl(controlSelector, 5000);
     await expect(control).toBeEnabled();
 
     await control.click();
@@ -68,8 +85,7 @@ export class ControlContract {
     options: { method?: string; timeout?: number } = {}
   ): Promise<ContractResult> {
     const { method, timeout = 10000 } = options;
-    const control = this.page.locator(controlSelector).first();
-    await expect(control).toBeVisible({ timeout: 5000 });
+    const control = await this.findFirstVisibleControl(controlSelector, 5000);
     await expect(control).toBeEnabled();
 
     const apiCallPromise = this.page.waitForRequest(
@@ -112,8 +128,7 @@ export class ControlContract {
     options: { timeout?: number } = {}
   ): Promise<ContractResult> {
     const { timeout = 5000 } = options;
-    const control = this.page.locator(controlSelector).first();
-    await expect(control).toBeVisible({ timeout: 5000 });
+    const control = await this.findFirstVisibleControl(controlSelector, 5000);
     await expect(control).toBeEnabled();
 
     await control.click();
@@ -145,8 +160,7 @@ export class ControlContract {
     toggleSelector: string,
     stateIndicatorSelector: string
   ): Promise<ContractResult> {
-    const toggle = this.page.locator(toggleSelector).first();
-    await expect(toggle).toBeVisible({ timeout: 5000 });
+    const toggle = await this.findFirstVisibleControl(toggleSelector, 5000);
 
     const indicatorBefore = await this.page
       .locator(stateIndicatorSelector)
@@ -200,6 +214,117 @@ export class ControlContract {
       action: "be visible and interactive",
       passed: !isDisabled,
       detail: isDisabled ? "Control is disabled" : "Control is enabled",
+    };
+  }
+
+  /**
+   * Verify a button click causes at least one observable effect.
+   * This is useful for catching dead controls in redesigned screens.
+   */
+  async verifyButtonCausesObservableEffect(
+    controlSelector: string,
+    options: { timeout?: number } = {}
+  ): Promise<ContractResult> {
+    const { timeout = 2000 } = options;
+    const startedAt = Date.now();
+    const debug = process.env.CONTROL_CONTRACT_DEBUG === "1";
+    const debugLog = (message: string) => {
+      if (!debug) return;
+      console.info(
+        `[ControlContractCore +${Date.now() - startedAt}ms] ${message}`
+      );
+    };
+
+    const control = await this.findFirstVisibleControl(controlSelector, 5000);
+    await expect(control).toBeEnabled();
+    debugLog("control resolved + enabled");
+
+    const urlBefore = this.page.url();
+    const dialogsBefore = await this.page.locator('[role="dialog"]').count();
+    const toastsBefore = await this.page
+      .locator('[role="alert"], [data-sonner-toast]')
+      .count();
+    const ariaExpandedBefore = await control
+      .getAttribute("aria-expanded")
+      .catch(() => null);
+    const dataStateBefore = await control
+      .getAttribute("data-state")
+      .catch(() => null);
+
+    let mutationRequestSeen = false;
+    const onRequest = (request: { method(): string }) => {
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
+        mutationRequestSeen = true;
+      }
+    };
+
+    this.page.on("request", onRequest);
+    try {
+      debugLog("starting click");
+      const domClicked = await control
+        .evaluate(el => {
+          if (!(el instanceof HTMLElement)) return false;
+          el.click();
+          return true;
+        })
+        .catch(() => false);
+      debugLog(`domClicked=${domClicked}`);
+      if (!domClicked) {
+        await control.scrollIntoViewIfNeeded().catch(() => undefined);
+        await control
+          .click({ timeout: 3000, force: true, noWaitAfter: true })
+          .catch(() => undefined);
+        debugLog("forced click attempted");
+      }
+      await this.page.waitForTimeout(timeout);
+      debugLog(`post-click wait complete (${timeout}ms)`);
+    } finally {
+      this.page.off("request", onRequest);
+    }
+
+    const urlAfter = this.page.url();
+    const dialogsAfter = await this.page.locator('[role="dialog"]').count();
+    const toastsAfter = await this.page
+      .locator('[role="alert"], [data-sonner-toast]')
+      .count();
+    const urlChanged = urlAfter !== urlBefore;
+
+    const ariaExpandedAfter = urlChanged
+      ? ariaExpandedBefore
+      : await control
+          .getAttribute("aria-expanded", { timeout: 300 })
+          .catch(() => ariaExpandedBefore);
+    const dataStateAfter = urlChanged
+      ? dataStateBefore
+      : await control
+          .getAttribute("data-state", { timeout: 300 })
+          .catch(() => dataStateBefore);
+
+    const dialogChanged = dialogsAfter > dialogsBefore;
+    const toastChanged = toastsAfter > toastsBefore;
+    const expandedChanged = ariaExpandedBefore !== ariaExpandedAfter;
+    const dataStateChanged = dataStateBefore !== dataStateAfter;
+
+    const passed =
+      urlChanged ||
+      dialogChanged ||
+      toastChanged ||
+      mutationRequestSeen ||
+      expandedChanged ||
+      dataStateChanged;
+
+    return {
+      control: controlSelector,
+      action: "cause observable effect",
+      passed,
+      detail: [
+        `urlChanged=${urlChanged}`,
+        `dialogChanged=${dialogChanged}`,
+        `toastChanged=${toastChanged}`,
+        `mutationRequestSeen=${mutationRequestSeen}`,
+        `expandedChanged=${expandedChanged}`,
+        `dataStateChanged=${dataStateChanged}`,
+      ].join(", "),
     };
   }
 
