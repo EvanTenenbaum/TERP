@@ -1,11 +1,12 @@
 # Phase 8 - Adversarial QA Re-Audit
 
-Date: 2026-02-28
+Date: 2026-03-01
 Target: `https://terp-staging-yicld.ondigitalocean.app`
 
 ## Scope
 
 Post-merge adversarial re-audit focused on previously open release blockers:
+
 - RT-07 recoverable delete safety behavior
 - TER-463 blocked-delete messaging behavior
 - TER-464 CI schema-validation gate behavior
@@ -16,15 +17,15 @@ Post-merge adversarial re-audit focused on previously open release blockers:
 
 ### 1) Destructive Flow Safety (RT-07)
 
-- Setup: deterministic deletable candidate (`onHandQty=0`).
+- Setup: deterministic deletable candidate (`SKU-0115-0128-199`, `onHandQty=0`).
 - Action: select row -> delete confirm -> undo restore.
 - Result: PASS.
 - Evidence:
-  - `ui-evidence/post-merge/inventory-api-proof-post-merge.json`
-  - `ui-evidence/post-merge/rt07-ui-01-selected-row.png`
-  - `ui-evidence/post-merge/rt07-ui-02-delete-confirm.png`
-  - `ui-evidence/post-merge/rt07-ui-03-after-delete.png`
-  - `ui-evidence/post-merge/rt07-ui-04-after-undo.png`
+  - `ui-evidence/2026-03-01-live-revalidation/lane-b-evidence.json`
+  - `ui-evidence/2026-03-01-live-revalidation/delete-undo-selected-row.png`
+  - `ui-evidence/2026-03-01-live-revalidation/delete-undo-after-delete.png`
+  - `ui-evidence/2026-03-01-live-revalidation/delete-undo-clicked-undo.png`
+  - `ui-evidence/2026-03-01-live-revalidation/delete-undo-restored.png`
 
 ### 2) Guard-Path Error Surface (TER-463)
 
@@ -32,31 +33,31 @@ Post-merge adversarial re-audit focused on previously open release blockers:
 - Expected failure mode: explicit business-rule guidance, no generic fallback.
 - Result: PASS.
 - Evidence:
-  - `ui-evidence/post-merge/ter463-ui-02-blocked-delete-error.png`
-  - `ui-evidence/post-merge/inventory-api-proof-post-merge.json` (`BAD_REQUEST` + explicit message)
+  - `ui-evidence/2026-03-01-live-revalidation/blocked-delete-guidance-message.png`
+  - `ui-evidence/2026-03-01-live-revalidation/lane-b-evidence.json` (`includesBusinessRule=true`, `unexpectedErrorMentions=0`)
 
 ### 3) Legacy/Deep-Link Route Canonicalization
 
 - Routes exercised: `/spreadsheet-view`, `/purchase-orders/classic`, `/inventory/1`, `/orders/create`, `/receiving`.
 - Result: PASS.
 - Evidence:
-  - `ui-evidence/post-merge/route-final-urls-post-merge.txt`
-  - associated `route-*-post-merge.png` captures
+  - `ui-evidence/2026-03-01-live-revalidation/route-final-urls-2026-03-01.txt`
+  - associated `route-*.png` captures
 
 ### 4) CI Gate Robustness (TER-464)
 
 - Question: does merged head still fail schema validation on `main`?
 - Result: PASS (green).
 - Evidence:
-  - Schema Validation success: `22508410090`
-  - Main CI/CD success: `22508410102`
+  - Schema Validation success: `22508410090` (latest dedicated run on `main`)
+  - Main CI/CD success: `22532690617` (current main head)
 
 ### 5) Live Environment Health Gate
 
 - Question: is staging currently healthy enough for release pass?
-- Result: FAIL.
+- Result: PASS.
 - Evidence:
-  - `/health` returns `status: degraded` repeatedly with disk warning at 81%.
+  - `/health` x3 on 2026-03-01T21:50:37Z..21:50:42Z returned `status: healthy`, disk used 62%.
 
 ## Seeding Capability Review (for deterministic preconditions)
 
@@ -66,4 +67,4 @@ Post-merge adversarial re-audit focused on previously open release blockers:
 
 ## Re-Audit Verdict
 
-`BLOCKED` — feature/CI blockers are closed, but staging health gate is not green.
+`PASS` — adversarial checks and environment health gate are green with fresh live evidence.

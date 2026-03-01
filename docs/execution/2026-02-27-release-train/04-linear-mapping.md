@@ -1,35 +1,37 @@
 # Phase 4 - Linear Mapping
 
-Date: 2026-02-28
+Date: 2026-03-01
 Team: Terpcorp (`d88bb32f-ea0a-4809-aac1-fde6ec81bad3`)
 Project: TERP - Golden Flows Beta (`79882db1-0cac-448b-b73c-5dd9307c85c8`)
 
-Release-train blocker tickets were updated with post-merge evidence. A later live-health recheck re-opened TER-462.
+Release-train blocker tickets were revalidated against live staging and refreshed with 2026-03-01 evidence. TER-462 is now closed after final gate revalidation.
 
 ## Issue Map (Latest Sync)
 
-| Ticket | Title | Final State | Evidence Comment ID | Updated At (UTC) |
-| --- | --- | --- | --- | --- |
-| TER-459 | RT-07 Recoverable delete UX for inventory + purchase orders | Done | `cfce4cc8-c0ca-4205-9591-706eb9e9fa62` | 2026-02-28T00:15:53Z |
-| TER-463 | BUG: Inventory blocked-delete path generic error | Done | `e46bde5b-0f29-4a27-af75-83d84fad8639` | 2026-02-28T00:15:53Z |
-| TER-464 | CI: Schema validation fails on main (MySQL reachability) | Done | `d2cb18da-8a12-4dde-8b4d-77028dfcbcf9` | 2026-02-28T00:15:55Z |
-| TER-462 | RT-10 Integration regression + release gate package | In Progress | `7622a247-32eb-40ec-bd3f-e8e8cc6a3e06` | 2026-02-28T05:44:49Z |
+| Ticket  | Title                                                       | Final State | Evidence Comment ID                    | Updated At (UTC)     |
+| ------- | ----------------------------------------------------------- | ----------- | -------------------------------------- | -------------------- |
+| TER-459 | RT-07 Recoverable delete UX for inventory + purchase orders | Done        | `da407a30-0721-477e-8b92-4d0b0eb5b183` | 2026-03-01T21:51:12Z |
+| TER-463 | BUG: Inventory blocked-delete path generic error            | Done        | `d5deee66-748e-4173-80e2-c1bd32f746e7` | 2026-03-01T21:51:13Z |
+| TER-464 | CI: Schema validation fails on main (MySQL reachability)    | Done        | `e74fbc10-c849-4a6f-8d89-5da32d989a88` | 2026-03-01T21:51:13Z |
+| TER-462 | RT-10 Integration regression + release gate package         | Done        | `cad6c47f-9792-4c01-80bb-939a8177d981` | 2026-03-01T21:51:17Z |
 
 ## Evidence Snapshot Used For Sync
 
-- PR merged: https://github.com/EvanTenenbaum/TERP/pull/447
-- Merge commit on `main`: `14b4cf325b633295fab46c23846a72e50f6b583c`
-- Main checks (same head SHA):
-  - Schema Validation success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410090
-  - Main Branch CI/CD success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410102
-  - TypeScript Baseline Check success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410087
-  - Sync Main → Staging success: https://github.com/EvanTenenbaum/TERP/actions/runs/22508410119
-- Live staging proof pack:
-  - `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/route-final-urls-post-merge.txt`
-  - `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/inventory-api-proof-post-merge.json`
-  - `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/inventory-ui-proof-post-merge.json`
-- Live blocker proof (re-opened TER-462):
-  - `curl https://terp-staging-yicld.ondigitalocean.app/health` => `status: degraded`, `checks.disk.usedPercent: 81`
+- Canonical earlier RC from PR #446: `03133aff36626f97a0190352bdf122538537f80a`
+- Current `origin/main`: `cbe4979e57cb4f2a53dcf6b817c8ff059ad24435` (PR #450)
+- Main checks for current head:
+  - Main Branch CI/CD success: https://github.com/EvanTenenbaum/TERP/actions/runs/22532690617
+  - TypeScript Baseline Check success: https://github.com/EvanTenenbaum/TERP/actions/runs/22532690608
+  - Sync Main → Staging success: https://github.com/EvanTenenbaum/TERP/actions/runs/22532690605
+- Latest dedicated Schema Validation run on `main`: success https://github.com/EvanTenenbaum/TERP/actions/runs/22508410090
+- Live staging build and health:
+  - `curl https://terp-staging-yicld.ondigitalocean.app/version.json` => `commit: build-mm71i63x`
+  - `curl https://terp-staging-yicld.ondigitalocean.app/health` x3 => `status: healthy`, `checks.disk.usedPercent: 62`
+- Live proof pack (2026-03-01):
+  - `docs/execution/2026-02-27-release-train/ui-evidence/2026-03-01-live-revalidation/lane-b-evidence.json`
+  - `docs/execution/2026-02-27-release-train/ui-evidence/2026-03-01-live-revalidation/route-final-urls-2026-03-01.txt`
+  - `docs/execution/2026-02-27-release-train/ui-evidence/2026-03-01-live-revalidation/route-audit-2026-03-01.json`
+  - `docs/execution/2026-02-27-release-train/ui-evidence/2026-03-01-live-revalidation/excluded-smoke-rerun-report.json`
 
 ## Linear URLs
 

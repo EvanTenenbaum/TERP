@@ -1,38 +1,40 @@
 # Phase 7 - Release Gate Verdict
 
-Date: 2026-02-28
+Date: 2026-03-01
 Release candidate lineage:
-- Prior main commit from PR #446: `03133aff36626f97a0190352bdf122538537f80a`
-- Fix merge commit from PR #447: `14b4cf325b633295fab46c23846a72e50f6b583c`
 
-Final Verdict: `BLOCKED`
+- Prior main commit from PR #446: `03133aff36626f97a0190352bdf122538537f80a`
+- Current main head from PR #450: `cbe4979e57cb4f2a53dcf6b817c8ff059ad24435`
+
+Final Verdict: `PASS`
 
 ## Decision Basis
 
-Code and functional gates are green, but required staging health gate is currently red.
+All required gates are currently green with fresh live evidence.
 
 ## Required Gate Checklist
 
-| Gate | Result | Evidence |
-| --- | --- | --- |
-| PR merged to `main` | PASS | https://github.com/EvanTenenbaum/TERP/pull/447 |
-| Main Branch CI/CD | PASS | https://github.com/EvanTenenbaum/TERP/actions/runs/22508410102 |
-| Schema Validation | PASS | https://github.com/EvanTenenbaum/TERP/actions/runs/22508410090 |
-| TypeScript Baseline Check | PASS | https://github.com/EvanTenenbaum/TERP/actions/runs/22508410087 |
-| Sync Main → Staging | PASS | https://github.com/EvanTenenbaum/TERP/actions/runs/22508410119 |
-| Staging deployment identity | PASS | `curl .../version.json` => `build-mm5juzk6` |
-| Route canonicalization (5 routes) | PASS | `ui-evidence/post-merge/route-final-urls-post-merge.txt` + screenshots |
-| RT-07 delete/undo/restore | PASS | `ui-evidence/post-merge/inventory-api-proof-post-merge.json` + `rt07-ui-01..04` |
-| TER-463 blocked-delete guidance | PASS | `ter463-ui-02-blocked-delete-error.png` + API `BAD_REQUEST` message |
-| TER-464 CI blocker closure | PASS | Main `Schema Validation` green at `14b4cf...` |
-| Staging health | FAIL | `curl .../health` => `status: degraded` (disk warning `usedPercent: 81`) |
+| Gate                                             | Result | Evidence                                                                                  |
+| ------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------- |
+| Current head on `main`                           | PASS   | https://github.com/EvanTenenbaum/TERP/pull/450                                            |
+| Main Branch CI/CD                                | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22532690617                            |
+| TypeScript Baseline Check                        | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22532690608                            |
+| Sync Main → Staging                              | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22532690605                            |
+| Schema Validation (latest dedicated run on main) | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22508410090                            |
+| Staging deployment identity                      | PASS   | `curl .../version.json` => `build-mm71i63x`                                               |
+| Route canonicalization (5 routes)                | PASS   | `ui-evidence/2026-03-01-live-revalidation/route-final-urls-2026-03-01.txt` + screenshots  |
+| RT-07 delete/undo/restore                        | PASS   | `ui-evidence/2026-03-01-live-revalidation/lane-b-evidence.json` + delete/undo screenshots |
+| TER-463 blocked-delete guidance                  | PASS   | `lane-b-evidence.json` + `blocked-delete-guidance-message.png`                            |
+| TER-464 CI blocker closure                       | PASS   | schema run `22508410090` + current main checks green                                      |
+| Staging health                                   | PASS   | `curl .../health` x3 => `status: healthy`, disk `usedPercent: 62`                         |
 
-## Explicit Blockers
+## Notes
 
-1. Blocker: Staging operational health is degraded.
-- Proof: three consecutive `/health` checks returned `status: degraded` with `checks.disk.status: warning` and `checks.disk.usedPercent: 81`.
-- Owner: Infra/Platform.
-- Next action: free disk / increase volume and restore `/health` to `healthy`, then rerun final gate.
+- Preflight mismatch recorded per protocol:
+  - intended earlier RC: `03133aff...` (PR #446)
+  - currently deployed staging build id: `build-mm71i63x`
+  - current main head: `cbe4979...` (PR #450)
+- Staging `/version.json` exposes build id, not git SHA; deployment identity was validated through build id plus successful `Sync Main → Staging` workflow and live behavior checks.
 
 ## Non-Gating Notes
 
