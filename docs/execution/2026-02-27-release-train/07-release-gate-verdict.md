@@ -1,40 +1,42 @@
 # Phase 7 - Release Gate Verdict
 
-Date: 2026-02-27
-Branch: `codex/release-train-20260227`
-Final Verdict: `BLOCKED`
+Date: 2026-03-01
+Release candidate lineage:
+
+- Prior main commit from PR #446: `03133aff36626f97a0190352bdf122538537f80a`
+- Current main head from PR #450: `cbe4979e57cb4f2a53dcf6b817c8ff059ad24435`
+
+Final Verdict: `PASS`
 
 ## Decision Basis
 
-Release is blocked because staging/prod-smoke gate is not passing, despite all core code-quality and test gates passing.
+All required gates are currently green with fresh live evidence.
 
-## Gate Checklist
+## Required Gate Checklist
 
-| Gate                            | Result | Evidence                                                                         |
-| ------------------------------- | ------ | -------------------------------------------------------------------------------- |
-| `pnpm check`                    | PASS   | Type check successful.                                                           |
-| `pnpm lint`                     | PASS   | ESLint completed with no errors.                                                 |
-| `pnpm test`                     | PASS   | 215 files passed, 5613 tests passed.                                             |
-| `pnpm build`                    | PASS   | Production client/server bundle built successfully.                              |
-| `pnpm roadmap:validate`         | PASS   | Roadmap validation succeeded (warnings only).                                    |
-| `pnpm validate:sessions`        | PASS   | Session cleanup validation succeeded.                                            |
-| Targeted V4 evidence pack       | PASS   | 8 test files, 91 tests, 0 failures.                                              |
-| Staging/prod-smoke browser gate | FAIL   | `pnpm test:e2e:prod-smoke` -> `Timed out waiting 60000ms from config.webServer`. |
+| Gate                                             | Result | Evidence                                                                                  |
+| ------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------- |
+| Current head on `main`                           | PASS   | https://github.com/EvanTenenbaum/TERP/pull/450                                            |
+| Main Branch CI/CD                                | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22532690617                            |
+| TypeScript Baseline Check                        | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22532690608                            |
+| Sync Main → Staging                              | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22532690605                            |
+| Schema Validation (latest dedicated run on main) | PASS   | https://github.com/EvanTenenbaum/TERP/actions/runs/22508410090                            |
+| Staging deployment identity                      | PASS   | `curl .../version.json` => `build-mm71i63x`                                               |
+| Route canonicalization (5 routes)                | PASS   | `ui-evidence/2026-03-01-live-revalidation/route-final-urls-2026-03-01.txt` + screenshots  |
+| RT-07 delete/undo/restore                        | PASS   | `ui-evidence/2026-03-01-live-revalidation/lane-b-evidence.json` + delete/undo screenshots |
+| TER-463 blocked-delete guidance                  | PASS   | `lane-b-evidence.json` + `blocked-delete-guidance-message.png`                            |
+| TER-464 CI blocker closure                       | PASS   | schema run `22508410090` + current main checks green                                      |
+| Staging health                                   | PASS   | `curl .../health` x3 => `status: healthy`, disk `usedPercent: 62`                         |
 
-## Residual Risks
+## Notes
 
-1. Staging/prod smoke environment startup path is not healthy (`config.webServer` timeout), so critical live-flow verification is incomplete.
-2. Release confidence is high for unit/integration scope but not yet complete for staging webServer boot + end-to-end live walkthrough.
-3. One timeout-only `pnpm test` run was observed at final head but did not reproduce in targeted rerun or full-suite rerun; keep this as a flake-watch item.
-4. Build warnings remain (`%VITE_APP_TITLE%` undefined in env; large bundle chunk warning) and should be tracked, though not release blockers by themselves.
+- Preflight mismatch recorded per protocol:
+  - intended earlier RC: `03133aff...` (PR #446)
+  - currently deployed staging build id: `build-mm71i63x`
+  - current main head: `cbe4979...` (PR #450)
+- Staging `/version.json` exposes build id, not git SHA; deployment identity was validated through build id plus successful `Sync Main → Staging` workflow and live behavior checks.
 
-## Owner-Tagged Next Actions
+## Non-Gating Notes
 
-1. Owner: Platform/DevOps. Fix staging/prod-smoke webServer startup path and re-run `pnpm test:e2e:prod-smoke`.
-2. Owner: Release Supervisor. After prod-smoke pass, rerun final gate package and move TER-462 to `Done`.
-3. Owner: QA/Infra. Monitor for recurrence of timeout-only full-suite flakes and quarantine if recurrence rises.
-4. Owner: Frontend Platform. Triage build warnings (env placeholder and chunk size warning) and define follow-up optimization ticket if needed.
-
-## Rollback Posture
-
-If release is attempted before prod-smoke recovery, rollback recommendation is immediate hold/no-deploy. If deployment has started, revert integration changes in reverse dependency order (RT-10 down to RT-01).
+- `.github/workflows/nightly-schema-check.yml` appears as failed on push with no jobs; not part of required release gate set.
+- `doctl` API access unavailable (`401`) in this environment; direct DO introspection unavailable.
