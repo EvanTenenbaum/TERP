@@ -39,6 +39,7 @@ import {
   CheckSquare,
   PackageCheck,
   Download,
+  ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,26 @@ import { PICK_PACK_STATUS_TOKENS } from "../../lib/statusTokens";
 // ============================================================================
 
 type PickPackStatus = "PENDING" | "PICKING" | "PACKED" | "READY";
+type PickPackSortKey =
+  | "newest"
+  | "oldest"
+  | "client_asc"
+  | "client_desc"
+  | "order_asc"
+  | "order_desc";
+
+const PICK_PACK_VIEW_STATE_KEY = "terp-pick-pack-view-v2";
+const PICK_PACK_SORT_OPTIONS: Array<{
+  value: PickPackSortKey;
+  label: string;
+}> = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "client_asc", label: "Client A-Z" },
+  { value: "client_desc", label: "Client Z-A" },
+  { value: "order_asc", label: "Order A-Z" },
+  { value: "order_desc", label: "Order Z-A" },
+];
 
 interface OrderItem {
   id: number;
@@ -535,9 +556,42 @@ export function PickPackWorkSurface() {
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
-    "ALL"
+    () => {
+      if (typeof window === "undefined") return "ALL";
+      try {
+        const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
+        if (!raw) return "ALL";
+        const parsed = JSON.parse(raw) as {
+          statusFilter?: PickPackStatus | "ALL";
+        };
+        return parsed.statusFilter ?? "ALL";
+      } catch {
+        return "ALL";
+      }
+    }
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw) as { searchQuery?: string };
+      return parsed.searchQuery ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [sortKey, setSortKey] = useState<PickPackSortKey>(() => {
+    if (typeof window === "undefined") return "newest";
+    try {
+      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
+      if (!raw) return "newest";
+      const parsed = JSON.parse(raw) as { sortKey?: PickPackSortKey };
+      return parsed.sortKey ?? "newest";
+    } catch {
+      return "newest";
+    }
+  });
   const [focusedOrderIndex, setFocusedOrderIndex] = useState(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState(0);
   const [focusZone, setFocusZone] = useState<"list" | "items">("list");
@@ -545,6 +599,18 @@ export function PickPackWorkSurface() {
     null
   );
   const [inspectedItemId, setInspectedItemId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        PICK_PACK_VIEW_STATE_KEY,
+        JSON.stringify({ statusFilter, searchQuery, sortKey })
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [searchQuery, sortKey, statusFilter]);
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -607,12 +673,37 @@ export function PickPackWorkSurface() {
   // Filter pick list
   const filteredPickList = useMemo(() => {
     if (!pickList) return [];
-    return pickList.filter(
+    const filtered = pickList.filter(
       order =>
         order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.clientName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [pickList, searchQuery]);
+
+    return filtered.sort((a, b) => {
+      const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const clientA = a.clientName.toLowerCase();
+      const clientB = b.clientName.toLowerCase();
+      const orderA = a.orderNumber.toLowerCase();
+      const orderB = b.orderNumber.toLowerCase();
+
+      switch (sortKey) {
+        case "oldest":
+          return createdA - createdB;
+        case "client_asc":
+          return clientA.localeCompare(clientB);
+        case "client_desc":
+          return clientB.localeCompare(clientA);
+        case "order_asc":
+          return orderA.localeCompare(orderB);
+        case "order_desc":
+          return orderB.localeCompare(orderA);
+        case "newest":
+        default:
+          return createdB - createdA;
+      }
+    });
+  }, [pickList, searchQuery, sortKey]);
 
   // Get unpacked items for current order
   const unpackedItems = useMemo(() => {
@@ -1107,6 +1198,24 @@ export function PickPackWorkSurface() {
                 <SelectItem value="PICKING">Picking</SelectItem>
                 <SelectItem value="PACKED">Packed</SelectItem>
                 <SelectItem value="READY">Ready</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={sortKey}
+              onValueChange={v => setSortKey(v as PickPackSortKey)}
+            >
+              <SelectTrigger className="w-full sm:w-[170px]">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Sort" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {PICK_PACK_SORT_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
