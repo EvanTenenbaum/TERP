@@ -23,24 +23,24 @@
 
 ## Checkpoint Status
 
-| Checkpoint | Scope            | Status      | Branch SHA(s)  | Main merge SHA | Staging QA | Blockers / Next Action                           |
-| ---------- | ---------------- | ----------- | -------------- | -------------- | ---------- | ------------------------------------------------ |
-| 1          | TER-479..TER-481 | IN_PROGRESS | pending commit | -              | pending    | Prepare checkpoint PR/merge, then run staging QA |
-| 2          | TER-482..TER-487 | TODO        | -              | -              | -          | Wait for checkpoint 1 PASS                       |
-| 3          | TER-488..TER-491 | TODO        | -              | -              | -          | Wait for checkpoint 2 PASS                       |
-| 4          | TER-492..TER-506 | TODO        | -              | -              | -          | Wait for checkpoint 3 PASS                       |
-| 5          | TER-507..TER-516 | TODO        | -              | -              | -          | Wait for checkpoint 4 PASS                       |
-| 6          | TER-517..TER-522 | TODO        | -              | -              | -          | Wait for checkpoint 5 PASS                       |
+| Checkpoint | Scope            | Status      | Branch SHA(s) | Main merge SHA | Staging QA | Blockers / Next Action                           |
+| ---------- | ---------------- | ----------- | ------------- | -------------- | ---------- | ------------------------------------------------ |
+| 1          | TER-479..TER-481 | IN_PROGRESS | 9bdac222      | -              | pending    | Prepare checkpoint PR/merge, then run staging QA |
+| 2          | TER-482..TER-487 | TODO        | -             | -              | -          | Wait for checkpoint 1 PASS                       |
+| 3          | TER-488..TER-491 | TODO        | -             | -              | -          | Wait for checkpoint 2 PASS                       |
+| 4          | TER-492..TER-506 | TODO        | -             | -              | -          | Wait for checkpoint 3 PASS                       |
+| 5          | TER-507..TER-516 | TODO        | -             | -              | -          | Wait for checkpoint 4 PASS                       |
+| 6          | TER-517..TER-522 | TODO        | -             | -              | -          | Wait for checkpoint 5 PASS                       |
 
 ## Ticket Status Matrix
 
 ### Checkpoint 1 (Wave 1)
 
-| Ticket  | Atomic | Risk   | Status        | Commit         | Verification                                                                          | QA Gate               | Staging Evidence              | Blocker |
-| ------- | ------ | ------ | ------------- | -------------- | ------------------------------------------------------------------------------------- | --------------------- | ----------------------------- | ------- |
-| TER-479 | CF-001 | STRICT | QA_PASS_LOCAL | pending commit | check/lint/test/build PASS + targeted `LineItemTable` + manual scan-path review       | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
-| TER-480 | CF-002 | STRICT | QA_PASS_LOCAL | pending commit | check/lint/test/build PASS + targeted `ConsolidatedWorkspaces`                        | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
-| TER-481 | CF-003 | STRICT | QA_PASS_LOCAL | pending commit | check/lint/test/build PASS + targeted `LineItemTable` + composer hierarchy validation | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
+| Ticket  | Atomic | Risk   | Status        | Commit   | Verification                                                                          | QA Gate               | Staging Evidence              | Blocker |
+| ------- | ------ | ------ | ------------- | -------- | ------------------------------------------------------------------------------------- | --------------------- | ----------------------------- | ------- |
+| TER-479 | CF-001 | STRICT | QA_PASS_LOCAL | 9bdac222 | check/lint/test/build PASS + targeted `LineItemTable` + manual scan-path review       | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
+| TER-480 | CF-002 | STRICT | QA_PASS_LOCAL | 9bdac222 | check/lint/test/build PASS + targeted `ConsolidatedWorkspaces`                        | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
+| TER-481 | CF-003 | STRICT | QA_PASS_LOCAL | 9bdac222 | check/lint/test/build PASS + targeted `LineItemTable` + composer hierarchy validation | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
 
 ### Checkpoint 2 (Wave 2)
 
