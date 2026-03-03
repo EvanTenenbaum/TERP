@@ -1,304 +1,169 @@
-# Production Seeding Runbook
+# Seeding & Photo Backfill Runbook
 
-**Version**: 1.0  
-**Last Updated**: 2025-12-16  
+**Version**: 2.0  
+**Last Updated**: 2026-03-03  
 **Status**: Active
 
-This runbook provides step-by-step instructions for seeding the TERP production database.
+This runbook covers how to seed realistic inventory photos safely in staging, keep the same behavior after promotion, and quickly disable synthetic fallback once client-owned catalog data is live.
 
 ---
 
-## Prerequisites
+## 1. What This Controls
 
-Before seeding production:
+`pnpm seed:new:complete` now does two things:
 
-1. **Backup the database** (DigitalOcean takes automatic daily backups)
-2. **Verify you have production access** via DigitalOcean console
-3. **Ensure no active users** are using the system during seeding
-4. **Review the seed size** - start with `small` for testing
+1. Canonical data seed (`pnpm seed:new`)
+2. Safe batch photo backfill (`pnpm seed:batch-images:apply`)
 
----
+Photo source order for each batch with zero `product_images` rows:
 
-## Quick Reference
+1. `batches.metadata.mediaFiles`
+2. `productMedia` legacy image
+3. Open-source flower fallback catalog (Wikimedia)
+
+Open-source fallback can be disabled with:
 
 ```bash
-# Dry-run (preview only, no changes)
-pnpm seed:new --dry-run --size=small
-
-# Small seed (195 records) - for testing
-pnpm seed:new --clean --size=small --force
-
-# Medium seed (1,950 records) - for staging
-pnpm seed:new --clean --size=medium --force
-
-# Large seed (19,500 records) - for production
-pnpm seed:new --clean --size=large --force
-
-# Complete seed (includes bills, POs)
-pnpm seed:new --clean --size=medium --complete --force
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=false
 ```
 
 ---
 
-## Step-by-Step Instructions
+## 2. Deployment Reality (TERP)
 
-### Step 1: Access DigitalOcean Console
+TERP deploy path is:
 
-1. Log into DigitalOcean App Platform
-2. Navigate to the TERP app
-3. Open the **Console** tab
-4. Wait for the console to connect
+1. PR merged into `main`
+2. GitHub sync merges `main` into `staging`
+3. DigitalOcean deploys staging
+4. Staging is verified
+5. Evan manually promotes that build to production
 
-### Step 2: Run Dry-Run Test
+Important: seeding does **not** auto-run on every deploy. You run it intentionally from a controlled job/console step.
 
-Always run a dry-run first to preview what will be seeded:
+---
+
+## 3. Staging Procedure (Recommended First)
+
+### 3.1 Set variables on staging app
+
+In DigitalOcean App Platform (staging app variables):
 
 ```bash
-pnpm seed:new --dry-run --size=small
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=true
 ```
 
-**Expected Output**:
-```
-🌱 TERP Database Seeder
-========================
-Mode: DRY RUN (no changes will be made)
-Size: small
+(If omitted, default behavior is also enabled.)
 
-📊 Preview:
-  vendors:    5 records
-  clients:    10 records
-  products:   20 records
-  batches:    30 records
-  orders:     50 records
-  invoices:   50 records
-  payments:   30 records
-  
-Total: 195 records
-```
+### 3.2 Dry-run first
 
-### Step 3: Execute Seed
-
-If dry-run looks correct, execute the seed:
+From staging app console/job:
 
 ```bash
-pnpm seed:new --clean --size=small --force
+pnpm seed:new --table=product_images --size=small --dry-run --force
+pnpm seed:batch-images:safe --limit 200
 ```
 
-**Flags explained**:
-- `--clean`: Clears existing data before seeding
-- `--size=small`: Uses small dataset (195 records)
-- `--force`: Skips confirmation prompt
-
-### Step 4: Verify Seeded Data
-
-After seeding, verify the data:
+### 3.3 Apply
 
 ```bash
-# Check record counts
-npx tsx scripts/prod-db-query.ts counts
-
-# Verify specific tables
-npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM clients"
-npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM orders"
+pnpm seed:new:complete
 ```
 
-### Step 5: Test Application
+### 3.4 Verify
 
-1. Navigate to production URL: https://terp-app-b9s35.ondigitalocean.app
-2. Log in and verify:
-   - Clients page shows seeded clients
-   - Orders page shows seeded orders
-   - No console errors in browser DevTools
+- Open `/photography` queue and confirm SKUs show expected photos
+- Spot-check multiple batches where `metadata.mediaFiles` is missing
+- Confirm no duplicate image spam (idempotent behavior)
 
 ---
 
-## Seed Sizes
+## 4. After Staging Promotion to Production
 
-| Size | Records | Use Case |
-|------|---------|----------|
-| `small` | 195 | Testing, quick verification |
-| `medium` | 1,950 | Staging, demo environments |
-| `large` | 19,500 | Production, load testing |
+When the verified staging build is promoted to production, the code path is identical.
 
-### Record Distribution by Size
-
-| Entity | Small | Medium | Large |
-|--------|-------|--------|-------|
-| Vendors | 5 | 15 | 50 |
-| Clients | 10 | 50 | 200 |
-| Products | 20 | 100 | 500 |
-| Batches | 30 | 200 | 1,000 |
-| Orders | 50 | 500 | 5,000 |
-| Invoices | 50 | 500 | 5,000 |
-| Payments | 30 | 300 | 3,000 |
-
----
-
-## Rollback Procedures
-
-### Option 1: Re-seed with Clean Flag
-
-The simplest rollback is to re-seed:
+To keep the same behavior in production before real catalog media is ready:
 
 ```bash
-pnpm seed:new --clean --size=small --force
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=true
 ```
 
-### Option 2: Manual Data Cleanup
-
-If you need to manually clean specific tables:
-
-```sql
--- Clear seeded data (preserves schema)
-SET FOREIGN_KEY_CHECKS = 0;
-
-TRUNCATE TABLE payments;
-TRUNCATE TABLE invoiceLineItems;
-TRUNCATE TABLE invoices;
-TRUNCATE TABLE order_line_items;
-TRUNCATE TABLE orders;
-TRUNCATE TABLE batches;
-TRUNCATE TABLE products;
-TRUNCATE TABLE clients;
-TRUNCATE TABLE vendors;
-
-SET FOREIGN_KEY_CHECKS = 1;
-```
-
-### Option 3: Release Stuck Locks
-
-If seeding fails mid-way and locks are stuck:
-
-```sql
--- Check for locks
-SHOW PROCESSLIST;
-
--- Kill stuck process (replace ID)
-KILL <process_id>;
-```
-
----
-
-## Monitoring Seeding Progress
-
-### Via Console Output
-
-The seeder provides real-time progress:
-
-```
-🌱 Seeding vendors... 5/5 ✓
-🌱 Seeding clients... 10/10 ✓
-🌱 Seeding products... 20/20 ✓
-🌱 Seeding batches... 30/30 ✓
-🌱 Seeding orders... 50/50 ✓
-🌱 Seeding invoices... 50/50 ✓
-🌱 Seeding payments... 30/30 ✓
-
-✅ Seeding complete!
-   Total records: 195
-   Duration: 12.3s
-   Errors: 0
-```
-
-### Via Database Queries
-
-Monitor progress by querying counts:
+Then run the same controlled command:
 
 ```bash
-npx tsx scripts/prod-db-query.ts "SELECT 'clients' as tbl, COUNT(*) as cnt FROM clients UNION ALL SELECT 'orders', COUNT(*) FROM orders"
+pnpm seed:new:complete
 ```
 
-### Via Application Health
+---
 
-After seeding, verify health endpoint:
+## 5. Fast Cancel (Real Client Data Go-Live)
+
+Once real products/SKUs/photos are actively managed by clients, disable synthetic fallback immediately:
 
 ```bash
-curl https://terp-app-b9s35.ondigitalocean.app/health
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=false
 ```
 
----
+Then use one of these commands for safe behavior:
 
-## Troubleshooting
+```bash
+# Full seed path, but real-media-only mode
+pnpm seed:new:complete:real-only
 
-### Error: "Connection refused"
+# Backfill-only path, real-media-only mode
+pnpm seed:batch-images:apply:real-only
+```
 
-**Cause**: Database not accessible
-**Solution**: 
-1. Check DATABASE_URL in environment variables
-2. Verify database is running in DigitalOcean
+Effect:
 
-### Error: "Foreign key constraint fails"
-
-**Cause**: Seeding order incorrect or orphaned references
-**Solution**:
-1. Use `--clean` flag to clear existing data
-2. Verify seeding order in `scripts/seed/seeders/index.ts`
-
-### Error: "Duplicate entry"
-
-**Cause**: Data already exists
-**Solution**:
-1. Use `--clean` flag to clear existing data
-2. Or use `--force` to overwrite
-
-### Error: "Lock wait timeout"
-
-**Cause**: Another process has table locked
-**Solution**:
-1. Wait for other process to complete
-2. Or kill stuck process (see Rollback section)
-
-### Error: "Out of memory"
-
-**Cause**: Large seed size on limited resources
-**Solution**:
-1. Use smaller seed size
-2. Seed in batches (run multiple small seeds)
+- Seeder still links real batch/product media where available
+- Seeder will skip batches with no real media instead of injecting synthetic fallback images
 
 ---
 
-## DigitalOcean-Specific Notes
+## 6. Rollback & Safety
 
-### Console Timeout
+### 6.1 Stop future synthetic inserts
 
-The DigitalOcean console may timeout after 10 minutes of inactivity. For large seeds:
-1. Keep the console active
-2. Or use `nohup` to run in background
+Set:
 
-### Environment Variables
+```bash
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=false
+```
 
-Ensure these are set in DigitalOcean App Settings:
-- `DATABASE_URL` - Production database connection string
-- `NODE_ENV=production` - Ensures production behavior
+This is the primary kill switch.
 
-### Resource Limits
+### 6.2 Remove previously inserted seeded rows (optional)
 
-DigitalOcean App Platform has resource limits:
-- Memory: Check your plan's limits
-- CPU: Seeding is CPU-intensive
-- Timeout: Long-running commands may be killed
+Only if needed for cleanup, run explicit SQL targeting seeded fallback captions containing `Wikimedia Commons`.
 
-For large seeds, consider:
-1. Upgrading instance temporarily
-2. Running during off-peak hours
-3. Using smaller batch sizes
+Always back up first.
 
 ---
 
-## Best Practices
+## 7. Operational Notes
 
-1. **Always dry-run first** - Preview before executing
-2. **Start small** - Test with `small` size before `large`
-3. **Backup first** - Ensure backup exists before `--clean`
-4. **Monitor progress** - Watch console output for errors
-5. **Verify after** - Check data and test application
-6. **Document changes** - Note when and what was seeded
+- `seed-batch-images-safe.ts` is idempotent for missing-image batches only.
+- It only touches batches with zero non-deleted `product_images` rows.
+- No code change is required to switch modes; only env var + command choice.
 
 ---
 
-## Related Documentation
+## 8. Command Quick Reference
 
-- `scripts/seed/README.md` - Seeder technical documentation
-- `.kiro/steering/04-infrastructure.md` - Infrastructure guide
-- `docs/deployment/README.md` - Deployment overview
+```bash
+# Canonical staging/demo behavior
+pnpm seed:new:complete
 
+# Real-client-safe behavior (no synthetic fallback)
+pnpm seed:new:complete:real-only
+
+# Backfill-only preview
+pnpm seed:batch-images:safe --limit 200
+
+# Backfill-only apply (synthetic allowed)
+pnpm seed:batch-images:apply
+
+# Backfill-only apply (synthetic disabled)
+pnpm seed:batch-images:apply:real-only
+```

@@ -22,9 +22,13 @@ pnpm seed:new --size=large    # ~1000+ records per table
 # Complete seed including safe batch image backfill
 pnpm seed:new:complete
 
+# Complete seed but force real-media-only behavior (no synthetic flower fallback)
+pnpm seed:new:complete:real-only
+
 # Preview/apply batch image backfill only
 pnpm seed:batch-images:safe
 pnpm seed:batch-images:apply
+pnpm seed:batch-images:apply:real-only
 ```
 
 ## Architecture
@@ -79,14 +83,16 @@ scripts/seed/
 
 ### Commands
 
-| Command                        | Description                                        |
-| ------------------------------ | -------------------------------------------------- |
-| `pnpm seed:new`                | Seed all tables with default settings              |
-| `pnpm seed:new:dry-run`        | Preview seeding without executing                  |
-| `pnpm seed:new:rollback`       | Rollback seeded data (Phase 2)                     |
-| `pnpm seed:new:complete`       | Run canonical seed then safe batch image backfill  |
-| `pnpm seed:batch-images:safe`  | Dry-run preview for batch image backfill           |
-| `pnpm seed:batch-images:apply` | Apply safe batch image backfill (`product_images`) |
+| Command                                  | Description                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| `pnpm seed:new`                          | Seed all tables with default settings                                    |
+| `pnpm seed:new:dry-run`                  | Preview seeding without executing                                        |
+| `pnpm seed:new:rollback`                 | Rollback seeded data (Phase 2)                                           |
+| `pnpm seed:new:complete`                 | Run canonical seed then safe batch image backfill                        |
+| `pnpm seed:new:complete:real-only`       | Same as complete seed, but disables synthetic open-source image fallback |
+| `pnpm seed:batch-images:safe`            | Dry-run preview for batch image backfill                                 |
+| `pnpm seed:batch-images:apply`           | Apply safe batch image backfill (`product_images`)                       |
+| `pnpm seed:batch-images:apply:real-only` | Apply batch image backfill without synthetic fallback images             |
 
 ### Options
 
@@ -127,6 +133,9 @@ Notes:
 - `product_images` (batch-level media) is the canonical source for batch photography and catalog/media surfacing.
 - `productMedia` is legacy product-level fallback and should not be treated as the primary batch media source.
 - If batch/product media is missing, seeders fall back to a deterministic open-source flower photo pool (`open-source-flower-images.ts`) for realistic QA visuals.
+- Synthetic fallback behavior is controlled by `SEED_OPEN_SOURCE_FLOWER_FALLBACK` (default: enabled).
+  - Set `SEED_OPEN_SOURCE_FLOWER_FALLBACK=false` to disable synthetic fallback for real-client environments.
+  - Use `pnpm seed:new:complete:real-only` for a one-command safe mode.
 - `seed-batch-images-safe.ts` is idempotent: it only fills batches that currently have zero `product_images` rows.
 
 ## Components

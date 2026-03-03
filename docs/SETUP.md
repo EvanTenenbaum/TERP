@@ -109,6 +109,12 @@ pnpm seed light
 
 # Seed with a full scenario (for E2E testing)
 pnpm seed full
+
+# Seed full canonical data + batch photo backfill (for E2E/UI testing)
+pnpm seed:new:complete
+
+# Optional: disable synthetic open-source fallback photos (real-client safe mode)
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=false pnpm seed:new:complete
 ```
 
 ---
@@ -143,19 +149,22 @@ Your local development environment is now fully set up. You can start making cha
 
 ### Quick Command Reference
 
-| Command                | Description                                      |
-| ---------------------- | ------------------------------------------------ |
-| `pnpm install`         | Install dependencies                             |
-| `pnpm dev`             | Start the development server                     |
-| `pnpm test`            | Run all tests                                    |
-| `pnpm test:watch`      | Run tests in watch mode (for TDD)                |
-| `pnpm lint`            | Check code quality                               |
-| `pnpm format`          | Format code                                      |
-| `pnpm typecheck`       | Verify TypeScript types                          |
-| `pnpm check`           | Run all quality checks (lint, format, typecheck) |
-| `pnpm db:push`         | Push schema changes to the database              |
-| `pnpm seed light`      | Seed the database with light mock data           |
-| `docker-compose up -d` | Start the local database                         |
-| `docker-compose down`  | Stop the local database                          |
+| Command                            | Description                                                   |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `pnpm install`                     | Install dependencies                                          |
+| `pnpm dev`                         | Start the development server                                  |
+| `pnpm test`                        | Run all tests                                                 |
+| `pnpm test:watch`                  | Run tests in watch mode (for TDD)                             |
+| `pnpm lint`                        | Check code quality                                            |
+| `pnpm format`                      | Format code                                                   |
+| `pnpm typecheck`                   | Verify TypeScript types                                       |
+| `pnpm check`                       | Run all quality checks (lint, format, typecheck)              |
+| `pnpm db:push`                     | Push schema changes to the database                           |
+| `pnpm seed:new:complete`           | Seed canonical data plus batch photos                         |
+| `pnpm seed:new:complete:real-only` | Seed with metadata/product media only (no synthetic fallback) |
+| `pnpm seed light`                  | Seed the database with light mock data                        |
+| `pnpm seed full`                   | Seed the database with full mock data                         |
+| `docker-compose up -d`             | Start the local database                                      |
+| `docker-compose down`              | Stop the local database                                       |
 
 ---

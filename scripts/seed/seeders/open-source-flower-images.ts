@@ -13,6 +13,11 @@ export interface OpenSourceFlowerImage {
   sourcePageUrl: string;
 }
 
+export const OPEN_SOURCE_FLOWER_FALLBACK_ENV =
+  "SEED_OPEN_SOURCE_FLOWER_FALLBACK";
+
+const FALSEY_ENV_VALUES = new Set(["0", "false", "off", "no"]);
+
 const OPEN_SOURCE_FLOWER_IMAGES: OpenSourceFlowerImage[] = [
   {
     title: "Marijuana Buds",
@@ -211,6 +216,22 @@ export function pickOpenSourceFlowerImage(
   const normalized = Math.abs(Math.trunc(seed));
   const index = normalized % OPEN_SOURCE_FLOWER_IMAGES.length;
   return OPEN_SOURCE_FLOWER_IMAGES[index];
+}
+
+/**
+ * Whether seeding is allowed to inject synthetic open-source fallback photos.
+ *
+ * Default behavior is enabled to support realistic demo/test environments.
+ * Set SEED_OPEN_SOURCE_FLOWER_FALLBACK=false (or 0/off/no) to disable.
+ */
+export function isOpenSourceFlowerFallbackEnabled(
+  rawValue: string | undefined = process.env[OPEN_SOURCE_FLOWER_FALLBACK_ENV]
+): boolean {
+  if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
+    return true;
+  }
+
+  return !FALSEY_ENV_VALUES.has(rawValue.trim().toLowerCase());
 }
 
 export function formatOpenSourceFlowerCaption(

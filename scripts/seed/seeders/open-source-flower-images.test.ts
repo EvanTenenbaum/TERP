@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatOpenSourceFlowerCaption,
+  isOpenSourceFlowerFallbackEnabled,
   pickOpenSourceFlowerImage,
 } from "./open-source-flower-images";
 
@@ -25,5 +26,22 @@ describe("open-source-flower-images", () => {
     expect(caption).toContain("Wikimedia Commons");
     expect(caption).toContain(image.license);
     expect(caption).toContain(image.author);
+  });
+
+  it("enables open-source fallback by default", () => {
+    expect(isOpenSourceFlowerFallbackEnabled(undefined)).toBe(true);
+  });
+
+  it("disables open-source fallback for false-like env values", () => {
+    expect(isOpenSourceFlowerFallbackEnabled("false")).toBe(false);
+    expect(isOpenSourceFlowerFallbackEnabled("0")).toBe(false);
+    expect(isOpenSourceFlowerFallbackEnabled("off")).toBe(false);
+    expect(isOpenSourceFlowerFallbackEnabled("no")).toBe(false);
+  });
+
+  it("treats true-like values as enabled", () => {
+    expect(isOpenSourceFlowerFallbackEnabled("true")).toBe(true);
+    expect(isOpenSourceFlowerFallbackEnabled("1")).toBe(true);
+    expect(isOpenSourceFlowerFallbackEnabled("yes")).toBe(true);
   });
 });

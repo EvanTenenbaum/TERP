@@ -31,6 +31,8 @@ import {
 } from "../../../drizzle/schema";
 import {
   formatOpenSourceFlowerCaption,
+  isOpenSourceFlowerFallbackEnabled,
+  OPEN_SOURCE_FLOWER_FALLBACK_ENV,
   pickOpenSourceFlowerImage,
 } from "./open-source-flower-images";
 
@@ -175,6 +177,13 @@ async function main() {
   console.log(`Mode: ${flags.write ? "WRITE" : "DRY-RUN"}`);
   // eslint-disable-next-line no-console
   console.log(`Limit: ${flags.limit}`);
+  const openSourceFallbackEnabled = isOpenSourceFlowerFallbackEnabled();
+  // eslint-disable-next-line no-console
+  console.log(
+    `${OPEN_SOURCE_FLOWER_FALLBACK_ENV}: ${
+      openSourceFallbackEnabled ? "enabled" : "disabled"
+    }`
+  );
   // eslint-disable-next-line no-console
   console.log("");
 
@@ -288,7 +297,7 @@ async function main() {
     ) {
       source = "productMedia";
       urls = [{ url: productFallbackImageMap.get(c.productId) as string }];
-    } else {
+    } else if (openSourceFallbackEnabled) {
       const openSourceImage = pickOpenSourceFlowerImage(c.batchId);
       if (openSourceImage) {
         source = "openSource";
@@ -356,6 +365,12 @@ async function main() {
   console.log(
     `- Seed source open-source flower fallback: ${batchesWithOpenSourceFallback}`
   );
+  if (!openSourceFallbackEnabled) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `- Open-source fallback disabled via ${OPEN_SOURCE_FLOWER_FALLBACK_ENV}`
+    );
+  }
   // eslint-disable-next-line no-console
   console.log(`- No seed source (skipped): ${batchesWithNoSource}`);
   // eslint-disable-next-line no-console

@@ -22,6 +22,7 @@ import { seedLogger, withPerformanceLogging } from "../lib/logging";
 import { createSeederResult, type SeederResult } from "./index";
 import {
   formatOpenSourceFlowerCaption,
+  isOpenSourceFlowerFallbackEnabled,
   pickOpenSourceFlowerImage,
 } from "./open-source-flower-images";
 
@@ -77,6 +78,7 @@ export async function seedProductImages(
       }
 
       seedLogger.tableSeeding("product_images", count);
+      const openSourceFallbackEnabled = isOpenSourceFlowerFallbackEnabled();
 
       const [systemUser] = await db
         .select({ id: users.id })
@@ -154,14 +156,18 @@ export async function seedProductImages(
           candidate.productId !== null
             ? productFallbackByProductId.get(candidate.productId)
             : undefined;
-        const openSourceFallback = pickOpenSourceFlowerImage(candidate.batchId);
+        const openSourceFallback = openSourceFallbackEnabled
+          ? pickOpenSourceFlowerImage(candidate.batchId)
+          : null;
         const imageUrl =
           metadataUrl ?? productFallback ?? openSourceFallback?.url ?? null;
 
         if (!imageUrl) {
           result.skipped++;
           result.errors.push(
-            `Batch ${candidate.batchId}: no metadata/productMedia/open-source fallback image available`
+            `Batch ${candidate.batchId}: no metadata/productMedia${
+              openSourceFallbackEnabled ? "/open-source fallback" : ""
+            } image available`
           );
           continue;
         }
