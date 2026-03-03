@@ -168,3 +168,16 @@
     - Create Order + left-side units/plus controls: `.playwright-cli/page-2026-03-03T01-06-42-910Z.png`
     - Customer controls right drawer + pricing permission gate: `.playwright-cli/page-2026-03-03T01-07-35-037Z.png`
     - Margin editor defaulting to dollar mode with profile source context: `.playwright-cli/page-2026-03-03T01-10-42-125Z.png`
+
+### 2026-03-03 (Balanced Ladder QA acceleration enablement)
+
+- Adopted release-train `Balanced Ladder` workflow for remaining checkpoints.
+- Added impact-map v2 coverage for work-surface and release-train touchpoints.
+- Added automation scripts:
+  - `scripts/ci/verify-release-train-impact-map.sh`
+  - `scripts/qa/release-train/ticket-fast-loop.sh`
+  - `scripts/qa/release-train/checkpoint-gate.sh`
+  - `scripts/qa/release-train/final-gate.sh`
+- Added evidence and bundle templates:
+  - `docs/roadmaps/2026-03-02-feedback-video-evidence-packet-v2-template.md`
+  - `docs/roadmaps/checkpoint-bundles/README.md`
