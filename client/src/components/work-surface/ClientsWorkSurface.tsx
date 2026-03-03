@@ -87,8 +87,19 @@ import {
 // ============================================================================
 
 const clientSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  name: z
+    .string()
+    .min(
+      1,
+      "Field: Name. Rule: value is required. Fix: enter the client name before saving."
+    ),
+  email: z
+    .string()
+    .email(
+      "Field: Email. Rule: must be a valid email format. Fix: enter an address like name@company.com."
+    )
+    .optional()
+    .or(z.literal("")),
   phone: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -262,7 +273,11 @@ function ClientInspectorContent({
       setEditMode(false);
     } else {
       // Surface validation feedback to the user
-      toast.error("Please fix validation errors before saving.");
+      const firstValidationMessage = Object.values(result.errors)[0];
+      toast.error(
+        firstValidationMessage ||
+          "Field: Form. Rule: contains validation errors. Fix: correct highlighted fields and retry."
+      );
     }
   };
 

@@ -11,8 +11,8 @@ describe("uiDensity", () => {
     document.documentElement.removeAttribute("data-view-density");
   });
 
-  it("defaults to comfortable when nothing is stored", () => {
-    expect(readUiDensity()).toBe("comfortable");
+  it("defaults to compact when nothing is stored", () => {
+    expect(readUiDensity()).toBe("compact");
   });
 
   it("initializes data attribute from storage", () => {
@@ -35,9 +35,9 @@ describe("uiDensity", () => {
     );
   });
 
-  it("falls back to comfortable for invalid values", () => {
+  it("falls back to compact for invalid values", () => {
     localStorage.setItem(UI_DENSITY_STORAGE_KEY, "dense");
 
-    expect(readUiDensity()).toBe("comfortable");
+    expect(readUiDensity()).toBe("compact");
   });
 });

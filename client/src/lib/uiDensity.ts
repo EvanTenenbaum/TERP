@@ -13,11 +13,11 @@ export function readUiDensity(): UiDensity {
     typeof window === "undefined" ||
     typeof window.localStorage === "undefined"
   ) {
-    return "comfortable";
+    return "compact";
   }
 
   const stored = window.localStorage.getItem(UI_DENSITY_STORAGE_KEY);
-  return isUiDensity(stored) ? stored : "comfortable";
+  return isUiDensity(stored) ? stored : "compact";
 }
 
 export function applyUiDensity(density: UiDensity): void {

@@ -211,10 +211,29 @@ const qtyAdjustmentSchema = z.object({
   adjustment: z
     .string()
     .trim()
-    .min(1, "Enter an adjustment amount")
-    .refine(value => !Number.isNaN(Number(value)), "Enter a valid number")
-    .refine(value => Number(value) !== 0, "Adjustment cannot be zero"),
-  reason: z.string().trim().min(1, "Enter an adjustment reason"),
+    .min(
+      1,
+      "Field: Adjustment Amount. Rule: value is required. Fix: enter a whole-number adjustment before saving."
+    )
+    .refine(
+      value => !Number.isNaN(Number(value)),
+      "Field: Adjustment Amount. Rule: must be numeric. Fix: enter digits only (for example -5 or 12)."
+    )
+    .refine(
+      value => Number.isInteger(Number(value)),
+      "Field: Adjustment Amount. Rule: must be a whole number (step=1). Fix: remove decimals and enter an integer."
+    )
+    .refine(
+      value => Number(value) !== 0,
+      "Field: Adjustment Amount. Rule: cannot be zero. Fix: enter a positive or negative non-zero quantity."
+    ),
+  reason: z
+    .string()
+    .trim()
+    .min(
+      1,
+      "Field: Adjustment Reason. Rule: reason is required. Fix: describe why the quantity changed."
+    ),
 });
 
 // ============================================================================
@@ -287,6 +306,31 @@ const normalizeSavedFilters = (
       : defaultFilters.paymentStatus,
   };
 };
+
+const normalizeStatus = (status: string | null | undefined): string =>
+  String(status ?? "").toUpperCase();
+
+function getInventoryStatusFilterExitMessage(params: {
+  batchSku: string;
+  activeStatuses: string[];
+  toStatus: string;
+}): string | null {
+  if (params.activeStatuses.length === 0) {
+    return null;
+  }
+
+  const normalizedStatuses = params.activeStatuses.map(normalizeStatus);
+  const normalizedTarget = normalizeStatus(params.toStatus);
+  if (normalizedStatuses.includes(normalizedTarget)) {
+    return null;
+  }
+
+  const filterLabel = normalizedStatuses
+    .map(status => status.toLowerCase())
+    .join(", ");
+
+  return `${params.batchSku} moved to ${normalizedTarget} and is now hidden by the ${filterLabel} filter. Clear or update filters to keep tracking it.`;
+}
 
 const calculateAvailable = (
   batch:
@@ -1181,6 +1225,7 @@ export function InventoryWorkSurface() {
 
   const handleStatusChange = useCallback(
     (batchId: number, newStatus: string): void => {
+      const batch = items.find(item => item.batch?.id === batchId)?.batch;
       const previousStatus = items.find(item => item.batch?.id === batchId)
         ?.batch?.batchStatus;
       updateStatusMutation.mutate(
@@ -1191,6 +1236,14 @@ export function InventoryWorkSurface() {
         {
           onSuccess: () => {
             if (!previousStatus || previousStatus === newStatus) return;
+            const exitMessage = getInventoryStatusFilterExitMessage({
+              batchSku: batch?.sku || `Batch ${batchId}`,
+              activeStatuses: filters.status,
+              toStatus: newStatus,
+            });
+            if (exitMessage) {
+              toast.info(exitMessage);
+            }
             undo.registerAction({
               description: `Changed status to ${newStatus.replace(/_/g, " ")}`,
               undo: async () => {
@@ -1210,6 +1263,7 @@ export function InventoryWorkSurface() {
     },
     [
       items,
+      filters.status,
       undo,
       undoStatusMutation,
       updateStatusMutation,
@@ -2160,6 +2214,7 @@ export function InventoryWorkSurface() {
                 id="qty-adjustment"
                 data-testid="qty-adjustment"
                 type="number"
+                step="1"
                 placeholder="e.g., -5"
                 value={qtyAdjustment}
                 onChange={e => {
