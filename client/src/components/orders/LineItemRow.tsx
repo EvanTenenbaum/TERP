@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 // import { useMarginLookup } from "@/hooks/orders/useMarginLookup";
 import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+import { parsePositiveInteger } from "@/lib/quantity";
 
 interface LineItem {
   id?: number;
@@ -64,21 +65,23 @@ export const LineItemRow = memo(function LineItemRow({
 
   // FEAT-003: Handle quantity change with validation
   const handleQuantityChange = (newQty: number) => {
-    // Validate: quantity must be greater than 0
-    if (newQty > 0) {
-      const updated = calculateLineItem(
-        item.batchId,
-        newQty,
-        item.cogsPerUnit,
-        item.marginPercent
-      );
-      onUpdate(updated);
+    const normalizedQty = parsePositiveInteger(newQty);
+    if (normalizedQty === null) {
+      return;
     }
+
+    const updated = calculateLineItem(
+      item.batchId,
+      normalizedQty,
+      item.cogsPerUnit,
+      item.marginPercent
+    );
+    onUpdate(updated);
   };
 
   const handleQuantityBlur = () => {
-    const qty = parseFloat(qtyInput);
-    if (!isNaN(qty) && qty > 0) {
+    const qty = parsePositiveInteger(qtyInput);
+    if (qty !== null) {
       handleQuantityChange(qty);
     } else {
       // Reset to original value if invalid
@@ -157,6 +160,11 @@ export const LineItemRow = memo(function LineItemRow({
       ...updated,
       marginPercent: newMarginPercent,
       isMarginOverridden: isOverridden,
+      marginSource: isOverridden
+        ? "MANUAL"
+        : item.marginSource === "MANUAL"
+          ? "CUSTOMER_PROFILE"
+          : item.marginSource,
     });
   };
 
@@ -206,10 +214,10 @@ export const LineItemRow = memo(function LineItemRow({
           <div className="flex items-center justify-end gap-1">
             <Input
               type="number"
-              min="0"
+              min="1"
               step="1"
               value={qtyInput}
-              onChange={e => setQtyInput(e.target.value)}
+              onChange={e => setQtyInput(e.target.value.replace(/[^\d]/g, ""))}
               onBlur={handleQuantityBlur}
               onKeyDown={handleQuantityKeyDown}
               onFocus={e => e.target.select()}
@@ -252,6 +260,7 @@ export const LineItemRow = memo(function LineItemRow({
         <MarginInput
           marginPercent={item.marginPercent}
           marginDollar={item.marginDollar}
+          cogsPerUnit={item.cogsPerUnit}
           source={item.marginSource}
           isOverridden={item.isMarginOverridden}
           onChange={handleMarginChange}
