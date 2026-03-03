@@ -20,6 +20,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
+import {
+  normalizePositiveIntegerWithin,
+  parsePositiveInteger,
+} from "@/lib/quantity";
+import { toast } from "sonner";
 import type {
   PricedInventoryItem,
   BatchStatus,
@@ -151,7 +156,19 @@ export function InventoryBrowser({
 
   // Add selected items to sheet
   const addSelectedToSheet = () => {
-    const itemsToAdd = inventory.filter(item => selectedIds.has(item.id));
+    const itemsToAdd = inventory
+      .filter(item => selectedIds.has(item.id))
+      .map(item => {
+        const availableUnits = Math.floor(item.quantity || 0);
+        const requestedQty = normalizePositiveIntegerWithin(
+          quickQuantities[item.id] || "1",
+          availableUnits
+        );
+        return {
+          ...item,
+          orderQuantity: requestedQty ?? 1,
+        };
+      });
     onAddItems(itemsToAdd);
     setSelectedIds(new Set());
   };
@@ -161,11 +178,17 @@ export function InventoryBrowser({
     item: PricedInventoryItem,
     customQuantity?: number
   ) => {
-    const qty = customQuantity || parseFloat(quickQuantities[item.id]) || 1;
+    const availableUnits = Math.floor(item.quantity || 0);
+    if (availableUnits < 1) {
+      toast.error("No available units to add for this item");
+      return;
+    }
 
-    // FEAT-003: Validate quantity doesn't exceed available stock
-    const availableQty = item.quantity || 0;
-    const finalQty = Math.min(qty, availableQty);
+    const parsedCustomQty =
+      customQuantity !== undefined
+        ? parsePositiveInteger(customQuantity)
+        : parsePositiveInteger(quickQuantities[item.id] || "1");
+    const finalQty = Math.min(parsedCustomQty ?? 1, availableUnits);
 
     const itemWithQuantity = { ...item, orderQuantity: finalQty };
     onAddItems([itemWithQuantity]);
@@ -179,7 +202,9 @@ export function InventoryBrowser({
 
   // FEAT-003: Update quick quantity for an item
   const updateQuickQuantity = (itemId: number, value: string) => {
-    setQuickQuantities(prev => ({ ...prev, [itemId]: value }));
+    const [integerPortion = ""] = value.split(".");
+    const sanitized = integerPortion.replace(/[^\d]/g, "");
+    setQuickQuantities(prev => ({ ...prev, [itemId]: sanitized }));
   };
 
   // Calculate markup percentage
@@ -248,6 +273,7 @@ export function InventoryBrowser({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12"></TableHead>
+                <TableHead className="w-[210px]">Units to Add</TableHead>
                 <TableHead>Item</TableHead>
                 {/* TER-213: Vendor column for availability catalog */}
                 <TableHead>Vendor</TableHead>
@@ -256,15 +282,13 @@ export function InventoryBrowser({
                 <TableHead>Price/Unit</TableHead>
                 <TableHead>Client Price</TableHead>
                 <TableHead>Markup</TableHead>
-                <TableHead className="w-24">Quick Qty</TableHead>
-                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredInventory.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={9}
                     className="text-center text-muted-foreground"
                   >
                     No inventory items found
@@ -278,6 +302,10 @@ export function InventoryBrowser({
                   );
                   const alreadyInSheet = isInSheet(item.id);
                   const quickQty = quickQuantities[item.id] || "";
+                  const availableUnits = Math.max(
+                    0,
+                    Math.floor(item.quantity || 0)
+                  );
 
                   return (
                     <TableRow
@@ -290,6 +318,57 @@ export function InventoryBrowser({
                           onCheckedChange={() => toggleSelection(item.id)}
                           disabled={alreadyInSheet}
                         />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            max={availableUnits}
+                            step="1"
+                            placeholder="1"
+                            value={quickQty}
+                            onChange={e =>
+                              updateQuickQuantity(item.id, e.target.value)
+                            }
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && !alreadyInSheet) {
+                                e.preventDefault();
+                                addSingleItem(item);
+                                const currentRow = (
+                                  e.target as HTMLElement
+                                ).closest("tr");
+                                const nextRow = currentRow?.nextElementSibling;
+                                if (nextRow) {
+                                  const nextInput = nextRow.querySelector(
+                                    'input[aria-label*="Number of units"]'
+                                  ) as HTMLInputElement | null;
+                                  nextInput?.focus();
+                                }
+                              }
+                            }}
+                            disabled={alreadyInSheet || availableUnits < 1}
+                            className="w-24 h-8 text-center"
+                            title={`Available: ${availableUnits}`}
+                            aria-label={`Number of units to add for ${item.name}`}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addSingleItem(item)}
+                            disabled={alreadyInSheet || availableUnits < 1}
+                            title={quickQty ? `Add ${quickQty}` : "Add 1"}
+                            aria-label={`Quick add ${item.name}`}
+                          >
+                            <Plus className="h-4 w-4" />
+                            {quickQty && (
+                              <span className="ml-1 text-xs">{quickQty}</span>
+                            )}
+                          </Button>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          / {availableUnits}
+                        </span>
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex flex-col gap-1">
@@ -342,7 +421,7 @@ export function InventoryBrowser({
                           {item.category || "N/A"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{item.quantity.toFixed(2)}</TableCell>
+                      <TableCell>{availableUnits}</TableCell>
                       <TableCell>${item.basePrice.toFixed(2)}</TableCell>
                       <TableCell className="font-semibold">
                         ${item.retailPrice.toFixed(2)}
@@ -352,59 +431,6 @@ export function InventoryBrowser({
                           {markup > 0 ? "+" : ""}
                           {markup.toFixed(1)}%
                         </Badge>
-                      </TableCell>
-                      {/* FEAT-003: Quick Add Quantity Field */}
-                      <TableCell>
-                        <div className="flex flex-col gap-0.5">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={item.quantity}
-                            step="0.01"
-                            placeholder="1"
-                            value={quickQty}
-                            onChange={e =>
-                              updateQuickQuantity(item.id, e.target.value)
-                            }
-                            onKeyDown={e => {
-                              if (e.key === "Enter" && !alreadyInSheet) {
-                                e.preventDefault();
-                                addSingleItem(item);
-                                // Focus next row's quantity input for quick entry
-                                const currentRow = (
-                                  e.target as HTMLElement
-                                ).closest("tr");
-                                const nextRow = currentRow?.nextElementSibling;
-                                if (nextRow) {
-                                  const nextInput = nextRow.querySelector(
-                                    'input[type="number"]'
-                                  ) as HTMLInputElement;
-                                  nextInput?.focus();
-                                }
-                              }
-                            }}
-                            disabled={alreadyInSheet}
-                            className="w-20 h-8 text-center"
-                            title={`Available: ${item.quantity.toFixed(2)}`}
-                          />
-                          <span className="text-[10px] text-muted-foreground text-center">
-                            / {item.quantity.toFixed(2)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => addSingleItem(item)}
-                          disabled={alreadyInSheet}
-                          title={quickQty ? `Add ${quickQty}` : "Add 1"}
-                        >
-                          <Plus className="h-4 w-4" />
-                          {quickQty && (
-                            <span className="ml-1 text-xs">{quickQty}</span>
-                          )}
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );

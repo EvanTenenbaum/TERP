@@ -4,7 +4,7 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Percent, DollarSign, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 interface MarginInputProps {
   marginPercent: number;
   marginDollar: number;
+  cogsPerUnit: number;
   source: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   isOverridden: boolean;
   onChange: (newMarginPercent: number, isOverridden: boolean) => void;
@@ -28,22 +29,53 @@ interface MarginInputProps {
 export function MarginInput({
   marginPercent,
   marginDollar,
+  cogsPerUnit,
   source,
   isOverridden: _isOverridden,
   onChange,
 }: MarginInputProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [inputMode, setInputMode] = useState<"percent" | "dollar">("percent");
-  const [inputValue, setInputValue] = useState(marginPercent.toString());
+  const [inputMode, setInputMode] = useState<"percent" | "dollar">("dollar");
+  const [inputValue, setInputValue] = useState(marginDollar.toFixed(2));
+
+  useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+    setInputValue(
+      inputMode === "dollar"
+        ? marginDollar.toFixed(2)
+        : marginPercent.toFixed(1)
+    );
+  }, [inputMode, isEditing, marginDollar, marginPercent]);
+
+  const marginPercentFromDollar = (value: number): number => {
+    if (cogsPerUnit <= 0) {
+      return 0;
+    }
+    return (value / cogsPerUnit) * 100;
+  };
 
   const getSourceBadge = () => {
     switch (source) {
       case "CUSTOMER_PROFILE":
-        return <Badge variant="default" className="text-xs">Profile</Badge>;
+        return (
+          <Badge variant="default" className="text-xs">
+            Profile
+          </Badge>
+        );
       case "DEFAULT":
-        return <Badge variant="secondary" className="text-xs">Default</Badge>;
+        return (
+          <Badge variant="secondary" className="text-xs">
+            Default
+          </Badge>
+        );
       case "MANUAL":
-        return <Badge variant="outline" className="text-xs">Manual</Badge>;
+        return (
+          <Badge variant="outline" className="text-xs">
+            Manual
+          </Badge>
+        );
     }
   };
 
@@ -58,15 +90,19 @@ export function MarginInput({
   const handleSave = () => {
     const value = parseFloat(inputValue);
     if (!isNaN(value)) {
-      // If in dollar mode, we'd need COGS to calculate percent
-      // For now, we only support percent input
-      onChange(value, true);
+      const marginPercentValue =
+        inputMode === "dollar" ? marginPercentFromDollar(value) : value;
+      onChange(marginPercentValue, true);
       setIsEditing(false);
     }
   };
 
   const handleCancel = () => {
-    setInputValue(marginPercent.toString());
+    setInputValue(
+      inputMode === "dollar"
+        ? marginDollar.toFixed(2)
+        : marginPercent.toFixed(1)
+    );
     setIsEditing(false);
   };
 
@@ -99,8 +135,20 @@ export function MarginInput({
             <ToggleGroup
               type="single"
               value={inputMode}
-              onValueChange={(value) => {
-                if (value) setInputMode(value as "percent" | "dollar");
+              onValueChange={value => {
+                if (!value) return;
+                const nextMode = value as "percent" | "dollar";
+                const numericValue = parseFloat(inputValue);
+                if (nextMode !== inputMode && Number.isFinite(numericValue)) {
+                  if (nextMode === "dollar") {
+                    const dollarValue = (cogsPerUnit * numericValue) / 100;
+                    setInputValue(dollarValue.toFixed(2));
+                  } else {
+                    const percentValue = marginPercentFromDollar(numericValue);
+                    setInputValue(percentValue.toFixed(1));
+                  }
+                }
+                setInputMode(nextMode);
               }}
               className="justify-start"
             >
@@ -108,7 +156,7 @@ export function MarginInput({
                 <Percent className="h-4 w-4 mr-2" />
                 Percent
               </ToggleGroupItem>
-              <ToggleGroupItem value="dollar" aria-label="Dollar" disabled>
+              <ToggleGroupItem value="dollar" aria-label="Dollar">
                 <DollarSign className="h-4 w-4 mr-2" />
                 Dollar
               </ToggleGroupItem>
@@ -124,8 +172,8 @@ export function MarginInput({
               type="number"
               step={inputMode === "percent" ? "0.1" : "0.01"}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === "Enter") handleSave();
                 if (e.key === "Escape") handleCancel();
               }}
@@ -136,18 +184,10 @@ export function MarginInput({
           </div>
 
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={handleSave}
-              className="flex-1"
-            >
+            <Button size="sm" onClick={handleSave} className="flex-1">
               Save
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-            >
+            <Button size="sm" variant="ghost" onClick={handleCancel}>
               Cancel
             </Button>
           </div>
@@ -168,4 +208,3 @@ export function MarginInput({
     </Popover>
   );
 }
-

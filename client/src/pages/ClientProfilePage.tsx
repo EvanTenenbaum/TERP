@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "wouter";
+import { useEffect, useState } from "react";
+import { useLocation, useParams, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,27 @@ import {
   Settings,
   BookOpen,
 } from "lucide-react";
-import { useLocation } from "wouter";
+
+const TABBABLE_SECTIONS = new Set([
+  "overview",
+  "supplier",
+  "transactions",
+  "payments",
+  "pricing",
+  "needs",
+  "communications",
+  "calendar",
+  "notes",
+  "live-catalog",
+]);
+
+function getInitialClientTab(search: string): string {
+  const tabParam = new URLSearchParams(search).get("tab");
+  if (tabParam && TABBABLE_SECTIONS.has(tabParam)) {
+    return tabParam;
+  }
+  return "overview";
+}
 
 // TER-289: Typed interfaces to replace `any` in transaction/activity callbacks
 interface ClientTransaction {
@@ -102,9 +122,10 @@ type TransactionType =
 
 export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
+  const search = useSearch();
   const [, setLocation] = useLocation();
   const clientId = parseInt(params.id || "0", 10);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(() => getInitialClientTab(search));
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -115,6 +136,11 @@ export default function ClientProfilePage() {
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [showTagInput, setShowTagInput] = useState(false);
+
+  useEffect(() => {
+    const nextTab = getInitialClientTab(search);
+    setActiveTab(currentTab => (currentTab === nextTab ? currentTab : nextTab));
+  }, [search]);
 
   // Credit visibility settings
   const { shouldShowCreditWidgetInProfile } = useCreditVisibility();
@@ -197,6 +223,12 @@ export default function ClientProfilePage() {
       setShowTagInput(false);
     },
   });
+
+  useEffect(() => {
+    if (activeTab === "supplier" && client && !client.isSeller) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, client]);
 
   if (clientLoading) {
     return <PageSkeleton variant="dashboard" />;
