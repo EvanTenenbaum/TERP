@@ -7,6 +7,7 @@
  * - Sources images from:
  *   1) batch.metadata.mediaFiles (preferred)
  *   2) productMedia (fallback)
+ *   3) open-source cannabis flower catalog (realistic fallback)
  *
  * Safety defaults:
  * - Dry-run by default (no writes)
@@ -21,8 +22,17 @@
 import { config } from "dotenv";
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
-import { batches, productImages, productMedia, users } from "../../../drizzle/schema";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import {
+  batches,
+  productImages,
+  productMedia,
+  users,
+} from "../../../drizzle/schema";
+import {
+  formatOpenSourceFlowerCaption,
+  pickOpenSourceFlowerImage,
+} from "./open-source-flower-images";
 
 type Flags = {
   envFile?: string;
@@ -154,7 +164,10 @@ async function main() {
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = drizzle(pool as any, { schema: { batches, productImages, productMedia, users }, mode: "default" });
+  const db = drizzle(pool as any, {
+    schema: { batches, productImages, productMedia, users },
+    mode: "default",
+  });
 
   // eslint-disable-next-line no-console
   console.log("Safe Batch Image Seeder");
@@ -189,7 +202,9 @@ async function main() {
   const candidateBatchCount = candidates.length;
   if (candidateBatchCount === 0) {
     // eslint-disable-next-line no-console
-    console.log("No batches found with zero product_images rows. Nothing to do.");
+    console.log(
+      "No batches found with zero product_images rows. Nothing to do."
+    );
     await pool.end();
     return;
   }
@@ -228,6 +243,7 @@ async function main() {
 
   let batchesWithMetadata = 0;
   let batchesWithProductFallback = 0;
+  let batchesWithOpenSourceFallback = 0;
   let batchesWithNoSource = 0;
   let rowsToInsert = 0;
 
@@ -255,28 +271,47 @@ async function main() {
       .filter(m => isNonEmptyString(m.url))
       .map(m => ({
         url: (m.url as string).trim(),
-        fileName: isNonEmptyString(m.fileName) ? (m.fileName as string).trim() : undefined,
+        fileName: isNonEmptyString(m.fileName)
+          ? (m.fileName as string).trim()
+          : undefined,
       }));
 
-    let source: "metadata" | "productMedia" | "none" = "none";
+    let source: "metadata" | "productMedia" | "openSource" | "none" = "none";
     let urls: Array<{ url: string; caption?: string }> = [];
 
     if (mediaFiles.length > 0) {
       source = "metadata";
       urls = mediaFiles.map(m => ({ url: m.url, caption: m.fileName }));
-    } else if (typeof c.productId === "number" && productFallbackImageMap.has(c.productId)) {
+    } else if (
+      typeof c.productId === "number" &&
+      productFallbackImageMap.has(c.productId)
+    ) {
       source = "productMedia";
       urls = [{ url: productFallbackImageMap.get(c.productId) as string }];
+    } else {
+      const openSourceImage = pickOpenSourceFlowerImage(c.batchId);
+      if (openSourceImage) {
+        source = "openSource";
+        urls = [
+          {
+            url: openSourceImage.url,
+            caption: formatOpenSourceFlowerCaption(openSourceImage),
+          },
+        ];
+      }
     }
 
     if (source === "metadata") batchesWithMetadata++;
     else if (source === "productMedia") batchesWithProductFallback++;
+    else if (source === "openSource") batchesWithOpenSourceFallback++;
     else batchesWithNoSource++;
 
     if (source === "none") {
       if (flags.verbose) {
         // eslint-disable-next-line no-console
-        console.log(`[SKIP] batchId=${c.batchId} (no metadata.mediaFiles, no productMedia image)`);
+        console.log(
+          `[SKIP] batchId=${c.batchId} (no metadata.mediaFiles, no productMedia image)`
+        );
       }
       continue;
     }
@@ -314,7 +349,13 @@ async function main() {
   // eslint-disable-next-line no-console
   console.log(`- Seed source metadata.mediaFiles: ${batchesWithMetadata}`);
   // eslint-disable-next-line no-console
-  console.log(`- Seed source productMedia fallback: ${batchesWithProductFallback}`);
+  console.log(
+    `- Seed source productMedia fallback: ${batchesWithProductFallback}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `- Seed source open-source flower fallback: ${batchesWithOpenSourceFallback}`
+  );
   // eslint-disable-next-line no-console
   console.log(`- No seed source (skipped): ${batchesWithNoSource}`);
   // eslint-disable-next-line no-console
@@ -356,7 +397,9 @@ async function main() {
 }
 
 main().catch(err => {
-  // eslint-disable-next-line no-console
-  console.error("Seed failed:", err instanceof Error ? err.message : String(err));
+  console.error(
+    "Seed failed:",
+    err instanceof Error ? err.message : String(err)
+  );
   process.exit(1);
 });
