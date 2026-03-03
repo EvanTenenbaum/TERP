@@ -19,6 +19,7 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -57,6 +58,11 @@ import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import { useUndo } from "@/hooks/work-surface/useUndo";
 import { useExport } from "@/hooks/work-surface/useExport";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  isShippingEnabledMode,
+  resolveSalesBusinessMode,
+} from "@/lib/salesMode";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
@@ -553,6 +559,23 @@ function OrderInspector({
 // ============================================================================
 
 export function PickPackWorkSurface() {
+  const [location] = useLocation();
+  const { hasAnyPermission } = usePermissions();
+  const salesBusinessMode = useMemo(
+    () => resolveSalesBusinessMode(location),
+    [location]
+  );
+  const shippingEnabled = isShippingEnabledMode(salesBusinessMode);
+  const canManagePickPack = hasAnyPermission([
+    "pick-pack:manage",
+    "orders:manage",
+    "orders:fulfill",
+    "orders:update",
+  ]);
+  const readyCtaLabel = shippingEnabled
+    ? "Mark Ready for Shipping (R)"
+    : "Mark Ready for Payment (R)";
+
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
@@ -802,7 +825,11 @@ export function PickPackWorkSurface() {
       void refetchPickList();
       void refetchStats();
       setSaved();
-      toast.success("Order marked ready for shipping");
+      toast.success(
+        shippingEnabled
+          ? "Order marked ready for shipping"
+          : "Order marked ready for payment handoff"
+      );
       if (priorFilter !== "ALL" && priorFilter !== "READY") {
         toast.info(
           `Order moved to READY and is now hidden by the ${priorFilter.toLowerCase()} filter. Switch to All or Ready to keep tracking it.`
@@ -841,6 +868,9 @@ export function PickPackWorkSurface() {
   }, [itemSelection]);
 
   const handlePackSelected = useCallback(() => {
+    if (!canManagePickPack) {
+      return;
+    }
     if (selectedOrderId && selectedItems.length > 0) {
       const orderId = selectedOrderId;
       const itemIds = [...selectedItems];
@@ -868,6 +898,7 @@ export function PickPackWorkSurface() {
       );
     }
   }, [
+    canManagePickPack,
     packItemsMutation,
     registerAction,
     selectedItems,
@@ -876,6 +907,9 @@ export function PickPackWorkSurface() {
   ]);
 
   const handleMarkAllPacked = useCallback(() => {
+    if (!canManagePickPack) {
+      return;
+    }
     if (selectedOrderId) {
       const orderId = selectedOrderId;
       const itemIds = unpackedItems.map(item => item.id);
@@ -901,6 +935,7 @@ export function PickPackWorkSurface() {
       );
     }
   }, [
+    canManagePickPack,
     markAllPackedMutation,
     registerAction,
     selectedOrderId,
@@ -909,10 +944,13 @@ export function PickPackWorkSurface() {
   ]);
 
   const handleMarkReady = useCallback(() => {
+    if (!canManagePickPack) {
+      return;
+    }
     if (selectedOrderId) {
       markReadyMutation.mutate({ orderId: selectedOrderId });
     }
-  }, [selectedOrderId, markReadyMutation]);
+  }, [canManagePickPack, selectedOrderId, markReadyMutation]);
 
   const handleExportManifest = useCallback(() => {
     if (!orderDetails || pickPackManifestRows.length === 0) {
@@ -1022,6 +1060,7 @@ export function PickPackWorkSurface() {
         p: () => handlePackSelected(),
         a: () => selectAllUnpacked(),
         r: () => handleMarkReady(),
+        // Status changing shortcuts are disabled for read-only users.
         i: () => {
           if (focusZone === "items" && orderDetails?.items[focusedItemIndex]) {
             openItemInspector(orderDetails.items[focusedItemIndex].id);
@@ -1323,7 +1362,12 @@ export function PickPackWorkSurface() {
                 variant="outline"
                 size="sm"
                 onClick={selectAllUnpacked}
-                disabled={unpackedItems.length === 0}
+                disabled={unpackedItems.length === 0 || !canManagePickPack}
+                title={
+                  canManagePickPack
+                    ? undefined
+                    : "Pick & Pack manage permissions required"
+                }
               >
                 <CheckSquare className="w-4 h-4 mr-2" />
                 Select All (A)
@@ -1351,7 +1395,14 @@ export function PickPackWorkSurface() {
                 size="sm"
                 onClick={handlePackSelected}
                 disabled={
-                  selectedItems.length === 0 || packItemsMutation.isPending
+                  selectedItems.length === 0 ||
+                  packItemsMutation.isPending ||
+                  !canManagePickPack
+                }
+                title={
+                  canManagePickPack
+                    ? undefined
+                    : "Pick & Pack manage permissions required"
                 }
               >
                 {packItemsMutation.isPending ? (
@@ -1366,7 +1417,14 @@ export function PickPackWorkSurface() {
                 size="sm"
                 onClick={handleMarkAllPacked}
                 disabled={
-                  unpackedItems.length === 0 || markAllPackedMutation.isPending
+                  unpackedItems.length === 0 ||
+                  markAllPackedMutation.isPending ||
+                  !canManagePickPack
+                }
+                title={
+                  canManagePickPack
+                    ? undefined
+                    : "Pick & Pack manage permissions required"
                 }
               >
                 Pack All to One Bag
@@ -1379,16 +1437,22 @@ export function PickPackWorkSurface() {
                 disabled={
                   orderDetails.summary.packedItems <
                     orderDetails.summary.totalItems ||
-                  markReadyMutation.isPending
+                  markReadyMutation.isPending ||
+                  !canManagePickPack
                 }
                 className="bg-green-600 hover:bg-green-700"
+                title={
+                  canManagePickPack
+                    ? undefined
+                    : "Pick & Pack manage permissions required"
+                }
               >
                 {markReadyMutation.isPending ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <Truck className="w-4 h-4 mr-2" />
                 )}
-                Mark Ready (R)
+                {readyCtaLabel}
               </Button>
             </div>
 
