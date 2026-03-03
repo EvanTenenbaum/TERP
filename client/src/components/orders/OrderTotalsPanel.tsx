@@ -38,13 +38,13 @@ export function OrderTotalsPanel({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
           Order Totals
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Subtotal */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Subtotal</span>
@@ -104,8 +104,8 @@ export function OrderTotalsPanel({
         {/* Total */}
         <Separator />
         <div className="flex items-center justify-between">
-          <span className="text-lg font-semibold">Total</span>
-          <span className="text-2xl font-bold">{fmt(totals.total)}</span>
+          <span className="text-base font-semibold">Total</span>
+          <span className="text-xl font-bold">{fmt(totals.total)}</span>
         </div>
 
         {/* Warnings */}
@@ -113,7 +113,7 @@ export function OrderTotalsPanel({
           <>
             <Separator />
             <div className="space-y-2">
-              {warnings.map((warning) => (
+              {warnings.map(warning => (
                 <Alert
                   key={`warning-${warning.substring(0, 40)}`}
                   variant="default"

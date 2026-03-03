@@ -328,9 +328,9 @@ export function LineItemTable({
   }, [bulkActions, bulkCogsPerUnit]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Line Items</h3>
+        <h3 className="text-base font-semibold">Line Items</h3>
         <div className="flex gap-2">
           {items.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleClearAll}>
@@ -413,7 +413,7 @@ export function LineItemTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">
+                <TableHead className="w-[36px] py-2 text-xs uppercase tracking-wide">
                   <Checkbox
                     aria-label="Select all line items"
                     checked={
@@ -428,18 +428,28 @@ export function LineItemTable({
                     }
                   />
                 </TableHead>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead className="text-right w-[100px]">Qty</TableHead>
-                <TableHead className="text-right w-[120px]">
+                <TableHead className="w-[36px] py-2 text-xs uppercase tracking-wide">
+                  #
+                </TableHead>
+                <TableHead className="py-2 text-xs uppercase tracking-wide">
+                  Product
+                </TableHead>
+                <TableHead className="text-right w-[90px] py-2 text-xs uppercase tracking-wide">
+                  Qty
+                </TableHead>
+                <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
                   COGS/Unit
                 </TableHead>
-                <TableHead className="text-right w-[120px]">Margin</TableHead>
-                <TableHead className="text-right w-[120px]">
+                <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
+                  Margin
+                </TableHead>
+                <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
                   Price/Unit
                 </TableHead>
-                <TableHead className="text-right w-[120px]">Total</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
+                <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
+                  Total
+                </TableHead>
+                <TableHead className="w-[72px] py-2 text-xs uppercase tracking-wide"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -170,7 +170,7 @@ export const LineItemRow = memo(function LineItemRow({
       className={selected ? "bg-muted/50" : undefined}
     >
       {/* Selection */}
-      <TableCell className="w-[40px]">
+      <TableCell className="w-[36px] py-2">
         <Checkbox
           checked={selected}
           onCheckedChange={checked => onToggleSelected?.(checked === true)}
@@ -179,14 +179,14 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* Index */}
-      <TableCell className="font-medium text-muted-foreground">
+      <TableCell className="py-2 font-medium text-muted-foreground text-xs">
         {index + 1}
       </TableCell>
 
       {/* FEAT-006: Product Name Primary, SKU/Batch Secondary */}
-      <TableCell>
+      <TableCell className="py-2">
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium">
+          <span className="font-medium text-sm leading-tight">
             {item.productDisplayName || "Unknown Product"}
           </span>
           <span className="text-xs text-muted-foreground">
@@ -201,7 +201,7 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* Quantity - FEAT-003: Enhanced with validation and keyboard navigation */}
-      <TableCell className="text-right">
+      <TableCell className="text-right py-2">
         {isEditingQty ? (
           <div className="flex items-center justify-end gap-1">
             <Input
@@ -213,14 +213,14 @@ export const LineItemRow = memo(function LineItemRow({
               onBlur={handleQuantityBlur}
               onKeyDown={handleQuantityKeyDown}
               onFocus={e => e.target.select()}
-              className="w-20 h-8 text-right"
+              className="w-16 h-7 text-right text-sm"
               autoFocus
             />
           </div>
         ) : (
           <div
             tabIndex={0}
-            className="cursor-pointer hover:bg-muted px-2 py-1 rounded"
+            className="cursor-pointer hover:bg-muted px-2 py-1 rounded text-sm"
             onClick={() => setIsEditingQty(true)}
             onKeyDown={e => {
               if (e.key === "Enter" || e.key === " ") {
@@ -237,7 +237,7 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* COGS/Unit */}
-      <TableCell className="text-right">
+      <TableCell className="text-right py-2">
         <COGSInput
           value={item.cogsPerUnit}
           originalValue={item.originalCogsPerUnit}
@@ -248,7 +248,7 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* Margin */}
-      <TableCell className="text-right">
+      <TableCell className="text-right py-2">
         <MarginInput
           marginPercent={item.marginPercent}
           marginDollar={item.marginDollar}
@@ -259,7 +259,7 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* Price/Unit */}
-      <TableCell className="text-right">
+      <TableCell className="text-right py-2">
         <div className="flex flex-col items-end">
           <span className="font-medium">{fmt(item.unitPrice)}</span>
           {(hasLowMargin || hasNegativeMargin) && (
@@ -274,12 +274,12 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* Total */}
-      <TableCell className="text-right font-semibold">
+      <TableCell className="text-right py-2 font-semibold">
         {fmt(item.lineTotal)}
       </TableCell>
 
       {/* Actions - WSQA-002: Added lot selection button */}
-      <TableCell>
+      <TableCell className="py-2">
         <div className="flex items-center gap-1">
           {/* WSQA-002: Change Lot button - only show if productId available */}
           {item.productId && onChangeLot && (
