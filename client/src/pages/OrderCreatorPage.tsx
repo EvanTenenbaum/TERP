@@ -25,6 +25,16 @@ import {
 } from "@/components/ui/select";
 import { ClientCombobox } from "@/components/ui/client-combobox";
 import { cn } from "@/lib/utils";
+import { normalizePositiveIntegerWithin } from "@/lib/quantity";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import {
@@ -63,6 +73,8 @@ import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
+import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
@@ -99,6 +111,8 @@ interface InventoryItemForOrder {
   quantity?: number; // Available stock quantity
 }
 
+type CustomerDrawerSection = "credit" | "pricing";
+
 const orderValidationSchema = z.object({
   clientId: z.number().positive("Select a client"),
   orderType: z.enum(["SALE", "QUOTE"]),
@@ -117,6 +131,10 @@ export default function OrderCreatorPageV2() {
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
+  const [customerDrawerSection, setCustomerDrawerSection] =
+    useState<CustomerDrawerSection>("credit");
+  const customerDrawerOriginRef = useRef<HTMLElement | null>(null);
 
   // CHAOS-007: Unsaved changes warning
   const { setHasUnsavedChanges, ConfirmNavigationDialog } =
@@ -137,6 +155,12 @@ export default function OrderCreatorPageV2() {
   const [referredByClientId, setReferredByClientId] = useState<number | null>(
     null
   );
+  const { hasAnyPermission } = usePermissions();
+  const canEditPricing = hasAnyPermission([
+    "pricing:manage",
+    "pricing:update",
+    "pricing:create",
+  ]);
 
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
     useSaveState();
@@ -189,6 +213,19 @@ export default function OrderCreatorPageV2() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!clientId) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchString);
+    const drawerSection = params.get("customerDrawer");
+    if (drawerSection === "credit" || drawerSection === "pricing") {
+      setCustomerDrawerSection(drawerSection);
+      setCustomerDrawerOpen(true);
+    }
+  }, [clientId, searchString]);
+
   // QA-W2-005: Track unsaved changes - consider both items and auto-save status
   // Warning should show when there are items OR when auto-save is pending/failed
   useEffect(() => {
@@ -217,10 +254,11 @@ export default function OrderCreatorPageV2() {
   const clients = Array.isArray(clientsData)
     ? clientsData
     : (clientsData?.items ?? []);
-  const { data: clientDetails } = trpc.clients.getById.useQuery(
-    { clientId: clientId || 0 },
-    { enabled: !!clientId }
-  );
+  const { data: clientDetails, refetch: refetchClientDetails } =
+    trpc.clients.getById.useQuery(
+      { clientId: clientId || 0 },
+      { enabled: !!clientId }
+    );
 
   // Fetch inventory with pricing when client is selected
   // BUG-045: Use useRetryableQuery to preserve form state on retry
@@ -256,6 +294,98 @@ export default function OrderCreatorPageV2() {
       );
     }
   }, [inventoryError]);
+
+  const openCustomerDrawer = useCallback(
+    (
+      section: CustomerDrawerSection,
+      triggerElement?: HTMLElement | null | undefined
+    ) => {
+      customerDrawerOriginRef.current =
+        triggerElement ||
+        (document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null);
+      setCustomerDrawerSection(section);
+      setCustomerDrawerOpen(true);
+    },
+    []
+  );
+
+  const closeCustomerDrawer = useCallback(() => {
+    setCustomerDrawerOpen(false);
+    requestAnimationFrame(() => {
+      customerDrawerOriginRef.current?.focus();
+    });
+  }, []);
+
+  const handleCustomerDrawerOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        setCustomerDrawerOpen(true);
+        return;
+      }
+      closeCustomerDrawer();
+      void refetchClientDetails();
+    },
+    [closeCustomerDrawer, refetchClientDetails]
+  );
+
+  const refreshProfilePricingInOrder = useCallback(async () => {
+    const refreshedInventory = await inventoryQuery.refetch();
+    const latestInventory =
+      (refreshedInventory.data as InventoryItemForOrder[] | undefined) ??
+      (inventory as InventoryItemForOrder[] | undefined) ??
+      [];
+
+    if (latestInventory.length === 0) {
+      return;
+    }
+
+    setItems(currentItems =>
+      currentItems.map(item => {
+        if (item.marginSource === "MANUAL" || item.isMarginOverridden) {
+          return item;
+        }
+
+        const profilePricing = latestInventory.find(
+          inv => inv.id === item.batchId
+        );
+        if (!profilePricing) {
+          return item;
+        }
+
+        const cogsPerUnit = item.cogsPerUnit;
+        const retailPrice =
+          profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
+        const marginPercent =
+          cogsPerUnit > 0
+            ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100
+            : 0;
+        const recalculated = calculateLineItem(
+          item.batchId,
+          item.quantity,
+          cogsPerUnit,
+          marginPercent
+        );
+
+        return {
+          ...item,
+          ...recalculated,
+          marginPercent,
+          marginSource: "CUSTOMER_PROFILE",
+          isMarginOverridden: false,
+        };
+      })
+    );
+  }, [inventory, inventoryQuery]);
+
+  const handlePricingProfileApplied = useCallback(() => {
+    void (async () => {
+      await refreshProfilePricingInOrder();
+      await refetchClientDetails();
+      closeCustomerDrawer();
+    })();
+  }, [closeCustomerDrawer, refreshProfilePricingInOrder, refetchClientDetails]);
 
   // Calculations
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
@@ -512,8 +642,12 @@ export default function OrderCreatorPageV2() {
       const marginPercent =
         cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
 
-      // FEAT-003 + TER-233: Use orderQuantity from InventoryBrowser, or quantity from Sales Sheet bridge, or default to 1
-      const quantity = item.orderQuantity || item.quantity || 1;
+      const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
+      const quantity =
+        normalizePositiveIntegerWithin(
+          item.orderQuantity ?? item.quantity ?? 1,
+          availableUnits
+        ) ?? 1;
 
       // Use calculateLineItem to ensure proper structure
       const calculated = calculateLineItem(
@@ -890,23 +1024,55 @@ export default function OrderCreatorPageV2() {
                 <div className="space-y-4 lg:sticky lg:top-4 self-start">
                   {/* Customer Context Snapshot */}
                   <Card>
-                    <CardContent className="pt-4 space-y-1.5">
+                    <CardContent className="pt-4 space-y-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
                         Customer Context
                       </p>
-                      <p className="text-sm font-semibold">
-                        {clientDetails?.name ?? "Selected customer"}
-                      </p>
-                      {clientDetails?.email ? (
-                        <p className="text-xs text-muted-foreground">
-                          {clientDetails.email}
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-semibold">
+                          {clientDetails?.name ?? "Selected customer"}
                         </p>
-                      ) : null}
-                      {referredByClientId ? (
-                        <p className="text-xs text-muted-foreground">
-                          Referred by{" "}
-                          {clients.find(c => c.id === referredByClientId)
-                            ?.name ?? `Client #${referredByClientId}`}
+                        {clientDetails?.email ? (
+                          <p className="text-xs text-muted-foreground">
+                            {clientDetails.email}
+                          </p>
+                        ) : null}
+                        {referredByClientId ? (
+                          <p className="text-xs text-muted-foreground">
+                            Referred by{" "}
+                            {clients.find(c => c.id === referredByClientId)
+                              ?.name ?? `Client #${referredByClientId}`}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="justify-start"
+                          onClick={event =>
+                            openCustomerDrawer("credit", event.currentTarget)
+                          }
+                        >
+                          Credit Limit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="justify-start"
+                          onClick={event =>
+                            openCustomerDrawer("pricing", event.currentTarget)
+                          }
+                          disabled={!canEditPricing}
+                        >
+                          Pricing Profile
+                        </Button>
+                      </div>
+                      {!canEditPricing ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          Pricing edits require pricing permissions.
                         </p>
                       ) : null}
                     </CardContent>
@@ -1126,6 +1292,61 @@ export default function OrderCreatorPageV2() {
             }
           />
         </section>
+
+        <Drawer
+          open={customerDrawerOpen}
+          onOpenChange={handleCustomerDrawerOpenChange}
+          direction="right"
+        >
+          <DrawerContent className="w-[760px] sm:max-w-none">
+            <DrawerHeader>
+              <DrawerTitle>Customer Controls</DrawerTitle>
+              <DrawerDescription>
+                Credit and pricing configuration uses a shared right-drawer
+                contract. Successful saves return focus to the source control.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 overflow-y-auto">
+              <Tabs
+                value={customerDrawerSection}
+                onValueChange={value =>
+                  setCustomerDrawerSection(value as CustomerDrawerSection)
+                }
+                className="space-y-4"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="credit">Credit Limit</TabsTrigger>
+                  <TabsTrigger value="pricing" disabled={!canEditPricing}>
+                    Pricing Profile
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="credit" className="space-y-4">
+                  {clientId ? (
+                    <CreditLimitWidget
+                      clientId={clientId}
+                      showAdjustControls={true}
+                      defaultExpanded={true}
+                    />
+                  ) : null}
+                </TabsContent>
+                <TabsContent value="pricing" className="space-y-4">
+                  {clientId && canEditPricing ? (
+                    <PricingConfigTab
+                      clientId={clientId}
+                      onProfileApplied={handlePricingProfileApplied}
+                    />
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8 text-sm text-muted-foreground">
+                        You do not have permission to edit pricing profiles.
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          </DrawerContent>
+        </Drawer>
 
         {/* Credit Warning Dialog */}
         <CreditWarningDialog

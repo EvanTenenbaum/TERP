@@ -23,24 +23,24 @@
 
 ## Checkpoint Status
 
-| Checkpoint | Scope            | Status      | Branch SHA(s) | Main merge SHA | Staging QA | Blockers / Next Action                           |
-| ---------- | ---------------- | ----------- | ------------- | -------------- | ---------- | ------------------------------------------------ |
-| 1          | TER-479..TER-481 | IN_PROGRESS | 9bdac222      | -              | pending    | Prepare checkpoint PR/merge, then run staging QA |
-| 2          | TER-482..TER-487 | TODO        | -             | -              | -          | Wait for checkpoint 1 PASS                       |
-| 3          | TER-488..TER-491 | TODO        | -             | -              | -          | Wait for checkpoint 2 PASS                       |
-| 4          | TER-492..TER-506 | TODO        | -             | -              | -          | Wait for checkpoint 3 PASS                       |
-| 5          | TER-507..TER-516 | TODO        | -             | -              | -          | Wait for checkpoint 4 PASS                       |
-| 6          | TER-517..TER-522 | TODO        | -             | -              | -          | Wait for checkpoint 5 PASS                       |
+| Checkpoint | Scope            | Status   | Branch SHA(s)      | Main merge SHA | Staging QA | Blockers / Next Action                                             |
+| ---------- | ---------------- | -------- | ------------------ | -------------- | ---------- | ------------------------------------------------------------------ |
+| 1          | TER-479..TER-481 | COMPLETE | 9bdac222, 93865748 | 09270483       | PASS       | Rebase delivery branch on latest `origin/main`; start checkpoint 2 |
+| 2          | TER-482..TER-487 | TODO     | -                  | -              | -          | Wait for checkpoint 1 PASS                                         |
+| 3          | TER-488..TER-491 | TODO     | -                  | -              | -          | Wait for checkpoint 2 PASS                                         |
+| 4          | TER-492..TER-506 | TODO     | -                  | -              | -          | Wait for checkpoint 3 PASS                                         |
+| 5          | TER-507..TER-516 | TODO     | -                  | -              | -          | Wait for checkpoint 4 PASS                                         |
+| 6          | TER-517..TER-522 | TODO     | -                  | -              | -          | Wait for checkpoint 5 PASS                                         |
 
 ## Ticket Status Matrix
 
 ### Checkpoint 1 (Wave 1)
 
-| Ticket  | Atomic | Risk   | Status        | Commit   | Verification                                                                          | QA Gate               | Staging Evidence              | Blocker |
-| ------- | ------ | ------ | ------------- | -------- | ------------------------------------------------------------------------------------- | --------------------- | ----------------------------- | ------- |
-| TER-479 | CF-001 | STRICT | QA_PASS_LOCAL | 9bdac222 | check/lint/test/build PASS + targeted `LineItemTable` + manual scan-path review       | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
-| TER-480 | CF-002 | STRICT | QA_PASS_LOCAL | 9bdac222 | check/lint/test/build PASS + targeted `ConsolidatedWorkspaces`                        | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
-| TER-481 | CF-003 | STRICT | QA_PASS_LOCAL | 9bdac222 | check/lint/test/build PASS + targeted `LineItemTable` + composer hierarchy validation | QG-1..QG-4 local PASS | pending checkpoint staging QA | -       |
+| Ticket  | Atomic | Risk   | Status | Commit   | Verification                                                                          | QA Gate         | Staging Evidence                                                                                                | Blocker |
+| ------- | ------ | ------ | ------ | -------- | ------------------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------- | ------- |
+| TER-479 | CF-001 | STRICT | DONE   | 9bdac222 | check/lint/test/build PASS + targeted `LineItemTable` + manual scan-path review       | QG-1..QG-4 PASS | `.playwright-cli/page-2026-03-02T16-15-35-create-order.png`                                                     | -       |
+| TER-480 | CF-002 | STRICT | DONE   | 9bdac222 | check/lint/test/build PASS + targeted `ConsolidatedWorkspaces`                        | QG-1..QG-4 PASS | `.playwright-cli/page-2026-03-02T16-15-55-orders.png`, `.playwright-cli/page-2026-03-02T16-16-01-pick-pack.png` | -       |
+| TER-481 | CF-003 | STRICT | DONE   | 9bdac222 | check/lint/test/build PASS + targeted `LineItemTable` + composer hierarchy validation | QG-1..QG-4 PASS | `.playwright-cli/page-2026-03-02T16-15-35-create-order.png`                                                     | -       |
 
 ### Checkpoint 2 (Wave 2)
 
@@ -132,3 +132,15 @@
 - Targeted tests rerun:
   - `pnpm test client/src/components/orders/LineItemTable.test.tsx`: PASS
   - `pnpm test client/src/pages/ConsolidatedWorkspaces.test.tsx`: PASS
+- Checkpoint 1 promotion:
+  - PR merged: `https://github.com/EvanTenenbaum/TERP/pull/451`
+  - Main merge SHA: `09270483d0a99834328deeed65bea991eae8865a`
+  - Delivery branch sync commit: `93865748`
+- Checkpoint 1 staging QA:
+  - Deployment active in `terp-staging` app id `62f2d9f8-3fb5-4576-9f7b-8dd91cf552a6`.
+  - Staging health: `https://terp-staging-yicld.ondigitalocean.app/health` (healthy).
+  - Version endpoint: `buildTime=2026-03-03T00:04:31.295Z`, `commit=build-mm9uijzn`.
+  - UI proof captures:
+    - Orders toolbar contract and `New Sale`: `.playwright-cli/page-2026-03-02T16-15-55-orders.png`
+    - Pick & Pack toolbar contract: `.playwright-cli/page-2026-03-02T16-16-01-pick-pack.png`
+    - Create Order hierarchy + compact layout: `.playwright-cli/page-2026-03-02T16-15-35-create-order.png`
