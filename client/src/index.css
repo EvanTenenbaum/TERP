@@ -500,6 +500,43 @@
   }
 
   /**
+   * Global compact density mode for data-dense surfaces:
+   * - shadcn table-based grids
+   * - AG Grid spreadsheet views
+   * - line-item editing rows
+   */
+  :root[data-view-density="compact"] [data-slot="table-head"] {
+    height: 2rem;
+    padding-top: 0.22rem;
+    padding-bottom: 0.22rem;
+    font-size: 0.68rem;
+    line-height: 1;
+  }
+
+  :root[data-view-density="compact"] [data-slot="table-cell"] {
+    padding-top: 0.24rem;
+    padding-bottom: 0.24rem;
+    font-size: 0.78rem;
+    line-height: 1.2;
+  }
+
+  :root[data-view-density="compact"] [data-line-item-quantity-trigger] {
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+    font-size: 0.78rem;
+    line-height: 1.15;
+  }
+
+  :root[data-view-density="compact"] .ag-theme-alpine {
+    --ag-grid-size: 3px;
+    --ag-header-height: 32px;
+    --ag-row-height: 30px;
+    --ag-list-item-height: 28px;
+    --ag-cell-horizontal-padding: 6px;
+    --ag-font-size: 12px;
+  }
+
+  /**
    * MOBILE-UX-AUDIT: Global mobile touch target enforcement
    * Ensures all interactive elements meet WCAG 44x44px minimum on touch devices.
    * Applied only below the md breakpoint (< 768px) to avoid affecting desktop.

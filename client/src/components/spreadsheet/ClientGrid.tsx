@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import type { ClientGridRow, ClientGridSummary } from "@/types/spreadsheet";
 import { Loader2 } from "lucide-react";
 
@@ -25,6 +26,7 @@ const currencyFormatter = (value: number): string =>
 
 export const ClientGrid = React.memo(function ClientGrid() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const { isCompact } = useUiDensity();
 
   const {
     data: clientsData,
@@ -229,10 +231,13 @@ export const ClientGrid = React.memo(function ClientGrid() {
             {error && !isLoading && (
               <div className="mb-3 text-sm text-destructive">
                 {/* BUG-088 fix: Show user-friendly error instead of raw SQL/query errors */}
-                Unable to load client orders. Please try again or contact support if the issue persists.
+                Unable to load client orders. Please try again or contact
+                support if the issue persists.
               </div>
             )}
-            {!isLoading && !error && (!gridData?.rows || gridData.rows.length === 0) ? (
+            {!isLoading &&
+            !error &&
+            (!gridData?.rows || gridData.rows.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <p className="text-lg font-medium text-muted-foreground mb-2">
                   No orders found for this client
@@ -246,6 +251,8 @@ export const ClientGrid = React.memo(function ClientGrid() {
                 rowData={gridData?.rows ?? []}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
+                rowHeight={isCompact ? 30 : undefined}
+                headerHeight={isCompact ? 32 : undefined}
                 getRowStyle={getRowStyle}
                 animateRows
                 pagination

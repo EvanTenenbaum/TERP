@@ -103,5 +103,8 @@ describe("AppHeader - Notification Bell", () => {
     // Check for unread badge - should show the mocked unread count
     const badge = screen.getByText("2");
     expect(badge).toBeInTheDocument();
+
+    const densityToggle = screen.getByTestId("density-toggle-button");
+    expect(densityToggle).toBeInTheDocument();
   });
 });

@@ -24,6 +24,11 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  isShippingEnabledMode,
+  resolveSalesBusinessMode,
+} from "@/lib/salesMode";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -100,7 +105,18 @@ interface Order {
   clientId: number;
   isDraft: boolean;
   orderType?: string;
-  fulfillmentStatus?: string;
+  fulfillmentStatus?:
+    | "PENDING"
+    | "PACKED"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "RETURNED"
+    | "RESTOCKED"
+    | "RETURNED_TO_VENDOR"
+    | "CANCELLED"
+    | "DRAFT"
+    | "CONFIRMED"
+    | null;
   saleStatus?: string;
   invoiceId?: number | null;
   total: string;
@@ -120,6 +136,11 @@ interface ClientSummary {
   id: number;
   name?: string | null;
 }
+
+type FulfillmentStatusValue = Exclude<
+  Order["fulfillmentStatus"],
+  null | undefined
+>;
 
 // ============================================================================
 // CONSTANTS
@@ -228,6 +249,20 @@ const buildConfirmedQueryInput = (
 const normalizeStatus = (status?: string | null): string =>
   String(status ?? "").toUpperCase();
 
+export function getStatusFilterExitMessage(params: {
+  orderNumber: string;
+  fromFilter: string;
+  toStatus: string;
+}): string | null {
+  const normalizedFilter = normalizeStatus(params.fromFilter);
+  const normalizedTarget = normalizeStatus(params.toStatus);
+  if (normalizedFilter === "ALL" || normalizedFilter === normalizedTarget) {
+    return null;
+  }
+
+  return `${params.orderNumber} moved to ${normalizedTarget} and is now hidden by the ${normalizedFilter.toLowerCase()} filter. Switch to All to keep tracking it.`;
+}
+
 // ============================================================================
 // STATUS BADGE
 // ============================================================================
@@ -236,7 +271,7 @@ function OrderStatusBadge({
   status,
   isDraft,
 }: {
-  status?: string;
+  status?: string | null;
   isDraft?: boolean;
 }) {
   const displayStatus = isDraft ? "DRAFT" : status || "PENDING";
@@ -260,7 +295,11 @@ interface OrderInspectorProps {
   order: Order | null;
   clientName: string;
   cogsLineItems: OrderCOGSLineItem[];
+  shippingEnabled: boolean;
+  canManageShipping: boolean;
+  canAccessAccounting: boolean;
   onEdit: (orderId: number) => void;
+  onMakePayment: (orderId: number) => void;
   onConfirm: (orderId: number) => void;
   onConfirmFulfillment?: (orderId: number) => void;
   onDelete: (orderId: number) => void;
@@ -276,7 +315,11 @@ function OrderInspectorContent({
   order,
   clientName,
   cogsLineItems,
+  shippingEnabled,
+  canManageShipping,
+  canAccessAccounting,
   onEdit,
+  onMakePayment,
   onConfirm,
   onConfirmFulfillment,
   onDelete,
@@ -421,10 +464,37 @@ function OrderInspectorContent({
             </>
           ) : (
             <>
+              <div className="pb-1">
+                <Badge variant="outline" className="text-xs">
+                  {shippingEnabled
+                    ? "Shipping-enabled mode"
+                    : "Non-shipping mode"}
+                </Badge>
+              </div>
+
+              {!shippingEnabled && order.orderType === "SALE" && (
+                <Button
+                  variant="default"
+                  className="w-full justify-start"
+                  data-testid="make-payment-btn"
+                  onClick={() => onMakePayment(order.id)}
+                  disabled={!canAccessAccounting}
+                  title={
+                    canAccessAccounting
+                      ? "Open accounting payments context"
+                      : "Accounting permissions required"
+                  }
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Make Payment
+                </Button>
+              )}
+
               {/* WSQA-003: Status-based actions */}
               {order.fulfillmentStatus === "PENDING" &&
                 onConfirmFulfillment &&
-                !order.confirmedAt && (
+                !order.confirmedAt &&
+                canManageShipping && (
                   <Button
                     variant="outline"
                     className="w-full justify-start"
@@ -436,17 +506,19 @@ function OrderInspectorContent({
                   </Button>
                 )}
               {(order.fulfillmentStatus === "PENDING" ||
-                order.fulfillmentStatus === "PACKED") && (
-                <Button
-                  variant="default"
-                  className="w-full justify-start"
-                  data-testid="ship-order-btn"
-                  onClick={() => onShip(order.id)}
-                >
-                  <Truck className="h-4 w-4 mr-2" />
-                  Ship Order
-                </Button>
-              )}
+                order.fulfillmentStatus === "PACKED") &&
+                shippingEnabled &&
+                canManageShipping && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="ship-order-btn"
+                    onClick={() => onShip(order.id)}
+                  >
+                    <Truck className="h-4 w-4 mr-2" />
+                    Ship Order
+                  </Button>
+                )}
               {order.orderType === "SALE" &&
                 !order.invoiceId &&
                 order.fulfillmentStatus &&
@@ -468,7 +540,8 @@ function OrderInspectorContent({
               {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
               {(order.fulfillmentStatus === "SHIPPED" ||
                 order.fulfillmentStatus === "DELIVERED") &&
-                onMarkReturned && (
+                onMarkReturned &&
+                canManageShipping && (
                   <Button
                     variant="outline"
                     className="w-full justify-start text-orange-600 hover:text-orange-700"
@@ -479,7 +552,7 @@ function OrderInspectorContent({
                   </Button>
                 )}
               {/* WSQA-003: Processing paths for RETURNED orders */}
-              {order.fulfillmentStatus === "RETURNED" && (
+              {order.fulfillmentStatus === "RETURNED" && canManageShipping && (
                 <>
                   {onProcessRestock && (
                     <Button
@@ -520,9 +593,28 @@ function OrderInspectorContent({
 // ============================================================================
 
 export function OrdersWorkSurface() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const trpcUtils = trpc.useUtils();
+  const { hasAnyPermission } = usePermissions();
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const salesBusinessMode = useMemo(
+    () => resolveSalesBusinessMode(location),
+    [location]
+  );
+  const shippingEnabled = isShippingEnabledMode(salesBusinessMode);
+  const canManageShipping = hasAnyPermission([
+    "orders:update",
+    "orders:fulfill",
+    "orders:manage",
+  ]);
+  const canAccessAccounting = hasAnyPermission([
+    "accounting:access",
+    "accounting:read",
+    "accounting:create",
+    "accounting:transactions:read",
+    "accounting:transactions:create",
+  ]);
 
   // State
   const [activeTab, setActiveTab] = useState<"draft" | "confirmed">(
@@ -645,8 +737,7 @@ export function OrdersWorkSurface() {
   );
 
   const patchConfirmedOrderStatus = useCallback(
-    (orderId: number) => {
-      const targetStatus = "SHIPPED" as const;
+    (orderId: number, targetStatus: FulfillmentStatusValue) => {
       const statusFilters = FULFILLMENT_STATUSES.map(status =>
         status.value === "ALL" ? undefined : status.value
       );
@@ -688,6 +779,23 @@ export function OrdersWorkSurface() {
       }
     },
     [trpcUtils]
+  );
+
+  const notifyStatusFilterExit = useCallback(
+    (order: Order | null, nextStatus: string) => {
+      if (!order || activeTab !== "confirmed") {
+        return;
+      }
+      const message = getStatusFilterExitMessage({
+        orderNumber: order.orderNumber || `Order #${order.id}`,
+        fromFilter: statusFilter,
+        toStatus: nextStatus,
+      });
+      if (message) {
+        toast.info(message);
+      }
+    },
+    [activeTab, statusFilter]
   );
 
   // Helpers
@@ -842,6 +950,10 @@ export function OrdersWorkSurface() {
   const confirmFulfillmentMutation = trpc.orders.confirmOrder.useMutation({
     onMutate: () => setSaving("Confirming for fulfillment..."),
     onSuccess: () => {
+      if (selectedOrderId) {
+        patchConfirmedOrderStatus(selectedOrderId, "PENDING");
+      }
+      notifyStatusFilterExit(selectedOrder, "PENDING");
       toast.success("Order confirmed for fulfillment");
       setSaved();
       void refetchConfirmed();
@@ -863,8 +975,9 @@ export function OrdersWorkSurface() {
       const shippedOrderId =
         typeof result?.orderId === "number" ? result.orderId : selectedOrderId;
       if (typeof shippedOrderId === "number") {
-        patchConfirmedOrderStatus(shippedOrderId);
+        patchConfirmedOrderStatus(shippedOrderId, "SHIPPED");
       }
+      notifyStatusFilterExit(selectedOrder, "SHIPPED");
 
       toast.success("Order shipped");
       setSaved();
@@ -887,6 +1000,10 @@ export function OrdersWorkSurface() {
   const markAsReturnedMutation = trpc.orders.markAsReturned.useMutation({
     onMutate: () => setSaving("Marking as returned..."),
     onSuccess: () => {
+      if (selectedOrderId) {
+        patchConfirmedOrderStatus(selectedOrderId, "RETURNED");
+      }
+      notifyStatusFilterExit(selectedOrder, "RETURNED");
       toast.success("Order marked as returned");
       setSaved();
       void refetchConfirmed();
@@ -904,6 +1021,10 @@ export function OrdersWorkSurface() {
   const processRestockMutation = trpc.orders.processRestock.useMutation({
     onMutate: () => setSaving("Restocking inventory..."),
     onSuccess: () => {
+      if (selectedOrderId) {
+        patchConfirmedOrderStatus(selectedOrderId, "RESTOCKED");
+      }
+      notifyStatusFilterExit(selectedOrder, "RESTOCKED");
       toast.success("Inventory restocked successfully");
       setSaved();
       void refetchConfirmed();
@@ -921,6 +1042,10 @@ export function OrdersWorkSurface() {
     trpc.orders.processVendorReturn.useMutation({
       onMutate: () => setSaving("Processing vendor return..."),
       onSuccess: () => {
+        if (selectedOrderId) {
+          patchConfirmedOrderStatus(selectedOrderId, "RETURNED_TO_VENDOR");
+        }
+        notifyStatusFilterExit(selectedOrder, "RETURNED_TO_VENDOR");
         toast.success("Vendor return processed successfully");
         setSaved();
         void refetchConfirmed();
@@ -1039,6 +1164,9 @@ export function OrdersWorkSurface() {
   const handleShip = (orderId: number) => {
     setSelectedOrderId(orderId);
     setShowShipDialog(true);
+  };
+  const handleMakePayment = (orderId: number) => {
+    setLocation(`/accounting?tab=payments&orderId=${orderId}&from=sales`);
   };
   const handleGenerateInvoice = (orderId: number) => {
     generateInvoiceMutation.mutate({ orderId });
@@ -1284,7 +1412,11 @@ export function OrdersWorkSurface() {
               selectedOrder ? getClientName(selectedOrder.clientId) : ""
             }
             cogsLineItems={cogsLineItems}
+            shippingEnabled={shippingEnabled}
+            canManageShipping={canManageShipping}
+            canAccessAccounting={canAccessAccounting}
             onEdit={handleEdit}
+            onMakePayment={handleMakePayment}
             onConfirm={handleConfirm}
             onConfirmFulfillment={handleConfirmFulfillment}
             onDelete={handleDelete}

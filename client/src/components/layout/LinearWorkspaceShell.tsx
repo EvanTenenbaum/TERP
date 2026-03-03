@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Command, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import { cn } from "@/lib/utils";
 
 export interface LinearWorkspaceTab<T extends string = string> {
@@ -31,6 +33,8 @@ export function LinearWorkspaceShell<T extends string>({
   children,
   className,
 }: LinearWorkspaceShellProps<T>) {
+  const { isCompact, toggleDensity } = useUiDensity();
+
   return (
     <section className={cn("linear-workspace-shell", className)}>
       <header className="linear-workspace-header">
@@ -42,14 +46,16 @@ export function LinearWorkspaceShell<T extends string>({
           </div>
         </div>
 
-        <div className="linear-workspace-shortcuts" aria-label="Workspace shortcuts">
+        <div
+          className="linear-workspace-shortcuts"
+          aria-label="Workspace shortcuts"
+        >
           <span className="linear-workspace-shortcut-chip">
             <Search className="h-3.5 w-3.5" />
             Search
           </span>
           <span className="linear-workspace-shortcut-chip">
-            <Command className="h-3.5 w-3.5" />
-            K
+            <Command className="h-3.5 w-3.5" />K
           </span>
         </div>
       </header>
@@ -71,7 +77,12 @@ export function LinearWorkspaceShell<T extends string>({
         className="linear-workspace-tabs"
       >
         <div className="linear-workspace-tab-row">
-          <TabsList className={cn("linear-workspace-tabs-list", `linear-workspace-tabs-count-${tabs.length}`)}>
+          <TabsList
+            className={cn(
+              "linear-workspace-tabs-list",
+              `linear-workspace-tabs-count-${tabs.length}`
+            )}
+          >
             {tabs.map(tab => (
               <TabsTrigger
                 key={tab.value}
@@ -82,7 +93,17 @@ export function LinearWorkspaceShell<T extends string>({
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="linear-workspace-command-strip">{commandStrip}</div>
+          <div className="linear-workspace-command-strip">
+            {commandStrip}
+            <Button
+              size="sm"
+              variant={isCompact ? "secondary" : "outline"}
+              onClick={toggleDensity}
+              data-testid="workspace-density-toggle"
+            >
+              {isCompact ? "Comfortable" : "Compact"}
+            </Button>
+          </div>
         </div>
         {children}
       </Tabs>
@@ -95,7 +116,10 @@ interface LinearWorkspacePanelProps {
   children: ReactNode;
 }
 
-export function LinearWorkspacePanel({ value, children }: LinearWorkspacePanelProps) {
+export function LinearWorkspacePanel({
+  value,
+  children,
+}: LinearWorkspacePanelProps) {
   return (
     <TabsContent value={value} className="linear-workspace-content">
       {children}

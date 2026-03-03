@@ -56,6 +56,7 @@ import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { useUndo } from "@/hooks/work-surface/useUndo";
 import { useExport, usePowersheetSelection } from "@/hooks/work-surface";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import {
   createDirectIntakeRemovalPlan,
   submitRowsWithGuaranteedCleanup,
@@ -727,6 +728,7 @@ function RowInspectorContent({
 // ============================================================================
 
 export function DirectIntakeWorkSurface() {
+  const { isCompact } = useUiDensity();
   // TER-218: Start with multiple rows for faster multi-item intake
   const INITIAL_ROW_COUNT = 5;
   const [rows, setRows] = useState<IntakeGridRow[]>(() =>
@@ -2220,6 +2222,8 @@ export function DirectIntakeWorkSurface() {
                 rowData={rows}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
+                rowHeight={isCompact ? 30 : undefined}
+                headerHeight={isCompact ? 32 : undefined}
                 animateRows
                 rowSelection={{
                   mode: "multiRow",

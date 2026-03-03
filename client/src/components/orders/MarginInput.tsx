@@ -37,6 +37,9 @@ export function MarginInput({
   const [isEditing, setIsEditing] = useState(false);
   const [inputMode, setInputMode] = useState<"percent" | "dollar">("dollar");
   const [inputValue, setInputValue] = useState(marginDollar.toFixed(2));
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (isEditing) {
@@ -87,14 +90,42 @@ export function MarginInput({
     return "text-green-700";
   };
 
-  const handleSave = () => {
-    const value = parseFloat(inputValue);
-    if (!isNaN(value)) {
-      const marginPercentValue =
-        inputMode === "dollar" ? marginPercentFromDollar(value) : value;
-      onChange(marginPercentValue, true);
-      setIsEditing(false);
+  const validateInput = (): string | null => {
+    const trimmed = inputValue.trim();
+    const fieldLabel = inputMode === "percent" ? "Margin (%)" : "Margin ($)";
+    if (!trimmed) {
+      return `Field: ${fieldLabel}. Rule: value is required. Fix: enter a numeric value before saving.`;
     }
+
+    const parsed = Number.parseFloat(trimmed);
+    if (!Number.isFinite(parsed)) {
+      return `Field: ${fieldLabel}. Rule: must be numeric. Fix: enter only digits (for example ${inputMode === "percent" ? "12.5" : "12.50"}).`;
+    }
+
+    if (inputMode === "percent" && parsed < -100) {
+      return "Field: Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target markup.";
+    }
+
+    if (inputMode === "dollar" && cogsPerUnit <= 0 && parsed !== 0) {
+      return "Field: Margin ($). Rule: dollar mode requires a positive COGS baseline. Fix: update COGS first or set margin to 0.";
+    }
+
+    return null;
+  };
+
+  const handleSave = () => {
+    const errorMessage = validateInput();
+    if (errorMessage) {
+      setValidationMessage(errorMessage);
+      return;
+    }
+
+    const value = parseFloat(inputValue);
+    const marginPercentValue =
+      inputMode === "dollar" ? marginPercentFromDollar(value) : value;
+    onChange(marginPercentValue, true);
+    setValidationMessage(null);
+    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -103,11 +134,20 @@ export function MarginInput({
         ? marginDollar.toFixed(2)
         : marginPercent.toFixed(1)
     );
+    setValidationMessage(null);
     setIsEditing(false);
   };
 
   return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
+    <Popover
+      open={isEditing}
+      onOpenChange={open => {
+        setIsEditing(open);
+        if (!open) {
+          setValidationMessage(null);
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <div className="flex flex-col items-end gap-1 cursor-pointer hover:bg-muted px-2 py-1 rounded">
           <div className="flex items-center gap-2">
@@ -123,6 +163,18 @@ export function MarginInput({
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
+          {validationMessage && (
+            <div
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-2"
+              role="alert"
+            >
+              <p className="text-sm font-medium text-destructive">
+                Cannot save margin
+              </p>
+              <p className="text-xs text-destructive">{validationMessage}</p>
+            </div>
+          )}
+
           <div>
             <h4 className="font-semibold mb-2">Edit Margin</h4>
             <p className="text-sm text-muted-foreground">
@@ -172,12 +224,20 @@ export function MarginInput({
               type="number"
               step={inputMode === "percent" ? "0.1" : "0.01"}
               value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
+              onChange={e => {
+                setInputValue(e.target.value);
+                if (validationMessage) {
+                  setValidationMessage(null);
+                }
+              }}
               onKeyDown={e => {
                 if (e.key === "Enter") handleSave();
                 if (e.key === "Escape") handleCancel();
               }}
             />
+            {validationMessage && (
+              <p className="text-xs text-destructive">{validationMessage}</p>
+            )}
             <p className="text-xs text-muted-foreground">
               Negative values create a loss (discount)
             </p>

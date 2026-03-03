@@ -6,14 +6,20 @@ import superjson from "superjson";
 import "@/lib/ag-grid";
 import App from "./App";
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
+import { initializeUiDensity } from "@/lib/uiDensity";
 import "./index.css";
+
+initializeUiDensity();
 
 // Initialize Sentry AFTER all other imports to prevent blocking
 // Sentry is already wrapped in try-catch in sentry.client.config.ts
 // Only load if DSN is configured (non-blocking)
 if (import.meta.env.VITE_SENTRY_DSN) {
-  import("../../sentry.client.config").catch((error) => {
-    console.warn("Failed to load Sentry, continuing without error tracking:", error);
+  import("../../sentry.client.config").catch(error => {
+    console.warn(
+      "Failed to load Sentry, continuing without error tracking:",
+      error
+    );
   });
 }
 
@@ -33,7 +39,7 @@ const queryClient = new QueryClient({
         // Retry other errors up to 2 times
         return failureCount < 2;
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
       // onError removed - use onError in individual queries if needed
     },
     mutations: {
@@ -42,8 +48,8 @@ const queryClient = new QueryClient({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const err = error as any;
         if (import.meta.env.DEV) {
-          console.error('[tRPC Mutation Error]', {
-            message: err?.message || 'Unknown error',
+          console.error("[tRPC Mutation Error]", {
+            message: err?.message || "Unknown error",
             code: err?.data?.code,
             httpStatus: err?.data?.httpStatus,
             path: err?.data?.path,
@@ -51,7 +57,7 @@ const queryClient = new QueryClient({
           });
         } else {
           // In production, log minimal info without exposing sensitive details
-          console.error('[Error]', err?.data?.code || 'UNKNOWN');
+          console.error("[Error]", err?.data?.code || "UNKNOWN");
         }
       },
     },
@@ -65,7 +71,8 @@ const queryClient = new QueryClient({
 function getVipSessionToken(): string | null {
   // Check sessionStorage first (impersonation sessions)
   const sessionToken = sessionStorage.getItem("vip_session_token");
-  const isImpersonation = sessionStorage.getItem("vip_impersonation") === "true";
+  const isImpersonation =
+    sessionStorage.getItem("vip_impersonation") === "true";
 
   if (sessionToken && isImpersonation) {
     return sessionToken;
@@ -73,7 +80,8 @@ function getVipSessionToken(): string | null {
 
   // Check localStorage (regular sessions)
   const regularToken = localStorage.getItem("vip_session_token");
-  const isRegularImpersonation = localStorage.getItem("vip_impersonation") === "true";
+  const isRegularImpersonation =
+    localStorage.getItem("vip_impersonation") === "true";
 
   if (regularToken && !isRegularImpersonation) {
     return regularToken;
