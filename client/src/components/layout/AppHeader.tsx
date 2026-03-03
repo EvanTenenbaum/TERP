@@ -26,6 +26,7 @@ import { useState } from "react";
 import { AppBreadcrumb } from "./AppBreadcrumb";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { trpc } from "@/lib/trpc";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import versionInfo from "../../../version.json";
 
 interface AppHeaderProps {
@@ -36,6 +37,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, toggleTheme, switchable } = useTheme();
+  const { isCompact, toggleDensity } = useUiDensity();
 
   // Get current user
   const { data: user } = trpc.auth.me.useQuery();
@@ -107,10 +109,27 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
             variant="ghost"
             className="hidden lg:flex h-8 rounded-full border border-border/70 bg-background px-2.5 text-[11px] font-medium text-muted-foreground"
             title="Open command palette"
-            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            onClick={() =>
+              window.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "k", metaKey: true })
+              )
+            }
           >
-            <Command className="h-3.5 w-3.5 mr-1.5" />
-            K
+            <Command className="h-3.5 w-3.5 mr-1.5" />K
+          </Button>
+
+          <Button
+            variant={isCompact ? "secondary" : "ghost"}
+            className="hidden md:flex h-8 rounded-full border border-border/70 bg-background px-2.5 text-[11px] font-medium text-muted-foreground"
+            onClick={toggleDensity}
+            title={
+              isCompact
+                ? "Switch to comfortable row spacing"
+                : "Switch to compact row spacing"
+            }
+            data-testid="density-toggle-button"
+          >
+            {isCompact ? "Comfortable" : "Compact"}
           </Button>
 
           <NotificationBell className="hidden sm:flex relative" />
@@ -171,6 +190,11 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
               >
                 <Settings className="h-4 w-4 mr-2" />
                 System Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleDensity}>
+                {isCompact
+                  ? "Switch to comfortable spacing"
+                  : "Switch to compact spacing"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

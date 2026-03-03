@@ -30,6 +30,7 @@ import {
 } from "./BatchSelectionDialog";
 import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import type { PowersheetBulkActionContract } from "@/types/powersheet";
 
 export interface LineItem {
@@ -79,6 +80,7 @@ export function LineItemTable({
   onChange,
   onAddItem,
 }: LineItemTableProps) {
+  const { isCompact, toggleDensity } = useUiDensity();
   // WSQA-002: Batch selection dialog state
   const [lotSelection, setLotSelection] = useState<LotSelectionState | null>(
     null
@@ -328,10 +330,18 @@ export function LineItemTable({
   }, [bulkActions, bulkCogsPerUnit]);
 
   return (
-    <div className="space-y-3">
+    <div className={isCompact ? "space-y-2" : "space-y-3"}>
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Line Items</h3>
         <div className="flex gap-2">
+          <Button
+            variant={isCompact ? "secondary" : "outline"}
+            size="sm"
+            onClick={toggleDensity}
+            data-testid="line-item-density-toggle"
+          >
+            {isCompact ? "Comfortable" : "Compact"}
+          </Button>
           {items.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleClearAll}>
               <Trash2 className="h-4 w-4 mr-2" />
@@ -351,7 +361,13 @@ export function LineItemTable({
       </div>
 
       {bulkActions.selectedCount > 0 && (
-        <div className="rounded-lg border bg-muted/40 px-3 py-2">
+        <div
+          className={
+            isCompact
+              ? "rounded-lg border bg-muted/40 px-3 py-1.5"
+              : "rounded-lg border bg-muted/40 px-3 py-2"
+          }
+        >
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">
               {bulkActions.selectedCount} selected
@@ -401,7 +417,13 @@ export function LineItemTable({
       )}
 
       {items.length === 0 ? (
-        <div className="border-2 border-dashed rounded-lg p-12 text-center">
+        <div
+          className={
+            isCompact
+              ? "border-2 border-dashed rounded-lg p-8 text-center"
+              : "border-2 border-dashed rounded-lg p-12 text-center"
+          }
+        >
           <p className="text-muted-foreground">
             {clientId
               ? "No items added yet. Click 'Add Item' to get started."

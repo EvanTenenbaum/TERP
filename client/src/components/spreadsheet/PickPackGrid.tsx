@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc, staleTimePresets } from "@/lib/trpc";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import { toast } from "sonner";
 import type { PickPackGridRow, PickPackStats } from "@/types/spreadsheet";
 import { Package, RefreshCw, CheckCircle, Clock, Loader2 } from "lucide-react";
@@ -56,6 +57,7 @@ const currencyFormatter = (value: number | null): string =>
 export const PickPackGrid = React.memo(function PickPackGrid() {
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const { isCompact } = useUiDensity();
 
   // Fetch pick list data
   const {
@@ -400,28 +402,33 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
           </div>
         )}
         {!isLoading && !error && rows.length > 0 && (
-        <div className="ag-theme-alpine h-[600px] w-full">
-          <AgGridReact<PickPackGridRow>
-            rowData={rows}
-            columnDefs={columnDefs}
-            defaultColDef={defaultColDef}
-            animateRows
-            pagination
-            paginationPageSize={25}
-            rowSelection="multiple"
-            onRowSelected={handleRowSelected}
-            onCellValueChanged={handleCellValueChanged}
-            getRowId={params => String(params.data.orderId)}
-            suppressLoadingOverlay={!isLoading}
-            rowClassRules={{
-              "bg-yellow-50": params =>
-                params.data?.pickPackStatus === "PENDING",
-              "bg-blue-50": params => params.data?.pickPackStatus === "PICKING",
-              "bg-green-50": params => params.data?.pickPackStatus === "PACKED",
-              "bg-purple-50": params => params.data?.pickPackStatus === "READY",
-            }}
-          />
-        </div>
+          <div className="ag-theme-alpine h-[600px] w-full">
+            <AgGridReact<PickPackGridRow>
+              rowData={rows}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              rowHeight={isCompact ? 30 : undefined}
+              headerHeight={isCompact ? 32 : undefined}
+              animateRows
+              pagination
+              paginationPageSize={25}
+              rowSelection="multiple"
+              onRowSelected={handleRowSelected}
+              onCellValueChanged={handleCellValueChanged}
+              getRowId={params => String(params.data.orderId)}
+              suppressLoadingOverlay={!isLoading}
+              rowClassRules={{
+                "bg-yellow-50": params =>
+                  params.data?.pickPackStatus === "PENDING",
+                "bg-blue-50": params =>
+                  params.data?.pickPackStatus === "PICKING",
+                "bg-green-50": params =>
+                  params.data?.pickPackStatus === "PACKED",
+                "bg-purple-50": params =>
+                  params.data?.pickPackStatus === "READY",
+              }}
+            />
+          </div>
         )}
       </CardContent>
     </Card>

@@ -797,11 +797,17 @@ export function PickPackWorkSurface() {
   const markReadyMutation = trpc.pickPack.markOrderReady.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
+      const priorFilter = statusFilter;
       setSelectedOrderId(null);
       void refetchPickList();
       void refetchStats();
       setSaved();
       toast.success("Order marked ready for shipping");
+      if (priorFilter !== "ALL" && priorFilter !== "READY") {
+        toast.info(
+          `Order moved to READY and is now hidden by the ${priorFilter.toLowerCase()} filter. Switch to All or Ready to keep tracking it.`
+        );
+      }
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)

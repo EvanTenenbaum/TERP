@@ -9,6 +9,7 @@ import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { useUiDensity } from "@/hooks/useUiDensity";
 import { toast } from "sonner";
 import type { InventoryGridRow } from "@/types/spreadsheet";
 import { Loader2, AlertCircle, Package, RefreshCw } from "lucide-react";
@@ -38,6 +39,7 @@ const formatNumber = (value: number): string => value.toLocaleString();
 
 export const InventoryGrid = React.memo(function InventoryGrid() {
   const gridApiRef = useRef<GridApi<InventoryGridRow> | null>(null);
+  const { isCompact } = useUiDensity();
 
   const { data, isLoading, error, refetch } =
     trpc.spreadsheet.getInventoryGridData.useQuery({ limit: 200 });
@@ -371,6 +373,8 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
               rowData={data.rows}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
+              rowHeight={isCompact ? 30 : undefined}
+              headerHeight={isCompact ? 32 : undefined}
               // Row identity for efficient updates
               getRowId={params => String(params.data.id)}
               animateRows={false} // Disable for better performance

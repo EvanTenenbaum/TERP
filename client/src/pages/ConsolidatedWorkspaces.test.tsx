@@ -111,6 +111,12 @@ describe("Consolidated workspace pages", () => {
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "New Sale" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "New Order" })
+    ).not.toBeInTheDocument();
   });
 
   it("renders Credits workspace with settings content", () => {
