@@ -87,6 +87,7 @@ import {
   Trash2,
   Send,
   Download,
+  ArrowUpDown,
 } from "lucide-react";
 
 // ============================================================================
@@ -136,6 +137,25 @@ const FULFILLMENT_STATUSES = [
   { value: "RESTOCKED", label: "Restocked" },
   { value: "RETURNED_TO_VENDOR", label: "Returned to Vendor" },
   { value: "CANCELLED", label: "Cancelled" },
+];
+
+const ORDERS_VIEW_STATE_KEY = "terp-sales-orders-view-v2";
+
+type OrdersSortKey =
+  | "newest"
+  | "oldest"
+  | "client_asc"
+  | "client_desc"
+  | "total_desc"
+  | "total_asc";
+
+const ORDER_SORT_OPTIONS: Array<{ value: OrdersSortKey; label: string }> = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "client_asc", label: "Client A-Z" },
+  { value: "client_desc", label: "Client Z-A" },
+  { value: "total_desc", label: "Total high-low" },
+  { value: "total_asc", label: "Total low-high" },
 ];
 
 // WSQA-003: Added return status icons
@@ -195,7 +215,9 @@ const extractItems = <T,>(data: unknown): T[] => {
   return [];
 };
 
-const buildConfirmedQueryInput = (fulfillmentStatus?: string): {
+const buildConfirmedQueryInput = (
+  fulfillmentStatus?: string
+): {
   isDraft: boolean;
   fulfillmentStatus?: string;
 } =>
@@ -506,8 +528,39 @@ export function OrdersWorkSurface() {
   const [activeTab, setActiveTab] = useState<"draft" | "confirmed">(
     "confirmed"
   );
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [search, setSearch] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw) as { search?: string };
+      return parsed.search ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [statusFilter, setStatusFilter] = useState(() => {
+    if (typeof window === "undefined") return "ALL";
+    try {
+      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
+      if (!raw) return "ALL";
+      const parsed = JSON.parse(raw) as { statusFilter?: string };
+      return parsed.statusFilter ?? "ALL";
+    } catch {
+      return "ALL";
+    }
+  });
+  const [sortKey, setSortKey] = useState<OrdersSortKey>(() => {
+    if (typeof window === "undefined") return "newest";
+    try {
+      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
+      if (!raw) return "newest";
+      const parsed = JSON.parse(raw) as { sortKey?: OrdersSortKey };
+      return parsed.sortKey ?? "newest";
+    } catch {
+      return "newest";
+    }
+  });
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -525,6 +578,22 @@ export function OrdersWorkSurface() {
   const [showVendorReturnDialog, setShowVendorReturnDialog] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        ORDERS_VIEW_STATE_KEY,
+        JSON.stringify({
+          search,
+          statusFilter,
+          sortKey,
+        })
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [search, statusFilter, sortKey]);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -633,17 +702,43 @@ export function OrdersWorkSurface() {
   // Filtered orders
   const displayOrders = useMemo(() => {
     const orders = activeTab === "draft" ? draftOrders : confirmedOrders;
-    if (!search) return orders;
     const searchLower = search.toLowerCase();
-    return orders.filter((order: Order) => {
-      const orderNumber = order.orderNumber || "";
-      const clientName = getClientName(order.clientId);
-      return (
-        orderNumber.toLowerCase().includes(searchLower) ||
-        clientName.toLowerCase().includes(searchLower)
-      );
+    const filtered = !search
+      ? [...orders]
+      : orders.filter((order: Order) => {
+          const orderNumber = order.orderNumber || "";
+          const clientName = getClientName(order.clientId);
+          return (
+            orderNumber.toLowerCase().includes(searchLower) ||
+            clientName.toLowerCase().includes(searchLower)
+          );
+        });
+
+    return filtered.sort((a: Order, b: Order) => {
+      const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const clientA = getClientName(a.clientId).toLowerCase();
+      const clientB = getClientName(b.clientId).toLowerCase();
+      const totalA = Number.parseFloat(String(a.total ?? 0)) || 0;
+      const totalB = Number.parseFloat(String(b.total ?? 0)) || 0;
+
+      switch (sortKey) {
+        case "oldest":
+          return createdA - createdB;
+        case "client_asc":
+          return clientA.localeCompare(clientB);
+        case "client_desc":
+          return clientB.localeCompare(clientA);
+        case "total_desc":
+          return totalB - totalA;
+        case "total_asc":
+          return totalA - totalB;
+        case "newest":
+        default:
+          return createdB - createdA;
+      }
     });
-  }, [activeTab, draftOrders, confirmedOrders, search, getClientName]);
+  }, [activeTab, draftOrders, confirmedOrders, search, getClientName, sortKey]);
 
   // Selected order
   const selectedOrder = useMemo(
@@ -961,6 +1056,10 @@ export function OrdersWorkSurface() {
     setSelectedOrderId(orderId);
     setShowVendorReturnDialog(true);
   };
+  const handleRefresh = () => {
+    void refetchDrafts();
+    void refetchConfirmed();
+  };
 
   const isLoading = activeTab === "draft" ? loadingDrafts : loadingConfirmed;
 
@@ -1043,6 +1142,28 @@ export function OrdersWorkSurface() {
                   </SelectContent>
                 </Select>
               )}
+              <Select
+                value={sortKey}
+                onValueChange={value => setSortKey(value as OrdersSortKey)}
+              >
+                <SelectTrigger className="w-44">
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Sort" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_SORT_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
               <Button
                 onClick={() => setLocation("/orders/create")}
                 data-testid="new-order-button"

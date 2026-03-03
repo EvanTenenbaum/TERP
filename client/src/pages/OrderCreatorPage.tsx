@@ -691,7 +691,7 @@ export default function OrderCreatorPageV2() {
     <PageErrorBoundary pageName="OrderCreator">
       <div
         {...keyboard.keyboardProps}
-        className="container mx-auto p-4 md:p-6 space-y-6"
+        className="container mx-auto p-3 md:p-4 space-y-4"
       >
         <BackButton label="Back to Orders" to="/orders" className="mb-4" />
         <section className="linear-workspace-shell">
@@ -776,12 +776,12 @@ export default function OrderCreatorPageV2() {
 
           <div className="linear-workspace-content">
             {clientId ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-4">
                   {/* Inventory Browser */}
                   <Card id="inventory-browser-section">
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-4">
                       {inventoryError ? (
                         <div className="text-center py-8">
                           <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
@@ -840,10 +840,8 @@ export default function OrderCreatorPageV2() {
 
                   {/* Line Items */}
                   <Card>
-                    <CardContent className="pt-6">
-                      <h3 className="mb-3 text-base font-semibold">
-                        Line Items
-                      </h3>
+                    <CardContent className="pt-4">
+                      <h3 className="mb-2 text-sm font-semibold">Line Items</h3>
                       <LineItemTable
                         items={items}
                         clientId={clientId}
@@ -889,7 +887,31 @@ export default function OrderCreatorPageV2() {
                 </div>
 
                 {/* Right Column: Totals & Preview (1/3) */}
-                <div className="space-y-6">
+                <div className="space-y-4 lg:sticky lg:top-4 self-start">
+                  {/* Customer Context Snapshot */}
+                  <Card>
+                    <CardContent className="pt-4 space-y-1.5">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Customer Context
+                      </p>
+                      <p className="text-sm font-semibold">
+                        {clientDetails?.name ?? "Selected customer"}
+                      </p>
+                      {clientDetails?.email ? (
+                        <p className="text-xs text-muted-foreground">
+                          {clientDetails.email}
+                        </p>
+                      ) : null}
+                      {referredByClientId ? (
+                        <p className="text-xs text-muted-foreground">
+                          Referred by{" "}
+                          {clients.find(c => c.id === referredByClientId)
+                            ?.name ?? `Client #${referredByClientId}`}
+                        </p>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+
                   {/* Credit Limit Banner */}
                   {clientDetails && orderType === "SALE" && (
                     <CreditLimitBanner
@@ -905,13 +927,6 @@ export default function OrderCreatorPageV2() {
                       orderTotal={totals.total}
                     />
                   )}
-
-                  {/* Totals */}
-                  <OrderTotalsPanel
-                    totals={totals}
-                    warnings={warnings}
-                    isValid={isValid}
-                  />
 
                   {/* TER-206: Collapsible order preview */}
                   <details open>
@@ -942,6 +957,13 @@ export default function OrderCreatorPageV2() {
                       onRemoveItem={handlePreviewRemoveItem}
                     />
                   </details>
+
+                  {/* Totals */}
+                  <OrderTotalsPanel
+                    totals={totals}
+                    warnings={warnings}
+                    isValid={isValid}
+                  />
 
                   {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
                   <Card>
