@@ -11,7 +11,7 @@
 
 | Finding | Severity | Impact on Plan |
 |---------|----------|----------------|
-| **Unmerged release train branch** (`codex/feedback-release-train-20260302`) has 24 changed files including `InventoryWorkSurface.tsx` — NOT yet merged to main | **BLOCKER** | Added mandatory Gate 0: merge this branch before ANY session starts |
+| ~~Unmerged release train branch~~ (`codex/feedback-release-train-20260302`) | **FALSE ALARM** | Branch is fully contained in main (0 commits ahead, `git merge-base --is-ancestor` confirms). Stale branch — no action needed. Gate 0.1 removed. |
 | **5 exact file collisions** between LEX-008→012 and UX-H tasks — not just "possible" overlap but confirmed line-level conflicts in `InventoryWorkSurface.tsx`, `AdvancedFilters.tsx`, `FilterChips.tsx`, `InventoryCard.tsx`, `nomenclature.ts` | **HIGH** | Reversed sequencing: LEX string renames go FIRST (surgical), UX structural refactors go SECOND (on clean base) |
 | **k6 not installed** anywhere — binary missing from CI runners and local. STX-005 and STX-010 have a hidden prerequisite | **HIGH** | Added k6 install step as STX-000.5 prerequisite before Wave S2 |
 | **BullMQ listed in CLAUDE.md but not implemented** — no Redis, no ioredis, no bullmq in deps | **MEDIUM** | STX profiles must NOT include queue worker stress. Corrected in STX-004 scope |
@@ -29,12 +29,12 @@
 
 | # | Gate | Owner | Command / Action | Pass Criteria |
 |---|------|-------|-----------------|---------------|
-| 0.1 | **Merge feedback release train** | Evan | Merge `codex/feedback-release-train-20260302` to main via PR or fast-forward | Branch shows 0 commits ahead of main on GitHub |
+| ~~0.1~~ | ~~Merge feedback release train~~ | — | **CLEARED** — branch is already fully contained in main (verified `git merge-base --is-ancestor`). Stale branch, safe to delete. | ✅ Already passed |
 | 0.2 | **Verify main is clean** | Evan | `git pull origin main && pnpm check && pnpm lint && pnpm test && pnpm build` | All 4 pass |
 | 0.3 | **Staging is current** | Evan | `curl -s https://terp-staging-yicld.ondigitalocean.app/health` | Returns 200 |
 | 0.4 | **No active sessions** | Any | `cat docs/ACTIVE_SESSIONS.md` | No genuine in-progress work (stale entries OK) |
 
-**Why Gate 0.1 is critical**: The release train branch modified `InventoryWorkSurface.tsx`, `OrdersWorkSurface.tsx`, `ClientsWorkSurface.tsx`, `InvoicesWorkSurface.tsx`, and `PickPackWorkSurface.tsx`. If Sessions A or B branch off main without these changes, every inventory/order/client work surface edit will produce merge conflicts.
+**Gate 0.1 status**: The `codex/feedback-release-train-20260302` branch was investigated and found to be fully integrated into main (0 commits ahead, confirmed ancestor). All work surface changes it contained are already in main. No merge required — the branch can be safely deleted.
 
 ---
 
@@ -458,7 +458,7 @@ Session B merges H1-H6 to main
 
 | # | Risk | Impact | Probability | Mitigation | Fallback |
 |---|------|--------|-------------|------------|----------|
-| R1 | Feedback release train not merged, causes conflicts | All sessions blocked | **HIGH if skipped** | Gate 0 is mandatory | Cannot proceed without merge |
+| ~~R1~~ | ~~Feedback release train not merged~~ | ~~All sessions blocked~~ | **ELIMINATED** | Branch is already in main (verified). Gate 0.1 cleared. | N/A |
 | R2 | LEX-004 ships with vague policy wording | 6 downstream tasks stall or produce wrong output | Medium | Evan review gate after LEX-004 | Pause normalization, revise LEX-004 |
 | R3 | UX-H takes longer than expected, delays LEX Phase 7 | LEX Session A idles waiting for Gate 2 | Medium | LEX has ~90 min of foundation work before needing Gate 2. Timing buffer is large. | LEX starts 013+015 (no UI) while waiting |
 | R4 | LEX-008→012 conflicts with UX-H despite sequencing | Merge conflicts in 5 collision files | Low (gates prevent) | Gate 2 ensures UX-H is merged. Gate 3 ensures LEX rebases. | Manual conflict resolution |
@@ -568,7 +568,7 @@ Use /wave-execute for each wave.
 
 ### Pre-Launch (Evan)
 
-- [ ] **Gate 0.1**: Merge `codex/feedback-release-train-20260302` to main (24 files including InventoryWorkSurface.tsx)
+- [x] **Gate 0.1**: ~~Merge release train~~ — CLEARED. Branch already fully integrated into main.
 - [ ] **Gate 0.2**: Verify clean build on main: `pnpm check && pnpm lint && pnpm test && pnpm build`
 - [ ] **Gate 0.3**: Verify staging health: `curl -s https://terp-staging-yicld.ondigitalocean.app/health`
 - [ ] Spin up 3 Claude Code sessions
