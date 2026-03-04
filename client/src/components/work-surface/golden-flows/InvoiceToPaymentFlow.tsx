@@ -744,10 +744,10 @@ export function InvoiceToPaymentFlow({
     const payments = paymentsData?.items ?? [];
     return payments.map(toPaymentHistoryItem);
   }, [paymentsData]);
-  const amountDue = useMemo(
-    () => parseFloat(invoice?.amountDue || "0"),
-    [invoice]
-  );
+  const amountDue = useMemo(() => {
+    const parsed = parseFloat(invoice?.amountDue || "0");
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }, [invoice]);
 
   // Set initial amount when invoice loads
   useEffect(() => {

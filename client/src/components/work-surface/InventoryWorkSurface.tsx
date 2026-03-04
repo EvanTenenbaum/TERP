@@ -175,6 +175,9 @@ interface BatchVersionEntity {
 // CONSTANTS
 // ============================================================================
 
+// localStorage key for persisting search/sort state across page reloads
+const INVENTORY_VIEW_STATE_KEY = "terp-inventory-view-v1";
+
 const BATCH_STATUSES = [
   { value: "ALL", label: "All Statuses" },
   { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
@@ -545,10 +548,30 @@ export function InventoryWorkSurface() {
     }>
   >([]);
 
-  // State
-  const [search, setSearch] = useState("");
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  // State — Initialize from localStorage for filter persistence
+  const savedViewState = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(INVENTORY_VIEW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as {
+        search?: string;
+        sortColumn?: string | null;
+        sortDirection?: string;
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+  const [search, setSearch] = useState(() => savedViewState?.search ?? "");
+  const [sortColumn, setSortColumn] = useState<string | null>(
+    () => savedViewState?.sortColumn ?? null
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(() => {
+    const saved = savedViewState?.sortDirection;
+    if (saved === "asc" || saved === "desc") return saved;
+    return "desc";
+  });
   const [page, setPage] = useState(0);
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -567,6 +590,18 @@ export function InventoryWorkSurface() {
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
     useInventoryFilters();
   const { exportCSV, state: exportState } = useExport<InventoryExportRow>();
+
+  // Persist search/sort state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        INVENTORY_VIEW_STATE_KEY,
+        JSON.stringify({ search, sortColumn, sortDirection })
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [search, sortColumn, sortDirection]);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();

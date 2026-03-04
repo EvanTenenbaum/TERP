@@ -578,43 +578,30 @@ export function PickPackWorkSurface() {
 
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  // Parse localStorage once and distribute
+  const savedViewState = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as {
+        statusFilter?: PickPackStatus | "ALL";
+        searchQuery?: string;
+        sortKey?: PickPackSortKey;
+      };
+    } catch {
+      return null;
+    }
+  }, []);
   const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
-    () => {
-      if (typeof window === "undefined") return "ALL";
-      try {
-        const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-        if (!raw) return "ALL";
-        const parsed = JSON.parse(raw) as {
-          statusFilter?: PickPackStatus | "ALL";
-        };
-        return parsed.statusFilter ?? "ALL";
-      } catch {
-        return "ALL";
-      }
-    }
+    () => savedViewState?.statusFilter ?? "ALL"
   );
-  const [searchQuery, setSearchQuery] = useState(() => {
-    if (typeof window === "undefined") return "";
-    try {
-      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-      if (!raw) return "";
-      const parsed = JSON.parse(raw) as { searchQuery?: string };
-      return parsed.searchQuery ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [sortKey, setSortKey] = useState<PickPackSortKey>(() => {
-    if (typeof window === "undefined") return "newest";
-    try {
-      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-      if (!raw) return "newest";
-      const parsed = JSON.parse(raw) as { sortKey?: PickPackSortKey };
-      return parsed.sortKey ?? "newest";
-    } catch {
-      return "newest";
-    }
-  });
+  const [searchQuery, setSearchQuery] = useState(
+    () => savedViewState?.searchQuery ?? ""
+  );
+  const [sortKey, setSortKey] = useState<PickPackSortKey>(
+    () => savedViewState?.sortKey ?? "newest"
+  );
   const [focusedOrderIndex, setFocusedOrderIndex] = useState(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState(0);
   const [focusZone, setFocusZone] = useState<"list" | "items">("list");
@@ -624,7 +611,6 @@ export function PickPackWorkSurface() {
   const [inspectedItemId, setInspectedItemId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
       localStorage.setItem(
         PICK_PACK_VIEW_STATE_KEY,
@@ -789,7 +775,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("Items packed successfully");
-      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PICKING");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PACKED");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -1014,8 +1000,14 @@ export function PickPackWorkSurface() {
       customHandlers: {
         arrowup: () => {
           if (focusZone === "list") {
+            if (filteredPickList.length === 0) {
+              return;
+            }
             setFocusedOrderIndex(prev => Math.max(0, prev - 1));
           } else if (orderDetails) {
+            if (orderDetails.items.length === 0) {
+              return;
+            }
             setFocusedItemIndex(prev => Math.max(0, prev - 1));
           }
         },

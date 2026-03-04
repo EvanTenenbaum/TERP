@@ -473,27 +473,25 @@ export function InvoicesWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State — TER-507: Initialize from localStorage for filter persistence
-  const [search, setSearch] = useState(() => {
-    if (typeof window === "undefined") return "";
+  // Parse localStorage once and distribute to avoid redundant JSON.parse calls
+  const savedViewState = useMemo(() => {
+    if (typeof window === "undefined") return null;
     try {
       const raw = localStorage.getItem(INVOICES_VIEW_STATE_KEY);
-      if (!raw) return "";
-      const parsed = JSON.parse(raw) as { search?: string };
-      return parsed.search ?? "";
+      if (!raw) return null;
+      return JSON.parse(raw) as { search?: string; statusFilter?: string };
     } catch {
-      return "";
+      return null;
     }
-  });
+  }, []);
+  const [search, setSearch] = useState(() => savedViewState?.search ?? "");
   const [statusFilter, setStatusFilter] = useState(() => {
-    if (typeof window === "undefined") return "ALL";
-    try {
-      const raw = localStorage.getItem(INVOICES_VIEW_STATE_KEY);
-      if (!raw) return "ALL";
-      const parsed = JSON.parse(raw) as { statusFilter?: string };
-      return parsed.statusFilter ?? "ALL";
-    } catch {
-      return "ALL";
+    const saved = savedViewState?.statusFilter;
+    const validStatuses = INVOICE_STATUSES.map(s => s.value);
+    if (saved && validStatuses.includes(saved)) {
+      return saved;
     }
+    return "ALL";
   });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(
     null
@@ -507,7 +505,6 @@ export function InvoicesWorkSurface() {
 
   // TER-507: Persist filter state to localStorage
   useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
       localStorage.setItem(
         INVOICES_VIEW_STATE_KEY,
@@ -824,12 +821,21 @@ export function InvoicesWorkSurface() {
                 ref={searchInputRef}
                 placeholder="Search invoices... (Cmd+K)"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-10"
                 data-testid="invoices-search-input"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={v => {
+                setStatusFilter(v);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-full md:w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
