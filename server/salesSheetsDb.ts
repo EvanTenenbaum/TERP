@@ -572,11 +572,29 @@ export async function convertDraftToSheet(
     throw new Error("Draft not found");
   }
 
+  // Recalculate total from items instead of trusting stored draft totalValue
+  interface DraftItem {
+    finalPrice?: number;
+    retailPrice?: number;
+    quantity?: number;
+  }
+  const draftItems = draft.items as unknown as DraftItem[];
+  const recalculatedTotal = Array.isArray(draftItems)
+    ? Math.round(
+        draftItems.reduce(
+          (sum, item) =>
+            sum +
+            (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
+          0
+        ) * 100
+      ) / 100
+    : parseFloat(draft.totalValue);
+
   // Create the sales sheet
   const sheetId = await saveSalesSheet({
     clientId: draft.clientId,
     items: draft.items as unknown[],
-    totalValue: parseFloat(draft.totalValue),
+    totalValue: recalculatedTotal,
     createdBy: userId,
   });
 
@@ -755,12 +773,14 @@ export async function convertToOrder(
   }
   const sheetItems = sheet.items as unknown as ConvertSheetItem[];
   const recalculatedTotal = Array.isArray(sheetItems)
-    ? sheetItems.reduce(
-        (sum, item) =>
-          sum +
-          (item.finalPrice || item.retailPrice || 0) * (item.quantity ?? 1),
-        0
-      )
+    ? Math.round(
+        sheetItems.reduce(
+          (sum, item) =>
+            sum +
+            (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
+          0
+        ) * 100
+      ) / 100
     : Number(sheet.totalValue) || 0;
 
   // TER-345: Wrap in transaction to prevent partial-conversion inconsistency

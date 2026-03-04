@@ -8,6 +8,25 @@ import * as salesSheetsDb from "../salesSheetsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { randomBytes } from "crypto";
 
+/**
+ * Calculate total value from items: SUM(unitPrice * quantity) with cent-rounding.
+ * Shared by save, saveDraft, and convertDraftToSheet validation.
+ */
+function calculateItemsTotal(
+  items: Array<{
+    finalPrice?: number;
+    retailPrice: number;
+    quantity: number;
+  }>
+): number {
+  const raw = items.reduce(
+    (sum, item) =>
+      sum + (item.finalPrice ?? item.retailPrice) * (item.quantity ?? 1),
+    0
+  );
+  return Math.round(raw * 100) / 100;
+}
+
 // Sales sheet item schema with full validation
 const salesSheetItemSchema = z.object({
   id: z.number(),
@@ -126,11 +145,7 @@ export const salesSheetsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       // Verify total matches items — quantity × unit price (TER-320/TER-321)
-      const calculatedTotal = input.items.reduce(
-        (sum, item) =>
-          sum + (item.finalPrice || item.retailPrice) * (item.quantity ?? 1),
-        0
-      );
+      const calculatedTotal = calculateItemsTotal(input.items);
 
       if (Math.abs(calculatedTotal - input.totalValue) > 0.01) {
         throw new Error("Total value mismatch");
@@ -243,13 +258,19 @@ export const salesSheetsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // Recalculate total server-side to prevent stale/incorrect values
+      const correctedTotal =
+        input.items.length > 0
+          ? calculateItemsTotal(input.items)
+          : input.totalValue;
+
       const userId = getAuthenticatedUserId(ctx);
       const draftId = await salesSheetsDb.saveDraft({
         draftId: input.draftId,
         clientId: input.clientId,
         name: input.name,
         items: input.items,
-        totalValue: input.totalValue,
+        totalValue: correctedTotal,
         createdBy: userId,
       });
       return { draftId };
@@ -386,7 +407,7 @@ export const salesSheetsRouter = router({
           name: item.name,
           category: item.category,
           quantity: item.quantity,
-          price: item.finalPrice || item.retailPrice,
+          price: item.finalPrice ?? item.retailPrice,
         })),
         totalValue: sheet.totalValue,
         itemCount: sheet.itemCount,

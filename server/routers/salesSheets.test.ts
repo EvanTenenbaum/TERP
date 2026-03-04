@@ -356,5 +356,176 @@ describe("Sales Sheets Router", () => {
       // Assert
       expect(result.items[0].quantity).toBe(0);
     });
+
+    it("should handle $0 finalPrice (comp/sample items)", async () => {
+      // Arrange — finalPrice=0 should be used, NOT fallback to retailPrice
+      const input = {
+        clientId: 1,
+        items: [
+          {
+            id: 1,
+            name: "Sample Item",
+            basePrice: 100,
+            retailPrice: 150,
+            finalPrice: 0,
+            quantity: 5,
+            priceMarkup: 0,
+          },
+        ],
+        totalValue: 0, // 0 * 5 = 0
+      };
+
+      const mockSavedSheet = { id: 1, ...input, createdBy: 1 };
+      vi.mocked(salesSheetsDb.saveSalesSheet).mockResolvedValue(mockSavedSheet);
+
+      // Act — should NOT throw "Total value mismatch"
+      const result = await caller.salesSheets.save(input);
+
+      // Assert
+      expect(result).toBeDefined();
+    });
+
+    it("should handle floating-point precision correctly", async () => {
+      // Arrange — 0.1 + 0.2 scenario multiplied out
+      const input = {
+        clientId: 1,
+        items: [
+          {
+            id: 1,
+            name: "Item A",
+            basePrice: 0.1,
+            retailPrice: 0.1,
+            finalPrice: 0.1,
+            quantity: 3,
+            priceMarkup: 0,
+          },
+          {
+            id: 2,
+            name: "Item B",
+            basePrice: 0.2,
+            retailPrice: 0.2,
+            finalPrice: 0.2,
+            quantity: 3,
+            priceMarkup: 0,
+          },
+        ],
+        totalValue: 0.9, // 0.1*3 + 0.2*3 = 0.3 + 0.6 = 0.9 (rounded)
+      };
+
+      const mockSavedSheet = { id: 1, ...input, createdBy: 1 };
+      vi.mocked(salesSheetsDb.saveSalesSheet).mockResolvedValue(mockSavedSheet);
+
+      // Act — should pass with cent rounding
+      const result = await caller.salesSheets.save(input);
+
+      // Assert
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe("saveDraft total correction", () => {
+    it("should correct totalValue server-side when saving draft", async () => {
+      // Arrange — send wrong total, server should correct it
+      const input = {
+        clientId: 1,
+        name: "Test Draft",
+        items: [
+          {
+            id: 1,
+            name: "OG Kush",
+            basePrice: 100,
+            retailPrice: 150,
+            quantity: 10,
+            priceMarkup: 50,
+          },
+        ],
+        totalValue: 150, // Wrong (old sum-of-prices), should be 1500
+      };
+
+      vi.mocked(salesSheetsDb.saveDraft).mockResolvedValue(42);
+
+      // Act
+      const result = await caller.salesSheets.saveDraft(input);
+
+      // Assert — server should have corrected to 1500
+      expect(result.draftId).toBe(42);
+      expect(salesSheetsDb.saveDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalValue: 1500, // Corrected by server
+        })
+      );
+    });
+  });
+
+  describe("convertToOrder", () => {
+    it("should call convertToOrder with correct params", async () => {
+      // Arrange
+      vi.mocked(salesSheetsDb.convertToOrder).mockResolvedValue(99);
+
+      // Act
+      const result = await caller.salesSheets.convertToOrder({
+        sheetId: 1,
+        orderType: "DRAFT",
+      });
+
+      // Assert
+      expect(result.orderId).toBe(99);
+      expect(salesSheetsDb.convertToOrder).toHaveBeenCalledWith(1, 1, "DRAFT");
+    });
+
+    it("should call convertToOrder with QUOTE type", async () => {
+      // Arrange
+      vi.mocked(salesSheetsDb.convertToOrder).mockResolvedValue(100);
+
+      // Act
+      const result = await caller.salesSheets.convertToOrder({
+        sheetId: 5,
+        orderType: "QUOTE",
+      });
+
+      // Assert
+      expect(result.orderId).toBe(100);
+      expect(salesSheetsDb.convertToOrder).toHaveBeenCalledWith(5, 1, "QUOTE");
+    });
+
+    it("should propagate conversion errors to caller", async () => {
+      // Arrange — simulate transaction/DB failure
+      vi.mocked(salesSheetsDb.convertToOrder).mockRejectedValue(
+        new Error("Sales sheet not found")
+      );
+
+      // Act & Assert
+      await expect(
+        caller.salesSheets.convertToOrder({ sheetId: 999, orderType: "DRAFT" })
+      ).rejects.toThrow("Sales sheet not found");
+    });
+  });
+
+  describe("convertToLiveSession", () => {
+    it("should call convertToLiveSession with correct params", async () => {
+      // Arrange
+      vi.mocked(salesSheetsDb.convertToLiveSession).mockResolvedValue(55);
+
+      // Act
+      const result = await caller.salesSheets.convertToLiveSession({
+        sheetId: 3,
+      });
+
+      // Assert
+      expect(result.sessionId).toBe(55);
+      expect(salesSheetsDb.convertToLiveSession).toHaveBeenCalledWith(3, 1);
+    });
+
+    it("should propagate live session conversion errors", async () => {
+      // Arrange
+      vi.mocked(salesSheetsDb.convertToLiveSession).mockRejectedValue(
+        new Error("Database not available")
+      );
+
+      // Act & Assert
+      await expect(
+        caller.salesSheets.convertToLiveSession({ sheetId: 1 })
+      ).rejects.toThrow("Database not available");
+    });
   });
 });

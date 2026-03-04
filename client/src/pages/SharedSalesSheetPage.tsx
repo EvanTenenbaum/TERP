@@ -112,7 +112,12 @@ export default function SharedSalesSheetPage() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold">
-                  {formatCurrency(Number(sheet.totalValue))}
+                  {formatCurrency(
+                    sheet.items.reduce(
+                      (sum, i) => sum + i.price * i.quantity,
+                      0
+                    )
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {sheet.itemCount} items
@@ -185,7 +190,12 @@ export default function SharedSalesSheetPage() {
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(Number(sheet.totalValue))}
+                  {formatCurrency(
+                    sheet.items.reduce(
+                      (sum, i) => sum + i.price * i.quantity,
+                      0
+                    )
+                  )}
                 </p>
               </div>
             </div>
