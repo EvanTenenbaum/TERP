@@ -472,23 +472,20 @@ function OrderInspectorContent({
                 </Badge>
               </div>
 
-              {!shippingEnabled && order.orderType === "SALE" && (
-                <Button
-                  variant="default"
-                  className="w-full justify-start"
-                  data-testid="make-payment-btn"
-                  onClick={() => onMakePayment(order.id)}
-                  disabled={!canAccessAccounting}
-                  title={
-                    canAccessAccounting
-                      ? "Open accounting payments context"
-                      : "Accounting permissions required"
-                  }
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Make Payment
-                </Button>
-              )}
+              {!shippingEnabled &&
+                order.orderType === "SALE" &&
+                canAccessAccounting && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="make-payment-btn"
+                    onClick={() => onMakePayment(order.id)}
+                    title="Open accounting payments context"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Make Payment
+                  </Button>
+                )}
 
               {/* WSQA-003: Status-based actions */}
               {order.fulfillmentStatus === "PENDING" &&
@@ -1110,6 +1107,9 @@ export function OrdersWorkSurface() {
       },
       arrowdown: e => {
         e.preventDefault();
+        if (displayOrders.length === 0) {
+          return;
+        }
         const newIndex = Math.min(displayOrders.length - 1, selectedIndex + 1);
         setSelectedIndex(newIndex);
         const order = displayOrders[newIndex];

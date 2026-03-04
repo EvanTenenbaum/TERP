@@ -1002,10 +1002,16 @@ export function PickPackWorkSurface() {
         },
         arrowdown: () => {
           if (focusZone === "list") {
+            if (filteredPickList.length === 0) {
+              return;
+            }
             setFocusedOrderIndex(prev =>
               Math.min(filteredPickList.length - 1, prev + 1)
             );
           } else if (orderDetails) {
+            if (orderDetails.items.length === 0) {
+              return;
+            }
             setFocusedItemIndex(prev =>
               Math.min(orderDetails.items.length - 1, prev + 1)
             );

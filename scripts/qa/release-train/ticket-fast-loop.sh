@@ -18,6 +18,7 @@ Usage:
     [--blast-radius-ref docs/roadmaps/...md] \
     [--rollback-ref docs/roadmaps/...md] \
     [--adversarial-note docs/roadmaps/...md] \
+    [--local-base-url http://localhost:5173] \
     [--output-root qa-results/release-train]
 
 Notes:
@@ -40,6 +41,7 @@ BLAST_RADIUS_REF="PENDING"
 ROLLBACK_REF="PENDING"
 ADVERSARIAL_NOTE=""
 OUTPUT_ROOT="qa-results/release-train"
+LOCAL_BASE_URL="${RELEASE_TRAIN_LOCAL_BASE_URL:-http://localhost:5173}"
 
 TARGETED_CMDS=()
 CHANGED_FILES=()
@@ -89,6 +91,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --output-root)
       OUTPUT_ROOT="$2"
+      shift 2
+      ;;
+    --local-base-url)
+      LOCAL_BASE_URL="$2"
       shift 2
       ;;
     --help|-h)
@@ -237,7 +243,7 @@ done
 
 index=1
 for qa_cmd in "${DOMAIN_CMDS[@]}"; do
-  run_cmd "qa-${index}" "${qa_cmd}"
+  run_cmd "qa-${index}" "PLAYWRIGHT_BASE_URL='${LOCAL_BASE_URL}' SKIP_E2E_SETUP=1 ${qa_cmd}"
   index=$((index + 1))
 done
 

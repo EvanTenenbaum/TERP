@@ -69,11 +69,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const actionCommands = [
     {
       id: "new-sale",
-      label: "Create New Sale",
+      label: "New Sale",
       icon: Plus,
       shortcut: "N",
       action: () => {
-        setLocation("/orders/create");
+        setLocation("/sales?tab=create-order");
         onOpenChange(false);
       },
     },

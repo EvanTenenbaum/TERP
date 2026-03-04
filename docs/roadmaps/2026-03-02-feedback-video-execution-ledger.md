@@ -181,3 +181,47 @@
 - Added evidence and bundle templates:
   - `docs/roadmaps/2026-03-02-feedback-video-evidence-packet-v2-template.md`
   - `docs/roadmaps/checkpoint-bundles/README.md`
+
+### 2026-03-03 11:25 PST (usage-budget pause checkpoint)
+
+- Supervisor paused active execution to avoid session interruption from usage budget.
+- Current branch/head: `codex/feedback-release-train-20260302` @ `feae6600` (ahead 3 on origin branch).
+- Wave state: Checkpoint 3 (`TER-488..TER-491`) is still active and not yet implemented/verified in this session.
+- Lane agents dispatched for acceptance gap scan only:
+  - Lane A: TER-488 + TER-491 (UI/UX)
+  - Lane B: TER-489 + TER-490 (frontend behavior/state)
+  - Lane C: TER-489 + TER-490 (backend/RED)
+- No new code edits applied after this checkpoint marker.
+
+#### Deterministic Resume Queue (start at ~2026-03-03 12:23 PST)
+
+1. Collect lane agent reports and consolidate acceptance gap matrix for TER-488..TER-491.
+2. Apply minimal code deltas for unmet criteria only.
+3. Run per-ticket fast loops:
+   - `bash scripts/qa/release-train/ticket-fast-loop.sh --ticket TER-488 --risk STRICT ...`
+   - `bash scripts/qa/release-train/ticket-fast-loop.sh --ticket TER-489 --risk RED ...`
+   - `bash scripts/qa/release-train/ticket-fast-loop.sh --ticket TER-490 --risk RED ...`
+   - `bash scripts/qa/release-train/ticket-fast-loop.sh --ticket TER-491 --risk STRICT ...`
+4. Run Checkpoint 3 baseline gate once:
+   - `bash scripts/qa/release-train/checkpoint-gate.sh --checkpoint 3 --domains orders,pick-pack --tickets TER-488,TER-489,TER-490,TER-491`
+5. Promote Checkpoint 3 to `main`, wait for staging deploy, run runtime smoke/domain QA, and attach evidence links.
+6. Update ledger/tickets and proceed immediately to Checkpoint 4.
+
+### 2026-03-03 14:35 PST (wave 3 throughput recovery)
+
+- Restored deterministic local runtime harness for checkpoint QA:
+  - test DB up + full reset (`pnpm test:env:up`, `pnpm test:db:reset:full`)
+  - QA auth users seeded by reset flow
+  - local app running on `http://localhost:5173` with `DEMO_MODE=true` and `QA_AUTH_ENABLED=true`
+- Applied wave 3 code deltas and gap fixes:
+  - mode-aware payment CTA visibility + keyboard index guards in orders/pick-pack surfaces
+  - transition map alignment in `OrderStatusActions` (removed `PACKED -> PENDING`)
+  - TER-491 wording consistency patch: `New Sale` label unified in command palette + sales empty state
+- Wave 3 targeted verification snapshot (local):
+  - `pnpm check`: PASS
+  - `pnpm test client/src/components/CommandPalette.test.tsx client/src/components/orders/MarginInput.test.tsx client/src/components/orders/OrderStatusActions.test.tsx client/src/components/layout/AppSidebar.test.tsx client/src/pages/ConsolidatedWorkspaces.test.tsx client/src/lib/salesMode.test.ts server/services/orderStateMachine.test.ts server/routers/orders.test.ts`: PASS (`8` files, `73` tests)
+  - broader smoke run had one unrelated cross-domain oracle failure (`CRM.Clients.Create`) and does not block wave-3 orders scope.
+- RED runtime-oracle blocker identified:
+  - `Orders.Fulfillment.ConfirmOrder` and `Orders.OrderStatus.UpdateOrderStatus` oracles assume shipping CTA paths that conflict with locked default non-shipping mode contract.
+  - blocker owner: execution lead (this branch)
+  - unblock plan: patch orders oracles to validate non-shipping CTA/RBAC contract for wave 3, then re-run scoped orders runtime proofs.

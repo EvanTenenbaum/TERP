@@ -10,6 +10,7 @@ Usage:
     --checkpoint 3 \
     --domains orders,inventory \
     [--tickets TER-488,TER-489,TER-490,TER-491] \
+    [--local-base-url http://localhost:5173] \
     [--staging-url https://terp-staging-...ondigitalocean.app] \
     [--output-root docs/roadmaps/checkpoint-bundles] \
     [--skip-runtime]
@@ -30,6 +31,7 @@ DOMAINS_CSV=""
 TICKETS_CSV=""
 STAGING_URL=""
 OUTPUT_ROOT="docs/roadmaps/checkpoint-bundles"
+LOCAL_BASE_URL="${RELEASE_TRAIN_LOCAL_BASE_URL:-http://localhost:5173}"
 SKIP_RUNTIME=0
 
 while [[ $# -gt 0 ]]; do
@@ -48,6 +50,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --staging-url)
       STAGING_URL="$2"
+      shift 2
+      ;;
+    --local-base-url)
+      LOCAL_BASE_URL="$2"
       shift 2
       ;;
     --output-root)
@@ -146,7 +152,7 @@ run_cmd "baseline-build" "pnpm build"
 
 index=1
 for qa_cmd in "${LOCAL_QA_CMDS[@]}"; do
-  run_cmd "local-qa-${index}" "${qa_cmd}"
+  run_cmd "local-qa-${index}" "PLAYWRIGHT_BASE_URL='${LOCAL_BASE_URL}' SKIP_E2E_SETUP=1 ${qa_cmd}"
   index=$((index + 1))
 done
 
