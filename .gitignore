@@ -110,6 +110,9 @@ jspm_packages/
 tmp/
 temp/
 
+# Claude Code worktrees (parallel agent sessions)
+.claude/worktrees/
+
 # Database
 *.db
 *.sqlite

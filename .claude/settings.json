@@ -1,4 +1,13 @@
 {
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "type": "command",
+        "command": "pnpm check && pnpm lint && pnpm test && pnpm build",
+        "timeout": 120000
+      }
+    ]
+  },
   "auditSystem": {
     "enabled": true,
     "knownPatterns": ".claude/known-bug-patterns.md",
