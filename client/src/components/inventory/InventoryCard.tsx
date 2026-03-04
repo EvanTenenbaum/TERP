@@ -23,7 +23,11 @@ interface InventoryCardProps {
   onEdit?: (id: number) => void;
 }
 
-export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit }: InventoryCardProps) {
+export const InventoryCard = memo(function InventoryCard({
+  batch,
+  onView,
+  onEdit,
+}: InventoryCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case "AWAITING_INTAKE":
@@ -46,7 +50,7 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
   const formatStatus = (status: string) => {
     return status
       .split("_")
-      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
       .join(" ");
   };
 
@@ -57,7 +61,9 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-mono text-muted-foreground">{batch.sku}</p>
+            <p className="text-sm font-mono text-muted-foreground">
+              {batch.sku}
+            </p>
             <h3 className="text-lg font-semibold">{batch.productName}</h3>
           </div>
           <Badge className={getStatusColor(batch.status)} variant="outline">
@@ -70,7 +76,9 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             {/* ENH-007: Dynamic Brand/Farmer label based on category */}
-            <p className="text-muted-foreground">{getBrandLabel(batch.category)}</p>
+            <p className="text-muted-foreground">
+              {getBrandLabel(batch.category)}
+            </p>
             <p className="font-medium">{batch.brandName}</p>
           </div>
           <div>
@@ -89,11 +97,15 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
           <div className="grid grid-cols-3 gap-2 text-sm">
             <div>
               <p className="text-muted-foreground text-xs">On Hand</p>
-              <p className="font-semibold">{parseFloat(batch.onHandQty).toFixed(2)}</p>
+              <p className="font-semibold">
+                {parseFloat(batch.onHandQty).toFixed(2)}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Reserved</p>
-              <p className="font-semibold">{parseFloat(batch.reservedQty).toFixed(2)}</p>
+              <p className="font-semibold">
+                {parseFloat(batch.reservedQty).toFixed(2)}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Available</p>
@@ -111,8 +123,9 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
             size="sm"
             className="flex-1"
             onClick={() => onView(batch.id)}
+            aria-label={`View batch ${batch.sku}`}
           >
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
             View
           </Button>
           {isAwaitingIntake && onEdit && (
@@ -121,8 +134,9 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
               size="sm"
               className="flex-1"
               onClick={() => onEdit(batch.id)}
+              aria-label={`Intake batch ${batch.sku}`}
             >
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
               Intake
             </Button>
           )}

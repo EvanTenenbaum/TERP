@@ -585,6 +585,7 @@ export function InventoryWorkSurface() {
   const [editRack, setEditRack] = useState("");
   const [editStatus, setEditStatus] = useState<InventoryBatchStatus>("LIVE");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
   const pageSize = 50;
   const useEnhancedApi = true;
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
@@ -1044,6 +1045,22 @@ export function InventoryWorkSurface() {
   const toggleBatchSelection = selection.toggle;
   const toggleAllVisibleSelection = selection.toggleAll;
 
+  // H1: Pre-compute eligible vs blocked sets for batch deletion
+  const { _eligibleForDelete, blockedFromDelete } = useMemo(() => {
+    const eligible = new Set<number>();
+    const blocked = new Set<number>();
+    for (const batchId of selectedBatchIds) {
+      const item = items.find(i => i.batch?.id === batchId);
+      const onHand = parseFloat(item?.batch?.onHandQty || "0");
+      if (onHand > 0) {
+        blocked.add(batchId);
+      } else {
+        eligible.add(batchId);
+      }
+    }
+    return { _eligibleForDelete: eligible, blockedFromDelete: blocked };
+  }, [selectedBatchIds, items]);
+
   // Status-filter-exit notification (TER-518 / XP-A-004-INV)
   const notifyStatusFilterExit = useCallback(
     (batch: { sku?: string; id: number }, newStatus: string) => {
@@ -1158,7 +1175,10 @@ export function InventoryWorkSurface() {
     },
     onError: err => {
       pendingBulkDeleteRef.current = [];
-      toast.error(err.message || "Failed to delete selected batches");
+      setBulkDeleteError(
+        err.message ||
+          "Failed to delete selected batches. Check that all selected batches have zero on-hand quantity."
+      );
       setError(err.message);
     },
   });
@@ -1503,17 +1523,20 @@ export function InventoryWorkSurface() {
 
   const handleBulkDelete = useCallback(() => {
     if (selectedBatchIds.size === 0) return;
+    setBulkDeleteError(null);
     setShowBulkDeleteConfirm(true);
   }, [selectedBatchIds]);
 
   const handleConfirmBulkDelete = useCallback(() => {
-    const batchIds = Array.from(selectedBatchIds);
+    const batchIds = Array.from(selectedBatchIds).filter(
+      id => !blockedFromDelete.has(id)
+    );
     if (batchIds.length === 0) {
       setShowBulkDeleteConfirm(false);
       return;
     }
     bulkDeleteMutation.mutate(batchIds);
-  }, [selectedBatchIds, bulkDeleteMutation]);
+  }, [selectedBatchIds, blockedFromDelete, bulkDeleteMutation]);
 
   const handleExportCsv = useCallback(async () => {
     if (displayItems.length === 0) {
@@ -1736,6 +1759,7 @@ export function InventoryWorkSurface() {
             <Input
               ref={searchInputRef}
               placeholder="Search inventory... (Cmd+K)"
+              aria-label="Search inventory"
               value={search}
               onChange={e => {
                 setSearch(e.target.value);
@@ -1782,20 +1806,23 @@ export function InventoryWorkSurface() {
           </Button>
         </div>
 
-        <AdvancedFilters
-          filters={filters}
-          onUpdateFilter={(key, value) => {
-            updateFilter(key, value);
-            setPage(0);
-          }}
-          vendors={vendorOptions}
-          brands={brandOptions}
-          categories={categoryOptions}
-          subcategories={subcategoryOptions}
-          grades={gradeOptions}
-        />
+        {/* H3: Collapse filters during multi-select for focused selection mode */}
+        {selectedBatchIds.size === 0 && (
+          <AdvancedFilters
+            filters={filters}
+            onUpdateFilter={(key, value) => {
+              updateFilter(key, value);
+              setPage(0);
+            }}
+            vendors={vendorOptions}
+            brands={brandOptions}
+            categories={categoryOptions}
+            subcategories={subcategoryOptions}
+            grades={gradeOptions}
+          />
+        )}
 
-        {hasActiveFilters ? (
+        {selectedBatchIds.size === 0 && hasActiveFilters ? (
           <FilterChips
             filters={filters}
             onRemoveFilter={handleRemoveFilterChip}
@@ -1847,45 +1874,112 @@ export function InventoryWorkSurface() {
             size="sm"
             variant="destructive"
             onClick={handleBulkDelete}
-            disabled={bulkDeleteMutation.isPending}
+            disabled={
+              bulkDeleteMutation.isPending || blockedFromDelete.size > 0
+            }
+            aria-label={
+              blockedFromDelete.size > 0
+                ? `Cannot delete: ${blockedFromDelete.size} batch${blockedFromDelete.size === 1 ? " has" : "es have"} remaining inventory`
+                : `Delete ${selectedBatchIds.size} selected batch${selectedBatchIds.size === 1 ? "" : "es"}`
+            }
+            title={
+              blockedFromDelete.size > 0
+                ? `${blockedFromDelete.size} batch${blockedFromDelete.size === 1 ? " has" : "es have"} remaining inventory — reduce on-hand to 0 first`
+                : undefined
+            }
           >
             Delete Selected
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => selection.clear()}>
+          {blockedFromDelete.size > 0 && (
+            <span className="text-xs text-destructive" role="alert">
+              {blockedFromDelete.size} batch
+              {blockedFromDelete.size === 1 ? "" : "es"}{" "}
+              {blockedFromDelete.size === 1 ? "has" : "have"} remaining
+              inventory
+            </span>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => selection.clear()}
+            aria-label="Clear batch selection"
+          >
             Clear Selection
           </Button>
         </div>
       )}
 
-      {(dashboardStats?.statusCounts ||
-        enhancedData?.summary.byStockStatus) && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-3 border-b bg-muted/10">
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Critical</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.critical ?? 0}
-            </div>
-          </div>
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Low</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.low ?? 0}
-            </div>
-          </div>
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Optimal</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.optimal ?? 0}
-            </div>
-          </div>
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Out Of Stock</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.outOfStock ?? 0}
-            </div>
+      {/* H2: Single error banner for bulk delete failures */}
+      {bulkDeleteError && (
+        <div
+          role="alert"
+          className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          <span>{bulkDeleteError}</span>
+          <div className="flex items-center gap-2">
+            {blockedFromDelete.size === 1 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const blockedId = Array.from(blockedFromDelete)[0];
+                  setBulkDeleteError(null);
+                  selection.clear();
+                  const blockedItem = items.find(
+                    i => i.batch?.id === blockedId
+                  );
+                  if (blockedItem?.batch) {
+                    setSelectedBatchId(blockedItem.batch.id);
+                    inspector.open();
+                  }
+                }}
+              >
+                Adjust quantity
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setBulkDeleteError(null)}
+              aria-label="Dismiss error"
+            >
+              Dismiss
+            </Button>
           </div>
         </div>
       )}
+
+      {/* H3: Hide stats grid during selection for focused mode */}
+      {selectedBatchIds.size === 0 &&
+        (dashboardStats?.statusCounts ||
+          enhancedData?.summary.byStockStatus) && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-3 border-b bg-muted/10">
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Critical</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.critical ?? 0}
+              </div>
+            </div>
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Low</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.low ?? 0}
+              </div>
+            </div>
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Optimal</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.optimal ?? 0}
+              </div>
+            </div>
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Out Of Stock</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.outOfStock ?? 0}
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">

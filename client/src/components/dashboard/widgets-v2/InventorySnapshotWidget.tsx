@@ -46,9 +46,27 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          Inventory Snapshot
-        </CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="text-lg font-semibold">
+              What&apos;s In Stock
+            </CardTitle>
+            {data && data.categories.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {data.totalUnits.toLocaleString()} units across{" "}
+                {data.categories.length} categor
+                {data.categories.length === 1 ? "y" : "ies"} — worth{" "}
+                {formatCurrency(data.totalValue)}
+              </p>
+            )}
+          </div>
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+            onClick={() => setLocation("/inventory")}
+          >
+            View All →
+          </button>
+        </div>
       </CardHeader>
       <CardContent>
         {error ? (
