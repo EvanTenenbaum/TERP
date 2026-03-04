@@ -1,6 +1,7 @@
 # ============================================
 # TERP Optimized Multi-Stage Dockerfile
-# Version: 2.1 - Fixed memory settings for DigitalOcean App Platform
+# Version: 3.0 - Production-only deps in runner stage
+# See: .kiro/specs/deployment-optimization/design.md
 # ============================================
 
 # ============================================
@@ -8,7 +9,7 @@
 # ============================================
 FROM node:22-slim AS base
 
-LABEL build.version="2026-01-05-MEMORY-FIX"
+LABEL build.version="2026-02-28-PROD-DEPS"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential ca-certificates git openssl pkg-config \
@@ -67,11 +68,13 @@ FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Copy node_modules from deps stage (includes all deps)
-# NOTE: We can't use --prod because vite.config.js is imported at runtime
-# for dev mode detection. This is a known limitation.
-COPY --from=deps /app/node_modules ./node_modules
+# Install ONLY production dependencies in the runner stage.
+# This is safe because vite and all build tools are dynamically imported
+# and only loaded in development mode (see server/_core/vite.ts).
+# Saves ~250 MB of unnecessary dev dependencies from the final image.
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
+RUN pnpm install --prod --frozen-lockfile && pnpm store prune
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist

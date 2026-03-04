@@ -55,9 +55,6 @@ services:
         value: "true"
       - key: ENABLE_QA_CRONS
         value: "true"
-      - key: UPLOAD_DIR
-        value: /tmp/uploads
-
       # Memory limit for the application (in bytes)
       # apps-d-1vcpu-2gb (2GB): 1536000000 (1.5GB)
       # This value is used by memoryOptimizer.ts for accurate health reporting
