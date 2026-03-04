@@ -92,6 +92,9 @@ Creates:
 pnpm seed:full
 # or simply
 pnpm seed
+
+# Canonical full seed path with batch image backfill
+pnpm seed:new:complete
 ```
 
 Creates:
@@ -102,6 +105,12 @@ Creates:
 - 500 inventory items
 - 200 orders
 - 150 invoices
+
+If you need to avoid synthetic QA/demo photos (real-client safe mode):
+
+```bash
+pnpm seed:new:complete:real-only
+```
 
 #### 3. Edge Cases Seed
 
@@ -206,6 +215,12 @@ pnpm seed
 ```bash
 pnpm run check:dashboard  # Verify data is missing
 pnpm seed                 # Seed the database
+```
+
+If client data is already live, run:
+
+```bash
+pnpm seed:new:complete:real-only
 ```
 
 ### Issue: Seed Script Fails

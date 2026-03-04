@@ -217,7 +217,7 @@ export const EmptyStatePresets = {
       action={
         props.onCreateOrder
           ? {
-              label: "Create Sale",
+              label: "New Sale",
               onClick: props.onCreateOrder,
             }
           : undefined

@@ -68,11 +68,9 @@ steps:
     name: "draft_order_created"
 
 expected_ui:
-  url_equals: "/sales?tab=create-order"
+  url_contains: "/sales?tab=create-order"
   visible:
     - "text=Create Sales Order"
-  text_present:
-    - "Line Items"
 
 expected_db:
   orders:

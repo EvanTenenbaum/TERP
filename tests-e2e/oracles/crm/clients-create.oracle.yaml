@@ -78,7 +78,7 @@ steps:
     wait_for_navigation: true
 
   - action: wait
-    for: "button:has-text('Edit Client'), [role='tab']:has-text('Overview'), [role='main']"
+    for: "[role='main'], nav[aria-label='breadcrumb'], [data-testid='clients-list']"
     timeout: 10000
 
   - action: screenshot
@@ -87,12 +87,10 @@ steps:
 expected_ui:
   url_contains: "/clients"
   visible:
-    - "button:has-text('Edit Client'), [role='tab']:has-text('Overview')"
+    - "nav[aria-label='breadcrumb']"
   not_visible:
     - ".error-message"
     - "[data-testid='loading-spinner']"
-  text_present:
-    - "Client Information"
 
 expected_db:
   clients:

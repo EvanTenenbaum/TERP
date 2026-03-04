@@ -5,7 +5,7 @@
  * Source priority:
  * 1) batch metadata mediaFiles URLs
  * 2) productMedia image URL for that product
- * 3) deterministic placeholder URL
+ * 3) deterministic open-source cannabis flower image URL
  */
 
 import { db } from "../../db-sync";
@@ -20,6 +20,11 @@ import type { SchemaValidator } from "../lib/validation";
 import type { PIIMasker } from "../lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "../lib/logging";
 import { createSeederResult, type SeederResult } from "./index";
+import {
+  formatOpenSourceFlowerCaption,
+  isOpenSourceFlowerFallbackEnabled,
+  pickOpenSourceFlowerImage,
+} from "./open-source-flower-images";
 
 type BatchMetadataMediaFile = {
   url?: unknown;
@@ -54,12 +59,8 @@ function parseMetadataFirstUrl(metadata: unknown): string | null {
   return null;
 }
 
-function placeholderImageUrl(batchId: number): string {
-  return `https://picsum.photos/seed/terp-batch-${batchId}/1200/1200`;
-}
-
 /**
- * Seed product_images using existing media first, placeholder as fallback.
+ * Seed product_images using existing media first, then open-source flower images.
  */
 export async function seedProductImages(
   count: number,
@@ -77,6 +78,7 @@ export async function seedProductImages(
       }
 
       seedLogger.tableSeeding("product_images", count);
+      const openSourceFallbackEnabled = isOpenSourceFlowerFallbackEnabled();
 
       const [systemUser] = await db
         .select({ id: users.id })
@@ -154,16 +156,32 @@ export async function seedProductImages(
           candidate.productId !== null
             ? productFallbackByProductId.get(candidate.productId)
             : undefined;
+        const openSourceFallback = openSourceFallbackEnabled
+          ? pickOpenSourceFlowerImage(candidate.batchId)
+          : null;
         const imageUrl =
-          metadataUrl ??
-          productFallback ??
-          placeholderImageUrl(candidate.batchId);
+          metadataUrl ?? productFallback ?? openSourceFallback?.url ?? null;
+
+        if (!imageUrl) {
+          result.skipped++;
+          result.errors.push(
+            `Batch ${candidate.batchId}: no metadata/productMedia${
+              openSourceFallbackEnabled ? "/open-source fallback" : ""
+            } image available`
+          );
+          continue;
+        }
+
+        const caption =
+          metadataUrl || productFallback || !openSourceFallback
+            ? null
+            : formatOpenSourceFlowerCaption(openSourceFallback).slice(0, 255);
 
         const record = {
           batchId: candidate.batchId,
           productId: candidate.productId,
           imageUrl,
-          caption: null,
+          caption,
           isPrimary: true,
           sortOrder: 0,
           status: "APPROVED" as const,

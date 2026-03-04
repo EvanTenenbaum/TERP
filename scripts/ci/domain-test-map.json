@@ -16,12 +16,14 @@
         "server/routers/cryptoPayments*",
         "server/routers/serviceBilling*",
         "client/src/pages/Account*",
+        "client/src/pages/AccountingWorkspacePage*",
         "client/src/pages/CogsSettings*",
-        "client/src/components/**/accounting/**"
+        "client/src/components/**/accounting/**",
+        "client/src/components/work-surface/InvoicesWorkSurface*",
+        "client/src/components/work-surface/InvoiceEditInspector*",
+        "client/src/components/work-surface/PaymentInspector*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/accounting-quick-payment.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/accounting-quick-payment.spec.ts"]
     },
 
     "calendar": {
@@ -33,9 +35,7 @@
         "client/src/pages/Calendar*",
         "client/src/pages/Scheduling*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/calendar-events.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/calendar-events.spec.ts"]
     },
 
     "clients": {
@@ -49,7 +49,11 @@
         "server/routers/credits*",
         "client/src/pages/Client*",
         "client/src/pages/Credit*",
-        "client/src/hooks/useClientsData*"
+        "client/src/pages/ClientProfilePage*",
+        "client/src/hooks/useClientsData*",
+        "client/src/components/orders/ClientPreview*",
+        "client/src/components/work-surface/ClientsWorkSurface*",
+        "client/src/components/work-surface/ClientLedgerWorkSurface*"
       ],
       "e2e_specs": [
         "tests-e2e/critical-paths/client-credit-workflow.spec.ts",
@@ -62,8 +66,15 @@
         "server/routers/orders*",
         "server/routers/orderEnhancements*",
         "server/routers/quotes*",
+        "client/src/pages/Order*",
         "client/src/pages/Orders*",
-        "client/src/pages/Quotes*"
+        "client/src/pages/Quotes*",
+        "client/src/pages/ConsolidatedWorkspaces*",
+        "client/src/components/orders/**",
+        "client/src/components/work-surface/OrdersWorkSurface*",
+        "client/src/components/work-surface/QuotesWorkSurface*",
+        "client/src/components/work-surface/InlinePriceEditor*",
+        "client/src/components/work-surface/PurchaseOrdersWorkSurface*"
       ],
       "e2e_specs": [
         "tests-e2e/critical-paths/order-fulfillment-workflow.spec.ts",
@@ -84,8 +95,11 @@
         "server/routers/productCatalogue*",
         "server/routers/strains*",
         "client/src/pages/Inventory*",
+        "client/src/pages/InventoryWorkspacePage*",
         "client/src/pages/IntakeReceipts*",
-        "client/src/hooks/useInventory*"
+        "client/src/hooks/useInventory*",
+        "client/src/components/sales/Inventory*",
+        "client/src/components/work-surface/InventoryWorkSurface*"
       ],
       "e2e_specs": [
         "tests-e2e/critical-paths/inventory-intake.spec.ts",
@@ -96,11 +110,10 @@
     "pick-pack": {
       "source_patterns": [
         "server/routers/pickPack*",
-        "client/src/pages/PickPack*"
+        "client/src/pages/PickPack*",
+        "client/src/components/work-surface/PickPackWorkSurface*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/pick-pack.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/pick-pack.spec.ts"]
     },
 
     "sales-sheets": {
@@ -124,9 +137,7 @@
         "client/src/pages/Locations*",
         "client/src/pages/CashLocations*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/locations-management.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/locations-management.spec.ts"]
     },
 
     "returns": {
@@ -135,9 +146,7 @@
         "server/routers/refunds*",
         "client/src/pages/Returns*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/returns-workflow.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/returns-workflow.spec.ts"]
     },
 
     "settings-admin": {
@@ -165,9 +174,7 @@
         "client/src/pages/VIP*",
         "client/src/pages/LiveShopping*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"]
     },
 
     "dashboard-analytics": {
@@ -200,9 +207,7 @@
         "client/src/hooks/useAuth*",
         "tests-e2e/fixtures/auth*"
       ],
-      "e2e_specs": [
-        "tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"
-      ]
+      "e2e_specs": ["tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"]
     },
 
     "vendors-purchasing": {
@@ -229,6 +234,8 @@
       "shared/**",
       "client/src/lib/trpc.ts",
       "client/src/lib/api-utils.ts",
+      "client/src/components/work-surface/**",
+      "client/src/components/layout/AppHeader*",
       "client/src/App.tsx",
       "client/src/main.tsx",
       "package.json",
