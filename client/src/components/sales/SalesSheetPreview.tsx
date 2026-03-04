@@ -99,8 +99,8 @@ function SortableItem({
     item.priceOverride?.toString() || ""
   );
 
-  const displayPrice = item.priceOverride || item.retailPrice;
-  const hasOverride = !!item.priceOverride;
+  const displayPrice = item.priceOverride ?? item.retailPrice;
+  const hasOverride = item.priceOverride !== undefined;
 
   const handleSaveOverride = () => {
     const value = parseFloat(overrideValue);
@@ -154,7 +154,8 @@ function SortableItem({
 
         <div className="mt-2 flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {item.quantity.toFixed(2)} units
+            {item.quantity.toFixed(2)} units × ${displayPrice.toFixed(2)} = $
+            {(displayPrice * item.quantity).toFixed(2)}
           </span>
 
           {isEditing ? (
@@ -269,12 +270,15 @@ export function SalesSheetPreview({
     priceOverride: priceOverrides.get(item.id),
   });
 
-  // Calculate totals
+  // Calculate totals — quantity × unit price per line (TER-320/TER-321)
   const totalItems = items.length;
-  const totalValue = items.reduce((sum, item) => {
-    const price = priceOverrides.get(item.id) || item.retailPrice;
-    return sum + price;
-  }, 0);
+  const totalValue =
+    Math.round(
+      items.reduce((sum, item) => {
+        const price = priceOverrides.get(item.id) ?? item.retailPrice;
+        return sum + price * (item.quantity ?? 1);
+      }, 0) * 100
+    ) / 100;
 
   const [, setLocation] = useLocation();
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -342,7 +346,7 @@ export function SalesSheetPreview({
   const handleSave = () => {
     const itemsToSave = items.map(item => ({
       ...item,
-      finalPrice: priceOverrides.get(item.id) || item.retailPrice,
+      finalPrice: priceOverrides.get(item.id) ?? item.retailPrice,
       priceMarkup: 0, // Default markup; can be overridden if needed
     }));
 
@@ -357,8 +361,9 @@ export function SalesSheetPreview({
   const handleCopyToClipboard = () => {
     const text = items
       .map((item, index) => {
-        const price = priceOverrides.get(item.id) || item.retailPrice;
-        return `${index + 1}. ${item.name} - $${price.toFixed(2)}`;
+        const price = priceOverrides.get(item.id) ?? item.retailPrice;
+        const lineTotal = price * (item.quantity ?? 1);
+        return `${index + 1}. ${item.name} — ${item.quantity} × $${price.toFixed(2)} = $${lineTotal.toFixed(2)}`;
       })
       .join("\n");
 
@@ -407,8 +412,13 @@ export function SalesSheetPreview({
     let y = 40;
 
     items.forEach((item, index) => {
-      const price = priceOverrides.get(item.id) || item.retailPrice;
-      doc.text(`${index + 1}. ${item.name} - $${price.toFixed(2)}`, 20, y);
+      const price = priceOverrides.get(item.id) ?? item.retailPrice;
+      const lineTotal = price * (item.quantity ?? 1);
+      doc.text(
+        `${index + 1}. ${item.name} — ${item.quantity} × $${price.toFixed(2)} = $${lineTotal.toFixed(2)}`,
+        20,
+        y
+      );
       y += 10;
 
       if (y > 270) {

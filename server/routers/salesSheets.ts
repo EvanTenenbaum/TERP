@@ -1,8 +1,31 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as salesSheetsDb from "../salesSheetsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { randomBytes } from "crypto";
+
+/**
+ * Calculate total value from items: SUM(unitPrice * quantity) with cent-rounding.
+ * Shared by save, saveDraft, and convertDraftToSheet validation.
+ */
+function calculateItemsTotal(
+  items: Array<{
+    finalPrice?: number;
+    retailPrice: number;
+    quantity: number;
+  }>
+): number {
+  const raw = items.reduce(
+    (sum, item) =>
+      sum + (item.finalPrice ?? item.retailPrice) * (item.quantity ?? 1),
+    0
+  );
+  return Math.round(raw * 100) / 100;
+}
 
 // Sales sheet item schema with full validation
 const salesSheetItemSchema = z.object({
@@ -71,11 +94,13 @@ export const salesSheetsRouter = router({
   list: protectedProcedure
     .use(requirePermission("orders:read"))
     .input(
-      z.object({
-        limit: z.number().min(1).max(1000).optional().default(50),
-        offset: z.number().min(0).optional().default(0),
-        clientId: z.number().positive().optional(),
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(1000).optional().default(50),
+          offset: z.number().min(0).optional().default(0),
+          clientId: z.number().positive().optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const limit = input?.limit ?? 50;
@@ -101,14 +126,16 @@ export const salesSheetsRouter = router({
     }),
 
   // Inventory with Pricing
-  getInventory: protectedProcedure.use(requirePermission("orders:read"))
+  getInventory: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ clientId: z.number().positive() }))
     .query(async ({ input }) => {
       return await salesSheetsDb.getInventoryWithPricing(input.clientId);
     }),
 
   // History
-  save: protectedProcedure.use(requirePermission("orders:create"))
+  save: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         clientId: z.number().positive(),
@@ -117,11 +144,8 @@ export const salesSheetsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify total matches items
-      const calculatedTotal = input.items.reduce(
-        (sum, item) => sum + (item.finalPrice || item.retailPrice),
-        0
-      );
+      // Verify total matches items — quantity × unit price (TER-320/TER-321)
+      const calculatedTotal = calculateItemsTotal(input.items);
 
       if (Math.abs(calculatedTotal - input.totalValue) > 0.01) {
         throw new Error("Total value mismatch");
@@ -134,7 +158,8 @@ export const salesSheetsRouter = router({
       });
     }),
 
-  getHistory: protectedProcedure.use(requirePermission("orders:read"))
+  getHistory: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number().positive(),
@@ -148,13 +173,15 @@ export const salesSheetsRouter = router({
       );
     }),
 
-  getById: protectedProcedure.use(requirePermission("orders:read"))
+  getById: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ sheetId: z.number().positive() }))
     .query(async ({ input }) => {
       return await salesSheetsDb.getSalesSheetById(input.sheetId);
     }),
 
-  delete: protectedProcedure.use(requirePermission("orders:create"))
+  delete: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ sheetId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteSalesSheet(input.sheetId);
@@ -162,7 +189,8 @@ export const salesSheetsRouter = router({
     }),
 
   // Templates
-  createTemplate: protectedProcedure.use(requirePermission("orders:create"))
+  createTemplate: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         name: z.string().min(1).max(255),
@@ -180,7 +208,8 @@ export const salesSheetsRouter = router({
       });
     }),
 
-  getTemplates: protectedProcedure.use(requirePermission("orders:read"))
+  getTemplates: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number().positive().optional(),
@@ -194,13 +223,15 @@ export const salesSheetsRouter = router({
       );
     }),
 
-  loadTemplate: protectedProcedure.use(requirePermission("orders:read"))
+  loadTemplate: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ templateId: z.number().positive() }))
     .query(async ({ input }) => {
       return await salesSheetsDb.loadTemplate(input.templateId);
     }),
 
-  deleteTemplate: protectedProcedure.use(requirePermission("orders:create"))
+  deleteTemplate: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ templateId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteTemplate(input.templateId);
@@ -215,7 +246,8 @@ export const salesSheetsRouter = router({
    * Save or update a draft
    * If draftId is provided, updates existing; otherwise creates new
    */
-  saveDraft: protectedProcedure.use(requirePermission("orders:create"))
+  saveDraft: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         draftId: z.number().positive().optional(),
@@ -226,13 +258,19 @@ export const salesSheetsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // Recalculate total server-side to prevent stale/incorrect values
+      const correctedTotal =
+        input.items.length > 0
+          ? calculateItemsTotal(input.items)
+          : input.totalValue;
+
       const userId = getAuthenticatedUserId(ctx);
       const draftId = await salesSheetsDb.saveDraft({
         draftId: input.draftId,
         clientId: input.clientId,
         name: input.name,
         items: input.items,
-        totalValue: input.totalValue,
+        totalValue: correctedTotal,
         createdBy: userId,
       });
       return { draftId };
@@ -242,11 +280,14 @@ export const salesSheetsRouter = router({
    * Get all drafts for the current user
    * Optionally filter by clientId
    */
-  getDrafts: protectedProcedure.use(requirePermission("orders:read"))
+  getDrafts: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
-      z.object({
-        clientId: z.number().positive().optional(),
-      }).optional()
+      z
+        .object({
+          clientId: z.number().positive().optional(),
+        })
+        .optional()
     )
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -256,7 +297,8 @@ export const salesSheetsRouter = router({
   /**
    * Get a specific draft by ID
    */
-  getDraftById: protectedProcedure.use(requirePermission("orders:read"))
+  getDraftById: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ draftId: z.number().positive() }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -266,7 +308,8 @@ export const salesSheetsRouter = router({
   /**
    * Delete a draft
    */
-  deleteDraft: protectedProcedure.use(requirePermission("orders:create"))
+  deleteDraft: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ draftId: z.number().positive() }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -277,11 +320,15 @@ export const salesSheetsRouter = router({
   /**
    * Convert a draft to a finalized sales sheet
    */
-  convertDraftToSheet: protectedProcedure.use(requirePermission("orders:create"))
+  convertDraftToSheet: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ draftId: z.number().positive() }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
-      const sheetId = await salesSheetsDb.convertDraftToSheet(input.draftId, userId);
+      const sheetId = await salesSheetsDb.convertDraftToSheet(
+        input.draftId,
+        userId
+      );
       return { sheetId };
     }),
 
@@ -294,7 +341,8 @@ export const salesSheetsRouter = router({
   /**
    * Generate a shareable link for a sales sheet
    */
-  generateShareLink: protectedProcedure.use(requirePermission("orders:create"))
+  generateShareLink: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         sheetId: z.number().positive(),
@@ -318,7 +366,8 @@ export const salesSheetsRouter = router({
   /**
    * Revoke a share link
    */
-  revokeShareLink: protectedProcedure.use(requirePermission("orders:create"))
+  revokeShareLink: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ sheetId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.revokeShareToken(input.sheetId);
@@ -344,12 +393,21 @@ export const salesSheetsRouter = router({
       return {
         id: sheet.id,
         clientName: sheet.clientName,
-        items: (sheet.items as unknown as Array<{ id: number; name: string; category?: string; quantity: number; finalPrice?: number; retailPrice: number }>).map((item) => ({
+        items: (
+          sheet.items as unknown as Array<{
+            id: number;
+            name: string;
+            category?: string;
+            quantity: number;
+            finalPrice?: number;
+            retailPrice: number;
+          }>
+        ).map(item => ({
           id: item.id,
           name: item.name,
           category: item.category,
           quantity: item.quantity,
-          price: item.finalPrice || item.retailPrice,
+          price: item.finalPrice ?? item.retailPrice,
         })),
         totalValue: sheet.totalValue,
         itemCount: sheet.itemCount,
@@ -365,7 +423,8 @@ export const salesSheetsRouter = router({
   /**
    * Convert a sales sheet to an order
    */
-  convertToOrder: protectedProcedure.use(requirePermission("orders:create"))
+  convertToOrder: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         sheetId: z.number().positive(),
@@ -385,7 +444,8 @@ export const salesSheetsRouter = router({
   /**
    * Convert a sales sheet to a live shopping session
    */
-  convertToLiveSession: protectedProcedure.use(requirePermission("orders:create"))
+  convertToLiveSession: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ sheetId: z.number().positive() }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -404,7 +464,8 @@ export const salesSheetsRouter = router({
    * Save a view configuration (filters, sort, columns)
    * Reuses the templates table with filters/columnVisibility JSON fields
    */
-  saveView: protectedProcedure.use(requirePermission("orders:create"))
+  saveView: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         id: z.number().positive().optional(), // For updates
@@ -422,8 +483,15 @@ export const salesSheetsRouter = router({
           inStockOnly: z.boolean(),
         }),
         sort: z.object({
-          field: z.enum(['name', 'category', 'retailPrice', 'quantity', 'basePrice', 'grade']),
-          direction: z.enum(['asc', 'desc']),
+          field: z.enum([
+            "name",
+            "category",
+            "retailPrice",
+            "quantity",
+            "basePrice",
+            "grade",
+          ]),
+          direction: z.enum(["asc", "desc"]),
         }),
         columnVisibility: z.object({
           category: z.boolean(),
@@ -450,11 +518,14 @@ export const salesSheetsRouter = router({
   /**
    * Get saved views for a client (includes universal views)
    */
-  getViews: protectedProcedure.use(requirePermission("orders:read"))
+  getViews: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
-      z.object({
-        clientId: z.number().positive().optional(),
-      }).optional()
+      z
+        .object({
+          clientId: z.number().positive().optional(),
+        })
+        .optional()
     )
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -465,7 +536,8 @@ export const salesSheetsRouter = router({
    * Load a specific view by ID
    * FIX: Now passes userId for authorization check
    */
-  loadView: protectedProcedure.use(requirePermission("orders:read"))
+  loadView: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ viewId: z.number().positive() }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -475,7 +547,8 @@ export const salesSheetsRouter = router({
   /**
    * Set a view as the default for a client
    */
-  setDefaultView: protectedProcedure.use(requirePermission("orders:create"))
+  setDefaultView: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         viewId: z.number().positive(),
@@ -491,7 +564,8 @@ export const salesSheetsRouter = router({
   /**
    * Delete a saved view
    */
-  deleteView: protectedProcedure.use(requirePermission("orders:create"))
+  deleteView: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(z.object({ viewId: z.number().positive() }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);

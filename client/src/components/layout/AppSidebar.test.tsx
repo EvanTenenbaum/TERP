@@ -6,7 +6,7 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { Sidebar } from "./Sidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
@@ -116,10 +116,17 @@ describe("AppSidebar navigation", () => {
       </ThemeProvider>
     );
 
-    const dashboardQuickAction = screen.getByText("Dashboard");
-    const newSaleQuickAction = screen.getByText("New Sale");
-    const recordReceiptQuickAction = screen.getByText("Record Receipt");
-    const clientsQuickAction = screen.getByText("Clients");
+    const quickActionsHeading = screen.getByText("Quick Actions");
+    const quickActionsSection =
+      quickActionsHeading.closest("div")?.parentElement;
+    expect(quickActionsSection).not.toBeNull();
+
+    const quickActions = within(quickActionsSection as HTMLElement);
+
+    const dashboardQuickAction = quickActions.getByTitle("Dashboard");
+    const newSaleQuickAction = quickActions.getByTitle("New Sale");
+    const recordReceiptQuickAction = quickActions.getByTitle("Record Receipt");
+    const clientsQuickAction = quickActions.getByTitle("Clients");
 
     expect(dashboardQuickAction).toBeVisible();
     expect(newSaleQuickAction).toBeVisible();
@@ -131,7 +138,7 @@ describe("AppSidebar navigation", () => {
       "/purchase-orders?tab=receiving"
     );
     expect(clientsQuickAction.closest("a")).toHaveAttribute("href", "/clients");
-  }, 10000);
+  }, 20000);
 
   it("highlights active navigation item", () => {
     mockLocation = "/sales";

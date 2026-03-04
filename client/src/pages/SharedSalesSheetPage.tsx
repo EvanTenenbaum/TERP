@@ -29,7 +29,11 @@ export default function SharedSalesSheetPage() {
   const [, params] = useRoute("/shared/sales-sheet/:token");
   const token = params?.token || "";
 
-  const { data: sheet, isLoading, error } = trpc.salesSheets.getByToken.useQuery(
+  const {
+    data: sheet,
+    isLoading,
+    error,
+  } = trpc.salesSheets.getByToken.useQuery(
     { token },
     { enabled: !!token, retry: false }
   );
@@ -108,7 +112,12 @@ export default function SharedSalesSheetPage() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold">
-                  {formatCurrency(Number(sheet.totalValue))}
+                  {formatCurrency(
+                    sheet.items.reduce(
+                      (sum, i) => sum + i.price * i.quantity,
+                      0
+                    )
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {sheet.itemCount} items
@@ -142,7 +151,8 @@ export default function SharedSalesSheetPage() {
                   <TableHead>Item</TableHead>
                   <TableHead className="text-center">Category</TableHead>
                   <TableHead className="text-right">Qty Available</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead className="text-right">Line Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -165,6 +175,9 @@ export default function SharedSalesSheetPage() {
                     <TableCell className="text-right font-medium">
                       {formatCurrency(item.price)}
                     </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(item.price * item.quantity)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -177,7 +190,12 @@ export default function SharedSalesSheetPage() {
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(Number(sheet.totalValue))}
+                  {formatCurrency(
+                    sheet.items.reduce(
+                      (sum, i) => sum + i.price * i.quantity,
+                      0
+                    )
+                  )}
                 </p>
               </div>
             </div>
