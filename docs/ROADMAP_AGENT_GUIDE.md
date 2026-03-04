@@ -12,7 +12,8 @@ This repository’s **single source of truth** for execution work is:
 2. Ensure there is a roadmap task for the work you’re about to do
 3. Create a session file under `docs/sessions/active/`
 4. Confirm no conflicts in `docs/ACTIVE_SESSIONS.md`
-5. Select verification mode per `.kiro/steering/08-adaptive-qa-protocol.md`
+5. Select risk tier and gate profile per `docs/protocols/QA_GATING_EFFICIENCY_PROTOCOL_V1.md`
+6. Create a QA gate declaration from `docs/templates/QA_GATE_DECLARATION_TEMPLATE.md`
 
 ### When adding tasks
 
@@ -40,3 +41,4 @@ If validation fails, **do not commit** until fixed.
 ## Reference
 
 - Initiative → roadmap workflow: `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md`
+- Default testing/gating standard: `docs/protocols/QA_GATING_EFFICIENCY_PROTOCOL_V1.md`

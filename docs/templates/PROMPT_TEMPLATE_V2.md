@@ -16,6 +16,11 @@
 
 Follow the 4-phase protocol in `docs/ROADMAP_AGENT_GUIDE.md`:
 
+Apply default testing standard:
+
+- `docs/protocols/QA_GATING_EFFICIENCY_PROTOCOL_V1.md`
+- `docs/templates/QA_GATE_DECLARATION_TEMPLATE.md`
+
 ### Phase 1: Pre-Flight Check
 
 1. Clone repository: `git clone https://github.com/EvanTenenbaum/TERP.git`
@@ -33,9 +38,11 @@ Follow the 4-phase protocol in `docs/ROADMAP_AGENT_GUIDE.md`:
 
 ### Phase 3: Testing
 
-1. Run all tests: `pnpm test`
-2. Manual testing
-3. Verify fix resolves the issue
+1. Declare risk tier + gate profile using QA Gate Declaration template
+2. Run required gates for selected risk tier
+3. Run V4 QA gate if STRICT/RED
+4. Produce evidence bundle under `docs/execution/`
+5. Verify fix resolves the issue
 
 ### Phase 4: Completion
 
@@ -84,6 +91,8 @@ Follow the 4-phase protocol in `docs/ROADMAP_AGENT_GUIDE.md`:
 - [ ] Issue resolved
 - [ ] Tests passing
 - [ ] Manual testing complete
+- [ ] QA Gate Declaration included
+- [ ] Evidence bundle created and referenced
 - [ ] **Roadmap updated to ✅ Complete**
 - [ ] Session archived
 - [ ] **Pushed to main (no PR)**

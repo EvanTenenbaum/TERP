@@ -8,9 +8,13 @@
 **Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 4-8h
+**Risk Tier:** STRICT
+**Gate Profile:** B + C + D
+**Impact Mapping Confidence:** medium
 **Module:** `path/to/module`
 **Dependencies:** None
 **Prompt:** `docs/prompts/[TASK_ID].md`
+**Evidence Bundle:** `docs/execution/YYYY-MM-DD-[TASK_ID]/`
 
 **Problem:**
 [Describe the problem or need this task addresses.]
@@ -28,6 +32,8 @@
 - [ ] [Deliverable 3]
 - [ ] [Deliverable 4]
 - [ ] [Deliverable 5]
+- [ ] QA Gate Declaration completed (`docs/templates/QA_GATE_DECLARATION_TEMPLATE.md`)
+- [ ] Evidence bundle produced under `docs/execution/`
 
 ---
 
@@ -35,6 +41,9 @@
 - [ ] Status uses: ready, in-progress, complete, or blocked
 - [ ] Priority uses: HIGH, MEDIUM, or LOW
 - [ ] Estimate uses format like: 4-8h, 16h, 2d
+- [ ] Risk Tier uses: SAFE, STRICT, or RED
+- [ ] Gate Profile is listed
+- [ ] Impact Mapping Confidence uses: high, medium, or low
 - [ ] Module path is valid
 - [ ] Prompt file exists at docs/prompts/[TASK_ID].md
 - [ ] Prompt file has "## Implementation Guide" section

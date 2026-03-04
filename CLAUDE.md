@@ -1,8 +1,8 @@
 # TERP Agent Protocol
 
-**Version**: 1.2
+**Version**: 1.3
 **Status**: MANDATORY
-**Last Updated**: 2026-02-27
+**Last Updated**: 2026-03-03
 
 > **READ THIS FIRST**: Every agent (Claude, Cursor, ChatGPT, Kiro, or any other) MUST read this document in full before starting any TERP work. This is the single source of truth for how agents operate in this codebase.
 
@@ -64,6 +64,23 @@ Before marking ANY work complete:
 4. **Verify deployment** (if code was pushed)
 5. **Perform Live QA** (using `terp-qa` protocol)
 
+### Default Testing Standard (Mandatory)
+
+`docs/protocols/QA_GATING_EFFICIENCY_PROTOCOL_V1.md` is now the default testing/gating standard for all TERP plans and agent execution.
+
+For every task, session, and completion report, include a **QA Gate Declaration** with:
+
+- `Risk Tier`: SAFE | STRICT | RED
+- `Gate Profile`: A/B/C/D/E gates executed
+- `Impact Mapping Confidence`: high | medium | low
+- `Evidence Bundle`: `docs/execution/<DATE>-<task>/...`
+
+Mandatory enforcement rules:
+
+- No silent `SKIP` for required checks. Low-confidence impact mapping must trigger smoke coverage.
+- Inventory/accounting/auth/migration work cannot run as SAFE.
+- Blocking tests allow at most one retry; first-failure evidence must be retained.
+
 ### Autonomy Modes
 
 Select the appropriate mode based on risk level:
@@ -113,7 +130,7 @@ These areas require maximum caution:
 | Orders/Fulfillment   | Customer impact, inventory          |
 | Database Migrations  | Data integrity, rollback difficulty |
 
-### Definition of Done (12 Criteria)
+### Definition of Done (13 Criteria)
 
 A task is NOT complete until ALL pass:
 
@@ -129,6 +146,7 @@ A task is NOT complete until ALL pass:
 10. ✅ Requirements traceability - every acceptance criterion mapped to evidence
 11. ✅ Blast radius reviewed - impacted modules verified with targeted regressions
 12. ✅ Evidence packet posted to Linear/roadmap task before marking complete
+13. ✅ QA Gate Declaration completed and linked to evidence bundle
 
 ### V4 QA Gate (Mandatory for STRICT/RED)
 
@@ -185,6 +203,10 @@ When completing work, always provide:
 ```
 VERIFICATION RESULTS
 ====================
+Risk Tier:  SAFE | STRICT | RED
+Gate Profile: A/B/C/D/E (list executed)
+Impact Mapping Confidence: high | medium | low
+Evidence Bundle: docs/execution/<DATE>-<task>/...
 TypeScript: ✅ PASS | ❌ FAIL (X errors)
 Lint:       ✅ PASS | ❌ FAIL (X warnings)
 Tests:      ✅ PASS | ❌ FAIL (X/Y passing)

@@ -5,6 +5,10 @@
 **Started:** YYYY-MM-DDTHH:MM:SSZ
 **Expected Completion:** YYYY-MM-DD
 **Module:** `path/to/module`
+**Risk Tier:** SAFE | STRICT | RED
+**Gate Profile:** A/B/C/D/E
+**Impact Mapping Confidence:** high | medium | low
+**Evidence Bundle:** `docs/execution/YYYY-MM-DD-[TASK_ID]/`
 
 ---
 
@@ -14,6 +18,7 @@
 - [ ] Phase 2: Session Startup
 - [ ] Phase 3: Development
 - [ ] Phase 4: Completion
+- [ ] QA Gate Declaration completed
 
 ---
 

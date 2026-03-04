@@ -5,6 +5,10 @@
 **Estimated Time:** [ESTIMATE]
 **Actual Time:** [ACTUAL_TIME]
 **Variance:** [VARIANCE]
+**Risk Tier:** SAFE | STRICT | RED
+**Gate Profile:** A/B/C/D/E
+**Impact Mapping Confidence:** high | medium | low
+**Evidence Bundle:** `docs/execution/YYYY-MM-DD-[TASK_ID]/`
 
 ---
 
@@ -22,11 +26,15 @@
 
 ---
 
-## Test Results
+## Verification Results
 
-- **Total tests:** [NUMBER]
-- **Passing:** [NUMBER]
-- **Coverage:** [PERCENTAGE]
+- **TypeScript (`pnpm check`):** ✅ PASS | ❌ FAIL
+- **Lint (`pnpm lint`):** ✅ PASS | ❌ FAIL
+- **Tests (`pnpm test` or targeted set):** ✅ PASS | ❌ FAIL
+- **Build (`pnpm build`):** ✅ PASS | ❌ FAIL
+- **V4 QA Gate:** ✅ PASS | ❌ FAIL
+- **Blast Radius Review:** ✅ PASS | ❌ FAIL
+- **Deployment Verification (if applicable):** ✅ PASS | ❌ FAIL | N/A
 
 ---
 
@@ -56,3 +64,14 @@
 ---
 
 **PR:** #[PR_NUMBER]
+
+---
+
+## QA Gate Declaration
+
+```text
+Risk Tier: ...
+Gate Profile: ...
+Impact Mapping Confidence: ...
+Evidence Bundle: ...
+```

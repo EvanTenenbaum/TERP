@@ -1,7 +1,7 @@
 # TERP Development Protocols
 
-**Version:** 1.2
-**Last Updated:** 2026-02-09
+**Version:** 1.3
+**Last Updated:** 2026-03-03
 
 This directory contains all code quality and development standards for the TERP project.
 
@@ -23,6 +23,7 @@ This directory contains all code quality and development standards for the TERP 
 
 | Protocol                                                         | Purpose                                                                                            | Priority                         |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------- |
+| [QA_GATING_EFFICIENCY_PROTOCOL_V1.md](./QA_GATING_EFFICIENCY_PROTOCOL_V1.md) | Default TERP risk-weighted QA/gating standard (99/1 model) with anti-false-green guardrails       | **MANDATORY DEFAULT**            |
 | [CODE_STANDARDS.md](./CODE_STANDARDS.md)                         | TypeScript, React, error handling patterns                                                         | **MANDATORY**                    |
 | [TESTING_QUALITY.md](./TESTING_QUALITY.md)                       | Test coverage, quality standards, anti-patterns                                                    | **MANDATORY**                    |
 | [THIRD_PARTY_QA_PROTOCOL_V4.md](./THIRD_PARTY_QA_PROTOCOL_V4.md) | Adversarial five-lens QA + mandatory preexisting-issue disposition (30% rule + roadmap escalation) | **MANDATORY FOR THIRD-PARTY QA** |
@@ -63,6 +64,7 @@ This directory contains all code quality and development standards for the TERP 
 - Tier 2 (business): 80%+ coverage
 - NO placeholder tests
 - NO implementation detail testing
+- Default testing protocol: `QA_GATING_EFFICIENCY_PROTOCOL_V1.md`
 
 ### Database
 
