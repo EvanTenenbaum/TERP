@@ -785,11 +785,15 @@ export function InvoiceToPaymentFlow({
 
       const paymentAmount = parseFloat(config.amount) || 0;
       if (paymentAmount <= 0) {
-        toast.error("Please enter a valid payment amount");
+        toast.error(
+          "Field: Payment Amount. Rule: must be greater than zero. Fix: enter a positive dollar amount."
+        );
         return;
       }
       if (paymentAmount > amountDue) {
-        toast.error("Payment amount cannot exceed amount due");
+        toast.error(
+          `Field: Payment Amount. Rule: cannot exceed amount due (${formatCurrency(amountDue)}). Fix: reduce the payment amount or select a quick-amount preset.`
+        );
         return;
       }
 

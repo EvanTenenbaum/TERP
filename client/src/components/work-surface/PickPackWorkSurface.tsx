@@ -762,6 +762,23 @@ export function PickPackWorkSurface() {
   });
   const selectedItems = itemSelection.getSelectedArray();
 
+  // Status filter exit notification (XP-A-004-PPK / TER-498)
+  // Mirrors the Orders pattern: warn user when a status change moves an order
+  // outside the currently-active status filter.
+  const notifyStatusFilterExit = useCallback(
+    (orderNumber: string | undefined, newStatus: string) => {
+      const normalizedFilter = statusFilter.toUpperCase();
+      const normalizedTarget = newStatus.toUpperCase();
+      if (normalizedFilter === "ALL" || normalizedFilter === normalizedTarget) {
+        return;
+      }
+      toast.info(
+        `${orderNumber ?? "Order"} moved to ${normalizedTarget} and is now hidden by the ${normalizedFilter.toLowerCase()} filter. Switch to All or ${normalizedTarget.charAt(0) + normalizedTarget.slice(1).toLowerCase()} to keep tracking it.`
+      );
+    },
+    [statusFilter]
+  );
+
   // Mutations
   const packItemsMutation = trpc.pickPack.packItems.useMutation({
     onMutate: () => setSaving(),
@@ -772,6 +789,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("Items packed successfully");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PICKING");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -790,6 +808,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("All items packed");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PACKED");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -808,6 +827,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("Items unpacked");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PICKING");
     },
     onError: (error: { message: string }) => {
       if (!handleConflictError(error)) {
@@ -820,8 +840,11 @@ export function PickPackWorkSurface() {
   const markReadyMutation = trpc.pickPack.markOrderReady.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
-      const priorFilter = statusFilter;
+      const orderNum = orderDetails?.order.orderNumber;
       setSelectedOrderId(null);
+      // Close inspector on terminal status change (XP-A-007-PPK / TER-504)
+      setInspectorMode(null);
+      setInspectedItemId(null);
       void refetchPickList();
       void refetchStats();
       setSaved();
@@ -830,11 +853,7 @@ export function PickPackWorkSurface() {
           ? "Order marked ready for shipping"
           : "Order marked ready for payment handoff"
       );
-      if (priorFilter !== "ALL" && priorFilter !== "READY") {
-        toast.info(
-          `Order moved to READY and is now hidden by the ${priorFilter.toLowerCase()} filter. Switch to All or Ready to keep tracking it.`
-        );
-      }
+      notifyStatusFilterExit(orderNum, "READY");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)

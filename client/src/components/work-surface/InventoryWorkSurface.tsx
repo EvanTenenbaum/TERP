@@ -1009,6 +1009,22 @@ export function InventoryWorkSurface() {
   const toggleBatchSelection = selection.toggle;
   const toggleAllVisibleSelection = selection.toggleAll;
 
+  // Status-filter-exit notification (TER-518 / XP-A-004-INV)
+  const notifyStatusFilterExit = useCallback(
+    (batch: { sku?: string; id: number }, newStatus: string) => {
+      if (filters.status.length === 0) return;
+      const exitMessage = getInventoryStatusFilterExitMessage({
+        batchSku: batch.sku || `Batch ${batch.id}`,
+        activeStatuses: filters.status,
+        toStatus: newStatus,
+      });
+      if (exitMessage) {
+        toast.info(exitMessage, { duration: 4000 });
+      }
+    },
+    [filters.status]
+  );
+
   // Mutations
   const undoStatusMutation = trpc.inventory.updateStatus.useMutation();
   const undoAdjustQtyMutation = trpc.inventory.adjustQty.useMutation();
@@ -1236,14 +1252,7 @@ export function InventoryWorkSurface() {
         {
           onSuccess: () => {
             if (!previousStatus || previousStatus === newStatus) return;
-            const exitMessage = getInventoryStatusFilterExitMessage({
-              batchSku: batch?.sku || `Batch ${batchId}`,
-              activeStatuses: filters.status,
-              toStatus: newStatus,
-            });
-            if (exitMessage) {
-              toast.info(exitMessage);
-            }
+            notifyStatusFilterExit({ sku: batch?.sku, id: batchId }, newStatus);
             undo.registerAction({
               description: `Changed status to ${newStatus.replace(/_/g, " ")}`,
               undo: async () => {
@@ -1263,7 +1272,7 @@ export function InventoryWorkSurface() {
     },
     [
       items,
-      filters.status,
+      notifyStatusFilterExit,
       undo,
       undoStatusMutation,
       updateStatusMutation,
@@ -1348,6 +1357,8 @@ export function InventoryWorkSurface() {
     }
     const previousStatus = items.find(item => item.batch?.id === editBatchId)
       ?.batch?.batchStatus;
+    const batchSku = items.find(item => item.batch?.id === editBatchId)?.batch
+      ?.sku;
     updateStatusMutation.mutate(
       {
         id: editBatchId,
@@ -1356,6 +1367,10 @@ export function InventoryWorkSurface() {
       {
         onSuccess: () => {
           if (!previousStatus || previousStatus === editStatus) return;
+          notifyStatusFilterExit(
+            { sku: batchSku, id: editBatchId },
+            editStatus
+          );
           undo.registerAction({
             description: `Edited status to ${editStatus.replace(/_/g, " ")}`,
             undo: async () => {
@@ -1377,6 +1392,7 @@ export function InventoryWorkSurface() {
     editBatchId,
     editStatus,
     items,
+    notifyStatusFilterExit,
     undo,
     undoStatusMutation,
     updateStatusMutation,
@@ -1406,6 +1422,18 @@ export function InventoryWorkSurface() {
       },
       {
         onSuccess: () => {
+          // Notify if bulk status change moves batches outside the active filter
+          if (filters.status.length > 0) {
+            const normalizedTarget = normalizeStatus(bulkStatus);
+            const normalizedActive = filters.status.map(normalizeStatus);
+            if (!normalizedActive.includes(normalizedTarget)) {
+              toast.info(
+                `${previousStatuses.length} batch${previousStatuses.length === 1 ? "" : "es"} moved to ${normalizedTarget} and may be hidden by the current filter.`,
+                { duration: 4000 }
+              );
+            }
+          }
+
           if (!previousStatuses.length) return;
           undo.registerAction({
             description: `Updated status for ${previousStatuses.length} batch${previousStatuses.length === 1 ? "" : "es"}`,
@@ -1429,6 +1457,7 @@ export function InventoryWorkSurface() {
     selectedBatchIds,
     items,
     bulkStatus,
+    filters.status,
     bulkUpdateStatusMutation,
     undo,
     undoStatusMutation,

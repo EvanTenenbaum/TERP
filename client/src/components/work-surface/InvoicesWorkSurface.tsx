@@ -150,6 +150,9 @@ const STATUS_ICONS: Record<string, ReactNode> = {
 
 const STATUS_COLORS = INVOICE_STATUS_TOKENS;
 
+// TER-507: localStorage key for persisting view state across page reloads
+const INVOICES_VIEW_STATE_KEY = "terp-invoices-view-v2";
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -469,9 +472,29 @@ function InvoiceInspectorContent({
 export function InvoicesWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // State
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  // State — TER-507: Initialize from localStorage for filter persistence
+  const [search, setSearch] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = localStorage.getItem(INVOICES_VIEW_STATE_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw) as { search?: string };
+      return parsed.search ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [statusFilter, setStatusFilter] = useState(() => {
+    if (typeof window === "undefined") return "ALL";
+    try {
+      const raw = localStorage.getItem(INVOICES_VIEW_STATE_KEY);
+      if (!raw) return "ALL";
+      const parsed = JSON.parse(raw) as { statusFilter?: string };
+      return parsed.statusFilter ?? "ALL";
+    } catch {
+      return "ALL";
+    }
+  });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(
     null
   );
@@ -481,6 +504,22 @@ export function InvoicesWorkSurface() {
   const [showAging, setShowAging] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 50;
+
+  // TER-507: Persist filter state to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        INVOICES_VIEW_STATE_KEY,
+        JSON.stringify({
+          search,
+          statusFilter,
+        })
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [search, statusFilter]);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();

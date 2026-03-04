@@ -145,6 +145,9 @@ const CLIENT_TYPE_FILTERS: {
   { value: "contractor", label: "Contractors" },
 ];
 
+// TER-508: localStorage key for persisting view state across page reloads
+const CLIENTS_VIEW_STATE_KEY = "terp-clients-view-v2";
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -513,18 +516,90 @@ export function ClientsWorkSurface() {
   const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // State
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<ClientTypeFilter | "all">("all");
+  // State — TER-508: Initialize from localStorage for filter persistence
+  const [search, setSearch] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = localStorage.getItem(CLIENTS_VIEW_STATE_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw) as { search?: string };
+      return parsed.search ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [typeFilter, setTypeFilter] = useState<ClientTypeFilter | "all">(() => {
+    if (typeof window === "undefined") return "all";
+    try {
+      const raw = localStorage.getItem(CLIENTS_VIEW_STATE_KEY);
+      if (!raw) return "all";
+      const parsed = JSON.parse(raw) as { typeFilter?: string };
+      const saved = parsed.typeFilter;
+      const validFilters: Array<ClientTypeFilter | "all"> = [
+        "all",
+        "buyer",
+        "seller",
+        "brand",
+        "referee",
+        "contractor",
+      ];
+      if (saved && validFilters.includes(saved as ClientTypeFilter | "all")) {
+        return saved as ClientTypeFilter | "all";
+      }
+      return "all";
+    } catch {
+      return "all";
+    }
+  });
   const [page, setPage] = useState(0);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortColumn, setSortColumn] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(CLIENTS_VIEW_STATE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { sortColumn?: string | null };
+      return parsed.sortColumn ?? null;
+    } catch {
+      return null;
+    }
+  });
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(() => {
+    if (typeof window === "undefined") return "desc";
+    try {
+      const raw = localStorage.getItem(CLIENTS_VIEW_STATE_KEY);
+      if (!raw) return "desc";
+      const parsed = JSON.parse(raw) as { sortDirection?: string };
+      const saved = parsed.sortDirection;
+      if (saved === "asc" || saved === "desc") return saved;
+      return "desc";
+    } catch {
+      return "desc";
+    }
+  });
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   const limit = 50;
+
+  // TER-508: Persist filter state to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        CLIENTS_VIEW_STATE_KEY,
+        JSON.stringify({
+          search,
+          typeFilter,
+          sortColumn,
+          sortDirection,
+        })
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [search, typeFilter, sortColumn, sortDirection]);
 
   // Work Surface hooks
   // QA-005 FIX: Removed unused saveState variable
