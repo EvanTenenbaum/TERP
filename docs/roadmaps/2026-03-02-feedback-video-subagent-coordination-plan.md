@@ -38,6 +38,11 @@
 - Owns: merge queue, wave closeout checklist, regression gate, release verdict.
 - Must not: bypass QA gate or merge unverified tickets.
 
+7. Linear clerk lane
+
+- Owns: evidence packet posting, parent rollups (`TER-465..TER-477`), and cross-epic updates (`TER-478`).
+- Must not: implement code or override QA PASS/BLOCKED verdicts.
+
 ## Handoff contracts
 
 Each handoff packet must include:

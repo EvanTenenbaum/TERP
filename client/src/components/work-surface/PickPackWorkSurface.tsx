@@ -578,43 +578,30 @@ export function PickPackWorkSurface() {
 
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  // Parse localStorage once and distribute
+  const savedViewState = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as {
+        statusFilter?: PickPackStatus | "ALL";
+        searchQuery?: string;
+        sortKey?: PickPackSortKey;
+      };
+    } catch {
+      return null;
+    }
+  }, []);
   const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
-    () => {
-      if (typeof window === "undefined") return "ALL";
-      try {
-        const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-        if (!raw) return "ALL";
-        const parsed = JSON.parse(raw) as {
-          statusFilter?: PickPackStatus | "ALL";
-        };
-        return parsed.statusFilter ?? "ALL";
-      } catch {
-        return "ALL";
-      }
-    }
+    () => savedViewState?.statusFilter ?? "ALL"
   );
-  const [searchQuery, setSearchQuery] = useState(() => {
-    if (typeof window === "undefined") return "";
-    try {
-      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-      if (!raw) return "";
-      const parsed = JSON.parse(raw) as { searchQuery?: string };
-      return parsed.searchQuery ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [sortKey, setSortKey] = useState<PickPackSortKey>(() => {
-    if (typeof window === "undefined") return "newest";
-    try {
-      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-      if (!raw) return "newest";
-      const parsed = JSON.parse(raw) as { sortKey?: PickPackSortKey };
-      return parsed.sortKey ?? "newest";
-    } catch {
-      return "newest";
-    }
-  });
+  const [searchQuery, setSearchQuery] = useState(
+    () => savedViewState?.searchQuery ?? ""
+  );
+  const [sortKey, setSortKey] = useState<PickPackSortKey>(
+    () => savedViewState?.sortKey ?? "newest"
+  );
   const [focusedOrderIndex, setFocusedOrderIndex] = useState(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState(0);
   const [focusZone, setFocusZone] = useState<"list" | "items">("list");
@@ -624,7 +611,6 @@ export function PickPackWorkSurface() {
   const [inspectedItemId, setInspectedItemId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
       localStorage.setItem(
         PICK_PACK_VIEW_STATE_KEY,
@@ -762,6 +748,23 @@ export function PickPackWorkSurface() {
   });
   const selectedItems = itemSelection.getSelectedArray();
 
+  // Status filter exit notification (XP-A-004-PPK / TER-498)
+  // Mirrors the Orders pattern: warn user when a status change moves an order
+  // outside the currently-active status filter.
+  const notifyStatusFilterExit = useCallback(
+    (orderNumber: string | undefined, newStatus: string) => {
+      const normalizedFilter = statusFilter.toUpperCase();
+      const normalizedTarget = newStatus.toUpperCase();
+      if (normalizedFilter === "ALL" || normalizedFilter === normalizedTarget) {
+        return;
+      }
+      toast.info(
+        `${orderNumber ?? "Order"} moved to ${normalizedTarget} and is now hidden by the ${normalizedFilter.toLowerCase()} filter. Switch to All or ${normalizedTarget.charAt(0) + normalizedTarget.slice(1).toLowerCase()} to keep tracking it.`
+      );
+    },
+    [statusFilter]
+  );
+
   // Mutations
   const packItemsMutation = trpc.pickPack.packItems.useMutation({
     onMutate: () => setSaving(),
@@ -772,6 +775,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("Items packed successfully");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PACKED");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -790,6 +794,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("All items packed");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PACKED");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -808,6 +813,7 @@ export function PickPackWorkSurface() {
       void refetchStats();
       setSaved();
       toast.success("Items unpacked");
+      notifyStatusFilterExit(orderDetails?.order.orderNumber, "PICKING");
     },
     onError: (error: { message: string }) => {
       if (!handleConflictError(error)) {
@@ -820,8 +826,11 @@ export function PickPackWorkSurface() {
   const markReadyMutation = trpc.pickPack.markOrderReady.useMutation({
     onMutate: () => setSaving(),
     onSuccess: () => {
-      const priorFilter = statusFilter;
+      const orderNum = orderDetails?.order.orderNumber;
       setSelectedOrderId(null);
+      // Close inspector on terminal status change (XP-A-007-PPK / TER-504)
+      setInspectorMode(null);
+      setInspectedItemId(null);
       void refetchPickList();
       void refetchStats();
       setSaved();
@@ -830,11 +839,7 @@ export function PickPackWorkSurface() {
           ? "Order marked ready for shipping"
           : "Order marked ready for payment handoff"
       );
-      if (priorFilter !== "ALL" && priorFilter !== "READY") {
-        toast.info(
-          `Order moved to READY and is now hidden by the ${priorFilter.toLowerCase()} filter. Switch to All or Ready to keep tracking it.`
-        );
-      }
+      notifyStatusFilterExit(orderNum, "READY");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
@@ -995,17 +1000,29 @@ export function PickPackWorkSurface() {
       customHandlers: {
         arrowup: () => {
           if (focusZone === "list") {
+            if (filteredPickList.length === 0) {
+              return;
+            }
             setFocusedOrderIndex(prev => Math.max(0, prev - 1));
           } else if (orderDetails) {
+            if (orderDetails.items.length === 0) {
+              return;
+            }
             setFocusedItemIndex(prev => Math.max(0, prev - 1));
           }
         },
         arrowdown: () => {
           if (focusZone === "list") {
+            if (filteredPickList.length === 0) {
+              return;
+            }
             setFocusedOrderIndex(prev =>
               Math.min(filteredPickList.length - 1, prev + 1)
             );
           } else if (orderDetails) {
+            if (orderDetails.items.length === 0) {
+              return;
+            }
             setFocusedItemIndex(prev =>
               Math.min(orderDetails.items.length - 1, prev + 1)
             );

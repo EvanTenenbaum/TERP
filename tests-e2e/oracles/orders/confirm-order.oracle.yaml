@@ -1,16 +1,17 @@
 # Oracle: Orders.Fulfillment.ConfirmOrder
-# Confirm a pending SALE order (fulfillment workflow)
+# Validate non-shipping CTA contract on a confirmed SALE order
 
 flow_id: "Orders.Fulfillment.ConfirmOrder"
-description: "Confirm a pending SALE order, validating inventory availability"
-role: "Fulfillment"
+description: "Validate non-shipping CTA contract for pending confirmed SALE orders"
+role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
   - tier1
   - orders
   - fulfillment
-  - state-transition
   - mutation
+  - contract
+  - non-shipping
 timeout: 60000
 
 preconditions:
@@ -39,17 +40,12 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/orders"
+    path: "/sales?tab=orders"
     wait_for: "[data-testid='orders-table'], table"
 
-  - action: wait
-    network_idle: true
-    timeout: 10000
-
-  # Ensure confirmed tab is active and locate created order
   - action: click
     target: "button[role='tab']:has-text('Confirmed'), [role='tab']:has-text('Confirmed')"
-    wait_after: 1000
+    wait_after: 500
 
   - action: type
     target: "[data-testid='orders-search-input']"
@@ -57,77 +53,52 @@ steps:
     clear_first: true
 
   - action: wait
-    for: "table tbody tr"
+    for: "table tbody tr:has-text('{{temp:order_to_confirm.orderNumber}}')"
     timeout: 10000
 
-  # Click on the pending order
   - action: click
-    target: "table tbody tr:first-of-type"
+    target: "table tbody tr:has-text('{{temp:order_to_confirm.orderNumber}}')"
     wait_after: 500
 
-  - action: wait
-    for: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
-    timeout: 10000
+  - action: assert
+    text_contains: "Non-shipping mode"
 
-  # Click confirm-for-fulfillment button
-  - action: click
-    target: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
-    wait_after: 500
+  - action: assert
+    not_visible: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
 
-  # Add confirmation notes and submit
-  - action: wait
-    for: "[data-testid='confirm-modal'], [role='dialog']"
-    timeout: 5000
+  - action: assert
+    not_visible: "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
 
-  - action: type
-    target: "[data-testid='confirm-notes'], input[data-testid='confirm-notes']"
-    value: "Confirmed for fulfillment via E2E test"
-    clear_first: true
-
-  - action: click
-    target: "[data-testid='submit-confirm'], [role='dialog'] button:has-text('Confirm')"
-    wait_after: 2000
-
-  - action: wait
-    network_idle: true
-    timeout: 15000
+  - action: assert
+    visible: "[data-testid='generate-invoice-btn'], button:has-text('Generate Invoice')"
 
   - action: screenshot
-    name: "order_confirmed_for_fulfillment"
+    name: "order_non_shipping_cta_contract"
 
 expected_ui:
   visible:
     - "[data-testid='orders-table'], table"
+    - "[data-testid='generate-invoice-btn'], button:has-text('Generate Invoice')"
+  not_visible:
+    - "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
+    - "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
+  text_present:
+    - "Non-shipping mode"
 
 expected_db:
   orders:
     - where:
-        order_number: "$stored.confirming_order_number"
+        order_number: "{{temp:order_to_confirm.orderNumber}}"
       expect:
         order_type: "SALE"
         is_draft: false
-        confirmed_at_not_null: true
-        notes_like: "%Confirmed%"
-      store_as: "confirmed_order"
-
-  batches:
-    - where:
-        id: "$seed:batch.og_kush.id"
-      expect:
-        # confirmOrder validates but does NOT decrement inventory
-        on_hand_qty_gte: 15
+        fulfillment_status: "PENDING"
+      store_as: "pending_order"
 
   invariants:
-    - name: "Order confirmed timestamp set"
+    - name: "Order remains pending in non-shipping mode"
       query: |
-        SELECT confirmed_at
+        SELECT fulfillment_status
         FROM orders
-        WHERE id = $confirmed_order.id
-      assert: "confirmed_at IS NOT NULL"
-
-    - name: "Inventory verified but not decremented"
-      query: |
-        SELECT on_hand_qty
-        FROM batches
-        WHERE id = $seed:batch.og_kush.id
-      assert: "on_hand_qty >= 15"
+        WHERE id = $pending_order.id
+      assert: "fulfillment_status = 'PENDING'"

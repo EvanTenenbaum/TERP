@@ -472,23 +472,20 @@ function OrderInspectorContent({
                 </Badge>
               </div>
 
-              {!shippingEnabled && order.orderType === "SALE" && (
-                <Button
-                  variant="default"
-                  className="w-full justify-start"
-                  data-testid="make-payment-btn"
-                  onClick={() => onMakePayment(order.id)}
-                  disabled={!canAccessAccounting}
-                  title={
-                    canAccessAccounting
-                      ? "Open accounting payments context"
-                      : "Accounting permissions required"
-                  }
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Make Payment
-                </Button>
-              )}
+              {!shippingEnabled &&
+                order.orderType === "SALE" &&
+                canAccessAccounting && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="make-payment-btn"
+                    onClick={() => onMakePayment(order.id)}
+                    title="Open accounting payments context"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Make Payment
+                  </Button>
+                )}
 
               {/* WSQA-003: Status-based actions */}
               {order.fulfillmentStatus === "PENDING" &&
@@ -616,43 +613,31 @@ export function OrdersWorkSurface() {
     "accounting:transactions:create",
   ]);
 
-  // State
+  // State — Parse localStorage once and distribute
+  const savedViewState = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as {
+        search?: string;
+        statusFilter?: string;
+        sortKey?: OrdersSortKey;
+      };
+    } catch {
+      return null;
+    }
+  }, []);
   const [activeTab, setActiveTab] = useState<"draft" | "confirmed">(
     "confirmed"
   );
-  const [search, setSearch] = useState(() => {
-    if (typeof window === "undefined") return "";
-    try {
-      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
-      if (!raw) return "";
-      const parsed = JSON.parse(raw) as { search?: string };
-      return parsed.search ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [statusFilter, setStatusFilter] = useState(() => {
-    if (typeof window === "undefined") return "ALL";
-    try {
-      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
-      if (!raw) return "ALL";
-      const parsed = JSON.parse(raw) as { statusFilter?: string };
-      return parsed.statusFilter ?? "ALL";
-    } catch {
-      return "ALL";
-    }
-  });
-  const [sortKey, setSortKey] = useState<OrdersSortKey>(() => {
-    if (typeof window === "undefined") return "newest";
-    try {
-      const raw = localStorage.getItem(ORDERS_VIEW_STATE_KEY);
-      if (!raw) return "newest";
-      const parsed = JSON.parse(raw) as { sortKey?: OrdersSortKey };
-      return parsed.sortKey ?? "newest";
-    } catch {
-      return "newest";
-    }
-  });
+  const [search, setSearch] = useState(() => savedViewState?.search ?? "");
+  const [statusFilter, setStatusFilter] = useState(
+    () => savedViewState?.statusFilter ?? "ALL"
+  );
+  const [sortKey, setSortKey] = useState<OrdersSortKey>(
+    () => savedViewState?.sortKey ?? "newest"
+  );
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -672,15 +657,10 @@ export function OrdersWorkSurface() {
   const [selectedVendorId, setSelectedVendorId] = useState("");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
       localStorage.setItem(
         ORDERS_VIEW_STATE_KEY,
-        JSON.stringify({
-          search,
-          statusFilter,
-          sortKey,
-        })
+        JSON.stringify({ search, statusFilter, sortKey })
       );
     } catch {
       // Ignore storage failures.
@@ -1110,6 +1090,9 @@ export function OrdersWorkSurface() {
       },
       arrowdown: e => {
         e.preventDefault();
+        if (displayOrders.length === 0) {
+          return;
+        }
         const newIndex = Math.min(displayOrders.length - 1, selectedIndex + 1);
         setSelectedIndex(newIndex);
         const order = displayOrders[newIndex];
@@ -1117,6 +1100,9 @@ export function OrdersWorkSurface() {
       },
       arrowup: e => {
         e.preventDefault();
+        if (displayOrders.length === 0) {
+          return;
+        }
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const order = displayOrders[newIndex];

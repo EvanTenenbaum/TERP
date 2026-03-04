@@ -79,3 +79,35 @@ Wave close requires:
 - Blast radius summary and targeted regressions.
 - Adversarial findings and mitigations.
 - Rollback steps and trigger conditions.
+
+## Balanced Ladder (95/20) execution policy
+
+- Per-ticket validation (delta checks):
+  - `pnpm check`
+  - targeted tests from atomic contract
+  - `pnpm qa:test:smoke`
+  - domain runtime suite(s) as routed by impact map
+- Per-checkpoint baseline (once):
+  - `pnpm check`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm build`
+  - aggregated domain suite(s) + staging runtime validation
+- Ticket `Done` gate:
+  - ticket evidence packet must include baseline-link fields:
+    - `baseline_checkpoint_sha`
+    - `baseline_full_quartet_ref`
+    - `ticket_delta_checks_ref`
+    - `blast_radius_ref`
+    - `rollback_ref` (RED only)
+
+## Automation entrypoints
+
+- Impact map contract verifier:
+  - `scripts/ci/verify-release-train-impact-map.sh`
+- Ticket fast loop:
+  - `scripts/qa/release-train/ticket-fast-loop.sh`
+- Checkpoint baseline gate:
+  - `scripts/qa/release-train/checkpoint-gate.sh`
+- Final release gate:
+  - `scripts/qa/release-train/final-gate.sh <staging-url>`

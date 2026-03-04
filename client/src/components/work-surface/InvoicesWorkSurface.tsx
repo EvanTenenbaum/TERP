@@ -150,6 +150,9 @@ const STATUS_ICONS: Record<string, ReactNode> = {
 
 const STATUS_COLORS = INVOICE_STATUS_TOKENS;
 
+// TER-507: localStorage key for persisting view state across page reloads
+const INVOICES_VIEW_STATE_KEY = "terp-invoices-view-v2";
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -469,9 +472,27 @@ function InvoiceInspectorContent({
 export function InvoicesWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // State
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  // State — TER-507: Initialize from localStorage for filter persistence
+  // Parse localStorage once and distribute to avoid redundant JSON.parse calls
+  const savedViewState = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(INVOICES_VIEW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as { search?: string; statusFilter?: string };
+    } catch {
+      return null;
+    }
+  }, []);
+  const [search, setSearch] = useState(() => savedViewState?.search ?? "");
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const saved = savedViewState?.statusFilter;
+    const validStatuses = INVOICE_STATUSES.map(s => s.value);
+    if (saved && validStatuses.includes(saved)) {
+      return saved;
+    }
+    return "ALL";
+  });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(
     null
   );
@@ -481,6 +502,21 @@ export function InvoicesWorkSurface() {
   const [showAging, setShowAging] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 50;
+
+  // TER-507: Persist filter state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        INVOICES_VIEW_STATE_KEY,
+        JSON.stringify({
+          search,
+          statusFilter,
+        })
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [search, statusFilter]);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -785,12 +821,21 @@ export function InvoicesWorkSurface() {
                 ref={searchInputRef}
                 placeholder="Search invoices... (Cmd+K)"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-10"
                 data-testid="invoices-search-input"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={v => {
+                setStatusFilter(v);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-full md:w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>

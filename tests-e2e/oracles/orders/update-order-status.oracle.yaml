@@ -1,16 +1,17 @@
 # Oracle: Orders.OrderStatus.UpdateOrderStatus
-# Update order fulfillment status through the workflow
+# Validate non-shipping status-control visibility and filtered-list stability
 
 flow_id: "Orders.OrderStatus.UpdateOrderStatus"
-description: "Update an order's fulfillment status through PENDING -> PACKED -> SHIPPED workflow"
-role: "Fulfillment"
+description: "Validate non-shipping status control visibility and list stability for packed orders"
+role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
   - tier1
   - orders
-  - fulfillment
-  - state-transition
+  - status
   - mutation
+  - contract
+  - non-shipping
 timeout: 60000
 
 preconditions:
@@ -40,67 +41,7 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/orders"
-    wait_for: "[data-testid='orders-table'], table"
-
-  - action: wait
-    network_idle: true
-    timeout: 10000
-
-  - action: click
-    target: "button[role='tab']:has-text('Confirmed'), [role='tab']:has-text('Confirmed')"
-    wait_after: 500
-
-  - action: type
-    target: "[data-testid='orders-search-input']"
-    value: "{{temp:order_to_ship.orderNumber}}"
-    clear_first: true
-
-  - action: wait
-    for: "table tbody tr"
-    timeout: 10000
-
-  # Click on the packed order
-  - action: click
-    target: "table tbody tr:first-of-type"
-    wait_after: 500
-
-  - action: wait
-    for: "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
-    timeout: 10000
-
-  # Click ship button
-  - action: click
-    target: "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
-    wait_after: 500
-
-  # Fill shipping modal
-  - action: wait
-    for: "[data-testid='ship-modal'], [role='dialog']"
-    timeout: 5000
-
-  - action: type
-    target: "[data-testid='tracking-number'], input[name='trackingNumber']"
-    value: "TRACK-E2E-{{random:8}}"
-
-  - action: type
-    target: "[data-testid='carrier-input'], input[name='carrier']"
-    value: "E2E Test Carrier"
-
-  - action: type
-    target: "[data-testid='ship-notes'], textarea[name='notes']"
-    value: "Shipped via E2E test"
-
-  - action: click
-    target: "[data-testid='confirm-ship'], [role='dialog'] button:has-text('Ship')"
-    wait_after: 2000
-
-  - action: wait
-    network_idle: true
-    timeout: 15000
-
-  - action: navigate
-    path: "/orders"
+    path: "/sales?tab=orders"
     wait_for: "[data-testid='orders-table'], table"
 
   - action: click
@@ -113,76 +54,57 @@ steps:
     clear_first: true
 
   - action: wait
-    for: "table tbody tr"
+    for: "table tbody tr:has-text('{{temp:order_to_ship.orderNumber}}')"
     timeout: 10000
 
+  - action: click
+    target: "table tbody tr:has-text('{{temp:order_to_ship.orderNumber}}')"
+    wait_after: 500
+
+  - action: assert
+    text_contains: "Non-shipping mode"
+
+  - action: assert
+    not_visible: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
+
+  - action: assert
+    not_visible: "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
+
+  - action: click
+    target: "button:has-text('Refresh')"
+    wait_after: 500
+
   - action: wait
-    for: "table tbody tr:has-text('SHIPPED'), table tbody tr:has-text('Shipped')"
-    timeout: 15000
+    for: "table tbody tr:has-text('{{temp:order_to_ship.orderNumber}}')"
+    timeout: 10000
 
   - action: screenshot
-    name: "order_shipped"
+    name: "order_status_non_shipping_contract"
 
 expected_ui:
   visible:
     - "[data-testid='orders-table'], table"
+    - "table tbody tr:has-text('{{temp:order_to_ship.orderNumber}}')"
+  not_visible:
+    - "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
+    - "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
   text_present:
-    - "SHIPPED"
+    - "Non-shipping mode"
+    - "PACKED"
 
 expected_db:
   orders:
     - where:
-        order_number: "$stored.shipping_order_number"
+        order_number: "{{temp:order_to_ship.orderNumber}}"
       expect:
-        fulfillment_status: "SHIPPED"
-        shipped_at_not_null: true
-        shipped_by_not_null: true
-        notes_like: "%Shipped%"
-      store_as: "shipped_order"
-
-  order_status_history:
-    - where:
-        order_id: "$shipped_order.id"
-        fulfillment_status: "SHIPPED"
-      expect:
-        changed_by_not_null: true
-        notes_like: "%Shipped%"
-      count_gte: 1
-
-  batches:
-    - where:
-        id: "$seed:batch.og_kush.id"
-      expect:
-        # Inventory decremented at SHIPPED status
-        on_hand_qty_lte: 95
-
-  inventory_movements:
-    - where:
-        reference_type: "ORDER"
-        reference_id: "$shipped_order.id"
-      expect:
-        movement_type: "SALE"
-        quantity: -5
-      count_gte: 1
+        fulfillment_status: "PACKED"
+        packed_at_not_null: true
+      store_as: "packed_order"
 
   invariants:
-    - name: "Version incremented after status update"
+    - name: "Packed status persists after refresh and filtering"
       query: |
-        SELECT version
+        SELECT fulfillment_status
         FROM orders
-        WHERE id = $shipped_order.id
-      assert: "version > $stored.initial_version"
-
-    - name: "Status history recorded"
-      query: |
-        SELECT COUNT(*) as history_count
-        FROM order_status_history
-        WHERE order_id = $shipped_order.id
-      assert: "history_count >= 1"
-
-    - name: "Inventory movement recorded"
-      query: |
-        SELECT SUM(quantity_change) as total_change
-        FROM inventory_movements
-        WHERE reference_type = 'ORDER' AND reference_id = $shipped_order.id
-      assert: "total_change <= -5 OR total_change IS NULL"
+        WHERE id = $packed_order.id
+      assert: "fulfillment_status = 'PACKED'"

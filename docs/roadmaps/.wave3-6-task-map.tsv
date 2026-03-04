@@ -1,0 +1,35 @@
+3	CF-009	STRICT	CF-008	Field-specific validation guidance in sales pricing controls	client/src/components/orders/MarginInput.tsx; client/src/components/orders/LineItemRow.tsx; shared validation message schema
+3	CF-011	RED	CF-010	Mode-aware primary CTA semantics (non-shipping default)	client/src/components/orders/OrderStatusActions.tsx; client/src/components/work-surface/PaymentInspector.tsx; server/routers (mode config if needed)
+3	CF-012	RED	CF-002, CF-011	Status controls + filtered-list reliability in core sales flow	client/src/components/orders/OrderStatusActions.tsx; client/src/components/work-surface/PickPackWorkSurface.tsx; server/routers (transition map)
+3	CF-013	SAFE	CF-011	Primary entry CTA rename and discoverability (`New Sale`)	client/src/pages/SalesWorkspacePage.tsx; client/src/components/layout/AppHeader.tsx; client/src/components/layout/AppSidebar.tsx
+4	XP-A-001-ORD	STRICT	CF-002	A-001 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-001-PPK	STRICT	CF-002	A-001 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+4	XP-A-002-ORD	STRICT	CF-006, CF-007	A-002 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-003-ORD	RED	CF-011	A-003 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-003-PPK	RED	CF-011	A-003 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+4	XP-A-004-ORD	RED	CF-012	A-004 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-004-PPK	RED	CF-012	A-004 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+4	XP-A-005-ORD	STRICT	CF-009	A-005 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-005-PPK	STRICT	CF-009	A-005 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+4	XP-A-006-ORD	STRICT	CF-005	A-006 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-006-PPK	STRICT	CF-005	A-006 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+4	XP-A-007-ORD	STRICT	CF-010	A-007 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-007-PPK	STRICT	CF-010	A-007 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+4	XP-A-008-ORD	STRICT	CF-001	A-008 propagation on Orders	client/src/components/work-surface/OrdersWorkSurface.tsx; client/src/components/orders/LineItemTable.tsx
+4	XP-A-008-PPK	STRICT	CF-001	A-008 propagation on Pick & Pack	client/src/components/work-surface/PickPackWorkSurface.tsx; client/src/components/orders/OrderStatusActions.tsx
+5	XP-A-001-ACC	STRICT	CF-002	A-001 propagation on Accounting	client/src/pages/AccountingWorkspacePage.tsx; client/src/pages/accounting/Payments.tsx; client/src/components/work-surface/ClientLedgerWorkSurface.tsx
+5	XP-A-001-CLI	STRICT	CF-002	A-001 propagation on Clients	client/src/pages/ClientProfilePage.tsx; client/src/components/work-surface/ClientsWorkSurface.tsx
+5	XP-A-002-ACC	STRICT	CF-006, CF-007	A-002 propagation on Accounting	client/src/pages/AccountingWorkspacePage.tsx; client/src/pages/accounting/Payments.tsx; client/src/components/work-surface/ClientLedgerWorkSurface.tsx
+5	XP-A-002-CLI	STRICT	CF-006, CF-007	A-002 propagation on Clients	client/src/pages/ClientProfilePage.tsx; client/src/components/work-surface/ClientsWorkSurface.tsx
+5	XP-A-005-ACC	STRICT	CF-009	A-005 propagation on Accounting	client/src/pages/AccountingWorkspacePage.tsx; client/src/pages/accounting/Payments.tsx; client/src/components/work-surface/ClientLedgerWorkSurface.tsx
+5	XP-A-005-CLI	STRICT	CF-009	A-005 propagation on Clients	client/src/pages/ClientProfilePage.tsx; client/src/components/work-surface/ClientsWorkSurface.tsx
+5	XP-A-007-ACC	STRICT	CF-010	A-007 propagation on Accounting	client/src/pages/AccountingWorkspacePage.tsx; client/src/pages/accounting/Payments.tsx; client/src/components/work-surface/ClientLedgerWorkSurface.tsx
+5	XP-A-007-CLI	STRICT	CF-010	A-007 propagation on Clients	client/src/pages/ClientProfilePage.tsx; client/src/components/work-surface/ClientsWorkSurface.tsx
+5	XP-A-008-ACC	STRICT	CF-001	A-008 propagation on Accounting	client/src/pages/AccountingWorkspacePage.tsx; client/src/pages/accounting/Payments.tsx; client/src/components/work-surface/ClientLedgerWorkSurface.tsx
+5	XP-A-008-CLI	STRICT	CF-001	A-008 propagation on Clients	client/src/pages/ClientProfilePage.tsx; client/src/components/work-surface/ClientsWorkSurface.tsx
+6	XP-A-001-INV	STRICT	CF-002	A-001 propagation on Inventory	client/src/pages/InventoryWorkspacePage.tsx; client/src/components/work-surface/InventoryWorkSurface.tsx
+6	XP-A-004-INV	RED	CF-012	A-004 propagation on Inventory	client/src/pages/InventoryWorkspacePage.tsx; client/src/components/work-surface/InventoryWorkSurface.tsx
+6	XP-A-005-INV	STRICT	CF-009	A-005 propagation on Inventory	client/src/pages/InventoryWorkspacePage.tsx; client/src/components/work-surface/InventoryWorkSurface.tsx
+6	XP-A-006-INV	STRICT	CF-005	A-006 propagation on Inventory	client/src/pages/InventoryWorkspacePage.tsx; client/src/components/work-surface/InventoryWorkSurface.tsx
+6	XP-A-007-INV	STRICT	CF-010	A-007 propagation on Inventory	client/src/pages/InventoryWorkspacePage.tsx; client/src/components/work-surface/InventoryWorkSurface.tsx
+6	XP-A-008-INV	STRICT	CF-001	A-008 propagation on Inventory	client/src/pages/InventoryWorkspacePage.tsx; client/src/components/work-surface/InventoryWorkSurface.tsx

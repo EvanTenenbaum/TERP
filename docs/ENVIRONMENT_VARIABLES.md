@@ -223,6 +223,38 @@ VITE_APP_ID=terp-staging
 
 ---
 
+### SEED_OPEN_SOURCE_FLOWER_FALLBACK
+
+**Type:** Boolean (`true`/`false`)  
+**Required:** No  
+**Default:** `true`
+
+Controls whether seeding scripts can use curated open-license flower images as a
+fallback when a batch has no native media in `batches.metadata.mediaFiles` and
+no legacy `productMedia` image.
+
+**When `true` (default):**
+
+- `pnpm seed:new:complete` and `pnpm seed:batch-images:apply` can insert
+  realistic fallback photos for media-empty SKUs.
+
+**When `false`:**
+
+- Seed scripts only use existing batch/product media.
+- No synthetic fallback photos are injected.
+
+**Examples:**
+
+```bash
+# Staging/demo behavior (default)
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=true
+
+# Real-client safe mode
+SEED_OPEN_SOURCE_FLOWER_FALLBACK=false
+```
+
+---
+
 ### NODE_ENV
 
 **Type:** String  
