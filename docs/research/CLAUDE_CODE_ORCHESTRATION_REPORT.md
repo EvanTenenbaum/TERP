@@ -1,8 +1,8 @@
-# Claude Code Orchestration Research Report
+# Claude Code Parallel Orchestration — Research Report
 
 **Date**: 2026-03-04
-**Purpose**: Research findings for executing the TERP Epic Parallel Execution Plan (40 tasks, 4 roadmaps, 3 concurrent sessions)
-**Audience**: Evan (execution), Claude agents (skill creation)
+**Purpose**: Comprehensive reference for orchestrating parallel Claude Code sessions across large codebases. Project-agnostic — usable as-is for execution or as input for building a Claude skill.
+**Scope**: `/batch`, Agent Teams, custom agents, skills, hooks, worktrees, CLAUDE.md optimization, plan mode
 
 ---
 
@@ -20,14 +20,16 @@
 
 **Phase 3 — Track Progress**: Renders a status table updated as agents complete, pulling PR URLs from each output.
 
-### Application to TERP Epic
+### When to Use
 
-LEX Phase 7 (tasks LEX-008 through LEX-013) is a textbook `/batch` use case: 6 independent UI text normalization passes across different component families. Instead of manually orchestrating 6 subagents with collision avoidance, a single `/batch "Rename all UI instances of 'Vendor' to 'Supplier' per terminology bible at docs/terminology-bible.md"` could decompose and execute the entire burst.
+- Repetitive changes across many files (renaming, API migrations, pattern enforcement)
+- Independent UI normalization passes across component families
+- Codemod-style transformations that touch 5+ files with no inter-file dependencies
 
 ### Limitations
 
-- Only works for parallelizable, independent changes
-- Each worktree needs its own `pnpm install` (no shared `node_modules`)
+- Only works for parallelizable, independent changes (no cross-unit dependencies)
+- Each worktree needs its own dependency install (no shared `node_modules`)
 - Requires a Git repository
 
 ### References
@@ -52,7 +54,7 @@ Add `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` to `settings.json` or set as environm
 
 - **Team Lead**: Creates the team, spawns teammates, coordinates work, synthesizes results
 - **Teammates**: Separate Claude Code instances with their own context windows
-- **Task List**: Shared list of work items that teammates claim
+- **Task List**: Shared list of work items that teammates claim from
 - **Mailbox**: Messaging system for inter-agent communication
 
 ### Key Difference from Subagents
@@ -72,15 +74,22 @@ Two hook events integrate with the Agent Teams lifecycle:
 
 Press `Shift+Tab` to cycle into delegate mode after starting a team. This restricts the lead to coordination-only tools: spawning teammates, messaging, shutting them down, and managing tasks. The lead can't touch code directly — it focuses entirely on orchestration.
 
-### Application to TERP Epic
+### When to Use
 
-Session B (UX Master Plan) would benefit most from Agent Teams. The team lead coordinates two sub-streams (Inventory: H1→H2→H3∥H4, Dashboard: H5∥H6) with `TaskCompleted` hooks enforcing `pnpm check && pnpm lint && pnpm test && pnpm build` before any task closes.
+- Multiple related but independent work streams (e.g., frontend + backend + tests in parallel)
+- Work that benefits from peer-to-peer coordination between agents
+- Projects where a single orchestrator can't hold all context
+
+### When NOT to Use
+
+- Sequential tasks or same-file edits (use a single session or subagents instead)
+- Fewer than 3 parallel tasks (overhead exceeds benefit)
 
 ### Best Practices
 
 - Start with 3-5 teammates (beyond this, coordination overhead outweighs gains)
 - Size tasks to produce a clear deliverable (function, test file, review section)
-- For sequential tasks or same-file edits, use a single session or subagents instead
+- Use `TaskCompleted` hooks to enforce quality gates (tests, lint, type-check)
 - Token costs scale linearly — each teammate has its own context window
 
 ### References
@@ -112,8 +121,8 @@ When multiple agents share the same name, the higher-priority location wins.
 
 ```yaml
 ---
-name: lex-normalizer
-description: "Executes terminology normalization passes on UI components"
+name: my-agent-name
+description: "What this agent does — shown in agent selection UI"
 model: sonnet          # sonnet, opus, haiku, or inherit (default)
 isolation: worktree    # Each invocation gets its own git worktree
 background: true       # Runs in background by default
@@ -129,17 +138,18 @@ tools:                 # Allowlist (overrides inherited tools)
 disallowedTools:       # Denylist (alternative to allowlist)
   - Agent              # Prevent recursive agent spawning
 skills:                # Skills to preload
-  - terminology-gate
-  - verification-protocol
+  - my-verification-skill
+  - my-domain-skill
 permissionMode: auto   # auto, manual, or custom
 hooks:
   TaskCompleted:
-    command: "pnpm check && pnpm lint && pnpm test"
+    command: "npm test && npm run lint && npm run typecheck"
 ---
 
-# LEX Normalizer Agent
+# Agent Instructions
 
-Instructions for the agent go here in markdown...
+The markdown body contains the full instructions for the agent.
+This is loaded when the agent is invoked.
 ```
 
 ### CLI-Defined Agents
@@ -150,15 +160,14 @@ For one-off use, agents can be passed as JSON via the `--agents` flag when launc
 
 VS Code also detects `.md` files in `.claude/agents/`, following the same format. Agent definitions work across Claude Code CLI, Desktop app, and IDE extensions.
 
-### Application to TERP Epic
+### Practical Patterns
 
-Create three agent definitions encoding all session rules:
-
-| Agent File | Purpose | Key Config |
-|-----------|---------|------------|
-| `.claude/agents/lex-session.md` | Session A: LEX terminology bible | `isolation: worktree`, skills: `[terminology-gate, verification-protocol]` |
-| `.claude/agents/ux-session.md` | Session B: UX master plan | Skills: `[file-collision-matrix, verification-protocol]`, hooks: `TaskCompleted` |
-| `.claude/agents/stx-session.md` | Session C: STX stress testing | Skills: `[stx-prerequisites, verification-protocol]` |
+| Pattern | Agent Config |
+|---------|-------------|
+| Parallel feature implementation | `isolation: worktree`, `background: true`, specific `tools` allowlist |
+| Code review / QA agent | `disallowedTools: [Write, Edit]`, `model: opus` |
+| Bulk rename / migration | `isolation: worktree`, `hooks.TaskCompleted: "npm test"` |
+| Documentation generator | `tools: [Read, Write, Grep, Glob]`, `model: haiku` |
 
 ### References
 
@@ -187,13 +196,13 @@ Skills are markdown-based instruction sets in `.claude/skills/` that Claude load
 
 ```
 .claude/skills/
-├── terminology-gate/
-│   ├── SKILL.md           # Frontmatter + instructions
-│   ├── collision-matrix.md # Referenced on demand
-│   └── examples/          # Referenced on demand
 ├── verification-protocol/
-│   └── SKILL.md
-└── stx-prerequisites/
+│   ├── SKILL.md           # Frontmatter + instructions
+│   └── checklist.md       # Referenced on demand
+├── migration-guide/
+│   ├── SKILL.md
+│   └── examples/          # Referenced on demand
+└── code-review/
     └── SKILL.md
 ```
 
@@ -201,41 +210,46 @@ Skills are markdown-based instruction sets in `.claude/skills/` that Claude load
 
 ```markdown
 ---
-name: terminology-gate
-description: "Gate protocol for LEX terminology normalization — file collision matrix, sequencing rules, and verification commands"
+name: verification-protocol
+description: "Quality gate protocol — test/lint/typecheck commands, output template, and definition of done criteria"
 ---
 
-# Terminology Gate Protocol
+# Verification Protocol
 
-## File Collision Matrix
-[5 collision files with exact line numbers...]
+## Required Commands
+- `npm test` — Unit tests
+- `npm run lint` — Linting
+- `npm run typecheck` — Type checking
+- `npm run build` — Build verification
 
-## Sequencing Rules
-[LEX-011 before LEX-012, UX-H before LEX-008...]
-
-## Verification Commands
-[pnpm check, pnpm lint, etc.]
+## Definition of Done
+1. All commands pass
+2. No new warnings introduced
+3. Coverage threshold met
+...
 ```
 
 ### User-Invocable Skills
 
 Skills with a `name` field become invocable as `/skill-name`. Claude also auto-loads them when it determines they're relevant to the current task based on the description.
 
-### Application to TERP Epic
+### Key Design Principle
 
-Convert the execution plan's protocol sections into lazy-loaded skills:
+Only ~100 tokens per skill are loaded at conversation start (name + description). The full body (~5,000 tokens) loads only when relevant. This means you can have dozens of skills without bloating every conversation.
 
-| Skill | Content | Loaded When |
-|-------|---------|-------------|
-| `verification-protocol` | The 12-criteria DoD, verification commands, output template | Any commit or completion |
-| `terminology-gate` | File collision matrix, LEX sequencing rules, normalization policies | LEX Phase 7 tasks |
-| `stx-prerequisites` | k6 install commands, BullMQ warning, connection pool limits, staging app ID | STX Wave S0-S2 |
-| `file-collision-matrix` | The 5 confirmed collision files with line numbers | Any cross-session work |
-| `ux-inventory-safety` | H1-H4 file scope, InventoryWorkSurface.tsx section boundaries | UX inventory tasks |
+### Common Skill Types
+
+| Skill Category | What It Contains | When Loaded |
+|---------------|-----------------|-------------|
+| Verification / QA | Test commands, quality checklist, output template | Any commit or task completion |
+| Architecture guide | Schema patterns, query examples, forbidden patterns | When touching data layer |
+| Migration protocol | Step-by-step migration procedures, rollback plans | Schema or API changes |
+| File collision matrix | Files that multiple agents may touch, sequencing rules | Parallel agent sessions |
+| Deployment runbook | Deploy commands, health checks, log monitoring | Post-merge verification |
 
 ### Why This Matters for CLAUDE.md
 
-Current CLAUDE.md is ~600+ lines. Research consistently says this causes instruction loss. Boris Cherny (Anthropic, Claude Code lead) keeps his at ~2,500 tokens (~1 page). The recommendation: CLAUDE.md should be 60-150 lines with everything else in skills.
+Large CLAUDE.md files (500+ lines) cause instruction loss — Claude starts ignoring rules buried deep in the document. Boris Cherny (Anthropic, Claude Code lead) keeps his at ~2,500 tokens (~1 page). The recommendation: CLAUDE.md should be 60-150 lines with everything else in skills.
 
 > "For each line, ask: 'Would removing this cause Claude to make mistakes?' If not, cut it. Bloated CLAUDE.md files cause Claude to ignore your actual instructions!"
 > — [Writing a good CLAUDE.md (HumanLayer)](https://www.humanlayer.dev/blog/writing-a-good-claude-md)
@@ -282,7 +296,7 @@ Hooks are configured in `settings.json` or `.claude/settings.json`:
 {
   "hooks": {
     "TaskCompleted": {
-      "command": "pnpm check && pnpm lint && pnpm test && pnpm build",
+      "command": "npm test && npm run lint && npm run typecheck && npm run build",
       "timeout": 120000
     },
     "PreToolUse": {
@@ -293,14 +307,15 @@ Hooks are configured in `settings.json` or `.claude/settings.json`:
 }
 ```
 
-### Application to TERP Epic
+### Practical Hook Patterns
 
-| Hook | Purpose | Session |
+| Hook | Command | Purpose |
 |------|---------|---------|
-| `TaskCompleted` → `pnpm check && pnpm lint && pnpm test && pnpm build` | Enforce verification quartet before any task closes | All sessions |
-| `PreToolUse` → check if target file is in collision matrix | Block writes to collision files before Gate 2 clears | Session A (LEX) |
-| `TeammateIdle` → check for unclaimed LEX normalization tasks | Reassign idle agents during Phase 7 burst | Session A (LEX) |
-| `TaskCompleted` → check for k6 binary before STX-005 | Fast-fail if prerequisite missing | Session C (STX) |
+| `TaskCompleted` | `npm test && npm run lint && npm run typecheck` | Enforce verification before any task closes |
+| `PreToolUse` | Check if target file is in a protected list | Block writes to files being edited by other agents |
+| `TeammateIdle` | Check shared task list for unclaimed work | Keep idle teammates productive |
+| `PostToolUse` | Append to modification log | Audit trail of all file changes |
+| `TaskCompleted` | Check for required binaries/dependencies | Fast-fail if prerequisites missing |
 
 ### Key Insight
 
@@ -343,15 +358,15 @@ Worktrees are created at `.claude/worktrees/<name>/`. Each gets a full checkout 
 ### Critical Requirements
 
 1. **Add `.claude/worktrees/` to `.gitignore`** — prevents worktree dirs from showing as untracked
-2. **Run dependency installs per worktree** — `node_modules` is not shared. Each worktree needs its own `pnpm install`
+2. **Run dependency installs per worktree** — `node_modules` is not shared. Each worktree needs its own install
 3. **Custom VCS support** — `WorktreeCreate` and `WorktreeRemove` hooks for non-Git systems
 
-### Application to TERP Epic
+### When Worktrees Are Used Automatically
 
-Every parallel pattern in the plan depends on worktree isolation:
-- LEX Phase 7 `/batch` normalization: 6 worktrees
-- Agent Teams teammates: each in own worktree
-- STX parallel wave S2: 4 worktrees for STX-002/003/004/006
+- `/batch` creates one worktree per decomposed unit
+- Agent Teams create one worktree per teammate (when configured)
+- Subagents with `isolation: "worktree"` get their own worktree
+- `claude --worktree` starts the entire session in an isolated worktree
 
 ### References
 
@@ -364,11 +379,11 @@ Every parallel pattern in the plan depends on worktree isolation:
 
 ## 7. CLAUDE.md Optimization
 
-### Current State
+### The Problem
 
-TERP's CLAUDE.md is ~600+ lines. Research shows this causes instruction loss.
+Large CLAUDE.md files (500+ lines) cause **instruction loss** — Claude deprioritizes rules buried deep in long documents. This is the most common configuration mistake.
 
-### Recommended Structure
+### Recommended Size
 
 > "CLAUDE.md should not exceed 150+ lines. 60 lines is recommended."
 > — [50 Claude Code Tips & Tricks (Geeky Gadgets)](https://www.geeky-gadgets.com/claude-code-tips-2/)
@@ -378,24 +393,31 @@ TERP's CLAUDE.md is ~600+ lines. Research shows this causes instruction loss.
 
 ### What Belongs in CLAUDE.md vs. Skills
 
-| In CLAUDE.md (~60-150 lines) | In Skills (lazy-loaded) |
-|------------------------------|------------------------|
-| Tech stack overview | Architecture deep dive |
-| Build/test/lint commands | Verification protocol (12 criteria) |
-| Critical forbidden patterns (top 5) | Full deprecated systems list |
-| Party model one-liner | Party model query patterns |
+| In CLAUDE.md (~60-150 lines) | In Skills (lazy-loaded on demand) |
+|------------------------------|----------------------------------|
+| Tech stack (1-2 lines) | Architecture deep dive |
+| Build/test/lint commands | Full verification protocol |
+| Top 5 forbidden patterns | Complete forbidden patterns list |
+| Data model one-liner | Data model query patterns |
 | Git commit format | Session management protocol |
-| Actor attribution rule | Roadmap management protocol |
-| | Estimation protocol |
-| | Audit system |
+| Critical security rules | Estimation protocol, audit system |
 
 ### The `@import` Syntax
 
 CLAUDE.md supports `@path/to/file` imports for referencing additional context:
 ```markdown
-See @docs/protocols/CANONICAL_DICTIONARY.md for term definitions
+See @docs/architecture.md for architecture details
 See @package.json for available commands
 ```
+
+### File Placement Hierarchy
+
+| File | Scope | Loaded When |
+|------|-------|-------------|
+| `CLAUDE.md` (repo root) | All sessions in this repo | Every conversation start |
+| `.claude/CLAUDE.md` | Same as above, alternative location | Every conversation start |
+| `src/CLAUDE.md` | Only when working in `src/` | When Claude reads files in `src/` |
+| `~/.claude/CLAUDE.md` | All repos for this user | Every conversation start |
 
 ### Team Maintenance Philosophy
 
@@ -437,7 +459,7 @@ The Explore → Plan → Code → Commit pattern:
 
 - `/clear` between distinct tasks (wipes conversation, re-reads CLAUDE.md)
 - `/compact` for partial context reduction mid-session
-- Manual `/compact` at 50% context to avoid the "agent dumb zone"
+- Manual `/compact` at 50% context to avoid the "agent dumb zone" (degraded performance when context is nearly full)
 
 ### References
 
@@ -448,31 +470,53 @@ The Explore → Plan → Code → Commit pattern:
 
 ---
 
-## 9. Concrete Recommendations for TERP Epic
+## 9. Decision Framework — Which Tool When
 
-### Priority 1: Create `.claude/agents/` Definitions (Immediate)
+### Choosing the Right Orchestration Mechanism
 
-Create three agent definition files that encode all session rules, replacing copy-paste prompts with version-controlled, reusable configs.
+```
+How many parallel tasks?
+├── 1 task → Single session (no orchestration needed)
+├── 2-3 tasks → Subagents with isolation: "worktree"
+├── 4-6 independent, similar tasks → /batch
+├── 4-6 related tasks needing coordination → Agent Teams
+└── 7+ tasks → Split into waves, use /batch or Agent Teams per wave
 
-### Priority 2: Create Skills for Gate Protocols (Immediate)
+Are the tasks independent?
+├── Yes, all independent → /batch (auto-decomposes)
+├── Mostly independent, some sequencing → Agent Teams (task dependencies)
+└── Highly sequential → Single session, no parallelism
 
-Extract verification protocol, file collision matrix, and STX prerequisites into `.claude/skills/` for lazy loading.
+Do agents need to communicate?
+├── No → /batch or parallel subagents
+├── Yes, simple status → Subagents reporting to orchestrator
+└── Yes, peer-to-peer → Agent Teams with mailbox
+```
 
-### Priority 3: Add `TaskCompleted` Hook (Immediate)
+### Feature Comparison Matrix
 
-Configure in `.claude/settings.json` to deterministically enforce the verification quartet before any task closes.
+| Feature | Subagents | `/batch` | Agent Teams |
+|---------|-----------|----------|-------------|
+| Isolation | Per-agent worktree (optional) | Per-unit worktree (automatic) | Per-teammate worktree (optional) |
+| Communication | Report to parent only | None (fully independent) | Peer-to-peer mailbox |
+| Task management | Manual | Automatic decomposition | Shared task list |
+| Quality gates | Parent checks results | `/simplify` + tests per unit | `TaskCompleted` hook |
+| Setup effort | Low | None (describe in English) | Medium (enable experimental flag) |
+| Max parallelism | ~10 (context limit) | 5-30 (built-in) | 3-5 (recommended) |
+| Token cost | Shared context | Per-unit context | Per-teammate context |
 
-### Priority 4: Use `/batch` for LEX Phase 7 (At Execution Time)
+### Implementation Priorities (Generic)
 
-When Session A reaches Wave L4b, invoke `/batch` instead of manually orchestrating 6 parallel normalization subagents.
+When adopting these features for any project:
 
-### Priority 5: Evaluate Agent Teams for Session B (At Execution Time)
-
-If `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is available, use it for UX session with `TaskCompleted` and `TeammateIdle` hooks.
-
-### Priority 6: Slim Down CLAUDE.md (Follow-up)
-
-Move ~400 lines of protocol/architecture/deprecated systems content into skills. Keep CLAUDE.md at ~150 lines.
+| Priority | Action | Effort | Impact |
+|----------|--------|--------|--------|
+| 1 | Add `TaskCompleted` hook for test/lint/typecheck | ~5 min | Deterministic quality — can't be skipped |
+| 2 | Create `.claude/skills/` for domain protocols | ~20 min | Lazy-loads context, keeps conversations lean |
+| 3 | Create `.claude/agents/` for reusable session types | ~15 min | Version-controlled, shareable agent configs |
+| 4 | Slim CLAUDE.md to ~150 lines, move rest to skills | ~30 min | Prevents instruction loss from context bloat |
+| 5 | Use `/batch` for repetitive multi-file changes | At use time | Replaces manual subagent orchestration |
+| 6 | Evaluate Agent Teams for coordinated parallel work | At use time | Peer-to-peer coordination with idle/completion hooks |
 
 ---
 
@@ -503,11 +547,14 @@ Move ~400 lines of protocol/architecture/deprecated systems content into skills.
 20. [Claude Skills & Subagents (Towards Data Science)](https://towardsdatascience.com/claude-skills-and-subagents-escaping-the-prompt-engineering-hamster-wheel/)
 21. [UltraThink is Dead (Decode Claude)](https://decodeclaude.com/ultrathink-deprecated/)
 22. [Claude Code Customization Guide (alexop.dev)](https://alexop.dev/posts/claude-code-customization-guide-claudemd-skills-subagents/)
+23. [ClaudeLog: Custom Agents Guide](https://claudelog.com/mechanics/custom-agents/)
 
 ### Announcements & Primary Sources
-23. [Boris Cherny — Built-in worktree support (Threads)](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj/)
-24. [Boris Cherny — Subagent worktree isolation (Threads)](https://www.threads.com/@boris_cherny/post/DVAAqhLgWQY/)
-25. [Claude Code System Prompts (Piebald-AI/GitHub)](https://github.com/Piebald-AI/claude-code-system-prompts)
-26. [Awesome Claude Code (community index)](https://github.com/hesreallyhim/awesome-claude-code)
-27. [Shipyard: Multi-agent orchestration for Claude Code 2026](https://shipyard.build/blog/claude-code-multi-agent/)
-28. [Claude Code Beyond Sub-Agents (Medium)](https://medium.com/@kumaran.isk/claude-code-beyond-sub-agents-orchestrating-peer-to-peer-ai-with-agent-teams-3406d2169bfd)
+24. [Boris Cherny — Built-in worktree support (Threads)](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj/)
+25. [Boris Cherny — Subagent worktree isolation (Threads)](https://www.threads.com/@boris_cherny/post/DVAAqhLgWQY/)
+26. [Claude Code System Prompts (Piebald-AI/GitHub)](https://github.com/Piebald-AI/claude-code-system-prompts)
+27. [Awesome Claude Code (community index)](https://github.com/hesreallyhim/awesome-claude-code)
+28. [Shipyard: Multi-agent orchestration for Claude Code 2026](https://shipyard.build/blog/claude-code-multi-agent/)
+29. [Claude Code Beyond Sub-Agents (Medium)](https://medium.com/@kumaran.isk/claude-code-beyond-sub-agents-orchestrating-peer-to-peer-ai-with-agent-teams-3406d2169bfd)
+30. [Claude Code's Custom Agent Framework Changes Everything (DEV Community)](https://dev.to/therealmrmumba/claude-codes-custom-agent-framework-changes-everything-4o4m)
+31. [Agents and Subagents Best Practices (DeepWiki)](https://deepwiki.com/shanraisshan/claude-code-best-practice/3.2-agents-and-subagents)
