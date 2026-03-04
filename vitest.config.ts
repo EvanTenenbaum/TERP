@@ -7,6 +7,8 @@ export default defineConfig({
   root: path.resolve(import.meta.dirname),
   test: {
     globals: true,
+    // The suite now includes heavier UI/contract runs; 5s default causes false timeout failures under load.
+    testTimeout: 15000,
     // Use different environments for server vs client tests
     environment: "jsdom", // Use jsdom for client tests by default
     include: [
