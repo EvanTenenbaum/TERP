@@ -98,7 +98,7 @@ describe("Sales Sheets Router", () => {
 
   describe("save", () => {
     it("should save a sales sheet", async () => {
-      // Arrange
+      // Arrange — totalValue = SUM(finalPrice * quantity) = 150*10 + 120*5 = 2100
       const input = {
         clientId: 1,
         items: [
@@ -121,7 +121,7 @@ describe("Sales Sheets Router", () => {
             priceMarkup: 50,
           },
         ],
-        totalValue: 270,
+        totalValue: 2100,
       };
 
       const mockSavedSheet = {
@@ -142,14 +142,14 @@ describe("Sales Sheets Router", () => {
         expect.objectContaining({
           clientId: 1,
           items: input.items,
-          totalValue: 270,
+          totalValue: 2100,
           createdBy: 1,
         })
       );
     });
 
     it("should use retailPrice when finalPrice is not provided", async () => {
-      // Arrange
+      // Arrange — totalValue = retailPrice * quantity = 150 * 10 = 1500
       const input = {
         clientId: 1,
         items: [
@@ -162,7 +162,7 @@ describe("Sales Sheets Router", () => {
             priceMarkup: 50,
           },
         ],
-        totalValue: 150,
+        totalValue: 1500,
       };
 
       const mockSavedSheet = {
@@ -325,7 +325,7 @@ describe("Sales Sheets Router", () => {
     });
 
     it("should handle zero quantity items", async () => {
-      // Arrange
+      // Arrange — quantity 0 means line total = 0
       const input = {
         clientId: 1,
         items: [
@@ -339,7 +339,7 @@ describe("Sales Sheets Router", () => {
             priceMarkup: 50,
           },
         ],
-        totalValue: 150,
+        totalValue: 0,
       };
 
       const mockSavedSheet = {

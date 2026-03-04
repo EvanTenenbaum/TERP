@@ -29,7 +29,11 @@ export default function SharedSalesSheetPage() {
   const [, params] = useRoute("/shared/sales-sheet/:token");
   const token = params?.token || "";
 
-  const { data: sheet, isLoading, error } = trpc.salesSheets.getByToken.useQuery(
+  const {
+    data: sheet,
+    isLoading,
+    error,
+  } = trpc.salesSheets.getByToken.useQuery(
     { token },
     { enabled: !!token, retry: false }
   );
@@ -142,7 +146,8 @@ export default function SharedSalesSheetPage() {
                   <TableHead>Item</TableHead>
                   <TableHead className="text-center">Category</TableHead>
                   <TableHead className="text-right">Qty Available</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead className="text-right">Line Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,6 +169,9 @@ export default function SharedSalesSheetPage() {
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(item.price)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(item.price * item.quantity)}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -154,7 +154,8 @@ function SortableItem({
 
         <div className="mt-2 flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {item.quantity.toFixed(2)} units
+            {item.quantity.toFixed(2)} units × ${displayPrice.toFixed(2)} = $
+            {(displayPrice * item.quantity).toFixed(2)}
           </span>
 
           {isEditing ? (
@@ -269,11 +270,11 @@ export function SalesSheetPreview({
     priceOverride: priceOverrides.get(item.id),
   });
 
-  // Calculate totals
+  // Calculate totals — quantity × unit price per line (TER-320/TER-321)
   const totalItems = items.length;
   const totalValue = items.reduce((sum, item) => {
     const price = priceOverrides.get(item.id) || item.retailPrice;
-    return sum + price;
+    return sum + price * (item.quantity ?? 1);
   }, 0);
 
   const [, setLocation] = useLocation();
@@ -358,7 +359,8 @@ export function SalesSheetPreview({
     const text = items
       .map((item, index) => {
         const price = priceOverrides.get(item.id) || item.retailPrice;
-        return `${index + 1}. ${item.name} - $${price.toFixed(2)}`;
+        const lineTotal = price * (item.quantity ?? 1);
+        return `${index + 1}. ${item.name} — ${item.quantity} × $${price.toFixed(2)} = $${lineTotal.toFixed(2)}`;
       })
       .join("\n");
 
@@ -408,7 +410,12 @@ export function SalesSheetPreview({
 
     items.forEach((item, index) => {
       const price = priceOverrides.get(item.id) || item.retailPrice;
-      doc.text(`${index + 1}. ${item.name} - $${price.toFixed(2)}`, 20, y);
+      const lineTotal = price * (item.quantity ?? 1);
+      doc.text(
+        `${index + 1}. ${item.name} — ${item.quantity} × $${price.toFixed(2)} = $${lineTotal.toFixed(2)}`,
+        20,
+        y
+      );
       y += 10;
 
       if (y > 270) {
