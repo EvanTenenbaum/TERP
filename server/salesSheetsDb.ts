@@ -572,11 +572,29 @@ export async function convertDraftToSheet(
     throw new Error("Draft not found");
   }
 
+  // Recalculate total from items instead of trusting stored draft totalValue
+  interface DraftItem {
+    finalPrice?: number;
+    retailPrice?: number;
+    quantity?: number;
+  }
+  const draftItems = draft.items as unknown as DraftItem[];
+  const recalculatedTotal = Array.isArray(draftItems)
+    ? Math.round(
+        draftItems.reduce(
+          (sum, item) =>
+            sum +
+            (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
+          0
+        ) * 100
+      ) / 100
+    : parseFloat(draft.totalValue);
+
   // Create the sales sheet
   const sheetId = await saveSalesSheet({
     clientId: draft.clientId,
     items: draft.items as unknown[],
-    totalValue: parseFloat(draft.totalValue),
+    totalValue: recalculatedTotal,
     createdBy: userId,
   });
 
@@ -746,32 +764,55 @@ export async function convertToOrder(
   const isDraft = orderType === "DRAFT" ? 1 : 0;
   const dbOrderType = orderType === "QUOTE" ? "QUOTE" : "SALE";
 
-  // Create the order
-  const result = await db.insert(orders).values({
-    orderNumber,
-    orderType: dbOrderType as "QUOTE" | "SALE",
-    isDraft: isDraft === 1,
-    clientId: sheet.clientId,
-    items: sheet.items,
-    subtotal: sheet.totalValue,
-    total: sheet.totalValue,
-    totalCogs: "0",
-    totalMargin: "0",
-    avgMarginPercent: "0",
-    paymentTerms: "NET_30",
-    createdBy: userId,
-    convertedFromSalesSheetId: sheetId,
+  // TER-323: Recalculate total from items instead of trusting stored totalValue
+  // This ensures conversion parity even for sheets saved before TER-321 fix
+  interface ConvertSheetItem {
+    finalPrice?: number;
+    retailPrice?: number;
+    quantity?: number;
+  }
+  const sheetItems = sheet.items as unknown as ConvertSheetItem[];
+  const recalculatedTotal = Array.isArray(sheetItems)
+    ? Math.round(
+        sheetItems.reduce(
+          (sum, item) =>
+            sum +
+            (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
+          0
+        ) * 100
+      ) / 100
+    : Number(sheet.totalValue) || 0;
+
+  // TER-345: Wrap in transaction to prevent partial-conversion inconsistency
+  const orderId = await db.transaction(async tx => {
+    const result = await tx.insert(orders).values({
+      orderNumber,
+      orderType: dbOrderType as "QUOTE" | "SALE",
+      isDraft: isDraft === 1,
+      clientId: sheet.clientId,
+      items: sheet.items,
+      subtotal: recalculatedTotal.toFixed(2),
+      total: recalculatedTotal.toFixed(2),
+      totalCogs: "0",
+      totalMargin: "0",
+      avgMarginPercent: "0",
+      paymentTerms: "NET_30",
+      createdBy: userId,
+      convertedFromSalesSheetId: sheetId,
+    });
+
+    const newOrderId = Number(result[0].insertId);
+
+    // Update the sales sheet with the converted order ID
+    await tx
+      .update(salesSheetHistory)
+      .set({
+        convertedToOrderId: newOrderId,
+      })
+      .where(eq(salesSheetHistory.id, sheetId));
+
+    return newOrderId;
   });
-
-  const orderId = Number(result[0].insertId);
-
-  // Update the sales sheet with the converted order ID
-  await db
-    .update(salesSheetHistory)
-    .set({
-      convertedToOrderId: orderId,
-    })
-    .where(eq(salesSheetHistory.id, sheetId));
 
   return orderId;
 }
@@ -795,19 +836,7 @@ export async function convertToLiveSession(
   // Generate unique room code
   const roomCode = randomBytes(16).toString("hex");
 
-  // Create the session
-  const sessionResult = await db.insert(liveShoppingSessions).values({
-    hostUserId: userId,
-    clientId: sheet.clientId,
-    status: "ACTIVE",
-    roomCode,
-    startedAt: new Date(),
-    title: `Sales Sheet #${sheetId}`,
-  });
-
-  const sessionId = Number(sessionResult[0].insertId);
-
-  // Add items from the sales sheet to the session
+  // TER-345: Wrap in transaction to prevent partial-conversion inconsistency
   interface SheetItem {
     id: number;
     name?: string;
@@ -816,66 +845,84 @@ export async function convertToLiveSession(
     retailPrice?: number;
     basePrice?: number;
   }
-  const items = sheet.items as unknown as SheetItem[];
-  if (items && items.length > 0) {
-    // Fetch all batches at once to avoid N+1 queries
-    const batchIds = items.map(item => item.id).filter(Boolean);
-    const batchesData = await db
-      .select()
-      .from(batches)
-      .where(inArray(batches.id, batchIds));
 
-    // Create a map for quick lookup
-    const batchMap = new Map(batchesData.map(b => [b.id, b]));
+  const sessionId = await db.transaction(async tx => {
+    // Create the session
+    const sessionResult = await tx.insert(liveShoppingSessions).values({
+      hostUserId: userId,
+      clientId: sheet.clientId,
+      status: "ACTIVE",
+      roomCode,
+      startedAt: new Date(),
+      title: `Sales Sheet #${sheetId}`,
+    });
 
-    // Track items that couldn't be added
-    const skippedItems: string[] = [];
+    const newSessionId = Number(sessionResult[0].insertId);
 
-    for (const item of items) {
-      const batch = batchMap.get(item.id);
-      if (batch) {
-        // Validate required fields before inserting
-        if (!batch.productId) {
-          skippedItems.push(
-            `${item.name || `Item #${item.id}`} (missing productId)`
-          );
-          continue;
+    // Add items from the sales sheet to the session
+    const items = sheet.items as unknown as SheetItem[];
+    if (items && items.length > 0) {
+      // Fetch all batches at once to avoid N+1 queries
+      const batchIds = items.map(item => item.id).filter(Boolean);
+      const batchesData = await tx
+        .select()
+        .from(batches)
+        .where(inArray(batches.id, batchIds));
+
+      // Create a map for quick lookup
+      const batchMap = new Map(batchesData.map(b => [b.id, b]));
+
+      // Track items that couldn't be added
+      const skippedItems: string[] = [];
+
+      for (const item of items) {
+        const batch = batchMap.get(item.id);
+        if (batch) {
+          // Validate required fields before inserting
+          if (!batch.productId) {
+            skippedItems.push(
+              `${item.name || `Item #${item.id}`} (missing productId)`
+            );
+            continue;
+          }
+          await tx.insert(sessionCartItems).values({
+            sessionId: newSessionId,
+            batchId: item.id,
+            productId: batch.productId,
+            quantity: item.quantity?.toString() || "1",
+            unitPrice:
+              (
+                item.finalPrice ||
+                item.retailPrice ||
+                item.basePrice
+              )?.toString() || "0",
+            addedByRole: "HOST",
+            itemStatus: "TO_PURCHASE",
+          });
+        } else {
+          skippedItems.push(item.name || `Item #${item.id}`);
         }
-        await db.insert(sessionCartItems).values({
-          sessionId,
-          batchId: item.id,
-          productId: batch.productId,
-          quantity: item.quantity?.toString() || "1",
-          unitPrice:
-            (
-              item.finalPrice ||
-              item.retailPrice ||
-              item.basePrice
-            )?.toString() || "0",
-          addedByRole: "HOST",
-          itemStatus: "TO_PURCHASE",
-        });
-      } else {
-        skippedItems.push(item.name || `Item #${item.id}`);
+      }
+
+      // Log warning if items were skipped
+      if (skippedItems.length > 0) {
+        logger.warn(
+          { sessionId: newSessionId, skippedItems },
+          `convertToLiveSession: ${skippedItems.length} items skipped (batch not found)`
+        );
       }
     }
 
-    // Log warning if items were skipped
-    if (skippedItems.length > 0) {
-      logger.warn(
-        { sessionId, skippedItems },
-        `convertToLiveSession: ${skippedItems.length} items skipped (batch not found)`
-      );
-    }
-  }
+    // Update the sales sheet with the converted session ID
+    await tx
+      .update(salesSheetHistory)
+      .set({
+        convertedToSessionId: newSessionId.toString(),
+      })
+      .where(eq(salesSheetHistory.id, sheetId));
 
-  // Update the sales sheet with the converted session ID
-  await db
-    .update(salesSheetHistory)
-    .set({
-      convertedToSessionId: sessionId.toString(),
-    })
-    .where(eq(salesSheetHistory.id, sheetId));
+    return newSessionId;
+  });
 
   return sessionId;
 }

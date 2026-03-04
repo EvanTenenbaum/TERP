@@ -27,9 +27,6 @@ services:
   - key: ENABLE_QA_CRONS
     scope: RUN_AND_BUILD_TIME
     value: "true"
-  - key: UPLOAD_DIR
-    scope: RUN_AND_BUILD_TIME
-    value: /tmp/uploads
   - key: VITE_APP_TITLE
     scope: BUILD_TIME
     value: TERP

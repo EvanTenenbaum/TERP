@@ -33,8 +33,6 @@ services:
         value: "true"
       - key: ENABLE_QA_CRONS
         value: "true"
-      - key: UPLOAD_DIR
-        value: /tmp/uploads
       - key: DATABASE_URL
         scope: RUN_TIME
         type: SECRET
