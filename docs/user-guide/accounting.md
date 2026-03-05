@@ -52,20 +52,20 @@ New Balance: $10,000
 
 ---
 
-### Pay Vendor (WS-002)
+### Pay Supplier (WS-002)
 
-Record a vendor payment (cash out) quickly.
+Record a supplier payment (cash out) quickly.
 
 #### How to Use
 
 1. **Access the Quick Action:**
-   - From Dashboard: Click **"Pay Vendor"** quick action button
-   - From Vendor Profile: Click **"Pay Vendor"** in the Actions menu
+   - From Dashboard: Click **"Pay Supplier"** quick action button
+   - From Supplier Profile: Click **"Pay Supplier"** in the Actions menu
 
 2. **Fill in the Form:**
    | Field | Description | Required |
    |-------|-------------|----------|
-   | Vendor | Select vendor | Yes |
+   | Supplier | Select supplier | Yes |
    | Amount | Payment amount | Yes |
    | Payment Type | Cash, Check, Wire, ACH | Yes |
    | Reference | Check number or reference | No |
@@ -209,14 +209,14 @@ For manual adjustments:
 1. Navigate to Accounting → Bills
 2. Click **"+ New Bill"**
 3. Fill in:
-   - Vendor
+   - Supplier
    - Bill date and due date
    - Line items
 4. Save the bill
 
 ### Paying Bills
 
-Use the **Pay Vendor** quick action or:
+Use the **Pay Supplier** quick action or:
 
 1. Open the bill
 2. Click **"Record Payment"**

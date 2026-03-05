@@ -93,9 +93,9 @@ route,source,is_redirect,in_navigation,navigation_name,navigation_group,workspac
 /todos,app_route,false,true,Todo Lists,admin,,
 /todos/:listId,app_route,false,false,,,,hidden_or_workflow_route
 /users,app_route,false,true,Users,admin,,
-/vendor-supply,app_route,true,false,,,,hidden_or_workflow_route
-/vendors,app_route,true,false,,,,hidden_or_workflow_route
-/vendors/:id,app_route,false,false,,,,hidden_or_workflow_route
+/supplier-supply,app_route,true,false,,,,hidden_or_workflow_route
+/suppliers,app_route,true,false,,,,hidden_or_workflow_route
+/suppliers/:id,app_route,false,false,,,,hidden_or_workflow_route
 /vip-portal,app_route,false,false,,,,hidden_or_workflow_route
 /vip-portal/auth/impersonate,app_route,false,false,,,,hidden_or_workflow_route
 /vip-portal/dashboard,app_route,false,false,,,,hidden_or_workflow_route

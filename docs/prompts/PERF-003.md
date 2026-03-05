@@ -148,7 +148,7 @@ router_files = glob.glob('server/routers/*.ts')
 for file_path in router_files:
     with open(file_path, 'r') as f:
         content = f.read()
-    
+
     response = client.models.generate_content(
         model='gemini-2.0-flash-exp',
         contents=f"""Analyze this tRPC router for list endpoints without pagination:
@@ -169,18 +169,19 @@ Output format:
 - Recommendation: [add pagination / keep as-is / cursor-based]
 """
     )
-    
+
     print(f"\n{file_path}:")
     print(response.text)
 ```
 
 **Priority Endpoints** (from roadmap):
+
 - Dashboard endpoints (invoices, recent orders, KPIs)
 - VIP portal leaderboard
 - Inventory list
 - Orders list
 - Clients list
-- Vendors list
+- Suppliers list
 
 **Document:** Create `docs/PERF-003-ENDPOINT-AUDIT.md` with findings.
 
@@ -191,7 +192,7 @@ Output format:
 **Create** `server/_core/pagination.ts`:
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // Pagination input schema
 export const paginationInputSchema = z.object({
@@ -248,8 +249,11 @@ export type CursorPaginationInput = z.infer<typeof cursorPaginationInputSchema>;
 **Example - Dashboard Router:**
 
 ```typescript
-import { paginationInputSchema, createPaginatedResponse } from '../_core/pagination';
-import { count } from 'drizzle-orm';
+import {
+  paginationInputSchema,
+  createPaginatedResponse,
+} from "../_core/pagination";
+import { count } from "drizzle-orm";
 
 export const dashboardRouter = router({
   // Before
@@ -263,12 +267,10 @@ export const dashboardRouter = router({
     .input(paginationInputSchema)
     .query(async ({ input }) => {
       const { limit, offset } = input;
-      
+
       // Get total count
-      const [{ total }] = await db
-        .select({ total: count() })
-        .from(ordersTable);
-      
+      const [{ total }] = await db.select({ total: count() }).from(ordersTable);
+
       // Get paginated results
       const orders = await db
         .select()
@@ -276,7 +278,7 @@ export const dashboardRouter = router({
         .limit(limit)
         .offset(offset)
         .orderBy(desc(ordersTable.createdAt));
-      
+
       return createPaginatedResponse(orders, total, limit, offset);
     }),
 });
@@ -304,6 +306,7 @@ Generate the complete paginated endpoint.
 ```
 
 **Endpoints to update:**
+
 - `dashboard.getRecentOrders`
 - `dashboard.getRecentQuotes`
 - `dashboard.getInvoices`
@@ -320,12 +323,12 @@ export const vipPortalRouter = router({
     .input(paginationInputSchema)
     .query(async ({ input }) => {
       const { limit, offset } = input;
-      
+
       // Get total count
       const [{ total }] = await db
         .select({ total: count() })
         .from(clientsTable);
-      
+
       // Get paginated leaderboard
       const leaderboard = await db
         .select({
@@ -340,7 +343,7 @@ export const vipPortalRouter = router({
         .orderBy(desc(sum(ordersTable.total)))
         .limit(limit)
         .offset(offset);
-      
+
       return createPaginatedResponse(leaderboard, total, limit, offset);
     }),
 });
@@ -348,7 +351,7 @@ export const vipPortalRouter = router({
 
 ### Step 3.5: Add Pagination to List Endpoints
 
-**Action:** Update all list endpoints (orders, clients, inventory, vendors).
+**Action:** Update all list endpoints (orders, clients, inventory, suppliers).
 
 **Example - Orders Router:**
 
@@ -358,48 +361,51 @@ export const ordersRouter = router({
     .input(
       z.object({
         pagination: paginationInputSchema,
-        filters: z.object({
-          status: z.string().optional(),
-          clientId: z.number().optional(),
-        }).optional(),
+        filters: z
+          .object({
+            status: z.string().optional(),
+            clientId: z.number().optional(),
+          })
+          .optional(),
       })
     )
     .query(async ({ input }) => {
       const { pagination, filters } = input;
       const { limit, offset } = pagination;
-      
+
       // Build query with filters
       let query = db.select().from(ordersTable);
-      
+
       if (filters?.status) {
         query = query.where(eq(ordersTable.status, filters.status));
       }
       if (filters?.clientId) {
         query = query.where(eq(ordersTable.clientId, filters.clientId));
       }
-      
+
       // Get total count with filters
       const [{ total }] = await db
         .select({ total: count() })
         .from(ordersTable)
         .where(/* same filters */);
-      
+
       // Get paginated results
       const orders = await query
         .limit(limit)
         .offset(offset)
         .orderBy(desc(ordersTable.createdAt));
-      
+
       return createPaginatedResponse(orders, total, limit, offset);
     }),
 });
 ```
 
 **Routers to update:**
+
 - `server/routers/orders.ts`
 - `server/routers/clients.ts`
 - `server/routers/inventory.ts`
-- `server/routers/vendors.ts`
+- `server/routers/suppliers.ts`
 
 ### Step 3.6: Implement Cursor-Based Pagination (Optional)
 
@@ -413,10 +419,10 @@ export const inventoryRouter = router({
     .input(cursorPaginationInputSchema)
     .query(async ({ input }) => {
       const { limit, cursor } = input;
-      
+
       // Parse cursor (encoded last item ID)
       const lastId = cursor ? parseInt(cursor) : 0;
-      
+
       // Get items after cursor
       const batches = await db
         .select()
@@ -424,12 +430,12 @@ export const inventoryRouter = router({
         .where(gt(batchesTable.id, lastId))
         .limit(limit + 1) // Fetch one extra to check if more exist
         .orderBy(asc(batchesTable.id));
-      
+
       // Determine next cursor
       const hasMore = batches.length > limit;
       const items = hasMore ? batches.slice(0, limit) : batches;
       const nextCursor = hasMore ? items[items.length - 1].id.toString() : null;
-      
+
       return createCursorPaginatedResponse(items, nextCursor);
     }),
 });
@@ -449,30 +455,30 @@ export function OrdersListPage() {
   const [page, setPage] = useState(1);
   const limit = 50;
   const offset = (page - 1) * limit;
-  
+
   const { data, isLoading } = trpc.orders.list.useQuery({
     pagination: { limit, offset },
   });
-  
+
   if (isLoading) return <div>Loading...</div>;
-  
+
   const { items, pagination } = data;
-  
+
   return (
     <div>
       {/* Render orders */}
       {items.map(order => <OrderItem key={order.id} order={order} />)}
-      
+
       {/* Pagination controls */}
       <div className="pagination">
-        <button 
+        <button
           disabled={page === 1}
           onClick={() => setPage(p => p - 1)}
         >
           Previous
         </button>
         <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
-        <button 
+        <button
           disabled={!pagination.hasMore}
           onClick={() => setPage(p => p + 1)}
         >
@@ -485,6 +491,7 @@ export function OrdersListPage() {
 ```
 
 **Pages to update:**
+
 - `client/src/pages/OrdersPage.tsx`
 - `client/src/pages/InventoryPage.tsx`
 - `client/src/pages/ClientsPage.tsx`
@@ -502,11 +509,11 @@ pnpm test
 **Update tests to include pagination:**
 
 ```typescript
-it('should return paginated orders', async () => {
+it("should return paginated orders", async () => {
   const result = await caller.orders.list({
     pagination: { limit: 10, offset: 0 },
   });
-  
+
   expect(result.items).toHaveLength(10);
   expect(result.pagination.total).toBeGreaterThan(0);
   expect(result.pagination.hasMore).toBe(true);
@@ -532,6 +539,7 @@ pnpm check
 **File:** `docs/PERF-003-COMPLETION-REPORT.md`
 
 **Include:**
+
 - Summary of endpoints updated (count and list)
 - Pagination limits configured
 - Frontend pages updated
@@ -543,6 +551,7 @@ pnpm check
 **File:** `docs/roadmaps/MASTER_ROADMAP.md`
 
 Update PERF-003:
+
 - Change status to `✅ COMPLETE`
 - Add completion date: `(Completed: YYYY-MM-DD)`
 - Add actual time spent
@@ -576,11 +585,13 @@ Move session file from `docs/sessions/active/` to `docs/sessions/completed/`.
 ## ⚡ Quick Reference
 
 **Key Files:**
+
 - `server/_core/pagination.ts` - Pagination schemas and helpers
 - `server/routers/*.ts` - Backend routers
 - `client/src/pages/*.tsx` - Frontend pages
 
 **Pagination Pattern:**
+
 ```typescript
 // Backend
 .input(paginationInputSchema)
@@ -596,6 +607,7 @@ const { data } = trpc.endpoint.useQuery({ pagination: { limit: 50, offset: 0 } }
 ```
 
 **Key Commands:**
+
 ```bash
 # Run tests
 pnpm test
@@ -612,15 +624,19 @@ pnpm dev
 ## 🆘 Troubleshooting
 
 **Issue:** Tests fail with pagination
+
 - **Solution:** Update tests to include pagination input parameters
 
 **Issue:** Frontend doesn't show all data
+
 - **Solution:** Verify pagination state is managed correctly; check if initial page is loaded
 
 **Issue:** Performance doesn't improve
+
 - **Solution:** Verify database queries use indexes; check if count() query is optimized
 
 **Issue:** TypeScript errors with pagination types
+
 - **Solution:** Ensure pagination schemas are properly imported and typed
 
 ---

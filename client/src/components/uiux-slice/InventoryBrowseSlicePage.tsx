@@ -39,7 +39,7 @@ const defaultColumns: GridColumnOption[] = [
   { id: "status", label: "Status", visible: true },
   { id: "onHand", label: "On Hand", visible: true },
   { id: "cost", label: "Cost", visible: true },
-  { id: "vendor", label: "Vendor", visible: true },
+  { id: "vendor", label: "Supplier", visible: true },
   { id: "images", label: "Images", visible: true },
 ];
 
@@ -87,9 +87,7 @@ export function InventoryBrowseSlicePage() {
   const productsQuery = trpc.purchaseOrders.products.useQuery({ limit: 100 });
   const utils = trpc.useUtils();
   const backendItems = useMemo(() => {
-    const normalizeEnhanced = (
-      enhancedItems: Array<Record<string, unknown>>
-    ) =>
+    const normalizeEnhanced = (enhancedItems: Array<Record<string, unknown>>) =>
       enhancedItems.map(item => ({
         batch: {
           id: Number(item.id ?? 0),
@@ -104,9 +102,7 @@ export function InventoryBrowseSlicePage() {
         product: {
           nameCanonical: String(item.productName ?? "Unknown Product"),
         },
-        vendor: item.vendorName
-          ? { name: String(item.vendorName) }
-          : undefined,
+        vendor: item.vendorName ? { name: String(item.vendorName) } : undefined,
       }));
 
     const enhancedPayload = enhancedQuery.data as
@@ -128,17 +124,22 @@ export function InventoryBrowseSlicePage() {
         draft.lines.map((line, index) => {
           const batchId =
             line.batchId ??
-            Number(`${Math.max(draft.poId, 1)}${index + 1}${Math.max(index, 0)}`);
+            Number(
+              `${Math.max(draft.poId, 1)}${index + 1}${Math.max(index, 0)}`
+            );
           return {
             batch: {
               id: batchId,
-              sku: line.sku ?? `LAB-${String(draft.poId).padStart(4, "0")}-${String(index + 1).padStart(3, "0")}`,
+              sku:
+                line.sku ??
+                `LAB-${String(draft.poId).padStart(4, "0")}-${String(index + 1).padStart(3, "0")}`,
               batchStatus: "RECEIVED",
               onHandQty: line.intakeQty,
               unitCogs: line.unitCost,
             },
             product: {
-              nameCanonical: line.productName ?? line.strainName ?? "Unknown Product",
+              nameCanonical:
+                line.productName ?? line.strainName ?? "Unknown Product",
             },
             vendor: {
               name: draft.vendorName,
@@ -171,7 +172,11 @@ export function InventoryBrowseSlicePage() {
         },
       };
     });
-  }, [backendItems.length, fallbackInventoryItems.length, productsQuery.data?.items]);
+  }, [
+    backendItems.length,
+    fallbackInventoryItems.length,
+    productsQuery.data?.items,
+  ]);
 
   const items =
     backendItems.length > 0
@@ -185,7 +190,12 @@ export function InventoryBrowseSlicePage() {
     fallbackInventoryItems.forEach(item => {
       const batchId = item.batch?.id;
       if (!batchId) return;
-      const images = (item as { __fallbackImages?: Array<{ url: string; fileName: string }> }).__fallbackImages ?? [];
+      const images =
+        (
+          item as {
+            __fallbackImages?: Array<{ url: string; fileName: string }>;
+          }
+        ).__fallbackImages ?? [];
       if (images.length > 0) {
         map[batchId] = images;
       }
@@ -242,9 +252,14 @@ export function InventoryBrowseSlicePage() {
       const pairs = await Promise.all(
         missingBatchIds.map(async batchId => {
           try {
-            const images = await utils.photography.getBatchImages.fetch({ batchId });
+            const images = await utils.photography.getBatchImages.fetch({
+              batchId,
+            });
             const image = images[0];
-            return [batchId, image?.thumbnailUrl ?? image?.imageUrl ?? ""] as const;
+            return [
+              batchId,
+              image?.thumbnailUrl ?? image?.imageUrl ?? "",
+            ] as const;
           } catch {
             return [batchId, ""] as const;
           }
@@ -270,7 +285,9 @@ export function InventoryBrowseSlicePage() {
     };
   }, [primaryThumbByBatchId, utils.photography.getBatchImages, visualBatchIds]);
 
-  const visibleColumnIds = new Set(columns.filter(c => c.visible).map(c => c.id));
+  const visibleColumnIds = new Set(
+    columns.filter(c => c.visible).map(c => c.id)
+  );
 
   const savePreference = (
     nextColumns: GridColumnOption[],
@@ -281,7 +298,9 @@ export function InventoryBrowseSlicePage() {
       {
         viewMode: nextViewMode,
         columnOrder: nextColumns.map(c => c.id),
-        columnVisibility: Object.fromEntries(nextColumns.map(c => [c.id, c.visible])),
+        columnVisibility: Object.fromEntries(
+          nextColumns.map(c => [c.id, c.visible])
+        ),
       },
       storageUserId
     );
@@ -313,9 +332,12 @@ export function InventoryBrowseSlicePage() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-6 py-4 border-b bg-background">
-        <h1 className="text-2xl font-semibold">Inventory Browse (Slice Test)</h1>
+        <h1 className="text-2xl font-semibold">
+          Inventory Browse (Slice Test)
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Grid-first browse with column controls, view modes, and SKU gallery drawer.
+          Grid-first browse with column controls, view modes, and SKU gallery
+          drawer.
         </p>
       </div>
 
@@ -326,11 +348,14 @@ export function InventoryBrowseSlicePage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9"
-            placeholder="Search SKU, product, vendor"
+            placeholder="Search SKU, product, supplier"
           />
         </div>
 
-        <Select value={viewMode} onValueChange={v => setViewModeAndPersist(v as GridViewMode)}>
+        <Select
+          value={viewMode}
+          onValueChange={v => setViewModeAndPersist(v as GridViewMode)}
+        >
           <SelectTrigger className="w-44">
             <SelectValue placeholder="View" />
           </SelectTrigger>
@@ -341,20 +366,38 @@ export function InventoryBrowseSlicePage() {
           </SelectContent>
         </Select>
 
-        <GridColumnsPopover columns={columns} onChange={setColumnsAndPersist} onReset={resetColumns} />
+        <GridColumnsPopover
+          columns={columns}
+          onChange={setColumnsAndPersist}
+          onReset={resetColumns}
+        />
       </div>
 
       <div className="flex-1 overflow-auto">
         <table className="w-full">
           <thead className="sticky top-0 bg-background border-b">
             <tr>
-              {visibleColumnIds.has("sku") && <th className="text-left p-2">SKU</th>}
-              {visibleColumnIds.has("product") && <th className="text-left p-2">Product</th>}
-              {visibleColumnIds.has("status") && <th className="text-left p-2">Status</th>}
-              {visibleColumnIds.has("onHand") && <th className="text-right p-2">On Hand</th>}
-              {visibleColumnIds.has("cost") && <th className="text-right p-2">Cost</th>}
-              {visibleColumnIds.has("vendor") && <th className="text-left p-2">Vendor</th>}
-              {viewMode === "VISUAL" && visibleColumnIds.has("images") && <th className="text-left p-2">Image</th>}
+              {visibleColumnIds.has("sku") && (
+                <th className="text-left p-2">SKU</th>
+              )}
+              {visibleColumnIds.has("product") && (
+                <th className="text-left p-2">Product</th>
+              )}
+              {visibleColumnIds.has("status") && (
+                <th className="text-left p-2">Status</th>
+              )}
+              {visibleColumnIds.has("onHand") && (
+                <th className="text-right p-2">On Hand</th>
+              )}
+              {visibleColumnIds.has("cost") && (
+                <th className="text-right p-2">Cost</th>
+              )}
+              {visibleColumnIds.has("vendor") && (
+                <th className="text-left p-2">Supplier</th>
+              )}
+              {viewMode === "VISUAL" && visibleColumnIds.has("images") && (
+                <th className="text-left p-2">Image</th>
+              )}
               <th className="text-right p-2"></th>
             </tr>
           </thead>
@@ -364,21 +407,36 @@ export function InventoryBrowseSlicePage() {
               if (!batchId) return null;
               const onHand = Number(item.batch?.onHandQty ?? 0);
               const fallbackThumb = fallbackImagesByBatchId[batchId]?.[0]?.url;
-              const visualThumb = primaryThumbByBatchId[batchId] || fallbackThumb;
+              const visualThumb =
+                primaryThumbByBatchId[batchId] || fallbackThumb;
               return (
                 <tr key={batchId} className={`border-b ${rowClass}`}>
-                  {visibleColumnIds.has("sku") && <td className="p-2 font-mono text-xs">{item.batch?.sku}</td>}
-                  {visibleColumnIds.has("product") && <td className="p-2">{item.product?.nameCanonical ?? "-"}</td>}
-                  {visibleColumnIds.has("status") && (
+                  {visibleColumnIds.has("sku") && (
+                    <td className="p-2 font-mono text-xs">{item.batch?.sku}</td>
+                  )}
+                  {visibleColumnIds.has("product") && (
                     <td className="p-2">
-                      <Badge variant="outline">{item.batch?.batchStatus ?? "-"}</Badge>
+                      {item.product?.nameCanonical ?? "-"}
                     </td>
                   )}
-                  {visibleColumnIds.has("onHand") && <td className="p-2 text-right">{onHand.toFixed(2)}</td>}
-                  {visibleColumnIds.has("cost") && (
-                    <td className="p-2 text-right">${Number(item.batch?.unitCogs ?? 0).toFixed(2)}</td>
+                  {visibleColumnIds.has("status") && (
+                    <td className="p-2">
+                      <Badge variant="outline">
+                        {item.batch?.batchStatus ?? "-"}
+                      </Badge>
+                    </td>
                   )}
-                  {visibleColumnIds.has("vendor") && <td className="p-2">{item.vendor?.name ?? "-"}</td>}
+                  {visibleColumnIds.has("onHand") && (
+                    <td className="p-2 text-right">{onHand.toFixed(2)}</td>
+                  )}
+                  {visibleColumnIds.has("cost") && (
+                    <td className="p-2 text-right">
+                      ${Number(item.batch?.unitCogs ?? 0).toFixed(2)}
+                    </td>
+                  )}
+                  {visibleColumnIds.has("vendor") && (
+                    <td className="p-2">{item.vendor?.name ?? "-"}</td>
+                  )}
                   {viewMode === "VISUAL" && visibleColumnIds.has("images") && (
                     <td className="p-2">
                       {visualThumb ? (
@@ -425,7 +483,10 @@ export function InventoryBrowseSlicePage() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td className="p-8 text-center text-muted-foreground" colSpan={8}>
+                <td
+                  className="p-8 text-center text-muted-foreground"
+                  colSpan={8}
+                >
                   No inventory records found.
                 </td>
               </tr>
@@ -444,8 +505,12 @@ export function InventoryBrowseSlicePage() {
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-3">
             <div className="text-sm rounded border p-2 bg-muted/20">
-              <p className="font-medium">{selectedItem?.product?.nameCanonical ?? "-"}</p>
-              <p className="text-xs text-muted-foreground">SKU {selectedItem?.batch?.sku ?? "-"}</p>
+              <p className="font-medium">
+                {selectedItem?.product?.nameCanonical ?? "-"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                SKU {selectedItem?.batch?.sku ?? "-"}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -456,11 +521,13 @@ export function InventoryBrowseSlicePage() {
                       url: image.thumbnailUrl ?? image.imageUrl,
                       caption: image.caption ?? "SKU image",
                     }))
-                  : (fallbackImagesByBatchId[selectedBatchId ?? -1] ?? []).map((image, index) => ({
-                      id: Number(`${selectedBatchId ?? 0}${index + 1}`),
-                      url: image.url,
-                      caption: image.fileName ?? "SKU image",
-                    }))) ?? []
+                  : (fallbackImagesByBatchId[selectedBatchId ?? -1] ?? []).map(
+                      (image, index) => ({
+                        id: Number(`${selectedBatchId ?? 0}${index + 1}`),
+                        url: image.url,
+                        caption: image.fileName ?? "SKU image",
+                      })
+                    )) ?? []
               ).map(image => (
                 <img
                   key={image.id}
@@ -470,9 +537,12 @@ export function InventoryBrowseSlicePage() {
                 />
               ))}
               {(galleryQuery.data ?? []).length === 0 &&
-                (fallbackImagesByBatchId[selectedBatchId ?? -1] ?? []).length === 0 && (
-                <p className="text-sm text-muted-foreground">No images available for this SKU.</p>
-              )}
+                (fallbackImagesByBatchId[selectedBatchId ?? -1] ?? [])
+                  .length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No images available for this SKU.
+                  </p>
+                )}
             </div>
           </div>
           <DrawerFooter>

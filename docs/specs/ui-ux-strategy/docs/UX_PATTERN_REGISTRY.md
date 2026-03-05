@@ -6,8 +6,9 @@ This registry defines the **approved UX patterns** for TERP.
 AI agents must use these patterns when implementing UI.
 
 If an agent believes a new pattern is necessary, it must:
-1) justify why existing patterns fail, and
-2) add the new pattern here with usage constraints.
+
+1. justify why existing patterns fail, and
+2. add the new pattern here with usage constraints.
 
 ---
 
@@ -16,17 +17,20 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** A reusable interaction shell for high-frequency workflows.
 
 **Components:**
+
 - Sticky Context Header
 - Primary Work Grid
 - Inspector Panel (right)
 - Status Bar / Summary Footer
 
 **Use when:**
+
 - repetitive entry
 - bulk operations
 - user needs to stay in flow
 
 **Avoid when:**
+
 - a workflow is truly infrequent and complex (rare in TERP)
 
 ---
@@ -36,13 +40,15 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Establish batch scope and defaults.
 
 **Includes (examples):**
-- vendor/customer
+
+- supplier/customer
 - warehouse/location
 - date
 - payment terms
 - source
 
 **Rules:**
+
 - fields used most frequently belong here
 - must not scroll away
 - must not be overcrowded
@@ -54,12 +60,14 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Dense display + fast entry.
 
 **Rules:**
+
 - keyboard-first navigation
 - inline edit primitives only
 - supports multi-select
 - supports row creation without losing focus
 
 **Minimum features:**
+
 - tab/enter behavior is deterministic
 - row-level validation on commit
 
@@ -70,6 +78,7 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Edit complex objects without leaving context.
 
 **Rules:**
+
 - never blocks the grid
 - opens based on selection
 - contains advanced fields + audit/history
@@ -82,6 +91,7 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Show context-aware actions when multiple rows are selected.
 
 **Rules:**
+
 - appears only on selection >1
 - shows count + actions
 - destructive actions require confirmation + undo
@@ -93,11 +103,13 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Make persistence trustworthy.
 
 **Allowed states:**
+
 - ✅ Saved
 - 🟡 Saving…
 - 🔴 Needs attention
 
 **Rules:**
+
 - never hide the state
 - errors must be actionable (link to row/field)
 
@@ -108,6 +120,7 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Reduce frustration and speed entry.
 
 **Rules:**
+
 - success may show instantly
 - error shows on blur or commit attempt
 - never show “required missing” while typing
@@ -119,6 +132,7 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** global entry point for actions.
 
 **Rules:**
+
 - not used for field-level selection
 - shows shortcut hints
 - fuzzy match allowed
@@ -130,11 +144,13 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** Reduce repeated entry.
 
 **Examples:**
+
 - default warehouse per org
-- default payment terms per vendor
+- default payment terms per supplier
 - last-used source
 
 **Rules:**
+
 - defaults must be visible and editable
 - never hide important assumptions
 
@@ -145,10 +161,12 @@ If an agent believes a new pattern is necessary, it must:
 **Intent:** create missing records without breaking flow.
 
 **Examples:**
+
 - inline product create from grid item cell
-- new vendor creation from combobox
+- new supplier creation from combobox
 
 **Rules:**
+
 - minimal required fields only
 - creation must not spawn nested modals
 
@@ -161,4 +179,3 @@ If an agent believes a new pattern is necessary, it must:
 - Multiple competing search systems
 - “Empty white UI” with no signifiers
 - Grid used as a report + entry + analysis mashup
-

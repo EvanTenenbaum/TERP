@@ -26,7 +26,7 @@ You are Agent Team C working on the TERP project. You MUST follow all protocols 
 | ORD-003   | Fix Invalid Order State Transitions            | 2h       | `server/services/orderStateMachine.ts`   |
 | ORD-004   | Add Credit Override Authorization              | 2h       | `server/services/orderPricingService.ts` |
 | PARTY-001 | Add Nullable supplierClientId to POs           | 4h       | `drizzle/schema.ts`                      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft            | 2h       | `server/routers/vendors.ts`              |
+| PARTY-004 | Convert Supplier Hard Deletes to Soft          | 2h       | `server/routers/suppliers.ts`            |
 
 ---
 
@@ -72,7 +72,7 @@ cat > "docs/sessions/active/${SESSION_ID}.md" << 'EOF'
 - [ ] ORD-003: Fix Invalid Order State Transitions
 - [ ] ORD-004: Add Credit Override Authorization
 - [ ] PARTY-001: Add Nullable supplierClientId to POs
-- [ ] PARTY-004: Convert Vendor Hard Deletes to Soft
+- [ ] PARTY-004: Convert Supplier Hard Deletes to Soft
 
 ## Progress Notes
 Starting inventory and orders work...
@@ -130,7 +130,7 @@ Batch 6 (Order Validations - 2h each):
 
 Batch 7 (Party Model - 4h):
 ├── PARTY-001: supplierClientId on POs
-└── PARTY-004: Soft deletes for vendors
+└── PARTY-004: Soft deletes for suppliers
 ```
 
 ### STRICT Mode: Inventory Verification

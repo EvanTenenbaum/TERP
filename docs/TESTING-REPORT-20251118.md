@@ -137,7 +137,7 @@ Accounts Payable: $0.00
 | Table                    | Records | Purpose                       |
 | ------------------------ | ------- | ----------------------------- |
 | **Inventory**            |         |                               |
-| lots                     | 30      | Vendor inventory lots         |
+| lots                     | 30      | Supplier inventory lots       |
 | batches                  | 25      | Product batches               |
 | inventoryMovements       | 50      | Audit trail                   |
 | **Orders & Sales**       |         |                               |

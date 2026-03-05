@@ -17,7 +17,7 @@
 > - ✅ **FIX-UI-001**: Feature flags Default toggle now editable
 > - ✅ **FIX-UI-002**: Dashboard unified to use same layout as rest of app
 >
-> **Production Verified:** 121 products, 333 calendar events, 170 comments, 10 vendor bills
+> **Production Verified:** 121 products, 333 calendar events, 170 comments, 10 supplier bills
 > **Documentation:** `docs/roadmaps/WAVE_7_DATA_SEEDING_COMPLETE.md`
 
 > ✅ **UX ENHANCEMENT WAVE 2 COMPLETE (Jan 3, 2026)**
@@ -158,37 +158,39 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 > **Task:** Complete User Flow Mapping and Documentation
 > **Status:** ✅ COMPLETE
 > **Documentation:**
+>
 > - `docs/reference/FLOW_GUIDE.md` - Comprehensive flow guide by domain/entity
 > - `docs/reference/USER_FLOW_MATRIX.csv` - 200+ deduplicated user flows
 > - `docs/assets/ST-045/` - Working files and raw data
 
 **Key Findings from ST-045:**
+
 - 245+ unique tRPC procedures across 21 routers
 - 10 business domains documented
 - RBAC permission gaps identified (see RBAC-001)
 - Calendar router security issue (see SEC-013)
-- Deprecated vendors router needs migration (see DATA-012)
+- Deprecated suppliers router needs migration (see DATA-012)
 
 ### 📋 New Tasks from ST-045 Analysis (Jan 8, 2026)
 
 #### RBAC & Security
 
-| Task    | Description                                      | File                                    | Status     | Priority |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| RBAC-001 | RBAC Permission Harmonization                   | `server/db/seed.ts`                     | 🟡 OPEN    | HIGH     |
-| SEC-013 | Calendar Router Security - Uses publicProcedure | `server/routers/calendar*.ts`           | 🟡 OPEN    | MEDIUM   |
+| Task     | Description                                     | File                          | Status  | Priority |
+| -------- | ----------------------------------------------- | ----------------------------- | ------- | -------- |
+| RBAC-001 | RBAC Permission Harmonization                   | `server/db/seed.ts`           | 🟡 OPEN | HIGH     |
+| SEC-013  | Calendar Router Security - Uses publicProcedure | `server/routers/calendar*.ts` | 🟡 OPEN | MEDIUM   |
 
 #### Data & Migration
 
-| Task     | Description                                      | File                                    | Status     | Priority |
-| -------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| DATA-012 | Complete Vendors→Clients Migration               | `server/routers/vendors.ts`             | 🟡 OPEN    | MEDIUM   |
+| Task     | Description                          | File                          | Status  | Priority |
+| -------- | ------------------------------------ | ----------------------------- | ------- | -------- |
+| DATA-012 | Complete Suppliers→Clients Migration | `server/routers/suppliers.ts` | 🟡 OPEN | MEDIUM   |
 
 #### Documentation
 
-| Task    | Description                                      | File                                    | Status     | Priority |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| DOC-002 | API Documentation from Flow Matrix               | `docs/reference/`                       | 🟢 BACKLOG | LOW      |
+| Task    | Description                        | File              | Status     | Priority |
+| ------- | ---------------------------------- | ----------------- | ---------- | -------- |
+| DOC-002 | API Documentation from Flow Matrix | `docs/reference/` | 🟢 BACKLOG | LOW      |
 
 ### 🐛 Critical Bugs Discovered (Jan 7, 2026 - User Flow Testing)
 
@@ -198,53 +200,53 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 #### P0 - Critical (Blocks Core Functionality)
 
-| Task    | Description                                      | File                                    | Status     |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
-| BUG-040 | Order Creator: Inventory loading fails           | `server/pricingEngine.ts`               | 🔴 OPEN    |
-| BUG-041 | Batch Detail View crashes app                    | `client/src/components/inventory/BatchDetailDrawer.tsx` | 🔴 OPEN    |
-| BUG-042 | Global Search returns no results                 | `server/routers/search.ts`              | 🔴 OPEN    |
-| BUG-043 | Permission Service empty array SQL crash         | `server/services/permissionService.ts`  | 🔴 OPEN    |
-| BUG-044 | VIP Portal empty batch IDs crash                 | `server/routers/vipPortal.ts`           | 🔴 OPEN    |
+| Task    | Description                              | File                                                    | Status  |
+| ------- | ---------------------------------------- | ------------------------------------------------------- | ------- |
+| BUG-040 | Order Creator: Inventory loading fails   | `server/pricingEngine.ts`                               | 🔴 OPEN |
+| BUG-041 | Batch Detail View crashes app            | `client/src/components/inventory/BatchDetailDrawer.tsx` | 🔴 OPEN |
+| BUG-042 | Global Search returns no results         | `server/routers/search.ts`                              | 🔴 OPEN |
+| BUG-043 | Permission Service empty array SQL crash | `server/services/permissionService.ts`                  | 🔴 OPEN |
+| BUG-044 | VIP Portal empty batch IDs crash         | `server/routers/vipPortal.ts`                           | 🔴 OPEN |
 
 #### P1 - High (Degrades User Experience)
 
-| Task    | Description                                      | File                                    | Status     |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
-| BUG-045 | Order Creator: Retry resets entire form          | `client/src/pages/OrderCreatorPage.tsx` | 🟡 OPEN    |
-| BUG-046 | Settings Users tab misleading auth error         | `server/_core/trpc.ts`                  | 🟡 OPEN    |
-| BUG-047 | Spreadsheet View shows empty grid                | `server/services/spreadsheetViewService.ts` | 🟡 OPEN    |
-| BUG-048 | ClientsListPage Retry resets filters             | `client/src/pages/ClientsListPage.tsx`  | 🟡 OPEN    |
-| BUG-049 | Live Catalog SQL injection risk                  | `server/services/liveCatalogService.ts` | 🟡 OPEN    |
-| BUG-050 | AuditModal unsafe .map() calls                   | `client/src/components/audit/AuditModal.tsx` | 🟡 OPEN    |
-| BUG-051 | Permission middleware generic errors             | `server/_core/permissionMiddleware.ts`  | 🟡 OPEN    |
-| BUG-052 | Tag Management empty array SQL                   | `server/tagManagementService.ts`        | 🟡 OPEN    |
-| BUG-053 | Credit Engine empty session IDs                  | `server/services/creditEngine-patch.ts` | 🟡 OPEN    |
+| Task    | Description                              | File                                         | Status  |
+| ------- | ---------------------------------------- | -------------------------------------------- | ------- |
+| BUG-045 | Order Creator: Retry resets entire form  | `client/src/pages/OrderCreatorPage.tsx`      | 🟡 OPEN |
+| BUG-046 | Settings Users tab misleading auth error | `server/_core/trpc.ts`                       | 🟡 OPEN |
+| BUG-047 | Spreadsheet View shows empty grid        | `server/services/spreadsheetViewService.ts`  | 🟡 OPEN |
+| BUG-048 | ClientsListPage Retry resets filters     | `client/src/pages/ClientsListPage.tsx`       | 🟡 OPEN |
+| BUG-049 | Live Catalog SQL injection risk          | `server/services/liveCatalogService.ts`      | 🟡 OPEN |
+| BUG-050 | AuditModal unsafe .map() calls           | `client/src/components/audit/AuditModal.tsx` | 🟡 OPEN |
+| BUG-051 | Permission middleware generic errors     | `server/_core/permissionMiddleware.ts`       | 🟡 OPEN |
+| BUG-052 | Tag Management empty array SQL           | `server/tagManagementService.ts`             | 🟡 OPEN |
+| BUG-053 | Credit Engine empty session IDs          | `server/services/creditEngine-patch.ts`      | 🟡 OPEN |
 
 #### P2 - Medium (Minor Issues)
 
-| Task    | Description                                      | File                                    | Status     |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
-| BUG-054 | AppointmentRequestsList unsafe .map()            | `client/src/components/calendar/AppointmentRequestsList.tsx` | 🟢 BACKLOG |
-| BUG-055 | TimeOffRequestsList unsafe .map()                | `client/src/components/calendar/TimeOffRequestsList.tsx` | 🟢 BACKLOG |
-| BUG-056 | Dashboard widgets unsafe .map() calls            | `client/src/components/dashboard/widgets-v2/` | 🟢 BACKLOG |
-| BUG-057 | Search inconsistency (inventory vs global)       | `server/routers/search.ts`              | 🟢 BACKLOG |
-| BUG-058 | Auth helpers silent null return                  | `server/_core/authHelpers.ts`           | 🟢 BACKLOG |
-| BUG-059 | Inventory utils silent empty return              | `server/inventoryUtils.ts`              | 🟢 BACKLOG |
-| BUG-060 | Audit router silent empty array                  | `server/routers/audit.ts`               | 🟢 BACKLOG |
+| Task    | Description                                | File                                                         | Status     |
+| ------- | ------------------------------------------ | ------------------------------------------------------------ | ---------- |
+| BUG-054 | AppointmentRequestsList unsafe .map()      | `client/src/components/calendar/AppointmentRequestsList.tsx` | 🟢 BACKLOG |
+| BUG-055 | TimeOffRequestsList unsafe .map()          | `client/src/components/calendar/TimeOffRequestsList.tsx`     | 🟢 BACKLOG |
+| BUG-056 | Dashboard widgets unsafe .map() calls      | `client/src/components/dashboard/widgets-v2/`                | 🟢 BACKLOG |
+| BUG-057 | Search inconsistency (inventory vs global) | `server/routers/search.ts`                                   | 🟢 BACKLOG |
+| BUG-058 | Auth helpers silent null return            | `server/_core/authHelpers.ts`                                | 🟢 BACKLOG |
+| BUG-059 | Inventory utils silent empty return        | `server/inventoryUtils.ts`                                   | 🟢 BACKLOG |
+| BUG-060 | Audit router silent empty array            | `server/routers/audit.ts`                                    | 🟢 BACKLOG |
 
 #### P3 - Low (Polish/Improvements)
 
-| Task    | Description                                      | File                                    | Status     |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
-| BUG-061 | AnalyticsPage missing empty state                | `client/src/pages/AnalyticsPage.tsx`    | 🟢 BACKLOG |
-| BUG-062 | CalendarPage missing empty state                 | `client/src/pages/CalendarPage.tsx`     | 🟢 BACKLOG |
-| BUG-063 | NotificationsPage missing empty state            | `client/src/pages/NotificationsPage.tsx`| 🟢 BACKLOG |
-| BUG-064 | PhotographyPage missing empty state              | `client/src/pages/PhotographyPage.tsx`  | 🟢 BACKLOG |
-| BUG-065 | PickPackPage missing empty state                 | `client/src/pages/PickPackPage.tsx`     | 🟢 BACKLOG |
-| BUG-066 | ProductsPage missing empty state                 | `client/src/pages/ProductsPage.tsx`     | 🟢 BACKLOG |
-| BUG-067 | SampleManagement missing empty state             | `client/src/pages/SampleManagement.tsx` | 🟢 BACKLOG |
-| BUG-068 | Generic "Unauthorized" errors in accounting      | `server/routers/accounting.ts`          | 🟢 BACKLOG |
-| BUG-069 | Calendar "Permission denied" without details     | `server/routers/calendar.ts`            | 🟢 BACKLOG |
+| Task    | Description                                  | File                                     | Status     |
+| ------- | -------------------------------------------- | ---------------------------------------- | ---------- |
+| BUG-061 | AnalyticsPage missing empty state            | `client/src/pages/AnalyticsPage.tsx`     | 🟢 BACKLOG |
+| BUG-062 | CalendarPage missing empty state             | `client/src/pages/CalendarPage.tsx`      | 🟢 BACKLOG |
+| BUG-063 | NotificationsPage missing empty state        | `client/src/pages/NotificationsPage.tsx` | 🟢 BACKLOG |
+| BUG-064 | PhotographyPage missing empty state          | `client/src/pages/PhotographyPage.tsx`   | 🟢 BACKLOG |
+| BUG-065 | PickPackPage missing empty state             | `client/src/pages/PickPackPage.tsx`      | 🟢 BACKLOG |
+| BUG-066 | ProductsPage missing empty state             | `client/src/pages/ProductsPage.tsx`      | 🟢 BACKLOG |
+| BUG-067 | SampleManagement missing empty state         | `client/src/pages/SampleManagement.tsx`  | 🟢 BACKLOG |
+| BUG-068 | Generic "Unauthorized" errors in accounting  | `server/routers/accounting.ts`           | 🟢 BACKLOG |
+| BUG-069 | Calendar "Permission denied" without details | `server/routers/calendar.ts`             | 🟢 BACKLOG |
 
 ---
 
@@ -256,18 +258,19 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 #### SEC - Security (CRITICAL - Unprotected API Mutations)
 
-| Task    | Description                                      | File                                    | Status     | Priority |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| SEC-005 | Unprotected Location Router Mutations            | `server/routers/locations.ts`           | 🔴 OPEN    | HIGH     |
-| SEC-006 | Unprotected Warehouse Transfer Mutations         | `server/routers/warehouseTransfers.ts`  | 🔴 OPEN    | HIGH     |
-| SEC-007 | Unprotected Order Enhancement Mutations (11 eps) | `server/routers/orderEnhancements.ts`   | 🔴 OPEN    | HIGH     |
-| SEC-008 | Unprotected Settings Router Mutations            | `server/routers/settings.ts`            | 🔴 OPEN    | HIGH     |
-| SEC-009 | VIP Portal Needs Data Publicly Exposed           | `server/routers/alerts.ts`              | 🔴 OPEN    | HIGH     |
-| SEC-010 | Unprotected Returns/Refunds Query Endpoints      | `server/routers/returns.ts, refunds.ts` | 🔴 OPEN    | HIGH     |
-| SEC-011 | VIP Portal Session Duration Too Long (30 days)   | `server/routers/vipPortal.ts`           | 🟡 OPEN    | MEDIUM   |
-| SEC-012 | Admin Setup Endpoint Security Weaknesses         | `server/routers/adminSetup.ts`          | 🟡 OPEN    | MEDIUM   |
+| Task    | Description                                      | File                                    | Status  | Priority |
+| ------- | ------------------------------------------------ | --------------------------------------- | ------- | -------- |
+| SEC-005 | Unprotected Location Router Mutations            | `server/routers/locations.ts`           | 🔴 OPEN | HIGH     |
+| SEC-006 | Unprotected Warehouse Transfer Mutations         | `server/routers/warehouseTransfers.ts`  | 🔴 OPEN | HIGH     |
+| SEC-007 | Unprotected Order Enhancement Mutations (11 eps) | `server/routers/orderEnhancements.ts`   | 🔴 OPEN | HIGH     |
+| SEC-008 | Unprotected Settings Router Mutations            | `server/routers/settings.ts`            | 🔴 OPEN | HIGH     |
+| SEC-009 | VIP Portal Needs Data Publicly Exposed           | `server/routers/alerts.ts`              | 🔴 OPEN | HIGH     |
+| SEC-010 | Unprotected Returns/Refunds Query Endpoints      | `server/routers/returns.ts, refunds.ts` | 🔴 OPEN | HIGH     |
+| SEC-011 | VIP Portal Session Duration Too Long (30 days)   | `server/routers/vipPortal.ts`           | 🟡 OPEN | MEDIUM   |
+| SEC-012 | Admin Setup Endpoint Security Weaknesses         | `server/routers/adminSetup.ts`          | 🟡 OPEN | MEDIUM   |
 
 **Impact:** 28+ API endpoints accessible without authentication. Anyone can:
+
 - Create/modify warehouse locations
 - Transfer inventory between locations
 - Create recurring orders and modify payment terms
@@ -278,32 +281,32 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 #### BUG - New Bugs from Chaos Testing
 
-| Task    | Description                                      | File                                    | Status     | Priority |
-| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| BUG-070 | Silent Auth Failure in DashboardLayout           | `client/src/components/DashboardLayout.tsx` | 🟡 OPEN | HIGH     |
-| BUG-071 | PurchaseModal Media Upload Without Rollback      | `client/src/components/inventory/PurchaseModal.tsx` | 🟡 OPEN | HIGH |
-| BUG-072 | Silent localStorage Failure                      | `client/src/pages/Orders.tsx`           | 🟢 BACKLOG | MEDIUM   |
-| BUG-073 | Race Conditions in Debounced Search              | `client/src/components/inventory/PurchaseModal.tsx` | 🟢 BACKLOG | MEDIUM |
-| BUG-074 | ClientProfilePage Missing isPending Checks       | `client/src/pages/ClientProfilePage.tsx`| 🟢 BACKLOG | MEDIUM   |
+| Task    | Description                                 | File                                                | Status     | Priority |
+| ------- | ------------------------------------------- | --------------------------------------------------- | ---------- | -------- |
+| BUG-070 | Silent Auth Failure in DashboardLayout      | `client/src/components/DashboardLayout.tsx`         | 🟡 OPEN    | HIGH     |
+| BUG-071 | PurchaseModal Media Upload Without Rollback | `client/src/components/inventory/PurchaseModal.tsx` | 🟡 OPEN    | HIGH     |
+| BUG-072 | Silent localStorage Failure                 | `client/src/pages/Orders.tsx`                       | 🟢 BACKLOG | MEDIUM   |
+| BUG-073 | Race Conditions in Debounced Search         | `client/src/components/inventory/PurchaseModal.tsx` | 🟢 BACKLOG | MEDIUM   |
+| BUG-074 | ClientProfilePage Missing isPending Checks  | `client/src/pages/ClientProfilePage.tsx`            | 🟢 BACKLOG | MEDIUM   |
 
 #### ST - Stabilization Tasks
 
-| Task   | Description                                      | File                                    | Status     | Priority |
-| ------ | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| ST-025 | Add Error Boundaries to Critical Pages           | `client/src/pages/*.tsx`                | 🟡 OPEN    | HIGH     |
-| ST-026 | Implement Concurrent Edit Detection              | `drizzle/schema.ts`, `server/routers/`  | 🟡 OPEN    | HIGH     |
+| Task   | Description                            | File                                   | Status  | Priority |
+| ------ | -------------------------------------- | -------------------------------------- | ------- | -------- |
+| ST-025 | Add Error Boundaries to Critical Pages | `client/src/pages/*.tsx`               | 🟡 OPEN | HIGH     |
+| ST-026 | Implement Concurrent Edit Detection    | `drizzle/schema.ts`, `server/routers/` | 🟡 OPEN | HIGH     |
 
 #### UX - User Experience Improvements
 
-| Task   | Description                                      | File                                    | Status     | Priority |
-| ------ | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
-| UX-001 | Implement Form Dirty State Protection            | `client/src/hooks/`                     | 🟡 OPEN    | HIGH     |
-| UX-002 | Add Delete Confirmation to TaskDetailModal       | `client/src/components/todos/TaskDetailModal.tsx` | 🟢 BACKLOG | MEDIUM |
-| UX-003 | Fix Mobile Kanban Overflow                       | `client/src/pages/UnifiedSalesPortalPage.tsx` | 🟡 OPEN | HIGH     |
-| UX-004 | Coordinate Loading States on Multi-Query Pages   | `client/src/pages/ClientProfilePage.tsx`| 🟢 BACKLOG | MEDIUM   |
-| UX-005 | Make Select Dropdowns Responsive                 | Multiple components                     | 🟢 BACKLOG | MEDIUM   |
-| UX-006 | Add Error Recovery UI with Retry                 | `client/src/components/common/`         | 🟡 OPEN    | HIGH     |
-| UX-007 | Fix Sidebar Skeleton Responsive Width            | `client/src/components/DashboardLayoutSkeleton.tsx` | 🟢 BACKLOG | LOW |
+| Task   | Description                                    | File                                                | Status     | Priority |
+| ------ | ---------------------------------------------- | --------------------------------------------------- | ---------- | -------- |
+| UX-001 | Implement Form Dirty State Protection          | `client/src/hooks/`                                 | 🟡 OPEN    | HIGH     |
+| UX-002 | Add Delete Confirmation to TaskDetailModal     | `client/src/components/todos/TaskDetailModal.tsx`   | 🟢 BACKLOG | MEDIUM   |
+| UX-003 | Fix Mobile Kanban Overflow                     | `client/src/pages/UnifiedSalesPortalPage.tsx`       | 🟡 OPEN    | HIGH     |
+| UX-004 | Coordinate Loading States on Multi-Query Pages | `client/src/pages/ClientProfilePage.tsx`            | 🟢 BACKLOG | MEDIUM   |
+| UX-005 | Make Select Dropdowns Responsive               | Multiple components                                 | 🟢 BACKLOG | MEDIUM   |
+| UX-006 | Add Error Recovery UI with Retry               | `client/src/components/common/`                     | 🟡 OPEN    | HIGH     |
+| UX-007 | Fix Sidebar Skeleton Responsive Width          | `client/src/components/DashboardLayoutSkeleton.tsx` | 🟢 BACKLOG | LOW      |
 
 ---
 
@@ -358,7 +361,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Task   | Description                                | Priority | Status      |
 | ------ | ------------------------------------------ | -------- | ----------- |
 | WS-001 | Quick Action: Receive Client Payment       | CRITICAL | ✅ COMPLETE |
-| WS-002 | Quick Action: Pay Vendor                   | CRITICAL | ✅ COMPLETE |
+| WS-002 | Quick Action: Pay Supplier                 | CRITICAL | ✅ COMPLETE |
 | WS-003 | Pick & Pack Module: Group Bagging          | CRITICAL | ✅ COMPLETE |
 | WS-004 | Simultaneous Multi-Order & Referral Credit | CRITICAL | ✅ COMPLETE |
 | WS-005 | No Black Box Audit Trail                   | CRITICAL | ✅ COMPLETE |
@@ -370,7 +373,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | WS-011 | Sales: Quick Customer Creation             | MEDIUM   | ✅ COMPLETE |
 | WS-012 | Customer Preferences & Purchase History    | MEDIUM   | ✅ COMPLETE |
 | WS-013 | Simple Task Management                     | MEDIUM   | ✅ COMPLETE |
-| WS-014 | Vendor "Harvesting Again" Reminder         | MEDIUM   | ✅ COMPLETE |
+| WS-014 | Supplier "Harvesting Again" Reminder       | MEDIUM   | ✅ COMPLETE |
 | WS-015 | Sales: Customer Wishlist Field             | MEDIUM   | ✅ COMPLETE |
 
 ### ✅ Recently Completed (This Sprint)
@@ -570,16 +573,16 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### Feature Breakdown by Module
 
-| Module          | Features Completed     | Status          |
-| --------------- | ---------------------- | --------------- |
-| Accounting      | WS-001, WS-002, WS-006 | ✅ All Complete |
-| Pick & Pack     | WS-003, WS-009         | ✅ All Complete |
-| Sales/Credit    | WS-004, WS-011, WS-012 | ✅ All Complete |
-| System Core     | WS-005                 | ✅ Complete     |
-| Inventory       | WS-007, WS-008, WS-010 | ✅ All Complete |
-| General Utility | WS-013                 | ✅ Complete     |
-| Vendor/Calendar | WS-014                 | ✅ Complete     |
-| Sales           | WS-015                 | ✅ Complete     |
+| Module            | Features Completed     | Status          |
+| ----------------- | ---------------------- | --------------- |
+| Accounting        | WS-001, WS-002, WS-006 | ✅ All Complete |
+| Pick & Pack       | WS-003, WS-009         | ✅ All Complete |
+| Sales/Credit      | WS-004, WS-011, WS-012 | ✅ All Complete |
+| System Core       | WS-005                 | ✅ Complete     |
+| Inventory         | WS-007, WS-008, WS-010 | ✅ All Complete |
+| General Utility   | WS-013                 | ✅ Complete     |
+| Supplier/Calendar | WS-014                 | ✅ Complete     |
+| Sales             | WS-015                 | ✅ Complete     |
 
 ### QA Fixes Applied (Dec 31, 2025)
 
@@ -1050,11 +1053,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** All CRUD mutations in `locations.ts` use `publicProcedure`, allowing anyone to create, update, or delete warehouse locations without authentication.
 
 **Objectives:**
+
 - Replace `publicProcedure` with `protectedProcedure` for all mutations
 - Add `requirePermission('inventory:locations:manage')` middleware
 - Maintain read access with appropriate permissions
 
 **Deliverables:**
+
 - [ ] Import `protectedProcedure` from `server/_core/trpc`
 - [ ] Replace `publicProcedure` on create, update, delete
 - [ ] Add permission middleware
@@ -1075,11 +1080,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** The `transfer` mutation uses `publicProcedure`, allowing anyone to move inventory between locations without authentication.
 
 **Objectives:**
+
 - Protect transfer mutation with authentication
 - Add inventory transfer permission check
 - Protect stats query with read permission
 
 **Deliverables:**
+
 - [ ] Replace `publicProcedure` with `protectedProcedure`
 - [ ] Add `requirePermission('inventory:transfer')` middleware
 - [ ] Verify unauthenticated requests rejected
@@ -1100,16 +1107,19 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** All 11 mutations in `orderEnhancements.ts` use `publicProcedure`, exposing recurring orders, payment terms, and alert configurations to unauthenticated access.
 
 **Affected Endpoints:**
+
 1. `createRecurringOrder`, `updateRecurringOrder`, `pauseRecurringOrder`, `resumeRecurringOrder`, `cancelRecurringOrder`
 2. `reorderFromPrevious`, `updateClientPaymentTerms`
 3. `createAlertConfiguration`, `updateAlertConfiguration`, `deleteAlertConfiguration`, `toggleAlertConfiguration`
 
 **Objectives:**
+
 - Protect all 11 endpoints with authentication
 - Add appropriate permission checks per operation type
 - No regression in authenticated user functionality
 
 **Deliverables:**
+
 - [ ] Replace all `publicProcedure` with `protectedProcedure`
 - [ ] Add recurring order permissions
 - [ ] Add payment terms permissions
@@ -1131,11 +1141,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** All CRUD mutations for grades, categories, subcategories, and locations use `publicProcedure`, allowing anyone to corrupt master data.
 
 **Objectives:**
+
 - Protect all settings mutations with admin authentication
 - Prevent unauthorized master data manipulation
 - Maintain admin functionality
 
 **Deliverables:**
+
 - [ ] Replace all `publicProcedure` with `adminProcedure`
 - [ ] Verify non-admin users receive 403 Forbidden
 - [ ] Existing admin functionality preserved
@@ -1156,11 +1168,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** The `getNeedsForVipPortal` endpoint exposes all active client needs publicly - a critical business intelligence leak.
 
 **Objectives:**
+
 - Change from `publicProcedure` to `vipPortalProcedure`
 - Filter results to only show authenticated client's own needs
 - Add proper VIP session validation
 
 **Deliverables:**
+
 - [ ] Replace `publicProcedure` with `vipPortalProcedure`
 - [ ] Filter by `ctx.vipPortalClientId`
 - [ ] Unauthenticated requests return 401
@@ -1181,15 +1195,18 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Returns and refunds routers expose financial data through public queries.
 
 **Affected Endpoints:**
+
 - `returns.getAll`, `returns.getById`
 - `refunds.getAll`, `refunds.getById`, `refunds.getByReturn`, `refunds.getByOriginalTransaction`
 
 **Objectives:**
+
 - Protect all financial data queries with authentication
 - Add orders read permission check
 - Protect privacy of financial records
 
 **Deliverables:**
+
 - [ ] Replace `publicProcedure` with `protectedProcedure`
 - [ ] Add `requirePermission('orders:read')` middleware
 - [ ] Unauthenticated requests return 401
@@ -1210,11 +1227,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** VIP Portal sessions are valid for 30 days, which is excessive and increases security risk.
 
 **Objectives:**
+
 - Reduce session duration to 7-14 days
 - Add session revocation on logout
 - Consider refresh token pattern for extended sessions
 
 **Deliverables:**
+
 - [ ] Reduce `sessionExpiresAt` to 14 days
 - [ ] Clear DB record on logout
 - [ ] Old sessions properly revoked
@@ -1235,11 +1254,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** The `promoteToAdmin` endpoint has security weaknesses: no rate limiting, no logging, secret key could leak.
 
 **Objectives:**
+
 - Add rate limiting (max 3 attempts per minute)
 - Add comprehensive audit logging
 - Log IP address and attempt details
 
 **Deliverables:**
+
 - [ ] Add rate limiting logic
 - [ ] Add audit logging for all attempts
 - [ ] Log IP address and email
@@ -1260,11 +1281,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Auth check failures silently set a default guest user without notification. Users don't know if authentication failed.
 
 **Objectives:**
+
 - Show explicit error message when auth fails
 - Redirect to login on auth failure
 - Distinguish between network errors and unauthenticated state
 
 **Deliverables:**
+
 - [ ] Add error handling with user notification
 - [ ] Add redirect to login on session issues
 - [ ] Network errors distinguished from auth errors
@@ -1285,11 +1308,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Media files are uploaded before record creation. If purchase creation fails, orphaned media files remain.
 
 **Objectives:**
+
 - Implement cleanup on purchase creation failure
 - Track uploaded media IDs
 - Delete orphaned media on error
 
 **Deliverables:**
+
 - [ ] Track uploaded media IDs during upload
 - [ ] Add try/catch with cleanup logic
 - [ ] Delete orphaned media on failure
@@ -1310,11 +1335,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Only 2-3 ErrorBoundary usages found. 20+ pages lack error boundaries, causing entire page crashes.
 
 **Objectives:**
+
 - Create PageErrorBoundary wrapper component
 - Apply to all page-level components
 - Add retry and error reporting functionality
 
 **Deliverables:**
+
 - [ ] Create `PageErrorBoundary.tsx` component
 - [ ] Wrap Inventory.tsx with ErrorBoundary
 - [ ] Wrap ClientProfilePage.tsx with ErrorBoundary
@@ -1337,12 +1364,14 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** System uses "last write wins" for all updates. Multiple users editing same record causes silent data loss.
 
 **Objectives:**
+
 - Add version field to critical tables (orders, clients, batches)
 - Include version in update mutations
 - Reject updates with stale version numbers
 - Show conflict resolution UI
 
 **Deliverables:**
+
 - [ ] Add version columns to orders, clients, batches tables
 - [ ] Add version check to orders router
 - [ ] Add version check to clients router
@@ -1365,11 +1394,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Users can navigate away from forms with unsaved changes without any warning.
 
 **Objectives:**
+
 - Create `useFormDirtyState` hook
 - Add `beforeunload` event listener
 - Show confirmation dialog on navigation with unsaved changes
 
 **Deliverables:**
+
 - [ ] Create useFormDirtyState.ts hook
 - [ ] Add beforeunload handler
 - [ ] Browser prompts before navigation with unsaved changes
@@ -1390,11 +1421,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Kanban columns use `min-w-[300px]` causing horizontal overflow on mobile devices.
 
 **Objectives:**
+
 - Stack columns vertically on mobile
 - Use responsive breakpoints for width
 - Add swipe navigation for mobile kanban
 
 **Deliverables:**
+
 - [ ] Add responsive container classes
 - [ ] Columns stack on mobile (< 768px)
 - [ ] Horizontal scroll with snap points on tablet
@@ -1415,11 +1448,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Problem:** Failed data loads show error but no retry mechanism. Users must manually refresh.
 
 **Objectives:**
+
 - Create ErrorWithRetry component
 - Include refetch function in error display
 - Add loading indicator during retry
 
 **Deliverables:**
+
 - [ ] Create ErrorWithRetry.tsx component
 - [ ] Add retry button to error states
 - [ ] Loading indicator during retry
@@ -2455,7 +2490,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 1. Create a "Live Shopping" mode for real-time order creation with customers
 2. Enable iPad/tablet-friendly interface for customer self-service in showroom
 3. Implement price negotiation workflow with "awaiting offer" status
-4. Support vendor consultation for price approval
+4. Support supplier consultation for price approval
 5. Provide clear status tracking for negotiated items
 6. Maintain full order history and audit trail
 
@@ -2474,13 +2509,13 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 - [ ] Create price negotiation workflow
   - Mark items for negotiation
   - Add customer requested price
-  - Vendor consultation interface
+  - Supplier consultation interface
   - Approval/decline workflow
   - Counter-offer capability
-- [ ] Add vendor consultation features
+- [ ] Add supplier consultation features
   - Notification system for pending negotiations
   - Quick approval interface
-  - Vendor notes and history
+  - Supplier notes and history
   - Bulk approval for multiple items
 - [ ] Implement order finalization
   - Convert negotiated items to confirmed pricing
@@ -2496,13 +2531,13 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
   - `order_negotiations` table
   - Track negotiation history
   - Link to order items
-  - Store vendor responses
+  - Store supplier responses
 - [ ] Implement tRPC endpoints
   - `liveShop.createSession` - Start live shopping session
   - `liveShop.addItem` - Add item to cart
   - `liveShop.markForNegotiation` - Flag item for price negotiation
   - `liveShop.submitNegotiation` - Submit negotiation request
-  - `liveShop.approveNegotiation` - Vendor approval
+  - `liveShop.approveNegotiation` - Supplier approval
   - `liveShop.finalizeOrder` - Convert to order
 - [ ] Add comprehensive tests
   - Unit tests for negotiation logic
@@ -2510,7 +2545,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
   - E2E tests for live shopping flow
 - [ ] Create documentation
   - User guide for live shopping mode
-  - Vendor guide for negotiations
+  - Supplier guide for negotiations
   - Showroom setup instructions
 - [ ] All tests passing
 - [ ] Zero TypeScript errors
@@ -2522,9 +2557,9 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 2. **As a customer**, I want to request a lower price on specific items, so I can negotiate better deals on bulk purchases.
 
-3. **As a sales rep**, I want to see which items need vendor approval, so I can quickly consult with vendors and provide pricing decisions.
+3. **As a sales rep**, I want to see which items need supplier approval, so I can quickly consult with suppliers and provide pricing decisions.
 
-4. **As a vendor**, I want to review negotiation requests and approve/decline them, so I can maintain pricing control while offering flexibility.
+4. **As a supplier**, I want to review negotiation requests and approve/decline them, so I can maintain pricing control while offering flexibility.
 
 5. **As a sales rep**, I want to finalize orders with both confirmed and negotiated items, so I can complete the sale efficiently.
 
@@ -2532,7 +2567,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 - Use industry-standard terminology: "Awaiting Offer", "In Negotiation", "Approved", "Declined"
 - Consider real-time updates using WebSockets or polling for multi-user scenarios
-- Implement proper authorization - only vendors can approve negotiations
+- Implement proper authorization - only suppliers can approve negotiations
 - Add audit logging for all negotiation actions
 - Consider offline mode for showroom iPads with sync when online
 - Responsive design for various tablet sizes
@@ -2541,11 +2576,11 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 - May require updates to existing order creation flow
 - Consider integration with inventory availability checks
-- May need vendor notification system (email/SMS)
+- May need supplier notification system (email/SMS)
 
 ---
 
-### FEATURE-004: Clarify Vendor vs Buyer vs Client Distinction
+### FEATURE-004: Clarify Supplier vs Buyer vs Client Distinction
 
 **Status:** complete  
 **Priority:** MEDIUM  
@@ -2555,24 +2590,24 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 **Dependencies:** None  
 **Key Commits:** `50f992b9`, `af61def4`, `1e600510`, `eb5fe6b6`
 
-**Problem:** The application has unclear terminology and navigation around vendors, buyers, and clients. The vendor page exists but is not visible in the sidebar navigation, and the distinction between these entity types is confusing for users.
+**Problem:** The application has unclear terminology and navigation around suppliers, buyers, and clients. The supplier page exists but is not visible in the sidebar navigation, and the distinction between these entity types is confusing for users.
 
-**Resolution:** Completed as part of the Canonical Model Unification initiative. Vendors are now unified into the `clients` table with `isSeller=true` flag. Supplier-specific data stored in `supplier_profiles` table. Created `SupplierProfileSection.tsx` component and `vendorMappingService.ts` for backward compatibility. Documentation added in `docs/protocols/CANONICAL_DICTIONARY.md` and `docs/protocols/NAMING_CONVENTIONS.md`.
+**Resolution:** Completed as part of the Canonical Model Unification initiative. Suppliers are now unified into the `clients` table with `isSeller=true` flag. Supplier-specific data stored in `supplier_profiles` table. Created `SupplierProfileSection.tsx` component and `vendorMappingService.ts` for backward compatibility. Documentation added in `docs/protocols/CANONICAL_DICTIONARY.md` and `docs/protocols/NAMING_CONVENTIONS.md`.
 
 **Deliverables:**
 
-- [x] Audit current usage of vendor/buyer/client terminology across codebase
+- [x] Audit current usage of supplier/buyer/client terminology across codebase
 - [x] Document clear business definitions in CANONICAL_DICTIONARY.md
 - [x] Unified model: clients table with isSeller/isBuyer flags
 - [x] SupplierProfileSection component for supplier-specific UI
-- [x] vendorMappingService for legacy vendor ID lookups
+- [x] vendorMappingService for legacy supplier ID lookups
 - [x] All tests passing
 - [x] Session archived
 
 **Technical Implementation:**
 
-- Vendors → `clients` with `isSeller=true` + `supplier_profiles` table
-- `supplier_profiles.legacyVendorId` maps to old `vendors.id` for migration
+- Suppliers → `clients` with `isSeller=true` + `supplier_profiles` table
+- `supplier_profiles.legacyVendorId` maps to old `suppliers.id` for migration
 - See `07-deprecated-systems.md` for deprecation details
 
 ---
@@ -2713,7 +2748,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
   - Task ID: ST-007
   - Scope: Expand RF-002 to cover ALL list endpoints, not just dashboard
   - Action: Add pagination (limit/offset or cursor-based) to all `getAll` and list endpoints
-  - Priority Endpoints: Accounting, inventory, orders, clients, vendors
+  - Priority Endpoints: Accounting, inventory, orders, clients, suppliers
   - Implementation: Add `limit` and `offset` parameters to all list procedures
   - Testing: Verify pagination works with large datasets (1000+ records)
   - Impact: Prevent browser crashes with large datasets
@@ -2761,7 +2796,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
     2. ✅ Get DSN from project settings
     3. ✅ Add `VITE_SENTRY_DSN` to Digital Ocean env vars
     4. ✅ Add `SENTRY_DSN` to Digital Ocean env vars
-    5. ✅ Restart application and verify Sentry receiving events
+    5. ✅ Restart application and verify Sentry intake events
     6. ✅ Configure email notifications in Sentry
     7. ✅ Create alert rule for new errors
     8. ✅ Create alert rule for error rate spikes
@@ -3373,7 +3408,7 @@ logger.error({ err: error }, "Error message");
 
 **Deliverables:**
 
-- [ ] Pagination added to priority endpoints (accounting, inventory, orders, clients, vendors)
+- [ ] Pagination added to priority endpoints (accounting, inventory, orders, clients, suppliers)
 - [ ] Pagination added to all remaining list endpoints
 - [ ] Tests for pagination with large datasets
 - [ ] Documentation of pagination parameters (limit/offset)
@@ -4912,7 +4947,7 @@ logger.error({ err: error }, "Error message");
   - **Phase 2: Auto-Tagging Rules (V2)**
     - **Tag Rules Engine:**
       - Define rules to automatically assign tags based on conditions
-      - Rule conditions: strain name, product type, brand, category, vendor, etc.
+      - Rule conditions: strain name, product type, brand, category, supplier, etc.
       - Rule actions: add tag(s), remove tag(s)
       - Rule priority for conflict resolution
       - Enable/disable rules without deletion
@@ -4961,12 +4996,12 @@ logger.error({ err: error }, "Error message");
     - Pick & Pack: Order fulfillment and packaging
     - Scheduling: Appointment and calendar management
     - Matchmaking: Client-product matching and recommendations
-    - Product Intake: Receiving and processing new inventory
+    - Product Intake: Intake and processing new inventory
     - Quality Control: Product quality inspection
     - Shipping: Order shipping and logistics
     - Returns Processing: Handling returns and refunds
     - Client Support: Client inquiries and support
-    - Vendor Relations: Vendor communication and management
+    - Supplier Relations: Supplier communication and management
     - Accounting: Financial tasks and reconciliation
     - Compliance: Regulatory compliance tasks
   - **Notification Triggers:**
@@ -5392,10 +5427,10 @@ These should **NOT** be built:
 
 - [ ] **Product Intake Flow** (Priority Feature) (2025-10-26)
   - Batch-by-batch processing
-  - Internal & vendor notes
+  - Internal & supplier notes
   - COGS agreement tracking
   - Automatic inventory updates
-  - Vendor receipt generation
+  - Supplier receipt generation
   - Status: Production-ready
 
 - [ ] **Recurring Orders System** (2025-10-26)
@@ -5476,7 +5511,7 @@ These should **NOT** be built:
 - REL-003/REL-004: Connection pool memory leak fix
 - BUG-025: Analytics page connected to real data
 - ST-013: Soft-delete implementation complete
-- FEATURE-004: Canonical model unification (vendors → clients)
+- FEATURE-004: Canonical model unification (suppliers → clients)
 - DATA-011: Production-grade seeding system
 
 ---
@@ -5664,11 +5699,11 @@ Module `/analytics` now accessible. Business intelligence features available thr
 
 ## 🔴 QA-IDENTIFIED HIGH PRIORITY BUGS
 
-#### QA-006: Fix Dashboard - Vendors Button 404
+#### QA-006: Fix Dashboard - Suppliers Button 404
 
 **Priority:** P1 | **Status:** complete | **Effort:** 2-4h
 
-Dashboard Vendors button returns 404.
+Dashboard Suppliers button returns 404.
 
 ---
 
@@ -5701,7 +5736,7 @@ Dashboard Locations button returns 404.
 **Priority:** P1 | **Status:** complete | **Effort:** 4-6h
 Export CSV button in Inventory module is unresponsive.
 
-**Resolution:** Fixed data mapping issue in export handler. Added transformation logic to map nested inventory data (batch, product, brand, vendor) to flat objects before export.
+**Resolution:** Fixed data mapping issue in export handler. Added transformation logic to map nested inventory data (batch, product, brand, supplier) to flat objects before export.
 
 ## See docs/QA-010-COMPLETION-REPORT.md for details.
 
@@ -5747,7 +5782,7 @@ See docs/QA-014-COMPLETION-REPORT.md for details.
 
 **Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
-**Resolution:** Fixed 404 errors for both "Add Need" and "Add Supply" buttons by correcting navigation routes. Add Need now navigates to /clients (where needs are created in client context), and Add Supply navigates to /vendor-supply (existing page). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+**Resolution:** Fixed 404 errors for both "Add Need" and "Add Supply" buttons by correcting navigation routes. Add Need now navigates to /clients (where needs are created in client context), and Add Supply navigates to /supplier-supply (existing page). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
 See docs/QA-015-COMPLETION-REPORT.md for details.
 
 ---
@@ -5756,7 +5791,7 @@ See docs/QA-015-COMPLETION-REPORT.md for details.
 
 **Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
-**Resolution:** Fixed together with QA-015 by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /vendor-supply (existing routes). Both buttons were navigating to non-existent routes (/needs/new and /supply/new). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+**Resolution:** Fixed together with QA-015 by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /supplier-supply (existing routes). Both buttons were navigating to non-existent routes (/needs/new and /supply/new). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
 See docs/QA-015-COMPLETION-REPORT.md and docs/QA-016-COMPLETION-REPORT.md for details.
 
 ---
@@ -6795,7 +6830,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
       - Indoor: 2,642 units $53,733
       - Outdoor: 1,963 units $45,566
     - Inventory table below shows "No inventory found" with "Create First Batch" button
-    - Table headers visible: SKU, Product, Brand, Vendor, Grade, Status, On Hand, Reserved, Available, Actions
+    - Table headers visible: SKU, Product, Brand, Supplier, Grade, Status, On Hand, Reserved, Available, Actions
   - **Root Cause:** Unknown - data exists but table is not rendering rows
     - Possible causes:
       1. API endpoint returning empty array for table data
@@ -6815,7 +6850,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     2. Compare API endpoints used for metrics vs table
     3. Verify table data API response (should contain 6,731+ items)
     4. Check frontend data transformation logic
-    5. Verify table component is receiving data correctly
+    5. Verify table component is intake data correctly
     6. Check for filtering logic that might be excluding all rows
     7. Test with browser console to inspect data flow
   - **Files to Check:**
@@ -6824,7 +6859,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - `client/src/components/inventory/InventoryTable.tsx` (table component)
   - **Expected Behavior:**
     - Table should display all 6,731 inventory items
-    - Each row should show SKU, Product, Brand, Vendor, Grade, Status, quantities
+    - Each row should show SKU, Product, Brand, Supplier, Grade, Status, quantities
     - Users should be able to click rows for details
     - Search, filter, and sort should work
   - **Estimate:** 4-8 hours (requires investigation and fix)
@@ -6930,7 +6965,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - **Scope:** 100% of pages affected (20+ pages)
     - **User Experience:** Severe - content unreadable, tables truncated, forms cramped
     - **Business Impact:** HIGH - Mobile users cannot effectively use the application
-  - **Affected Pages:** Dashboard, Orders, Clients, Inventory, Calendar, Settings, Analytics, Accounting, Matchmaking, Workflow Queue, Sales Sheets, Pricing, Vendors, Purchase Orders, Returns, Locations, and all other pages with sidebar
+  - **Affected Pages:** Dashboard, Orders, Clients, Inventory, Calendar, Settings, Analytics, Accounting, Matchmaking, Workflow Queue, Sales Sheets, Pricing, Suppliers, Purchase Orders, Returns, Locations, and all other pages with sidebar
   - **Test Protocols Blocked:** ALL 47 mobile protocols affected by this issue
   - **Evidence:**
     - Dashboard: Sidebar 200px, content 190px on 390px viewport
@@ -8065,7 +8100,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - [ ] Bills list
 - [ ] Payments list
 - [ ] Calendar events list
-- [ ] Vendors/Suppliers list
+- [ ] Suppliers/Suppliers list
 - [ ] Purchase Orders list
 - [ ] Todo tasks list
 - [ ] Users list (admin)
@@ -8249,7 +8284,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
   - **Status:** Not Started
   - **Effort:** 30-40h
 
-- [ ] **QA-054: Implement Vendor Supply Management Backend** (P1)
+- [ ] **QA-054: Implement Supplier Supply Management Backend** (P1)
   - **Status:** Not Started
   - **Effort:** 25-35h
 
@@ -8637,7 +8672,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - `server/routers/todoLists.ts` (2 procedures)
     - `server/routers/todoTasks.ts` (2 procedures)
     - `server/routers/clients.ts` (1 procedure)
-    - `server/routers/vendors.ts` (1 procedure)
+    - `server/routers/suppliers.ts` (1 procedure)
     - `server/routers/purchaseOrders.ts` (1 procedure)
     - `server/routers/orders.ts` (1 procedure)
     - `server/routers/accounting.ts` (8 procedures)
@@ -8781,7 +8816,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | Task   | Description                                                  | Priority | Estimate | Module       | Status      | Spec                               |
 | :----- | :----------------------------------------------------------- | :------- | :------- | :----------- | :---------- | :--------------------------------- |
 | WS-001 | **Quick Action: Receive Client Payment (Cash Drop-off)**     | CRITICAL | 8h       | Accounting   | ✅ COMPLETE | [📋 Spec](../specs/WS-001-SPEC.md) |
-| WS-002 | **Quick Action: Pay Vendor (Cash Out)**                      | CRITICAL | 8h       | Accounting   | ✅ COMPLETE | [📋 Spec](../specs/WS-002-SPEC.md) |
+| WS-002 | **Quick Action: Pay Supplier (Cash Out)**                    | CRITICAL | 8h       | Accounting   | ✅ COMPLETE | [📋 Spec](../specs/WS-002-SPEC.md) |
 | WS-003 | **Pick & Pack Module: Group Bagging/Packing Action**         | CRITICAL | 24h      | Pick & Pack  | ✅ COMPLETE | [📋 Spec](../specs/WS-003-SPEC.md) |
 | WS-004 | **Sales: Simultaneous Multi-Order & Referral Credit System** | CRITICAL | 40h      | Sales/Credit | ✅ COMPLETE | [📋 Spec](../specs/WS-004-SPEC.md) |
 | WS-005 | **No Black Box Audit Trail (System-wide)**                   | CRITICAL | 30h      | System Core  | ✅ COMPLETE | [📋 Spec](../specs/WS-005-SPEC.md) |
@@ -8798,13 +8833,13 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ### 🟠 P2 - MEDIUM PRIORITY
 
-| Task   | Description                                     | Priority | Estimate | Module          | Status      | Spec                               |
-| :----- | :---------------------------------------------- | :------- | :------- | :-------------- | :---------- | :--------------------------------- |
-| WS-011 | **Sales: Quick Customer Creation**              | MEDIUM   | 4h       | Sales           | ✅ COMPLETE | [📋 Spec](../specs/WS-011-SPEC.md) |
-| WS-012 | **Customer Preferences & Purchase History**     | MEDIUM   | 16h      | Sales/CRM       | ✅ COMPLETE | [📋 Spec](../specs/WS-012-SPEC.md) |
-| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM   | 12h      | General Utility | ✅ COMPLETE | [📋 Spec](../specs/WS-013-SPEC.md) |
-| WS-014 | **Vendor "Harvesting Again" Reminder**          | MEDIUM   | 8h       | Vendor/Calendar | ✅ COMPLETE | [📋 Spec](../specs/WS-014-SPEC.md) |
-| WS-015 | **Sales: Customer Wishlist Field**              | MEDIUM   | 4h       | Sales           | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
+| Task   | Description                                     | Priority | Estimate | Module            | Status      | Spec                               |
+| :----- | :---------------------------------------------- | :------- | :------- | :---------------- | :---------- | :--------------------------------- |
+| WS-011 | **Sales: Quick Customer Creation**              | MEDIUM   | 4h       | Sales             | ✅ COMPLETE | [📋 Spec](../specs/WS-011-SPEC.md) |
+| WS-012 | **Customer Preferences & Purchase History**     | MEDIUM   | 16h      | Sales/CRM         | ✅ COMPLETE | [📋 Spec](../specs/WS-012-SPEC.md) |
+| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM   | 12h      | General Utility   | ✅ COMPLETE | [📋 Spec](../specs/WS-013-SPEC.md) |
+| WS-014 | **Supplier "Harvesting Again" Reminder**        | MEDIUM   | 8h       | Supplier/Calendar | ✅ COMPLETE | [📋 Spec](../specs/WS-014-SPEC.md) |
+| WS-015 | **Sales: Customer Wishlist Field**              | MEDIUM   | 4h       | Sales             | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
 
 ---
 
@@ -8820,7 +8855,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | **🟢 B**  | Frontend UX & UI Components     | 66h      | Frontend Agent      | ✅ COMPLETE (Jan 2, 2026) |
 | **🟠 C**  | Accounting & VIP Portal         | 54h      | Full-Stack Agent    | ✅ COMPLETE (Jan 2, 2026) |
 | **🟣 D**  | Sales, Inventory & QA           | 58h      | Full-Stack/QA Agent | ✅ COMPLETE (Jan 2, 2026) |
-| **🟤 E**  | Calendar, Vendors & CRM         | 58h      | Full-Stack Agent    | ✅ COMPLETE (Jan 2, 2026) |
+| **🟤 E**  | Calendar, Suppliers & CRM       | 58h      | Full-Stack Agent    | ✅ COMPLETE (Jan 2, 2026) |
 | **Total** |                                 | **296h** |                     |                           |
 
 **Execution Order:**
@@ -9355,38 +9390,38 @@ This sprint addresses 7 critical performance bottlenecks identified in a compreh
 
 ### Phase 1: High-Impact Quick Wins (20h)
 
-| Task ID | Title | Est. | Priority | Description |
-|---------|-------|------|----------|-------------|
-| PERF-006 | Cache Hot-Path Reference Data | 4h | HIGH | Use existing cache utility for `fetchClientNamesMap`, RBAC checks, and feature flags. |
-| PERF-001a | Reduce Default API Limits | 4h | HIGH | Change `limit: 1000` to `limit: 100` across all affected endpoints. |
-| PERF-002a | Add Database Indexes | 4h | HIGH | Add composite indexes to `invoices` and `payments` tables. |
-| PERF-007 | Optimize Application Startup | 4h | MEDIUM | Move migrations and RBAC validation to CI/prestart hook. |
-| PERF-003a | Add Calendar Financial Indexes | 4h | MEDIUM | Add composite indexes to `invoices` and `bills` for customer/status/date queries. |
+| Task ID   | Title                          | Est. | Priority | Description                                                                           |
+| --------- | ------------------------------ | ---- | -------- | ------------------------------------------------------------------------------------- |
+| PERF-006  | Cache Hot-Path Reference Data  | 4h   | HIGH     | Use existing cache utility for `fetchClientNamesMap`, RBAC checks, and feature flags. |
+| PERF-001a | Reduce Default API Limits      | 4h   | HIGH     | Change `limit: 1000` to `limit: 100` across all affected endpoints.                   |
+| PERF-002a | Add Database Indexes           | 4h   | HIGH     | Add composite indexes to `invoices` and `payments` tables.                            |
+| PERF-007  | Optimize Application Startup   | 4h   | MEDIUM   | Move migrations and RBAC validation to CI/prestart hook.                              |
+| PERF-003a | Add Calendar Financial Indexes | 4h   | MEDIUM   | Add composite indexes to `invoices` and `bills` for customer/status/date queries.     |
 
 ### Phase 2: Core Optimizations (32h)
 
-| Task ID | Title | Est. | Priority | Description |
-|---------|-------|------|----------|-------------|
-| PERF-002 | Optimize Dashboard KPIs | 12h | HIGH | Move aggregations to SQL, implement caching with 60s TTL. |
-| PERF-001b | Implement Table Virtualization | 8h | HIGH | Add `@tanstack/react-virtual` to Inventory page. |
-| PERF-004 | Implement Full-Text Search | 12h | MEDIUM | Replace `LIKE '%query%'` with MySQL `FULLTEXT` indexes. |
+| Task ID   | Title                          | Est. | Priority | Description                                               |
+| --------- | ------------------------------ | ---- | -------- | --------------------------------------------------------- |
+| PERF-002  | Optimize Dashboard KPIs        | 12h  | HIGH     | Move aggregations to SQL, implement caching with 60s TTL. |
+| PERF-001b | Implement Table Virtualization | 8h   | HIGH     | Add `@tanstack/react-virtual` to Inventory page.          |
+| PERF-004  | Implement Full-Text Search     | 12h  | MEDIUM   | Replace `LIKE '%query%'` with MySQL `FULLTEXT` indexes.   |
 
 ### Phase 3: Advanced Optimizations (12h)
 
-| Task ID | Title | Est. | Priority | Description |
-|---------|-------|------|----------|-------------|
-| PERF-001c | Virtualized Client Selectors | 4h | MEDIUM | Replace static dropdowns with searchable, async comboboxes. |
-| PERF-005 | Implement Streaming Exports | 8h | MEDIUM | Server-side CSV generation with chunked responses. |
+| Task ID   | Title                        | Est. | Priority | Description                                                 |
+| --------- | ---------------------------- | ---- | -------- | ----------------------------------------------------------- |
+| PERF-001c | Virtualized Client Selectors | 4h   | MEDIUM   | Replace static dropdowns with searchable, async comboboxes. |
+| PERF-005  | Implement Streaming Exports  | 8h   | MEDIUM   | Server-side CSV generation with chunked responses.          |
 
 ### Success Metrics
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Dashboard API Latency (p95) | ~2s | < 500ms |
-| Inventory Page Load (10k rows) | ~5s | < 2s |
-| Memory Usage (Inventory Page) | ~300MB | < 100MB |
-| Global Search Latency (p95) | ~1.5s | < 500ms |
-| Application Cold Start | ~10s | < 5s |
+| Metric                         | Current | Target  |
+| ------------------------------ | ------- | ------- |
+| Dashboard API Latency (p95)    | ~2s     | < 500ms |
+| Inventory Page Load (10k rows) | ~5s     | < 2s    |
+| Memory Usage (Inventory Page)  | ~300MB  | < 100MB |
+| Global Search Latency (p95)    | ~1.5s   | < 500ms |
+| Application Cold Start         | ~10s    | < 5s    |
 
 ### Dependency Chain
 
@@ -9454,6 +9489,7 @@ PERF-005 (Streaming Exports) ─────────────────
 ### Parallel Execution Strategy
 
 **Wave 1 (Can Start Immediately):**
+
 - UX & Stability Sprint: STAB-001, STAB-002, STAB-003
 - **Performance Sprint: PERF-006, PERF-001a, PERF-002a, PERF-007, PERF-003a**
 - Core Systems Sprint: NOTIF-001
@@ -9461,29 +9497,33 @@ PERF-005 (Streaming Exports) ─────────────────
 - VIP Portal Sprint: VIP-F-001, VIP-M-001, VIP-A-001, VIP-B-001
 
 **Wave 2 (After NOTIF-001 Complete):**
+
 - Calendar Sprint: CAL-003 (Request/Approval Workflow)
 - **Performance Sprint: PERF-002, PERF-001b, PERF-004**
 
 **Wave 3 (After CAL-003 Complete):**
+
 - Calendar Sprint: CAL-004 (Enhanced Features)
 - VIP Portal Sprint: VIP-C-001 (Appointment Scheduling - now uses Calendar Sprint foundation)
 - **Performance Sprint: PERF-001c, PERF-005**
 
 **Wave 4 (Lower Priority):**
+
 - UX & Stability Sprint: ACT-001, ACT-002, ACT-003, ENH-001, ENH-002, ENH-003
 
 ---
 
 ## Total Roadmap Summary
 
-| Sprint | Hours | Status |
-|--------|-------|--------|
-| UX & Stability Sprint | 66h | Ready |
-| **Performance Sprint** | **64h** | **Ready** |
-| Core Systems Sprint | 32h | Ready |
-| Calendar Sprint | 100h | Ready |
-| VIP Portal Sprint | 112h | Partially Blocked |
-| **Grand Total** | **374h** | |
+| Sprint                 | Hours    | Status            |
+| ---------------------- | -------- | ----------------- |
+| UX & Stability Sprint  | 66h      | Ready             |
+| **Performance Sprint** | **64h**  | **Ready**         |
+| Core Systems Sprint    | 32h      | Ready             |
+| Calendar Sprint        | 100h     | Ready             |
+| VIP Portal Sprint      | 112h     | Partially Blocked |
+| **Grand Total**        | **374h** |                   |
+
 # Video Testing Session Tasks (Jan 7, 2026)
 
 ## 🎬 Video Testing Session Issues (Jan 7, 2026)
@@ -9492,71 +9532,70 @@ PERF-005 (Streaming Exports) ─────────────────
 > **Total Tasks:** 46
 > **Documentation:** `docs/testing/VIDEO_SESSION_2026-01-07.md`
 
-
 ### 🐛 Critical Bugs from Video Testing
 
-| Task | Description | Priority | Estimate | Status |
-|------|-------------|----------|----------|--------|
-| BUG-070 | Fix Client List Click Handlers Not Working | HIGH | 4-8h | ready |
-| BUG-071 | Fix Create Client Form Submission Failure | HIGH | 4-8h | ready |
-| BUG-072 | Fix Inventory Data Not Loading in Dashboard | HIGH | 8h | ready |
-| BUG-073 | Fix Live Shopping Feature Not Accessible | HIGH | 8h | ready |
-| BUG-074 | Fix Spreadsheet View Empty Grid | HIGH | 8h | ready |
-| BUG-075 | Fix Settings Users Tab Authentication Error | HIGH | 4-8h | ready |
-| BUG-076 | Fix Search and Filter Functionality | HIGH | 16h | ready |
-| BUG-077 | Fix Notification System Not Working | HIGH | 8h | ready |
+| Task    | Description                                 | Priority | Estimate | Status |
+| ------- | ------------------------------------------- | -------- | -------- | ------ |
+| BUG-070 | Fix Client List Click Handlers Not Working  | HIGH     | 4-8h     | ready  |
+| BUG-071 | Fix Create Client Form Submission Failure   | HIGH     | 4-8h     | ready  |
+| BUG-072 | Fix Inventory Data Not Loading in Dashboard | HIGH     | 8h       | ready  |
+| BUG-073 | Fix Live Shopping Feature Not Accessible    | HIGH     | 8h       | ready  |
+| BUG-074 | Fix Spreadsheet View Empty Grid             | HIGH     | 8h       | ready  |
+| BUG-075 | Fix Settings Users Tab Authentication Error | HIGH     | 4-8h     | ready  |
+| BUG-076 | Fix Search and Filter Functionality         | HIGH     | 16h      | ready  |
+| BUG-077 | Fix Notification System Not Working         | HIGH     | 8h       | ready  |
 
 ### 🎨 UI/UX Issues from Video Testing
 
-| Task | Description | Priority | Estimate | Status |
-|------|-------------|----------|----------|--------|
-| UX-001 | Reorganize Navigation - Dashboard Separate from Sales | HIGH | 8h | ready |
-| UX-002 | Improve Form Validation Error Messages | MEDIUM | 8h | ready |
-| UX-003 | Visual Distinction Between Actionable and Informational Cards | MEDIUM | 8h | ready |
-| UX-004 | Add Confirmation Dialogs for Destructive Actions | MEDIUM | 4-8h | ready |
-| UX-005 | Fix Horizontal Scrolling Issues | MEDIUM | 4-8h | ready |
-| UX-006 | Improve Search/Filter UI Integration | MEDIUM | 8h | ready |
-| UX-007 | Fix User/Permission Management UI Confusion | MEDIUM | 8h | ready |
-| UX-008 | Add Quick Add Functionality for Related Entities | MEDIUM | 8h | ready |
-| UX-009 | Fix Sidebar Slide Animation | LOW | 2-4h | ready |
-| UX-010 | Clarify My Account vs User Settings Navigation | LOW | 2-4h | ready |
-| UX-011 | Fix Two Export Buttons Issue | LOW | 1-2h | ready |
-| UX-012 | Fix Period Display Formatting | LOW | 1-2h | ready |
-| UX-013 | Fix Mirrored Elements Issue | LOW | 2-4h | ready |
-| UX-014 | Make Optional Fields Clear | LOW | 2-4h | ready |
+| Task   | Description                                                   | Priority | Estimate | Status |
+| ------ | ------------------------------------------------------------- | -------- | -------- | ------ |
+| UX-001 | Reorganize Navigation - Dashboard Separate from Sales         | HIGH     | 8h       | ready  |
+| UX-002 | Improve Form Validation Error Messages                        | MEDIUM   | 8h       | ready  |
+| UX-003 | Visual Distinction Between Actionable and Informational Cards | MEDIUM   | 8h       | ready  |
+| UX-004 | Add Confirmation Dialogs for Destructive Actions              | MEDIUM   | 4-8h     | ready  |
+| UX-005 | Fix Horizontal Scrolling Issues                               | MEDIUM   | 4-8h     | ready  |
+| UX-006 | Improve Search/Filter UI Integration                          | MEDIUM   | 8h       | ready  |
+| UX-007 | Fix User/Permission Management UI Confusion                   | MEDIUM   | 8h       | ready  |
+| UX-008 | Add Quick Add Functionality for Related Entities              | MEDIUM   | 8h       | ready  |
+| UX-009 | Fix Sidebar Slide Animation                                   | LOW      | 2-4h     | ready  |
+| UX-010 | Clarify My Account vs User Settings Navigation                | LOW      | 2-4h     | ready  |
+| UX-011 | Fix Two Export Buttons Issue                                  | LOW      | 1-2h     | ready  |
+| UX-012 | Fix Period Display Formatting                                 | LOW      | 1-2h     | ready  |
+| UX-013 | Fix Mirrored Elements Issue                                   | LOW      | 2-4h     | ready  |
+| UX-014 | Make Optional Fields Clear                                    | LOW      | 2-4h     | ready  |
 
 ### 📋 Feature Tasks from Video Testing
 
-| Task | Description | Priority | Estimate | Status |
-|------|-------------|----------|----------|--------|
-| FEAT-001 | Client Form Field Updates | MEDIUM | 4-8h | ready |
-| FEAT-002 | Tag System Revamp for Clients and Products | HIGH | 16h | ready |
-| FEAT-003 | Order Creator Quick Add Quantity Field | MEDIUM | 4-8h | ready |
-| FEAT-004 | Add Dollar Amount Discount Option | MEDIUM | 4-8h | ready |
-| FEAT-005 | Merge Draft and Quote Workflows | MEDIUM | 8h | ready |
-| FEAT-006 | Show Product Name Instead of SKU in Order Creator | MEDIUM | 2-4h | ready |
-| FEAT-007 | Add Payment Recording Against Invoices | HIGH | 16h | ready |
-| FEAT-008 | Invoice Editing from Order View | MEDIUM | 8h | ready |
-| FEAT-009 | Add Product Subcategories (Smalls, Trim, etc.) | MEDIUM | 8h | ready |
-| FEAT-010 | Default Warehouse Selection | LOW | 2-4h | ready |
-| FEAT-011 | COGS Logic and Sales Flow Integration | HIGH | 16h | ready |
-| FEAT-012 | Make Grade Field Optional/Customizable | LOW | 4-8h | ready |
-| FEAT-013 | Add Packaged Unit Type for Products | MEDIUM | 4-8h | ready |
-| FEAT-014 | Remove Expected Delivery from Purchases | LOW | 2-4h | ready |
-| FEAT-015 | Finance Status Customization | MEDIUM | 8h | ready |
-| FEAT-016 | Rename Credits to Credit Settings | LOW | 1-2h | ready |
-| FEAT-017 | Feature Flags Direct Access | LOW | 2-4h | ready |
-| FEAT-018 | Remove Development-Only Features from User-Facing UI | MEDIUM | 4-8h | ready |
-| FEAT-019 | VIP Status and Tiers Implementation | MEDIUM | 16h | ready |
-| FEAT-020 | Product Subcategory and Strain Matching | MEDIUM | 8h | ready |
-| FEAT-021 | Settings Changes Apply to Entire Team | MEDIUM | 4-8h | ready |
-| FEAT-022 | Show Role Names Instead of Count in Permissions | LOW | 2-4h | ready |
-| FEAT-023 | Notification Preferences - System vs User Level | MEDIUM | 8h | ready |
-| FEAT-024 | Inline Notifications Without Page Navigation | MEDIUM | 4-8h | ready |
+| Task     | Description                                          | Priority | Estimate | Status |
+| -------- | ---------------------------------------------------- | -------- | -------- | ------ |
+| FEAT-001 | Client Form Field Updates                            | MEDIUM   | 4-8h     | ready  |
+| FEAT-002 | Tag System Revamp for Clients and Products           | HIGH     | 16h      | ready  |
+| FEAT-003 | Order Creator Quick Add Quantity Field               | MEDIUM   | 4-8h     | ready  |
+| FEAT-004 | Add Dollar Amount Discount Option                    | MEDIUM   | 4-8h     | ready  |
+| FEAT-005 | Merge Draft and Quote Workflows                      | MEDIUM   | 8h       | ready  |
+| FEAT-006 | Show Product Name Instead of SKU in Order Creator    | MEDIUM   | 2-4h     | ready  |
+| FEAT-007 | Add Payment Recording Against Invoices               | HIGH     | 16h      | ready  |
+| FEAT-008 | Invoice Editing from Order View                      | MEDIUM   | 8h       | ready  |
+| FEAT-009 | Add Product Subcategories (Smalls, Trim, etc.)       | MEDIUM   | 8h       | ready  |
+| FEAT-010 | Default Warehouse Selection                          | LOW      | 2-4h     | ready  |
+| FEAT-011 | COGS Logic and Sales Flow Integration                | HIGH     | 16h      | ready  |
+| FEAT-012 | Make Grade Field Optional/Customizable               | LOW      | 4-8h     | ready  |
+| FEAT-013 | Add Packaged Unit Type for Products                  | MEDIUM   | 4-8h     | ready  |
+| FEAT-014 | Remove Expected Delivery from Purchases              | LOW      | 2-4h     | ready  |
+| FEAT-015 | Finance Status Customization                         | MEDIUM   | 8h       | ready  |
+| FEAT-016 | Rename Credits to Credit Settings                    | LOW      | 1-2h     | ready  |
+| FEAT-017 | Feature Flags Direct Access                          | LOW      | 2-4h     | ready  |
+| FEAT-018 | Remove Development-Only Features from User-Facing UI | MEDIUM   | 4-8h     | ready  |
+| FEAT-019 | VIP Status and Tiers Implementation                  | MEDIUM   | 16h      | ready  |
+| FEAT-020 | Product Subcategory and Strain Matching              | MEDIUM   | 8h       | ready  |
+| FEAT-021 | Settings Changes Apply to Entire Team                | MEDIUM   | 4-8h     | ready  |
+| FEAT-022 | Show Role Names Instead of Count in Permissions      | LOW      | 2-4h     | ready  |
+| FEAT-023 | Notification Preferences - System vs User Level      | MEDIUM   | 8h       | ready  |
+| FEAT-024 | Inline Notifications Without Page Navigation         | MEDIUM   | 4-8h     | ready  |
+
 ---
 
 ## 📝 Detailed Task Specifications (Video Testing Session)
-
 
 ### BUG-070: Fix Client List Click Handlers Not Working
 
@@ -10018,17 +10057,17 @@ User and permission management UI is confusing. View and Edit should be combined
 **Prompt:** `docs/prompts/UX-008.md`
 
 **Problem:**
-When adding a purchase and vendor doesn't exist, there's no way to quickly add the vendor. Same for other related entities.
+When adding a purchase and supplier doesn't exist, there's no way to quickly add the supplier. Same for other related entities.
 
 **Objectives:**
 
-1. Add inline quick-add for vendors in purchase form
+1. Add inline quick-add for suppliers in purchase form
 2. Add inline quick-add for clients in order form
 3. Implement consistent quick-add pattern
 
 **Deliverables:**
 
-- [ ] Quick add vendor from purchase form
+- [ ] Quick add supplier from purchase form
 - [ ] Quick add client from order form
 - [ ] Quick add product from order form
 - [ ] Modal-based quick add component
@@ -10939,6 +10978,7 @@ Should be clear when fields are optional. If you don't set something, it should 
 **Source Timestamps:** 30:36, 30:41
 
 ---
+
 ### ST-045: Complete User Flow Mapping and Documentation
 
 **Status:** ready
@@ -10973,11 +11013,11 @@ The ERP system lacks a complete, exhaustive map of all user flows including vari
 
 **Reference Assets:**
 
-| File | Location |
-|------|----------|
-| Routes CSV | `docs/assets/ST-045/TERP_Routes.csv` |
-| Flow Guide | `docs/assets/ST-045/TERP_Flow_Guide.md` |
-| RBAC Mismatches | `docs/assets/ST-045/TERP_RBAC_Permission_Mismatches.csv` |
-| User Flow Matrix | `docs/assets/ST-045/TERP_User_Flow_Matrix_FULL.csv` |
+| File             | Location                                                 |
+| ---------------- | -------------------------------------------------------- |
+| Routes CSV       | `docs/assets/ST-045/TERP_Routes.csv`                     |
+| Flow Guide       | `docs/assets/ST-045/TERP_Flow_Guide.md`                  |
+| RBAC Mismatches  | `docs/assets/ST-045/TERP_RBAC_Permission_Mismatches.csv` |
+| User Flow Matrix | `docs/assets/ST-045/TERP_User_Flow_Matrix_FULL.csv`      |
 
 ---

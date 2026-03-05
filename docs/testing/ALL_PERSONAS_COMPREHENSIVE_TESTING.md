@@ -9,6 +9,7 @@
 ## Testing Strategy
 
 **Approach:** For each persona, I will:
+
 1. Adopt their role and goals
 2. Attempt their primary workflows end-to-end
 3. Document workflow blockers, bugs, and UX issues
@@ -16,6 +17,7 @@
 5. Assess whether they can accomplish their job
 
 **Personas (9 total):**
+
 1. ✅ Sales Manager (Marcus) - COMPLETE
 2. 🔄 Inventory Manager (Lisa) - IN PROGRESS
 3. Accountant (David)
@@ -38,6 +40,7 @@
 **Workflow Tested:** Create new order for existing client
 
 **Steps:**
+
 1. Navigate to Create Order ✓
 2. Select customer ✓
 3. Add product to order ✗ **BLOCKED BY BUG-012**
@@ -45,12 +48,14 @@
 5. Finalize order ✗ Cannot reach
 
 **Bugs Found:**
+
 - BUG-012: Add Item button not working (P0 CRITICAL) - Blocks all order creation
 - BUG-M004: Customer name inconsistency (P2 MEDIUM)
 - BUG-M005: All orders show "0 items" (P1 HIGH)
 - BUG-011: Debug dashboard in production (P1 HIGH)
 
 **Positive Findings:**
+
 - Excellent order creation interface design
 - Comprehensive client profile page (8 tabs)
 - Professional client management with advanced filtering
@@ -68,6 +73,7 @@
 
 **Page Loaded:** Inventory Management  
 **Visible Features:**
+
 - Total Inventory Value: $161,095.72 (6,731 units)
 - Avg Value per Unit: $24.53
 - Low Stock: 1 item ≤100 units
@@ -84,11 +90,12 @@
 
 ### Workflow 1: Create New Batch (Purchase)
 
-**Goal:** Lisa needs to record a new batch of product received from vendor
+**Goal:** Lisa needs to record a new batch of product received from supplier
 
 **Steps:**
+
 1. Click "New Purchase" button to open batch creation modal
-2. Fill in batch details (product, quantity, cost, vendor, etc.)
+2. Fill in batch details (product, quantity, cost, supplier, etc.)
 3. Submit to create new batch
 4. Verify batch appears in inventory table
 

@@ -12,12 +12,12 @@ This document catalogs all UI elements that have been identified but not yet ful
 
 ### Overall Statistics
 
-| Category | Count |
-|----------|-------|
-| **Total Elements Identified** | 45 |
-| **Fully Tested (Working)** | 22 |
-| **Untested** | 20 |
-| **Broken/Failed** | 3 |
+| Category                      | Count |
+| ----------------------------- | ----- |
+| **Total Elements Identified** | 45    |
+| **Fully Tested (Working)**    | 22    |
+| **Untested**                  | 20    |
+| **Broken/Failed**             | 3     |
 
 ### Broken Elements Requiring Immediate Attention
 
@@ -31,28 +31,28 @@ This document catalogs all UI elements that have been identified but not yet ful
 
 ### Tested Elements ✅
 
-| Element | Status | Notes |
-|---------|--------|-------|
-| Customize button | ✅ Working | Opens customization modal |
-| Comments button | ✅ Working | Opens comments panel |
-| Inbox button | ✅ Working | Opens inbox with empty state |
-| Settings button (header) | ✅ Working | Navigates to settings |
-| User Profile button | ✅ Working | Navigates to settings |
+| Element                  | Status     | Notes                        |
+| ------------------------ | ---------- | ---------------------------- |
+| Customize button         | ✅ Working | Opens customization modal    |
+| Comments button          | ✅ Working | Opens comments panel         |
+| Inbox button             | ✅ Working | Opens inbox with empty state |
+| Settings button (header) | ✅ Working | Navigates to settings        |
+| User Profile button      | ✅ Working | Navigates to settings        |
 
 ### Broken Elements 🔴
 
-| Element | Bug ID | Issue |
-|---------|--------|-------|
+| Element           | Bug ID  | Issue                       |
+| ----------------- | ------- | --------------------------- |
 | Global Search Bar | BUG-010 | Returns 404 error on search |
 
 ### Untested Elements ⚠️
 
-| Element | Priority | Expected Functionality |
-|---------|----------|----------------------|
-| Dashboard time period dropdowns (2x "Lifetime") | MEDIUM | Filter dashboard data by time period |
-| Matchmaking "View All" link | MEDIUM | Navigate to full matchmaking page |
-| Sales table client name links | MEDIUM | Navigate to client detail pages |
-| Metric card click interactions | LOW | Drill down into metric details |
+| Element                                         | Priority | Expected Functionality               |
+| ----------------------------------------------- | -------- | ------------------------------------ |
+| Dashboard time period dropdowns (2x "Lifetime") | MEDIUM   | Filter dashboard data by time period |
+| Matchmaking "View All" link                     | MEDIUM   | Navigate to full matchmaking page    |
+| Sales table client name links                   | MEDIUM   | Navigate to client detail pages      |
+| Metric card click interactions                  | LOW      | Drill down into metric details       |
 
 ---
 
@@ -60,28 +60,28 @@ This document catalogs all UI elements that have been identified but not yet ful
 
 ### Tested Elements ✅
 
-| Element | Status | Notes |
-|---------|--------|-------|
-| New Order button | ✅ Working | Navigates to /orders/create |
-| Confirmed Orders tab | ✅ Working | Shows 26 orders |
-| Draft Orders tab | ✅ Present | Shows 0 orders (not clicked) |
-| Metrics cards (4x) | ✅ Working | Display accurate statistics |
+| Element              | Status     | Notes                        |
+| -------------------- | ---------- | ---------------------------- |
+| New Order button     | ✅ Working | Navigates to /orders/create  |
+| Confirmed Orders tab | ✅ Working | Shows 26 orders              |
+| Draft Orders tab     | ✅ Present | Shows 0 orders (not clicked) |
+| Metrics cards (4x)   | ✅ Working | Display accurate statistics  |
 
 ### Broken Elements 🔴
 
-| Element | Bug ID | Issue |
-|---------|--------|-------|
+| Element         | Bug ID  | Issue                                     |
+| --------------- | ------- | ----------------------------------------- |
 | Debug Dashboard | BUG-011 | Visible in production (should be removed) |
 
 ### Untested Elements ⚠️
 
-| Element | Priority | Expected Functionality |
-|---------|----------|----------------------|
-| Export CSV button | HIGH | Export orders to CSV file |
-| Draft Orders tab (click) | HIGH | Switch to draft orders view |
-| Customize Metrics button | MEDIUM | Customize order metrics display |
-| Status Filter dropdown | HIGH | Filter orders by status |
-| Individual order cards (click) | CRITICAL | Navigate to order detail page |
+| Element                        | Priority | Expected Functionality          |
+| ------------------------------ | -------- | ------------------------------- |
+| Export CSV button              | HIGH     | Export orders to CSV file       |
+| Draft Orders tab (click)       | HIGH     | Switch to draft orders view     |
+| Customize Metrics button       | MEDIUM   | Customize order metrics display |
+| Status Filter dropdown         | HIGH     | Filter orders by status         |
+| Individual order cards (click) | CRITICAL | Navigate to order detail page   |
 
 ---
 
@@ -89,31 +89,31 @@ This document catalogs all UI elements that have been identified but not yet ful
 
 ### Tested Elements ✅
 
-| Element | Status | Notes |
-|---------|--------|-------|
-| Back to Orders button | ✅ Working | Returns to orders list |
-| Order Type dropdown | ✅ Present | Shows "Sale" |
-| Customer selector | ✅ Working | Loads 68 customers |
-| Order totals display | ✅ Working | Shows $0.00 with validation |
-| Client Preview | ✅ Working | Shows invoice preview |
-| Empty state | ✅ Working | Helpful guidance message |
-| Validation banner | ✅ Working | Shows validation errors |
-| COGS tracking | ✅ Working | Displays COGS and margin |
+| Element               | Status     | Notes                       |
+| --------------------- | ---------- | --------------------------- |
+| Back to Orders button | ✅ Working | Returns to orders list      |
+| Order Type dropdown   | ✅ Present | Shows "Sale"                |
+| Customer selector     | ✅ Working | Loads 68 customers          |
+| Order totals display  | ✅ Working | Shows $0.00 with validation |
+| Client Preview        | ✅ Working | Shows invoice preview       |
+| Empty state           | ✅ Working | Helpful guidance message    |
+| Validation banner     | ✅ Working | Shows validation errors     |
+| COGS tracking         | ✅ Working | Displays COGS and margin    |
 
 ### Broken Elements 🔴
 
-| Element | Bug ID | Issue |
-|---------|--------|-------|
+| Element         | Bug ID  | Issue                                           |
+| --------------- | ------- | ----------------------------------------------- |
 | Add Item button | BUG-012 | No response when clicked, 400 errors in console |
 
 ### Untested Elements ⚠️
 
-| Element | Priority | Expected Functionality |
-|---------|----------|----------------------|
-| Order Type dropdown (change) | HIGH | Switch between Sale/Purchase/Quote |
-| Order-Level Adjustment section | HIGH | Add discounts/fees to order |
-| Save as Draft button | HIGH | Save order as draft |
-| Preview & Finalize button | CRITICAL | Submit/finalize order |
+| Element                        | Priority | Expected Functionality             |
+| ------------------------------ | -------- | ---------------------------------- |
+| Order Type dropdown (change)   | HIGH     | Switch between Sale/Purchase/Quote |
+| Order-Level Adjustment section | HIGH     | Add discounts/fees to order        |
+| Save as Draft button           | HIGH     | Save order as draft                |
+| Preview & Finalize button      | CRITICAL | Submit/finalize order              |
 
 ---
 
@@ -121,28 +121,28 @@ This document catalogs all UI elements that have been identified but not yet ful
 
 ### Tested Elements ✅
 
-| Element | Status | Notes |
-|---------|--------|-------|
-| Total Inventory Value card | ✅ Working | $161,095.72, 6,731 units |
-| Avg Value per Unit card | ✅ Working | $24.53 average COGS |
-| Low Stock card | ✅ Working | 1 item ≤100 units |
-| Stock by Category chart | ✅ Working | Flower: 6,731 units |
+| Element                    | Status     | Notes                     |
+| -------------------------- | ---------- | ------------------------- |
+| Total Inventory Value card | ✅ Working | $161,095.72, 6,731 units  |
+| Avg Value per Unit card    | ✅ Working | $24.53 average COGS       |
+| Low Stock card             | ✅ Working | 1 item ≤100 units         |
+| Stock by Category chart    | ✅ Working | Flower: 6,731 units       |
 | Stock by Subcategory chart | ✅ Working | 3 subcategories displayed |
 
 ### Untested Elements ⚠️
 
-| Element | Priority | Expected Functionality |
-|---------|----------|----------------------|
-| Saved Views button | MEDIUM | Load saved inventory views |
-| Save View button | MEDIUM | Save current view configuration |
-| Export CSV button | HIGH | Export inventory to CSV |
-| New Purchase button | CRITICAL | Create new purchase/batch |
-| Customize Metrics button | MEDIUM | Customize metrics display |
-| Search bar | HIGH | Search by SKU/batch/product |
-| Advanced Filters button | HIGH | Open advanced filtering |
-| Table column headers (sorting) | HIGH | Sort inventory data |
-| Table data rows | CRITICAL | View/interact with inventory batches |
-| Select all checkbox | MEDIUM | Bulk select inventory items |
+| Element                        | Priority | Expected Functionality               |
+| ------------------------------ | -------- | ------------------------------------ |
+| Saved Views button             | MEDIUM   | Load saved inventory views           |
+| Save View button               | MEDIUM   | Save current view configuration      |
+| Export CSV button              | HIGH     | Export inventory to CSV              |
+| New Purchase button            | CRITICAL | Create new purchase/batch            |
+| Customize Metrics button       | MEDIUM   | Customize metrics display            |
+| Search bar                     | HIGH     | Search by SKU/batch/product          |
+| Advanced Filters button        | HIGH     | Open advanced filtering              |
+| Table column headers (sorting) | HIGH     | Sort inventory data                  |
+| Table data rows                | CRITICAL | View/interact with inventory batches |
+| Select all checkbox            | MEDIUM   | Bulk select inventory items          |
 
 ---
 
@@ -150,26 +150,26 @@ This document catalogs all UI elements that have been identified but not yet ful
 
 ### Tested Elements ✅
 
-| Element | Status | Notes |
-|---------|--------|-------|
-| Page navigation | ✅ Working | Loads settings interface |
-| Back to Dashboard button | ✅ Working | Returns to dashboard |
-| Tabs (7 total) | ✅ Present | Users, Roles, Permissions, etc. |
-| Create User form | ✅ Present | Username, password, display name |
-| Reset Password form | ✅ Present | Username, new password |
+| Element                  | Status     | Notes                            |
+| ------------------------ | ---------- | -------------------------------- |
+| Page navigation          | ✅ Working | Loads settings interface         |
+| Back to Dashboard button | ✅ Working | Returns to dashboard             |
+| Tabs (7 total)           | ✅ Present | Users, Roles, Permissions, etc.  |
+| Create User form         | ✅ Present | Username, password, display name |
+| Reset Password form      | ✅ Present | Username, new password           |
 
 ### Untested Elements ⚠️
 
-| Element | Priority | Expected Functionality |
-|---------|----------|----------------------|
-| User Roles tab | HIGH | Manage user role assignments |
-| Roles tab | HIGH | Define custom roles |
-| Permissions tab | HIGH | Configure permissions |
-| Locations tab | MEDIUM | Manage location settings |
-| Categories tab | MEDIUM | Manage product categories |
-| Grades tab | MEDIUM | Manage product grades |
-| Create User button | HIGH | Submit new user creation |
-| Reset Password button | HIGH | Submit password reset |
+| Element               | Priority | Expected Functionality       |
+| --------------------- | -------- | ---------------------------- |
+| User Roles tab        | HIGH     | Manage user role assignments |
+| Roles tab             | HIGH     | Define custom roles          |
+| Permissions tab       | HIGH     | Configure permissions        |
+| Locations tab         | MEDIUM   | Manage location settings     |
+| Categories tab        | MEDIUM   | Manage product categories    |
+| Grades tab            | MEDIUM   | Manage product grades        |
+| Create User button    | HIGH     | Submit new user creation     |
+| Reset Password button | HIGH     | Submit password reset        |
 
 ---
 
@@ -194,7 +194,7 @@ The following pages have not yet been visited or tested:
 
 ### Medium Priority Pages
 
-13. **Vendors** - Vendor management (seed data missing)
+13. **Suppliers** - Supplier management (seed data missing)
 14. **Purchase Orders** - PO management (crashes - BUG-008)
 15. **Returns** - Returns management
 16. **Locations** - Location management (seed data missing)
@@ -244,7 +244,7 @@ Based on these findings, the following testing tasks should be created:
 28. **TEST-CREDIT-SETTINGS** - Full page testing for Credit Settings
 29. **TEST-COGS-SETTINGS** - Full page testing for COGS Settings
 30. **TEST-ANALYTICS** - Full page testing for Analytics
-31. **TEST-VENDORS** - Full page testing for Vendors (after seed data added)
+31. **TEST-VENDORS** - Full page testing for Suppliers (after seed data added)
 32. **TEST-LOCATIONS** - Full page testing for Locations (after seed data added)
 33. **TEST-RETURNS** - Full page testing for Returns
 34. **TEST-HELP** - Full page testing for Help/documentation
@@ -277,7 +277,7 @@ Based on these findings, the following testing tasks should be created:
 7. Test all export functionality (CSV exports)
 8. Test all search and filter functionality
 9. Test all form submissions (Settings, Create User, etc.)
-10. Add seed data for Vendors and Locations
+10. Add seed data for Suppliers and Locations
 
 ### Medium-Term Actions (2-4 Weeks)
 
@@ -296,4 +296,3 @@ Based on these findings, the following testing tasks should be created:
 - Many features are implemented but simply haven't been clicked/tested yet
 - Overall system shows strong implementation with professional UI/UX
 - Need to systematically test each page and feature to identify placeholders vs. working features
-

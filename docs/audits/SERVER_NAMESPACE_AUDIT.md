@@ -19,63 +19,64 @@ Potential dead code: 8
 
 These namespaces are actively used by the client application:
 
-| Namespace | Primary Usage | Client Files |
-|-----------|---------------|--------------|
-| `auth` | Authentication | Login, session management |
-| `calendar` | Calendar events | CalendarPage.tsx |
-| `calendarParticipants` | Event participants | CalendarPage.tsx |
-| `calendarReminders` | Event reminders | CalendarPage.tsx |
-| `calendarViews` | Calendar views | CalendarPage.tsx |
-| `calendarRecurrence` | Recurring events | CalendarPage.tsx |
-| `calendarMeetings` | Meeting management | CalendarPage.tsx |
-| `calendarFinancials` | Financial events | CalendarPage.tsx |
-| `calendarInvitations` | Event invitations | CalendarPage.tsx |
-| `clients` | Client management | ClientsListPage, ClientProfilePage |
-| `clientNeeds` | Client needs matching | MatchmakingServicePage |
-| `comments` | Comments system | Various |
-| `dashboard` | Dashboard data | DashboardV3 |
-| `dashboardEnhanced` | Enhanced dashboard | DashboardV3 |
-| `dashboardPreferences` | User preferences | DashboardV3 |
-| `dataCardMetrics` | Data card metrics | Various pages |
-| `inbox` | Inbox/notifications | InboxPage |
-| `inventory` | Inventory management | Inventory.tsx |
-| `inventoryMovements` | Inventory tracking | Inventory.tsx |
-| `locations` | Location management | LocationsPage |
-| `matching` | Matchmaking service | MatchmakingServicePage |
-| `orders` | Order management | Orders.tsx, Quotes.tsx |
-| `orderEnhancements` | Order features | OrderCreatorPage |
-| `pricing` | Pricing rules | PricingRulesPage |
-| `pricingDefaults` | Default pricing | PricingProfilesPage |
-| `purchaseOrders` | Purchase orders | PurchaseOrdersPage |
-| `returns` | Returns processing | ReturnsPage |
-| `salesSheets` | Sales sheets | SalesSheetCreatorPage |
-| `search` | Global search | SearchResultsPage |
-| `settings` | App settings | Settings.tsx |
-| `todoLists` | Todo lists | TodoListsPage |
-| `todoTasks` | Todo tasks | TodoListDetailPage |
-| `todoActivity` | Todo activity | TodoListDetailPage |
-| `users` | User profiles | Various |
-| `vendors` | Vendor management | VendorsPage |
-| `vendorSupply` | Vendor supply | VendorSupplyPage |
-| `vipPortal` | VIP portal | VIPLogin, VIPDashboard |
-| `vipPortalAdmin` | VIP admin | VIPPortalConfigPage |
-| `workflowQueue` | Workflow queue | WorkflowQueuePage |
+| Namespace              | Primary Usage         | Client Files                       |
+| ---------------------- | --------------------- | ---------------------------------- |
+| `auth`                 | Authentication        | Login, session management          |
+| `calendar`             | Calendar events       | CalendarPage.tsx                   |
+| `calendarParticipants` | Event participants    | CalendarPage.tsx                   |
+| `calendarReminders`    | Event reminders       | CalendarPage.tsx                   |
+| `calendarViews`        | Calendar views        | CalendarPage.tsx                   |
+| `calendarRecurrence`   | Recurring events      | CalendarPage.tsx                   |
+| `calendarMeetings`     | Meeting management    | CalendarPage.tsx                   |
+| `calendarFinancials`   | Financial events      | CalendarPage.tsx                   |
+| `calendarInvitations`  | Event invitations     | CalendarPage.tsx                   |
+| `clients`              | Client management     | ClientsListPage, ClientProfilePage |
+| `clientNeeds`          | Client needs matching | MatchmakingServicePage             |
+| `comments`             | Comments system       | Various                            |
+| `dashboard`            | Dashboard data        | DashboardV3                        |
+| `dashboardEnhanced`    | Enhanced dashboard    | DashboardV3                        |
+| `dashboardPreferences` | User preferences      | DashboardV3                        |
+| `dataCardMetrics`      | Data card metrics     | Various pages                      |
+| `inbox`                | Inbox/notifications   | InboxPage                          |
+| `inventory`            | Inventory management  | Inventory.tsx                      |
+| `inventoryMovements`   | Inventory tracking    | Inventory.tsx                      |
+| `locations`            | Location management   | LocationsPage                      |
+| `matching`             | Matchmaking service   | MatchmakingServicePage             |
+| `orders`               | Order management      | Orders.tsx, Quotes.tsx             |
+| `orderEnhancements`    | Order features        | OrderCreatorPage                   |
+| `pricing`              | Pricing rules         | PricingRulesPage                   |
+| `pricingDefaults`      | Default pricing       | PricingProfilesPage                |
+| `purchaseOrders`       | Purchase orders       | PurchaseOrdersPage                 |
+| `returns`              | Returns processing    | ReturnsPage                        |
+| `salesSheets`          | Sales sheets          | SalesSheetCreatorPage              |
+| `search`               | Global search         | SearchResultsPage                  |
+| `settings`             | App settings          | Settings.tsx                       |
+| `todoLists`            | Todo lists            | TodoListsPage                      |
+| `todoTasks`            | Todo tasks            | TodoListDetailPage                 |
+| `todoActivity`         | Todo activity         | TodoListDetailPage                 |
+| `users`                | User profiles         | Various                            |
+| `suppliers`            | Supplier management   | VendorsPage                        |
+| `vendorSupply`         | Supplier supply       | VendorSupplyPage                   |
+| `vipPortal`            | VIP portal            | VIPLogin, VIPDashboard             |
+| `vipPortalAdmin`       | VIP admin             | VIPPortalConfigPage                |
+| `workflowQueue`        | Workflow queue        | WorkflowQueuePage                  |
 
 ### Admin-Only (Restricted Access)
 
 These namespaces are for administrative functions only:
 
-| Namespace | Purpose | Access Method |
-|-----------|---------|---------------|
-| `admin` | General admin functions | Admin panel (future) |
-| `adminImport` | Data import | Admin CLI/API |
-| `adminMigrations` | Database migrations | Admin CLI |
-| `adminQuickFix` | Quick fixes | Admin CLI |
-| `adminSchemaPush` | Schema updates | Admin CLI |
-| `adminSchema` | Schema management | Admin CLI |
-| `adminDataAugment` | Data augmentation | Admin CLI/API |
+| Namespace          | Purpose                 | Access Method        |
+| ------------------ | ----------------------- | -------------------- |
+| `admin`            | General admin functions | Admin panel (future) |
+| `adminImport`      | Data import             | Admin CLI/API        |
+| `adminMigrations`  | Database migrations     | Admin CLI            |
+| `adminQuickFix`    | Quick fixes             | Admin CLI            |
+| `adminSchemaPush`  | Schema updates          | Admin CLI            |
+| `adminSchema`      | Schema management       | Admin CLI            |
+| `adminDataAugment` | Data augmentation       | Admin CLI/API        |
 
 **Note**: These are intentionally not exposed in the UI. They are accessed via:
+
 - Direct API calls from admin scripts
 - CLI tools
 - Future admin panel
@@ -84,42 +85,42 @@ These namespaces are for administrative functions only:
 
 These namespaces support system operations:
 
-| Namespace | Purpose | Access Method |
-|-----------|---------|---------------|
-| `system` | System health/info | Health checks, monitoring |
-| `monitoring` | Performance monitoring | Ops dashboards |
-| `deployments` | Deployment tracking | CI/CD pipelines |
-| `debug` | Debug endpoints | Development only |
-| `auditLogs` | Audit logging | Admin/compliance |
+| Namespace     | Purpose                | Access Method             |
+| ------------- | ---------------------- | ------------------------- |
+| `system`      | System health/info     | Health checks, monitoring |
+| `monitoring`  | Performance monitoring | Ops dashboards            |
+| `deployments` | Deployment tracking    | CI/CD pipelines           |
+| `debug`       | Debug endpoints        | Development only          |
+| `auditLogs`   | Audit logging          | Admin/compliance          |
 
 ### Background Jobs
 
-| Namespace | Purpose | Trigger |
-|-----------|---------|---------|
+| Namespace         | Purpose             | Trigger          |
+| ----------------- | ------------------- | ---------------- |
 | `accountingHooks` | Accounting webhooks | External systems |
 
 ### Potential Dead Code (Review Needed)
 
 These namespaces may be unused or candidates for removal:
 
-| Namespace | Status | Recommendation |
-|-----------|--------|----------------|
-| `strains` | Low usage | Review - may be used by inventory |
-| `cogs` | Low usage | Review - may be used by accounting |
-| `scratchPad` | Unknown | Review - may be development artifact |
-| `freeformNotes` | Low usage | Review - may be used by clients |
-| `credit` | Duplicate? | Review - may overlap with `credits` |
-| `credits` | Active | Keep - used by credit system |
-| `badDebt` | Low usage | Review - may be used by accounting |
-| `samples` | Low usage | Review - may be used by inventory |
-| `salesSheetEnhancements` | Low usage | Review - may be consolidated |
-| `advancedTagFeatures` | Low usage | Review - may be used by inventory |
-| `productIntake` | Low usage | Review - may be used by inventory |
-| `refunds` | Low usage | Review - may be used by returns |
-| `warehouseTransfers` | Low usage | Review - may be used by inventory |
-| `poReceiving` | Low usage | Review - may be used by POs |
-| `userManagement` | Low usage | Review - may overlap with users |
-| `configuration` | Low usage | Review - may overlap with settings |
+| Namespace                | Status     | Recommendation                       |
+| ------------------------ | ---------- | ------------------------------------ |
+| `strains`                | Low usage  | Review - may be used by inventory    |
+| `cogs`                   | Low usage  | Review - may be used by accounting   |
+| `scratchPad`             | Unknown    | Review - may be development artifact |
+| `freeformNotes`          | Low usage  | Review - may be used by clients      |
+| `credit`                 | Duplicate? | Review - may overlap with `credits`  |
+| `credits`                | Active     | Keep - used by credit system         |
+| `badDebt`                | Low usage  | Review - may be used by accounting   |
+| `samples`                | Low usage  | Review - may be used by inventory    |
+| `salesSheetEnhancements` | Low usage  | Review - may be consolidated         |
+| `advancedTagFeatures`    | Low usage  | Review - may be used by inventory    |
+| `productIntake`          | Low usage  | Review - may be used by inventory    |
+| `refunds`                | Low usage  | Review - may be used by returns      |
+| `warehouseTransfers`     | Low usage  | Review - may be used by inventory    |
+| `poReceiving`            | Low usage  | Review - may be used by POs          |
+| `userManagement`         | Low usage  | Review - may overlap with users      |
+| `configuration`          | Low usage  | Review - may overlap with settings   |
 
 ## Recommendations
 

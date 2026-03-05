@@ -19,7 +19,7 @@ Comprehensive batch of fixes for the Golden Flows beta release, covering 13 task
 - **TER-33 (GF-001)**: Fixed Direct Intake form field visibility - AG Grid v35 theme conflict resolved by switching from CSS to JS theme API (`themeAlpine` prop)
 - **TER-35 (GF-008)**: Fixed Sample Request product selector not loading - removed overly restrictive `enabled` guard on product query
 - **TER-36 (GF-004)**: Fixed Invoice PDF generation timeout - wrapped entire async operation in `withTimeout` instead of just the sync PDF call
-- **TER-37 (GF-006)**: Fixed AR/AP dashboard data inconsistencies - added "VIEWED" status to debtors filter, fixed vendor name resolution via `supplierProfiles → clients` path (removed deprecated `vendors` table reference)
+- **TER-37 (GF-006)**: Fixed AR/AP dashboard data inconsistencies - added "VIEWED" status to debtors filter, fixed supplier name resolution via `supplierProfiles → clients` path (removed deprecated `suppliers` table reference)
 
 ### WAVE 3: Component Integration
 
@@ -34,7 +34,7 @@ Comprehensive batch of fixes for the Golden Flows beta release, covering 13 task
 
 ### WAVE 5: Security & RBAC
 
-- **TER-49**: Added `requirePermission()` guards to all vendor supply mutation endpoints (create, update, reserve, purchase, delete)
+- **TER-49**: Added `requirePermission()` guards to all supplier supply mutation endpoints (create, update, reserve, purchase, delete)
 - **TER-56**: Replaced raw SQL delete with Drizzle typed query in `clientWants` router; comprehensive security audit documented
 
 ## Verification Results
@@ -97,9 +97,9 @@ Build:      PASS
 1. Navigate to **Accounting > AR/AP Dashboard**
 2. Check the **Top Debtors** section
 3. **Verify**: Invoices with "VIEWED" status are included in the totals
-4. Check the **Top Vendors Owed** section
-5. **Verify**: Vendor names show as actual names (e.g., "Acme Corp"), not "Vendor #123"
-6. **Verify**: If a vendor name can't be resolved, it falls back to "Vendor #ID"
+4. Check the **Top Suppliers Owed** section
+5. **Verify**: Supplier names show as actual names (e.g., "Acme Corp"), not "Supplier #123"
+6. **Verify**: If a supplier name can't be resolved, it falls back to "Supplier #ID"
 7. **Pass criteria**: Both sections show accurate totals with real names
 
 ### Test 5: Sample Request Product Selector (TER-35, GF-008)
@@ -136,7 +136,7 @@ Build:      PASS
 3. Navigate to **Audit Logs** - **Verify**: Full access to view, search, export
 4. Attempt to create/edit/delete anything (orders, clients, invoices, etc.)
 5. **Verify**: All mutations are blocked with a "Forbidden" or similar permission error
-6. Specifically test vendor supply: try to create a new supply item
+6. Specifically test supplier supply: try to create a new supply item
 7. **Verify**: Operation is blocked (previously this was unprotected)
 8. **Pass criteria**: Auditor can read everything, write nothing
 

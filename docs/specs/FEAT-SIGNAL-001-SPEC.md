@@ -45,6 +45,7 @@ This specification provides **complete, actionable implementation details** for 
 TERP users currently manage client communications outside the system, creating fragmented customer records and missed follow-up opportunities. Sales representatives juggle personal phones, multiple messaging apps, and email while the ERP has no visibility into these critical touchpoints.
 
 **User Pain Points:**
+
 - No unified view of client communication history
 - Manual logging of conversations is tedious and incomplete
 - No ability to message clients directly from order/client context
@@ -54,6 +55,7 @@ TERP users currently manage client communications outside the system, creating f
 ### 1.2 Solution Overview
 
 Integrate Signal messaging directly into TERP with:
+
 - **Per-role Signal numbers** (Sales, Account Management, Operations, Support, Admin)
 - **Two-way messaging** embedded in client records
 - **Message templates** for common communications
@@ -62,19 +64,20 @@ Integrate Signal messaging directly into TERP with:
 
 ### 1.3 Technical Approach
 
-| Layer | Technology | Rationale |
-|-------|------------|-----------|
-| Signal Interface | signal-cli-rest-api (Docker) | Most mature unofficial API, 2,300+ GitHub stars, JSON-RPC mode for performance |
-| Backend Service | TypeScript SignalService class | Aligns with TERP's service pattern (see accountingHooks.ts, notificationService) |
-| API Layer | tRPC router (signalRouter.ts) | Standard TERP pattern with protectedProcedure/adminProcedure |
-| Database | Drizzle schema extensions | New tables following existing conventions |
-| Queue | BullMQ with Redis | Handles retry logic, rate limiting |
-| Frontend | React components with tRPC hooks | Standard shadcn/ui components |
-| Real-time | WebSocket events via existing pattern | Extends TERP's notification WebSocket |
+| Layer            | Technology                            | Rationale                                                                        |
+| ---------------- | ------------------------------------- | -------------------------------------------------------------------------------- |
+| Signal Interface | signal-cli-rest-api (Docker)          | Most mature unofficial API, 2,300+ GitHub stars, JSON-RPC mode for performance   |
+| Backend Service  | TypeScript SignalService class        | Aligns with TERP's service pattern (see accountingHooks.ts, notificationService) |
+| API Layer        | tRPC router (signalRouter.ts)         | Standard TERP pattern with protectedProcedure/adminProcedure                     |
+| Database         | Drizzle schema extensions             | New tables following existing conventions                                        |
+| Queue            | BullMQ with Redis                     | Handles retry logic, rate limiting                                               |
+| Frontend         | React components with tRPC hooks      | Standard shadcn/ui components                                                    |
+| Real-time        | WebSocket events via existing pattern | Extends TERP's notification WebSocket                                            |
 
 ### 1.4 Risk Acknowledgment
 
 **Signal ToS Risk (Medium):** Signal's Terms of Service prohibit "auto-messaging" but enforcement appears limited for legitimate business use. Mitigation:
+
 - Messages are user-initiated, not automated spam
 - Per-role numbers distribute load
 - Business-appropriate volume patterns
@@ -86,39 +89,39 @@ Integrate Signal messaging directly into TERP with:
 
 ### 2.1 Core Capabilities
 
-| ID | Requirement | Priority | Acceptance Criteria |
-|----|-------------|----------|---------------------|
-| FR-001 | Send Signal messages from client detail page | Must Have | User can compose and send message; delivery status shown |
-| FR-002 | Receive Signal messages in real-time | Must Have | Incoming messages appear within 5 seconds; notification bell updates |
-| FR-003 | View conversation history per client | Must Have | Threaded view shows all messages with timestamps |
-| FR-004 | Use message templates | Should Have | Templates with variable substitution (client name, order number) |
-| FR-005 | Assign Signal numbers to roles | Must Have | Admin can manage role-to-number mapping |
-| FR-006 | Search message history | Should Have | Full-text search across all conversations |
-| FR-007 | Message from order context | Should Have | Quick message with order details auto-populated |
-| FR-008 | Bulk message (limited) | Could Have | Send to multiple clients with personalization |
-| FR-009 | Read receipts display | Should Have | Show when message was delivered/read |
-| FR-010 | Attachment support | Should Have | Send/receive images and documents |
+| ID     | Requirement                                  | Priority    | Acceptance Criteria                                                  |
+| ------ | -------------------------------------------- | ----------- | -------------------------------------------------------------------- |
+| FR-001 | Send Signal messages from client detail page | Must Have   | User can compose and send message; delivery status shown             |
+| FR-002 | Receive Signal messages in real-time         | Must Have   | Incoming messages appear within 5 seconds; notification bell updates |
+| FR-003 | View conversation history per client         | Must Have   | Threaded view shows all messages with timestamps                     |
+| FR-004 | Use message templates                        | Should Have | Templates with variable substitution (client name, order number)     |
+| FR-005 | Assign Signal numbers to roles               | Must Have   | Admin can manage role-to-number mapping                              |
+| FR-006 | Search message history                       | Should Have | Full-text search across all conversations                            |
+| FR-007 | Message from order context                   | Should Have | Quick message with order details auto-populated                      |
+| FR-008 | Bulk message (limited)                       | Could Have  | Send to multiple clients with personalization                        |
+| FR-009 | Read receipts display                        | Should Have | Show when message was delivered/read                                 |
+| FR-010 | Attachment support                           | Should Have | Send/receive images and documents                                    |
 
 ### 2.2 Business Rules
 
-| ID | Rule | Enforcement |
-|----|------|-------------|
-| BR-001 | Only users with `signal:send` permission can send messages | tRPC middleware check |
-| BR-002 | Messages linked to client record if phone matches | Auto-link on receive, manual link available |
-| BR-003 | Admin role required for account registration/management | adminProcedure in router |
-| BR-004 | Rate limit: max 10 messages per minute per account | BullMQ limiter configuration |
-| BR-005 | All messages logged immutably for audit | INSERT-only pattern, no deletes |
-| BR-006 | Failed messages retry 3 times with exponential backoff | BullMQ retry configuration |
+| ID     | Rule                                                       | Enforcement                                 |
+| ------ | ---------------------------------------------------------- | ------------------------------------------- |
+| BR-001 | Only users with `signal:send` permission can send messages | tRPC middleware check                       |
+| BR-002 | Messages linked to client record if phone matches          | Auto-link on receive, manual link available |
+| BR-003 | Admin role required for account registration/management    | adminProcedure in router                    |
+| BR-004 | Rate limit: max 10 messages per minute per account         | BullMQ limiter configuration                |
+| BR-005 | All messages logged immutably for audit                    | INSERT-only pattern, no deletes             |
+| BR-006 | Failed messages retry 3 times with exponential backoff     | BullMQ retry configuration                  |
 
 ### 2.3 Integration Points
 
-| System | Integration Type | Details |
-|--------|-----------------|---------|
-| Client Module | Data Link | signalConversations.clientId → clients.id |
-| RBAC System | Permission Check | New permissions: signal:view, signal:send, signal:admin |
-| Notification System | Event Push | signal:message:received triggers inbox notification |
-| Audit Log | Event Logging | All send/receive events logged to auditLogs table |
-| Calendar Module | Optional | Link messages to scheduled follow-ups |
+| System              | Integration Type | Details                                                 |
+| ------------------- | ---------------- | ------------------------------------------------------- |
+| Client Module       | Data Link        | signalConversations.clientId → clients.id               |
+| RBAC System         | Permission Check | New permissions: signal:view, signal:send, signal:admin |
+| Notification System | Event Push       | signal:message:received triggers inbox notification     |
+| Audit Log           | Event Logging    | All send/receive events logged to auditLogs table       |
+| Calendar Module     | Optional         | Link messages to scheduled follow-ups                   |
 
 ---
 
@@ -162,11 +165,11 @@ import { roles } from "./schema-rbac";
  * Tracks the registration lifecycle of a Signal account
  */
 export const signalAccountStatusEnum = mysqlEnum("signal_account_status", [
-  "PENDING_REGISTRATION",  // Registration initiated, awaiting verification
-  "PENDING_VERIFICATION",  // Verification code sent, awaiting entry
-  "ACTIVE",                // Fully registered and operational
-  "SUSPENDED",             // Temporarily disabled (manual or rate limit)
-  "DEACTIVATED",           // Permanently deactivated
+  "PENDING_REGISTRATION", // Registration initiated, awaiting verification
+  "PENDING_VERIFICATION", // Verification code sent, awaiting entry
+  "ACTIVE", // Fully registered and operational
+  "SUSPENDED", // Temporarily disabled (manual or rate limit)
+  "DEACTIVATED", // Permanently deactivated
 ]);
 
 /**
@@ -209,7 +212,7 @@ export const signalAccounts = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     roleIdIdx: index("idx_signal_accounts_role").on(table.roleId),
     statusIdx: index("idx_signal_accounts_status").on(table.status),
     phoneIdx: uniqueIndex("idx_signal_accounts_phone").on(table.phoneNumber),
@@ -239,7 +242,9 @@ export const signalConversations = mysqlTable(
       .references(() => signalAccounts.id, { onDelete: "cascade" }),
 
     // Link to TERP client (nullable - may be unknown contact initially)
-    clientId: int("client_id").references(() => clients.id, { onDelete: "set null" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
 
     // Client's Signal phone number (E.164 format)
     clientPhoneNumber: varchar("client_phone_number", { length: 20 }).notNull(),
@@ -261,7 +266,7 @@ export const signalConversations = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     // Unique conversation per account + phone number
     uniqueConversation: uniqueIndex("idx_signal_conv_unique").on(
       table.signalAccountId,
@@ -283,22 +288,25 @@ export type InsertSignalConversation = typeof signalConversations.$inferInsert;
 /**
  * Message Direction Enum
  */
-export const signalMessageDirectionEnum = mysqlEnum("signal_message_direction", [
-  "INBOUND",   // Received from client
-  "OUTBOUND",  // Sent to client
-]);
+export const signalMessageDirectionEnum = mysqlEnum(
+  "signal_message_direction",
+  [
+    "INBOUND", // Received from client
+    "OUTBOUND", // Sent to client
+  ]
+);
 
 /**
  * Message Status Enum
  * Tracks delivery lifecycle
  */
 export const signalMessageStatusEnum = mysqlEnum("signal_message_status", [
-  "PENDING",    // Queued for sending
-  "SENDING",    // Currently being sent
-  "SENT",       // Sent to Signal server
-  "DELIVERED",  // Delivered to recipient device
-  "READ",       // Read receipt received
-  "FAILED",     // Delivery failed after retries
+  "PENDING", // Queued for sending
+  "SENDING", // Currently being sent
+  "SENT", // Sent to Signal server
+  "DELIVERED", // Delivered to recipient device
+  "READ", // Read receipt received
+  "FAILED", // Delivery failed after retries
 ]);
 
 /**
@@ -348,10 +356,14 @@ export const signalMessages = mysqlTable(
     retryCount: int("retry_count").notNull().default(0),
 
     // Who sent this outbound message (null for inbound)
-    sentByUserId: int("sent_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    sentByUserId: int("sent_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
 
     // Template used (if any)
-    templateId: int("template_id").references(() => signalTemplates.id, { onDelete: "set null" }),
+    templateId: int("template_id").references(() => signalTemplates.id, {
+      onDelete: "set null",
+    }),
 
     // Contextual links (optional)
     linkedOrderId: int("linked_order_id"),
@@ -361,8 +373,10 @@ export const signalMessages = mysqlTable(
     // Immutable timestamp - no updatedAt for audit integrity
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
-    conversationIdx: index("idx_signal_msg_conversation").on(table.conversationId),
+  table => ({
+    conversationIdx: index("idx_signal_msg_conversation").on(
+      table.conversationId
+    ),
     timestampIdx: index("idx_signal_msg_timestamp").on(table.signalTimestamp),
     statusIdx: index("idx_signal_msg_status").on(table.status),
     sentByIdx: index("idx_signal_msg_sent_by").on(table.sentByUserId),
@@ -380,13 +394,16 @@ export type InsertSignalMessage = typeof signalMessages.$inferInsert;
 /**
  * Template Category Enum
  */
-export const signalTemplateCategoryEnum = mysqlEnum("signal_template_category", [
-  "ORDER_UPDATE",
-  "DELIVERY_NOTIFICATION",
-  "PAYMENT_REMINDER",
-  "FOLLOW_UP",
-  "GENERAL",
-]);
+export const signalTemplateCategoryEnum = mysqlEnum(
+  "signal_template_category",
+  [
+    "ORDER_UPDATE",
+    "DELIVERY_NOTIFICATION",
+    "PAYMENT_REMINDER",
+    "FOLLOW_UP",
+    "GENERAL",
+  ]
+);
 
 /**
  * Signal Templates Table
@@ -428,7 +445,7 @@ export const signalTemplates = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     categoryIdx: index("idx_signal_tpl_category").on(table.category),
     roleIdx: index("idx_signal_tpl_role").on(table.roleId),
     globalIdx: index("idx_signal_tpl_global").on(table.isGlobal),
@@ -477,7 +494,9 @@ export const signalAuditLog = mysqlTable(
     eventType: signalAuditEventTypeEnum.notNull(),
 
     // Actor
-    actorUserId: int("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    actorUserId: int("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     actorIp: varchar("actor_ip", { length: 45 }),
 
     // Entity references (polymorphic)
@@ -491,10 +510,13 @@ export const signalAuditLog = mysqlTable(
     // Immutable timestamp
     occurredAt: timestamp("occurred_at").defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     eventTypeIdx: index("idx_signal_audit_event").on(table.eventType),
     actorIdx: index("idx_signal_audit_actor").on(table.actorUserId),
-    entityIdx: index("idx_signal_audit_entity").on(table.entityType, table.entityId),
+    entityIdx: index("idx_signal_audit_entity").on(
+      table.entityType,
+      table.entityId
+    ),
     occurredAtIdx: index("idx_signal_audit_time").on(table.occurredAt),
   })
 );
@@ -506,25 +528,31 @@ export type InsertSignalAuditLogEntry = typeof signalAuditLog.$inferInsert;
 // RELATIONS
 // ============================================================================
 
-export const signalAccountsRelations = relations(signalAccounts, ({ one, many }) => ({
-  role: one(roles, {
-    fields: [signalAccounts.roleId],
-    references: [roles.id],
-  }),
-  conversations: many(signalConversations),
-}));
+export const signalAccountsRelations = relations(
+  signalAccounts,
+  ({ one, many }) => ({
+    role: one(roles, {
+      fields: [signalAccounts.roleId],
+      references: [roles.id],
+    }),
+    conversations: many(signalConversations),
+  })
+);
 
-export const signalConversationsRelations = relations(signalConversations, ({ one, many }) => ({
-  signalAccount: one(signalAccounts, {
-    fields: [signalConversations.signalAccountId],
-    references: [signalAccounts.id],
-  }),
-  client: one(clients, {
-    fields: [signalConversations.clientId],
-    references: [clients.id],
-  }),
-  messages: many(signalMessages),
-}));
+export const signalConversationsRelations = relations(
+  signalConversations,
+  ({ one, many }) => ({
+    signalAccount: one(signalAccounts, {
+      fields: [signalConversations.signalAccountId],
+      references: [signalAccounts.id],
+    }),
+    client: one(clients, {
+      fields: [signalConversations.clientId],
+      references: [clients.id],
+    }),
+    messages: many(signalMessages),
+  })
+);
 
 export const signalMessagesRelations = relations(signalMessages, ({ one }) => ({
   conversation: one(signalConversations, {
@@ -541,17 +569,20 @@ export const signalMessagesRelations = relations(signalMessages, ({ one }) => ({
   }),
 }));
 
-export const signalTemplatesRelations = relations(signalTemplates, ({ one, many }) => ({
-  role: one(roles, {
-    fields: [signalTemplates.roleId],
-    references: [roles.id],
-  }),
-  createdByUser: one(users, {
-    fields: [signalTemplates.createdByUserId],
-    references: [users.id],
-  }),
-  messages: many(signalMessages),
-}));
+export const signalTemplatesRelations = relations(
+  signalTemplates,
+  ({ one, many }) => ({
+    role: one(roles, {
+      fields: [signalTemplates.roleId],
+      references: [roles.id],
+    }),
+    createdByUser: one(users, {
+      fields: [signalTemplates.createdByUserId],
+      references: [users.id],
+    }),
+    messages: many(signalMessages),
+  })
+);
 ```
 
 ### 3.3 Schema Export
@@ -587,11 +618,11 @@ Create: `server/services/signalService.ts`
 
 ```typescript
 export interface SignalServiceConfig {
-  apiUrl: string;                    // signal-cli-rest-api URL
-  healthCheckIntervalMs: number;     // Health check frequency
-  maxRetryAttempts: number;          // Max message retry attempts
-  retryDelayMs: number;              // Initial retry delay
-  rateLimitPerMinute: number;        // Messages per minute limit
+  apiUrl: string; // signal-cli-rest-api URL
+  healthCheckIntervalMs: number; // Health check frequency
+  maxRetryAttempts: number; // Max message retry attempts
+  retryDelayMs: number; // Initial retry delay
+  rateLimitPerMinute: number; // Messages per minute limit
 }
 ```
 
@@ -599,16 +630,16 @@ export interface SignalServiceConfig {
 
 The SignalService class should implement:
 
-| Method | Purpose | Returns |
-|--------|---------|---------|
-| `initialize()` | Start service, load accounts, begin receiving | void |
-| `shutdown()` | Graceful shutdown, stop subscriptions | void |
-| `registerAccount(phone, roleId, displayName?)` | Initiate Signal registration | { success, error? } |
-| `verifyRegistration(phone, code)` | Complete verification with SMS code | { success, error? } |
-| `sendMessage(payload)` | Send message through role's account | { success, messageId?, error? } |
-| `getOrCreateConversation(accountId, clientPhone)` | Get/create conversation record | SignalConversation |
-| `linkConversationToClient(conversationId, clientId)` | Link conversation to TERP client | { success, error? } |
-| `getHealthStatus()` | Get health status of all accounts | AccountHealthStatus[] |
+| Method                                               | Purpose                                    | Returns                         |
+| ---------------------------------------------------- | ------------------------------------------ | ------------------------------- |
+| `initialize()`                                       | Start service, load accounts, begin intake | void                            |
+| `shutdown()`                                         | Graceful shutdown, stop subscriptions      | void                            |
+| `registerAccount(phone, roleId, displayName?)`       | Initiate Signal registration               | { success, error? }             |
+| `verifyRegistration(phone, code)`                    | Complete verification with SMS code        | { success, error? }             |
+| `sendMessage(payload)`                               | Send message through role's account        | { success, messageId?, error? } |
+| `getOrCreateConversation(accountId, clientPhone)`    | Get/create conversation record             | SignalConversation              |
+| `linkConversationToClient(conversationId, clientId)` | Link conversation to TERP client           | { success, error? }             |
+| `getHealthStatus()`                                  | Get health status of all accounts          | AccountHealthStatus[]           |
 
 ### 4.4 Implementation Notes
 
@@ -645,7 +676,7 @@ export const signalMessageQueue = new Queue<QueuedMessage>("signal-messages", {
     attempts: 3,
     backoff: {
       type: "exponential",
-      delay: 5000,  // 5s, 25s, 125s
+      delay: 5000, // 5s, 25s, 125s
     },
     removeOnComplete: { count: 1000 },
     removeOnFail: { count: 5000 },
@@ -658,7 +689,7 @@ export const signalMessageQueue = new Queue<QueuedMessage>("signal-messages", {
 ```typescript
 export const signalMessageWorker = new Worker<QueuedMessage>(
   "signal-messages",
-  async (job) => {
+  async job => {
     // Process message send
   },
   {
@@ -666,7 +697,7 @@ export const signalMessageWorker = new Worker<QueuedMessage>(
     concurrency: 5,
     limiter: {
       max: 10,
-      duration: 60000,  // 10 messages per minute
+      duration: 60000, // 10 messages per minute
     },
   }
 );
@@ -682,27 +713,27 @@ Create: `server/routers/signalRouter.ts`
 
 ### 6.2 Router Endpoints
 
-| Endpoint | Procedure Type | Purpose |
-|----------|---------------|---------|
-| `listConversations` | protectedProcedure | List conversations for user's role |
-| `getConversation` | protectedProcedure | Get single conversation with messages |
-| `listMessages` | protectedProcedure | Paginated messages for conversation |
-| `sendMessage` | protectedProcedure | Send new message |
-| `sendTemplateMessage` | protectedProcedure | Send using template |
-| `markRead` | protectedProcedure | Mark conversation as read |
-| `setArchived` | protectedProcedure | Archive/unarchive conversation |
-| `linkToClient` | protectedProcedure | Link conversation to client |
-| `listTemplates` | protectedProcedure | List available templates |
-| `createTemplate` | protectedProcedure | Create new template |
-| `updateTemplate` | protectedProcedure | Update existing template |
-| `deleteTemplate` | protectedProcedure | Soft delete template |
-| `registerAccount` | adminProcedure | Register new Signal account |
-| `verifyAccount` | adminProcedure | Verify account registration |
-| `listAccounts` | adminProcedure | List all Signal accounts |
-| `getHealthStatus` | adminProcedure | Get system health status |
-| `getAuditLog` | adminProcedure | Get audit log entries |
-| `suspendAccount` | adminProcedure | Suspend account |
-| `reactivateAccount` | adminProcedure | Reactivate suspended account |
+| Endpoint              | Procedure Type     | Purpose                               |
+| --------------------- | ------------------ | ------------------------------------- |
+| `listConversations`   | protectedProcedure | List conversations for user's role    |
+| `getConversation`     | protectedProcedure | Get single conversation with messages |
+| `listMessages`        | protectedProcedure | Paginated messages for conversation   |
+| `sendMessage`         | protectedProcedure | Send new message                      |
+| `sendTemplateMessage` | protectedProcedure | Send using template                   |
+| `markRead`            | protectedProcedure | Mark conversation as read             |
+| `setArchived`         | protectedProcedure | Archive/unarchive conversation        |
+| `linkToClient`        | protectedProcedure | Link conversation to client           |
+| `listTemplates`       | protectedProcedure | List available templates              |
+| `createTemplate`      | protectedProcedure | Create new template                   |
+| `updateTemplate`      | protectedProcedure | Update existing template              |
+| `deleteTemplate`      | protectedProcedure | Soft delete template                  |
+| `registerAccount`     | adminProcedure     | Register new Signal account           |
+| `verifyAccount`       | adminProcedure     | Verify account registration           |
+| `listAccounts`        | adminProcedure     | List all Signal accounts              |
+| `getHealthStatus`     | adminProcedure     | Get system health status              |
+| `getAuditLog`         | adminProcedure     | Get audit log entries                 |
+| `suspendAccount`      | adminProcedure     | Suspend account                       |
+| `reactivateAccount`   | adminProcedure     | Reactivate suspended account          |
 
 ### 6.3 Router Registration
 
@@ -725,24 +756,48 @@ export const appRouter = router({
 
 ```typescript
 const signalPermissions = [
-  { name: "signal:view", module: "signal", description: "View Signal conversations and messages" },
-  { name: "signal:send", module: "signal", description: "Send Signal messages" },
-  { name: "signal:template:create", module: "signal", description: "Create Signal message templates" },
-  { name: "signal:template:edit", module: "signal", description: "Edit Signal message templates" },
-  { name: "signal:template:delete", module: "signal", description: "Delete Signal message templates" },
-  { name: "signal:admin", module: "signal", description: "Manage Signal accounts (admin only)" },
+  {
+    name: "signal:view",
+    module: "signal",
+    description: "View Signal conversations and messages",
+  },
+  {
+    name: "signal:send",
+    module: "signal",
+    description: "Send Signal messages",
+  },
+  {
+    name: "signal:template:create",
+    module: "signal",
+    description: "Create Signal message templates",
+  },
+  {
+    name: "signal:template:edit",
+    module: "signal",
+    description: "Edit Signal message templates",
+  },
+  {
+    name: "signal:template:delete",
+    module: "signal",
+    description: "Delete Signal message templates",
+  },
+  {
+    name: "signal:admin",
+    module: "signal",
+    description: "Manage Signal accounts (admin only)",
+  },
 ];
 ```
 
 ### 7.2 Default Role Assignments
 
-| Role | Permissions |
-|------|-------------|
-| Admin | All signal:* permissions |
-| Manager | signal:view, signal:send, signal:template:* |
-| Sales | signal:view, signal:send |
-| Support | signal:view, signal:send |
-| Warehouse | signal:view |
+| Role      | Permissions                                  |
+| --------- | -------------------------------------------- |
+| Admin     | All signal:\* permissions                    |
+| Manager   | signal:view, signal:send, signal:template:\* |
+| Sales     | signal:view, signal:send                     |
+| Support   | signal:view, signal:send                     |
+| Warehouse | signal:view                                  |
 
 ---
 
@@ -801,14 +856,14 @@ REDIS_PASSWORD=
 
 Create in `client/src/components/signal/`:
 
-| Component | Purpose |
-|-----------|---------|
+| Component                    | Purpose                                  |
+| ---------------------------- | ---------------------------------------- |
 | `SignalConversationList.tsx` | List of conversations with search/filter |
-| `SignalMessageThread.tsx` | Message thread view with send input |
-| `SignalComposeModal.tsx` | Modal for composing new message |
-| `SignalTemplateSelector.tsx` | Template picker with preview |
-| `SignalClientWidget.tsx` | Widget for client detail page |
-| `SignalAdminPanel.tsx` | Admin account management |
+| `SignalMessageThread.tsx`    | Message thread view with send input      |
+| `SignalComposeModal.tsx`     | Modal for composing new message          |
+| `SignalTemplateSelector.tsx` | Template picker with preview             |
+| `SignalClientWidget.tsx`     | Widget for client detail page            |
+| `SignalAdminPanel.tsx`       | Admin account management                 |
 
 ### 9.2 Page Routes
 
@@ -844,6 +899,7 @@ Add to routing:
 ### 10.3 E2E Tests
 
 Add to mega-qa journeys:
+
 - Account registration flow
 - Send message to client flow
 - Receive and link message flow
@@ -901,12 +957,12 @@ Add to mega-qa journeys:
 
 ### 12.1 Key Metrics
 
-| Metric | Threshold | Alert |
-|--------|-----------|-------|
-| Message send success rate | < 95% | Page on-call |
-| Avg message latency | > 5s | Slack warning |
-| Queue depth | > 100 | Slack warning |
-| Account consecutive failures | >= 3 | Page on-call |
+| Metric                       | Threshold | Alert         |
+| ---------------------------- | --------- | ------------- |
+| Message send success rate    | < 95%     | Page on-call  |
+| Avg message latency          | > 5s      | Slack warning |
+| Queue depth                  | > 100     | Slack warning |
+| Account consecutive failures | >= 3      | Page on-call  |
 
 ### 12.2 Logging
 
@@ -958,35 +1014,35 @@ Structured logging for all Signal events with correlation IDs.
 
 ### A. Signal CLI REST API Endpoints
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/v1/register/{number}` | POST | Initiate registration |
-| `/v1/register/{number}/verify/{code}` | POST | Complete verification |
-| `/v2/send` | POST | Send message |
-| `/v1/receive/{number}` | GET | Poll for messages |
-| `/v1/about/{number}` | GET | Health check |
+| Endpoint                              | Method | Purpose               |
+| ------------------------------------- | ------ | --------------------- |
+| `/v1/register/{number}`               | POST   | Initiate registration |
+| `/v1/register/{number}/verify/{code}` | POST   | Complete verification |
+| `/v2/send`                            | POST   | Send message          |
+| `/v1/receive/{number}`                | GET    | Poll for messages     |
+| `/v1/about/{number}`                  | GET    | Health check          |
 
 ### B. Template Variables
 
-| Variable | Source | Example |
-|----------|--------|---------|
-| `{{clientName}}` | clients.name | "ABC Dispensary" |
-| `{{orderNumber}}` | orders.id prefixed | "ORD-12345" |
-| `{{totalAmount}}` | orders.total formatted | "$1,234.56" |
-| `{{userName}}` | users.name | "John Smith" |
-| `{{dueDate}}` | orders.dueDate formatted | "January 25, 2026" |
+| Variable          | Source                   | Example            |
+| ----------------- | ------------------------ | ------------------ |
+| `{{clientName}}`  | clients.name             | "ABC Dispensary"   |
+| `{{orderNumber}}` | orders.id prefixed       | "ORD-12345"        |
+| `{{totalAmount}}` | orders.total formatted   | "$1,234.56"        |
+| `{{userName}}`    | users.name               | "John Smith"       |
+| `{{dueDate}}`     | orders.dueDate formatted | "January 25, 2026" |
 
 ### C. Cost Estimate
 
-| Item | Setup | Monthly |
-|------|-------|---------|
-| 5 Mobile SIMs | $100 | $150-200 |
-| Redis (existing) | $0 | $0 |
-| Docker resources | $0 | ~$10 |
-| **Total** | **$100** | **$160-210** |
+| Item             | Setup    | Monthly      |
+| ---------------- | -------- | ------------ |
+| 5 Mobile SIMs    | $100     | $150-200     |
+| Redis (existing) | $0       | $0           |
+| Docker resources | $0       | ~$10         |
+| **Total**        | **$100** | **$160-210** |
 
 ---
 
 **End of Specification**
 
-*This document is designed for direct consumption by Claude Code. All code samples follow TERP's established patterns and are production-ready.*
+_This document is designed for direct consumption by Claude Code. All code samples follow TERP's established patterns and are production-ready._

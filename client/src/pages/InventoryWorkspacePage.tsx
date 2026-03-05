@@ -28,6 +28,7 @@ export default function InventoryWorkspacePage() {
     <LinearWorkspaceShell
       title={INVENTORY_WORKSPACE.title}
       description={INVENTORY_WORKSPACE.description}
+      section="Buy"
       activeTab={activeTab}
       tabs={INVENTORY_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
@@ -37,13 +38,25 @@ export default function InventoryWorkspacePage() {
       ]}
       commandStrip={
         <>
-          <Button size="sm" variant="outline" onClick={() => setLocation("/direct-intake")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setLocation("/direct-intake")}
+          >
             New Intake
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setActiveTab("browse")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setActiveTab("browse")}
+          >
             Browse SKU Grid
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setActiveTab("products")}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setActiveTab("products")}
+          >
             Jump to Products
           </Button>
         </>

@@ -35,6 +35,7 @@ server/services/emailService.ts
 ```
 
 **DO NOT MODIFY:**
+
 - `client/src/**` (Team B owns)
 - `server/accountingHooks.ts` (Team A owns - ACC-001)
 - `drizzle/**` (Team D owns)
@@ -51,19 +52,21 @@ server/services/emailService.ts
 #### SSE-001: Fix Live Shopping SSE Event Naming (2 hours)
 
 **Files:**
+
 - `server/services/live-shopping/sessionTimeoutService.ts`
 - `client/src/hooks/useLiveSessionSSE.ts:135-147`
 
 **Problem:** Backend emits `SESSION_TIMEOUT_WARNING` but frontend listens for `TIMEOUT_WARNING`.
 
 **Fix (prefer backend naming):**
+
 ```typescript
 // In useLiveSessionSSE.ts, update event listeners:
 // BEFORE:
-eventSource.addEventListener('TIMEOUT_WARNING', handler);
+eventSource.addEventListener("TIMEOUT_WARNING", handler);
 
 // AFTER:
-eventSource.addEventListener('SESSION_TIMEOUT_WARNING', handler);
+eventSource.addEventListener("SESSION_TIMEOUT_WARNING", handler);
 ```
 
 **Note:** Coordinate with Team B if frontend file changes are needed.
@@ -77,9 +80,10 @@ eventSource.addEventListener('SESSION_TIMEOUT_WARNING', handler);
 **Problem:** `sendQuote` mutation has TODO comment but doesn't send emails.
 
 **Implementation:**
+
 ```typescript
 // In sendQuote mutation:
-import { emailService } from '@/services/emailService';
+import { emailService } from "@/services/emailService";
 
 // After marking quote as sent:
 await emailService.sendQuoteEmail({
@@ -89,10 +93,11 @@ await emailService.sendQuoteEmail({
 });
 
 // Track delivery status:
-await db.update(quotes)
+await db
+  .update(quotes)
   .set({
     emailSentAt: new Date(),
-    emailStatus: 'sent',
+    emailStatus: "sent",
   })
   .where(eq(quotes.id, input.quoteId));
 ```
@@ -107,6 +112,7 @@ await db.update(quotes)
 **Problem:** Endpoints return NOT_IMPLEMENTED.
 
 **Implementation:**
+
 ```typescript
 // getArSummary - Accounts Receivable Summary
 getArSummary: protectedProcedure
@@ -155,6 +161,7 @@ getApSummary: protectedProcedure
 **Tests:** `server/routers/accounting.test.ts:298-340`
 
 **Implementation:**
+
 ```typescript
 // listExpenses
 listExpenses: protectedProcedure
@@ -285,16 +292,19 @@ generateBalanceSheet: protectedProcedure
 #### TERP-0001: Dashboard Backend Data Accuracy (8-16 hours)
 
 **Files:**
+
 - `server/routers/dashboard.ts`
 - `server/dashboardHelpers.ts`
 - `server/routers/analytics.ts`
 
 **Problems:**
+
 1. Hardcoded profit margins (25%)
 2. Inconsistent time-period filters
 3. N+1 client name lookups
 
 **Fixes:**
+
 ```typescript
 // 1. Replace hardcoded profit margin:
 // BEFORE:
@@ -309,8 +319,14 @@ async function calculateActualProfitMargin(invoiceId: number) {
     with: { batch: true },
   });
 
-  const revenue = lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0);
-  const cogs = lineItems.reduce((sum, li) => sum + (li.batch?.unitCogs ?? 0) * li.quantity, 0);
+  const revenue = lineItems.reduce(
+    (sum, li) => sum + li.price * li.quantity,
+    0
+  );
+  const cogs = lineItems.reduce(
+    (sum, li) => sum + (li.batch?.unitCogs ?? 0) * li.quantity,
+    0
+  );
 
   return revenue > 0 ? (revenue - cogs) / revenue : 0;
 }
@@ -318,7 +334,9 @@ async function calculateActualProfitMargin(invoiceId: number) {
 // 2. Use bulk query for client names:
 // BEFORE:
 for (const clientId of clientIds) {
-  const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId) });
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.id, clientId),
+  });
   clientNames[clientId] = client?.name;
 }
 
@@ -330,13 +348,20 @@ const clientsList = await db.query.clients.findMany({
 const clientNames = Object.fromEntries(clientsList.map(c => [c.id, c.name]));
 
 // 3. Add time-period filter consistently:
-function applyTimePeriodFilter(query, period: 'LIFETIME' | 'YEAR' | 'QUARTER' | 'MONTH') {
+function applyTimePeriodFilter(
+  query,
+  period: "LIFETIME" | "YEAR" | "QUARTER" | "MONTH"
+) {
   const now = new Date();
   switch (period) {
-    case 'MONTH': return and(query, gte(invoices.createdAt, subMonths(now, 1)));
-    case 'QUARTER': return and(query, gte(invoices.createdAt, subMonths(now, 3)));
-    case 'YEAR': return and(query, gte(invoices.createdAt, subYears(now, 1)));
-    default: return query;
+    case "MONTH":
+      return and(query, gte(invoices.createdAt, subMonths(now, 1)));
+    case "QUARTER":
+      return and(query, gte(invoices.createdAt, subMonths(now, 3)));
+    case "YEAR":
+      return and(query, gte(invoices.createdAt, subYears(now, 1)));
+    default:
+      return query;
   }
 }
 ```
@@ -350,6 +375,7 @@ function applyTimePeriodFilter(query, period: 'LIFETIME' | 'YEAR' | 'QUARTER' | 
 **Problem:** Production can miss `notifications` table.
 
 **Fix:**
+
 ```typescript
 // Add to autoMigrate:
 async function ensureNotificationsTable() {
@@ -367,7 +393,7 @@ async function ensureNotificationsTable() {
       INDEX idx_notifications_user_unread (user_id, is_read)
     )
   `);
-  logger.info('Ensured notifications table exists');
+  logger.info("Ensured notifications table exists");
 }
 
 // Call in migration sequence
@@ -505,6 +531,7 @@ disableTimeout: protectedProcedure
 **Problem:** `setThresholds` throws "not yet available".
 
 **Fix:**
+
 1. Create migration for `minStockLevel` and `targetStockLevel` columns
 2. Request via coordination ticket to Team D
 3. Implement endpoint after schema update
@@ -546,7 +573,10 @@ function extractBrands(inventory: InventoryItem[]): string[] {
 }
 
 // STUB-002: Price range (line 367)
-function calculatePriceRange(inventory: InventoryItem[]): { min: number; max: number } {
+function calculatePriceRange(inventory: InventoryItem[]): {
+  min: number;
+  max: number;
+} {
   if (inventory.length === 0) return { min: 0, max: 0 };
 
   const prices = inventory.map(i => i.price).filter(p => p > 0);
@@ -561,16 +591,17 @@ function calculatePriceRange(inventory: InventoryItem[]): { min: number; max: nu
 
 ### Phase 3: Cleanup (Day 4)
 
-#### DEPR-001: Migrate Deprecated Vendor Router (8 hours)
+#### DEPR-001: Migrate Deprecated Supplier Router (8 hours)
 
-**File:** `server/routers/vendors.ts`
+**File:** `server/routers/suppliers.ts`
 
-All calls to `vendors` router should use `clients` with `isSeller=true`.
+All calls to `suppliers` router should use `clients` with `isSeller=true`.
 
 **Pattern:**
+
 ```typescript
 // BEFORE:
-const vendors = await db.query.vendors.findMany();
+const suppliers = await db.query.suppliers.findMany();
 
 // AFTER:
 const suppliers = await db.query.clients.findMany({
@@ -646,13 +677,16 @@ EOF
 ## Cross-Team Dependencies
 
 **Blocking you:**
+
 - Team D: For schema changes (API-017 needs stock threshold columns)
 
 **You block:**
+
 - Team B: Frontend needs these APIs
 - Team E: Work Surfaces need complete API surface
 
 **Coordination needed:**
+
 - Team A: For `accountingHooks.ts` changes
 - Team D: For schema additions
 

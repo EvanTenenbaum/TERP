@@ -27,6 +27,7 @@
 ### What to Test
 
 Each golden flow (GF-001 through GF-008) represents a critical business workflow. Your goal is to:
+
 - Complete each flow end-to-end following the step-by-step instructions
 - Note any errors, confusing UI, or unexpected behavior
 - Measure perceived performance (is it faster than a spreadsheet?)
@@ -43,42 +44,43 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 
 ## 2) Test Accounts and Credentials
 
-| Role | Email | Password | Primary Flows |
-|------|-------|----------|---------------|
-| Super Admin | `qa.superadmin@terp.test` | `TerpQA2026!` | All flows (full access) |
-| Sales Manager | `qa.salesmanager@terp.test` | `TerpQA2026!` | GF-003, GF-008 |
-| Sales Rep / CS | `qa.salesrep@terp.test` | `TerpQA2026!` | GF-003, GF-008 |
-| Inventory Manager | `qa.inventory@terp.test` | `TerpQA2026!` | GF-001, GF-002, GF-007 |
-| Warehouse Staff | `qa.fulfillment@terp.test` | `TerpQA2026!` | GF-005 |
-| Accountant | `qa.accounting@terp.test` | `TerpQA2026!` | GF-004, GF-006 |
-| Read-Only Auditor | `qa.auditor@terp.test` | `TerpQA2026!` | View-only access to all |
+| Role              | Email                       | Password      | Primary Flows           |
+| ----------------- | --------------------------- | ------------- | ----------------------- |
+| Super Admin       | `qa.superadmin@terp.test`   | `TerpQA2026!` | All flows (full access) |
+| Sales Manager     | `qa.salesmanager@terp.test` | `TerpQA2026!` | GF-003, GF-008          |
+| Sales Rep / CS    | `qa.salesrep@terp.test`     | `TerpQA2026!` | GF-003, GF-008          |
+| Inventory Manager | `qa.inventory@terp.test`    | `TerpQA2026!` | GF-001, GF-002, GF-007  |
+| Warehouse Staff   | `qa.fulfillment@terp.test`  | `TerpQA2026!` | GF-005                  |
+| Accountant        | `qa.accounting@terp.test`   | `TerpQA2026!` | GF-004, GF-006          |
+| Read-Only Auditor | `qa.auditor@terp.test`      | `TerpQA2026!` | View-only access to all |
 
 ### Role-Based Access Summary
 
-| Module | Super Admin | Sales Mgr | Sales Rep | Inventory | Warehouse | Accountant | Auditor |
-|--------|:-----------:|:---------:|:---------:|:---------:|:---------:|:----------:|:-------:|
-| Dashboard | Full | Full | Full | Full | Full | Full | Read |
-| Orders | Full | Full | Full | View | View | View | Read |
-| Clients | Full | Full | Full | View | - | View | Read |
-| Inventory | Full | View | View | Full | View | View | Read |
-| Purchase Orders | Full | - | - | Full | View | View | Read |
-| Invoices | Full | View | View | - | - | Full | Read |
-| Payments | Full | - | - | - | - | Full | Read |
-| Fulfillment | Full | - | - | View | Full | - | Read |
-| Samples | Full | Full | Full | View | - | - | Read |
-| Accounting | Full | - | - | - | - | Full | Read |
-| Audit Logs | Full | - | - | - | - | - | Read |
+| Module          | Super Admin | Sales Mgr | Sales Rep | Inventory | Warehouse | Accountant | Auditor |
+| --------------- | :---------: | :-------: | :-------: | :-------: | :-------: | :--------: | :-----: |
+| Dashboard       |    Full     |   Full    |   Full    |   Full    |   Full    |    Full    |  Read   |
+| Orders          |    Full     |   Full    |   Full    |   View    |   View    |    View    |  Read   |
+| Clients         |    Full     |   Full    |   Full    |   View    |     -     |    View    |  Read   |
+| Inventory       |    Full     |   View    |   View    |   Full    |   View    |    View    |  Read   |
+| Purchase Orders |    Full     |     -     |     -     |   Full    |   View    |    View    |  Read   |
+| Invoices        |    Full     |   View    |   View    |     -     |     -     |    Full    |  Read   |
+| Payments        |    Full     |     -     |     -     |     -     |     -     |    Full    |  Read   |
+| Fulfillment     |    Full     |     -     |     -     |   View    |   Full    |     -      |  Read   |
+| Samples         |    Full     |   Full    |   Full    |   View    |     -     |     -      |  Read   |
+| Accounting      |    Full     |     -     |     -     |     -     |     -     |    Full    |  Read   |
+| Audit Logs      |    Full     |     -     |     -     |     -     |     -     |     -      |  Read   |
 
 ---
 
 ## 3) Expected Behavior Checklist by Golden Flow
 
 ### GF-001: Direct Intake
+
 - [ ] Login as Inventory Manager
 - [ ] Navigate to `/intake` - work surface loads
 - [ ] AG Grid table and inspector panel are visible
 - [ ] Add Row button creates a new intake line
-- [ ] Vendor/Supplier dropdown is searchable and populated
+- [ ] Supplier/Supplier dropdown is searchable and populated
 - [ ] Category dropdown shows all options
 - [ ] Quantity and COGS fields accept numeric input
 - [ ] Summary bar updates in real-time (Items, Qty, Value)
@@ -86,6 +88,7 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] Success toast appears after submission
 
 ### GF-002: Procure to Pay (Purchase Order)
+
 - [ ] Login as Inventory Manager
 - [ ] Navigate to Purchase Orders page
 - [ ] Create PO button opens creation form
@@ -97,6 +100,7 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] AP balance updates for supplier
 
 ### GF-003: Order to Cash (Sales Order)
+
 - [ ] Login as Sales Rep
 - [ ] Navigate to `/orders`
 - [ ] Create order with multiple line items
@@ -110,6 +114,7 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] Full payment completes invoice (status: PAID)
 
 ### GF-004: Invoice and Payment
+
 - [ ] Login as Accountant
 - [ ] Navigate to `/accounting/invoices`
 - [ ] Invoice list loads with status filters
@@ -121,6 +126,7 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] Invoice balance updates after payment
 
 ### GF-005: Pick-Pack (Fulfillment)
+
 - [ ] Login as Warehouse Staff
 - [ ] Navigate to fulfillment/pick queue
 - [ ] Pick queue shows orders awaiting fulfillment
@@ -130,9 +136,10 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] Shipment can be marked as shipped
 
 ### GF-006: Client Ledger / AR-AP
+
 - [ ] Login as Accountant
 - [ ] Dashboard shows Top Debtors widget with data
-- [ ] Dashboard shows Top Vendors Owed with proper names
+- [ ] Dashboard shows Top Suppliers Owed with proper names
 - [ ] Client list shows totalOwed column
 - [ ] Client ledger shows transaction history
 - [ ] Running balance calculates correctly
@@ -140,6 +147,7 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] CSV export works (if available)
 
 ### GF-007: Inventory Management
+
 - [ ] Login as Inventory Manager
 - [ ] Navigate to `/inventory`
 - [ ] Batch list loads with correct values (not $0.00)
@@ -150,6 +158,7 @@ Each golden flow (GF-001 through GF-008) represents a critical business workflow
 - [ ] Batch details are complete and accurate
 
 ### GF-008: Sample Request
+
 - [ ] Login as Sales Rep
 - [ ] Navigate to `/samples`
 - [ ] Status filter tabs work
@@ -169,12 +178,12 @@ Use the template at `docs/beta/BUG_REPORT_TEMPLATE.md` for all bugs.
 
 ### Severity Guide
 
-| Severity | Definition | Example |
-|----------|-----------|---------|
-| **Critical** | Flow is completely blocked, data corruption | Cannot submit any orders, payments double-posting |
-| **High** | Major functionality broken but workaround exists | PDF takes 3 minutes but eventually works |
-| **Medium** | Feature works incorrectly but doesn't block flow | Totals show wrong decimal places |
-| **Low** | Cosmetic or minor UX issue | Button alignment off, typo in label |
+| Severity     | Definition                                       | Example                                           |
+| ------------ | ------------------------------------------------ | ------------------------------------------------- |
+| **Critical** | Flow is completely blocked, data corruption      | Cannot submit any orders, payments double-posting |
+| **High**     | Major functionality broken but workaround exists | PDF takes 3 minutes but eventually works          |
+| **Medium**   | Feature works incorrectly but doesn't block flow | Totals show wrong decimal places                  |
+| **Low**      | Cosmetic or minor UX issue                       | Button alignment off, typo in label               |
 
 ### How to Report
 
@@ -213,10 +222,10 @@ While testing each flow, reflect on:
 
 These issues are being actively worked on. Do not report them as new bugs:
 
-| Issue | Flow | Status | Description |
-|-------|------|--------|-------------|
-| TER-33 | GF-001 | In Progress | Intake form fields not rendering |
-| TER-34 | GF-002 | In Progress | PO product dropdown empty |
+| Issue  | Flow   | Status      | Description                                             |
+| ------ | ------ | ----------- | ------------------------------------------------------- |
+| TER-33 | GF-001 | In Progress | Intake form fields not rendering                        |
+| TER-34 | GF-002 | In Progress | PO product dropdown empty                               |
 | TER-35 | GF-008 | In Progress | Sample form uses text input instead of product selector |
-| TER-36 | GF-004 | In Progress | PDF generation timeout (~197s) |
-| TER-37 | GF-006 | In Progress | Top Debtors empty, "Unknown Vendor" in AP |
+| TER-36 | GF-004 | In Progress | PDF generation timeout (~197s)                          |
+| TER-37 | GF-006 | In Progress | Top Debtors empty, "Unknown Supplier" in AP             |

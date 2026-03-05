@@ -8,22 +8,22 @@
 
 ## Current State Summary
 
-| Phase                                 | Status      | Progress                                   |
-| ------------------------------------- | ----------- | ------------------------------------------ |
-| Phase 0.A: Golden Flow Specification  | ✅ COMPLETE | 8/8                                        |
-| Phase 0: Critical Blockers            | ✅ COMPLETE | 19/19                                      |
-| Phase 1: Core Flow Restoration        | ✅ COMPLETE | 27/27                                      |
-| QA & Testing Infrastructure           | ✅ COMPLETE | 5/5                                        |
-| Post-QA Bug Fixes                     | ✅ COMPLETE | 3/3                                        |
-| Golden Flow Regression Remediation    | ✅ COMPLETE | All 8 fixes recovered (see Wave 6/7 below) |
-| Schema Hardening & Vendor Deprecation | ✅ COMPLETE | 7/7                                        |
-| Wave 6: Server 500s & Tx Fixes        | ✅ COMPLETE | 5/5 — merged 2026-02-18                    |
-| Wave 7: PR #404 Regression Redo       | ✅ COMPLETE | 4/4 — merged 2026-02-18 (PR #432)          |
-| Wave 8: Validation & Guard Rails      | ✅ COMPLETE | 5/5 — merged 2026-02-18 (PR #433)          |
-| Lint Zero: Full ESLint Cleanup        | ✅ COMPLETE | Merged 2026-02-19 — 346 errors to 0        |
-| Wave 9: E2E Test Stabilization        | 📋 BACKLOG  | 0/5                                        |
-| Wave 10: Infrastructure & Edge Cases  | 📋 BACKLOG  | 0/5                                        |
-| DevOps & Infrastructure               | 🟡 TODO     | 0/1 (TER-93 needs confirm)                 |
+| Phase                                   | Status      | Progress                                   |
+| --------------------------------------- | ----------- | ------------------------------------------ |
+| Phase 0.A: Golden Flow Specification    | ✅ COMPLETE | 8/8                                        |
+| Phase 0: Critical Blockers              | ✅ COMPLETE | 19/19                                      |
+| Phase 1: Core Flow Restoration          | ✅ COMPLETE | 27/27                                      |
+| QA & Testing Infrastructure             | ✅ COMPLETE | 5/5                                        |
+| Post-QA Bug Fixes                       | ✅ COMPLETE | 3/3                                        |
+| Golden Flow Regression Remediation      | ✅ COMPLETE | All 8 fixes recovered (see Wave 6/7 below) |
+| Schema Hardening & Supplier Deprecation | ✅ COMPLETE | 7/7                                        |
+| Wave 6: Server 500s & Tx Fixes          | ✅ COMPLETE | 5/5 — merged 2026-02-18                    |
+| Wave 7: PR #404 Regression Redo         | ✅ COMPLETE | 4/4 — merged 2026-02-18 (PR #432)          |
+| Wave 8: Validation & Guard Rails        | ✅ COMPLETE | 5/5 — merged 2026-02-18 (PR #433)          |
+| Lint Zero: Full ESLint Cleanup          | ✅ COMPLETE | Merged 2026-02-19 — 346 errors to 0        |
+| Wave 9: E2E Test Stabilization          | 📋 BACKLOG  | 0/5                                        |
+| Wave 10: Infrastructure & Edge Cases    | 📋 BACKLOG  | 0/5                                        |
+| DevOps & Infrastructure                 | 🟡 TODO     | 0/1 (TER-93 needs confirm)                 |
 
 **Overall:** All golden flow blockers resolved as of 2026-02-18. Waves 6, 7, 8 all shipped. All 8 golden flows should now be functional. Full ESLint cleanup completed 2026-02-19 (346 errors/warnings to 0). Remaining work is E2E test stabilization (Wave 9), medium infrastructure bugs (Wave 10), and the TER-261 data cleanup script.
 
@@ -68,12 +68,12 @@
 **Unblocked:** GF-001, GF-002, GF-006, GF-008 (4 flows)
 **Key Commits:** `396840f`, `e224fdd`
 
-| Ticket                                             | Priority | Title                                                | Status  |
-| -------------------------------------------------- | -------- | ---------------------------------------------------- | ------- |
-| [TER-96](https://linear.app/terpcorp/issue/TER-96) | Urgent   | GF-001: Fix intake location site schema mismatch     | ✅ Done |
-| [TER-97](https://linear.app/terpcorp/issue/TER-97) | Urgent   | GF-002: Fix purchaseOrders.create vendor mapping 500 | ✅ Done |
-| [TER-98](https://linear.app/terpcorp/issue/TER-98) | Urgent   | GF-008: Fix samples.createRequest 500 on insert      | ✅ Done |
-| [TER-99](https://linear.app/terpcorp/issue/TER-99) | High     | GF-006: Restore Client Ledger navigation             | ✅ Done |
+| Ticket                                             | Priority | Title                                                  | Status  |
+| -------------------------------------------------- | -------- | ------------------------------------------------------ | ------- |
+| [TER-96](https://linear.app/terpcorp/issue/TER-96) | Urgent   | GF-001: Fix intake location site schema mismatch       | ✅ Done |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97) | Urgent   | GF-002: Fix purchaseOrders.create supplier mapping 500 | ✅ Done |
+| [TER-98](https://linear.app/terpcorp/issue/TER-98) | Urgent   | GF-008: Fix samples.createRequest 500 on insert        | ✅ Done |
+| [TER-99](https://linear.app/terpcorp/issue/TER-99) | High     | GF-006: Restore Client Ledger navigation               | ✅ Done |
 
 ---
 
@@ -157,7 +157,7 @@ Eliminated all 346 ESLint errors and warnings (281 errors, 65 warnings) down to 
 | Ticket                                               | Priority | Title                                       | Status    | Notes                                |
 | ---------------------------------------------------- | -------- | ------------------------------------------- | --------- | ------------------------------------ |
 | [TER-96](https://linear.app/terpcorp/issue/TER-96)   | Urgent   | GF-001: Fix intake location schema mismatch | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
-| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | Urgent   | GF-002: Fix PO create vendor mapping 500    | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | Urgent   | GF-002: Fix PO create supplier mapping 500  | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
 | [TER-98](https://linear.app/terpcorp/issue/TER-98)   | Urgent   | GF-008: Fix samples.createRequest 500       | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
 | [TER-99](https://linear.app/terpcorp/issue/TER-99)   | High     | GF-006: Restore Client Ledger navigation    | ✅ Done   | Re-implemented in Wave 7 (`396840f`) |
 | [TER-166](https://linear.app/terpcorp/issue/TER-166) | High     | Media follow-up: edge-case gaps             | In Review | Deferred — not MVP-blocking          |
@@ -289,7 +289,7 @@ These issues were discovered during the QA Runtime Testing on 2026-02-07 and res
 These tasks address regressions discovered during live e2e testing after the initial golden flow fixes were deployed:
 
 - **[TER-96](https://linear.app/terpcorp/issue/TER-96):** GF-001: Fix intake location site schema mismatch (UI label vs API regex)
-- **[TER-97](https://linear.app/terpcorp/issue/TER-97):** GF-002: Fix purchaseOrders.create 500 vendor mapping failure
+- **[TER-97](https://linear.app/terpcorp/issue/TER-97):** GF-002: Fix purchaseOrders.create 500 supplier mapping failure
 - **[TER-98](https://linear.app/terpcorp/issue/TER-98):** GF-008: Fix samples.createRequest 500 on insert
 - **[TER-99](https://linear.app/terpcorp/issue/TER-99):** GF-006: Restore discoverable navigation from Clients list to Client Ledger
 - **[TER-100](https://linear.app/terpcorp/issue/TER-100):** Orders routing: add /orders/new alias/redirect to /orders/create
@@ -299,13 +299,13 @@ These tasks address regressions discovered during live e2e testing after the ini
 
 ---
 
-## Schema Hardening & Vendor Deprecation (Waves 2-5)
+## Schema Hardening & Supplier Deprecation (Waves 2-5)
 
 **Status:** ✅ COMPLETE
 **Progress:** 7/7 tasks complete
 **Branch:** `claude/plan-improvements-linear-5Tw9C`
 
-This workstream hardens the database schema and completes the vendor-to-clients migration. All waves completed 2026-02-17.
+This workstream hardens the database schema and completes the supplier-to-clients migration. All waves completed 2026-02-17.
 
 ### Wave 2 — Schema Columns (Done)
 
@@ -318,14 +318,14 @@ Completed 2026-02-17.
   - **Completed:** 2026-02-17
   - **Key Commits:** `b517d86`
 
-### Wave 3 — Vendor Deprecation (Done)
+### Wave 3 — Supplier Deprecation (Done)
 
 Completed 2026-02-17.
 
-- **[TER-247](https://linear.app/terpcorp/issue/TER-247):** Rewrite vendor queries to use clients — Done
+- **[TER-247](https://linear.app/terpcorp/issue/TER-247):** Rewrite supplier queries to use clients — Done
   - **Completed:** 2026-02-17
   - **Key Commits:** `9d22afe`
-- **[TER-235](https://linear.app/terpcorp/issue/TER-235):** Deprecate vendor table — Done (3 phases: schema columns + backfill script, code update + deprecation, phantom column removal + FK constraints)
+- **[TER-235](https://linear.app/terpcorp/issue/TER-235):** Deprecate supplier table — Done (3 phases: schema columns + backfill script, code update + deprecation, phantom column removal + FK constraints)
   - **Completed:** 2026-02-17
   - **Key Commits:** `56b5cf1`, `e582903`, `70683d4`
 
@@ -383,7 +383,7 @@ Additional CI fixes merged 2026-02-08 (commit `9d823285`):
 | ------------------------------------------------------ | ---------- | ------------------------------------------------------------------------- |
 | [#398](https://github.com/EvanTenenbaum/TERP/pull/398) | 2026-02-05 | Golden flows type-safety, tRPC queries, test updates                      |
 | [#399](https://github.com/EvanTenenbaum/TERP/pull/399) | 2026-02-06 | Oracle QA infrastructure: entity resolver, validation, failure classifier |
-| [#400](https://github.com/EvanTenenbaum/TERP/pull/400) | 2026-02-06 | QA follow-up: fix hardcoded vendor return ID                              |
+| [#400](https://github.com/EvanTenenbaum/TERP/pull/400) | 2026-02-06 | QA follow-up: fix hardcoded supplier return ID                            |
 | [#401](https://github.com/EvanTenenbaum/TERP/pull/401) | 2026-02-06 | Golden Flow batch fixes (TER-33 through TER-57)                           |
 | [#402](https://github.com/EvanTenenbaum/TERP/pull/402) | 2026-02-07 | CI standardization: Node 22, pnpm 10.4.1, test fixes                      |
 | [#403](https://github.com/EvanTenenbaum/TERP/pull/403) | 2026-02-08 | QA user seeder, direct intake route, client error handling                |

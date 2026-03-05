@@ -153,7 +153,7 @@ Map complete operational flows for all major business processes. Create visual d
 **Key Flows to Map:**
 
 - Order-to-Cash: Order → Invoice → Line Items → Ledger → AR → Payment → Bank
-- Procure-to-Pay: PO → Receipt → Lot → Batch → Inventory → Vendor Bill → Payment
+- Procure-to-Pay: PO → Receipt → Lot → Batch → Inventory → Supplier Bill → Payment
 - Workflow: Receipt → Testing → Packaging → Available → Sold
 - Events: Schedule → Attendees → Invitations → Reminders → Completion → Notes
 - Client Relationship: Communication → Activity Log → Notes → Follow-ups

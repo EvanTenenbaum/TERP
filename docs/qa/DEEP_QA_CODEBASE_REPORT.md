@@ -35,7 +35,7 @@ Commands and manual inspections used:
 
 ### 2) Backend TODOs / stubs / placeholders
 
-- **Vendor supply matching is unimplemented:** `findClientNeedsForVendorSupply` returns an empty list and is explicitly marked TODO. 【F:server/matchingEngineReverseSimplified.ts†L142-L148】
+- **Supplier supply matching is unimplemented:** `findClientNeedsForVendorSupply` returns an empty list and is explicitly marked TODO. 【F:server/matchingEngineReverseSimplified.ts†L142-L148】
 - **Soft-delete schema gap for clients:** supplier deletion only flips `isSeller=false` because `clients.deletedAt` does not exist; TODO indicates missing schema for real soft delete. 【F:server/inventoryDb.ts†L442-L456】
 - **Client archive uses hard delete:** `archive` is a placeholder alias for delete until soft-delete exists. 【F:server/routers/clients.ts†L173-L183】
 - **VIP tier configuration is hardcoded:** both read/write are TODO and `updateVipTierConfiguration` is a no-op. Also note `any[]` use. 【F:server/services/vipPortalAdminService.ts†L440-L493】

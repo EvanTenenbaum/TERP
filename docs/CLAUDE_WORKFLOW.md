@@ -61,24 +61,24 @@ echo "Source: $SOURCE_COUNT, Roadmap unique items: check Appendix A"
 ### Example Traceability Matrix (Appendix A format)
 
 ```markdown
-| Item ID | Description | Wave | Section | Status |
-|---------|-------------|------|---------|--------|
-| MEET-001 | Dashboard cash display | 1 | 1.1 | 🔴 TODO |
-| MEET-002 | Multi-location tracking | 1 | 1.1 | 🔴 TODO |
-| ... | ... | ... | ... | ... |
+| Item ID  | Description             | Wave | Section | Status  |
+| -------- | ----------------------- | ---- | ------- | ------- |
+| MEET-001 | Dashboard cash display  | 1    | 1.1     | 🔴 TODO |
+| MEET-002 | Multi-location tracking | 1    | 1.1     | 🔴 TODO |
+| ...      | ...                     | ...  | ...     | ...     |
 
 **Validation:** 75/75 items accounted for ✅
 ```
 
 ### When to Apply RTP
 
-| Scenario | Apply RTP? |
-|----------|------------|
-| Creating roadmap from meeting notes | ✅ Yes |
-| Creating roadmap from user requests | ✅ Yes |
-| Creating specs from requirements | ✅ Yes |
-| Simple bug fix | ❌ No (use existing BUG-xxx) |
-| Code refactoring | ❌ No |
+| Scenario                            | Apply RTP?                   |
+| ----------------------------------- | ---------------------------- |
+| Creating roadmap from meeting notes | ✅ Yes                       |
+| Creating roadmap from user requests | ✅ Yes                       |
+| Creating specs from requirements    | ✅ Yes                       |
+| Simple bug fix                      | ❌ No (use existing BUG-xxx) |
+| Code refactoring                    | ❌ No                        |
 
 **Key Principle:** If you're transforming 10+ items from source → deliverable, use RTP to ensure nothing is lost.
 
@@ -158,7 +158,7 @@ echo "Source: $SOURCE_COUNT, Roadmap unique items: check Appendix A"
 This file provides a real-time, at-a-glance view of test coverage across the entire application, broken down by:
 
 - **Module** (Inventory, Orders, etc.)
-- **User Flow** (Create Order, Vendor Intake, etc.)
+- **User Flow** (Create Order, Supplier Intake, etc.)
 - **Component** (Database, API, Auth, etc.)
 
 It is **automatically updated** every time a testing task is completed, ensuring we always know where our testing gaps are.
@@ -221,7 +221,6 @@ Every session should improve the codebase, not just add to it. Actively refactor
 
 Leave the code cleaner than you found it: fewer LoC through better abstractions.
 
-
 ---
 
 ## 🔐 DigitalOcean API Token Management
@@ -233,6 +232,7 @@ Leave the code cleaner than you found it: fewer LoC through better abstractions.
 ### When DigitalOcean CLI Access is Needed
 
 1. **Check for valid token:**
+
    ```bash
    doctl auth init -t $DIGITALOCEAN_API_TOKEN
    ```
@@ -244,14 +244,15 @@ Leave the code cleaner than you found it: fewer LoC through better abstractions.
    - **DO** offer alternative solutions (manual configuration via web console)
 
 3. **Request token from user:**
+
    ```
    I need a valid DigitalOcean API token to configure the app via CLI.
-   
+
    To get a token:
    1. Go to https://cloud.digitalocean.com/account/api/tokens
    2. Generate a new Personal Access Token with Write scope
    3. Provide the token (starts with dop_v1_)
-   
+
    Alternatively, I can guide you through manual configuration in the DigitalOcean console.
    ```
 
@@ -270,6 +271,7 @@ Leave the code cleaner than you found it: fewer LoC through better abstractions.
 ### Reference Documentation
 
 See `docs/DIGITALOCEAN_API_TOKEN_ISSUE.md` for complete details on:
+
 - Why tokens expire
 - How to obtain new tokens
 - Alternative methods when tokens are unavailable

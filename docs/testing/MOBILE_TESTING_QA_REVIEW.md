@@ -113,9 +113,9 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
     - COGS configuration
     - Toggle interactions
 
-14. **Vendors** - NOT TESTED
-    - Vendor list on mobile
-    - Vendor forms
+14. **Suppliers** - NOT TESTED
+    - Supplier list on mobile
+    - Supplier forms
 
 15. **Purchase Orders** - BLOCKED (BUG-008)
     - Cannot test due to crash
@@ -261,7 +261,7 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
    - Transaction tables
 
 5. **Other Data Tables** - NOT TESTED
-   - Vendors table
+   - Suppliers table
    - Locations table
    - Pricing rules table
    - Returns table
@@ -318,8 +318,8 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
    - Pricing rule creation
    - Profile configuration
 
-10. **Vendor Forms** - NOT TESTED
-    - Add/edit vendor
+10. **Supplier Forms** - NOT TESTED
+    - Add/edit supplier
 
 11. **Location Forms** - NOT TESTED
     - Add/edit location
@@ -482,6 +482,7 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
 ### Reality Check
 
 **Actual Testing:**
+
 - **Pages Tested:** 3 of 20 (15%)
 - **Pages Interacted With:** 3 of 20 (15%)
 - **Workflows Tested:** 0 of 10 (0%)
@@ -512,11 +513,13 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
 5. **Content Testing:** Data display, table behavior, modal content all testable
 
 **What BUG-M001 Actually Blocks:**
+
 - Optimal UX testing (layout is cramped)
 - Responsive design validation (sidebar not responsive)
 - Full viewport width testing
 
 **What BUG-M001 Does NOT Block:**
+
 - Functional testing (90% of protocols)
 - Interaction testing (100% of protocols)
 - Performance testing (100% of protocols)
@@ -529,11 +532,13 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
 ### What Should Have Been Done
 
 **Phase 1: Critical Blocker Identification** ✅ DONE
+
 - Identify BUG-M001 (sidebar not responsive)
 - Document scope and impact
 - Provide fix recommendations
 
 **Phase 2: Functional Testing Despite Layout Issues** ❌ NOT DONE
+
 - Test all pages for functionality
 - Test all forms and inputs
 - Test all modals and overlays
@@ -542,12 +547,14 @@ A thorough QA review of the mobile testing execution reveals **significant gaps 
 - Document all additional bugs found
 
 **Phase 3: Performance and Technical Testing** ❌ NOT DONE
+
 - Measure load times
 - Test scroll performance
 - Validate touch interactions
 - Test responsive breakpoints
 
 **Phase 4: Comprehensive Bug Documentation** ⚠️ PARTIAL
+
 - BUG-M001, BUG-M002, BUG-M003 documented
 - But many additional bugs likely exist and were not found
 

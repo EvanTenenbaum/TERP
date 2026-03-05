@@ -77,7 +77,7 @@ getAgingReport: protectedProcedure
   }))
   .query(async ({ input }) => {
     const table = input.type === 'ar' ? invoices : vendorInvoices;
-    const entityTable = input.type === 'ar' ? clients : vendors;
+    const entityTable = input.type === 'ar' ? clients : suppliers;
     const entityIdField = input.type === 'ar' ? invoices.clientId : vendorInvoices.vendorId;
 
     const aging = await db.select({
@@ -202,7 +202,7 @@ export const creditsRouter = router({
       });
 
       if (!client) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Client not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Client not found" });
       }
 
       // Calculate available credit
@@ -221,23 +221,26 @@ export const creditsRouter = router({
 
   // Update credit limit
   updateCreditLimit: protectedProcedure
-    .input(z.object({
-      clientId: z.number(),
-      creditLimit: z.number().min(0),
-      reason: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        creditLimit: z.number().min(0),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const client = await getClient(input.clientId);
       const oldLimit = client.creditLimit;
 
-      await db.update(clients)
+      await db
+        .update(clients)
         .set({ creditLimit: input.creditLimit })
         .where(eq(clients.id, input.clientId));
 
       // Log credit history
       await db.insert(creditHistory).values({
         clientId: input.clientId,
-        action: 'LIMIT_CHANGE',
+        action: "LIMIT_CHANGE",
         oldValue: oldLimit,
         newValue: input.creditLimit,
         reason: input.reason,
@@ -249,14 +252,17 @@ export const creditsRouter = router({
 
   // Place/remove credit hold
   setCreditHold: protectedProcedure
-    .input(z.object({
-      clientId: z.number(),
-      hold: z.boolean(),
-      reason: z.string(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        hold: z.boolean(),
+        reason: z.string(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      await db.update(clients)
-        .set({ 
+      await db
+        .update(clients)
+        .set({
           creditHold: input.hold,
           creditHoldReason: input.hold ? input.reason : null,
           creditHoldBy: input.hold ? ctx.user.id : null,
@@ -266,7 +272,7 @@ export const creditsRouter = router({
 
       await db.insert(creditHistory).values({
         clientId: input.clientId,
-        action: input.hold ? 'HOLD_PLACED' : 'HOLD_REMOVED',
+        action: input.hold ? "HOLD_PLACED" : "HOLD_REMOVED",
         reason: input.reason,
         changedBy: ctx.user.id,
       });
@@ -276,15 +282,18 @@ export const creditsRouter = router({
 
   // Check if order can proceed (credit check)
   checkOrderCredit: protectedProcedure
-    .input(z.object({
-      clientId: z.number(),
-      orderTotal: z.number(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        orderTotal: z.number(),
+      })
+    )
     .query(async ({ input }) => {
       const credit = await getClientCredit(input.clientId);
-      
+
       return {
-        canProceed: !credit.creditHold && credit.availableCredit >= input.orderTotal,
+        canProceed:
+          !credit.creditHold && credit.availableCredit >= input.orderTotal,
         availableCredit: credit.availableCredit,
         creditHold: credit.creditHold,
         creditHoldReason: credit.creditHoldReason,
@@ -359,7 +368,7 @@ export function CreditManagement({ clientId }: { clientId: number }) {
           <Button variant="outline" onClick={() => setShowLimitDialog(true)}>
             Adjust Limit
           </Button>
-          <Button 
+          <Button
             variant={credit.creditHold ? "default" : "destructive"}
             onClick={() => setShowHoldDialog(true)}
           >
@@ -418,18 +427,21 @@ export const returnsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const order = await getOrder(input.orderId);
       if (!order) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
-      const returnRecord = await db.transaction(async (tx) => {
+      const returnRecord = await db.transaction(async tx => {
         // Create return
-        const [ret] = await tx.insert(returns).values({
-          orderId: input.orderId,
-          clientId: order.clientId,
-          reason: input.reason,
-          status: 'pending',
-          createdBy: ctx.user.id,
-        }).returning();
+        const [ret] = await tx
+          .insert(returns)
+          .values({
+            orderId: input.orderId,
+            clientId: order.clientId,
+            reason: input.reason,
+            status: "pending",
+            createdBy: ctx.user.id,
+          })
+          .returning();
 
         // Create return items
         await tx.insert(returnItems).values(
@@ -449,33 +461,40 @@ export const returnsRouter = router({
     }),
 
   process: protectedProcedure
-    .input(z.object({
-      returnId: z.number(),
-      action: z.enum(['approve', 'reject']),
-      creditAmount: z.number().optional(),
-      restockItems: z.array(z.object({
-        returnItemId: z.number(),
-        restock: z.boolean(),
-        batchId: z.number().optional(),
-      })).optional(),
-      notes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        returnId: z.number(),
+        action: z.enum(["approve", "reject"]),
+        creditAmount: z.number().optional(),
+        restockItems: z
+          .array(
+            z.object({
+              returnItemId: z.number(),
+              restock: z.boolean(),
+              batchId: z.number().optional(),
+            })
+          )
+          .optional(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const ret = await getReturnWithItems(input.returnId);
-      
-      if (ret.status !== 'pending') {
+
+      if (ret.status !== "pending") {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Return has already been processed',
+          code: "BAD_REQUEST",
+          message: "Return has already been processed",
         });
       }
 
-      await db.transaction(async (tx) => {
-        if (input.action === 'approve') {
+      await db.transaction(async tx => {
+        if (input.action === "approve") {
           // Update return status
-          await tx.update(returns)
+          await tx
+            .update(returns)
             .set({
-              status: 'approved',
+              status: "approved",
               processedAt: new Date(),
               processedBy: ctx.user.id,
               creditAmount: input.creditAmount,
@@ -486,9 +505,12 @@ export const returnsRouter = router({
           // Restock items if specified
           for (const item of input.restockItems ?? []) {
             if (item.restock && item.batchId) {
-              const returnItem = ret.items.find(i => i.id === item.returnItemId);
+              const returnItem = ret.items.find(
+                i => i.id === item.returnItemId
+              );
               if (returnItem) {
-                await tx.update(batches)
+                await tx
+                  .update(batches)
                   .set({
                     quantity: sql`${batches.quantity} + ${returnItem.quantity}`,
                   })
@@ -503,15 +525,16 @@ export const returnsRouter = router({
               clientId: ret.clientId,
               returnId: ret.id,
               amount: input.creditAmount,
-              status: 'pending',
+              status: "pending",
               createdBy: ctx.user.id,
             });
           }
         } else {
           // Reject
-          await tx.update(returns)
+          await tx
+            .update(returns)
             .set({
-              status: 'rejected',
+              status: "rejected",
               processedAt: new Date(),
               processedBy: ctx.user.id,
               notes: input.notes,
@@ -579,7 +602,7 @@ export function ProcessReturnModal({ returnRecord, open, onClose }: Props) {
                       onCheckedChange={(checked) => {
                         setRestockItems(prev => {
                           const filtered = prev.filter(r => r.returnItemId !== item.id);
-                          return checked 
+                          return checked
                             ? [...filtered, { returnItemId: item.id, restock: true }]
                             : filtered;
                         });

@@ -109,7 +109,7 @@ describe("AppSidebar navigation", () => {
     expect(labelTexts).toEqual(["Sell", "Buy", "Finance", "Admin"]);
   });
 
-  it("shows quick actions with Record Receipt label", () => {
+  it("shows quick actions with Record Intake label", () => {
     render(
       <ThemeProvider>
         <Sidebar open />
@@ -124,8 +124,8 @@ describe("AppSidebar navigation", () => {
     const quickActions = within(quickActionsSection as HTMLElement);
 
     const dashboardQuickAction = quickActions.getByTitle("Dashboard");
-    const newSaleQuickAction = quickActions.getByTitle("New Sale");
-    const recordReceiptQuickAction = quickActions.getByTitle("Record Receipt");
+    const newSaleQuickAction = quickActions.getByTitle("New Sales Order");
+    const recordReceiptQuickAction = quickActions.getByTitle("Record Intake");
     const clientsQuickAction = quickActions.getByTitle("Clients");
 
     expect(dashboardQuickAction).toBeVisible();
@@ -154,7 +154,7 @@ describe("AppSidebar navigation", () => {
     expect(salesLink).toHaveAttribute("aria-current", "page");
   });
 
-  it("treats receiving tab variants as the same active nav destination", () => {
+  it("treats intake tab variants as the same active nav destination", () => {
     mockLocation = "/purchase-orders?tab=receiving";
     const { rerender } = render(
       <ThemeProvider>
@@ -163,7 +163,7 @@ describe("AppSidebar navigation", () => {
     );
 
     const receivingLink = screen.getByRole("link", {
-      name: /Receive inventory into the system/i,
+      name: /Intake inventory into the system/i,
     });
     expect(receivingLink).toHaveAttribute("aria-current", "page");
 

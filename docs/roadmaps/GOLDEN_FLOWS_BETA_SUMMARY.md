@@ -12,6 +12,7 @@
 The Jan 26 QA audit revealed that **5 of 8 Golden Flows are completely blocked** by a cascading SQL error in the inventory system. This roadmap provides a **36-day, 7-phase plan** to restore all flows to beta-ready state.
 
 **Key Numbers:**
+
 - **38 tasks** across 7 phases (including 8 specification tasks)
 - **36 estimated days** (includes 20% buffer from QA review)
 - **8 Golden Flows** to restore
@@ -22,16 +23,16 @@ The Jan 26 QA audit revealed that **5 of 8 Golden Flows are completely blocked**
 
 ## Current State: RED
 
-| Flow | Status | What's Broken |
-|------|--------|---------------|
-| GF-001: Direct Intake | **BLOCKED** | Form fields don't render |
-| GF-002: Procure-to-Pay | **BLOCKED** | Product dropdown empty |
-| GF-003: Order-to-Cash | **BLOCKED** | Inventory SQL error |
-| GF-004: Invoice & Payment | Partial | PDF generation timeout |
-| GF-005: Pick & Pack | Untested | Blocked by orders |
-| GF-006: Client Ledger | Partial | Data inconsistencies |
-| GF-007: Inventory Mgmt | **BLOCKED** | Shows 0 batches |
-| GF-008: Sample Request | **BLOCKED** | Product selector broken |
+| Flow                      | Status      | What's Broken            |
+| ------------------------- | ----------- | ------------------------ |
+| GF-001: Direct Intake     | **BLOCKED** | Form fields don't render |
+| GF-002: Procure-to-Pay    | **BLOCKED** | Product dropdown empty   |
+| GF-003: Order-to-Cash     | **BLOCKED** | Inventory SQL error      |
+| GF-004: Invoice & Payment | Partial     | PDF generation timeout   |
+| GF-005: Pick & Pack       | Untested    | Blocked by orders        |
+| GF-006: Client Ledger     | Partial     | Data inconsistencies     |
+| GF-007: Inventory Mgmt    | **BLOCKED** | Shows 0 batches          |
+| GF-008: Sample Request    | **BLOCKED** | Product selector broken  |
 
 **Root Cause:** A SQL query failure prevents inventory from loading, which cascades to break order creation, PO creation, and sample requests.
 
@@ -40,22 +41,28 @@ The Jan 26 QA audit revealed that **5 of 8 Golden Flows are completely blocked**
 ## The Plan: 7 Phases
 
 ### Phase 0.A: Golden Flow Specification (Days 1-2) - NEW
+
 **Define all flows before fixing**
+
 - Create complete specifications for all 8 Golden Flows
 - Document: UX flow, UI states, API endpoints, data model, business rules, error states
 - Define invariants that must be preserved
 - Document cross-flow touchpoints
-- *Why:* QA Protocol v3.0 requires flows be "fully defined on UX, UI, backend, frontend, logic, and business logic standpoint"
+- _Why:_ QA Protocol v3.0 requires flows be "fully defined on UX, UI, backend, frontend, logic, and business logic standpoint"
 
 ### Phase 0: Foundation (Days 3-5)
+
 **Fix the root cause blockers**
+
 - Investigate and fix the inventory SQL error
 - Fix Sales Rep RBAC (can't view clients)
 - Fix dashboard/inventory data mismatch
 - Fix order state machine test failures
 
 ### Phase 1: Flow Restoration (Days 6-9)
+
 **Make all 8 flows accessible**
+
 - Fix Direct Intake form rendering
 - Fix PO product dropdown
 - Fix Sample Request product selector
@@ -64,28 +71,36 @@ The Jan 26 QA audit revealed that **5 of 8 Golden Flows are completely blocked**
 - Fix Client creation wizard
 
 ### Phase 2: Flow Completion (Days 10-14)
+
 **Complete missing functionality**
+
 - Wire payment recording (currently a stub!)
 - Test Pick & Pack flow end-to-end
 - Verify GL entries are created properly
 - Test complete Order-to-Cash flow
 
 ### Phase 3: RBAC Verification (Days 15-19)
+
 **Verify correct roles can use correct flows**
+
 - Sales Rep → GF-003, GF-008
 - Inventory Manager → GF-001, GF-007
 - Accounting Manager → GF-004, GF-006
-- Fulfillment → GF-005, GF-002 receiving
+- Fulfillment → GF-005, GF-002 intake
 - Auditor → read-only access only
 
 ### Phase 4: E2E Automation (Days 20-26)
+
 **Automate testing for all flows**
+
 - Create E2E tests for each Golden Flow
 - Integrate into CI pipeline
 - Document test coverage
 
 ### Phase 5: Beta Hardening (Days 27-36)
+
 **Polish and prepare for beta**
+
 - Fix test infrastructure issues
 - Write documentation
 - Security review
@@ -107,16 +122,19 @@ The Jan 26 QA audit revealed that **5 of 8 Golden Flows are completely blocked**
 ## What You Need to Know
 
 ### This Plan Prioritizes:
+
 1. **Functionality first** - Get flows working before polishing
 2. **Data integrity** - GL entries, audit trails must work
 3. **Role correctness** - Right people can do right things
 
 ### Security Deferred (But Addressed):
+
 - Security issues moved to Phase 5 (not ignored)
 - BUG-103: QA password hint exposed on login
 - BUG-107: Fallback user ID pattern in code
 
 ### What Success Looks Like:
+
 - All 8 Golden Flows executable end-to-end
 - Each flow works with its designated role
 - E2E tests verify flows automatically
@@ -145,6 +163,7 @@ The Jan 26 QA audit revealed that **5 of 8 Golden Flows are completely blocked**
 ## Questions?
 
 The full roadmap contains:
+
 - Detailed task checklists for agents
 - Verification commands for each task
 - Rollback plans for each phase

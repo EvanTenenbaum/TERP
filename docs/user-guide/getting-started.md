@@ -38,21 +38,22 @@ After logging in, you'll see the **Dashboard** with:
 
 The left sidebar provides access to all modules:
 
-| Icon | Module | What It Does |
-|------|--------|--------------|
-| 📊 | Dashboard | Overview and quick actions |
-| 📦 | Inventory | Manage batches and stock |
-| 💰 | Sales | Orders, quotes, sales sheets |
-| 👥 | Clients | Customer profiles and credit |
-| 🧾 | Accounting | Invoices, payments, ledger |
-| 📋 | Pick & Pack | Order fulfillment |
-| 📅 | Calendar | Scheduling and reminders |
-| 📈 | Analytics | Reports and leaderboards |
-| ⚙️ | Settings | System configuration |
+| Icon | Module      | What It Does                 |
+| ---- | ----------- | ---------------------------- |
+| 📊   | Dashboard   | Overview and quick actions   |
+| 📦   | Inventory   | Manage batches and stock     |
+| 💰   | Sales       | Orders, quotes, sales sheets |
+| 👥   | Clients     | Customer profiles and credit |
+| 🧾   | Accounting  | Invoices, payments, ledger   |
+| 📋   | Pick & Pack | Order fulfillment            |
+| 📅   | Calendar    | Scheduling and reminders     |
+| 📈   | Analytics   | Reports and leaderboards     |
+| ⚙️   | Settings    | System configuration         |
 
 ### Global Search
 
 Press `/` or click the search bar to find:
+
 - Clients by name, email, or phone
 - Products by SKU or name
 - Orders by number
@@ -98,13 +99,13 @@ Press `/` or click the search bar to find:
 
 Speed up your workflow with these shortcuts:
 
-| Shortcut | Action |
-|----------|--------|
-| `/` | Open search |
-| `Esc` | Close dialog |
-| `Tab` | Next field |
-| `Enter` | Submit form |
-| `Ctrl+S` | Save |
+| Shortcut | Action       |
+| -------- | ------------ |
+| `/`      | Open search  |
+| `Esc`    | Close dialog |
+| `Tab`    | Next field   |
+| `Enter`  | Submit form  |
+| `Ctrl+S` | Save         |
 
 ---
 
@@ -120,7 +121,7 @@ Speed up your workflow with these shortcuts:
 5. Update inventory as needed
 ```
 
-### Inventory Receiving
+### Inventory Intake
 
 ```
 1. Go to Inventory → Intake
@@ -162,6 +163,7 @@ Speed up your workflow with these shortcuts:
 ### Support
 
 Contact your system administrator for:
+
 - Login issues
 - Permission problems
 - Technical errors

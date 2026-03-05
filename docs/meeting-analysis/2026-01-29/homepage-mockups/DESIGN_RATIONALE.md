@@ -104,12 +104,12 @@ A traditional dashboard layout optimized for the owner's daily workflow. Section
 
 ### Existing Components Used
 
-| Section | TERP Component |
-|---------|----------------|
-| Focus Items | `AgingInventoryWidget` (enhanced) |
-| Financial Stats | `AvailableCashWidget`, `TotalDebtWidget` |
-| Inventory Table | `InventorySnapshotWidget` (enhanced with price brackets) |
-| Client Engagement | `MatchmakingOpportunitiesWidget` |
+| Section           | TERP Component                                           |
+| ----------------- | -------------------------------------------------------- |
+| Focus Items       | `AgingInventoryWidget` (enhanced)                        |
+| Financial Stats   | `AvailableCashWidget`, `TotalDebtWidget`                 |
+| Inventory Table   | `InventorySnapshotWidget` (enhanced with price brackets) |
+| Client Engagement | `MatchmakingOpportunitiesWidget`                         |
 
 ---
 
@@ -143,7 +143,7 @@ Directly maps to the customer's "Tetris" mental model with 4 quadrants answering
 │  QUICK STATS BAR (4 numbers inline)                         │
 ├─────────────────────────────────────────────────────────────┤
 │  QUICK ACTIONS (4 buttons)                                   │
-│  New Order | Receive Payment | Pay Vendor | Reports         │
+│  New Order | Receive Payment | Pay Supplier | Reports         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -176,13 +176,13 @@ Directly maps to the customer's "Tetris" mental model with 4 quadrants answering
 
 ### Existing Components Used
 
-| Section | TERP Component |
-|---------|----------------|
-| Out of (Low Stock) | Custom (new logic needed) |
-| Too Much Of | Custom (new logic needed) |
-| About to Go Bad | `AgingInventoryWidget` |
-| Losing Money On | `ClientDebtLeaderboard` |
-| Quick Stats | `AvailableCashWidget`, `TotalDebtWidget` |
+| Section            | TERP Component                           |
+| ------------------ | ---------------------------------------- |
+| Out of (Low Stock) | Custom (new logic needed)                |
+| Too Much Of        | Custom (new logic needed)                |
+| About to Go Bad    | `AgingInventoryWidget`                   |
+| Losing Money On    | `ClientDebtLeaderboard`                  |
+| Quick Stats        | `AvailableCashWidget`, `TotalDebtWidget` |
 
 ---
 
@@ -255,28 +255,28 @@ Optimized for mobile use with swipeable cards and collapsible sections. Prioriti
 
 ### Existing Components Used
 
-| Section | TERP Component |
-|---------|----------------|
-| Hero Stats | `AvailableCashWidget`, `TotalDebtWidget` |
-| Alerts | `AgingInventoryWidget`, `ClientDebtLeaderboard` |
-| Inventory Accordions | `InventorySnapshotWidget` (restructured) |
-| Reach Out | `MatchmakingOpportunitiesWidget` |
+| Section              | TERP Component                                  |
+| -------------------- | ----------------------------------------------- |
+| Hero Stats           | `AvailableCashWidget`, `TotalDebtWidget`        |
+| Alerts               | `AgingInventoryWidget`, `ClientDebtLeaderboard` |
+| Inventory Accordions | `InventorySnapshotWidget` (restructured)        |
+| Reach Out            | `MatchmakingOpportunitiesWidget`                |
 
 ---
 
 ## Comparison Matrix
 
-| Feature | Mockup 1 | Mockup 2 | Mockup 3 |
-|---------|----------|----------|----------|
-| **Primary Metaphor** | Dashboard | Tetris Questions | Card Stack |
-| **Information Density** | High | Low | Medium |
-| **Mobile Experience** | Good | Good | Excellent |
-| **Desktop Experience** | Excellent | Good | Good |
-| **Scrolling Required** | More | Less | Medium |
-| **Clicks to Detail** | 1 | 1-2 | 1-2 |
-| **New Components Needed** | 1 | 2 | 0 |
-| **Implementation Effort** | Medium | Medium | Low |
-| **Best For** | Power users | Quick decisions | Mobile-first users |
+| Feature                   | Mockup 1    | Mockup 2         | Mockup 3           |
+| ------------------------- | ----------- | ---------------- | ------------------ |
+| **Primary Metaphor**      | Dashboard   | Tetris Questions | Card Stack         |
+| **Information Density**   | High        | Low              | Medium             |
+| **Mobile Experience**     | Good        | Good             | Excellent          |
+| **Desktop Experience**    | Excellent   | Good             | Good               |
+| **Scrolling Required**    | More        | Less             | Medium             |
+| **Clicks to Detail**      | 1           | 1-2              | 1-2                |
+| **New Components Needed** | 1           | 2                | 0                  |
+| **Implementation Effort** | Medium      | Medium           | Low                |
+| **Best For**              | Power users | Quick decisions  | Mobile-first users |
 
 ---
 
@@ -305,22 +305,22 @@ Optimized for mobile use with swipeable cards and collapsible sections. Prioriti
 
 ### New Components Needed
 
-| Component | Mockups | Effort |
-|-----------|---------|--------|
-| Focus Items Card | 1 | 4h |
-| Tetris Quadrant Card | 2 | 6h |
-| Collapsible Category Accordion | 3 | 3h |
-| Swipeable Card Container | 3 | 2h |
-| Alert List Card | 3 | 2h |
+| Component                      | Mockups | Effort |
+| ------------------------------ | ------- | ------ |
+| Focus Items Card               | 1       | 4h     |
+| Tetris Quadrant Card           | 2       | 6h     |
+| Collapsible Category Accordion | 3       | 3h     |
+| Swipeable Card Container       | 3       | 2h     |
+| Alert List Card                | 3       | 2h     |
 
 ### Backend Enhancements Needed
 
-| Feature | Mockups | Effort |
-|---------|---------|--------|
-| Inventory by price bracket | All | 4h |
-| Low stock detection | 1, 2 | 2h |
-| Overstock detection | 2 | 2h |
-| Client order frequency analysis | All | 4h |
+| Feature                         | Mockups | Effort |
+| ------------------------------- | ------- | ------ |
+| Inventory by price bracket      | All     | 4h     |
+| Low stock detection             | 1, 2    | 2h     |
+| Overstock detection             | 2       | 2h     |
+| Client order frequency analysis | All     | 4h     |
 
 ---
 
@@ -331,10 +331,11 @@ Optimized for mobile use with swipeable cards and collapsible sections. Prioriti
 3. Use Chrome DevTools device mode for mobile preview
 
 **Files:**
+
 - `mockup-1-command-center.html` - Traditional dashboard
 - `mockup-2-tetris-minimal.html` - 4-quadrant Tetris view
 - `mockup-3-card-stack.html` - Mobile-first card stack
 
 ---
 
-*Design rationale document created: January 30, 2026*
+_Design rationale document created: January 30, 2026_

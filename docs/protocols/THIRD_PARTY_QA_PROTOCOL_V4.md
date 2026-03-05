@@ -179,7 +179,7 @@ Goal: find known-bad patterns across changed code, dependencies, and nearby modu
 grep -rn "ctx\.user\?\.id \|\| 1" --include="*.ts" --include="*.tsx"
 grep -rn "ctx\.user\?\.id ?? 1" --include="*.ts" --include="*.tsx"
 grep -rn "input\.createdBy\|input\.userId" --include="*.ts" --include="*.tsx"
-grep -rn "db\.query\.vendors" --include="*.ts" --include="*.tsx"
+grep -rn "db\.query\.suppliers" --include="*.ts" --include="*.tsx"
 grep -rn ": any\b" --include="*.ts" --include="*.tsx"
 grep -rn "db\.delete(" --include="*.ts" --include="*.tsx"
 grep -rn "\.catch\(\(\) =>\|\.catch\(e =>" --include="*.ts" --include="*.tsx"

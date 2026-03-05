@@ -275,7 +275,7 @@ export function CogsEditModal({
               id="reason"
               value={reason}
               onChange={e => setReason(e.target.value)}
-              placeholder="e.g., Vendor price adjustment"
+              placeholder="e.g., Supplier price adjustment"
             />
           </div>
         </div>

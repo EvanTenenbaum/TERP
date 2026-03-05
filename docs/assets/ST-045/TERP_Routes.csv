@@ -58,9 +58,9 @@ Route
 /todos
 /todos/:listId
 /users
-/vendor-supply
-/vendors
-/vendors/:id
+/supplier-supply
+/suppliers
+/suppliers/:id
 /vip-portal
 /vip-portal/auth/impersonate
 /vip-portal/dashboard

@@ -31,7 +31,7 @@ The inventory system tracks physical goods. The `batches` table holds current qu
 | Table                | Purpose                 | Key Columns                                                         |
 | -------------------- | ----------------------- | ------------------------------------------------------------------- |
 | `batches`            | Current inventory state | `id`, `onHandQty`, `allocatedQty`, `status`                         |
-| `lots`               | Receiving groupings     | `id`, `status`, `totalQty`, `remainingQty`                          |
+| `lots`               | Intake groupings        | `id`, `status`, `totalQty`, `remainingQty`                          |
 | `inventoryMovements` | Audit trail             | `batchId`, `inventoryMovementType`, `quantityChange`, `performedBy` |
 
 #### Invariants
@@ -56,7 +56,7 @@ IF batch is allocated THEN batch.status IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
 #### Critical Operations
 
 - **Allocation**: Decreases `onHandQty`, creates negative movement
-- **Receiving**: Increases `onHandQty`, creates positive movement
+- **Intake**: Increases `onHandQty`, creates positive movement
 - **Return/Restock**: Increases `onHandQty`, creates positive movement
 - **Adjustment**: Creates corrective movement with reason
 
@@ -111,7 +111,7 @@ IF invoices.amountDue > 0 AND invoices.amountPaid > 0 THEN invoices.status = 'PA
 
 **Source of Truth**: `vendorReturns`, `bills`, `lots` (for consignment)
 
-AP tracks money owed to suppliers/vendors.
+AP tracks money owed to suppliers/suppliers.
 
 #### Truth Tables
 
@@ -119,16 +119,16 @@ AP tracks money owed to suppliers/vendors.
 | --------------- | ------------------------------ | --------------------------------------------------------------------- |
 | `lots`          | Purchase records (consignment) | `id`, `vendorId`, `paymentTerms`, `totalCost`                         |
 | `vendorReturns` | Return requests                | `id`, `orderId`, `vendorId`, `status`, `totalValue`, `creditReceived` |
-| `bills`         | Vendor invoices                | `id`, `vendorId`, `totalAmount`, `amountPaid`, `status`               |
+| `bills`         | Supplier invoices              | `id`, `vendorId`, `totalAmount`, `amountPaid`, `status`               |
 
 #### Invariants
 
 ```sql
--- AP-001: Vendor return value matches item costs
+-- AP-001: Supplier return value matches item costs
 vendorReturns.totalValue = SUM(vendorReturnItems.quantity * vendorReturnItems.unitCost)
 
 -- AP-002: Consignment payable tracks with lot sales
-payable_to_vendor = SUM(lots.totalCost WHERE lots.vendorId = vendor.id AND status = 'SOLD')
+payable_to_supplier = SUM(lots.totalCost WHERE lots.vendorId = supplier.id AND status = 'SOLD')
 
 -- AP-003: Credit received cannot exceed return value
 vendorReturns.creditReceived <= vendorReturns.totalValue
@@ -215,7 +215,7 @@ Lots, PurchaseOrders only for clients WHERE isSeller = true
 -- CLI-004: No orphan profiles
 Every supplierProfiles.clientId must exist in clients.id
 
--- CLI-005: Legacy vendor ID mapping is unique
+-- CLI-005: Legacy supplier ID mapping is unique
 supplierProfiles.legacyVendorId is unique when not null
 ```
 

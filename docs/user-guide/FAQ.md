@@ -77,7 +77,7 @@ Use the **Intake** process:
 
 1. Navigate to **Inventory → Intake**
 2. Click **"+ New Intake"**
-3. Enter vendor and items
+3. Enter supplier and items
 4. Complete quality check
 5. Finalize intake
 
@@ -154,10 +154,10 @@ Check the **Wishlist** tab on their profile. This shows products they've request
 2. Click **"Receive Payment"**
 3. Complete the form
 
-### How do I pay a vendor?
+### How do I pay a supplier?
 
-1. From Dashboard, click **"Pay Vendor"**
-2. Select vendor, enter amount
+1. From Dashboard, click **"Pay Supplier"**
+2. Select supplier, enter amount
 3. Choose payment type
 4. Optionally apply to specific bills
 5. Save

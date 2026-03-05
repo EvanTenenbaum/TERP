@@ -108,7 +108,7 @@ Batch 4: Build Config (4h)
 ├── BUILD-001: VITE_APP_TITLE
 ├── BUILD-002: Chunk splitting
 │   - Configure manualChunks in vite.config.ts
-│   - Split vendor chunks
+│   - Split supplier chunks
 └── BUILD-003: Lint script
     - Add "lint": "eslint client/src server"
     - Add "lint:fix": "eslint --fix"

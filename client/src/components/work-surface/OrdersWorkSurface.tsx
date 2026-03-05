@@ -156,7 +156,7 @@ const FULFILLMENT_STATUSES = [
   { value: "DELIVERED", label: "Delivered" },
   { value: "RETURNED", label: "Returned" },
   { value: "RESTOCKED", label: "Restocked" },
-  { value: "RETURNED_TO_VENDOR", label: "Returned to Vendor" },
+  { value: "RETURNED_TO_VENDOR", label: "Returned to Supplier" },
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
@@ -467,8 +467,8 @@ function OrderInspectorContent({
               <div className="pb-1">
                 <Badge variant="outline" className="text-xs">
                   {shippingEnabled
-                    ? "Shipping-enabled mode"
-                    : "Non-shipping mode"}
+                    ? "Fulfillment-enabled mode"
+                    : "Non-fulfillment mode"}
                 </Badge>
               </div>
 
@@ -568,7 +568,7 @@ function OrderInspectorContent({
                       onClick={() => onReturnToVendor(order.id)}
                     >
                       <Truck className="h-4 w-4 mr-2" />
-                      Return to Vendor
+                      Return to Supplier
                     </Button>
                   )}
                 </>
@@ -950,7 +950,7 @@ export function OrdersWorkSurface() {
   });
 
   const shipOrderMutation = trpc.orders.shipOrder.useMutation({
-    onMutate: () => setSaving("Shipping order..."),
+    onMutate: () => setSaving("Fulfilling order..."),
     onSuccess: result => {
       const shippedOrderId =
         typeof result?.orderId === "number" ? result.orderId : selectedOrderId;
@@ -1020,13 +1020,13 @@ export function OrdersWorkSurface() {
 
   const processVendorReturnMutation =
     trpc.orders.processVendorReturn.useMutation({
-      onMutate: () => setSaving("Processing vendor return..."),
+      onMutate: () => setSaving("Processing supplier return..."),
       onSuccess: () => {
         if (selectedOrderId) {
           patchConfirmedOrderStatus(selectedOrderId, "RETURNED_TO_VENDOR");
         }
         notifyStatusFilterExit(selectedOrder, "RETURNED_TO_VENDOR");
-        toast.success("Vendor return processed successfully");
+        toast.success("Supplier return processed successfully");
         setSaved();
         void refetchConfirmed();
         setShowVendorReturnDialog(false);
@@ -1035,7 +1035,7 @@ export function OrdersWorkSurface() {
       },
       onError: err => {
         if (!handleConflictError(err)) {
-          toast.error(err.message || "Failed to process vendor return");
+          toast.error(err.message || "Failed to process supplier return");
           setError(err.message);
         }
       },
@@ -1283,7 +1283,7 @@ export function OrdersWorkSurface() {
                 data-testid="new-order-button"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                New Sale
+                New Sales Order
               </Button>
             </div>
           </div>
@@ -1670,17 +1670,17 @@ export function OrdersWorkSurface() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Return to Vendor</DialogTitle>
+            <DialogTitle>Return to Supplier</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="mb-2">Select vendor:</p>
+              <p className="mb-2">Select supplier:</p>
               <Select
                 value={selectedVendorId}
                 onValueChange={value => setSelectedVendorId(value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select vendor" />
+                  <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
                   {(vendorReturnOptions?.items ?? []).map(vendor => (
@@ -1691,9 +1691,9 @@ export function OrdersWorkSurface() {
                 </SelectContent>
               </Select>
             </div>
-            <p>Please provide a reason for returning to the vendor:</p>
+            <p>Please provide a reason for returning to the supplier:</p>
             <Input
-              placeholder="Vendor return reason..."
+              placeholder="Supplier return reason..."
               value={returnReason}
               onChange={e => setReturnReason(e.target.value)}
             />
@@ -1732,7 +1732,7 @@ export function OrdersWorkSurface() {
             >
               {processVendorReturnMutation.isPending
                 ? "Processing..."
-                : "Return to Vendor"}
+                : "Return to Supplier"}
             </Button>
           </DialogFooter>
         </DialogContent>

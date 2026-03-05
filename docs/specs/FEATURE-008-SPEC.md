@@ -6,7 +6,7 @@
 **Module:** Core/UI  
 **Dependencies:** FEATURE-011 (Unified Catalogue)  
 **Spec Author:** Manus AI  
-**Spec Date:** 2025-12-30  
+**Spec Date:** 2025-12-30
 
 ---
 
@@ -24,16 +24,16 @@ As inventory grows, users need powerful filtering and search capabilities to qui
 
 ## 3. Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Multi-criteria filtering | Must Have |
-| FR-02 | Full-text search | Must Have |
-| FR-03 | Filter by date ranges | Must Have |
-| FR-04 | Filter by numeric ranges (price, quantity) | Must Have |
-| FR-05 | Save filter presets | Should Have |
-| FR-06 | Global search (cross-entity) | Should Have |
-| FR-07 | Recent searches | Nice to Have |
-| FR-08 | Search suggestions/autocomplete | Nice to Have |
+| ID    | Requirement                                | Priority     |
+| ----- | ------------------------------------------ | ------------ |
+| FR-01 | Multi-criteria filtering                   | Must Have    |
+| FR-02 | Full-text search                           | Must Have    |
+| FR-03 | Filter by date ranges                      | Must Have    |
+| FR-04 | Filter by numeric ranges (price, quantity) | Must Have    |
+| FR-05 | Save filter presets                        | Should Have  |
+| FR-06 | Global search (cross-entity)               | Should Have  |
+| FR-07 | Recent searches                            | Nice to Have |
+| FR-08 | Search suggestions/autocomplete            | Nice to Have |
 
 ## 4. Technical Specification
 
@@ -41,27 +41,36 @@ As inventory grows, users need powerful filtering and search capabilities to qui
 
 ```typescript
 interface FilterConfig {
-  entity: 'products' | 'batches' | 'orders' | 'customers' | 'vendors';
+  entity: "products" | "batches" | "orders" | "customers" | "suppliers";
   filters: FilterCriteria[];
-  sort: { field: string; direction: 'asc' | 'desc' };
+  sort: { field: string; direction: "asc" | "desc" };
   search?: string;
 }
 
 interface FilterCriteria {
   field: string;
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains' | 'between';
+  operator:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "in"
+    | "contains"
+    | "between";
   value: any;
 }
 
 // Example: Products with THC > 20%, Indica, in stock
 const filter: FilterConfig = {
-  entity: 'products',
+  entity: "products",
   filters: [
-    { field: 'thcPercent', operator: 'gt', value: 20 },
-    { field: 'strainType', operator: 'eq', value: 'INDICA' },
-    { field: 'totalQuantity', operator: 'gt', value: 0 }
+    { field: "thcPercent", operator: "gt", value: 20 },
+    { field: "strainType", operator: "eq", value: "INDICA" },
+    { field: "totalQuantity", operator: "gt", value: 0 },
   ],
-  sort: { field: 'name', direction: 'asc' }
+  sort: { field: "name", direction: "asc" },
 };
 ```
 
@@ -70,54 +79,86 @@ const filter: FilterConfig = {
 ```typescript
 // Generic filter endpoint
 search.filter = adminProcedure
-  .input(z.object({
-    entity: z.enum(['products', 'batches', 'orders', 'customers', 'vendors']),
-    filters: z.array(z.object({
-      field: z.string(),
-      operator: z.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'contains', 'between']),
-      value: z.any()
-    })),
-    sort: z.object({
-      field: z.string(),
-      direction: z.enum(['asc', 'desc'])
-    }).optional(),
-    search: z.string().optional(),
-    page: z.number().default(1),
-    pageSize: z.number().default(50)
-  }))
-  .output(z.object({
-    results: z.array(z.any()),
-    total: z.number(),
-    page: z.number()
-  }))
+  .input(
+    z.object({
+      entity: z.enum([
+        "products",
+        "batches",
+        "orders",
+        "customers",
+        "suppliers",
+      ]),
+      filters: z.array(
+        z.object({
+          field: z.string(),
+          operator: z.enum([
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "in",
+            "contains",
+            "between",
+          ]),
+          value: z.any(),
+        })
+      ),
+      sort: z
+        .object({
+          field: z.string(),
+          direction: z.enum(["asc", "desc"]),
+        })
+        .optional(),
+      search: z.string().optional(),
+      page: z.number().default(1),
+      pageSize: z.number().default(50),
+    })
+  )
+  .output(
+    z.object({
+      results: z.array(z.any()),
+      total: z.number(),
+      page: z.number(),
+    })
+  )
   .query(async ({ input }) => {});
 
 // Global search
 search.global = adminProcedure
-  .input(z.object({
-    query: z.string().min(2),
-    entities: z.array(z.string()).optional() // Limit to specific entities
-  }))
-  .output(z.object({
-    results: z.array(z.object({
-      entity: z.string(),
-      id: z.number(),
-      title: z.string(),
-      subtitle: z.string().nullable(),
-      url: z.string()
-    })),
-    total: z.number()
-  }))
+  .input(
+    z.object({
+      query: z.string().min(2),
+      entities: z.array(z.string()).optional(), // Limit to specific entities
+    })
+  )
+  .output(
+    z.object({
+      results: z.array(
+        z.object({
+          entity: z.string(),
+          id: z.number(),
+          title: z.string(),
+          subtitle: z.string().nullable(),
+          url: z.string(),
+        })
+      ),
+      total: z.number(),
+    })
+  )
   .query(async ({ input }) => {});
 
 // Save/load filter presets
 search.savePreset = adminProcedure
-  .input(z.object({
-    name: z.string(),
-    entity: z.string(),
-    filters: z.array(z.any()),
-    sort: z.any().optional()
-  }))
+  .input(
+    z.object({
+      name: z.string(),
+      entity: z.string(),
+      filters: z.array(z.any()),
+      sort: z.any().optional(),
+    })
+  )
   .output(z.object({ presetId: z.number() }))
   .mutation(async ({ input, ctx }) => {});
 ```
@@ -169,6 +210,7 @@ search.savePreset = adminProcedure
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

@@ -41,17 +41,21 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
       maximumFractionDigits: 0,
     })}`;
 
+  const unreadCount = inboxStats?.unread ?? 0;
+
   if (error) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Quick Cards</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            Today at a Glance
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <EmptyState
             variant="generic"
             size="sm"
-            title="Unable to load quick cards"
+            title="Unable to load daily snapshot"
             description="Transaction or inbox data could not be loaded"
           />
         </CardContent>
@@ -63,9 +67,11 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-2">
         <div>
-          <CardTitle className="text-lg font-semibold">Quick Cards</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            Today at a Glance
+          </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Today&apos;s sales and inbox signals for first-pass morning triage.
+            Sales, cash, and inbox signals for your morning review.
           </p>
         </div>
         <Button
@@ -92,13 +98,15 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
                 onClick={() => setLocation("/orders")}
               >
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Sales Today
+                  Sold Today
                 </p>
                 <p className="font-semibold font-mono text-base">
                   {formatCurrency(snapshot.today.sales)}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  Week: {formatCurrency(snapshot.thisWeek.sales)}
+                  {snapshot.today.sales > 0
+                    ? `${formatCurrency(snapshot.thisWeek.sales)} this week`
+                    : "No sales yet today"}
                 </p>
               </button>
               <button
@@ -106,13 +114,15 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
                 onClick={() => setLocation("/inventory")}
               >
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Units Sold
+                  Units Moved
                 </p>
                 <p className="font-semibold font-mono text-base">
                   {snapshot.today.unitsSold}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  Week: {snapshot.thisWeek.unitsSold}
+                  {snapshot.today.unitsSold > 0
+                    ? `${snapshot.thisWeek.unitsSold} this week`
+                    : "None shipped today"}
                 </p>
               </button>
               <button
@@ -120,54 +130,85 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
                 onClick={() => setLocation("/accounting/payments")}
               >
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Cash Collected
+                  Cash In Today
                 </p>
                 <p className="font-semibold font-mono text-base">
                   {formatCurrency(snapshot.today.cashCollected)}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  Week: {formatCurrency(snapshot.thisWeek.cashCollected)}
+                  {snapshot.today.cashCollected > 0
+                    ? `${formatCurrency(snapshot.thisWeek.cashCollected)} this week`
+                    : "No cash collected yet"}
                 </p>
               </button>
               <button
-                className="rounded border bg-muted/40 p-2 text-left hover:bg-muted/60 transition-colors"
+                className={`rounded border p-2 text-left hover:bg-muted/60 transition-colors ${
+                  unreadCount > 0
+                    ? "bg-amber-50 border-amber-200"
+                    : "bg-muted/40"
+                }`}
                 onClick={() => setLocation("/inbox")}
               >
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Inbox Items
+                  Inbox
                 </p>
                 <p className="font-semibold font-mono text-base">
-                  {inboxStats?.total ?? 0}
+                  {unreadCount} unread
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  {inboxStats?.unread ?? 0} unread
+                  {unreadCount > 0
+                    ? "Needs your attention"
+                    : `${inboxStats?.total ?? 0} total items`}
                 </p>
               </button>
             </div>
 
-            <div className="rounded border bg-card p-2">
-              <p className="text-xs font-semibold mb-1">Inbox Preview</p>
-              {inboxData?.items && inboxData.items.length > 0 ? (
-                <ol className="space-y-1 text-xs text-muted-foreground">
+            {/* Inbox preview */}
+            {inboxData?.items && inboxData.items.length > 0 && (
+              <div className="rounded border bg-card p-2">
+                <p className="text-xs font-semibold mb-1.5 text-muted-foreground uppercase tracking-wide">
+                  Next up in your inbox
+                </p>
+                <ol className="space-y-1.5 text-xs">
                   {inboxData.items.map((item, index) => (
-                    <li key={item.id} className="line-clamp-1">
-                      {index + 1}. {item.title}
+                    <li key={item.id} className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">
+                        {index + 1}.
+                      </span>
+                      <span className="line-clamp-1 text-foreground">
+                        {item.title}
+                      </span>
                     </li>
                   ))}
                 </ol>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  No pending inbox items
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 w-full text-xs h-7"
+                  onClick={() => setLocation("/inbox")}
+                >
+                  Go to Inbox <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            )}
+
+            {(!inboxData?.items || inboxData.items.length === 0) && (
+              <div className="rounded border bg-card p-3 text-center">
+                <p className="text-xs text-muted-foreground font-medium">
+                  Inbox is clear
                 </p>
-              )}
-            </div>
+                <p className="text-xs text-muted-foreground">
+                  Nothing waiting for your review.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <EmptyState
             variant="orders"
             size="sm"
             title="No transaction data"
-            description="Quick cards appear once orders and inbox activity exist"
+            description="Today's snapshot appears once orders are recorded"
           />
         )}
       </CardContent>

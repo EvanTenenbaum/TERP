@@ -39,7 +39,7 @@ Conducted comprehensive QA testing of all live TERP features against seeded data
 | - Sales by Client     | invoices, clients     | ✅ PASS | 25 clients with sales      | Top clients visible      |
 | **Inventory Page**    |                       |         |                            |                          |
 | - Batches             | batches               | ✅ PASS | 25 batches                 | All statuses represented |
-| - Lots                | lots                  | ✅ PASS | 30 lots                    | Linked to vendors        |
+| - Lots                | lots                  | ✅ PASS | 30 lots                    | Linked to suppliers      |
 | - Products            | products              | ✅ PASS | 100+ products              | Pre-existing data        |
 | - Movements           | inventoryMovements    | ✅ PASS | 50 movements               | All types covered        |
 | **Orders Page**       |                       |         |                            |                          |
@@ -88,7 +88,7 @@ Conducted comprehensive QA testing of all live TERP features against seeded data
 
 | Feature               | Data Requirements         | Status  | Records     | Notes                  |
 | --------------------- | ------------------------- | ------- | ----------- | ---------------------- |
-| **Vendors Page**      | vendors                   | ✅ PASS | 1 vendor    | Limited but functional |
+| **Suppliers Page**    | suppliers                 | ✅ PASS | 1 supplier  | Limited but functional |
 | **Matchmaking**       | client_needs              | ❌ FAIL | 0 needs     | **Feature won't work** |
 | **Todo Lists**        | todo_lists                | ✅ PASS | 100 lists   | Pre-existing data      |
 | **Locations**         | locations                 | ✅ PASS | 9 locations | Pre-existing data      |
@@ -222,7 +222,7 @@ INSERT INTO vip_portal_configurations (
 | Inbox            | 1        | 1      | 0      | 100%      |
 | Workflow         | 1        | 1      | 0      | 100%      |
 | Analytics        | 1        | 1      | 0      | 100%      |
-| Vendors          | 1        | 1      | 0      | 100%      |
+| Suppliers        | 1        | 1      | 0      | 100%      |
 | Matchmaking      | 1        | 0      | 1      | 0%        |
 | Todos            | 1        | 1      | 0      | 100%      |
 | Locations        | 1        | 1      | 0      | 100%      |
@@ -263,8 +263,8 @@ INSERT INTO vip_portal_configurations (
    - Create sample returns linked to orders
    - Estimated time: 1 hour
 
-8. **Expand Vendor Data** (DATA-014)
-   - Add more vendors (currently only 1)
+8. **Expand Supplier Data** (DATA-014)
+   - Add more suppliers (currently only 1)
    - Add purchase orders
    - Estimated time: 2 hours
 

@@ -253,7 +253,7 @@ function DraggablePipelineItemCard({
                 {!isDeleted && item.stage === "QUOTE" && (
                   <DropdownMenuItem onClick={() => onConvert(item)}>
                     <ArrowRight className="h-4 w-4 mr-2" />
-                    Convert to Sale
+                    Convert to Sales Order
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -453,7 +453,7 @@ function PipelineListRow({
                 Convert to{" "}
                 {VALID_TRANSITIONS[item.stage][0] === "QUOTE"
                   ? "Quote"
-                  : "Sale"}
+                  : "Sales Order"}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -1106,7 +1106,7 @@ export default function UnifiedSalesPortalPage() {
                   Expired Quote Warning
                 </span>
               ) : (
-                "Confirm Conversion to Sale"
+                "Confirm Conversion to Sales Order"
               )}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
@@ -1121,12 +1121,12 @@ export default function UnifiedSalesPortalPage() {
               ))}
 
               <p className="pt-2">
-                This will convert the quote to a sale order and:
+                This will convert the quote to a sales order and:
               </p>
               <ul className="list-disc list-inside text-sm space-y-1">
                 <li>Reduce inventory for all items</li>
                 <li>Create an audit log entry</li>
-                <li>Generate a sale order number</li>
+                <li>Generate a sales order number</li>
               </ul>
 
               {selectedItem && (

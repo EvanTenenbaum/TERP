@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
 import { StrainInput } from "@/components/inventory/StrainInput";
 import { useDebounce } from "@/hooks/useDebounce";
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel } from "@/lib/nomenclature";
 
 interface PurchaseModalProps {
   open: boolean;
@@ -335,14 +337,14 @@ export function PurchaseModal({
           <DialogTitle>New Product Intake</DialogTitle>
           <DialogDescription>
             Record a new product intake. You can add detailed location and other
-            information after receiving.
+            information after intake.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vendor Autocomplete */}
           <div className="space-y-2">
-            <Label htmlFor="vendor">Vendor *</Label>
+            <Label htmlFor="vendor">Supplier *</Label>
             <div className="relative">
               <Input
                 id="vendor"
@@ -353,7 +355,7 @@ export function PurchaseModal({
                   setShowVendorDropdown(true);
                 }}
                 onFocus={() => setShowVendorDropdown(true)}
-                placeholder="Start typing vendor name..."
+                placeholder="Start typing supplier name..."
                 required
               />
               {showVendorDropdown &&
@@ -380,7 +382,7 @@ export function PurchaseModal({
 
           {/* Brand Autocomplete */}
           <div className="space-y-2">
-            <Label htmlFor="brand">Brand *</Label>
+            <Label htmlFor="brand">{getBrandLabel(formData.category)} *</Label>
             <div className="relative">
               <Input
                 id="brand"

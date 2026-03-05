@@ -17,6 +17,7 @@ FEAT-010 adds the ability to set and use a default warehouse for inventory opera
 ### ✅ Completed Components
 
 #### 1. **Database Schema** (`/home/user/TERP/drizzle/schema.ts`)
+
 - **User Preferences Table** (lines 6556-6575):
   - `defaultWarehouseId` - User-specific default warehouse
   - `defaultLocationId` - User-specific default location
@@ -36,6 +37,7 @@ FEAT-010 adds the ability to set and use a default warehouse for inventory opera
 #### 2. **Backend API** (`/home/user/TERP/server/routers/organizationSettings.ts`)
 
 **User Preferences Router** (lines 137-243):
+
 - `userPreferences.get` - Get current user's preferences with defaults
 - `userPreferences.update` - Update user preferences (including default warehouse)
 - `userPreferences.setDefaultWarehouse` - Convenience method with validation
@@ -43,17 +45,20 @@ FEAT-010 adds the ability to set and use a default warehouse for inventory opera
   - Upserts user preference record (lines 223-241)
 
 **Team Settings Router** (lines 511-692):
+
 - `teamSettings.updateTeamSetting` - Set organization-wide defaults (lines 547-607)
 - `teamSettings.applyTeamSettingsToUser` - Apply team defaults to new users (lines 613-671)
 - Mapping: `team_default_warehouse_id` → `defaultWarehouseId` (lines 594, 637, 683)
 
 **Display Settings** (lines 705-748):
+
 - `getDisplaySettings` - Returns combined org + user preferences
 - Includes default warehouse fallbacks (lines 735)
 
 #### 3. **Frontend Settings UI** (`/home/user/TERP/client/src/components/settings/OrganizationSettings.tsx`)
 
 **User Preferences Component** (lines 220-351):
+
 - Location: Settings page, User Preferences card
 - Features:
   - Dropdown to select default warehouse (lines 251-273)
@@ -67,17 +72,23 @@ FEAT-010 adds the ability to set and use a default warehouse for inventory opera
 Created comprehensive helper functions for retrieving default warehouse:
 
 ```typescript
-export async function getDefaultWarehouse(userId: number): Promise<number | null>
-export async function getDefaultLocation(userId: number): Promise<number | null>
+export async function getDefaultWarehouse(
+  userId: number
+): Promise<number | null>;
+export async function getDefaultLocation(
+  userId: number
+): Promise<number | null>;
 ```
 
 **Hierarchy:**
+
 1. **User Preference** - Check `userPreferences.defaultWarehouseId`
 2. **Team/Org Default** - Check `organizationSettings.team_default_warehouse_id`
 3. **First Active Location** - Fallback to first available warehouse
 4. **null** - No default configured
 
 **Features:**
+
 - Validates warehouse is active and not soft-deleted
 - Handles JSON parsing errors gracefully
 - Comprehensive error logging
@@ -92,12 +103,14 @@ export async function getDefaultLocation(userId: number): Promise<number | null>
 The infrastructure exists for defaults to be applied in these areas:
 
 #### 1. **User Preferences Settings**
+
 - **File:** `/home/user/TERP/client/src/components/settings/OrganizationSettings.tsx`
 - **Status:** ✅ Fully implemented
 - Users can select default warehouse from dropdown
 - Changes saved immediately to database
 
 #### 2. **Display Settings API**
+
 - **File:** `/home/user/TERP/server/routers/organizationSettings.ts` (line 735)
 - **Status:** ✅ Returns default warehouse in display settings
 - Available to all components via `getDisplaySettings` query
@@ -109,11 +122,13 @@ The following areas could benefit from automatic default warehouse selection:
 #### A. **Inventory Intake Operations**
 
 **1. Intake Grid Component**
+
 - **File:** `/home/user/TERP/client/src/components/spreadsheet/IntakeGrid.tsx`
 - **Lines:** 39-55 (createEmptyRow function)
 - **Enhancement:** Pre-populate `locationId` with default warehouse
   ```typescript
-  const { data: preferences } = trpc.organizationSettings.userPreferences.get.useQuery();
+  const { data: preferences } =
+    trpc.organizationSettings.userPreferences.get.useQuery();
   const createEmptyRow = (): IntakeGridRow => ({
     // ... other fields
     locationId: preferences?.defaultWarehouseId || null,
@@ -125,21 +140,25 @@ The following areas could benefit from automatic default warehouse selection:
   ```
 
 **2. Purchase Modal**
+
 - **File:** `/home/user/TERP/client/src/components/inventory/PurchaseModal.tsx`
 - **Lines:** Around form initialization
 - **Enhancement:** Default location field to user's preference
 
 **3. Inventory Intake Service**
+
 - **File:** `/home/user/TERP/server/inventoryIntakeService.ts`
 - **Lines:** 56-62 (IntakeInput interface)
 - **Note:** Location is required input; defaults should be applied at UI/API level
 - **Usage:** Import `getDefaultWarehouse` from `../_core/defaultWarehouse`
 
-#### B. **Purchase Order Receiving**
+#### B. **Purchase Order Intake**
 
 **File:** `/home/user/TERP/server/routers/poReceiving.ts`
+
 - **Lines:** 26-49 (receive input schema)
-- **Enhancement:** Default receiving location if not specified
+- **Enhancement:** Default intake location if not specified
+
   ```typescript
   import { getDefaultWarehouse } from "../_core/defaultWarehouse";
 
@@ -150,18 +169,21 @@ The following areas could benefit from automatic default warehouse selection:
 #### C. **Warehouse Transfers**
 
 **File:** `/home/user/TERP/server/routers/warehouseTransfers.ts`
+
 - **Enhancement:** Default source location for transfers
 - Default destination based on user preference
 
 #### D. **Order Fulfillment**
 
 **File:** `/home/user/TERP/server/routers/orders.ts`
+
 - **Enhancement:** Default fulfillment location for picking/packing
 - Pre-select warehouse for inventory allocation
 
 #### E. **Inventory Filters**
 
 **File:** `/home/user/TERP/client/src/pages/Inventory.tsx`
+
 - **Enhancement:** Filter by default warehouse on page load
 - Save filter preference to user settings
 
@@ -173,7 +195,7 @@ The following areas could benefit from automatic default warehouse selection:
 
 ```typescript
 // Get user preferences (includes default warehouse)
-trpc.organizationSettings.userPreferences.get.useQuery()
+trpc.organizationSettings.userPreferences.get.useQuery();
 // Returns: { defaultWarehouseId: number | null, defaultLocationId: number | null, ... }
 
 // Update user preferences
@@ -181,28 +203,31 @@ trpc.organizationSettings.userPreferences.update.useMutation({
   defaultWarehouseId: number | null,
   defaultLocationId: number | null,
   // ... other preferences
-})
+});
 
 // Set default warehouse (convenience method)
 trpc.organizationSettings.userPreferences.setDefaultWarehouse.useMutation({
-  warehouseId: number | null
-})
+  warehouseId: number | null,
+});
 
 // Get display settings (includes defaults)
-trpc.organizationSettings.getDisplaySettings.useQuery()
+trpc.organizationSettings.getDisplaySettings.useQuery();
 
 // Team-level settings (admin only)
 trpc.organizationSettings.teamSettings.updateTeamSetting.useMutation({
   key: "team_default_warehouse_id",
   value: number,
-  syncToMembers: boolean
-})
+  syncToMembers: boolean,
+});
 ```
 
 ### Helper Functions
 
 ```typescript
-import { getDefaultWarehouse, getDefaultLocation } from "../_core/defaultWarehouse";
+import {
+  getDefaultWarehouse,
+  getDefaultLocation,
+} from "../_core/defaultWarehouse";
 
 // Get default warehouse for a user (with fallback hierarchy)
 const warehouseId = await getDefaultWarehouse(userId);
@@ -231,6 +256,7 @@ The system uses a **3-tier hierarchy** for default warehouse selection:
 ```
 
 **Validation:** All levels validate that the warehouse:
+
 - Exists in the database
 - Is active (`isActive = 1`)
 - Is not soft-deleted (`deletedAt IS NULL`)
@@ -240,6 +266,7 @@ The system uses a **3-tier hierarchy** for default warehouse selection:
 ## Database Tables
 
 ### `user_preferences`
+
 ```sql
 CREATE TABLE user_preferences (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -259,6 +286,7 @@ CREATE TABLE user_preferences (
 ```
 
 ### `organization_settings`
+
 ```sql
 CREATE TABLE organization_settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -278,6 +306,7 @@ VALUES ('team_default_warehouse_id', '1', 'TEAM');
 ```
 
 ### `locations`
+
 ```sql
 CREATE TABLE locations (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -298,49 +327,54 @@ CREATE TABLE locations (
 ## Testing Recommendations
 
 ### Unit Tests
+
 ```typescript
 // server/_core/__tests__/defaultWarehouse.test.ts
-describe('getDefaultWarehouse', () => {
-  it('should return user preference if set', async () => {
+describe("getDefaultWarehouse", () => {
+  it("should return user preference if set", async () => {
     // Test user-level preference
   });
 
-  it('should fall back to team default', async () => {
+  it("should fall back to team default", async () => {
     // Test organization-level default
   });
 
-  it('should fall back to first active location', async () => {
+  it("should fall back to first active location", async () => {
     // Test fallback logic
   });
 
-  it('should validate warehouse is active and not deleted', async () => {
+  it("should validate warehouse is active and not deleted", async () => {
     // Test validation logic
   });
 
-  it('should return null if no defaults available', async () => {
+  it("should return null if no defaults available", async () => {
     // Test no-default scenario
   });
 });
 ```
 
 ### Integration Tests
+
 ```typescript
 // server/routers/__tests__/organizationSettings.test.ts
-describe('User Preferences', () => {
-  it('should set and retrieve default warehouse', async () => {
+describe("User Preferences", () => {
+  it("should set and retrieve default warehouse", async () => {
     // Test full CRUD operations
   });
 
-  it('should validate warehouse exists', async () => {
+  it("should validate warehouse exists", async () => {
     // Test validation
   });
 });
 ```
 
 ### E2E Tests
+
 ```typescript
 // tests-e2e/critical-paths/default-warehouse.spec.ts
-test('User can set default warehouse and it applies to new batches', async ({ page }) => {
+test("User can set default warehouse and it applies to new batches", async ({
+  page,
+}) => {
   // 1. Navigate to settings
   // 2. Select default warehouse
   // 3. Create new batch
@@ -410,18 +444,21 @@ ALTER TABLE user_preferences
 ## Key Files Modified/Created
 
 ### Created
+
 - ✨ `/home/user/TERP/server/_core/defaultWarehouse.ts` - Helper utilities
 
 ### Existing (No changes needed)
+
 - `/home/user/TERP/drizzle/schema.ts` - Schema definitions (lines 782-796, 6556-6575, 6585-6604)
 - `/home/user/TERP/drizzle/0047_feat_009_015_implementation.sql` - Migration
 - `/home/user/TERP/server/routers/organizationSettings.ts` - API endpoints (lines 137-748)
 - `/home/user/TERP/client/src/components/settings/OrganizationSettings.tsx` - Settings UI (lines 220-351)
 
 ### Recommended for Enhancement
+
 - `/home/user/TERP/client/src/components/spreadsheet/IntakeGrid.tsx` - Apply defaults to new rows
 - `/home/user/TERP/client/src/components/inventory/PurchaseModal.tsx` - Apply defaults to form
-- `/home/user/TERP/server/routers/poReceiving.ts` - Apply defaults to PO receiving
+- `/home/user/TERP/server/routers/poReceiving.ts` - Apply defaults to PO intake
 - `/home/user/TERP/server/routers/warehouseTransfers.ts` - Apply defaults to transfers
 - `/home/user/TERP/server/routers/orders.ts` - Apply defaults to order fulfillment
 
@@ -449,9 +486,10 @@ ALTER TABLE user_preferences
 ✅ **Documentation** - Comprehensive implementation guide
 
 **Next Steps (Optional Enhancements):**
+
 - Apply defaults to Intake Grid component initialization
 - Apply defaults to Purchase Modal form
-- Apply defaults to PO Receiving operations
+- Apply defaults to PO Intake operations
 - Apply defaults to Warehouse Transfers
 - Apply defaults to Order Fulfillment
 - Add E2E tests for default warehouse workflows

@@ -17,7 +17,8 @@ Verify and close out incorrectly documented QA tasks, fix any navigation issues.
 Recent audit discovered that QA-001 through QA-004 (marked as "404 errors") are **actually implemented**. The routes and pages exist in the codebase. This agent will verify this, update documentation, and fix any real navigation issues.
 
 **IMPORTANT**: Routes already verified to exist:
-- `/vendors` → VendorsPage.tsx ✅
+
+- `/suppliers` → VendorsPage.tsx ✅
 - `/purchase-orders` → PurchaseOrdersPage.tsx ✅
 - `/todo` and `/todos` → TodoListsPage.tsx ✅
 - `/accounting` → AccountingDashboard.tsx ✅
@@ -29,7 +30,7 @@ Recent audit discovered that QA-001 through QA-004 (marked as "404 errors") are 
 ## Prompt
 
 ```
-You are working on the TERP cannabis ERP project. 
+You are working on the TERP cannabis ERP project.
 
 ## Setup
 gh repo clone EvanTenenbaum/TERP
@@ -44,7 +45,7 @@ Check these files exist in the codebase:
 
 1. Todo Lists:
    - client/src/pages/TodoListsPage.tsx
-   - client/src/pages/TodoListDetailPage.tsx  
+   - client/src/pages/TodoListDetailPage.tsx
    - server/routers/todoLists.ts
    - server/routers/todoTasks.ts
 
@@ -78,7 +79,7 @@ Check the sidebar navigation in:
 - client/src/components/DashboardLayout.tsx (main sidebar)
 
 Verify these routes work in client/src/App.tsx:
-- /vendors → VendorsPage (line ~156)
+- /suppliers → VendorsPage (line ~156)
 - /purchase-orders → PurchaseOrdersPage (line ~158)
 - /todo and /todos → TodoListsPage (lines ~175-177)
 
@@ -100,7 +101,7 @@ git commit -m "fix(qa): update QA backlog status - modules verified to exist
 
 - Mark QA-001 through QA-004 as complete (routes verified to exist)
 - Keep QA-005 open for data access investigation
-- All routes verified: /vendors, /purchase-orders, /todo, /accounting, /analytics"
+- All routes verified: /suppliers, /purchase-orders, /todo, /accounting, /analytics"
 
 git push origin fix/qa-backlog-cleanup
 gh pr create --title "fix(qa): update QA backlog - modules verified to exist" --body "## Summary
@@ -109,7 +110,7 @@ gh pr create --title "fix(qa): update QA backlog - modules verified to exist" --
 
 ## Verification Results
 - TodoListsPage.tsx: EXISTS
-- AccountingDashboard.tsx: EXISTS  
+- AccountingDashboard.tsx: EXISTS
 - CogsSettingsPage.tsx: EXISTS
 - AnalyticsPage.tsx: EXISTS
 - All routes configured in App.tsx
@@ -143,11 +144,11 @@ gh pr create --title "fix(qa): update QA backlog - modules verified to exist" --
 
 ## Files Modified
 
-| File | Change |
-|------|--------|
-| docs/roadmaps/QA_TASKS_BACKLOG.md | Update status of QA-001 through QA-004 |
-| client/src/components/DashboardLayout.tsx | Fix navigation (only if needed) |
-| client/src/App.tsx | Add missing routes (only if needed) |
+| File                                      | Change                                 |
+| ----------------------------------------- | -------------------------------------- |
+| docs/roadmaps/QA_TASKS_BACKLOG.md         | Update status of QA-001 through QA-004 |
+| client/src/components/DashboardLayout.tsx | Fix navigation (only if needed)        |
+| client/src/App.tsx                        | Add missing routes (only if needed)    |
 
 ---
 

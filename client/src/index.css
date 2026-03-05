@@ -222,6 +222,8 @@
     min-width: 0;
     gap: 0;
     border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    /* Accent left border that echoes the sidebar active-item indicator color */
+    border-left: 3px solid oklch(0.53 0.13 44 / 0.45);
     border-radius: 12px;
     background: color-mix(in oklab, var(--card) 96%, transparent);
     overflow: hidden;
@@ -250,6 +252,20 @@
     letter-spacing: 0.12em;
     font-weight: 600;
     color: color-mix(in oklab, var(--muted-foreground) 80%, transparent);
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Section name shown in the eyebrow when a nav group section is provided */
+  .linear-workspace-eyebrow-section {
+    color: oklch(0.53 0.13 44);
+    font-weight: 700;
+  }
+
+  .linear-workspace-eyebrow-sep {
+    opacity: 0.55;
+    margin: 0 0.1em;
   }
 
   .linear-workspace-title {

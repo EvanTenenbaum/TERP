@@ -112,12 +112,12 @@ For each completed task, perform the following verification:
 
 #### **P1 High Priority Tasks (12 tasks)**
 
-**QA-006: Fix Dashboard - Vendors Button 404**
+**QA-006: Fix Dashboard - Suppliers Button 404**
 
 - [ ] Navigate to dashboard
-- [ ] Click "Vendors" button
+- [ ] Click "Suppliers" button
 - [ ] Verify no 404 error
-- [ ] Confirm vendors page loads
+- [ ] Confirm suppliers page loads
 
 **QA-007: Fix Dashboard - Purchase Orders Button 404**
 

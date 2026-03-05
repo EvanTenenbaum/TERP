@@ -16,11 +16,19 @@ interface FilterChipsProps {
   onClearAll: () => void;
 }
 
-export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChipsProps) {
-  const chips: Array<{ label: string; key: keyof InventoryFilters; value?: string }> = [];
+export function FilterChips({
+  filters,
+  onRemoveFilter,
+  onClearAll,
+}: FilterChipsProps) {
+  const chips: Array<{
+    label: string;
+    key: keyof InventoryFilters;
+    value?: string;
+  }> = [];
 
   // Status filters
-  filters.status.forEach((status) => {
+  filters.status.forEach(status => {
     chips.push({
       label: `Status: ${status.replace(/_/g, " ")}`,
       key: "status",
@@ -45,9 +53,9 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
   }
 
   // Vendor filters
-  filters.vendor.forEach((vendor) => {
+  filters.vendor.forEach(vendor => {
     chips.push({
-      label: `Vendor: ${vendor}`,
+      label: `Supplier: ${vendor}`,
       key: "vendor",
       value: vendor,
     });
@@ -55,7 +63,7 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
 
   // Brand/Farmer filters - ENH-007: Dynamic label based on category
   const brandLabel = getBrandLabel(filters.category);
-  filters.brand.forEach((brand) => {
+  filters.brand.forEach(brand => {
     chips.push({
       label: `${brandLabel}: ${brand}`,
       key: "brand",
@@ -64,7 +72,7 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
   });
 
   // Grade filters
-  filters.grade.forEach((grade) => {
+  filters.grade.forEach(grade => {
     chips.push({
       label: `Grade: ${grade}`,
       key: "grade",
@@ -100,8 +108,10 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
 
   // COGS range filter
   if (filters.cogsRange.min !== null || filters.cogsRange.max !== null) {
-    const min = filters.cogsRange.min !== null ? `$${filters.cogsRange.min}` : "Min";
-    const max = filters.cogsRange.max !== null ? `$${filters.cogsRange.max}` : "Max";
+    const min =
+      filters.cogsRange.min !== null ? `$${filters.cogsRange.min}` : "Min";
+    const max =
+      filters.cogsRange.max !== null ? `$${filters.cogsRange.max}` : "Max";
     chips.push({
       label: `COGS: ${min} - ${max}`,
       key: "cogsRange",
@@ -109,7 +119,7 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
   }
 
   // Payment status filters
-  filters.paymentStatus.forEach((status) => {
+  filters.paymentStatus.forEach(status => {
     chips.push({
       label: `Payment: ${status}`,
       key: "paymentStatus",
@@ -121,10 +131,12 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-medium text-muted-foreground">Active Filters:</span>
-      {chips.map((chip) => (
+      <span className="text-sm font-medium text-muted-foreground">
+        Active Filters:
+      </span>
+      {chips.map(chip => (
         <Badge
-          key={`${chip.key}-${chip.value || 'no-value'}-${chip.label}`}
+          key={`${chip.key}-${chip.value || "no-value"}-${chip.label}`}
           variant="secondary"
           className="gap-1 pr-1"
         >
@@ -139,10 +151,14 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
           </Button>
         </Badge>
       ))}
-      <Button variant="ghost" size="sm" onClick={onClearAll} className="h-7 text-xs">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClearAll}
+        className="h-7 text-xs"
+      >
         Clear All
       </Button>
     </div>
   );
 }
-

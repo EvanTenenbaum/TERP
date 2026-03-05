@@ -69,7 +69,7 @@ The following test failures exist in the codebase but are **unrelated to the rec
 | `liveCatalogService.test.ts` | 7        | Function signature mismatch  |
 | `calendarFinancials.test.ts` | 8        | Mock setup issues            |
 | `clients.test.ts`            | 6        | Pagination mock issues       |
-| `inventory.test.ts`          | 5        | Vendor/brand lookup mocks    |
+| `inventory.test.ts`          | 5        | Supplier/brand lookup mocks  |
 | `analytics.test.ts`          | 3        | Service error handling mocks |
 | `orders.test.ts`             | 3        | Filter mock setup            |
 
@@ -226,7 +226,7 @@ CREATE TABLE notifications (
 
 - Missing env variables: `VITE_APP_LOGO`, `VITE_APP_TITLE`
 - Large chunk sizes (consider code splitting):
-  - `vendor-Bz6Y_amq.js`: 1,236 KB
+  - `supplier-Bz6Y_amq.js`: 1,236 KB
   - `index-D1D4hAIx.js`: 1,003 KB
 
 ---
@@ -296,7 +296,7 @@ Positive:
 ### Medium Priority
 
 5. **Code Splitting**
-   - Implement dynamic imports for large vendor chunks
+   - Implement dynamic imports for large supplier chunks
    - Consider lazy loading for calendar and forms
 
 6. **Cleanup Unused Variables**

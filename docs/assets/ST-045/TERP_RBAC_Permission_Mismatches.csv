@@ -15,7 +15,7 @@ Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,
 Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Get APAging,accounting.getAPAging,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
-Accounting,accounting,Get APSummary,accounting.getAPSummary,accounting:read,server/routers/accounting.ts,Get comprehensive AP summary by vendor,API-only / Unreferenced in client,
+Accounting,accounting,Get APSummary,accounting.getAPSummary,accounting:read,server/routers/accounting.ts,Get comprehensive AP summary by supplier,API-only / Unreferenced in client,
 Accounting,accounting,Get ARAging,accounting.getARAging,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Get ARSummary,accounting.getARSummary,accounting:read,server/routers/accounting.ts,Get comprehensive AR summary with aging and top debtors,API-only / Unreferenced in client,
 Accounting,accounting,Get Balance,accounting.getBalance,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
@@ -43,7 +43,7 @@ Accounting,accounting,Get Overdue Bills,accounting.getOverdueBills,accounting:re
 Accounting,accounting,Get Overdue Invoices,accounting.getOverdueInvoices,accounting:read,server/routers/accounting.ts,Get overdue invoices list,API-only / Unreferenced in client,
 Accounting,accounting,Get Pending Reimbursements,accounting.getPendingReimbursements,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Get Recent Clients,accounting.getRecentClients,accounting:read,server/routers/accounting.ts,Get recent clients for quick selection,API-only / Unreferenced in client,
-Accounting,accounting,Get Recent Vendors,accounting.getRecentVendors,accounting:read,server/routers/accounting.ts,Get recent vendors for quick selection,API-only / Unreferenced in client,
+Accounting,accounting,Get Recent Suppliers,accounting.getRecentVendors,accounting:read,server/routers/accounting.ts,Get recent suppliers for quick selection,API-only / Unreferenced in client,
 Accounting,accounting,Get Total Cash Balance,accounting.getTotalCashBalance,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Get Total Expenses,accounting.getTotalExpenses,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Get Trial Balance,accounting.getTrialBalance,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
@@ -60,7 +60,7 @@ Accounting,accounting,List,accounting.list,accounting:read,server/routers/accoun
 Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Lock,accounting.lock,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Mark Reimbursed,accounting.markReimbursed,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
-Accounting,accounting,Pay Vendor,accounting.payVendor,accounting:create,server/routers/accounting.ts,WS-002: Pay vendor (cash out),API-only / Unreferenced in client,
+Accounting,accounting,Pay Supplier,accounting.payVendor,accounting:create,server/routers/accounting.ts,WS-002: Pay supplier (cash out),API-only / Unreferenced in client,
 Accounting,accounting,Post Journal Entry,accounting.postJournalEntry,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
 Accounting,accounting,Preview Payment Balance,accounting.previewPaymentBalance,accounting:read,server/routers/accounting.ts,WS-001: Preview client balance before payment,API-only / Unreferenced in client,
 Accounting,accounting,Receive Client Payment,accounting.receiveClientPayment,accounting:create,server/routers/accounting.ts,WS-001: Receive client payment (cash drop-off),API-only / Unreferenced in client,
@@ -145,10 +145,10 @@ Admin/Settings,userManagement,Delete User,userManagement.deleteUser,users:manage
 Admin/Settings,userManagement,Reset Password,userManagement.resetPassword,users:manage,server/routers/userManagement.ts,Reset user password - requires authentication and users:manage permission,Client-wired,client/src/components/UserManagement.tsx
 Inventory,samples,Approve Return,samples.approveReturn,samples:approve,server/routers/samples.ts,Approve a sample return,Client-wired,client/src/pages/SampleManagement.tsx
 Inventory,samples,Complete Return,samples.completeReturn,samples:return,server/routers/samples.ts,Complete a sample return,Client-wired,client/src/pages/SampleManagement.tsx
-Inventory,samples,Confirm Vendor Return,samples.confirmVendorReturn,samples:vendorReturn,server/routers/samples.ts,Confirm vendor received the sample,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Confirm Supplier Return,samples.confirmVendorReturn,samples:vendorReturn,server/routers/samples.ts,Confirm supplier received the sample,Client-wired,client/src/pages/SampleManagement.tsx
 Inventory,samples,Request Return,samples.requestReturn,samples:return,server/routers/samples.ts,Request a sample return,Client-wired,client/src/pages/SampleManagement.tsx
-Inventory,samples,Request Vendor Return,samples.requestVendorReturn,samples:vendorReturn,server/routers/samples.ts,Request a vendor return,Client-wired,client/src/pages/SampleManagement.tsx
-Inventory,samples,Ship To Vendor,samples.shipToVendor,samples:vendorReturn,server/routers/samples.ts,Ship sample to vendor,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Request Supplier Return,samples.requestVendorReturn,samples:vendorReturn,server/routers/samples.ts,Request a supplier return,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Ship To Supplier,samples.shipToVendor,samples:vendorReturn,server/routers/samples.ts,Ship sample to supplier,Client-wired,client/src/pages/SampleManagement.tsx
 Other,badDebt,Get Aging Report,badDebt.getAgingReport,accounting:manage,server/routers/badDebt.ts,Get bad debt aging report,API-only / Unreferenced in client,
 Other,badDebt,Get By Client,badDebt.getByClient,accounting:manage,server/routers/badDebt.ts,Bad Debt Router API endpoints for bad debt write-off management,API-only / Unreferenced in client,
 Other,badDebt,Get Client Total,badDebt.getClientTotal,accounting:manage,server/routers/badDebt.ts,Bad Debt Router API endpoints for bad debt write-off management,API-only / Unreferenced in client,

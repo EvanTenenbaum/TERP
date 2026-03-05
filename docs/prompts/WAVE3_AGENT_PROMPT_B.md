@@ -35,14 +35,14 @@ git checkout -b feature/spreadsheet-editing-grouping
 
 ## 2. Your Tasks (44h total)
 
-| Task ID     | Title                                         | Est. Hours |
-| ----------- | --------------------------------------------- | ---------- |
-| TERP-SS-008 | Configure Inventory Grid Date/Vendor Grouping | 16h        |
-| TERP-SS-009 | Add Editing Capabilities to Inventory Grid    | 28h        |
+| Task ID     | Title                                           | Est. Hours |
+| ----------- | ----------------------------------------------- | ---------- |
+| TERP-SS-008 | Configure Inventory Grid Date/Supplier Grouping | 16h        |
+| TERP-SS-009 | Add Editing Capabilities to Inventory Grid      | 28h        |
 
-### Task 1: TERP-SS-008 - Configure Inventory Grid Date/Vendor Grouping
+### Task 1: TERP-SS-008 - Configure Inventory Grid Date/Supplier Grouping
 
-**Problem:** The inventory grid is a flat list, but users need to see it grouped by date and vendor.
+**Problem:** The inventory grid is a flat list, but users need to see it grouped by date and supplier.
 
 **Requirements:**
 
@@ -93,7 +93,7 @@ git checkout -b feature/spreadsheet-editing-grouping
 
 **Tasks to Verify:**
 
-- [ ] **TERP-SS-008:** Verify inventory grid grouping by date and vendor.
+- [ ] **TERP-SS-008:** Verify inventory grid grouping by date and supplier.
 - [ ] **TERP-SS-009:** Verify editing capabilities for Available, Ticket, and Notes columns.
 
 **Instructions:**

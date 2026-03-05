@@ -573,7 +573,7 @@ export function PickPackWorkSurface() {
     "orders:update",
   ]);
   const readyCtaLabel = shippingEnabled
-    ? "Mark Ready for Shipping (R)"
+    ? "Mark Ready for Fulfillment (R)"
     : "Mark Ready for Payment (R)";
 
   // State

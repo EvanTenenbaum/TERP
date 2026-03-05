@@ -6,7 +6,7 @@
 **Module:** System Core  
 **Dependencies:** None  
 **Spec Author:** Manus AI  
-**Spec Date:** 2025-12-30  
+**Spec Date:** 2025-12-30
 
 ---
 
@@ -30,42 +30,42 @@ Key principle: **"No black boxes"** - every number must be explainable.
 
 ### 3.1 Core Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | "Audit" button/icon next to all calculated fields | Must Have |
-| FR-02 | Audit modal shows source data and calculation breakdown | Must Have |
-| FR-03 | Audit trail for client tab balance | Must Have |
-| FR-04 | Audit trail for inventory quantities | Must Have |
-| FR-05 | Audit trail for order totals | Must Have |
-| FR-06 | Audit trail for vendor balances | Must Have |
-| FR-07 | Timestamps and user attribution for all source data | Must Have |
-| FR-08 | Export audit data to CSV/PDF | Should Have |
-| FR-09 | Filter audit data by date range | Should Have |
-| FR-10 | Link to source records from audit view | Nice to Have |
+| ID    | Requirement                                             | Priority     |
+| ----- | ------------------------------------------------------- | ------------ |
+| FR-01 | "Audit" button/icon next to all calculated fields       | Must Have    |
+| FR-02 | Audit modal shows source data and calculation breakdown | Must Have    |
+| FR-03 | Audit trail for client tab balance                      | Must Have    |
+| FR-04 | Audit trail for inventory quantities                    | Must Have    |
+| FR-05 | Audit trail for order totals                            | Must Have    |
+| FR-06 | Audit trail for supplier balances                       | Must Have    |
+| FR-07 | Timestamps and user attribution for all source data     | Must Have    |
+| FR-08 | Export audit data to CSV/PDF                            | Should Have  |
+| FR-09 | Filter audit data by date range                         | Should Have  |
+| FR-10 | Link to source records from audit view                  | Nice to Have |
 
 ### 3.2 Calculated Fields Requiring Audit Trail
 
-| Module | Field | Calculation Logic |
-|--------|-------|-------------------|
-| Client Profile | Tab Balance | Sum(orders) - Sum(payments) + Sum(credits) - Sum(refunds) |
-| Client Profile | Credit Limit Used | Sum(unpaid_orders) |
-| Vendor Profile | Amount Owed | Sum(bills) - Sum(payments) |
-| Inventory | Quantity on Hand | Sum(intake) - Sum(sold) - Sum(adjustments) + Sum(returns) |
-| Inventory | Reserved Quantity | Sum(pending_orders) |
-| Order | Order Total | Sum(line_items) - Sum(discounts) + Sum(taxes) |
-| Order | Amount Paid | Sum(payments) |
-| Order | Balance Due | Order Total - Amount Paid |
-| Accounting | Account Balance | Sum(debits) - Sum(credits) |
+| Module           | Field             | Calculation Logic                                         |
+| ---------------- | ----------------- | --------------------------------------------------------- |
+| Client Profile   | Tab Balance       | Sum(orders) - Sum(payments) + Sum(credits) - Sum(refunds) |
+| Client Profile   | Credit Limit Used | Sum(unpaid_orders)                                        |
+| Supplier Profile | Amount Owed       | Sum(bills) - Sum(payments)                                |
+| Inventory        | Quantity on Hand  | Sum(intake) - Sum(sold) - Sum(adjustments) + Sum(returns) |
+| Inventory        | Reserved Quantity | Sum(pending_orders)                                       |
+| Order            | Order Total       | Sum(line_items) - Sum(discounts) + Sum(taxes)             |
+| Order            | Amount Paid       | Sum(payments)                                             |
+| Order            | Balance Due       | Order Total - Amount Paid                                 |
+| Accounting       | Account Balance   | Sum(debits) - Sum(credits)                                |
 
 ### 3.3 Business Rules
 
-| ID | Rule | Example |
-|----|------|---------|
-| BR-01 | Audit data must be read-only | Cannot modify from audit view |
-| BR-02 | All source records must have created_by and created_at | Attribution requirement |
-| BR-03 | Audit queries must not block main operations | Performance requirement |
-| BR-04 | Audit data retained indefinitely | No automatic purging |
-| BR-05 | Audit access follows existing permissions | Users see only what they can access |
+| ID    | Rule                                                   | Example                             |
+| ----- | ------------------------------------------------------ | ----------------------------------- |
+| BR-01 | Audit data must be read-only                           | Cannot modify from audit view       |
+| BR-02 | All source records must have created_by and created_at | Attribution requirement             |
+| BR-03 | Audit queries must not block main operations           | Performance requirement             |
+| BR-04 | Audit data retained indefinitely                       | No automatic purging                |
+| BR-05 | Audit access follows existing permissions              | Users see only what they can access |
 
 ## 4. Technical Specification
 
@@ -99,54 +99,68 @@ CREATE TABLE audit_log (
 ```typescript
 // Generic audit endpoint for any calculated field
 audit.getCalculationBreakdown = adminProcedure
-  .input(z.object({
-    entityType: z.enum(['CLIENT', 'VENDOR', 'INVENTORY', 'ORDER', 'ACCOUNT']),
-    entityId: z.number(),
-    fieldName: z.string(), // e.g., 'tabBalance', 'quantityOnHand'
-    dateFrom: z.date().optional(),
-    dateTo: z.date().optional()
-  }))
-  .output(z.object({
-    currentValue: z.number(),
-    calculationFormula: z.string(), // Human-readable formula
-    components: z.array(z.object({
-      type: z.string(), // e.g., 'ORDER', 'PAYMENT', 'ADJUSTMENT'
-      description: z.string(),
-      amount: z.number(),
-      date: z.date(),
-      createdBy: z.string(),
-      sourceId: z.number(),
-      sourceType: z.string()
-    })),
-    runningTotal: z.array(z.object({
-      date: z.date(),
-      balance: z.number()
-    }))
-  }))
+  .input(
+    z.object({
+      entityType: z.enum(["CLIENT", "VENDOR", "INVENTORY", "ORDER", "ACCOUNT"]),
+      entityId: z.number(),
+      fieldName: z.string(), // e.g., 'tabBalance', 'quantityOnHand'
+      dateFrom: z.date().optional(),
+      dateTo: z.date().optional(),
+    })
+  )
+  .output(
+    z.object({
+      currentValue: z.number(),
+      calculationFormula: z.string(), // Human-readable formula
+      components: z.array(
+        z.object({
+          type: z.string(), // e.g., 'ORDER', 'PAYMENT', 'ADJUSTMENT'
+          description: z.string(),
+          amount: z.number(),
+          date: z.date(),
+          createdBy: z.string(),
+          sourceId: z.number(),
+          sourceType: z.string(),
+        })
+      ),
+      runningTotal: z.array(
+        z.object({
+          date: z.date(),
+          balance: z.number(),
+        })
+      ),
+    })
+  )
   .query(async ({ input }) => {
     // Fetch and calculate breakdown based on entityType and fieldName
   });
 
 // Client tab balance audit
 audit.getClientTabBreakdown = adminProcedure
-  .input(z.object({
-    clientId: z.number(),
-    dateFrom: z.date().optional(),
-    dateTo: z.date().optional()
-  }))
-  .output(z.object({
-    currentBalance: z.number(),
-    transactions: z.array(z.object({
-      id: z.number(),
-      type: z.enum(['ORDER', 'PAYMENT', 'CREDIT', 'REFUND', 'ADJUSTMENT']),
-      description: z.string(),
-      amount: z.number(),
-      runningBalance: z.number(),
-      date: z.date(),
-      createdBy: z.string(),
-      reference: z.string() // Order number, payment ID, etc.
-    }))
-  }))
+  .input(
+    z.object({
+      clientId: z.number(),
+      dateFrom: z.date().optional(),
+      dateTo: z.date().optional(),
+    })
+  )
+  .output(
+    z.object({
+      currentBalance: z.number(),
+      transactions: z.array(
+        z.object({
+          id: z.number(),
+          type: z.enum(["ORDER", "PAYMENT", "CREDIT", "REFUND", "ADJUSTMENT"]),
+          description: z.string(),
+          amount: z.number(),
+          runningBalance: z.number(),
+          date: z.date(),
+          createdBy: z.string(),
+          reference: z.string(), // Order number, payment ID, etc.
+        })
+      ),
+    })
+  )
   .query(async ({ input }) => {
     // 1. Get all orders for client
     // 2. Get all payments for client
@@ -157,26 +171,39 @@ audit.getClientTabBreakdown = adminProcedure
 
 // Inventory quantity audit
 audit.getInventoryBreakdown = adminProcedure
-  .input(z.object({
-    batchId: z.number(),
-    dateFrom: z.date().optional(),
-    dateTo: z.date().optional()
-  }))
-  .output(z.object({
-    currentQuantity: z.number(),
-    reservedQuantity: z.number(),
-    availableQuantity: z.number(),
-    movements: z.array(z.object({
-      id: z.number(),
-      type: z.enum(['INTAKE', 'SALE', 'ADJUSTMENT', 'TRANSFER', 'RETURN', 'SHRINKAGE']),
-      description: z.string(),
-      quantity: z.number(), // Positive or negative
-      runningTotal: z.number(),
-      date: z.date(),
-      createdBy: z.string(),
-      reference: z.string()
-    }))
-  }))
+  .input(
+    z.object({
+      batchId: z.number(),
+      dateFrom: z.date().optional(),
+      dateTo: z.date().optional(),
+    })
+  )
+  .output(
+    z.object({
+      currentQuantity: z.number(),
+      reservedQuantity: z.number(),
+      availableQuantity: z.number(),
+      movements: z.array(
+        z.object({
+          id: z.number(),
+          type: z.enum([
+            "INTAKE",
+            "SALE",
+            "ADJUSTMENT",
+            "TRANSFER",
+            "RETURN",
+            "SHRINKAGE",
+          ]),
+          description: z.string(),
+          quantity: z.number(), // Positive or negative
+          runningTotal: z.number(),
+          date: z.date(),
+          createdBy: z.string(),
+          reference: z.string(),
+        })
+      ),
+    })
+  )
   .query(async ({ input }) => {
     // Fetch all inventory movements for batch
   });
@@ -184,33 +211,43 @@ audit.getInventoryBreakdown = adminProcedure
 // Order total audit
 audit.getOrderBreakdown = adminProcedure
   .input(z.object({ orderId: z.number() }))
-  .output(z.object({
-    orderTotal: z.number(),
-    amountPaid: z.number(),
-    balanceDue: z.number(),
-    lineItems: z.array(z.object({
-      productName: z.string(),
-      quantity: z.number(),
-      unitPrice: z.number(),
-      lineTotal: z.number(),
-      discounts: z.array(z.object({
-        type: z.string(),
-        amount: z.number()
-      }))
-    })),
-    payments: z.array(z.object({
-      id: z.number(),
-      type: z.string(),
-      amount: z.number(),
-      date: z.date(),
-      createdBy: z.string()
-    })),
-    discounts: z.array(z.object({
-      type: z.string(),
-      description: z.string(),
-      amount: z.number()
-    }))
-  }))
+  .output(
+    z.object({
+      orderTotal: z.number(),
+      amountPaid: z.number(),
+      balanceDue: z.number(),
+      lineItems: z.array(
+        z.object({
+          productName: z.string(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+          lineTotal: z.number(),
+          discounts: z.array(
+            z.object({
+              type: z.string(),
+              amount: z.number(),
+            })
+          ),
+        })
+      ),
+      payments: z.array(
+        z.object({
+          id: z.number(),
+          type: z.string(),
+          amount: z.number(),
+          date: z.date(),
+          createdBy: z.string(),
+        })
+      ),
+      discounts: z.array(
+        z.object({
+          type: z.string(),
+          description: z.string(),
+          amount: z.number(),
+        })
+      ),
+    })
+  )
   .query(async ({ input }) => {
     // Fetch order with all components
   });
@@ -218,11 +255,11 @@ audit.getOrderBreakdown = adminProcedure
 
 ### 4.3 Integration Points
 
-| System | Integration Type | Description |
-|--------|-----------------|-------------|
-| All Modules | Read | Fetch source data for calculations |
-| Users | Read | Get user names for attribution |
-| Export | Write | Generate CSV/PDF exports |
+| System      | Integration Type | Description                        |
+| ----------- | ---------------- | ---------------------------------- |
+| All Modules | Read             | Fetch source data for calculations |
+| Users       | Read             | Get user names for attribution     |
+| Export      | Write            | Generate CSV/PDF exports           |
 
 ### 4.4 Performance Considerations
 
@@ -232,14 +269,15 @@ const auditCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute
 
 // Pagination for large audit trails
-audit.getClientTabBreakdown = adminProcedure
-  .input(z.object({
+audit.getClientTabBreakdown = adminProcedure.input(
+  z.object({
     clientId: z.number(),
     page: z.number().default(1),
     pageSize: z.number().default(50),
     // ...
-  }))
-  // ...
+  })
+);
+// ...
 
 // Index recommendations
 // - orders: INDEX (client_id, created_at)
@@ -349,14 +387,14 @@ audit.getClientTabBreakdown = adminProcedure
 
 ## 6. Edge Cases & Error Handling
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| No transactions for entity | Show "No transactions found" message |
-| Very large audit trail (10K+ records) | Paginate, show loading indicator |
-| Source record deleted | Show "[Deleted]" with original data if available |
-| User lacks permission to view source | Show transaction but hide "View" link |
-| Calculation mismatch detected | Show warning: "Calculated value differs from stored value" |
-| Network error loading audit | Show retry button, preserve any loaded data |
+| Scenario                              | Expected Behavior                                          |
+| ------------------------------------- | ---------------------------------------------------------- |
+| No transactions for entity            | Show "No transactions found" message                       |
+| Very large audit trail (10K+ records) | Paginate, show loading indicator                           |
+| Source record deleted                 | Show "[Deleted]" with original data if available           |
+| User lacks permission to view source  | Show transaction but hide "View" link                      |
+| Calculation mismatch detected         | Show warning: "Calculated value differs from stored value" |
+| Network error loading audit           | Show retry button, preserve any loaded data                |
 
 ## 7. Testing Requirements
 
@@ -409,12 +447,12 @@ UPDATE inventory_movements SET created_by = 1 WHERE created_by IS NULL;
 
 ## 9. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Audit usage | Track adoption | Count audit modal opens |
-| Support tickets re: "wrong numbers" | 50% reduction | Ticket categorization |
-| Time to resolve discrepancies | 75% reduction | Support ticket resolution time |
-| User trust (qualitative) | Improved | User feedback |
+| Metric                              | Target         | Measurement Method             |
+| ----------------------------------- | -------------- | ------------------------------ |
+| Audit usage                         | Track adoption | Count audit modal opens        |
+| Support tickets re: "wrong numbers" | 50% reduction  | Ticket categorization          |
+| Time to resolve discrepancies       | 75% reduction  | Support ticket resolution time |
+| User trust (qualitative)            | Improved       | User feedback                  |
 
 ## 10. Open Questions
 
@@ -426,6 +464,7 @@ UPDATE inventory_movements SET created_by = 1 WHERE created_by IS NULL;
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

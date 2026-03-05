@@ -428,7 +428,7 @@ export default function EventFormDialog({
                   <SelectItem value="INVENTORY">Inventory</SelectItem>
                   <SelectItem value="ACCOUNTING">Accounting</SelectItem>
                   <SelectItem value="CLIENTS">Clients</SelectItem>
-                  <SelectItem value="VENDORS">Vendors</SelectItem>
+                  <SelectItem value="VENDORS">Suppliers</SelectItem>
                   <SelectItem value="ORDERS">Orders</SelectItem>
                   <SelectItem value="SAMPLES">Samples</SelectItem>
                   <SelectItem value="COMPLIANCE">Compliance</SelectItem>

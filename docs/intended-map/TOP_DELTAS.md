@@ -9,6 +9,7 @@
 ## P0 Critical Blockers (Fix Immediately)
 
 ### DELTA-001: GF-001 Form Fields Not Rendering
+
 **Type:** IntendedMissing
 **Flow:** GF-001 Direct Intake
 **Impact:** Users cannot add inventory via direct intake; flow completely blocked
@@ -19,6 +20,7 @@
 **Owner:** TBD
 
 ### DELTA-002: GF-003 SQL Error on Inventory Load
+
 **Type:** IntendedMissing
 **Flow:** GF-003 Order-to-Cash
 **Impact:** Users cannot create orders with inventory; also blocks GF-005 Pick & Pack
@@ -29,6 +31,7 @@
 **Owner:** TBD
 
 ### DELTA-003: GF-007 Shows 0 Batches
+
 **Type:** IntendedMissing
 **Flow:** GF-007 Inventory Management
 **Impact:** Inventory page displays no data despite batches existing
@@ -42,16 +45,18 @@
 
 ## P1 Major Gaps (Next Sprint)
 
-### DELTA-004: PO Receiving UI Missing
+### DELTA-004: PO Intake UI Missing
+
 **Type:** IntendedMissing
 **Flow:** GF-002 Procure-to-Pay
 **Impact:** Users cannot receive goods against PO via UI (API-only)
 **Intent Source:** `docs/golden-flows/specs/GF-002-PROCURE-TO-PAY.md:Implementation Status`
-**Remediation:** Build receiving screen component, wire to `purchaseOrders.receive` API
+**Remediation:** Build intake screen component, wire to `purchaseOrders.receive` API
 **Effort:** 16-24h
 **Owner:** TBD
 
 ### DELTA-005: Sample Fulfill UI Missing
+
 **Type:** IntendedMissing
 **Flow:** GF-008 Sample Request
 **Impact:** Users cannot fulfill sample requests via UI
@@ -61,6 +66,7 @@
 **Owner:** TBD
 
 ### DELTA-006: Intake Verification (FEAT-008) Incomplete
+
 **Type:** IntendedMissing
 **Flow:** GF-001 Direct Intake
 **Impact:** No two-step verification workflow for intake accuracy
@@ -74,6 +80,7 @@
 ## P2 Medium Issues (This Quarter)
 
 ### DELTA-007: PDF Generation Timeout
+
 **Type:** Divergent
 **Flow:** GF-004 Invoice & Payment
 **Impact:** Large invoices occasionally fail to generate PDF
@@ -83,6 +90,7 @@
 **Owner:** TBD
 
 ### DELTA-008: Client Balance Inconsistencies
+
 **Type:** Divergent
 **Flow:** GF-006 Client Ledger
 **Impact:** Some client totalOwed values don't match sum of invoices
@@ -92,6 +100,7 @@
 **Owner:** TBD
 
 ### DELTA-009: Order Cancel After Invoice
+
 **Type:** Divergent
 **Flow:** GF-003 Order-to-Cash
 **Impact:** Orders can be cancelled after invoicing (spec says before ship only)
@@ -104,12 +113,12 @@
 
 ## Summary Metrics
 
-| Severity | Count | Combined Effort |
-|----------|-------|-----------------|
-| P0 | 3 | 12-24h |
-| P1 | 3 | 48-72h |
-| P2 | 3 | 14h |
-| **Total** | **9** | **74-110h** |
+| Severity  | Count | Combined Effort |
+| --------- | ----- | --------------- |
+| P0        | 3     | 12-24h          |
+| P1        | 3     | 48-72h          |
+| P2        | 3     | 14h             |
+| **Total** | **9** | **74-110h**     |
 
 ---
 
@@ -132,6 +141,7 @@
 ## Verification Checklist
 
 After remediation, verify:
+
 - [ ] All 8 Golden Flows execute end-to-end
 - [ ] No INV-XXX invariant violations
 - [ ] RBAC permissions enforced correctly

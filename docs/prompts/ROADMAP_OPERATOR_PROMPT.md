@@ -663,7 +663,7 @@ When reviewing code, reject PRs containing:
 | `input.createdBy`     | Security risk        | Get actor from `ctx.user.id`       |
 | `: any`               | Type safety          | Use proper types or `unknown`      |
 | `db.delete(...)`      | Data loss            | Use soft delete with `deletedAt`   |
-| `vendors` table       | Deprecated           | Use `clients` with `isSeller=true` |
+| `suppliers` table     | Deprecated           | Use `clients` with `isSeller=true` |
 
 **If found → Request changes, cite the pattern.**
 

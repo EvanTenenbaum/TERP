@@ -48,14 +48,16 @@ This document describes the soft delete implementation for the TERP system. Soft
 The following routers still need to be updated to use soft delete:
 
 #### High Priority (Financial & Core Data)
+
 - [ ] `server/routers/clients.ts` - Client management
 - [ ] `server/routers/invoices.ts` - Invoice management
 - [ ] `server/routers/payments.ts` - Payment processing
 - [ ] `server/routers/inventory.ts` - Inventory/batches
-- [ ] `server/routers/vendors.ts` - Vendor management
+- [ ] `server/routers/suppliers.ts` - Supplier management
 - [ ] `server/routers/purchaseOrders.ts` - Purchase orders
 
 #### Medium Priority (Operational)
+
 - [ ] `server/routers/salesSheets.ts` - Sales sheets
 - [ ] `server/routers/samples.ts` - Sample management
 - [ ] `server/routers/returns.ts` - Returns processing
@@ -64,6 +66,7 @@ The following routers still need to be updated to use soft delete:
 - [ ] `server/routers/strains.ts` - Strain management
 
 #### Low Priority (Supporting Features)
+
 - [ ] `server/routers/freeformNotes.ts` - Notes
 - [ ] `server/routers/scratchPad.ts` - Scratch pad
 - [ ] `server/routers/todoLists.ts` - Todo lists
@@ -78,8 +81,8 @@ The following routers still need to be updated to use soft delete:
 ### Basic Soft Delete
 
 ```typescript
-import { softDelete, restoreDeleted } from '../utils/softDelete';
-import { orders } from '../../drizzle/schema';
+import { softDelete, restoreDeleted } from "../utils/softDelete";
+import { orders } from "../../drizzle/schema";
 
 // Soft delete an order
 const rowsAffected = await softDelete(orders, orderId);
@@ -91,6 +94,7 @@ const restored = await restoreDeleted(orders, orderId);
 ### Updating Router Delete Procedures
 
 **Before (Hard Delete):**
+
 ```typescript
 delete: protectedProcedure
   .use(requirePermission("orders:delete"))
@@ -102,6 +106,7 @@ delete: protectedProcedure
 ```
 
 **After (Soft Delete):**
+
 ```typescript
 import { softDelete, restoreDeleted } from "../utils/softDelete";
 
@@ -125,8 +130,8 @@ restore: protectedProcedure
 ### Excluding Deleted Records in Queries
 
 ```typescript
-import { excludeDeleted } from '../utils/softDelete';
-import { orders } from '../../drizzle/schema';
+import { excludeDeleted } from "../utils/softDelete";
+import { orders } from "../../drizzle/schema";
 
 // Get only non-deleted orders
 const activeOrders = await db
@@ -138,18 +143,13 @@ const activeOrders = await db
 const clientOrders = await db
   .select()
   .from(orders)
-  .where(
-    and(
-      excludeDeleted(orders),
-      eq(orders.clientId, clientId)
-    )
-  );
+  .where(and(excludeDeleted(orders), eq(orders.clientId, clientId)));
 ```
 
 ### Admin Interface for Deleted Records
 
 ```typescript
-import { onlyDeleted, getDeleted } from '../utils/softDelete';
+import { onlyDeleted, getDeleted } from "../utils/softDelete";
 
 // Get all deleted orders
 const deletedOrders = await getDeleted(orders, 100);
@@ -188,6 +188,7 @@ The migration file `drizzle/0039_add_soft_delete_to_all_tables.sql` will be appl
 When updating a router to use soft delete:
 
 1. **Update the delete test:**
+
    ```typescript
    it("should soft delete a record", async () => {
      // Mock the database update
@@ -203,6 +204,7 @@ When updating a router to use soft delete:
    ```
 
 2. **Add restore test:**
+
    ```typescript
    it("should restore a deleted record", async () => {
      const mockUpdate = vi.fn().mockReturnValue({
@@ -234,7 +236,7 @@ The following tables have indexes on `deleted_at` for optimal query performance:
 - batches
 - invoices
 - payments
-- vendors
+- suppliers
 - products
 - purchase_orders
 - sales_sheets
@@ -246,11 +248,13 @@ The following tables have indexes on `deleted_at` for optimal query performance:
 When querying large tables:
 
 1. **Always use the index:**
+
    ```sql
    WHERE deleted_at IS NULL  -- Uses index
    ```
 
 2. **Avoid:**
+
    ```sql
    WHERE deleted_at = NULL  -- Does NOT use index
    ```

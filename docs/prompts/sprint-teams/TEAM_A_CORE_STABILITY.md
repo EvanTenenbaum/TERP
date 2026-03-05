@@ -36,6 +36,7 @@ client/src/hooks/work-surface/usePerformanceMonitor.ts
 ```
 
 **DO NOT MODIFY:**
+
 - `server/routers/*.ts` (Team C owns)
 - `client/src/pages/*.tsx` (Team B owns)
 - `scripts/seed/**` (Team D owns)
@@ -56,6 +57,7 @@ client/src/hooks/work-surface/usePerformanceMonitor.ts
 **Problem:** Three empty catch blocks silently swallow Performance Observer errors.
 
 **Fix:**
+
 ```typescript
 // Replace empty catch blocks:
 } catch (e) {}
@@ -69,6 +71,7 @@ client/src/hooks/work-surface/usePerformanceMonitor.ts
 ```
 
 **Verification:**
+
 ```bash
 pnpm check
 pnpm test client/src/hooks/work-surface/usePerformanceMonitor.test.ts
@@ -84,6 +87,7 @@ pnpm test client/src/hooks/work-surface/usePerformanceMonitor.test.ts
 **Problem:** GL posting failures are silently ignored. Sales complete without ledger entries.
 
 **Fix:**
+
 1. Make `postSaleGLEntries` throw on missing standard accounts
 2. Make `postPaymentGLEntries` throw on missing accounts
 3. Make `postRefundGLEntries` throw on missing accounts
@@ -91,25 +95,27 @@ pnpm test client/src/hooks/work-surface/usePerformanceMonitor.test.ts
 5. Add admin alert mechanism for missing standard accounts
 
 **Pattern:**
+
 ```typescript
 // BEFORE (silent failure)
-const account = await findStandardAccount('sales-revenue');
+const account = await findStandardAccount("sales-revenue");
 if (!account) {
-  logger.warn('Standard account not found');
+  logger.warn("Standard account not found");
   return; // Silent failure!
 }
 
 // AFTER (explicit failure)
-const account = await findStandardAccount('sales-revenue');
+const account = await findStandardAccount("sales-revenue");
 if (!account) {
   throw new TRPCError({
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'GL posting failed: sales-revenue standard account not configured',
+    code: "INTERNAL_SERVER_ERROR",
+    message: "GL posting failed: sales-revenue standard account not configured",
   });
 }
 ```
 
 **Verification:**
+
 ```bash
 pnpm test server/accountingHooks.test.ts
 pnpm check
@@ -124,24 +130,26 @@ pnpm check
 **Problem:** Tests fail with "Target container is not a DOM element"
 
 **Fix:**
+
 ```typescript
 // In vitest.setup.ts, add:
-import { afterEach, beforeEach } from 'vitest';
+import { afterEach, beforeEach } from "vitest";
 
 beforeEach(() => {
   // Create a root container for React
-  const root = document.createElement('div');
-  root.id = 'root';
+  const root = document.createElement("div");
+  root.id = "root";
   document.body.appendChild(root);
 });
 
 afterEach(() => {
   // Cleanup
-  document.body.innerHTML = '';
+  document.body.innerHTML = "";
 });
 ```
 
 **Verification:**
+
 ```bash
 pnpm test client/src/hooks/work-surface/__tests__/useExport.test.ts
 pnpm test client/src/hooks/work-surface/__tests__/usePrint.test.ts
@@ -156,13 +164,14 @@ pnpm test client/src/hooks/work-surface/__tests__/usePrint.test.ts
 **Problem:** Tests fail with "Database connection failed"
 
 **Fix:**
+
 ```typescript
 // In vitest.config.ts, add environment variables:
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: "node",
     env: {
-      DATABASE_URL: 'mysql://test:test@localhost:3306/terp_test',
+      DATABASE_URL: "mysql://test:test@localhost:3306/terp_test",
       // Or mock the database adapter for unit tests
     },
   },
@@ -170,6 +179,7 @@ export default defineConfig({
 ```
 
 **Alternative:** Create database mock for unit tests:
+
 ```typescript
 // test/mocks/database.ts
 export const mockDb = {
@@ -189,13 +199,16 @@ export const mockDb = {
 **Problem:** "No procedure found on path" errors
 
 **Fix:**
+
 ```typescript
 // Create test client with full router:
-import { createTRPCProxyClient } from '@trpc/client';
-import { appRouter } from '@/server/routers/_app';
+import { createTRPCProxyClient } from "@trpc/client";
+import { appRouter } from "@/server/routers/_app";
 
 const testClient = createTRPCProxyClient<typeof appRouter>({
-  links: [/* test links */],
+  links: [
+    /* test links */
+  ],
 });
 ```
 
@@ -208,6 +221,7 @@ const testClient = createTRPCProxyClient<typeof appRouter>({
 Run `pnpm check` and fix errors systematically.
 
 **Priority Order:**
+
 1. Server-side type mismatches (breaks build)
 2. Client-side type mismatches (breaks build)
 3. Null/undefined handling (runtime errors)
@@ -223,6 +237,7 @@ Run `pnpm check` and fix errors systematically.
 | `OrderToInvoiceFlow.tsx` | 5 | Type incompatibilities |
 
 **DO NOT:**
+
 - Add `any` types as workarounds
 - Use `@ts-ignore` comments
 - Skip files owned by other teams
@@ -234,12 +249,14 @@ Run `pnpm check` and fix errors systematically.
 Run `pnpm test` and fix failures.
 
 **Strategy:**
+
 1. Fix infrastructure issues first (TEST-INFRA-01..03)
 2. Fix type-related test failures
 3. Fix assertion mismatches
 4. Document skipped tests with reasons
 
 **Acceptance Criteria:**
+
 - Test pass rate > 95%
 - All skipped tests have documented reasons
 - No flaky tests
@@ -250,19 +267,19 @@ Run `pnpm test` and fix failures.
 
 After P0 tasks are complete:
 
-| ID | Task | Est. |
-|----|------|------|
-| TEST-INFRA-04 | Create test fixtures/factories | 8h |
-| TEST-INFRA-05 | Fix async element detection | 4h |
-| TEST-INFRA-06 | Fix admin security test | 2h |
-| TEST-QA-001 | Fix React Hook test infrastructure | 2h |
-| SEC-024 | Validate Quote Email XSS | 1h |
-| SEC-025 | Session Extension Limit | 1h |
-| SEC-026 | Cron Leader Election race | 2h |
-| DI-009 | Vendor ID Validation | 30min |
-| RBAC-002 | Time Clock Permission Gate | 30min |
-| QUAL-008 | Feature Flag Route Checks | 4h |
-| BUG-102 | Property Test Bugs | 4h |
+| ID            | Task                               | Est.  |
+| ------------- | ---------------------------------- | ----- |
+| TEST-INFRA-04 | Create test fixtures/factories     | 8h    |
+| TEST-INFRA-05 | Fix async element detection        | 4h    |
+| TEST-INFRA-06 | Fix admin security test            | 2h    |
+| TEST-QA-001   | Fix React Hook test infrastructure | 2h    |
+| SEC-024       | Validate Quote Email XSS           | 1h    |
+| SEC-025       | Session Extension Limit            | 1h    |
+| SEC-026       | Cron Leader Election race          | 2h    |
+| DI-009        | Supplier ID Validation             | 30min |
+| RBAC-002      | Time Clock Permission Gate         | 30min |
+| QUAL-008      | Feature Flag Route Checks          | 4h    |
+| BUG-102       | Property Test Bugs                 | 4h    |
 
 ---
 

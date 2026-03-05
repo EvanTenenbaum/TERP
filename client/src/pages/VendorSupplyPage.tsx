@@ -160,13 +160,13 @@ export default function VendorSupplyPage({
   // FE-QA-009: Create mutation
   const createMutation = trpc.vendorSupply.create.useMutation({
     onSuccess: () => {
-      toast.success("Vendor supply item created successfully");
+      toast.success("Supplier supply item created successfully");
       setCreateDialogOpen(false);
       setFormState(initialFormState);
       refetch();
     },
     onError: error => {
-      toast.error(error.message || "Failed to create vendor supply item");
+      toast.error(error.message || "Failed to create supplier supply item");
     },
   });
 
@@ -176,7 +176,7 @@ export default function VendorSupplyPage({
   // FE-QA-009: Handle form submission with enhanced validation
   const handleSubmit = () => {
     if (!formState.vendorId) {
-      toast.error("Please select a vendor");
+      toast.error("Please select a supplier");
       return;
     }
     if (!formState.quantityAvailable) {
@@ -342,9 +342,9 @@ export default function VendorSupplyPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Vendor Supply</h1>
+          <h1 className="text-3xl font-bold">Supplier Supply</h1>
           <p className="text-muted-foreground">
-            Manage vendor supply items and find matching clients
+            Manage supplier supply items and find matching clients
           </p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -356,14 +356,14 @@ export default function VendorSupplyPage({
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Add Vendor Supply Item</DialogTitle>
+              <DialogTitle>Add Supplier Supply Item</DialogTitle>
               <DialogDescription>
-                Record a new item available from a vendor
+                Record a new item available from a supplier
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="vendorId">Vendor *</Label>
+                <Label htmlFor="vendorId">Supplier *</Label>
                 <Select
                   value={formState.vendorId}
                   onValueChange={v =>
@@ -375,7 +375,7 @@ export default function VendorSupplyPage({
                     {vendorsLoading ? (
                       <Skeleton className="h-4 w-24" />
                     ) : (
-                      <SelectValue placeholder="Select a vendor" />
+                      <SelectValue placeholder="Select a supplier" />
                     )}
                   </SelectTrigger>
                   <SelectContent>
@@ -547,7 +547,7 @@ export default function VendorSupplyPage({
       <FilterSortSearchPanel
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Search by strain, product, category, or vendor..."
+        searchPlaceholder="Search by strain, product, category, or supplier..."
         filters={[
           {
             id: "status",
@@ -597,7 +597,7 @@ export default function VendorSupplyPage({
             <Package className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium">No supply items found</p>
             <p className="text-sm text-muted-foreground">
-              Add vendor supply items to see them here
+              Add supplier supply items to see them here
             </p>
           </CardContent>
         </Card>
@@ -615,7 +615,7 @@ export default function VendorSupplyPage({
                       {getStatusBadge(item.status)}
                     </div>
                     <CardDescription>
-                      Vendor: {item.vendorName || `#${item.vendorId}`}
+                      Supplier: {item.vendorName || `#${item.vendorId}`}
                       {item.category && ` • ${item.category}`}
                       {item.subcategory && ` • ${item.subcategory}`}
                       {item.grade && ` • Grade ${item.grade}`}

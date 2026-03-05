@@ -140,17 +140,17 @@ After deploying the migration:
 
 ---
 
-## TER-247: Rewrite Vendor Queries → Client Queries (STRICT Mode)
+## TER-247: Rewrite Supplier Queries → Client Queries (STRICT Mode)
 
 ### Summary
 
-Replace all remaining `vendors` table queries with `clients` table queries using `isSeller=true` filter.
+Replace all remaining `suppliers` table queries with `clients` table queries using `isSeller=true` filter.
 
 ### Prerequisite
 
-TER-247 MUST be completed before TER-235 (vendor table deprecation). TER-247 rewrites queries; TER-235 removes the table.
+TER-247 MUST be completed before TER-235 (supplier table deprecation). TER-247 rewrites queries; TER-235 removes the table.
 
-### Vendor Query Inventory (9 total)
+### Supplier Query Inventory (9 total)
 
 #### Already Migrated (4 queries — no action needed)
 
@@ -163,24 +163,24 @@ TER-247 MUST be completed before TER-235 (vendor table deprecation). TER-247 rew
 
 #### Need Rewriting (5 queries)
 
-| #   | File                               | Line | Current                     | Target                                                        |
-| --- | ---------------------------------- | ---- | --------------------------- | ------------------------------------------------------------- |
-| 1   | `server/db/dataCardMetricsDb.ts`   | ~45  | `from(vendors)`             | `from(clients).where(eq(clients.isSeller, true))`             |
-| 2   | `server/db/dataCardMetricsDb.ts`   | ~78  | `from(vendors)` join        | `from(clients).where(...)` with supplier_profiles join        |
-| 3   | `server/routers/audit.ts`          | ~120 | `vendors` in audit trail    | Map to `clients` entity                                       |
-| 4   | `server/routers/debug.ts`          | ~55  | `db.select().from(vendors)` | `db.select().from(clients).where(eq(clients.isSeller, true))` |
-| 5   | `server/routers/purchaseOrders.ts` | ~200 | vendor lookup               | `clients` with `supplierProfile` relation                     |
+| #   | File                               | Line | Current                       | Target                                                        |
+| --- | ---------------------------------- | ---- | ----------------------------- | ------------------------------------------------------------- |
+| 1   | `server/db/dataCardMetricsDb.ts`   | ~45  | `from(suppliers)`             | `from(clients).where(eq(clients.isSeller, true))`             |
+| 2   | `server/db/dataCardMetricsDb.ts`   | ~78  | `from(suppliers)` join        | `from(clients).where(...)` with supplier_profiles join        |
+| 3   | `server/routers/audit.ts`          | ~120 | `suppliers` in audit trail    | Map to `clients` entity                                       |
+| 4   | `server/routers/debug.ts`          | ~55  | `db.select().from(suppliers)` | `db.select().from(clients).where(eq(clients.isSeller, true))` |
+| 5   | `server/routers/purchaseOrders.ts` | ~200 | supplier lookup               | `clients` with `supplierProfile` relation                     |
 
 #### Client Components to Update (2)
 
-| File                                                             | Line | Current               | Target                                     |
-| ---------------------------------------------------------------- | ---- | --------------------- | ------------------------------------------ |
-| `client/src/components/intake/IntakeGrid.tsx`                    | ~151 | `trpc.vendors.getAll` | `trpc.clients.list` with `isSeller` filter |
-| `client/src/components/work-surface/DirectIntakeWorkSurface.tsx` | ~759 | `trpc.vendors.getAll` | `trpc.clients.list` with `isSeller` filter |
+| File                                                             | Line | Current                 | Target                                     |
+| ---------------------------------------------------------------- | ---- | ----------------------- | ------------------------------------------ |
+| `client/src/components/intake/IntakeGrid.tsx`                    | ~151 | `trpc.suppliers.getAll` | `trpc.clients.list` with `isSeller` filter |
+| `client/src/components/work-surface/DirectIntakeWorkSurface.tsx` | ~759 | `trpc.suppliers.getAll` | `trpc.clients.list` with `isSeller` filter |
 
 ### FK Dependencies (Out of Scope for TER-247)
 
-These 7 foreign keys reference `vendors.id` and will be addressed in TER-235:
+These 7 foreign keys reference `suppliers.id` and will be addressed in TER-235:
 
 1. `batches.vendorId`
 2. `inventory.vendorId`
@@ -193,8 +193,8 @@ These 7 foreign keys reference `vendors.id` and will be addressed in TER-235:
 ### Migration Pattern
 
 ```typescript
-// BEFORE (vendor query)
-const suppliers = await db.select().from(vendors);
+// BEFORE (supplier query)
+const suppliers = await db.select().from(suppliers);
 
 // AFTER (client query)
 const suppliers = await db.query.clients.findMany({
@@ -207,21 +207,21 @@ const suppliers = await db.query.clients.findMany({
 
 - **Estimate:** ~6h
 - **Risk:** MEDIUM — Query results must be equivalent (same columns exposed to UI)
-- **Key concern:** `vendors` table has different column names than `clients` — need mapping layer
+- **Key concern:** `suppliers` table has different column names than `clients` — need mapping layer
 - **Column mapping needed:**
-  - `vendors.name` → `clients.name` (same)
-  - `vendors.company` → `clients.company` (same)
-  - `vendors.licenseNumber` → `supplierProfiles.licenseNumber`
-  - `vendors.paymentTerms` → `supplierProfiles.paymentTerms`
+  - `suppliers.name` → `clients.name` (same)
+  - `suppliers.company` → `clients.company` (same)
+  - `suppliers.licenseNumber` → `supplierProfiles.licenseNumber`
+  - `suppliers.paymentTerms` → `supplierProfiles.paymentTerms`
 - **Verification:** Compare query results before/after for row count and key fields
 
 ---
 
-## TER-235: Deprecate Vendor Table (RED Mode)
+## TER-235: Deprecate Supplier Table (RED Mode)
 
 ### Summary
 
-Final removal of the `vendors` table after all queries are migrated (TER-247).
+Final removal of the `suppliers` table after all queries are migrated (TER-247).
 
 ### Prerequisites
 
@@ -231,9 +231,9 @@ Final removal of the `vendors` table after all queries are migrated (TER-247).
 ### This is a multi-phase task:
 
 1. **Phase 1:** Add `supplierClientId` column to tables with `vendorId` FK
-2. **Phase 2:** Backfill `supplierClientId` from vendor→client mapping
+2. **Phase 2:** Backfill `supplierClientId` from supplier→client mapping
 3. **Phase 3:** Update all code to use `supplierClientId`
-4. **Phase 4:** Drop `vendorId` columns and `vendors` table
+4. **Phase 4:** Drop `vendorId` columns and `suppliers` table
 
 ### Risk Assessment
 
@@ -252,8 +252,8 @@ Wave 2 (can run in parallel):
 └── TER-248: strains + referral_settings columns ── RED
 
 Wave 3 (sequential, depends on nothing above):
-├── TER-247: Rewrite vendor queries ─────────────── STRICT
-└── TER-235: Deprecate vendor table ─────────────── RED (after TER-247)
+├── TER-247: Rewrite supplier queries ─────────────── STRICT
+└── TER-235: Deprecate supplier table ─────────────── RED (after TER-247)
 
 Wave 4 (after Wave 2-3):
 └── E2E assertion rigor tasks

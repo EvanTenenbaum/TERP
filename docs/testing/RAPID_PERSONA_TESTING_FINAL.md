@@ -24,12 +24,14 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ❌ BLOCKED - Cannot add items to orders (BUG-012)
 
 **Bugs Found:**
+
 - BUG-012: Add Item button not working (P0 CRITICAL)
 - BUG-M004: Customer name inconsistency (P2 MEDIUM)
 - BUG-M005: All orders show "0 items" (P1 HIGH)
 - BUG-011: Debug dashboard in production (P1 HIGH)
 
 **Positive Findings:**
+
 - Excellent order creation interface design
 - Comprehensive client profile page (8 tabs)
 - Professional client management
@@ -45,17 +47,20 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ⚠️ PARTIAL - Can create batches, but cannot view inventory table (BUG-013)
 
 **Workflow Tested:**
+
 1. Open New Purchase modal ✓
 2. View comprehensive batch creation form ✓
 3. All required fields present ✓
 4. View inventory table ✗ BLOCKED BY BUG-013
 
 **Bugs Confirmed:**
+
 - BUG-013: Inventory table not displaying data (P0 CRITICAL)
 
 **Positive Findings:**
+
 - Comprehensive New Purchase modal with all fields:
-  - Vendor (autocomplete)
+  - Supplier (autocomplete)
   - Brand (autocomplete)
   - Product Name
   - Strain (optional)
@@ -81,6 +86,7 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ⚠️ PARTIAL - Can view accounting dashboard, some features incomplete
 
 **Workflow Tested:**
+
 1. Navigate to Accounting page ✓
 2. View AR/AP aging reports ✓
 3. View cash balance ✓
@@ -88,10 +94,12 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 5. Access General Ledger ✗ NOT FOUND
 
 **Bugs Found:**
+
 - BUG-M006: Chart of Accounts not accessible (P2 MEDIUM)
 - BUG-M007: General Ledger not accessible (P2 MEDIUM)
 
 **Positive Findings:**
+
 - Professional accounting dashboard with:
   - Cash Balance: $0.00
   - AR Aging (0-30, 31-60, 61-90, 90+ days)
@@ -110,6 +118,7 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ⚠️ PARTIAL - Calendar works, Workflow Queue works, Tasks blocked (BUG-014)
 
 **Workflow Tested:**
+
 1. Navigate to Workflow Queue ✓
 2. View workflow board ✓
 3. Navigate to Calendar ✓
@@ -117,9 +126,11 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 5. Navigate to Todo Lists ✗ BLOCKED BY BUG-014
 
 **Bugs Confirmed:**
+
 - BUG-014: Todo Lists page returns 404 (P1 HIGH)
 
 **Positive Findings:**
+
 - Excellent calendar interface with 4 view modes
 - Create Event modal with comprehensive fields
 - Workflow Queue page exists and loads
@@ -136,6 +147,7 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ⚠️ PARTIAL - Dashboard works, Analytics incomplete (BUG-007)
 
 **Workflow Tested:**
+
 1. View dashboard metrics ✓
 2. View sales table ✓
 3. View cashflow chart ✓
@@ -143,9 +155,11 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 5. View detailed analytics ✗ BLOCKED BY BUG-007
 
 **Bugs Confirmed:**
+
 - BUG-007: Analytics tabs show "Coming soon" (P1 HIGH)
 
 **Positive Findings:**
+
 - Professional dashboard with real-time metrics
 - Cashflow visualization
 - Sales table with client data
@@ -158,21 +172,24 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 
 ### PERSONA 6: Procurement Manager (Robert) ✅ TESTED
 
-**Primary Workflow:** Manage vendors, create purchase orders
+**Primary Workflow:** Manage suppliers, create purchase orders
 
 **Result:** ❌ BLOCKED - Purchase Orders page crashes (BUG-008)
 
 **Workflow Tested:**
-1. Navigate to Vendors page ✓
-2. View vendor list ⚠️ EMPTY (no seed data)
+
+1. Navigate to Suppliers page ✓
+2. View supplier list ⚠️ EMPTY (no seed data)
 3. Navigate to Purchase Orders ✗ BLOCKED BY BUG-008
 
 **Bugs Confirmed:**
+
 - BUG-008: Purchase Orders page crashes (P0 CRITICAL)
 
 **Positive Findings:**
-- Vendors page exists and loads (though empty)
-- Professional vendor management UI structure
+
+- Suppliers page exists and loads (though empty)
+- Professional supplier management UI structure
 
 **Can Do Job?** ❌ NO - Cannot access purchase orders (core function blocked)
 
@@ -185,6 +202,7 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ⚠️ PARTIAL - Matchmaking works, Returns unknown, Client support works
 
 **Workflow Tested:**
+
 1. Navigate to Matchmaking ✓
 2. View matchmaking opportunities ✓
 3. Navigate to Returns ✓
@@ -192,6 +210,7 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 5. Access client profiles for support ✓
 
 **Positive Findings:**
+
 - Comprehensive matchmaking interface with buyer-seller matching
 - Returns page exists and loads
 - Can access full client profiles for support
@@ -208,12 +227,14 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ⚠️ PARTIAL - Settings accessible, RBAC features present
 
 **Workflow Tested:**
+
 1. Navigate to Settings ✓
 2. View User Roles tab ✓
 3. View RBAC configuration ✓
 4. Test permission management ⚠️ NOT FULLY TESTED
 
 **Positive Findings:**
+
 - Settings page with multiple tabs
 - User Roles tab exists
 - RBAC features present
@@ -230,9 +251,11 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 **Result:** ❌ BLOCKED - VIP Portal returns 404 (BUG-M008)
 
 **Workflow Tested:**
+
 1. Navigate to /vip ✗ BLOCKED BY BUG-M008
 
 **Bugs Found:**
+
 - BUG-M008: VIP Portal not implemented (P1 HIGH)
 
 **Can Do Job?** ❌ NO - VIP Portal not accessible
@@ -244,11 +267,13 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 ### Bugs Found (Total: 10)
 
 **P0 CRITICAL (3):**
+
 - BUG-008: Purchase Orders page crashes
 - BUG-012: Add Item button not working
 - BUG-013: Inventory table not displaying data
 
 **P1 HIGH (5):**
+
 - BUG-007: Analytics tabs show "Coming soon"
 - BUG-011: Debug dashboard in production
 - BUG-014: Todo Lists page returns 404
@@ -256,23 +281,24 @@ I have completed rapid persona-based testing across all 9 user personas, testing
 - BUG-M008: VIP Portal not implemented
 
 **P2 MEDIUM (2):**
+
 - BUG-M004: Customer name inconsistency
 - BUG-M006: Chart of Accounts not accessible
 - BUG-M007: General Ledger not accessible
 
 ### Personas Who Can Do Their Job
 
-| Persona | Can Do Job? | Status |
-|---------|-------------|--------|
-| Sales Manager | ❌ NO | Blocked by BUG-012 |
-| Inventory Manager | ⚠️ PARTIAL | Blocked by BUG-013 |
-| Accountant | ⚠️ PARTIAL | Missing GL access |
-| Operations Manager | ⚠️ PARTIAL | Blocked by BUG-014 |
-| Owner/Manager | ⚠️ PARTIAL | Blocked by BUG-007 |
-| Procurement Manager | ❌ NO | Blocked by BUG-008 |
-| Customer Service | ⚠️ PARTIAL | Returns untested |
-| Admin | ⚠️ PARTIALLY | RBAC not fully tested |
-| VIP Client | ❌ NO | Blocked by BUG-M008 |
+| Persona             | Can Do Job?  | Status                |
+| ------------------- | ------------ | --------------------- |
+| Sales Manager       | ❌ NO        | Blocked by BUG-012    |
+| Inventory Manager   | ⚠️ PARTIAL   | Blocked by BUG-013    |
+| Accountant          | ⚠️ PARTIAL   | Missing GL access     |
+| Operations Manager  | ⚠️ PARTIAL   | Blocked by BUG-014    |
+| Owner/Manager       | ⚠️ PARTIAL   | Blocked by BUG-007    |
+| Procurement Manager | ❌ NO        | Blocked by BUG-008    |
+| Customer Service    | ⚠️ PARTIAL   | Returns untested      |
+| Admin               | ⚠️ PARTIALLY | RBAC not fully tested |
+| VIP Client          | ❌ NO        | Blocked by BUG-M008   |
 
 **Result:** 0/9 personas can fully complete their jobs, 3/9 completely blocked
 

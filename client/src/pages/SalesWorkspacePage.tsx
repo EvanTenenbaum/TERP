@@ -18,7 +18,7 @@ type SalesTab = BaseSalesTab | "create-order" | "pick-pack";
 
 const SALES_TABS_CONFIG = [
   ...SALES_WORKSPACE.tabs,
-  { value: "create-order", label: "New Sale" },
+  { value: "create-order", label: "New Sales Order" },
   { value: "pick-pack", label: "Pick & Pack" },
 ] as const satisfies readonly LinearWorkspaceTab<SalesTab>[];
 
@@ -37,6 +37,7 @@ export default function SalesWorkspacePage() {
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
       description={SALES_WORKSPACE.description}
+      section="Sell"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
@@ -56,7 +57,7 @@ export default function SalesWorkspacePage() {
             variant={activeTab === "create-order" ? "default" : "outline"}
             onClick={() => setActiveTab("create-order")}
           >
-            New Sale
+            New Sales Order
           </Button>
           <Button
             size="sm"

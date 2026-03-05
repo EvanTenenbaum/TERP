@@ -1,6 +1,6 @@
 Type,ID,Name,OwnerModule,IntentSource,Status,ImplementationSource,Notes
 GoldenFlow,GF-001,Direct Intake,Inventory,docs/golden-flows/specs/GF-001-DIRECT-INTAKE.md,IntendedMissing,client/src/components/inventory/PurchaseModal.tsx,BLOCKED - BUG-112
-GoldenFlow,GF-002,Procure-to-Pay,Purchasing,docs/golden-flows/specs/GF-002-PROCURE-TO-PAY.md,Divergent,server/routers/purchaseOrders.ts,PARTIAL - Receiving UI missing
+GoldenFlow,GF-002,Procure-to-Pay,Purchasing,docs/golden-flows/specs/GF-002-PROCURE-TO-PAY.md,Divergent,server/routers/purchaseOrders.ts,PARTIAL - Intake UI missing
 GoldenFlow,GF-003,Order-to-Cash,Sales,docs/golden-flows/specs/GF-003-ORDER-TO-CASH.md,IntendedMissing,server/routers/orders.ts,BLOCKED - SQL error
 GoldenFlow,GF-004,Invoice & Payment,Accounting,docs/golden-flows/specs/GF-004-INVOICE-PAYMENT.md,Intended&Implemented,server/routers/invoices.ts,IMPLEMENTED
 GoldenFlow,GF-005,Pick & Pack,Fulfillment,docs/golden-flows/specs/GF-005-PICK-PACK.md,Intended&Implemented,client/src/pages/PickPackPage.tsx,FUNCTIONAL
@@ -23,7 +23,7 @@ Screen,SCR-005,Invoices,Accounting,GF-004,Intended&Implemented,client/src/pages/
 Screen,SCR-006,PickPackPage,Fulfillment,GF-005,Intended&Implemented,client/src/pages/PickPackPage.tsx,
 Screen,SCR-007,ClientLedger,Accounting,GF-006,Intended&Implemented,client/src/pages/ClientLedger.tsx,
 Screen,SCR-008,Samples,Sales,GF-008,Divergent,client/src/pages/SampleManagement.tsx,No fulfill button
-Screen,SCR-009,PurchaseOrders,Purchasing,GF-002,Divergent,client/src/pages/PurchaseOrders.tsx,No receiving UI
+Screen,SCR-009,PurchaseOrders,Purchasing,GF-002,Divergent,client/src/pages/PurchaseOrders.tsx,No intake UI
 API,API-001,inventory.createIntake,Inventory,GF-001,Intended&Implemented,server/routers/inventory.ts:createIntake,
 API,API-002,orders.create,Sales,GF-003,Intended&Implemented,server/routers/orders.ts:create,
 API,API-003,orders.confirm,Sales,GF-003,Intended&Implemented,server/routers/orders.ts:confirm,

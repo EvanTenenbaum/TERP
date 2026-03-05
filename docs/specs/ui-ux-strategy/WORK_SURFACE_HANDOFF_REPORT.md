@@ -34,7 +34,7 @@ TERP is an **enterprise resource planning (ERP) system** built for cannabis/whol
 
 - **Inventory**: Product intake, batch tracking, multi-location storage, transfers
 - **Sales**: Orders, quotes, live shopping, client management, samples
-- **Procurement**: Purchase orders, vendor management, receiving
+- **Procurement**: Purchase orders, supplier management, intake
 - **Accounting**: Invoices, payments, AR/AP, general ledger, fiscal periods
 - **Fulfillment**: Pick & pack, shipping, returns
 - **CRM**: Client profiles, needs matching, VIP portal
@@ -129,7 +129,7 @@ A **Work Surface** is the universal execution shell for high-frequency workflows
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ CONTEXT HEADER (sticky)                            h: 64-80px   │
-│ [Vendor: Acme Corp ▼] [Location: Warehouse A ▼] [Date: Today]   │
+│ [Supplier: Acme Corp ▼] [Location: Warehouse A ▼] [Date: Today]   │
 ├─────────────────────────────────────────────────────┬───────────┤
 │                                                     │           │
 │                                                     │  INSPECTOR│
@@ -148,12 +148,12 @@ A **Work Surface** is the universal execution shell for high-frequency workflows
 
 ### Components
 
-| Component           | Purpose                                       | Behavior                                        |
-| ------------------- | --------------------------------------------- | ----------------------------------------------- |
-| **Context Header**  | Batch-level defaults (vendor, location, date) | Sticky; applies to all new rows                 |
-| **Primary Grid**    | Fast row entry with inline editing            | Keyboard-navigable; virtualized for performance |
-| **Inspector Panel** | Complex edits and audit context               | Non-modal; Esc closes; never blocks grid        |
-| **Status Bar**      | Save state, totals, error summary             | Sticky bottom; always visible                   |
+| Component           | Purpose                                         | Behavior                                        |
+| ------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| **Context Header**  | Batch-level defaults (supplier, location, date) | Sticky; applies to all new rows                 |
+| **Primary Grid**    | Fast row entry with inline editing              | Keyboard-navigable; virtualized for performance |
+| **Inspector Panel** | Complex edits and audit context                 | Non-modal; Esc closes; never blocks grid        |
+| **Status Bar**      | Save state, totals, error summary               | Sticky bottom; always visible                   |
 
 ### When to Use Work Surface vs Other Patterns
 
@@ -282,16 +282,16 @@ When `prefers-reduced-motion: reduce`: All animations become instant (0ms).
 
 ### Golden Flows (Must Never Break)
 
-| Flow                         | Entry                | Key Steps                                          |
-| ---------------------------- | -------------------- | -------------------------------------------------- |
-| **GF-001 Direct Intake**     | /spreadsheet         | Create session → Add items → Set vendor → Finalize |
-| **GF-002 Standard PO**       | /purchase-orders     | Create PO → Submit → Receive goods                 |
-| **GF-003 Sales Order**       | /orders              | Select client → Add items → Finalize               |
-| **GF-004 Invoice & Payment** | /accounting/invoices | Generate → Send → Receive payment                  |
-| **GF-005 Pick & Pack**       | /pick-pack           | View → Pick → Pack → Ship                          |
-| **GF-006 Client Ledger**     | /clients/:id/ledger  | View → Filter → Export                             |
-| **GF-007 Inventory Adjust**  | /inventory           | Select batch → Adjust qty → Confirm                |
-| **GF-008 Sample Request**    | /samples             | Create → Approve → Fulfill                         |
+| Flow                         | Entry                | Key Steps                                            |
+| ---------------------------- | -------------------- | ---------------------------------------------------- |
+| **GF-001 Direct Intake**     | /spreadsheet         | Create session → Add items → Set supplier → Finalize |
+| **GF-002 Standard PO**       | /purchase-orders     | Create PO → Submit → Receive goods                   |
+| **GF-003 Sales Order**       | /orders              | Select client → Add items → Finalize                 |
+| **GF-004 Invoice & Payment** | /accounting/invoices | Generate → Send → Receive payment                    |
+| **GF-005 Pick & Pack**       | /pick-pack           | View → Pick → Pack → Ship                            |
+| **GF-006 Client Ledger**     | /clients/:id/ledger  | View → Filter → Export                               |
+| **GF-007 Inventory Adjust**  | /inventory           | Select batch → Adjust qty → Confirm                  |
+| **GF-008 Sample Request**    | /samples             | Create → Approve → Fulfill                           |
 
 **Golden flow enforcement notes:**
 
@@ -302,16 +302,16 @@ When `prefers-reduced-motion: reduce`: All animations become instant (0ms).
 
 > **Critical**: Each golden flow must be tested with the appropriate RBAC role.
 
-| Flow | Required Permissions | Owning Roles | Test Using |
-|------|---------------------|--------------|------------|
-| GF-001 | `inventory:write`, `batches:create` | Inventory, Super Admin | QA Auth: Inventory role |
-| GF-002 | `purchase_orders:write` | Inventory, Purchasing | QA Auth: Inventory role |
-| GF-003 | `orders:write`, `inventory:read` | Sales Rep, Sales Manager | QA Auth: Sales Manager |
-| GF-004 | `invoices:write`, `payments:write` | Accounting | QA Auth: Accounting role |
-| GF-005 | `pick_pack:write`, `inventory:write` | Fulfillment | QA Auth: Fulfillment role |
-| GF-006 | `clients:read`, `ledger:read` | Sales Rep, Accounting | QA Auth: Sales Rep |
-| GF-007 | `inventory:write` | Inventory | QA Auth: Inventory role |
-| GF-008 | `samples:write` | Sales Rep, Sales Manager | QA Auth: Sales Manager |
+| Flow   | Required Permissions                 | Owning Roles             | Test Using                |
+| ------ | ------------------------------------ | ------------------------ | ------------------------- |
+| GF-001 | `inventory:write`, `batches:create`  | Inventory, Super Admin   | QA Auth: Inventory role   |
+| GF-002 | `purchase_orders:write`              | Inventory, Purchasing    | QA Auth: Inventory role   |
+| GF-003 | `orders:write`, `inventory:read`     | Sales Rep, Sales Manager | QA Auth: Sales Manager    |
+| GF-004 | `invoices:write`, `payments:write`   | Accounting               | QA Auth: Accounting role  |
+| GF-005 | `pick_pack:write`, `inventory:write` | Fulfillment              | QA Auth: Fulfillment role |
+| GF-006 | `clients:read`, `ledger:read`        | Sales Rep, Accounting    | QA Auth: Sales Rep        |
+| GF-007 | `inventory:write`                    | Inventory                | QA Auth: Inventory role   |
+| GF-008 | `samples:write`                      | Sales Rep, Sales Manager | QA Auth: Sales Manager    |
 
 > **Note**: Use the QA Auth system (AUTH-QA-001) with `/api/qa-auth/login` for deterministic RBAC testing.
 
@@ -327,7 +327,7 @@ These features intentionally have no UI:
 | DF-035 Invoice Disputes     | Dispute workflow via API              |
 | DF-038 Catalog Publishing   | External integration API              |
 | DF-046 System Monitoring    | Admin diagnostics tool                |
-| DF-048 Vendor Reminders     | Automated notification system         |
+| DF-048 Supplier Reminders   | Automated notification system         |
 | DF-057 Deployment Tracking  | DevOps tool                           |
 
 ---
@@ -382,12 +382,12 @@ These features intentionally have no UI:
 
 Each Work Surface module requires a dedicated feature flag for safe deployment:
 
-| Flag Name | Default | Controls | Rollout Order |
-|-----------|---------|----------|---------------|
-| `WORK_SURFACE_INTAKE` | false | UXS-201..203 (Intake/PO pilot) | 1st |
-| `WORK_SURFACE_ORDERS` | false | UXS-301..302 (Sales/Orders) | 2nd |
-| `WORK_SURFACE_INVENTORY` | false | UXS-401..402 (Inventory/Pick-Pack) | 3rd |
-| `WORK_SURFACE_ACCOUNTING` | false | UXS-501..502 (Accounting/Ledger) | 4th |
+| Flag Name                 | Default | Controls                           | Rollout Order |
+| ------------------------- | ------- | ---------------------------------- | ------------- |
+| `WORK_SURFACE_INTAKE`     | false   | UXS-201..203 (Intake/PO pilot)     | 1st           |
+| `WORK_SURFACE_ORDERS`     | false   | UXS-301..302 (Sales/Orders)        | 2nd           |
+| `WORK_SURFACE_INVENTORY`  | false   | UXS-401..402 (Inventory/Pick-Pack) | 3rd           |
+| `WORK_SURFACE_ACCOUNTING` | false   | UXS-501..502 (Accounting/Ledger)   | 4th           |
 
 ### Rollout Phases
 
@@ -406,6 +406,7 @@ Each Work Surface module requires a dedicated feature flag for safe deployment:
 ### Rollback Criteria
 
 Rollback flag to `false` immediately if:
+
 - Error rate increases >5% compared to baseline
 - P95 response time degrades >50%
 - User-reported critical workflow blocking
@@ -523,7 +524,7 @@ These require product input before implementation:
 ### Work Surface Components
 
 ```
-Context Header → Batch defaults (vendor, location, date)
+Context Header → Batch defaults (supplier, location, date)
 Primary Grid   → Fast row entry, keyboard-first
 Inspector      → Complex edits, non-modal, Esc closes
 Status Bar     → Save state, totals, errors

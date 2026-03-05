@@ -110,7 +110,7 @@ Also added better logging to help diagnose path resolution issues.
 
 ### Issue #3: Module resolution/import errors ✅ VERIFIED OK
 
-**Investigation**: Checked bundled JS - all imports use relative paths (`./react-vendor-*.js`) which are correct. Vite alias resolution works correctly in production build.
+**Investigation**: Checked bundled JS - all imports use relative paths (`./react-supplier-*.js`) which are correct. Vite alias resolution works correctly in production build.
 
 **Status**: No issues found - module resolution is working correctly.
 

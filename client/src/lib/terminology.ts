@@ -11,15 +11,15 @@
  * Internal/Technical Term -> User-Friendly Term
  */
 export const TERMINOLOGY = {
-  // Batch -> Inventory Item
-  batch: "inventory item",
-  Batch: "Inventory Item",
-  BATCH: "INVENTORY ITEM",
-  batches: "inventory items",
-  Batches: "Inventory Items",
-  BATCHES: "INVENTORY ITEMS",
-  batchId: "Item ID",
-  BatchId: "Item ID",
+  // Batch is the canonical term
+  batch: "batch",
+  Batch: "Batch",
+  BATCH: "BATCH",
+  batches: "batches",
+  Batches: "Batches",
+  BATCHES: "BATCHES",
+  batchId: "Batch ID",
+  BatchId: "Batch ID",
 
   // SKU -> Product Code
   sku: "product code",
@@ -44,10 +44,10 @@ export const TERMINOLOGY = {
  */
 export const UI_LABELS = {
   // Inventory
-  inventoryItem: "Inventory Item",
-  inventoryItems: "Inventory Items",
+  inventoryItem: "Batch",
+  inventoryItems: "Batches",
   productCode: "Product Code",
-  itemId: "Item ID",
+  itemId: "Batch ID",
   lotNumber: "Lot Number",
 
   // Pricing
@@ -78,11 +78,10 @@ export const UI_LABELS = {
  * Tooltips and help text with user-friendly language
  */
 export const HELP_TEXT = {
-  inventoryItem:
-    "A specific inventory item with its own tracking number and cost information.",
+  inventoryItem: "A batch with its own tracking number and cost information.",
   productCode: "A unique identifier for the product type (formerly SKU).",
   lotNumber: "A tracking number assigned when inventory is received.",
-  unitCost: "The cost paid to acquire this inventory item.",
+  unitCost: "The cost paid to acquire this batch.",
   profitMargin: "The percentage of profit on the sale price after costs.",
   lowStockThreshold: "The quantity at which to trigger low stock alerts.",
 } as const;
@@ -102,19 +101,7 @@ export function toUserFriendly(technicalTerm: string): string {
   // Handle common patterns
   let result = term;
 
-  // Replace "batch" variations (case-insensitive, whole word)
-  result = result.replace(/\bbatch\b/gi, match => {
-    if (match === "BATCH") return "INVENTORY ITEM";
-    if (match === "Batch") return "Inventory Item";
-    return "inventory item";
-  });
-
-  // Replace "batches" variations (case-insensitive, whole word)
-  result = result.replace(/\bbatches\b/gi, match => {
-    if (match === "BATCHES") return "INVENTORY ITEMS";
-    if (match === "Batches") return "Inventory Items";
-    return "inventory items";
-  });
+  // "batch" and "batches" are already canonical; no replacement needed
 
   // Replace "SKU" variations
   result = result.replace(/\bSKU\b/g, "Product Code");
@@ -129,7 +116,7 @@ export function toUserFriendly(technicalTerm: string): string {
  */
 export function getFieldLabel(fieldName: string): string {
   const labelMap: Record<string, string> = {
-    batchId: "Item ID",
+    batchId: "Batch ID",
     batchNumber: "Lot Number",
     sku: "Product Code",
     skuNumber: "Product Code",

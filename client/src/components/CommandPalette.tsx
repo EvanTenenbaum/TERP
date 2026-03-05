@@ -69,7 +69,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const actionCommands = [
     {
       id: "new-sale",
-      label: "New Sale",
+      label: "New Sales Order",
       icon: Plus,
       shortcut: "N",
       action: () => {
@@ -79,7 +79,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     {
       id: "record-receipt",
-      label: "Record Receipt",
+      label: "Record Intake",
       icon: ReceiptText,
       shortcut: "R",
       action: () => {

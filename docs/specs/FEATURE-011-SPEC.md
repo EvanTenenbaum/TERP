@@ -6,13 +6,14 @@
 **Module:** Products (Core)  
 **Dependencies:** None (Foundation for other features)  
 **Spec Author:** Manus AI  
-**Spec Date:** 2025-12-30  
+**Spec Date:** 2025-12-30
 
 ---
 
 ## 1. Problem Statement
 
 The current product/inventory structure is fragmented, making it difficult to:
+
 - Maintain a consistent product catalog
 - Track the same product across multiple batches
 - Generate meaningful reports
@@ -32,18 +33,18 @@ A unified product catalogue will serve as the **single source of truth** for all
 
 ## 3. Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Product master catalog (name, category, attributes) | Must Have |
-| FR-02 | Batch = instance of product (quantity, location, price) | Must Have |
-| FR-03 | Product search and filtering | Must Have |
-| FR-04 | Product attributes (strain, type, THC%, etc.) | Must Have |
-| FR-05 | Product images linked at product level | Must Have |
-| FR-06 | Batch inherits product attributes | Must Have |
-| FR-07 | Product merge (combine duplicates) | Should Have |
-| FR-08 | Product variants (sizes, packaging) | Should Have |
-| FR-09 | Product history (all batches ever) | Should Have |
-| FR-10 | Product templates for quick batch creation | Nice to Have |
+| ID    | Requirement                                             | Priority     |
+| ----- | ------------------------------------------------------- | ------------ |
+| FR-01 | Product master catalog (name, category, attributes)     | Must Have    |
+| FR-02 | Batch = instance of product (quantity, location, price) | Must Have    |
+| FR-03 | Product search and filtering                            | Must Have    |
+| FR-04 | Product attributes (strain, type, THC%, etc.)           | Must Have    |
+| FR-05 | Product images linked at product level                  | Must Have    |
+| FR-06 | Batch inherits product attributes                       | Must Have    |
+| FR-07 | Product merge (combine duplicates)                      | Should Have  |
+| FR-08 | Product variants (sizes, packaging)                     | Should Have  |
+| FR-09 | Product history (all batches ever)                      | Should Have  |
+| FR-10 | Product templates for quick batch creation              | Nice to Have |
 
 ## 4. Technical Specification
 
@@ -56,28 +57,28 @@ CREATE TABLE products (
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE,
   category_id INT REFERENCES categories(id),
-  
+
   -- Attributes
   strain VARCHAR(255),
   strain_type ENUM('INDICA', 'SATIVA', 'HYBRID', 'CBD', 'OTHER'),
   thc_percent DECIMAL(5,2),
   cbd_percent DECIMAL(5,2),
   terpene_profile JSON,
-  
+
   -- Pricing defaults
   default_unit VARCHAR(20) DEFAULT 'oz',
   default_price_per_unit DECIMAL(10,2),
-  
+
   -- Metadata
   description TEXT,
   notes TEXT,
   is_active BOOLEAN DEFAULT TRUE,
-  
+
   -- Audit
   created_by INT REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP,
-  
+
   INDEX idx_category (category_id),
   INDEX idx_strain (strain),
   FULLTEXT idx_search (name, strain, description)
@@ -86,7 +87,7 @@ CREATE TABLE products (
 -- Batches reference products
 ALTER TABLE batches ADD COLUMN product_id INT REFERENCES products(id);
 ALTER TABLE batches ADD COLUMN batch_number VARCHAR(50) UNIQUE;
-ALTER TABLE batches ADD COLUMN vendor_id INT REFERENCES vendors(id);
+ALTER TABLE batches ADD COLUMN vendor_id INT REFERENCES suppliers(id);
 ALTER TABLE batches ADD COLUMN intake_date DATE;
 ALTER TABLE batches ADD COLUMN expiration_date DATE;
 ALTER TABLE batches ADD COLUMN cost_per_unit DECIMAL(10,2);
@@ -114,116 +115,144 @@ CREATE TABLE categories (
 ```typescript
 // Product CRUD
 products.create = adminProcedure
-  .input(z.object({
-    name: z.string().min(1).max(255),
-    categoryId: z.number().optional(),
-    strain: z.string().optional(),
-    strainType: z.enum(['INDICA', 'SATIVA', 'HYBRID', 'CBD', 'OTHER']).optional(),
-    thcPercent: z.number().min(0).max(100).optional(),
-    cbdPercent: z.number().min(0).max(100).optional(),
-    defaultUnit: z.string().default('oz'),
-    defaultPricePerUnit: z.number().optional(),
-    description: z.string().optional()
-  }))
-  .output(z.object({
-    productId: z.number(),
-    slug: z.string()
-  }))
+  .input(
+    z.object({
+      name: z.string().min(1).max(255),
+      categoryId: z.number().optional(),
+      strain: z.string().optional(),
+      strainType: z
+        .enum(["INDICA", "SATIVA", "HYBRID", "CBD", "OTHER"])
+        .optional(),
+      thcPercent: z.number().min(0).max(100).optional(),
+      cbdPercent: z.number().min(0).max(100).optional(),
+      defaultUnit: z.string().default("oz"),
+      defaultPricePerUnit: z.number().optional(),
+      description: z.string().optional(),
+    })
+  )
+  .output(
+    z.object({
+      productId: z.number(),
+      slug: z.string(),
+    })
+  )
   .mutation(async ({ input, ctx }) => {});
 
 products.list = publicProcedure
-  .input(z.object({
-    categoryId: z.number().optional(),
-    strainType: z.string().optional(),
-    search: z.string().optional(),
-    hasInventory: z.boolean().optional(),
-    page: z.number().default(1),
-    pageSize: z.number().default(50)
-  }))
-  .output(z.object({
-    products: z.array(z.object({
-      id: z.number(),
-      name: z.string(),
-      categoryName: z.string(),
-      strain: z.string().nullable(),
-      strainType: z.string().nullable(),
-      primaryPhotoUrl: z.string().nullable(),
-      totalQuantity: z.number(),
-      batchCount: z.number(),
-      priceRange: z.object({
-        min: z.number(),
-        max: z.number()
-      }).nullable()
-    })),
-    total: z.number(),
-    page: z.number(),
-    pageSize: z.number()
-  }))
+  .input(
+    z.object({
+      categoryId: z.number().optional(),
+      strainType: z.string().optional(),
+      search: z.string().optional(),
+      hasInventory: z.boolean().optional(),
+      page: z.number().default(1),
+      pageSize: z.number().default(50),
+    })
+  )
+  .output(
+    z.object({
+      products: z.array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+          categoryName: z.string(),
+          strain: z.string().nullable(),
+          strainType: z.string().nullable(),
+          primaryPhotoUrl: z.string().nullable(),
+          totalQuantity: z.number(),
+          batchCount: z.number(),
+          priceRange: z
+            .object({
+              min: z.number(),
+              max: z.number(),
+            })
+            .nullable(),
+        })
+      ),
+      total: z.number(),
+      page: z.number(),
+      pageSize: z.number(),
+    })
+  )
   .query(async ({ input }) => {});
 
 products.getById = publicProcedure
   .input(z.object({ productId: z.number() }))
-  .output(z.object({
-    id: z.number(),
-    name: z.string(),
-    category: z.object({ id: z.number(), name: z.string() }).nullable(),
-    strain: z.string().nullable(),
-    strainType: z.string().nullable(),
-    thcPercent: z.number().nullable(),
-    cbdPercent: z.number().nullable(),
-    description: z.string().nullable(),
-    photos: z.array(z.object({
+  .output(
+    z.object({
       id: z.number(),
-      url: z.string(),
-      isPrimary: z.boolean()
-    })),
-    batches: z.array(z.object({
-      id: z.number(),
-      batchNumber: z.string(),
-      quantity: z.number(),
-      unit: z.string(),
-      pricePerUnit: z.number(),
-      vendorName: z.string().nullable(),
-      intakeDate: z.date()
-    })),
-    stats: z.object({
-      totalSold: z.number(),
-      totalRevenue: z.number(),
-      avgPrice: z.number()
+      name: z.string(),
+      category: z.object({ id: z.number(), name: z.string() }).nullable(),
+      strain: z.string().nullable(),
+      strainType: z.string().nullable(),
+      thcPercent: z.number().nullable(),
+      cbdPercent: z.number().nullable(),
+      description: z.string().nullable(),
+      photos: z.array(
+        z.object({
+          id: z.number(),
+          url: z.string(),
+          isPrimary: z.boolean(),
+        })
+      ),
+      batches: z.array(
+        z.object({
+          id: z.number(),
+          batchNumber: z.string(),
+          quantity: z.number(),
+          unit: z.string(),
+          pricePerUnit: z.number(),
+          vendorName: z.string().nullable(),
+          intakeDate: z.date(),
+        })
+      ),
+      stats: z.object({
+        totalSold: z.number(),
+        totalRevenue: z.number(),
+        avgPrice: z.number(),
+      }),
     })
-  }))
+  )
   .query(async ({ input }) => {});
 
 // Batch creation now references product
 batches.create = adminProcedure
-  .input(z.object({
-    productId: z.number(),
-    quantity: z.number().positive(),
-    unit: z.string(),
-    vendorId: z.number().optional(),
-    costPerUnit: z.number().optional(),
-    sellPricePerUnit: z.number(),
-    locationId: z.number().optional(),
-    intakeDate: z.date().optional(),
-    expirationDate: z.date().optional(),
-    notes: z.string().optional()
-  }))
-  .output(z.object({
-    batchId: z.number(),
-    batchNumber: z.string()
-  }))
+  .input(
+    z.object({
+      productId: z.number(),
+      quantity: z.number().positive(),
+      unit: z.string(),
+      vendorId: z.number().optional(),
+      costPerUnit: z.number().optional(),
+      sellPricePerUnit: z.number(),
+      locationId: z.number().optional(),
+      intakeDate: z.date().optional(),
+      expirationDate: z.date().optional(),
+      notes: z.string().optional(),
+    })
+  )
+  .output(
+    z.object({
+      batchId: z.number(),
+      batchNumber: z.string(),
+    })
+  )
   .mutation(async ({ input, ctx }) => {});
 
 // Product merge (combine duplicates)
 products.merge = adminProcedure
-  .input(z.object({
-    sourceProductIds: z.array(z.number()).min(1),
-    targetProductId: z.number()
-  }))
-  .output(z.object({
-    success: z.boolean(),
-    batchesMoved: z.number()
-  }))
+  .input(
+    z.object({
+      sourceProductIds: z.array(z.number()).min(1),
+      targetProductId: z.number(),
+    })
+  )
+  .output(
+    z.object({
+      success: z.boolean(),
+      batchesMoved: z.number(),
+    })
+  )
   .mutation(async ({ input }) => {
     // Move all batches from source products to target
     // Merge photos
@@ -233,14 +262,14 @@ products.merge = adminProcedure
 
 ### 4.3 Integration Points
 
-| System | Integration Type | Description |
-|--------|-----------------|-------------|
-| Batches | Read/Write | Batches reference products |
-| Photos | Read/Write | Photos linked to products |
-| Orders | Read | Order items reference batches→products |
-| VIP Portal | Read | Display product catalog |
-| Reports | Read | Product-level reporting |
-| Search | Read | Full-text product search |
+| System     | Integration Type | Description                            |
+| ---------- | ---------------- | -------------------------------------- |
+| Batches    | Read/Write       | Batches reference products             |
+| Photos     | Read/Write       | Photos linked to products              |
+| Orders     | Read             | Order items reference batches→products |
+| VIP Portal | Read             | Display product catalog                |
+| Reports    | Read             | Product-level reporting                |
+| Search     | Read             | Full-text product search               |
 
 ## 5. UI/UX Specification
 
@@ -293,7 +322,7 @@ products.merge = adminProcedure
 │                                                             │
 │  📦 Available Batches                        [+ New Batch]  │
 │  ─────────────────────────────────────────                  │
-│  │ Batch      │ Qty  │ Price  │ Vendor    │ Intake    │    │
+│  │ Batch      │ Qty  │ Price  │ Supplier  │ Intake    │    │
 │  │ BD-2024-001│ 25 oz│ $100/oz│ Farm A    │ Dec 15    │    │
 │  │ BD-2024-002│ 30 oz│ $95/oz │ Farm B    │ Dec 20    │    │
 │  │ BD-2024-003│ 20 oz│ $110/oz│ Farm A    │ Dec 28    │    │
@@ -318,7 +347,7 @@ products.merge = adminProcedure
 ```sql
 -- 1. Create products from existing batch data
 INSERT INTO products (name, strain, category_id, created_at)
-SELECT DISTINCT 
+SELECT DISTINCT
   COALESCE(strain, 'Unknown') as name,
   strain,
   category_id,
@@ -373,15 +402,16 @@ WHERE pp.product_id IS NULL;
 
 ## 8. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Duplicate products | 0 | Product audit |
-| Data consistency | 100% | Batch-product linkage |
-| Search accuracy | 95%+ | User feedback |
+| Metric             | Target | Measurement Method    |
+| ------------------ | ------ | --------------------- |
+| Duplicate products | 0      | Product audit         |
+| Data consistency   | 100%   | Batch-product linkage |
+| Search accuracy    | 95%+   | User feedback         |
 
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

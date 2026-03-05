@@ -38,14 +38,14 @@ The Spreadsheet View feature (FEATURE-021) provides users with a familiar spread
 
 ### Current Implementation
 
-| Component | File Path | Purpose |
-|-----------|-----------|---------|
-| Main Page | `client/src/pages/SpreadsheetViewPage.tsx` | Entry point with tab navigation |
-| Inventory Grid | `client/src/components/spreadsheet/InventoryGrid.tsx` | AG-Grid for inventory batches |
-| Client Grid | `client/src/components/spreadsheet/ClientGrid.tsx` | Master-detail layout for client orders |
-| Router | `server/routers/spreadsheet.ts` | tRPC endpoints with feature flag guard |
-| Service | `server/services/spreadsheetViewService.ts` | Data transformation and aggregation |
-| Types | `client/src/types/spreadsheet.ts` | TypeScript interfaces |
+| Component      | File Path                                             | Purpose                                |
+| -------------- | ----------------------------------------------------- | -------------------------------------- |
+| Main Page      | `client/src/pages/SpreadsheetViewPage.tsx`            | Entry point with tab navigation        |
+| Inventory Grid | `client/src/components/spreadsheet/InventoryGrid.tsx` | AG-Grid for inventory batches          |
+| Client Grid    | `client/src/components/spreadsheet/ClientGrid.tsx`    | Master-detail layout for client orders |
+| Router         | `server/routers/spreadsheet.ts`                       | tRPC endpoints with feature flag guard |
+| Service        | `server/services/spreadsheetViewService.ts`           | Data transformation and aggregation    |
+| Types          | `client/src/types/spreadsheet.ts`                     | TypeScript interfaces                  |
 
 ### Critical Design Principle
 
@@ -106,32 +106,32 @@ git commit -m "chore: register QA-SPREADSHEET-VIEW session"
 
 Navigate to `/spreadsheet` and evaluate:
 
-| Criterion | Check | Pass/Fail | Notes |
-|-----------|-------|-----------|-------|
-| **Layout** | Page header is clear and informative | | |
-| **Tabs** | Inventory/Clients tabs are visible and functional | | |
-| **Grid Rendering** | AG-Grid renders without visual glitches | | |
-| **Column Headers** | Headers match specification (Vendor Code, Date, Source, etc.) | | |
-| **Column Widths** | Columns are appropriately sized | | |
-| **Color Coding** | Status cells have appropriate colors | | |
-| **Loading States** | Spinner shows during data fetch | | |
-| **Empty States** | Appropriate message when no data | | |
-| **Error States** | Errors display clearly | | |
+| Criterion          | Check                                                           | Pass/Fail | Notes |
+| ------------------ | --------------------------------------------------------------- | --------- | ----- |
+| **Layout**         | Page header is clear and informative                            |           |       |
+| **Tabs**           | Inventory/Clients tabs are visible and functional               |           |       |
+| **Grid Rendering** | AG-Grid renders without visual glitches                         |           |       |
+| **Column Headers** | Headers match specification (Supplier Code, Date, Source, etc.) |           |       |
+| **Column Widths**  | Columns are appropriately sized                                 |           |       |
+| **Color Coding**   | Status cells have appropriate colors                            |           |       |
+| **Loading States** | Spinner shows during data fetch                                 |           |       |
+| **Empty States**   | Appropriate message when no data                                |           |       |
+| **Error States**   | Errors display clearly                                          |           |       |
 
 ### 2.2 Interaction Testing
 
-| Action | Expected Behavior | Actual | Pass/Fail |
-|--------|-------------------|--------|-----------|
-| Click Inventory tab | Shows inventory grid | | |
-| Click Clients tab | Shows client master-detail | | |
-| Click client in list | Loads client's order data | | |
-| Double-click editable cell | Enters edit mode | | |
-| Edit Available qty | Shows success toast, updates value | | |
-| Edit Status dropdown | Shows options, updates on select | | |
-| Click Refresh button | Reloads data | | |
-| Sort by column | Sorts data correctly | | |
-| Filter column | Filters data correctly | | |
-| Pagination | Navigates between pages | | |
+| Action                     | Expected Behavior                  | Actual | Pass/Fail |
+| -------------------------- | ---------------------------------- | ------ | --------- |
+| Click Inventory tab        | Shows inventory grid               |        |           |
+| Click Clients tab          | Shows client master-detail         |        |           |
+| Click client in list       | Loads client's order data          |        |           |
+| Double-click editable cell | Enters edit mode                   |        |           |
+| Edit Available qty         | Shows success toast, updates value |        |           |
+| Edit Status dropdown       | Shows options, updates on select   |        |           |
+| Click Refresh button       | Reloads data                       |        |           |
+| Sort by column             | Sorts data correctly               |        |           |
+| Filter column              | Filters data correctly             |        |           |
+| Pagination                 | Navigates between pages            |        |           |
 
 ### 2.3 Accessibility Review
 
@@ -169,15 +169,15 @@ print(response.text)
 
 Review `server/services/spreadsheetViewService.ts` and verify:
 
-| Field | Source | Transformation | Correct? |
-|-------|--------|----------------|----------|
-| `vendorCode` | `lot.code` or `vendor.name` | Fallback chain | |
-| `lotDate` | `lot.date` | ISO format (YYYY-MM-DD) | |
-| `source` | `brand.name` or `vendor.name` | Fallback chain | |
-| `available` | `onHandQty - reservedQty - quarantineQty - holdQty` | Calculation | |
-| `intake` | `onHandQty` | Direct mapping | |
-| `ticket` | `unitCogs` | Direct mapping | |
-| `sub` | `intake * ticket` | Calculation | |
+| Field        | Source                                              | Transformation          | Correct? |
+| ------------ | --------------------------------------------------- | ----------------------- | -------- |
+| `vendorCode` | `lot.code` or `supplier.name`                       | Fallback chain          |          |
+| `lotDate`    | `lot.date`                                          | ISO format (YYYY-MM-DD) |          |
+| `source`     | `brand.name` or `supplier.name`                     | Fallback chain          |          |
+| `available`  | `onHandQty - reservedQty - quarantineQty - holdQty` | Calculation             |          |
+| `intake`     | `onHandQty`                                         | Direct mapping          |          |
+| `ticket`     | `unitCogs`                                          | Direct mapping          |          |
+| `sub`        | `intake * ticket`                                   | Calculation             |          |
 
 ### 3.2 Backend Integration Verification
 
@@ -195,13 +195,13 @@ grep -A 20 "updateStatus" server/routers/inventory.ts
 
 ### 3.3 Permission & Validation Testing
 
-| Test | Steps | Expected | Actual | Pass/Fail |
-|------|-------|----------|--------|-----------|
-| Permission Guard | Remove `inventory:read` permission, access page | Should show error | | |
-| Feature Flag Guard | Disable `spreadsheet-view` flag | Should show disabled message | | |
-| Invalid Number | Enter "abc" in Available field | Should revert, show error | | |
-| Negative Number | Enter "-10" in Available field | Should handle appropriately | | |
-| Concurrent Edit | Edit same cell in two tabs | Should handle conflict | | |
+| Test               | Steps                                           | Expected                     | Actual | Pass/Fail |
+| ------------------ | ----------------------------------------------- | ---------------------------- | ------ | --------- |
+| Permission Guard   | Remove `inventory:read` permission, access page | Should show error            |        |           |
+| Feature Flag Guard | Disable `spreadsheet-view` flag                 | Should show disabled message |        |           |
+| Invalid Number     | Enter "abc" in Available field                  | Should revert, show error    |        |           |
+| Negative Number    | Enter "-10" in Available field                  | Should handle appropriately  |        |           |
+| Concurrent Edit    | Edit same cell in two tabs                      | Should handle conflict       |        |           |
 
 ### 3.4 Audit Log Verification
 
@@ -212,7 +212,7 @@ grep -A 20 "updateStatus" server/routers/inventory.ts
 
 ### 3.5 Use Gemini Pro for Code Analysis
 
-```python
+````python
 # Analyze the service code for logic issues
 service_code = open("server/services/spreadsheetViewService.ts").read()
 
@@ -225,17 +225,17 @@ response = client.models.generate_content(
     3. Type safety issues
     4. Performance concerns
     5. Security vulnerabilities
-    
+
     Code:
     ```typescript
     {service_code}
     ```
-    
+
     Provide specific line numbers and fixes.
     """
 )
 print(response.text)
-```
+````
 
 ---
 
@@ -245,13 +245,13 @@ print(response.text)
 
 Test at these breakpoints:
 
-| Breakpoint | Width | Expected Behavior | Actual | Pass/Fail |
-|------------|-------|-------------------|--------|-----------|
-| Mobile S | 320px | Horizontal scroll, touch-friendly | | |
-| Mobile M | 375px | Horizontal scroll, touch-friendly | | |
-| Mobile L | 425px | Horizontal scroll, touch-friendly | | |
-| Tablet | 768px | Full grid visible, side panel | | |
-| Desktop | 1024px+ | Full layout | | |
+| Breakpoint | Width   | Expected Behavior                 | Actual | Pass/Fail |
+| ---------- | ------- | --------------------------------- | ------ | --------- |
+| Mobile S   | 320px   | Horizontal scroll, touch-friendly |        |           |
+| Mobile M   | 375px   | Horizontal scroll, touch-friendly |        |           |
+| Mobile L   | 425px   | Horizontal scroll, touch-friendly |        |           |
+| Tablet     | 768px   | Full grid visible, side panel     |        |           |
+| Desktop    | 1024px+ | Full layout                       |        |           |
 
 ### 4.2 Mobile-Specific Issues to Check
 
@@ -295,22 +295,22 @@ Document any missing mobile optimizations:
 
 ### 5.1 Loading Performance
 
-| Metric | Target | Actual | Pass/Fail |
-|--------|--------|--------|-----------|
-| Initial page load | < 2s | | |
-| Grid data fetch | < 1s | | |
-| Cell edit response | < 500ms | | |
-| Tab switch | < 300ms | | |
+| Metric             | Target  | Actual | Pass/Fail |
+| ------------------ | ------- | ------ | --------- |
+| Initial page load  | < 2s    |        |           |
+| Grid data fetch    | < 1s    |        |           |
+| Cell edit response | < 500ms |        |           |
+| Tab switch         | < 300ms |        |           |
 
 ### 5.2 Rendering Performance
 
 ```javascript
 // In browser console, measure render performance
-performance.mark('grid-start');
+performance.mark("grid-start");
 // Trigger re-render
-performance.mark('grid-end');
-performance.measure('grid-render', 'grid-start', 'grid-end');
-console.log(performance.getEntriesByName('grid-render'));
+performance.mark("grid-end");
+performance.measure("grid-render", "grid-start", "grid-end");
+console.log(performance.getEntriesByName("grid-render"));
 ```
 
 ### 5.3 Memory Usage
@@ -335,38 +335,56 @@ Create a comprehensive report at `docs/reviews/QA-SPREADSHEET-VIEW-ANALYSIS.md`:
 **Tool:** Gemini Pro 2.5
 
 ## Executive Summary
+
 [Brief overview of findings]
 
 ## 1. UI/UX Analysis
+
 ### 1.1 Findings
+
 ### 1.2 Issues
+
 ### 1.3 Recommendations
 
 ## 2. Logic & Data Integrity Analysis
+
 ### 2.1 Findings
+
 ### 2.2 Issues
+
 ### 2.3 Recommendations
 
 ## 3. Mobile Optimization Analysis
+
 ### 3.1 Current State
+
 ### 3.2 Issues
+
 ### 3.3 Recommended Improvements
 
 ## 4. Performance Analysis
+
 ### 4.1 Metrics
+
 ### 4.2 Issues
+
 ### 4.3 Recommendations
 
 ## 5. Priority Fix List
-| # | Issue | Severity | Effort | Recommendation |
-|---|-------|----------|--------|----------------|
+
+| #   | Issue | Severity | Effort | Recommendation |
+| --- | ----- | -------- | ------ | -------------- |
 
 ## 6. Improvement Roadmap
+
 ### Phase 1: Critical Fixes
+
 ### Phase 2: UX Enhancements
+
 ### Phase 3: Mobile Optimization
 
 ## Appendix
+
 - Screenshots
 - Code snippets
 - Test results
@@ -389,7 +407,7 @@ response = client.models.generate_content(
     2. Specific code changes for each fix
     3. An implementation roadmap
     4. Risk assessment for each change
-    
+
     Findings:
     {all_findings}
     """
@@ -410,6 +428,7 @@ git checkout -b fix/spreadsheet-view-qa-$(date +%Y%m%d)
 ### 7.2 Apply Fixes
 
 For each fix:
+
 1. Implement the change
 2. Test locally
 3. Run pre-commit checks
@@ -421,13 +440,13 @@ For each fix:
 gh pr create --title "fix(spreadsheet): QA improvements for Spreadsheet View" \
   --body "## Summary
   Addresses issues found during QA review.
-  
+
   ## Changes
   - [List changes]
-  
+
   ## Testing
   - [Testing performed]
-  
+
   ## Related
   - QA Report: docs/reviews/QA-SPREADSHEET-VIEW-ANALYSIS.md"
 ```
@@ -497,15 +516,15 @@ response = client.models.generate_content(model="gemini-2.5-pro", contents="..."
 
 ## TROUBLESHOOTING
 
-| Issue | Solution |
-|-------|----------|
-| Feature flag not found | Check `server/services/featureFlagService.ts` |
-| AG-Grid not rendering | Verify CSS imports in component |
-| Data not loading | Check tRPC endpoint in Network tab |
-| Permission denied | Verify user has `inventory:read` and `orders:read` |
-| Mobile layout broken | Check Tailwind responsive classes |
+| Issue                  | Solution                                           |
+| ---------------------- | -------------------------------------------------- |
+| Feature flag not found | Check `server/services/featureFlagService.ts`      |
+| AG-Grid not rendering  | Verify CSS imports in component                    |
+| Data not loading       | Check tRPC endpoint in Network tab                 |
+| Permission denied      | Verify user has `inventory:read` and `orders:read` |
+| Mobile layout broken   | Check Tailwind responsive classes                  |
 
 ---
 
-*Prompt Version: 1.0*  
-*Last Updated: 2026-01-06*
+_Prompt Version: 1.0_  
+_Last Updated: 2026-01-06_

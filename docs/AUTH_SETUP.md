@@ -197,18 +197,18 @@ tsx scripts/seed-rbac.ts
 
 ### Predefined Roles
 
-| Role               | Description                                 |
-| ------------------ | ------------------------------------------- |
-| Super Admin        | Unrestricted access to everything           |
-| Owner/Executive    | Read-only access to all financial data      |
-| Operations Manager | Full inventory, orders, POs, vendors access |
-| Sales Manager      | Full clients, orders, quotes access         |
-| Accountant         | Full accounting, credits, COGS access       |
-| Inventory Manager  | Full inventory, locations, transfers access |
-| Buyer/Procurement  | Full POs, vendors, vendor supply access     |
-| Customer Service   | Full clients, orders, returns access        |
-| Warehouse Staff    | Receive POs, adjust/transfer inventory      |
-| Read-Only Auditor  | Read-only access + full audit logs          |
+| Role               | Description                                   |
+| ------------------ | --------------------------------------------- |
+| Super Admin        | Unrestricted access to everything             |
+| Owner/Executive    | Read-only access to all financial data        |
+| Operations Manager | Full inventory, orders, POs, suppliers access |
+| Sales Manager      | Full clients, orders, quotes access           |
+| Accountant         | Full accounting, credits, COGS access         |
+| Inventory Manager  | Full inventory, locations, transfers access   |
+| Buyer/Procurement  | Full POs, suppliers, supplier supply access   |
+| Customer Service   | Full clients, orders, returns access          |
+| Warehouse Staff    | Receive POs, adjust/transfer inventory        |
+| Read-Only Auditor  | Read-only access + full audit logs            |
 
 ### Super Admin Check
 
@@ -308,15 +308,15 @@ pnpm seed:qa-accounts
 
 ### QA Accounts
 
-| Email                        | Role              | Password      |
-| ---------------------------- | ----------------- | ------------- |
-| qa.superadmin@terp.test      | Super Admin       | TerpQA2026!   |
-| qa.salesmanager@terp.test    | Sales Manager     | TerpQA2026!   |
-| qa.salesrep@terp.test        | Sales Rep         | TerpQA2026!   |
-| qa.inventory@terp.test       | Inventory Manager | TerpQA2026!   |
-| qa.fulfillment@terp.test     | Fulfillment       | TerpQA2026!   |
-| qa.accounting@terp.test      | Accounting        | TerpQA2026!   |
-| qa.auditor@terp.test         | Read-Only Auditor | TerpQA2026!   |
+| Email                     | Role              | Password    |
+| ------------------------- | ----------------- | ----------- |
+| qa.superadmin@terp.test   | Super Admin       | TerpQA2026! |
+| qa.salesmanager@terp.test | Sales Manager     | TerpQA2026! |
+| qa.salesrep@terp.test     | Sales Rep         | TerpQA2026! |
+| qa.inventory@terp.test    | Inventory Manager | TerpQA2026! |
+| qa.fulfillment@terp.test  | Fulfillment       | TerpQA2026! |
+| qa.accounting@terp.test   | Accounting        | TerpQA2026! |
+| qa.auditor@terp.test      | Read-Only Auditor | TerpQA2026! |
 
 ### QA Auth API Endpoints
 
@@ -332,10 +332,10 @@ See [docs/auth/QA_AUTH.md](./auth/QA_AUTH.md) for complete QA authentication doc
 
 ## Available Scripts
 
-| Command                                        | Description                        |
-| ---------------------------------------------- | ---------------------------------- |
-| `pnpm setup:admin <email> <password>`          | Create/update admin user           |
-| `pnpm seed:test-accounts`                      | Create test accounts for all roles |
-| `pnpm seed:qa-accounts`                        | Create QA accounts for RBAC testing|
-| `pnpm get:auth-token <email> <password> [url]` | Get auth token for automation      |
-| `tsx scripts/seed-rbac.ts`                     | Seed RBAC roles and permissions    |
+| Command                                        | Description                         |
+| ---------------------------------------------- | ----------------------------------- |
+| `pnpm setup:admin <email> <password>`          | Create/update admin user            |
+| `pnpm seed:test-accounts`                      | Create test accounts for all roles  |
+| `pnpm seed:qa-accounts`                        | Create QA accounts for RBAC testing |
+| `pnpm get:auth-token <email> <password> [url]` | Get auth token for automation       |
+| `tsx scripts/seed-rbac.ts`                     | Seed RBAC roles and permissions     |

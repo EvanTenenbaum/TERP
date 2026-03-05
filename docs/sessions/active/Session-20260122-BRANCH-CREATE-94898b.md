@@ -35,7 +35,7 @@ Execute E2E test fixes based on comprehensive frontend E2E test report.
 
 - [x] Investigate C-02: Orders page shows no data
 - [x] Investigate C-05: Inventory page shows no data
-- [x] Investigate C-06: Vendors page shows no data
+- [x] Investigate C-06: Suppliers page shows no data
 - [x] Investigate M-01: Calendar database error
 - [x] Investigate M-03: Dashboard broken client links
 - [x] Investigate m-01: Double search required
@@ -77,8 +77,8 @@ Execute E2E test fixes based on comprehensive frontend E2E test report.
 Investigation confirmed the code is correct:
 
 - **C-02 (Orders)**: `ordersDb.getAllOrders()` correctly uses `sql\`isDraft = 0\`` for MySQL TINYINT boolean. Seed data missing.
-- **C-05 (Inventory)**: `inventoryDb.getBatchesWithDetails()` correctly joins batches→products→brands→lots→vendors. No data seeded.
-- **C-06 (Vendors)**: VendorsPage derives vendors from inventory list via `lots.vendorId`. No inventory = no vendors.
+- **C-05 (Inventory)**: `inventoryDb.getBatchesWithDetails()` correctly joins batches→products→brands→lots→suppliers. No data seeded.
+- **C-06 (Suppliers)**: VendorsPage derives suppliers from inventory list via `lots.vendorId`. No inventory = no suppliers.
 
 **Action Required**: Ensure E2E test environment runs seed scripts before testing.
 

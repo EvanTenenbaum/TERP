@@ -57,5 +57,5 @@ No new backend domain added. Owner widgets reuse existing APIs and card wiring.
 2. With flag `OFF`, `/dashboard` shows standard dashboard.
 3. Toggle flag `ON` in Feature Flags admin.
 4. Reload `/dashboard` and verify owner card layout renders.
-5. Verify `Vendors Who Need To Get Paid` card shows data and links to bills.
+5. Verify `Suppliers Who Need To Get Paid` card shows data and links to bills.
 6. Verify mobile and desktop screenshots for both states.

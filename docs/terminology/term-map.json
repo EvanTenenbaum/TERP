@@ -1,0 +1,368 @@
+{
+  "$schema": "./schema.json",
+  "version": "1.0.0",
+  "created": "2026-03-05",
+  "description": "TERP canonical term map v1. Every term in the 5 vocabulary families is defined here. Validated against docs/terminology/schema.json.",
+  "terms": [
+    {
+      "term": "client",
+      "canonical": "Client",
+      "family": "party",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "clients",
+        "db_column": "clients.id",
+        "api_field": "clientId",
+        "ui_label": "Client",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "All business entities (buyers, sellers, brands, referees, contractors) live in the `clients` table with boolean role flags (isBuyer, isSeller, isBrand, isReferee, isContractor). A Client is the top-level entity. Never create separate vendor/supplier/customer tables — use the `clients` table with the appropriate role flags.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "All party entities must be stored in the `clients` table. Never add new standalone party tables."
+      }
+    },
+    {
+      "term": "supplier",
+      "canonical": "Supplier",
+      "family": "party",
+      "source": {
+        "authority": "db_schema+evan_vocabulary",
+        "db_table": "clients",
+        "db_column": "clients.isSeller",
+        "api_field": "supplierClientId",
+        "ui_label": "Supplier",
+        "code_file": "server/inventoryDb.ts"
+      },
+      "deprecated_aliases": ["Vendor", "vendor", "vendorId", "vendors"],
+      "context": "A Supplier is a Client with isSeller=true. Supplier-specific metadata lives in the `supplier_profiles` table keyed by clientId. The `vendors` table is DEPRECATED since 2025-12-16 and must never be used in new code. Use `clients` with `isSeller=true` and join `supplier_profiles` for supplier-specific fields.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "Never use 'Vendor' in UI. Always use 'Supplier'. Never query db.query.vendors — use clients with isSeller=true.",
+        "exceptions": [
+          "drizzle/schema.ts",
+          "server/inventoryDb.ts",
+          "server/routers/vendors.ts",
+          "server/vendorContextDb.ts",
+          "server/vendorSupplyDb.ts",
+          "server/services/vendorMappingService.ts",
+          "server/services/payablesService.ts",
+          "client/src/components/vendors/**",
+          "client/src/lib/nomenclature.ts"
+        ]
+      },
+      "notes": "The vendors table and vendor-prefixed code are legacy backward-compatibility shims. They are being migrated. New code must use clients+isSeller=true."
+    },
+    {
+      "term": "buyer",
+      "canonical": "Buyer",
+      "family": "party",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "clients",
+        "db_column": "clients.isBuyer",
+        "api_field": "clientTypes",
+        "ui_label": "Customer",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "A Buyer is a Client with isBuyer=true. In user-facing UI, 'Customer' is the preferred label. In API and code, 'Buyer' or 'clientTypes: [buyer]' is the canonical reference. A Client can be both a buyer and a seller simultaneously.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Use 'Buyer' in code/API. 'Customer' is acceptable in UI labels."
+      }
+    },
+    {
+      "term": "brand",
+      "canonical": "Brand",
+      "family": "party",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "brands",
+        "db_column": "brands.id",
+        "api_field": "brandId",
+        "ui_label": "Brand",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "A Brand is a product line or label associated with a Supplier. In the DB, brands are a separate table linked to products via brandId. In the UI, the label dynamically switches to 'Farmer' for flower/pre-roll categories. See the brand/farmer policy.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "In code/DB/API always use 'brand' / brandId. In UI, use getBrandLabel(category) from nomenclature.ts to get the correct label ('Brand' or 'Farmer')."
+      },
+      "dynamic_variants": [
+        {
+          "condition": "product category is one of: flower, pre-roll, pre-rolls, preroll, prerolls, indoor flower, outdoor flower, greenhouse flower, smalls, shake, trim",
+          "label": "Farmer"
+        },
+        {
+          "condition": "product category is anything else (concentrates, edibles, tinctures, topicals, etc.)",
+          "label": "Brand"
+        },
+        {
+          "condition": "category is unknown or mixed",
+          "label": "Brand/Farmer"
+        }
+      ]
+    },
+    {
+      "term": "batch",
+      "canonical": "Batch",
+      "family": "product",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "batches",
+        "db_column": "batches.id",
+        "api_field": "batchId",
+        "ui_label": "Batch",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": ["InventoryItem", "inventory_item", "Item", "item"],
+      "context": "A Batch is a discrete received quantity of a specific Product within a Lot. Each Batch has its own batchStatus lifecycle (AWAITING_INTAKE → LIVE → SOLD_OUT/CLOSED), COGS configuration, and quantity tracking (onHandQty, sampleQty, reservedQty, etc.). A Batch is the atomic unit of inventory in TERP. In sales/order line item context, it may be informally called an 'item' in the UI, but the data model term is Batch.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "Use 'Batch' and 'batchId' in all technical contexts (code, API, types). 'Item' is only acceptable as a UI label for order line items — never as a type name."
+      }
+    },
+    {
+      "term": "sku",
+      "canonical": "SKU",
+      "family": "product",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "batches",
+        "db_column": "batches.sku",
+        "api_field": "sku",
+        "ui_label": "SKU",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "Each Batch has exactly one SKU, which is auto-generated and unique across all batches. The SKU is a stable identifier for a batch that can be used in external integrations, barcodes, and reporting.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "SKU is always uppercase in code and UI."
+      }
+    },
+    {
+      "term": "product",
+      "canonical": "Product",
+      "family": "product",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "products",
+        "db_column": "products.id",
+        "api_field": "productId",
+        "ui_label": "Product",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "A Product is a template or definition (strain, category, brand). A Batch is a physical instance of that Product with a specific quantity and COGS. One Product can have many Batches across different Lots.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Distinguish clearly between Product (definition) and Batch (instance with inventory quantity)."
+      }
+    },
+    {
+      "term": "lot",
+      "canonical": "Lot",
+      "family": "product",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "lots",
+        "db_column": "lots.id",
+        "api_field": "lotId",
+        "ui_label": "Lot",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "A Lot groups one or more Batches from the same supplier delivery event. Lots link Batches to Suppliers and provide a grouping unit for intake tracking.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Use 'Lot' and 'lotId' consistently. Do not confuse Lot with Batch."
+      }
+    },
+    {
+      "term": "purchase_order",
+      "canonical": "Purchase Order",
+      "family": "intake",
+      "source": {
+        "authority": "db_schema+evan_vocabulary",
+        "db_table": "purchaseOrders",
+        "db_column": "purchaseOrders.poNumber",
+        "api_field": "purchaseOrderId",
+        "ui_label": "Purchase Order",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "A Purchase Order (PO) is a formal commitment document created before inventory arrives from a Supplier. It specifies expected products, quantities, and prices. A PO can be linked to an Intake Session when goods are received. The status flows: DRAFT → SENT → CONFIRMED → PARTIALLY_RECEIVED → RECEIVED → CLOSED.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Spell out 'Purchase Order' in code. 'PO' is acceptable as a UI abbreviation or in variable names (e.g. poNumber, poId)."
+      }
+    },
+    {
+      "term": "direct_intake",
+      "canonical": "Direct Intake",
+      "family": "intake",
+      "source": {
+        "authority": "evan_vocabulary",
+        "db_table": null,
+        "db_column": null,
+        "api_field": null,
+        "ui_label": "Direct Intake",
+        "code_file": "client/src/components/work-surface/DirectIntakeWorkSurface.tsx"
+      },
+      "deprecated_aliases": [
+        "DirectEntry",
+        "direct_entry",
+        "ManualIntake",
+        "manual_intake"
+      ],
+      "context": "Direct Intake is the workflow for receiving inventory without a preceding Purchase Order. It directly creates a Lot and Batches in a single flow. Used when a supplier delivers ad-hoc without prior PO arrangement. Contrast with the PO Receiving flow which is tied to an existing Purchase Order.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "Use 'Direct Intake' in UI and documentation. Never call it 'Direct Entry' or 'Manual Intake'."
+      }
+    },
+    {
+      "term": "intake",
+      "canonical": "Intake",
+      "family": "intake",
+      "source": {
+        "authority": "evan_vocabulary",
+        "db_table": "intake_sessions",
+        "db_column": "intake_sessions.session_number",
+        "api_field": "intakeSessionId",
+        "ui_label": "Intake",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [
+        "Receiving",
+        "receiving",
+        "ReceivingSession",
+        "receiving_session"
+      ],
+      "context": "Intake is the umbrella process of recording received inventory. The `intake_sessions` table tracks a session of receiving multiple batches from a supplier at one time. Can be linked to a Purchase Order (PO Receiving) or standalone (Direct Intake). 'Product Intake' is the full UI label used in the Procurement Workspace.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "Use 'Intake' (not 'Receiving') in all new code, UI labels, and documentation. 'Product Intake' is acceptable as a full label in the UI."
+      }
+    },
+    {
+      "term": "sales_order",
+      "canonical": "Sales Order",
+      "family": "sales",
+      "source": {
+        "authority": "evan_vocabulary",
+        "db_table": "orders",
+        "db_column": "orders.orderType",
+        "api_field": "orderType",
+        "ui_label": "Sales Order",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": ["Sale", "sale"],
+      "context": "A Sales Order is an `orders` record with `orderType = 'SALE'`. It represents a confirmed sale to a Buyer/Customer. Distinguished from a Quote (which is `orderType = 'QUOTE'`). A Sales Order generates an Invoice and triggers Fulfillment tracking. The `saleStatus` field tracks payment: PENDING → PARTIALLY_PAID → PAID → OVERDUE.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "Always say 'Sales Order' not 'Sale' when referring to the document/record. 'Sale' as a verb or general concept is fine but ambiguous as a noun — use 'Sales Order' instead."
+      }
+    },
+    {
+      "term": "quote",
+      "canonical": "Quote",
+      "family": "sales",
+      "source": {
+        "authority": "db_schema+evan_vocabulary",
+        "db_table": "orders",
+        "db_column": "orders.orderType",
+        "api_field": "orderType",
+        "ui_label": "Quote",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": ["Estimate", "estimate"],
+      "context": "A Quote is an `orders` record with `orderType = 'QUOTE'`. It is a non-binding price proposal to a Customer. Quotes can be converted to Sales Orders. The `quoteStatus` field tracks state: DRAFT → SENT → ACCEPTED → REJECTED → EXPIRED.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Use 'Quote' not 'Estimate'. Never use 'Estimate' in new UI or code."
+      }
+    },
+    {
+      "term": "invoice",
+      "canonical": "Invoice",
+      "family": "sales",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "invoices",
+        "db_column": "invoices.id",
+        "api_field": "invoiceId",
+        "ui_label": "Invoice",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": [],
+      "context": "An Invoice is a financial document generated from a Sales Order that tracks the amount owed by a Customer. Each Sales Order generates at most one Invoice. The Invoice is the primary instrument for accounts receivable tracking.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Invoice is generated from Sales Orders only. Do not create Invoices directly without a Sales Order."
+      }
+    },
+    {
+      "term": "fulfillment",
+      "canonical": "Fulfillment",
+      "family": "sales",
+      "source": {
+        "authority": "db_schema",
+        "db_table": "orders",
+        "db_column": "orders.fulfillmentStatus",
+        "api_field": "fulfillmentStatus",
+        "ui_label": "Fulfillment",
+        "code_file": "drizzle/schema.ts"
+      },
+      "deprecated_aliases": ["Shipping", "shipping"],
+      "context": "Fulfillment tracks the physical movement of goods after a Sales Order is confirmed. The `fulfillmentStatus` enum tracks: PENDING → PACKED → SHIPPED → DELIVERED (or CANCELLED). Fulfillment is broader than shipping — it includes pick & pack, labeling, and delivery confirmation.",
+      "policy_lock": {
+        "locked": false,
+        "rule": "Use 'Fulfillment' as the overarching term. 'Shipping' is acceptable only to refer to the specific SHIPPED status or the act of shipping, not as an alternative for the full fulfillment lifecycle."
+      }
+    },
+    {
+      "term": "farmer",
+      "canonical": "Farmer",
+      "family": "brand",
+      "source": {
+        "authority": "evan_vocabulary",
+        "db_table": "brands",
+        "db_column": "brands.id",
+        "api_field": "brandId",
+        "ui_label": "Farmer",
+        "code_file": "client/src/lib/nomenclature.ts"
+      },
+      "deprecated_aliases": ["Grower", "grower"],
+      "context": "Farmer is a UI-only term used when the product category is flower, pre-roll, smalls, shake, or trim. It refers to the grower who produced the flower. In the data model, Farmers are stored as `brands` — there is no separate Farmer table or API field. The UI label is determined by `getBrandLabel(category)` in `client/src/lib/nomenclature.ts`. When category is unknown or mixed, the label is 'Brand/Farmer'.",
+      "policy_lock": {
+        "locked": true,
+        "rule": "Never create a 'farmer' DB table or API field. Always use `brands` table and `brandId` in the data model. Use getBrandLabel() from nomenclature.ts in UI components to get the correct label.",
+        "exceptions": [
+          "server/routers/intakeReceipts.ts",
+          "server/routers/vendors.ts",
+          "server/routers/pricing.ts"
+        ]
+      },
+      "dynamic_variants": [
+        {
+          "condition": "product category is one of: flower, pre-roll, pre-rolls, preroll, prerolls, indoor flower, outdoor flower, greenhouse flower, smalls, shake, trim",
+          "label": "Farmer"
+        },
+        {
+          "condition": "product category is anything else",
+          "label": "Brand"
+        },
+        {
+          "condition": "category unknown or multiple categories in view",
+          "label": "Brand/Farmer"
+        }
+      ],
+      "notes": "The intakeReceipts router uses 'farmerVerifiedAt' as a schema column name — this is a legacy column name and is acceptable as an exception. New columns must use 'brand' terminology."
+    }
+  ]
+}

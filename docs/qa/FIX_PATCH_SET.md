@@ -11,10 +11,11 @@
 > **IMPORTANT**: This patch set has been revised following a third-party expert review and product decision clarifications.
 >
 > **Key Corrections**:
+>
 > - ~~P0-002 (Inventory race condition)~~ **REMOVED** - False positive. Code already implements `.for("update")` locking
 > - ~~P0-004 (Individual feature flags)~~ **REMOVED** - Product decision: deployment-level flags sufficient
 > - **P0-002 (NEW)**: Flexible lot selection - users select specific batches per customer needs (not strict FIFO/LIFO)
-> - **P0-003**: Updated to add RETURNED status with restocking/vendor-return paths
+> - **P0-003**: Updated to add RETURNED status with restocking/supplier-return paths
 > - **P1-001**: Confirmed current void logic is correct; add void reason field
 
 ---
@@ -26,8 +27,13 @@
 **Verified**: ✅ Code inspection confirms stub with comment "In a real implementation..."
 
 ### Current Code (Broken)
+
 ```typescript
-const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) => {
+const handlePaymentSubmit = (
+  invoiceId: number,
+  amount: number,
+  note: string
+) => {
   setSaving("Recording payment...");
   // In a real implementation, this would call a recordPayment mutation  ← STUB!
   toasts.success(`Payment of ${formatCurrency(amount)} recorded`);
@@ -38,6 +44,7 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
 ```
 
 ### Reference Implementation (PaymentInspector.tsx shows correct pattern)
+
 ```typescript
 // PaymentInspector.tsx uses the mutation correctly - copy this pattern
 const recordPayment = trpc.payments.recordPayment.useMutation({
@@ -50,6 +57,7 @@ const recordPayment = trpc.payments.recordPayment.useMutation({
 ```
 
 ### Fixed Code
+
 ```typescript
 // Add mutation hook near other mutations
 const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
@@ -61,18 +69,22 @@ const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
     utils.accounting.invoices.list.invalidate();
     utils.accounting.invoices.getARAging.invalidate();
   },
-  onError: (error) => {
+  onError: error => {
     toasts.error(error.message || "Failed to record payment");
     setError(error.message);
   },
 });
 
-const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) => {
+const handlePaymentSubmit = (
+  invoiceId: number,
+  amount: number,
+  note: string
+) => {
   recordPaymentMutation.mutate({
     invoiceId,
     amount,
     notes: note,
-    paymentMethod: 'CHECK', // or get from form/dialog
+    paymentMethod: "CHECK", // or get from form/dialog
     paymentDate: new Date(),
   });
 };
@@ -85,13 +97,14 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
 > **Resolution**: Third-party code review confirms this was incorrectly reported.
 >
 > **Evidence**: `ordersDb.ts:290-296` shows proper implementation:
+>
 > ```typescript
 > const lockedBatch = await tx
 >   .select()
 >   .from(batches)
 >   .where(eq(batches.id, item.batchId))
 >   .limit(1)
->   .for("update")  // ✅ Row-level lock IS IMPLEMENTED
+>   .for("update") // ✅ Row-level lock IS IMPLEMENTED
 >   .then(rows => rows[0]);
 > ```
 >
@@ -105,11 +118,13 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
 **Product Decision**: Users need to select specific batches/lots per customer needs (not strict FIFO/LIFO)
 
 ### Current Behavior
+
 Single `unitCogs` stored per batch. System auto-allocates without user choice.
 
 ### Required Changes
 
 **1. Add lot selection UI to order creation:**
+
 ```typescript
 // OrderLineItemEditor.tsx
 const [selectedBatches, setSelectedBatches] = useState<BatchAllocation[]>([]);
@@ -123,23 +138,30 @@ const [selectedBatches, setSelectedBatches] = useState<BatchAllocation[]>([]);
 ```
 
 **2. Update order line item schema:**
+
 ```typescript
 // schema.ts - add batch allocations
-export const orderLineItemAllocations = pgTable('order_line_item_allocations', {
-  id: serial('id').primaryKey(),
-  orderLineItemId: integer('order_line_item_id').references(() => orderLineItems.id),
-  batchId: integer('batch_id').references(() => batches.id),
-  quantityAllocated: integer('quantity_allocated').notNull(),
-  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+export const orderLineItemAllocations = pgTable("order_line_item_allocations", {
+  id: serial("id").primaryKey(),
+  orderLineItemId: integer("order_line_item_id").references(
+    () => orderLineItems.id
+  ),
+  batchId: integer("batch_id").references(() => batches.id),
+  quantityAllocated: integer("quantity_allocated").notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
 });
 ```
 
 **3. Update COGS calculation:**
+
 ```typescript
 // Calculate weighted average COGS from selected batches
 const calculateCogs = (allocations: BatchAllocation[]) => {
   const totalQty = allocations.reduce((sum, a) => sum + a.quantity, 0);
-  const totalCost = allocations.reduce((sum, a) => sum + (a.quantity * a.unitCost), 0);
+  const totalCost = allocations.reduce(
+    (sum, a) => sum + a.quantity * a.unitCost,
+    0
+  );
   return totalCost / totalQty;
 };
 ```
@@ -150,47 +172,48 @@ const calculateCogs = (allocations: BatchAllocation[]) => {
 
 **File**: `server/db/schema.ts` (or relevant enum definition)
 **File**: `server/ordersDb.ts:1564-1570` (validation logic)
-**Product Decision**: Add RETURNED status with two paths: (a) restocked to inventory, (b) returned to vendor
+**Product Decision**: Add RETURNED status with two paths: (a) restocked to inventory, (b) returned to supplier
 
 ### Current Validation Code
+
 ```typescript
 // ordersDb.ts:1564-1570
 const validStatus =
-  newStatus === "PENDING" ||
-  newStatus === "PACKED" ||
-  newStatus === "SHIPPED"
+  newStatus === "PENDING" || newStatus === "PACKED" || newStatus === "SHIPPED"
     ? newStatus
     : "PENDING"; // Default to PENDING for unsupported statuses
 ```
 
 ### Fixed Schema
+
 ```typescript
-export const fulfillmentStatusEnum = pgEnum('fulfillment_status', [
-  'DRAFT',
-  'CONFIRMED',
-  'PENDING',
-  'PACKED',
-  'SHIPPED',
-  'DELIVERED',
-  'RETURNED',           // NEW
-  'RESTOCKED',          // NEW - returned items back in inventory
-  'RETURNED_TO_VENDOR', // NEW - returned items sent back to vendor
+export const fulfillmentStatusEnum = pgEnum("fulfillment_status", [
+  "DRAFT",
+  "CONFIRMED",
+  "PENDING",
+  "PACKED",
+  "SHIPPED",
+  "DELIVERED",
+  "RETURNED", // NEW
+  "RESTOCKED", // NEW - returned items back in inventory
+  "RETURNED_TO_VENDOR", // NEW - returned items sent back to supplier
 ]);
 ```
 
 ### Fixed Validation with State Machine
+
 ```typescript
 const validTransitions: Record<string, string[]> = {
-  'DRAFT': ['CONFIRMED', 'CANCELLED'],
-  'CONFIRMED': ['PENDING', 'CANCELLED'],
-  'PENDING': ['PACKED', 'CANCELLED'],
-  'PACKED': ['SHIPPED'],
-  'SHIPPED': ['DELIVERED', 'RETURNED'],
-  'DELIVERED': ['RETURNED'],
-  'RETURNED': ['RESTOCKED', 'RETURNED_TO_VENDOR'],
-  'RESTOCKED': [],        // Terminal
-  'RETURNED_TO_VENDOR': [], // Terminal
-  'CANCELLED': [],        // Terminal
+  DRAFT: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PENDING", "CANCELLED"],
+  PENDING: ["PACKED", "CANCELLED"],
+  PACKED: ["SHIPPED"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
+  RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
+  RESTOCKED: [], // Terminal
+  RETURNED_TO_VENDOR: [], // Terminal
+  CANCELLED: [], // Terminal
 };
 
 const canTransition = (from: string, to: string) =>
@@ -198,29 +221,31 @@ const canTransition = (from: string, to: string) =>
 ```
 
 ### Return Processing Logic
+
 ```typescript
 // When transitioning to RESTOCKED
 const processRestock = async (orderId: number) => {
   // Get returned items and add back to inventory batches
   const order = await getOrderWithItems(orderId);
   for (const item of order.lineItems) {
-    await adjustBatchQuantity(item.batchId, item.quantity, 'RESTOCK');
+    await adjustBatchQuantity(item.batchId, item.quantity, "RESTOCK");
   }
 };
 
 // When transitioning to RETURNED_TO_VENDOR
 const processVendorReturn = async (orderId: number, vendorId: number) => {
-  // Create vendor return record (separate from inventory)
+  // Create supplier return record (separate from inventory)
   await createVendorReturnRecord({
     orderId,
     vendorId,
     items: order.lineItems,
-    status: 'PENDING_VENDOR_CREDIT',
+    status: "PENDING_VENDOR_CREDIT",
   });
 };
 ```
 
 **Migration Required**:
+
 ```sql
 -- Add new enum values (PostgreSQL)
 ALTER TYPE fulfillment_status ADD VALUE 'DRAFT' BEFORE 'PENDING';
@@ -248,11 +273,12 @@ ALTER TYPE fulfillment_status ADD VALUE 'RETURNED_TO_VENDOR' AFTER 'RESTOCKED';
 **Product Decision**: Current void logic is CORRECT (paid invoices CAN be voided). Add field to capture reason.
 
 ### Current Code (Confirmed Correct)
+
 ```typescript
 if (invoice.status === "PAID" && input.status !== "VOID") {
   throw new TRPCError({
     code: "BAD_REQUEST",
-    message: "Paid invoices can only be voided"
+    message: "Paid invoices can only be voided",
   });
 }
 ```
@@ -260,6 +286,7 @@ if (invoice.status === "PAID" && input.status !== "VOID") {
 ### Required Changes
 
 **1. Update void mutation input schema:**
+
 ```typescript
 // invoices.ts
 void: protectedProcedure
@@ -273,6 +300,7 @@ void: protectedProcedure
 ```
 
 **2. Add voidReason column to invoices table:**
+
 ```sql
 ALTER TABLE invoices ADD COLUMN void_reason TEXT;
 ALTER TABLE invoices ADD COLUMN voided_at TIMESTAMP;
@@ -280,10 +308,12 @@ ALTER TABLE invoices ADD COLUMN voided_by INTEGER REFERENCES users(id);
 ```
 
 **3. Update void mutation to store reason:**
+
 ```typescript
-await db.update(invoices)
+await db
+  .update(invoices)
   .set({
-    status: 'VOID',
+    status: "VOID",
     voidReason: input.voidReason,
     voidedAt: new Date(),
     voidedBy: ctx.user.id,
@@ -292,6 +322,7 @@ await db.update(invoices)
 ```
 
 **4. Update UI to require reason:**
+
 ```typescript
 // InvoicesWorkSurface.tsx - void dialog
 <Dialog open={showVoidDialog}>
@@ -323,6 +354,7 @@ await db.update(invoices)
 **Verified**: ✅ No debounce or isPending guard found on confirm button
 
 ### Current Pattern (Vulnerable)
+
 ```typescript
 const handleConfirm = () => {
   confirmMutation.mutate({ orderId: selectedOrder.id });
@@ -332,6 +364,7 @@ const handleConfirm = () => {
 ```
 
 ### Fixed Code
+
 ```typescript
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -357,28 +390,30 @@ const handleConfirm = useDebouncedCallback(() => {
 **Verified**: ✅ Version check uses conditional `if (input.version && ...)`
 
 ### Current Code
+
 ```typescript
 if (input.version && input.version !== existingOrder.version) {
   throw new TRPCError({
-    code: 'CONFLICT',
-    message: 'Order has been modified by another user',
+    code: "CONFLICT",
+    message: "Order has been modified by another user",
   });
 }
 ```
 
 ### Fixed Code
+
 ```typescript
 // Make version check mandatory
 if (input.version === undefined || input.version === null) {
   throw new TRPCError({
-    code: 'BAD_REQUEST',
-    message: 'Version field is required for update operations',
+    code: "BAD_REQUEST",
+    message: "Version field is required for update operations",
   });
 }
 
 if (input.version !== existingOrder.version) {
   throw new TRPCError({
-    code: 'CONFLICT',
+    code: "CONFLICT",
     message: `Order has been modified. Your version: ${input.version}, Current: ${existingOrder.version}. Please refresh.`,
   });
 }
@@ -392,6 +427,7 @@ if (input.version !== existingOrder.version) {
 **Verified**: ✅ Error variables exist but not rendered
 
 ### Current Pattern
+
 ```typescript
 const { data, isLoading, error } = trpc.accounting.invoices.list.useQuery({...});
 
@@ -400,6 +436,7 @@ const { data, isLoading, error } = trpc.accounting.invoices.list.useQuery({...})
 ```
 
 ### Fixed Code
+
 ```typescript
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -426,28 +463,30 @@ const { data, isLoading, error, refetch } = trpc.accounting.invoices.list.useQue
 
 ---
 
-## P1-007: Deprecated Vendor Endpoint
+## P1-007: Deprecated Supplier Endpoint
 
 **File**: `client/src/components/work-surface/DirectIntakeWorkSurface.tsx`
 **Line**: 507
-**Verified**: ✅ Uses `trpc.vendors.getAll.useQuery()`
+**Verified**: ✅ Uses `trpc.suppliers.getAll.useQuery()`
 
 ### Current Code
+
 ```typescript
 const { data: vendorsData, isLoading: vendorsLoading } =
-  trpc.vendors.getAll.useQuery();
+  trpc.suppliers.getAll.useQuery();
 ```
 
 ### Fixed Code
+
 ```typescript
 const { data: vendorsData, isLoading: vendorsLoading } =
   trpc.clients.list.useQuery({
     isSeller: true,
-    pageSize: 1000
+    pageSize: 1000,
   });
 
 // Update data access pattern if needed
-const vendors = vendorsData?.items ?? [];
+const suppliers = vendorsData?.items ?? [];
 ```
 
 ---
@@ -459,6 +498,7 @@ const vendors = vendorsData?.items ?? [];
 **Verified**: ✅ Uses `protectedProcedure` without additional permission check
 
 ### Current Code
+
 ```typescript
 getEffectiveFlags: protectedProcedure
   .query(async ({ ctx }) => {
@@ -467,6 +507,7 @@ getEffectiveFlags: protectedProcedure
 ```
 
 ### Fixed Code
+
 ```typescript
 getEffectiveFlags: protectedProcedure
   .use(requireAnyPermission(["system:read", "feature_flags:read"]))
@@ -480,16 +521,19 @@ getEffectiveFlags: protectedProcedure
 ## Application Priority
 
 ### Immediate (Before next deployment)
+
 1. **P0-001**: Payment recording - Blocks accounting flow
 2. **P1-002**: Debounce mutations - Prevents duplicate operations
 
 ### This Sprint
+
 3. **P0-002**: Flexible lot selection - Core business requirement
 4. **P0-003**: Order status machine with RETURNED - Requires migration
 5. **P1-001**: Add void reason field - Minor schema + UI change
 6. **P1-005**: Error displays - UX improvement
 
 ### Next Sprint
+
 7. **P1-003**: Optimistic locking - May need client updates
 8. **P1-006**: Deprecated endpoint - Technical debt
 9. **P1-007**: Permission check - Security hardening
@@ -498,20 +542,21 @@ getEffectiveFlags: protectedProcedure
 
 ## Testing Requirements
 
-| Fix | Test Requirement |
-|-----|------------------|
-| P0-001 | Full payment flow: record → verify → check ledger |
-| P0-002 | Lot selection: user selects batches, verify COGS calculated correctly |
+| Fix    | Test Requirement                                                         |
+| ------ | ------------------------------------------------------------------------ |
+| P0-001 | Full payment flow: record → verify → check ledger                        |
+| P0-002 | Lot selection: user selects batches, verify COGS calculated correctly    |
 | P0-003 | Status transitions: SHIPPED → RETURNED → RESTOCKED or RETURNED_TO_VENDOR |
-| P1-001 | Void with reason: verify reason stored, displayed in audit |
-| P1-002 | Rapid click test (10 clicks in 1 second) |
-| P1-005 | Network error simulation, verify retry works |
+| P1-001 | Void with reason: verify reason stored, displayed in audit               |
+| P1-002 | Rapid click test (10 clicks in 1 second)                                 |
+| P1-005 | Network error simulation, verify retry works                             |
 
 ---
 
 ## Rollback Plan
 
 All changes should be:
+
 1. Feature flagged where possible (P0-004 enables this)
 2. Database migrations reversible
 3. Tested in staging before production

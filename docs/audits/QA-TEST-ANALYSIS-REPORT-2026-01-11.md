@@ -18,7 +18,7 @@ A comprehensive QA test was conducted across 274 test cases covering 15 domains.
 | **BLOCKED**        | 17    | 6.2%       |
 | **N/A (API-only)** | 62    | 22.6%      |
 
-> **Updated:** Initial analysis incorrectly marked several working features as BLOCKED due to navigation documentation gaps. Workflow, Analytics, Auth, and Vendor read operations are all functional.
+> **Updated:** Initial analysis incorrectly marked several working features as BLOCKED due to navigation documentation gaps. Workflow, Analytics, Auth, and Supplier read operations are all functional.
 
 ### Critical Findings
 
@@ -149,7 +149,7 @@ Features that couldn't be tested due to navigation problems:
 | CRM    | Client Notes          | 77-78 | 2     |
 | CRM    | Client Communications | 79-80 | 2     |
 
-> **Resolved:** Workflow/Todos (/todos), Analytics (/analytics), Auth (/account), and Vendors (/vendors) are all accessible and functional.
+> **Resolved:** Workflow/Todos (/todos), Analytics (/analytics), Auth (/account), and Suppliers (/suppliers) are all accessible and functional.
 
 **Root Cause:** CRM sub-features accessed via client detail page tabs, not standalone routes.
 
@@ -177,13 +177,13 @@ Destructive operations skipped to protect data:
 
 ### Category: No UI Available (3 cases)
 
-Deprecated vendor CRUD operations have no UI buttons:
+Deprecated supplier CRUD operations have no UI buttons:
 
-| Domain     | Procedure        | Row |
-| ---------- | ---------------- | --- |
-| Deprecated | `vendors.create` | 272 |
-| Deprecated | `vendors.update` | 273 |
-| Deprecated | `vendors.delete` | 274 |
+| Domain     | Procedure          | Row |
+| ---------- | ------------------ | --- |
+| Deprecated | `suppliers.create` | 272 |
+| Deprecated | `suppliers.update` | 273 |
+| Deprecated | `suppliers.delete` | 274 |
 
 ---
 
@@ -204,7 +204,7 @@ Deprecated vendor CRUD operations have no UI buttons:
 | Auth       | 4     | 4    | 0    | 0       | 0   |
 | Deprecated | 6     | 3    | 0    | 3       | 0   |
 
-> **Note:** Workflow, Analytics, Auth, and Deprecated (Vendors) domains updated after re-testing confirmed features are accessible.
+> **Note:** Workflow, Analytics, Auth, and Deprecated (Suppliers) domains updated after re-testing confirmed features are accessible.
 
 ---
 
@@ -226,7 +226,7 @@ Deprecated vendor CRUD operations have no UI buttons:
 
 7. **Review API-only Endpoints** - Consider UI exposure for frequently used API-only procedures
 8. **Implement Safe Test Mode** - Allow destructive operation testing without affecting production data
-9. **Deprecate Vendor Module** - Vendor CRUD has no UI; confirm if feature is intentionally deprecated
+9. **Deprecate Supplier Module** - Supplier CRUD has no UI; confirm if feature is intentionally deprecated
 
 ---
 

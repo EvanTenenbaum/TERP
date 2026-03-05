@@ -25,6 +25,7 @@ export default function CreditsWorkspacePage() {
     <LinearWorkspaceShell
       title={CREDITS_WORKSPACE.title}
       description={CREDITS_WORKSPACE.description}
+      section="Finance"
       activeTab={activeTab}
       tabs={CREDITS_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
@@ -34,10 +35,18 @@ export default function CreditsWorkspacePage() {
       ]}
       commandStrip={
         <>
-          <Button size="sm" variant="outline" onClick={() => setActiveTab("credits")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setActiveTab("credits")}
+          >
             Open Credits
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setActiveTab("settings")}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setActiveTab("settings")}
+          >
             Open Settings
           </Button>
         </>

@@ -228,7 +228,7 @@ Client-facing tRPC router `vipPortal` for authentication, dashboard KPIs, AR/AP,
 
 - **Method & Path:** `POST /api/trpc/vipPortal.documents.downloadBillPdf`
 - **Type:** Mutation
-- **Permissions:** VIP session (vendor must own bill)
+- **Permissions:** VIP session (supplier must own bill)
 - **Input:** `{ "billId": number }`
 - **Output:** `{ pdf: base64string, fileName: string }`
 

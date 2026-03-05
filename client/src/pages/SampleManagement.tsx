@@ -366,7 +366,7 @@ export default function SampleManagement() {
     trpc.samples.requestVendorReturn.useMutation({
       onSuccess: async () => {
         await utils.samples.getAll.invalidate();
-        toast.success("Vendor return requested.");
+        toast.success("Supplier return requested.");
       },
       onError: error => {
         toast.error(error.message);
@@ -376,7 +376,7 @@ export default function SampleManagement() {
   const shipToVendorMutation = trpc.samples.shipToVendor.useMutation({
     onSuccess: async () => {
       await utils.samples.getAll.invalidate();
-      toast.success("Marked as shipped to vendor.");
+      toast.success("Marked as shipped to supplier.");
     },
     onError: error => {
       toast.error(error.message);
@@ -387,7 +387,7 @@ export default function SampleManagement() {
     trpc.samples.confirmVendorReturn.useMutation({
       onSuccess: async () => {
         await utils.samples.getAll.invalidate();
-        toast.success("Vendor return confirmed.");
+        toast.success("Supplier return confirmed.");
       },
       onError: error => {
         toast.error(error.message);
@@ -760,7 +760,7 @@ export default function SampleManagement() {
           { value: "RETURNED" as TabFilter, label: "Returned" },
           {
             value: "VENDOR_RETURN_REQUESTED" as TabFilter,
-            label: "Vendor Returns",
+            label: "Supplier Returns",
           },
         ].map(tab => (
           <Button

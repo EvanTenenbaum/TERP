@@ -160,7 +160,7 @@ Do not try to import `WorkSurfaceStatusBarProps` as a type.
 | ------------------------------- | -------------------------------------------------------- | ------------------------------- |
 | `/inventory`                    | `InventoryWorkspacePage` → `InventoryWorkSurface`        | `LinearWorkspaceShell` (3 tabs) |
 | `/orders/create`, `/orders/new` | `OrderCreatorPage`                                       | None (standalone)               |
-| `/direct-intake`, `/receiving`  | `DirectIntakeWorkSurface`                                | None (manual CSS classes)       |
+| `/direct-intake`, `/intake`     | `DirectIntakeWorkSurface`                                | None (manual CSS classes)       |
 | `/purchase-orders`              | `ProcurementWorkspacePage` → `PurchaseOrdersWorkSurface` | `LinearWorkspaceShell` (3 tabs) |
 | `/pick-pack`                    | `PickPackWorkSurface`                                    | None (standalone)               |
 
@@ -288,7 +288,7 @@ const newRows = fillDownSelectedRows({
   rows: currentRows,
   selectedRowIds: selection.selectedIds,
   getRowId: row => row.id,
-  field: selectedField, // e.g., "vendor" or "cogs"
+  field: selectedField, // e.g., "supplier" or "cogs"
 });
 ```
 
@@ -326,7 +326,7 @@ const { exportCSV, state: exportState } = useExport<IntakeRow>();
 
 ```typescript
 const exportColumns: ExportColumn<IntakeRow>[] = [
-  { key: "vendor", label: "Vendor" },
+  { key: "supplier", label: "Supplier" },
   { key: "product", label: "Product" },
   { key: "strain", label: "Strain" },
   { key: "quantity", label: "Qty" },
@@ -580,7 +580,7 @@ const validation = useValidationTiming({
 
 **Step 2:** Either reuse those components directly or use `FilterSortSearchPanel` (already production-ready, used by 9 pages) — choose whichever provides more filter dimensions
 
-**Step 3:** Replace current 2-dropdown filter system with multi-dimensional filtering (Status, Category, Vendor, Brand, Grade, Location, Strain, Date Range, Price Range, Stock Level)
+**Step 3:** Replace current 2-dropdown filter system with multi-dimensional filtering (Status, Category, Supplier, Brand, Grade, Location, Strain, Date Range, Price Range, Stock Level)
 
 **Step 4:** Add filter chips below the filter bar showing active filters with individual remove buttons
 
@@ -612,7 +612,7 @@ const validation = useValidationTiming({
 
 **Step 2:** Port `StockStatusBadge` for per-row status indicators
 
-**Step 3:** Add additional sortable columns (Brand, Vendor, Grade, SKU, Reserved, Available, Status) to match legacy
+**Step 3:** Add additional sortable columns (Brand, Supplier, Grade, SKU, Reserved, Available, Status) to match legacy
 
 **Step 4:** Commit: `feat(inventory): port aging badges, stock status, and extended columns`
 
@@ -741,13 +741,13 @@ Use it in all 5 status bars instead of hardcoded strings.
 
 ### Task X.2: Ship 10 quick polish wins from 85-issue UX report
 
-| Fix                                             | Files                           | Impact    |
-| ----------------------------------------------- | ------------------------------- | --------- |
-| `toFixed(2)` on all currency displays           | Grep for floating point display | App-wide  |
-| Replace `window.confirm()` with `ConfirmDialog` | Grep for `confirm(`             | App-wide  |
-| Empty states for all tables                     | Each WorkSurface                | App-wide  |
-| "Lifetime" filter label → "All Time"            | Filter configs                  | Inventory |
-| Standardize "Supplier" vs "Seller" vs "Vendor"  | Labels and headings             | App-wide  |
+| Fix                                              | Files                           | Impact    |
+| ------------------------------------------------ | ------------------------------- | --------- |
+| `toFixed(2)` on all currency displays            | Grep for floating point display | App-wide  |
+| Replace `window.confirm()` with `ConfirmDialog`  | Grep for `confirm(`             | App-wide  |
+| Empty states for all tables                      | Each WorkSurface                | App-wide  |
+| "Lifetime" filter label → "All Time"             | Filter configs                  | Inventory |
+| Standardize "Supplier" vs "Seller" vs "Supplier" | Labels and headings             | App-wide  |
 
 ---
 

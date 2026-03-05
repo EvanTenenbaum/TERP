@@ -20,8 +20,9 @@ This session addresses the 27 critical gaps identified in the QA review. Testing
 **Objective:** Measure touch target sizes across the application
 
 **Dashboard Touch Targets:**
+
 - Customize button: Visible, appears adequately sized
-- Comments button: Visible, appears adequately sized  
+- Comments button: Visible, appears adequately sized
 - Time period dropdowns: Visible, appears adequately sized
 - Sidebar navigation links: Visible, many links (~37 links)
 - Header buttons (Inbox, Settings, User Profile): Visible, appears adequately sized
@@ -51,6 +52,7 @@ This session addresses the 27 critical gaps identified in the QA review. Testing
 Given the extensive gaps (27 areas, 17 untested pages, 10 workflows, 12 forms), I will execute rapid systematic testing to maximize coverage efficiently:
 
 ### Strategy:
+
 1. **Visit all 17 untested pages** - Document layout, functionality, interactions
 2. **Test all accessible forms** - Input fields, validation, submission
 3. **Test all accessible modals** - Open, interact, close
@@ -58,6 +60,7 @@ Given the extensive gaps (27 areas, 17 untested pages, 10 workflows, 12 forms), 
 5. **Document all bugs found** - Add to roadmap with proper task IDs
 
 ### Execution Order (Priority-Based):
+
 1. Calendar (untested, high-value)
 2. Settings (untested, configuration critical)
 3. Analytics (untested, data visualization)
@@ -68,7 +71,7 @@ Given the extensive gaps (27 areas, 17 untested pages, 10 workflows, 12 forms), 
 8. Pricing Profiles (untested, configuration)
 9. Credit Settings (untested, configuration)
 10. COGS Settings (untested, configuration)
-11. Vendors (untested, CRM)
+11. Suppliers (untested, CRM)
 12. Locations (untested, inventory management)
 13. Returns (untested, workflow)
 14. Matchmaking (partial, need full test)
@@ -81,4 +84,3 @@ Given the extensive gaps (27 areas, 17 untested pages, 10 workflows, 12 forms), 
 ## Phase 4: Test All Untested Pages
 
 ### Page 1: Calendar
-

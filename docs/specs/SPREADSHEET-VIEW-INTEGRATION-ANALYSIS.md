@@ -10,11 +10,11 @@ This document analyzes how to integrate the **Inventory Management**, **Intake**
 
 ### 1.1 Existing Workflows
 
-| Workflow | Current Implementation | Key Entities |
-|----------|----------------------|--------------|
-| **Inventory Management** | `Inventory.tsx` page with table/card views | `batches`, `products`, `lots`, `vendors` |
-| **Intake** | `inventoryIntakeService.ts` with transactional batch creation | `intakeSessions`, `batches`, `lots`, `batchLocations` |
-| **Pick & Pack** | `PickPackPage.tsx` with order queue and bag management | `orders`, `orderLineItems`, `orderBags`, `orderItemBags` |
+| Workflow                 | Current Implementation                                        | Key Entities                                             |
+| ------------------------ | ------------------------------------------------------------- | -------------------------------------------------------- |
+| **Inventory Management** | `Inventory.tsx` page with table/card views                    | `batches`, `products`, `lots`, `suppliers`               |
+| **Intake**               | `inventoryIntakeService.ts` with transactional batch creation | `intakeSessions`, `batches`, `lots`, `batchLocations`    |
+| **Pick & Pack**          | `PickPackPage.tsx` with order queue and bag management        | `orders`, `orderLineItems`, `orderBags`, `orderItemBags` |
 
 ### 1.2 Key Observations
 
@@ -70,7 +70,7 @@ The spreadsheet view should be a **presentation layer** over existing functional
 **Spreadsheet Columns:**
 | Column | Source | Editable | Notes |
 |--------|--------|----------|-------|
-| Vendor Code/Date | `lots.code` / `lots.date` | No | Grouping header |
+| Supplier Code/Date | `lots.code` / `lots.date` | No | Grouping header |
 | Source (brand) | `clients.name` (via supplierClientId) | No | |
 | Category | `products.category` | No | |
 | Item | `products.name` | No | |
@@ -82,6 +82,7 @@ The spreadsheet view should be a **presentation layer** over existing functional
 | Confirm | `batches.batchStatus` | Yes | Status dropdown |
 
 **Mutations Used:**
+
 - `inventory.updateBatch` (existing) - for Available, Ticket, Notes
 - `inventory.updateBatchStatus` (existing) - for Confirm status
 
@@ -94,7 +95,7 @@ The spreadsheet view should be a **presentation layer** over existing functional
 **Spreadsheet Columns:**
 | Column | Maps To | Required | Notes |
 |--------|---------|----------|-------|
-| Vendor | `vendorName` | Yes | Autocomplete from existing vendors |
+| Supplier | `vendorName` | Yes | Autocomplete from existing suppliers |
 | Category | `category` | Yes | Dropdown |
 | Item | `productName` | Yes | Autocomplete from existing products |
 | Qty | `quantity` | Yes | Numeric |
@@ -104,6 +105,7 @@ The spreadsheet view should be a **presentation layer** over existing functional
 | Notes | `metadata.notes` | No | Free text |
 
 **Workflow:**
+
 1. User adds rows to the intake grid (local state only)
 2. User clicks "Submit Intake" button
 3. System calls `flowerIntake.processIntake` for each row in a transaction
@@ -131,6 +133,7 @@ The spreadsheet view should be a **presentation layer** over existing functional
 | Status | `orders.pickPackStatus` | Yes | Dropdown |
 
 **Mutations Used:**
+
 - `pickPack.packItems` (existing) - for marking items packed
 - `pickPack.updateOrderStatus` (existing) - for status changes
 
@@ -140,34 +143,34 @@ The spreadsheet view should be a **presentation layer** over existing functional
 
 ### 4.1 What We're NOT Building
 
-| Avoided Complexity | Reason |
-|--------------------|--------|
-| New database tables | Spreadsheet view is presentation-only |
-| New business logic services | Reuse existing services |
-| Custom transaction handling | Use existing transactional services |
-| Duplicate validation | Existing routers handle validation |
-| New authentication/authorization | Use existing `protectedProcedure` |
+| Avoided Complexity               | Reason                                |
+| -------------------------------- | ------------------------------------- |
+| New database tables              | Spreadsheet view is presentation-only |
+| New business logic services      | Reuse existing services               |
+| Custom transaction handling      | Use existing transactional services   |
+| Duplicate validation             | Existing routers handle validation    |
+| New authentication/authorization | Use existing `protectedProcedure`     |
 
 ### 4.2 What We ARE Building
 
-| New Component | Purpose | Complexity |
-|---------------|---------|------------|
-| `SpreadsheetViewPage.tsx` | Container page with tabs | Low |
-| `InventoryGrid.tsx` | AG-Grid for inventory | Medium |
-| `IntakeGrid.tsx` | AG-Grid for new intakes | Medium |
-| `PickPackGrid.tsx` | AG-Grid for pick/pack | Medium |
-| `spreadsheetRouter.ts` | Data transformation only | Low |
+| New Component             | Purpose                  | Complexity |
+| ------------------------- | ------------------------ | ---------- |
+| `SpreadsheetViewPage.tsx` | Container page with tabs | Low        |
+| `InventoryGrid.tsx`       | AG-Grid for inventory    | Medium     |
+| `IntakeGrid.tsx`          | AG-Grid for new intakes  | Medium     |
+| `PickPackGrid.tsx`        | AG-Grid for pick/pack    | Medium     |
+| `spreadsheetRouter.ts`    | Data transformation only | Low        |
 
 ### 4.3 Lines of Code Estimate
 
-| Component | Estimated LOC | Notes |
-|-----------|---------------|-------|
-| SpreadsheetViewPage | ~150 | Tab container, layout |
-| InventoryGrid | ~300 | AG-Grid config, cell renderers |
-| IntakeGrid | ~250 | AG-Grid config, row creation |
-| PickPackGrid | ~300 | AG-Grid config, status handling |
-| spreadsheetRouter | ~200 | Data transformation queries |
-| **Total** | **~1,200** | Minimal footprint |
+| Component           | Estimated LOC | Notes                           |
+| ------------------- | ------------- | ------------------------------- |
+| SpreadsheetViewPage | ~150          | Tab container, layout           |
+| InventoryGrid       | ~300          | AG-Grid config, cell renderers  |
+| IntakeGrid          | ~250          | AG-Grid config, row creation    |
+| PickPackGrid        | ~300          | AG-Grid config, status handling |
+| spreadsheetRouter   | ~200          | Data transformation queries     |
+| **Total**           | **~1,200**    | Minimal footprint               |
 
 ---
 

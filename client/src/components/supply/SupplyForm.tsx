@@ -73,9 +73,11 @@ export function SupplyForm({
   const [error, setError] = useState<string | null>(null);
 
   // FEAT-012: Fetch display settings for grade field visibility
-  const { data: displaySettings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const showGradeField = displaySettings?.display?.showGradeField ?? true;
-  const gradeFieldRequired = displaySettings?.display?.gradeFieldRequired ?? false;
+  const gradeFieldRequired =
+    displaySettings?.display?.gradeFieldRequired ?? false;
 
   const [formData, setFormData] = useState<SupplyFormState>({
     strain: initialData?.strain || "",
@@ -225,11 +227,11 @@ export function SupplyForm({
       <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Add Vendor Supply" : "Edit Vendor Supply"}
+            {mode === "create" ? "Add Supplier Supply" : "Edit Supplier Supply"}
           </DialogTitle>
           <DialogDescription>
-            Record what this vendor has available. The system will automatically
-            find matching client needs.
+            Record what this supplier has available. The system will
+            automatically find matching client needs.
           </DialogDescription>
         </DialogHeader>
 
@@ -324,7 +326,10 @@ export function SupplyForm({
               {showGradeField && (
                 <div className="space-y-2">
                   <Label htmlFor="grade">
-                    Grade{gradeFieldRequired && <span className="text-destructive"> *</span>}
+                    Grade
+                    {gradeFieldRequired && (
+                      <span className="text-destructive"> *</span>
+                    )}
                   </Label>
                   <Input
                     id="grade"
@@ -404,7 +409,7 @@ export function SupplyForm({
             <h4 className="text-sm font-medium">Notes</h4>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Visible to Vendor)</Label>
+              <Label htmlFor="notes">Notes (Visible to Supplier)</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
@@ -420,7 +425,7 @@ export function SupplyForm({
                 id="internalNotes"
                 value={formData.internalNotes}
                 onChange={e => handleChange("internalNotes", e.target.value)}
-                placeholder="Internal notes not visible to vendor..."
+                placeholder="Internal notes not visible to supplier..."
                 rows={2}
               />
             </div>

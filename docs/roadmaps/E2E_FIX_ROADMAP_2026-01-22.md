@@ -17,10 +17,10 @@ The E2E tester used legacy paths (`/invoices`, `/ar-ap`, `/reports`, etc.) that 
 
 ### Systemic Issue 2: Data Display Gaps
 
-Orders, Inventory, and Vendors pages show "no data" despite seeded records. This is likely due to:
+Orders, Inventory, and Suppliers pages show "no data" despite seeded records. This is likely due to:
 
 - MySQL boolean handling (isDraft stored as TINYINT)
-- Vendor data not being populated in inventory items
+- Supplier data not being populated in inventory items
 - Query filter mismatches
 
 ### Systemic Issue 3: Event Handler Bug (C-01)
@@ -51,12 +51,12 @@ Add legacy route redirects for backward compatibility.
 
 Deep investigation confirmed that the code is correct. The issues stem from the E2E test environment not having properly seeded data:
 
-| Issue | Page      | Problem                | Root Cause Analysis                                                                            | Status                    |
-| ----- | --------- | ---------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
-| C-02  | Orders    | No orders displayed    | Code correctly uses `sql\`isDraft = 0\`` for MySQL TINYINT. Seed data missing in E2E env.      | ⚠️ Seed Data Issue        |
-| C-05  | Inventory | No inventory displayed | Query joins batches→products→brands→lots→vendors correctly. No seed data in E2E env.           | ⚠️ Seed Data Issue        |
-| C-06  | Vendors   | No data                | VendorsPage derives vendors from inventory.list via lots.vendorId. No inventory = no vendors.  | ⚠️ Seed Data Issue        |
-| M-03  | Dashboard | Broken client links    | SalesByClientWidget uses `/clients/${customerId}`. Customer ID may not exist in clients table. | ⚠️ Data Consistency Issue |
+| Issue | Page      | Problem                | Root Cause Analysis                                                                               | Status                    |
+| ----- | --------- | ---------------------- | ------------------------------------------------------------------------------------------------- | ------------------------- |
+| C-02  | Orders    | No orders displayed    | Code correctly uses `sql\`isDraft = 0\`` for MySQL TINYINT. Seed data missing in E2E env.         | ⚠️ Seed Data Issue        |
+| C-05  | Inventory | No inventory displayed | Query joins batches→products→brands→lots→suppliers correctly. No seed data in E2E env.            | ⚠️ Seed Data Issue        |
+| C-06  | Suppliers | No data                | VendorsPage derives suppliers from inventory.list via lots.vendorId. No inventory = no suppliers. | ⚠️ Seed Data Issue        |
+| M-03  | Dashboard | Broken client links    | SalesByClientWidget uses `/clients/${customerId}`. Customer ID may not exist in clients table.    | ⚠️ Data Consistency Issue |
 
 **Recommended Actions:**
 

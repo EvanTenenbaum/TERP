@@ -47,21 +47,69 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-const MOVEMENT_TYPE_CONFIG: Record<string, {
-  icon: typeof ArrowUp;
-  label: string;
-  color: string;
-  direction: "in" | "out" | "neutral";
-}> = {
-  INTAKE: { icon: ArrowDown, label: "Intake", color: "bg-green-100 text-green-700", direction: "in" },
-  SALE: { icon: ArrowUp, label: "Sale", color: "bg-blue-100 text-blue-700", direction: "out" },
-  REFUND_RETURN: { icon: ArrowDown, label: "Refund/Return", color: "bg-purple-100 text-purple-700", direction: "in" },
-  ADJUSTMENT: { icon: ArrowLeftRight, label: "Adjustment", color: "bg-yellow-100 text-yellow-700", direction: "neutral" },
-  QUARANTINE: { icon: AlertTriangle, label: "Quarantine", color: "bg-red-100 text-red-700", direction: "out" },
-  RELEASE_FROM_QUARANTINE: { icon: Package, label: "Release", color: "bg-green-100 text-green-700", direction: "in" },
-  DISPOSAL: { icon: ArrowUp, label: "Disposal", color: "bg-red-100 text-red-700", direction: "out" },
-  TRANSFER: { icon: ArrowLeftRight, label: "Transfer", color: "bg-orange-100 text-orange-700", direction: "neutral" },
-  SAMPLE: { icon: ArrowUp, label: "Sample", color: "bg-pink-100 text-pink-700", direction: "out" },
+const MOVEMENT_TYPE_CONFIG: Record<
+  string,
+  {
+    icon: typeof ArrowUp;
+    label: string;
+    color: string;
+    direction: "in" | "out" | "neutral";
+  }
+> = {
+  INTAKE: {
+    icon: ArrowDown,
+    label: "Intake",
+    color: "bg-green-100 text-green-700",
+    direction: "in",
+  },
+  SALE: {
+    icon: ArrowUp,
+    label: "Sales Order",
+    color: "bg-blue-100 text-blue-700",
+    direction: "out",
+  },
+  REFUND_RETURN: {
+    icon: ArrowDown,
+    label: "Refund/Return",
+    color: "bg-purple-100 text-purple-700",
+    direction: "in",
+  },
+  ADJUSTMENT: {
+    icon: ArrowLeftRight,
+    label: "Adjustment",
+    color: "bg-yellow-100 text-yellow-700",
+    direction: "neutral",
+  },
+  QUARANTINE: {
+    icon: AlertTriangle,
+    label: "Quarantine",
+    color: "bg-red-100 text-red-700",
+    direction: "out",
+  },
+  RELEASE_FROM_QUARANTINE: {
+    icon: Package,
+    label: "Release",
+    color: "bg-green-100 text-green-700",
+    direction: "in",
+  },
+  DISPOSAL: {
+    icon: ArrowUp,
+    label: "Disposal",
+    color: "bg-red-100 text-red-700",
+    direction: "out",
+  },
+  TRANSFER: {
+    icon: ArrowLeftRight,
+    label: "Transfer",
+    color: "bg-orange-100 text-orange-700",
+    direction: "neutral",
+  },
+  SAMPLE: {
+    icon: ArrowUp,
+    label: "Sample",
+    color: "bg-pink-100 text-pink-700",
+    direction: "out",
+  },
 };
 
 interface MovementHistoryPanelProps {
@@ -75,21 +123,21 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
   variant = "full",
   maxHeight = "500px",
 }: MovementHistoryPanelProps) {
-
   const [page, setPage] = useState(1);
   const [movementType, setMovementType] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data, isLoading, refetch } = trpc.inventoryMovements.getHistory.useQuery({
-    page,
-    pageSize: variant === "compact" ? 10 : 25,
-    batchId,
-    movementType: movementType !== "all" ? movementType : undefined,
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-  });
+  const { data, isLoading, refetch } =
+    trpc.inventoryMovements.getHistory.useQuery({
+      page,
+      pageSize: variant === "compact" ? 10 : 25,
+      batchId,
+      movementType: movementType !== "all" ? movementType : undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    });
 
   const formatQty = (qty: number) => {
     if (qty > 0) return `+${qty.toFixed(2)}`;
@@ -125,8 +173,10 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
             </p>
           ) : (
             <div className="space-y-2">
-              {data?.items.slice(0, 5).map((mov) => {
-                const config = MOVEMENT_TYPE_CONFIG[mov.movementType] || MOVEMENT_TYPE_CONFIG.ADJUSTMENT;
+              {data?.items.slice(0, 5).map(mov => {
+                const config =
+                  MOVEMENT_TYPE_CONFIG[mov.movementType] ||
+                  MOVEMENT_TYPE_CONFIG.ADJUSTMENT;
                 const Icon = config.icon;
 
                 return (
@@ -142,9 +192,13 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-sm font-mono font-bold ${
-                        mov.quantityChange > 0 ? "text-green-700" : "text-red-700"
-                      }`}>
+                      <p
+                        className={`text-sm font-mono font-bold ${
+                          mov.quantityChange > 0
+                            ? "text-green-700"
+                            : "text-red-700"
+                        }`}
+                      >
                         {formatQty(mov.quantityChange)}
                       </p>
                       <p className="text-xs opacity-70">
@@ -196,11 +250,13 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {Object.entries(MOVEMENT_TYPE_CONFIG).map(([type, config]) => (
-                    <SelectItem key={type} value={type}>
-                      {config.label}
-                    </SelectItem>
-                  ))}
+                  {Object.entries(MOVEMENT_TYPE_CONFIG).map(
+                    ([type, config]) => (
+                      <SelectItem key={type} value={type}>
+                        {config.label}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -209,7 +265,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
               <Input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => setStartDate(e.target.value)}
               />
             </div>
             <div>
@@ -217,7 +273,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
               <Input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={e => setEndDate(e.target.value)}
               />
             </div>
             <div className="flex items-end">
@@ -247,19 +303,27 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow
                     // eslint-disable-next-line react/no-array-index-key
-                    key={`movement-skeleton-${i}`}>
-                    <TableCell colSpan={7}><Skeleton className="h-8" /></TableCell>
+                    key={`movement-skeleton-${i}`}
+                  >
+                    <TableCell colSpan={7}>
+                      <Skeleton className="h-8" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : data?.items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     No movements found
                   </TableCell>
                 </TableRow>
               ) : (
-                data?.items.map((mov) => {
-                  const config = MOVEMENT_TYPE_CONFIG[mov.movementType] || MOVEMENT_TYPE_CONFIG.ADJUSTMENT;
+                data?.items.map(mov => {
+                  const config =
+                    MOVEMENT_TYPE_CONFIG[mov.movementType] ||
+                    MOVEMENT_TYPE_CONFIG.ADJUSTMENT;
                   const Icon = config.icon;
 
                   return (
@@ -281,9 +345,13 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className={`font-mono font-bold ${
-                          mov.quantityChange > 0 ? "text-green-600" : "text-red-600"
-                        }`}>
+                        <span
+                          className={`font-mono font-bold ${
+                            mov.quantityChange > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
                           {formatQty(mov.quantityChange)}
                         </span>
                       </TableCell>
@@ -297,7 +365,10 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                         {mov.performedByName || "System"}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {format(new Date(mov.createdAt ?? Date.now()), "MMM d, yyyy h:mm a")}
+                        {format(
+                          new Date(mov.createdAt ?? Date.now()),
+                          "MMM d, yyyy h:mm a"
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -311,9 +382,12 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
         {data && data.pagination.totalPages > 1 && (
           <div className="flex items-center justify-between pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              Showing {((page - 1) * data.pagination.pageSize) + 1} to{" "}
-              {Math.min(page * data.pagination.pageSize, data.pagination.totalItems)} of{" "}
-              {data.pagination.totalItems} movements
+              Showing {(page - 1) * data.pagination.pageSize + 1} to{" "}
+              {Math.min(
+                page * data.pagination.pageSize,
+                data.pagination.totalItems
+              )}{" "}
+              of {data.pagination.totalItems} movements
             </p>
             <div className="flex items-center gap-2">
               <Button

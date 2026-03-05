@@ -66,7 +66,7 @@ The single most important insight from the interview is the customer's "Tetris" 
 
 ### 3.1 The Genesis of the Analogy
 
-The analogy arises when the developer asks what the customer wants to see on login. The customer's first answer is a list: "Inventory, dashboard, cash." [01:44.8]. They then explain *why* inventory is their current default:
+The analogy arises when the developer asks what the customer wants to see on login. The customer's first answer is a list: "Inventory, dashboard, cash." [01:44.8]. They then explain _why_ inventory is their current default:
 
 > "probably inventory would be where I'd like it to pop up, you know, just because that's the thing we scroll through the most, like just understanding who we need to pay. And, and, um, yeah. Um, and what's aging and like, what do I need to focus on with my day?" [01:52.4]
 
@@ -76,12 +76,12 @@ This reveals their current, inefficient workflow: **scrolling a broken inventory
 
 ### 3.2 The Four Questions and Their Hidden Nuances
 
-| Question | Maps To | Implied Action | Hidden Nuance |
-|---|---|---|---|
-| **1. What are you out of?** | Low Stock | Purchasing | The developer notes this might be a separate "Needs" feature, not just an inventory view [03:00.7]. The customer's current workaround is a clunky "list generator" [03:28.4]. |
-| **2. What do you have too much of?** | Overstock | Sales Focus | This is the inverse of Question 1 and is about identifying what needs to be pushed to clients. |
-| **3. What's about to go bad?** | Aging Inventory | Urgent Sales | The customer wants a "focus on me" highlight for the "five, 10 oldest things" [05:07.5]. This is about preventing spoilage and write-offs. |
-| **4. What am I going to lose money on?** | Client Debt Risk | Credit Management | This is the most critical question. It's not just about who owes money, but who is becoming a credit risk. This directly leads to the request for a debt warning system. |
+| Question                                 | Maps To          | Implied Action    | Hidden Nuance                                                                                                                                                                 |
+| ---------------------------------------- | ---------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. What are you out of?**              | Low Stock        | Purchasing        | The developer notes this might be a separate "Needs" feature, not just an inventory view [03:00.7]. The customer's current workaround is a clunky "list generator" [03:28.4]. |
+| **2. What do you have too much of?**     | Overstock        | Sales Focus       | This is the inverse of Question 1 and is about identifying what needs to be pushed to clients.                                                                                |
+| **3. What's about to go bad?**           | Aging Inventory  | Urgent Sales      | The customer wants a "focus on me" highlight for the "five, 10 oldest things" [05:07.5]. This is about preventing spoilage and write-offs.                                    |
+| **4. What am I going to lose money on?** | Client Debt Risk | Credit Management | This is the most critical question. It's not just about who owes money, but who is becoming a credit risk. This directly leads to the request for a debt warning system.      |
 
 ### 3.3 The Current, Painful Workaround: The "List Generator"
 
@@ -90,6 +90,7 @@ A completely missed detail from the prior analysis was the customer's descriptio
 > "the only way I can find out how many candies I have right now is by using your list generator, selecting for candies and then selecting the column. And then I can't even tell like how many I have in each price category, unless I use that feature you gave me, but then it's a little complicated because there's so many price categories." [03:28.4]
 
 This tells us:
+
 1.  An existing "list generator" tool is being used for analysis, but it's multi-step and inefficient.
 2.  An existing price category filter is **too complicated** because it has too many granular options.
 3.  The customer's request for simplified price brackets ($100-200, $200-300, etc.) is a direct reaction to the pain of using the current, overly complex filter.
@@ -106,9 +107,9 @@ This section provides a line-by-line analysis of every theme, leaving no detail 
 
 The customer consistently pushes for simplicity and rejects jargon.
 
-*   **Rejection of Jargon:** The customer does not know what "AR/AP" means [14:36.1]. This is a powerful signal. The UI must use plain, business-oriented language ("Payment Office," "Who Owes Me," "Who I Owe") instead of accounting acronyms.
-*   **Desire for Fewer Options:** When looking at the complex Leaderboard, the customer explicitly states: "there could be even far less options on that sheet" [11:35.6] and "maybe we can just combine them into, into less things" [12:38.6].
-*   **Confusion Over Metrics:** The customer repeatedly asks for clarification on metric names that the developer thought were clear: "what's reliability" [11:46.0], "trend is kind of growth, right?" [12:09.0], "engagement and what's engagement again?" [12:53.0]. The labels are failing.
+- **Rejection of Jargon:** The customer does not know what "AR/AP" means [14:36.1]. This is a powerful signal. The UI must use plain, business-oriented language ("Payment Office," "Who Owes Me," "Who I Owe") instead of accounting acronyms.
+- **Desire for Fewer Options:** When looking at the complex Leaderboard, the customer explicitly states: "there could be even far less options on that sheet" [11:35.6] and "maybe we can just combine them into, into less things" [12:38.6].
+- **Confusion Over Metrics:** The customer repeatedly asks for clarification on metric names that the developer thought were clear: "what's reliability" [11:46.0], "trend is kind of growth, right?" [12:09.0], "engagement and what's engagement again?" [12:53.0]. The labels are failing.
 
 **Conclusion:** The developer, immersed in the system's logic, has created labels that make sense to him but not to the end user. The entire application needs a "plain language" audit. Every label and metric must be re-evaluated from the perspective of a busy business operator, not a software engineer or an accountant.
 
@@ -116,9 +117,9 @@ The customer consistently pushes for simplicity and rejects jargon.
 
 The customer is genuinely excited by the Leaderboard concept, but the execution is too complex.
 
-*   **Positive Reinforcement:** The customer says "I love it" four times in relation to the Leaderboard, and "nice. That's cool. I love that" [13:46.2] when the customizable weights are explained.
-*   **Debt is the Primary Focus:** The customer's first guess about the Master Score is that it's about debt turnover [10:12.8]. Their most important combination of metrics is "Financial" + "Reliability" (which they learn means payment behavior) [11:56.8].
-*   **The Debt Warning System was a Prior Promise:** The customer's request for a debt warning system is not new. They say, "you said you were gonna have some kind of tool" [11:21.4], indicating this is a follow-up on a previous commitment. This elevates its priority.
+- **Positive Reinforcement:** The customer says "I love it" four times in relation to the Leaderboard, and "nice. That's cool. I love that" [13:46.2] when the customizable weights are explained.
+- **Debt is the Primary Focus:** The customer's first guess about the Master Score is that it's about debt turnover [10:12.8]. Their most important combination of metrics is "Financial" + "Reliability" (which they learn means payment behavior) [11:56.8].
+- **The Debt Warning System was a Prior Promise:** The customer's request for a debt warning system is not new. They say, "you said you were gonna have some kind of tool" [11:21.4], indicating this is a follow-up on a previous commitment. This elevates its priority.
 
 **Conclusion:** The Leaderboard is a winning concept, but it needs to be simplified. The immediate actions are to (1) add tooltips or clear descriptions for every metric, (2) consider combining or renaming the confusing "Trend" vs "Growth" and "Reliability" vs "Financial" metrics, and (3) prioritize the debt warning system as the most critical new feature related to this module.
 
@@ -126,9 +127,9 @@ The customer is genuinely excited by the Leaderboard concept, but the execution 
 
 The prior analysis failed to capture the scale of the customer's business, which changes the context of the entire project.
 
-*   **Scale:** The AR/AP dashboard (Frame 15) shows **$2.49M in Accounts Receivable** and **$1.75M in Accounts Payable**. There are **96 overdue invoices** and **44 overdue bills**. This is not a small side project; this is a tool to manage a multi-million dollar operation with significant cash flow complexity.
-*   **Client Management is Low-Frequency:** The customer adds new clients only "four times a year" [09:14.4]. One-time visitors are put on an existing client's tab [09:27.9]. This means the client creation workflow, while it needs to be simple, is not a high-frequency or high-priority part of the daily user experience.
-*   **Cash Handling is Specific and High-Risk:** The workflow where the owner collects cash, gives a "big chunk" to the accountant ("Z"), and the accountant pays vendors is a critical business process. The customer's statement that "receiving payments is a little bit higher risk" [15:57.5] is a direct requirement for role-based permissions.
+- **Scale:** The AR/AP dashboard (Frame 15) shows **$2.49M in Accounts Receivable** and **$1.75M in Accounts Payable**. There are **96 overdue invoices** and **44 overdue bills**. This is not a small side project; this is a tool to manage a multi-million dollar operation with significant cash flow complexity.
+- **Client Management is Low-Frequency:** The customer adds new clients only "four times a year" [09:14.4]. One-time visitors are put on an existing client's tab [09:27.9]. This means the client creation workflow, while it needs to be simple, is not a high-frequency or high-priority part of the daily user experience.
+- **Cash Handling is Specific and High-Risk:** The workflow where the owner collects cash, gives a "big chunk" to the accountant ("Z"), and the accountant pays suppliers is a critical business process. The customer's statement that "intake payments is a little bit higher risk" [15:57.5] is a direct requirement for role-based permissions.
 
 **Conclusion:** TERP is being built to manage a serious business with millions of dollars in play. The bugs that prevent inventory from loading are not minor inconveniences; they are crippling failures that prevent the customer from managing millions in assets and liabilities. The pressure to fix these core issues is immense.
 
@@ -136,9 +137,9 @@ The prior analysis failed to capture the scale of the customer's business, which
 
 The developer is not just taking notes; they are actively guiding the conversation and interpreting the customer's needs.
 
-*   **Reframing:** The developer skillfully reframes the customer's habit of scrolling inventory into a need for a proper dashboard [02:26.1].
-*   **Clarifying:** The developer separates the concept of "low stock" from simple inventory browsing, suggesting it might be a separate "Needs" feature [03:00.7].
-*   **Managing Expectations:** The developer is careful to state that some features might not make the MVP [03:54.2] and is transparent about why the Spreadsheet View isn't done yet ("I've been focused on getting inventory to work") [16:57.8].
+- **Reframing:** The developer skillfully reframes the customer's habit of scrolling inventory into a need for a proper dashboard [02:26.1].
+- **Clarifying:** The developer separates the concept of "low stock" from simple inventory browsing, suggesting it might be a separate "Needs" feature [03:00.7].
+- **Managing Expectations:** The developer is careful to state that some features might not make the MVP [03:54.2] and is transparent about why the Spreadsheet View isn't done yet ("I've been focused on getting inventory to work") [16:57.8].
 
 **Conclusion:** The developer is performing the role of a product manager in real-time. They are not just a coder but a partner in shaping the product. This collaborative dynamic is a strength of the project.
 
@@ -166,24 +167,23 @@ This exhaustive analysis leads to a revised and more nuanced set of recommendati
 
 ## Appendix A: Full Interview Transcript
 
-*(The full transcript from the previous report is inserted here)*
+_(The full transcript from the previous report is inserted here)_
 
 ---
 
 ## Appendix B: Visual Context Notes from Video Frames
 
-*(The full visual context notes from the previous report are inserted here)*
+_(The full visual context notes from the previous report are inserted here)_
 
 ---
 
 ## Appendix C: Complete List of 64 Analyzed Details
 
-*(The full list of 64 missing details from the `terp-missing-details.md` file is inserted here)*
+_(The full list of 64 missing details from the `terp-missing-details.md` file is inserted here)_
 
 ---
 
-*End of document.*
-
+_End of document._
 
 ---
 
@@ -256,7 +256,7 @@ This exhaustive analysis leads to a revised and more nuanced set of recommendati
 [08:09.9 - 08:16.6] Client: in terms of maybe I need their login names, is this where their login names would be so they can log into the backend? Dev: Yeah, exactly. Mm hmm.
 [08:17.2 - 08:36.6] Dev: Um, do you, in terms of adding clients, there's not, you know, you're not going to need to put any of this contact information, um, other than certain things like, yeah, payment terms.
 [08:36.6 - 08:43.0] Dev: This will also be the area that, um, initial like credit settings go or things like that.
-[08:43.8 - 09:04.0] Dev: Are you able to, or do you create client? I guess you don't really have this concept. I'm trying to figure out when you're going to create a client because you need to be able, like a client, either like a buyer or a vendor, there's a concept that like, you're going to need to add them as an entity before you transfer...act with them.
+[08:43.8 - 09:04.0] Dev: Are you able to, or do you create client? I guess you don't really have this concept. I'm trying to figure out when you're going to create a client because you need to be able, like a client, either like a buyer or a supplier, there's a concept that like, you're going to need to add them as an entity before you transfer...act with them.
 [09:04.0 - 09:21.6] Client: Okay. Um, does that, I don't want it to be overburdened some, but it's just kind of a reality of like a, of a system like... we rarely add plants. So it's going to happen like four times a year, you know? Yeah. Okay. Yeah.
 [09:26.3 - 09:40.6] Client: Yeah. And if someone's coming in once, we can just put it on somebody else's tab, you know, like if I see Bob every week and Bob brings his buddy Tony one time, then yeah, yeah. Right. Right. You can just go on Bob's tab. Okay.
 [09:42.0 - 09:55.0] Dev: Um, this is something that's gotten, uh, improved a fair amount. Um,
@@ -291,11 +291,11 @@ This exhaustive analysis leads to a revised and more nuanced set of recommendati
 [14:27.5 - 14:35.4] Dev: invoices in ARAP. Um, this has gotten a lot more accurate since we last spoke.
 [14:36.1 - 14:48.1] Client: What is ARAP again? Dev: Um, accounts receivable and accounts payable. Client: Okay. Um, so this is like your payment office. Dev: Like this is going to be their command center basically.
 [14:49.5 - 15:15.8] Dev: So with that in mind, I guess thinking about what somebody who's working in your accounting divisions, um, dashboard or just like command center would look like, I imagine, you know, this sort of stuff is interesting for you, but really what they're going to want is just like this, which is basically just like, here are all the actions I can receive a payment. I can pay somebody journal entries, um, expenses.
-[15:21.2 - 15:26.8] Client: She never, Oh, I guess if I give her a bag of money, that's receiving the payment. Okay.
+[15:21.2 - 15:26.8] Client: She never, Oh, I guess if I give her a bag of money, that's intake the payment. Okay.
 [15:28.1 - 15:35.3] Client: Like for Z, I just, I just occasionally give her a big chunk and then she just writes down how much is coming out of that chunk.
 [15:36.2 - 15:46.3] Dev: Does she not ever, she doesn't receive payments from, okay. You do. And then she comes and picks them up. Cool.
 [15:46.4 - 15:54.6] Dev: So this is going to be important for you actually, cause this is just, just a really quick way of you being able to,
-[15:55.4 - 16:00.1] Client: she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk.
+[15:55.4 - 16:00.1] Client: she only needs like low risk farmers. I feel like intake payments is a little bit higher risk.
 [16:00.6 - 16:03.4] Dev: Yep. That makes sense. Okay. That's good to know.
 [16:07.4 - 16:09.7] Dev: Um, okay.
 [16:18.6 - 16:28.3] Client: yeah, there's a bunch of other stuff that's much smaller, but I think that honestly, like my question about the dashboards and what we just talked about was probably the most important one. Okay.
@@ -308,8 +308,11 @@ This exhaustive analysis leads to a revised and more nuanced set of recommendati
 [17:45.7 - 17:57.9] Dev: And then when do you leave tomorrow? Client: Uh, Saturday morning. Dev: Cool. Client: But I love to talk while on vacation. Dev: So great. I can't wait to hear about all the worms, all the worms.
 [17:59.0 - 18:06.9] Client: All right. Love you, bud. Thank you. Talk to you soon. Bye. Dev: Okay.
 ```
+
 ```
+
 ```
+
 ```
 
 
@@ -318,7 +321,7 @@ This exhaustive analysis leads to a revised and more nuanced set of recommendati
 ## Appendix B: Visual Context Notes from Video Frames
 
 ### Frame 1 (0:00) — Inventory Page
-The TERP application is showing the Inventory page. The left sidebar navigation is visible with sections: SALES (Dashboard, Inbox, Clients, Orders, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, Returns), INVENTORY (Pick & Pack, Products, Inventory [selected], Photography, Samples, Purchase Orders, Vendors, Vendor Supply, Spreadsheet View, Direct Intake). The main content area shows "Inventory — Manage batches and stock levels" with a search bar and filters (All Statuses, All Categories). It displays Batches: 0, Live: 0, Value: $0.00 with a loading spinner visible — inventory is not loading. The user is signed in as "TERP Operator."
+The TERP application is showing the Inventory page. The left sidebar navigation is visible with sections: SALES (Dashboard, Inbox, Clients, Orders, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, Returns), INVENTORY (Pick & Pack, Products, Inventory [selected], Photography, Samples, Purchase Orders, Suppliers, Supplier Supply, Spreadsheet View, Direct Intake). The main content area shows "Inventory — Manage batches and stock levels" with a search bar and filters (All Statuses, All Categories). It displays Batches: 0, Live: 0, Value: $0.00 with a loading spinner visible — inventory is not loading. The user is signed in as "TERP Operator."
 
 ### Frame 4 (3:00) — Dashboard Page
 The Dashboard is selected in the sidebar. It shows "Overview of your business metrics and activity." The Cash Flow section displays Cash Collected: $5,828,886.76 and Cash Spent: $0.00. The Sales section shows client rankings with Total Sales: Bay Distribution ($322,283), Green Cannabis Co ($386,406), Santa Rosa Reserve ($267,967), Los Angeles Therapeutics ($249,913), Golden Health ($215,193), and more. "Customize" and "Comments" buttons are visible.
@@ -336,10 +339,10 @@ The Leaderboard page shows client performance metrics with the header "Track and
 A modal shows "Customize Weights" for Master Score calculation with sliders: YTD Revenue 25% ("Year-to-date revenue contribution"), On-Time Payment 20% ("Payment reliability"), Order Frequency 15% ("Orders per period"), Profit Margin 15% ("Profitability percentage"), Credit Utilization 10% ("Credit line usage"), YoY Growth 10% ("Year-over-year growth rate"), Recency 5% ("Days since last order"). Total: 100%. "Reset to Defaults" and "Save Weights" buttons are visible. The background shows the Engagement Rankings tab.
 
 ### Frame 15 (14:00) — AR/AP Accounting Dashboard
-The AR/AP page is selected in the FINANCE section showing "Accounting Dashboard — Overview of your financial health and key metrics." Key metrics: Cash Balance $0.00, Accounts Receivable $2,492,412.54, Accounts Payable $1,753,971.17, Net Position $738,441.37 (AR minus AP). AR Aging breakdown: Current $1,005,720, 30 Days $559,758, 60 Days $476,819, 90 Days, 90+ Days. AP Aging breakdown: Current $957,646, 30 Days $933,612, 60 Days $758,620, 90 Days $291,125, 90+ Days. Top Debtors section shows "No outstanding balances." Top Vendors Owed shows "Unknown Vendor" entries with amounts ($258,649.91, $186,313.16, etc.). Bottom tabs: Overdue Invoices (96), Overdue Bills (44). "Configure Display" button visible.
+The AR/AP page is selected in the FINANCE section showing "Accounting Dashboard — Overview of your financial health and key metrics." Key metrics: Cash Balance $0.00, Accounts Receivable $2,492,412.54, Accounts Payable $1,753,971.17, Net Position $738,441.37 (AR minus AP). AR Aging breakdown: Current $1,005,720, 30 Days $559,758, 60 Days $476,819, 90 Days, 90+ Days. AP Aging breakdown: Current $957,646, 30 Days $933,612, 60 Days $758,620, 90 Days $291,125, 90+ Days. Top Debtors section shows "No outstanding balances." Top Suppliers Owed shows "Unknown Supplier" entries with amounts ($258,649.91, $186,313.16, etc.). Bottom tabs: Overdue Invoices (96), Overdue Bills (44). "Configure Display" button visible.
 
 ### Frame 16 (15:00) — AR/AP Quick Actions and Invoices
-The AR/AP page scrolled down shows Overdue Invoices (96) and Overdue Bills (44) tabs. The overdue invoices table displays: INV-20251123-00098 (West Coast Wellness Center, 12/07/2025, 52 days, $21,480.75), INV-20251124-00204 (Valley Cannabis Co, 12/08/2025, 51 days, $19,524.54), INV-20251125-00275 (Redwood Collective, 12/09/2025, 50 days, $14,700.10), INV-20251125-00374 (Los Angeles Therapeutics, 12/09/2025, 50 days, $180,052.48), INV-20251126-00190 (West Coast Apothecary, 12/10/2025, 49 days, $18,152.81). A "View All 96 Overdue Invoices" link is shown. The Quick Actions section has buttons: Receive Payment (green), Pay Vendor (green), Post Journal Entry, Create Invoice, Create Bill, Record Expense. Recent Invoices, Recent Bills, and Recent Payments sections are visible with various statuses (Paid, Viewed, Void, Pending, Received).
+The AR/AP page scrolled down shows Overdue Invoices (96) and Overdue Bills (44) tabs. The overdue invoices table displays: INV-20251123-00098 (West Coast Wellness Center, 12/07/2025, 52 days, $21,480.75), INV-20251124-00204 (Valley Cannabis Co, 12/08/2025, 51 days, $19,524.54), INV-20251125-00275 (Redwood Collective, 12/09/2025, 50 days, $14,700.10), INV-20251125-00374 (Los Angeles Therapeutics, 12/09/2025, 50 days, $180,052.48), INV-20251126-00190 (West Coast Apothecary, 12/10/2025, 49 days, $18,152.81). A "View All 96 Overdue Invoices" link is shown. The Quick Actions section has buttons: Receive Payment (green), Pay Supplier (green), Post Journal Entry, Create Invoice, Create Bill, Record Expense. Recent Invoices, Recent Bills, and Recent Payments sections are visible with various statuses (Paid, Viewed, Void, Pending, Received).
 
 
 ---
@@ -350,7 +353,7 @@ This appendix contains the full, unabridged list of 64 details, nuances, and imp
 
 ### Relationship & Emotional Context (1-7)
 
-1.  **The relationship is deeply personal.** They end with "Love you, bud" [18:03.2]. This is not a vendor-client relationship — it's friends/family building a product together.
+1.  **The relationship is deeply personal.** They end with "Love you, bud" [18:03.2]. This is not a supplier-client relationship — it's friends/family building a product together.
 2.  **The customer is patient but disappointed.** "I'm pretty disappointed that this isn't working yet" [16:28.6] — but immediately follows with encouragement. This emotional dynamic is critical context.
 3.  **The customer offered to wait.** The very first words: "days or a week, like, I don't mind, um, uh, waiting buddy. Like, like there's no point in spinning your wheels if you need a couple more hours or whatever." [00:00.0] — The customer is proactively managing the developer's stress.
 4.  **The developer has imposter syndrome concerns.** "I've kind of validated that I'm not just being a total dummy about some of this stuff." [00:35.8] — The developer is seeking validation, not just feedback.
@@ -414,10 +417,10 @@ This appendix contains the full, unabridged list of 64 details, nuances, and imp
 38. **AR/AP has improved.** "this has gotten a lot more accurate since we last spoke." [14:31.2] — Another reference to iterative improvement.
 39. **The developer frames AR/AP as the accounting person's command center.** "this is going to be their command center basically." [14:45.7] — Distinguishing between owner and accountant views.
 40. **The developer distinguishes between what interests the owner vs the accountant.** "this sort of stuff is interesting for you, but really what they're going to want is just like this" [15:05.6] — Thinking about role-based views.
-41. **The customer has a moment of realization about "Receive Payment."** "She never, Oh, I guess if I give her a bag of money, that's receiving the payment." [15:21.2] — The customer is working through the accounting concept in real time.
+41. **The customer has a moment of realization about "Receive Payment."** "She never, Oh, I guess if I give her a bag of money, that's intake the payment." [15:21.2] — The customer is working through the accounting concept in real time.
 42. **The cash handling workflow is specific.** Owner gives accountant a lump sum of cash, accountant tracks disbursements [15:28.1].
-43. **The developer clarifies the payment flow.** Clients pay the OWNER, who collects cash; the accountant picks up the cash and pays vendors [15:36.2].
-44. **"Low risk farmers" is a specific term.** The customer uses "farmers" to mean vendors/suppliers [15:55.4].
+43. **The developer clarifies the payment flow.** Clients pay the OWNER, who collects cash; the accountant picks up the cash and pays suppliers [15:36.2].
+44. **"Low risk farmers" is a specific term.** The customer uses "farmers" to mean suppliers/suppliers [15:55.4].
 
 ### The Closing Section (45-48)
 
@@ -447,3 +450,4 @@ This appendix contains the full, unabridged list of 64 details, nuances, and imp
 62. **One-time visitors go on existing tabs.** "if someone's coming in once, we can just put it on somebody else's tab" [09:27.9] — A specific business practice.
 63. **The customer's daily workflow starts with inventory.** The new homepage should replace this ritual.
 64. **"Before you cop in the car" = before you get in the car.** [05:16.7] — Implying the customer is mobile as part of their daily work.
+```

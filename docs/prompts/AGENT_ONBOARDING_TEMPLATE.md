@@ -8,7 +8,7 @@
 
 **TERP** is a comprehensive ERP (Enterprise Resource Planning) system for cannabis businesses. It manages:
 
-- **Inventory**: Products, batches, vendors, purchase orders
+- **Inventory**: Products, batches, suppliers, purchase orders
 - **Sales**: Clients, orders, quotes, invoices, payments
 - **VIP Portal**: Client-facing mobile/desktop portal for self-service
 - **Accounting**: AR/AP, ledger, bank reconciliation

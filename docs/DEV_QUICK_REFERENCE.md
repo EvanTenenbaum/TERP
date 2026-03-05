@@ -1,11 +1,13 @@
 # TERP Development - Quick Reference
 
 ## 🌐 Live Development URL
+
 **https://3001-ichtogremfzu0pbcw8rfc-2ba70fb0.manusvm.computer**
 
 ## 🚀 Quick Commands
 
 ### Update & Restart
+
 ```bash
 cd /home/ubuntu/TERP
 git pull origin main
@@ -16,6 +18,7 @@ node dist/index.js > /tmp/terp-server.log 2>&1 &
 ```
 
 ### Check Status
+
 ```bash
 # Server running?
 ps aux | grep "node dist"
@@ -28,6 +31,7 @@ mysql -u terp_user -pterp_production_2024 terp_production -e "SHOW TABLES;"
 ```
 
 ### Database
+
 ```bash
 # Connect
 mysql -u terp_user -pterp_production_2024 terp_production
@@ -42,6 +46,7 @@ mysqldump -u terp_user -pterp_production_2024 terp_production > backup.sql
 ## 📦 What's Deployed
 
 ### All Features (100% Complete)
+
 - ✅ Transaction & Credit Management
 - ✅ Bad Debt Write-Off
 - ✅ Inventory Tracking & Movements
@@ -51,7 +56,7 @@ mysqldump -u terp_user -pterp_production_2024 terp_production > backup.sql
 - ✅ Dashboard Analytics
 - ✅ Sales Sheet Enhancements
 - ✅ Advanced Tag Features
-- ✅ **Product Intake Flow** (batch-by-batch with vendor receipts)
+- ✅ **Product Intake Flow** (batch-by-batch with supplier receipts)
 - ✅ Recurring Orders
 - ✅ Reorder Functionality
 - ✅ Payment Terms Management
@@ -59,14 +64,17 @@ mysqldump -u terp_user -pterp_production_2024 terp_production > backup.sql
 - ✅ Alert Configuration
 
 ### Database Tables (30+)
+
 All migrations applied (0012-0018)
 
 ### API Endpoints (70+)
+
 All routers registered and functional
 
 ## 🔧 Common Tasks
 
 ### Add New Feature
+
 1. Code in `/home/ubuntu/TERP/server/` or `/home/ubuntu/TERP/client/`
 2. `pnpm check` (verify TypeScript)
 3. `git add . && git commit -m "feat: description"`
@@ -74,6 +82,7 @@ All routers registered and functional
 5. Rebuild & restart (see commands above)
 
 ### Fix Bug
+
 1. Identify issue in logs: `tail -f /tmp/terp-server.log`
 2. Fix code
 3. `pnpm check`
@@ -81,6 +90,7 @@ All routers registered and functional
 5. Test at dev URL
 
 ### Update Schema
+
 1. Edit `/home/ubuntu/TERP/drizzle/schema.ts`
 2. `pnpm db:push` (generates migration)
 3. Check migration in `/home/ubuntu/TERP/drizzle/`
@@ -88,13 +98,13 @@ All routers registered and functional
 
 ## 🐛 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Server won't start | Check logs: `cat /tmp/terp-server.log` |
-| Port in use | Kill process: `pkill -f "node dist"` |
-| Database error | Restart MySQL: `sudo service mysql restart` |
-| Build fails | `rm -rf node_modules && pnpm install` |
-| TypeScript errors | `pnpm check` to see all errors |
+| Issue              | Solution                                    |
+| ------------------ | ------------------------------------------- |
+| Server won't start | Check logs: `cat /tmp/terp-server.log`      |
+| Port in use        | Kill process: `pkill -f "node dist"`        |
+| Database error     | Restart MySQL: `sudo service mysql restart` |
+| Build fails        | `rm -rf node_modules && pnpm install`       |
+| TypeScript errors  | `pnpm check` to see all errors              |
 
 ## 📝 Git Workflow
 
@@ -119,6 +129,7 @@ git log --oneline -10
 Located at `/home/ubuntu/TERP/.env`
 
 Key variables:
+
 - `DATABASE_URL` - MySQL connection
 - `OAUTH_SERVER_URL` - Manus OAuth
 - `VITE_APP_*` - Frontend config
@@ -131,7 +142,7 @@ ps aux | grep "node dist" | grep -v grep
 
 # Database size
 mysql -u terp_user -pterp_production_2024 terp_production -e "
-SELECT 
+SELECT
   table_schema AS 'Database',
   ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'Size (MB)'
 FROM information_schema.tables
@@ -164,4 +175,3 @@ df -h /home/ubuntu/TERP
 **Status:** ✅ RUNNING  
 **URL:** https://3001-ichtogremfzu0pbcw8rfc-2ba70fb0.manusvm.computer  
 **Last Deploy:** 2025-10-26
-

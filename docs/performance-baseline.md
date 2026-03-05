@@ -11,32 +11,39 @@ This document establishes the performance baseline for critical API endpoints in
 ## Critical Endpoints Identified
 
 ### Client Management
+
 - `clients.list` - List all clients
 - `clients.getById` - Get client by ID
 
 ### Order Management
+
 - `orders.list` - List all orders
 - `orders.getById` - Get order by ID
 
 ### Inventory & Batches
+
 - `batches.list` - List all batches
 - `batches.getById` - Get batch by ID
 - `inventory.list` - List inventory items
 
-### Vendor Management
-- `vendors.list` - List all vendors
+### Supplier Management
+
+- `suppliers.list` - List all suppliers
 
 ### Dashboard & Reporting
+
 - `dashboard.getMetrics` - Get dashboard metrics
 - `dashboard.getKPIs` - Get dashboard KPIs
 - `reports.arAging` - Generate AR aging report
 - `reports.inventory` - Generate inventory report
 
 ### Product & Purchase Orders
+
 - `products.list` - List all products
 - `purchaseOrders.list` - List purchase orders
 
 ### Comments
+
 - `comments.list` - List comments
 
 ## Performance Targets
@@ -48,6 +55,7 @@ This document establishes the performance baseline for critical API endpoints in
 ## Benchmark Methodology
 
 The benchmark script:
+
 1. Measures each endpoint 10 times
 2. Calculates average, min, max, P50, P95, and P99
 3. Identifies slow endpoints (P95 > 500ms)
@@ -56,6 +64,7 @@ The benchmark script:
 ## Expected Improvements from ST-005
 
 With the database indexes added in ST-005, we expect:
+
 - **60-80% improvement** on queries with JOINs
 - **Significant improvement** on filtered queries (status, foreign keys)
 - **Reduced load** on database during peak usage
@@ -63,18 +72,21 @@ With the database indexes added in ST-005, we expect:
 ## Key Indexes Added
 
 ### Batches Table
+
 - `idx_batches_status` - Improves filtered queries by status
 - `idx_batches_product_id` - Speeds up product-batch JOINs
 - `idx_batches_lot_id` - Speeds up lot-batch JOINs
 
 ### Orders Table
+
 - `idx_orders_created_by` - User activity queries
 - `idx_orders_packed_by` - Fulfillment tracking
 - `idx_orders_shipped_by` - Shipping queries
 - `idx_orders_intake_event_id` - Calendar integration
 
 ### Supporting Tables
-- Payment history indexes (batch, vendor, user)
+
+- Payment history indexes (batch, supplier, user)
 - Batch locations index
 - Sales table indexes (batch, product, customer)
 - Order returns indexes

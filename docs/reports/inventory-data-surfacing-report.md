@@ -39,7 +39,7 @@ Inventory list UIs compute **available** as `onHand - reserved - quarantine - ho
 
 `inventory.list` is the primary “legacy” list endpoint used by multiple UIs. It performs cursor-based pagination, optional search, and joins `batches` to `products`, `brands`, `lots`, and **clients** (supplier) to produce list-ready records.【F:server/routers/inventory.ts†L694-L771】【F:server/inventoryDb.ts†L853-L953】
 
-Key join logic (canonical supplier): `lots.supplierClientId → clients.id` (replacing deprecated vendor joins). This ensures the supplier name comes from `clients` for list displays and export surfaces.【F:server/inventoryDb.ts†L881-L909】【F:server/inventoryDb.ts†L935-L959】
+Key join logic (canonical supplier): `lots.supplierClientId → clients.id` (replacing deprecated supplier joins). This ensures the supplier name comes from `clients` for list displays and export surfaces.【F:server/inventoryDb.ts†L881-L909】【F:server/inventoryDb.ts†L935-L959】
 
 ### 2.2 Enhanced inventory list (Inventory page “enhanced” mode)
 
@@ -63,7 +63,7 @@ It returns `{ items, pagination, summary }`, where `summary` aggregates totals a
 - **Data source:** `salesSheetsDb.getInventoryWithPricing`
 - **Purpose:** supply inventory list items **pre-priced** for a specific client (pricing rules applied)
 
-The sales sheet inventory list is computed by joining `batches` → `products` → `lots` → `clients` (supplier), filtering to `onHandQty > 0`, and applying client-specific pricing rules via the pricing engine. It returns `PricedInventoryItem[]` with category/subcategory, grade, vendor (supplier name), status, and pricing context (base price, retail price, markup, applied rules).【F:server/routers/salesSheets.ts†L75-L117】【F:server/salesSheetsDb.ts†L65-L220】
+The sales sheet inventory list is computed by joining `batches` → `products` → `lots` → `clients` (supplier), filtering to `onHandQty > 0`, and applying client-specific pricing rules via the pricing engine. It returns `PricedInventoryItem[]` with category/subcategory, grade, supplier (supplier name), status, and pricing context (base price, retail price, markup, applied rules).【F:server/routers/salesSheets.ts†L75-L117】【F:server/salesSheetsDb.ts†L65-L220】
 
 ### 2.4 Spreadsheet inventory grid data
 
@@ -71,7 +71,7 @@ The sales sheet inventory list is computed by joining `batches` → `products` �
 - **Data source:** `spreadsheetViewService.getInventoryGridData`
 - **Underlying data:** `inventoryDb.getBatchesWithDetails`
 
-This pathway converts inventory batch records into spreadsheet rows with derived columns (available, intake, ticket, sub, vendor/source). It’s designed for the spreadsheet view’s grid and uses the same canonical supplier joins as the main list API.【F:server/routers/spreadsheet.ts†L35-L68】【F:server/services/spreadsheetViewService.ts†L103-L208】
+This pathway converts inventory batch records into spreadsheet rows with derived columns (available, intake, ticket, sub, supplier/source). It’s designed for the spreadsheet view’s grid and uses the same canonical supplier joins as the main list API.【F:server/routers/spreadsheet.ts†L35-L68】【F:server/services/spreadsheetViewService.ts†L103-L208】
 
 ### 2.5 Batch selection for orders (product-focused)
 
@@ -96,7 +96,7 @@ This endpoint returns batch identifiers, availability, cost, and optional metada
 
 - Uses enhanced data mapping for batch, product, brand, supplier client
 - Computes CSV export fields and availability math on the client
-- Supports filters (status, category, vendor, brand, grade, age bracket, stock status) and sorts
+- Supports filters (status, category, supplier, brand, grade, age bracket, stock status) and sorts
 - Consumes `inventory.dashboardStats` for summary cards
 
 This is the canonical inventory list view, with enhanced data turned on by default and a fallback to the legacy list API.【F:client/src/pages/Inventory.tsx†L54-L520】
@@ -115,7 +115,7 @@ The work-surface inventory view uses the legacy list API with search, status, ca
 
 **Data source:** `trpc.spreadsheet.getInventoryGridData`
 
-The spreadsheet inventory grid uses inventory grid rows (vendor, date, category, available, ticket) derived from the same underlying batch list via `getInventoryGridData`. Edits invoke inventory mutations (`adjustQty`, `updateStatus`, `updateBatch`) to keep list data consistent with batch records.【F:client/src/components/spreadsheet/InventoryGrid.tsx†L28-L200】【F:server/routers/spreadsheet.ts†L35-L68】【F:server/services/spreadsheetViewService.ts†L103-L208】
+The spreadsheet inventory grid uses inventory grid rows (supplier, date, category, available, ticket) derived from the same underlying batch list via `getInventoryGridData`. Edits invoke inventory mutations (`adjustQty`, `updateStatus`, `updateBatch`) to keep list data consistent with batch records.【F:client/src/components/spreadsheet/InventoryGrid.tsx†L28-L200】【F:server/routers/spreadsheet.ts†L35-L68】【F:server/services/spreadsheetViewService.ts†L103-L208】
 
 ### 3.4 Sales Sheet Module (inventory browser for sales sheet creation)
 
@@ -205,14 +205,14 @@ Use this quick flow when inventory list surfaces appear empty or incomplete.
    - `spreadsheet.getInventoryGridData` should return grid rows for the spreadsheet view.【F:server/routers/spreadsheet.ts†L35-L68】
 
 2. **Check frontend filters that can hide inventory.**
-   - Inventory module filters are applied client-side (status, category, vendor, brand, grade, stock level, COGS range). If inventory data loads but the table is empty, validate the active filters and search parameters.【F:client/src/pages/Inventory.tsx†L472-L553】
+   - Inventory module filters are applied client-side (status, category, supplier, brand, grade, stock level, COGS range). If inventory data loads but the table is empty, validate the active filters and search parameters.【F:client/src/pages/Inventory.tsx†L472-L553】
    - Inventory Work Surface status filter defaults to `ALL`, so an empty list here usually indicates the backend list or search payload is empty rather than a client-side filter issue.【F:client/src/components/work-surface/InventoryWorkSurface.tsx†L319-L360】
 
 3. **Verify availability math for sellable inventory.**
    - If `available = onHand - reserved - quarantine - hold` calculates to `<= 0`, inventory will appear as out of stock in list views that filter for availability (e.g., sales sheet inventory list).【F:server/routers/inventory.ts†L117-L279】【F:server/salesSheetsDb.ts†L65-L140】
 
 4. **Validate supplier joins for list display.**
-   - Supplier names come from `lots.supplier_client_id` → `clients.id`; missing joins can result in empty vendor columns and may affect vendor filters.【F:server/inventoryDb.ts†L881-L909】
+   - Supplier names come from `lots.supplier_client_id` → `clients.id`; missing joins can result in empty supplier columns and may affect supplier filters.【F:server/inventoryDb.ts†L881-L909】
 
 5. **Confirm pricing engine output for sales flows.**
    - Sales sheet and order creation inventory lists depend on `getInventoryWithPricing`. If pricing rules yield no priced items, those lists will appear empty even if inventory exists.【F:server/salesSheetsDb.ts†L65-L220】

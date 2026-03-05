@@ -38,7 +38,7 @@ Post-merge adversarial re-audit focused on previously open release blockers:
 
 ### 3) Legacy/Deep-Link Route Canonicalization
 
-- Routes exercised: `/spreadsheet-view`, `/purchase-orders/classic`, `/inventory/1`, `/orders/create`, `/receiving`.
+- Routes exercised: `/spreadsheet-view`, `/purchase-orders/classic`, `/inventory/1`, `/orders/create`, `/intake`.
 - Result: PASS.
 - Evidence:
   - `ui-evidence/2026-03-01-live-revalidation/route-final-urls-2026-03-01.txt`

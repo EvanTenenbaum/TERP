@@ -16,19 +16,20 @@ All Phase 0-4.5 work is **COMPLETE**. A comprehensive destructive QA audit has b
 
 ### What's Been Done ✅
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 0 | ✅ COMPLETE | Emergency Blockers (PERF-001, ACC-001) |
-| Phase 1 | ✅ COMPLETE | Foundation & Test Infrastructure |
-| Phase 2 | ✅ COMPLETE | Security (175 endpoints secured, RBAC fix) |
-| Phase 3 | ✅ COMPLETE | Financial Systems (ordersDb fixes, soft deletes) |
-| Phase 4 | ✅ COMPLETE | Work Surfaces Core (WSQA-001/002/003, API-016, SSE-001) |
-| Phase 4.5 | ✅ COMPLETE | Work Surface Refactors (Products, Vendors, Golden Flows) |
-| QA Audit | ✅ COMPLETE | 92 bugs found → 7 systemic root causes documented |
+| Phase     | Status      | Description                                                |
+| --------- | ----------- | ---------------------------------------------------------- |
+| Phase 0   | ✅ COMPLETE | Emergency Blockers (PERF-001, ACC-001)                     |
+| Phase 1   | ✅ COMPLETE | Foundation & Test Infrastructure                           |
+| Phase 2   | ✅ COMPLETE | Security (175 endpoints secured, RBAC fix)                 |
+| Phase 3   | ✅ COMPLETE | Financial Systems (ordersDb fixes, soft deletes)           |
+| Phase 4   | ✅ COMPLETE | Work Surfaces Core (WSQA-001/002/003, API-016, SSE-001)    |
+| Phase 4.5 | ✅ COMPLETE | Work Surface Refactors (Products, Suppliers, Golden Flows) |
+| QA Audit  | ✅ COMPLETE | 92 bugs found → 7 systemic root causes documented          |
 
 ### What Needs to Be Done 🔴
 
 **Immediate Priority (P0 - This Week):**
+
 1. Fix security issues: SEC-027, SEC-028, SEC-029, SEC-030
 2. Fix financial issues: ACC-002, ACC-003, ACC-004, ACC-005
 3. Fix inventory issues: INV-001, INV-002, INV-003
@@ -67,28 +68,33 @@ Build:      ✅ PASS
 ## Phase Execution Status (Detailed)
 
 ### Phase 0: Emergency Blockers ✅ COMPLETE
+
 - [x] PERF-001: Fixed empty catch blocks in usePerformanceMonitor.ts
 - [x] ACC-001: Fixed Silent GL Posting Failures with proper error classes
 - [ ] SEC-023: Rotate exposed database credentials (⚠️ Requires Evan approval)
 
 ### Phase 1: Foundation & Test Infrastructure ✅ COMPLETE
+
 - [x] TS-001: TypeScript errors - 0 errors
 - [x] TEST-INFRA-03: tRPC router initialization working
 - [x] BUG-100: Fixed 6 failing tests
 
 ### Phase 2: Security ✅ COMPLETE
-- [x] DI-009: Added Vendor ID Validation in Return Processing
+
+- [x] DI-009: Added Supplier ID Validation in Return Processing
 - [x] TERP-0013: 175 endpoints secured (publicProcedure → protectedProcedure)
 - [x] Calendar router: Fixed ctx.user?.id ?? 1 violation
 - [x] CRITICAL FIX: rbac-roles.ts import alias security fix
 
 ### Phase 3: Financial Systems ✅ COMPLETE
+
 - [x] TERP-0015: Credit note references, fiscal period locking
 - [x] TERP-0016: Order state machine, safe decimal arithmetic
 - [x] TERP-0001: Dashboard uses real COGS instead of hardcoded 40%
 - [x] ordersDb.ts: Fixed forbidden ?? 1 patterns, soft deletes
 
 ### Phase 4: Work Surfaces Core ✅ COMPLETE
+
 - [x] WSQA-001: Wire InvoicesWorkSurface Payment Recording
 - [x] WSQA-002: Implement Flexible Lot Selection
 - [x] WSQA-003: Add RETURNED Order Status with Processing Paths
@@ -97,19 +103,23 @@ Build:      ✅ PASS
 - [x] API-016: Implement Quote Email Sending
 
 ### Phase 4.5: Work Surface Refactors ✅ COMPLETE
+
 - [x] WS-PROD-001: Created ProductsWorkSurface.tsx (720+ lines)
 - [x] WS-VEND-001: Created VendorsWorkSurface.tsx (656 lines, party model)
 - [x] WS-GF-001: Wired InvoiceToPaymentFlow Golden Flow
 
 ### Phase 5: Navigation & UX Polish ✅ MOSTLY COMPLETE
+
 - [x] NAV-006 through NAV-016: All navigation routes in place
 - [x] Command Palette includes all routes
 - [ ] TERP-0002: Dashboard widget improvements (deferred)
 
 ### Phase 6: Backend Completeness & Seeding 🔴 NOT STARTED
+
 > Blocked by P0 bug fixes
 
 ### Phase 7: MVP Release Verification 🔴 NOT STARTED
+
 > Blocked by Phase 6
 
 ---
@@ -117,7 +127,7 @@ Build:      ✅ PASS
 ## Commits Made This Session
 
 1. `ae3ef50` - fix(phase0): PERF-001, ACC-001 and test fixes
-2. `9edd5dc` - fix(security): DI-009 vendor ID validation + test fix
+2. `9edd5dc` - fix(security): DI-009 supplier ID validation + test fix
 3. `72f13f5` - fix(security): convert publicProcedure to protectedProcedure (TERP-0013)
 4. `f7894cf` - fix(security): secure 61 more endpoints (TERP-0013 batch 2)
 5. `78510bf` - fix(security): secure 78 more endpoints + CRITICAL rbac fix (TERP-0013 batch 3)
@@ -125,7 +135,7 @@ Build:      ✅ PASS
 7. `4c544d3` - fix(consistency): TERP-0018 permission cache and inventory validation
 8. `73585ff` - fix(critical): ordersDb CLAUDE.md violations (QA findings)
 9. `ea68f07` - feat(phase4): complete remaining Phase 4 work surface tasks
-10. `f5f82f4` - feat(phase4.5): complete Work Surface refactors for Products and Vendors
+10. `f5f82f4` - feat(phase4.5): complete Work Surface refactors for Products and Suppliers
 11. `d8507a9` - feat(phase4.5): WS-GF-001 wire InvoiceToPaymentFlow Golden Flow
 12. `0c2c8e6` - test: fix test files for Work Surface refactors
 13. `c24cd51` - docs: add full QA review findings to session file
@@ -138,25 +148,25 @@ Build:      ✅ PASS
 
 ### 7 Systemic Root Causes Identified
 
-| Root Cause | Severity | Impact |
-|------------|----------|--------|
-| Shadow Accounting | CRITICAL | 3 systems tracking client balances independently |
-| Missing COGS GL | CRITICAL | Revenue posted but cost of goods sold never created |
-| Silent Errors | CRITICAL | Financial operations fail silently and continue |
-| State Machine Ignored | HIGH | Defined correctly but not used by transitions |
-| Missing Transactions | HIGH | Multi-step operations without atomicity |
-| Security Chains | CRITICAL | Individual issues combine into exploits |
-| Party Model Debt | MEDIUM | 42 files reference deprecated vendors table |
+| Root Cause            | Severity | Impact                                              |
+| --------------------- | -------- | --------------------------------------------------- |
+| Shadow Accounting     | CRITICAL | 3 systems tracking client balances independently    |
+| Missing COGS GL       | CRITICAL | Revenue posted but cost of goods sold never created |
+| Silent Errors         | CRITICAL | Financial operations fail silently and continue     |
+| State Machine Ignored | HIGH     | Defined correctly but not used by transitions       |
+| Missing Transactions  | HIGH     | Multi-step operations without atomicity             |
+| Security Chains       | CRITICAL | Individual issues combine into exploits             |
+| Party Model Debt      | MEDIUM   | 42 files reference deprecated suppliers table       |
 
 ### Task Distribution
 
-| Priority | Count | Estimated Hours |
-|----------|-------|-----------------|
-| P0 (Critical) | 15 | 40h |
-| P1 (Architecture) | 8 | 36h |
-| P2 (Business Logic) | 12 | 30h |
-| P3 (Observability) | 6 | 26h |
-| **Total** | **41** | **132h** |
+| Priority            | Count  | Estimated Hours |
+| ------------------- | ------ | --------------- |
+| P0 (Critical)       | 15     | 40h             |
+| P1 (Architecture)   | 8      | 36h             |
+| P2 (Business Logic) | 12     | 30h             |
+| P3 (Observability)  | 6      | 26h             |
+| **Total**           | **41** | **132h**        |
 
 ### Agent IDs for Resumable Deep Dives
 
@@ -200,6 +210,7 @@ cat docs/SENIOR_ENGINEER_AUDIT_REPORT.md
 ## Files Modified This Session
 
 ### New Files Created
+
 - `client/src/components/work-surface/ProductsWorkSurface.tsx`
 - `client/src/components/work-surface/VendorsWorkSurface.tsx`
 - `client/src/test-utils.ts`
@@ -207,6 +218,7 @@ cat docs/SENIOR_ENGINEER_AUDIT_REPORT.md
 - `docs/SENIOR_ENGINEER_AUDIT_REPORT.md`
 
 ### Key Files Modified
+
 - `server/ordersDb.ts` - Soft deletes, removed ?? 1 patterns
 - `server/routers/orders.ts` - RETURNED status, state machine
 - `server/routers/*.ts` - 175 endpoints secured

@@ -21,22 +21,24 @@ Complete the VIP Portal for client self-service and implement the notification s
 ```typescript
 // server/routers/vipAuth.ts
 
-import { z } from 'zod';
-import { router, publicProcedure, vipProtectedProcedure } from '../_core/trpc';
-import { vipUsers, clients, vipSessions } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
-import { TRPCError } from '@trpc/server';
-import { hashPassword, verifyPassword, generateToken } from '../lib/auth';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, publicProcedure, vipProtectedProcedure } from "../_core/trpc";
+import { vipUsers, clients, vipSessions } from "../db/schema";
+import { eq, and } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
+import { logger } from "../lib/logger";
 
 export const vipAuthRouter = router({
   login: publicProcedure
-    .input(z.object({
-      email: z.string().email(),
-      password: z.string().min(1),
-    }))
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(1),
+      })
+    )
     .mutation(async ({ input }) => {
-      logger.info('[VIP Auth] Login attempt', { email: input.email });
+      logger.info("[VIP Auth] Login attempt", { email: input.email });
 
       const vipUser = await db.query.vipUsers.findFirst({
         where: eq(vipUsers.email, input.email.toLowerCase()),
@@ -44,16 +46,28 @@ export const vipAuthRouter = router({
       });
 
       if (!vipUser) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
+        });
       }
 
       if (!vipUser.isActive) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Account is inactive' });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Account is inactive",
+        });
       }
 
-      const isValid = await verifyPassword(input.password, vipUser.passwordHash);
+      const isValid = await verifyPassword(
+        input.password,
+        vipUser.passwordHash
+      );
       if (!isValid) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
+        });
       }
 
       // Create session
@@ -68,11 +82,12 @@ export const vipAuthRouter = router({
       });
 
       // Update last login
-      await db.update(vipUsers)
+      await db
+        .update(vipUsers)
         .set({ lastLoginAt: new Date() })
         .where(eq(vipUsers.id, vipUser.id));
 
-      logger.info('[VIP Auth] Login successful', { vipUserId: vipUser.id });
+      logger.info("[VIP Auth] Login successful", { vipUserId: vipUser.id });
 
       return {
         token,
@@ -86,48 +101,54 @@ export const vipAuthRouter = router({
       };
     }),
 
-  logout: vipProtectedProcedure
-    .mutation(async ({ ctx }) => {
-      await db.delete(vipSessions)
-        .where(eq(vipSessions.token, ctx.vipToken));
+  logout: vipProtectedProcedure.mutation(async ({ ctx }) => {
+    await db.delete(vipSessions).where(eq(vipSessions.token, ctx.vipToken));
 
-      logger.info('[VIP Auth] Logout', { vipUserId: ctx.vipUser.id });
+    logger.info("[VIP Auth] Logout", { vipUserId: ctx.vipUser.id });
 
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
-  me: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      return {
-        id: ctx.vipUser.id,
-        email: ctx.vipUser.email,
-        name: ctx.vipUser.name,
-        clientId: ctx.vipUser.clientId,
-        clientName: ctx.vipUser.client.name,
-      };
-    }),
+  me: vipProtectedProcedure.query(async ({ ctx }) => {
+    return {
+      id: ctx.vipUser.id,
+      email: ctx.vipUser.email,
+      name: ctx.vipUser.name,
+      clientId: ctx.vipUser.clientId,
+      clientName: ctx.vipUser.client.name,
+    };
+  }),
 
   changePassword: vipProtectedProcedure
-    .input(z.object({
-      currentPassword: z.string(),
-      newPassword: z.string().min(8),
-    }))
+    .input(
+      z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(8),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      const isValid = await verifyPassword(input.currentPassword, ctx.vipUser.passwordHash);
+      const isValid = await verifyPassword(
+        input.currentPassword,
+        ctx.vipUser.passwordHash
+      );
       if (!isValid) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Current password is incorrect' });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Current password is incorrect",
+        });
       }
 
       const newHash = await hashPassword(input.newPassword);
 
-      await db.update(vipUsers)
+      await db
+        .update(vipUsers)
         .set({
           passwordHash: newHash,
           updatedAt: new Date(),
         })
         .where(eq(vipUsers.id, ctx.vipUser.id));
 
-      logger.info('[VIP Auth] Password changed', { vipUserId: ctx.vipUser.id });
+      logger.info("[VIP Auth] Password changed", { vipUserId: ctx.vipUser.id });
 
       return { success: true };
     }),
@@ -139,21 +160,23 @@ export const vipAuthRouter = router({
 ```typescript
 // server/routers/vipCatalog.ts
 
-import { z } from 'zod';
-import { router, vipProtectedProcedure } from '../_core/trpc';
-import { catalogItems, clientPricing } from '../db/schema';
-import { eq, and, gt, ilike, or } from 'drizzle-orm';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, vipProtectedProcedure } from "../_core/trpc";
+import { catalogItems, clientPricing } from "../db/schema";
+import { eq, and, gt, ilike, or } from "drizzle-orm";
+import { logger } from "../lib/logger";
 
 export const vipCatalogRouter = router({
   browse: vipProtectedProcedure
-    .input(z.object({
-      category: z.string().optional(),
-      subcategory: z.string().optional(),
-      search: z.string().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        category: z.string().optional(),
+        subcategory: z.string().optional(),
+        search: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const conditions = [
         eq(catalogItems.isActive, true),
@@ -167,10 +190,12 @@ export const vipCatalogRouter = router({
         conditions.push(eq(catalogItems.subcategory, input.subcategory));
       }
       if (input.search) {
-        conditions.push(or(
-          ilike(catalogItems.name, `%${input.search}%`),
-          ilike(catalogItems.strain, `%${input.search}%`),
-        ));
+        conditions.push(
+          or(
+            ilike(catalogItems.name, `%${input.search}%`),
+            ilike(catalogItems.strain, `%${input.search}%`)
+          )
+        );
       }
 
       const items = await db.query.catalogItems.findMany({
@@ -189,8 +214,11 @@ export const vipCatalogRouter = router({
 
       // Get client-specific pricing
       const itemsWithPricing = await Promise.all(
-        items.map(async (item) => {
-          const pricing = await getClientPrice(ctx.vipUser.clientId, item.batchId);
+        items.map(async item => {
+          const pricing = await getClientPrice(
+            ctx.vipUser.clientId,
+            item.batchId
+          );
           return {
             ...item,
             price: pricing.price,
@@ -203,16 +231,16 @@ export const vipCatalogRouter = router({
       return itemsWithPricing;
     }),
 
-  getCategories: vipProtectedProcedure
-    .query(async () => {
-      const categories = await db.selectDistinct({
+  getCategories: vipProtectedProcedure.query(async () => {
+    const categories = await db
+      .selectDistinct({
         category: catalogItems.category,
       })
-        .from(catalogItems)
-        .where(eq(catalogItems.isActive, true));
+      .from(catalogItems)
+      .where(eq(catalogItems.isActive, true));
 
-      return categories.map(c => c.category).filter(Boolean);
-    }),
+    return categories.map(c => c.category).filter(Boolean);
+  }),
 
   getItemDetail: vipProtectedProcedure
     .input(z.object({ id: z.number() }))
@@ -220,21 +248,21 @@ export const vipCatalogRouter = router({
       const item = await db.query.catalogItems.findFirst({
         where: and(
           eq(catalogItems.id, input.id),
-          eq(catalogItems.isActive, true),
+          eq(catalogItems.isActive, true)
         ),
         with: {
           batch: {
             with: {
               photos: true,
               product: true,
-              vendor: true,
+              supplier: true,
             },
           },
         },
       });
 
       if (!item) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Item not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
       }
 
       const pricing = await getClientPrice(ctx.vipUser.clientId, item.batchId);
@@ -253,7 +281,7 @@ async function getClientPrice(clientId: number, batchId: number) {
   const clientPrice = await db.query.clientPricing.findFirst({
     where: and(
       eq(clientPricing.clientId, clientId),
-      eq(clientPricing.batchId, batchId),
+      eq(clientPricing.batchId, batchId)
     ),
   });
 
@@ -277,85 +305,101 @@ async function getClientPrice(clientId: number, batchId: number) {
 ```typescript
 // server/routers/vipCart.ts
 
-import { z } from 'zod';
-import { router, vipProtectedProcedure } from '../_core/trpc';
-import { vipCarts, vipCartItems, catalogItems, orders, orderItems } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
-import { TRPCError } from '@trpc/server';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, vipProtectedProcedure } from "../_core/trpc";
+import {
+  vipCarts,
+  vipCartItems,
+  catalogItems,
+  orders,
+  orderItems,
+} from "../db/schema";
+import { eq, and } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { logger } from "../lib/logger";
 
 export const vipCartRouter = router({
-  get: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      let cart = await db.query.vipCarts.findFirst({
-        where: eq(vipCarts.vipUserId, ctx.vipUser.id),
-        with: {
-          items: {
-            with: {
-              catalogItem: {
-                with: {
-                  batch: { with: { photos: true } },
-                },
+  get: vipProtectedProcedure.query(async ({ ctx }) => {
+    let cart = await db.query.vipCarts.findFirst({
+      where: eq(vipCarts.vipUserId, ctx.vipUser.id),
+      with: {
+        items: {
+          with: {
+            catalogItem: {
+              with: {
+                batch: { with: { photos: true } },
               },
             },
           },
         },
-      });
+      },
+    });
 
-      if (!cart) {
-        // Create cart if doesn't exist
-        const [newCart] = await db.insert(vipCarts).values({
+    if (!cart) {
+      // Create cart if doesn't exist
+      const [newCart] = await db
+        .insert(vipCarts)
+        .values({
           vipUserId: ctx.vipUser.id,
           clientId: ctx.vipUser.clientId,
           createdAt: new Date(),
-        }).returning();
-        
-        cart = { ...newCart, items: [] };
-      }
-
-      // Calculate totals with client pricing
-      let subtotal = 0;
-      const itemsWithPricing = await Promise.all(
-        cart.items.map(async (item) => {
-          const pricing = await getClientPrice(ctx.vipUser.clientId, item.catalogItem.batchId);
-          const lineTotal = item.quantity * pricing.price;
-          subtotal += lineTotal;
-          return {
-            ...item,
-            unitPrice: pricing.price,
-            lineTotal,
-          };
         })
-      );
+        .returning();
 
-      return {
-        ...cart,
-        items: itemsWithPricing,
-        subtotal,
-        total: subtotal,
-      };
-    }),
+      cart = { ...newCart, items: [] };
+    }
+
+    // Calculate totals with client pricing
+    let subtotal = 0;
+    const itemsWithPricing = await Promise.all(
+      cart.items.map(async item => {
+        const pricing = await getClientPrice(
+          ctx.vipUser.clientId,
+          item.catalogItem.batchId
+        );
+        const lineTotal = item.quantity * pricing.price;
+        subtotal += lineTotal;
+        return {
+          ...item,
+          unitPrice: pricing.price,
+          lineTotal,
+        };
+      })
+    );
+
+    return {
+      ...cart,
+      items: itemsWithPricing,
+      subtotal,
+      total: subtotal,
+    };
+  }),
 
   addItem: vipProtectedProcedure
-    .input(z.object({
-      catalogItemId: z.number(),
-      quantity: z.number().min(1),
-    }))
+    .input(
+      z.object({
+        catalogItemId: z.number(),
+        quantity: z.number().min(1),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       // Validate catalog item
       const catalogItem = await db.query.catalogItems.findFirst({
         where: and(
           eq(catalogItems.id, input.catalogItemId),
-          eq(catalogItems.isActive, true),
+          eq(catalogItems.isActive, true)
         ),
       });
 
       if (!catalogItem) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Item not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
       }
 
       if (input.quantity > catalogItem.availableQuantity) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient quantity available' });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Insufficient quantity available",
+        });
       }
 
       // Get or create cart
@@ -364,11 +408,14 @@ export const vipCartRouter = router({
       });
 
       if (!cart) {
-        const [newCart] = await db.insert(vipCarts).values({
-          vipUserId: ctx.vipUser.id,
-          clientId: ctx.vipUser.clientId,
-          createdAt: new Date(),
-        }).returning();
+        const [newCart] = await db
+          .insert(vipCarts)
+          .values({
+            vipUserId: ctx.vipUser.id,
+            clientId: ctx.vipUser.clientId,
+            createdAt: new Date(),
+          })
+          .returning();
         cart = newCart;
       }
 
@@ -376,7 +423,7 @@ export const vipCartRouter = router({
       const existingItem = await db.query.vipCartItems.findFirst({
         where: and(
           eq(vipCartItems.cartId, cart.id),
-          eq(vipCartItems.catalogItemId, input.catalogItemId),
+          eq(vipCartItems.catalogItemId, input.catalogItemId)
         ),
       });
 
@@ -384,10 +431,14 @@ export const vipCartRouter = router({
         // Update quantity
         const newQty = existingItem.quantity + input.quantity;
         if (newQty > catalogItem.availableQuantity) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient quantity available' });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient quantity available",
+          });
         }
 
-        await db.update(vipCartItems)
+        await db
+          .update(vipCartItems)
           .set({ quantity: newQty, updatedAt: new Date() })
           .where(eq(vipCartItems.id, existingItem.id));
       } else {
@@ -400,20 +451,22 @@ export const vipCartRouter = router({
         });
       }
 
-      logger.info('[VIP Cart] Item added', { 
-        vipUserId: ctx.vipUser.id, 
-        catalogItemId: input.catalogItemId, 
-        quantity: input.quantity 
+      logger.info("[VIP Cart] Item added", {
+        vipUserId: ctx.vipUser.id,
+        catalogItemId: input.catalogItemId,
+        quantity: input.quantity,
       });
 
       return { success: true };
     }),
 
   updateQuantity: vipProtectedProcedure
-    .input(z.object({
-      cartItemId: z.number(),
-      quantity: z.number().min(0),
-    }))
+    .input(
+      z.object({
+        cartItemId: z.number(),
+        quantity: z.number().min(0),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const cartItem = await db.query.vipCartItems.findFirst({
         where: eq(vipCartItems.id, input.cartItemId),
@@ -421,16 +474,25 @@ export const vipCartRouter = router({
       });
 
       if (!cartItem || cartItem.cart.vipUserId !== ctx.vipUser.id) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Cart item not found' });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cart item not found",
+        });
       }
 
       if (input.quantity === 0) {
-        await db.delete(vipCartItems).where(eq(vipCartItems.id, input.cartItemId));
+        await db
+          .delete(vipCartItems)
+          .where(eq(vipCartItems.id, input.cartItemId));
       } else {
         if (input.quantity > cartItem.catalogItem.availableQuantity) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient quantity available' });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient quantity available",
+          });
         }
-        await db.update(vipCartItems)
+        await db
+          .update(vipCartItems)
           .set({ quantity: input.quantity, updatedAt: new Date() })
           .where(eq(vipCartItems.id, input.cartItemId));
       }
@@ -439,12 +501,14 @@ export const vipCartRouter = router({
     }),
 
   checkout: vipProtectedProcedure
-    .input(z.object({
-      notes: z.string().optional(),
-      deliveryDate: z.date().optional(),
-    }))
+    .input(
+      z.object({
+        notes: z.string().optional(),
+        deliveryDate: z.date().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      logger.info('[VIP Cart] Checkout started', { vipUserId: ctx.vipUser.id });
+      logger.info("[VIP Cart] Checkout started", { vipUserId: ctx.vipUser.id });
 
       const cart = await db.query.vipCarts.findFirst({
         where: eq(vipCarts.vipUserId, ctx.vipUser.id),
@@ -458,14 +522,14 @@ export const vipCartRouter = router({
       });
 
       if (!cart || cart.items.length === 0) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cart is empty' });
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cart is empty" });
       }
 
       // Validate availability
       for (const item of cart.items) {
         if (item.quantity > item.catalogItem.availableQuantity) {
           throw new TRPCError({
-            code: 'BAD_REQUEST',
+            code: "BAD_REQUEST",
             message: `${item.catalogItem.name} has insufficient quantity`,
           });
         }
@@ -474,8 +538,11 @@ export const vipCartRouter = router({
       // Calculate totals
       let subtotal = 0;
       const orderItemsData = await Promise.all(
-        cart.items.map(async (item) => {
-          const pricing = await getClientPrice(ctx.vipUser.clientId, item.catalogItem.batchId);
+        cart.items.map(async item => {
+          const pricing = await getClientPrice(
+            ctx.vipUser.clientId,
+            item.catalogItem.batchId
+          );
           const lineTotal = item.quantity * pricing.price;
           subtotal += lineTotal;
           return {
@@ -489,17 +556,20 @@ export const vipCartRouter = router({
 
       // Create order
       const orderNumber = await generateOrderNumber();
-      const [order] = await db.insert(orders).values({
-        orderNumber,
-        clientId: ctx.vipUser.clientId,
-        status: 'pending',
-        source: 'vip_portal',
-        subtotal,
-        total: subtotal,
-        notes: input.notes,
-        requestedDeliveryDate: input.deliveryDate,
-        createdAt: new Date(),
-      }).returning();
+      const [order] = await db
+        .insert(orders)
+        .values({
+          orderNumber,
+          clientId: ctx.vipUser.clientId,
+          status: "pending",
+          source: "vip_portal",
+          subtotal,
+          total: subtotal,
+          notes: input.notes,
+          requestedDeliveryDate: input.deliveryDate,
+          createdAt: new Date(),
+        })
+        .returning();
 
       // Create order items
       await db.insert(orderItems).values(
@@ -511,7 +581,8 @@ export const vipCartRouter = router({
 
       // Reserve inventory
       for (const item of orderItemsData) {
-        await db.update(batches)
+        await db
+          .update(batches)
           .set({ reservedQuantity: sql`reserved_quantity + ${item.quantity}` })
           .where(eq(batches.id, item.batchId));
       }
@@ -519,7 +590,10 @@ export const vipCartRouter = router({
       // Clear cart
       await db.delete(vipCartItems).where(eq(vipCartItems.cartId, cart.id));
 
-      logger.info('[VIP Cart] Order created', { orderId: order.id, orderNumber });
+      logger.info("[VIP Cart] Order created", {
+        orderId: order.id,
+        orderNumber,
+      });
 
       return order;
     }),
@@ -532,54 +606,49 @@ export const vipCartRouter = router({
 // server/routers/vipAccount.ts
 
 export const vipAccountRouter = router({
-  getDashboard: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      const clientId = ctx.vipUser.clientId;
+  getDashboard: vipProtectedProcedure.query(async ({ ctx }) => {
+    const clientId = ctx.vipUser.clientId;
 
-      // Get recent orders
-      const recentOrders = await db.query.orders.findMany({
-        where: eq(orders.clientId, clientId),
-        orderBy: desc(orders.createdAt),
-        limit: 5,
-      });
+    // Get recent orders
+    const recentOrders = await db.query.orders.findMany({
+      where: eq(orders.clientId, clientId),
+      orderBy: desc(orders.createdAt),
+      limit: 5,
+    });
 
-      // Get open invoices
-      const openInvoices = await db.query.invoices.findMany({
-        where: and(
-          eq(invoices.clientId, clientId),
-          gt(invoices.amountDue, 0),
-        ),
-        orderBy: invoices.dueDate,
-      });
+    // Get open invoices
+    const openInvoices = await db.query.invoices.findMany({
+      where: and(eq(invoices.clientId, clientId), gt(invoices.amountDue, 0)),
+      orderBy: invoices.dueDate,
+    });
 
-      // Get available credits
-      const credits = await db.query.credits.findMany({
-        where: and(
-          eq(credits.clientId, clientId),
-          eq(credits.status, 'active'),
-        ),
-      });
+    // Get available credits
+    const credits = await db.query.credits.findMany({
+      where: and(eq(credits.clientId, clientId), eq(credits.status, "active")),
+    });
 
-      // Get client info
-      const client = await db.query.clients.findFirst({
-        where: eq(clients.id, clientId),
-      });
+    // Get client info
+    const client = await db.query.clients.findFirst({
+      where: eq(clients.id, clientId),
+    });
 
-      return {
-        client,
-        recentOrders,
-        openInvoices,
-        totalOwed: openInvoices.reduce((sum, inv) => sum + inv.amountDue, 0),
-        availableCredit: credits.reduce((sum, c) => sum + c.remainingAmount, 0),
-        credits,
-      };
-    }),
+    return {
+      client,
+      recentOrders,
+      openInvoices,
+      totalOwed: openInvoices.reduce((sum, inv) => sum + inv.amountDue, 0),
+      availableCredit: credits.reduce((sum, c) => sum + c.remainingAmount, 0),
+      credits,
+    };
+  }),
 
   getOrderHistory: vipProtectedProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(100).default(20),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ ctx, input }) => {
       return db.query.orders.findMany({
         where: eq(orders.clientId, ctx.vipUser.clientId),
@@ -592,13 +661,12 @@ export const vipAccountRouter = router({
       });
     }),
 
-  getInvoices: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      return db.query.invoices.findMany({
-        where: eq(invoices.clientId, ctx.vipUser.clientId),
-        orderBy: desc(invoices.createdAt),
-      });
-    }),
+  getInvoices: vipProtectedProcedure.query(async ({ ctx }) => {
+    return db.query.invoices.findMany({
+      where: eq(invoices.clientId, ctx.vipUser.clientId),
+      orderBy: desc(invoices.createdAt),
+    });
+  }),
 });
 ```
 
@@ -611,27 +679,27 @@ export const vipAccountRouter = router({
 ```typescript
 // server/services/notificationService.ts
 
-import { db } from '../db';
-import { notifications, notificationPreferences, users } from '../db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
-import { logger } from '../lib/logger';
-import { safeInArray } from '../lib/sqlSafety';
+import { db } from "../db";
+import { notifications, notificationPreferences, users } from "../db/schema";
+import { eq, and, inArray } from "drizzle-orm";
+import { logger } from "../lib/logger";
+import { safeInArray } from "../lib/sqlSafety";
 
-export type NotificationType = 
-  | 'order_created'
-  | 'order_confirmed'
-  | 'order_shipped'
-  | 'order_delivered'
-  | 'invoice_created'
-  | 'invoice_overdue'
-  | 'payment_received'
-  | 'inventory_low'
-  | 'batch_received'
-  | 'task_assigned'
-  | 'task_due'
-  | 'appointment_reminder'
-  | 'return_requested'
-  | 'credit_issued';
+export type NotificationType =
+  | "order_created"
+  | "order_confirmed"
+  | "order_shipped"
+  | "order_delivered"
+  | "invoice_created"
+  | "invoice_overdue"
+  | "payment_received"
+  | "inventory_low"
+  | "batch_received"
+  | "task_assigned"
+  | "task_due"
+  | "appointment_reminder"
+  | "return_requested"
+  | "credit_issued";
 
 interface NotificationPayload {
   type: NotificationType;
@@ -640,14 +708,17 @@ interface NotificationPayload {
   entityType?: string;
   entityId?: number;
   link?: string;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
 }
 
 export async function createNotification(
   userId: number,
   payload: NotificationPayload
 ): Promise<void> {
-  logger.debug('[Notifications] Creating notification', { userId, type: payload.type });
+  logger.debug("[Notifications] Creating notification", {
+    userId,
+    type: payload.type,
+  });
 
   // Check user preferences
   const prefs = await db.query.notificationPreferences.findFirst({
@@ -656,7 +727,10 @@ export async function createNotification(
 
   // Check if user has disabled this notification type
   if (prefs?.disabledTypes?.includes(payload.type)) {
-    logger.debug('[Notifications] Notification type disabled for user', { userId, type: payload.type });
+    logger.debug("[Notifications] Notification type disabled for user", {
+      userId,
+      type: payload.type,
+    });
     return;
   }
 
@@ -668,12 +742,15 @@ export async function createNotification(
     entityType: payload.entityType,
     entityId: payload.entityId,
     link: payload.link,
-    priority: payload.priority || 'normal',
+    priority: payload.priority || "normal",
     isRead: false,
     createdAt: new Date(),
   });
 
-  logger.info('[Notifications] Notification created', { userId, type: payload.type });
+  logger.info("[Notifications] Notification created", {
+    userId,
+    type: payload.type,
+  });
 }
 
 export async function createBulkNotifications(
@@ -682,7 +759,10 @@ export async function createBulkNotifications(
 ): Promise<void> {
   if (userIds.length === 0) return;
 
-  logger.debug('[Notifications] Creating bulk notifications', { userCount: userIds.length, type: payload.type });
+  logger.debug("[Notifications] Creating bulk notifications", {
+    userCount: userIds.length,
+    type: payload.type,
+  });
 
   // Get all user preferences
   const prefs = await db.query.notificationPreferences.findMany({
@@ -708,13 +788,16 @@ export async function createBulkNotifications(
       entityType: payload.entityType,
       entityId: payload.entityId,
       link: payload.link,
-      priority: payload.priority || 'normal',
+      priority: payload.priority || "normal",
       isRead: false,
       createdAt: new Date(),
     }))
   );
 
-  logger.info('[Notifications] Bulk notifications created', { count: eligibleUserIds.length, type: payload.type });
+  logger.info("[Notifications] Bulk notifications created", {
+    count: eligibleUserIds.length,
+    type: payload.type,
+  });
 }
 
 export async function notifyRole(
@@ -738,18 +821,20 @@ export async function notifyRole(
 ```typescript
 // server/routers/notifications.ts
 
-import { z } from 'zod';
-import { router, protectedProcedure } from '../_core/trpc';
-import { notifications, notificationPreferences } from '../db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, protectedProcedure } from "../_core/trpc";
+import { notifications, notificationPreferences } from "../db/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { logger } from "../lib/logger";
 
 export const notificationsRouter = router({
   list: protectedProcedure
-    .input(z.object({
-      unreadOnly: z.boolean().default(false),
-      limit: z.number().min(1).max(100).default(20),
-    }))
+    .input(
+      z.object({
+        unreadOnly: z.boolean().default(false),
+        limit: z.number().min(1).max(100).default(20),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const conditions = [eq(notifications.userId, ctx.user.id)];
       if (input.unreadOnly) {
@@ -763,74 +848,86 @@ export const notificationsRouter = router({
       });
     }),
 
-  getUnreadCount: protectedProcedure
-    .query(async ({ ctx }) => {
-      const result = await db.select({
+  getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
+    const result = await db
+      .select({
         count: sql<number>`count(*)`,
       })
-        .from(notifications)
-        .where(and(
+      .from(notifications)
+      .where(
+        and(
           eq(notifications.userId, ctx.user.id),
-          eq(notifications.isRead, false),
-        ));
+          eq(notifications.isRead, false)
+        )
+      );
 
-      return result[0]?.count || 0;
-    }),
+    return result[0]?.count || 0;
+  }),
 
   markAsRead: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await db.update(notifications)
+      await db
+        .update(notifications)
         .set({ isRead: true, readAt: new Date() })
-        .where(and(
-          eq(notifications.id, input.id),
-          eq(notifications.userId, ctx.user.id),
-        ));
+        .where(
+          and(
+            eq(notifications.id, input.id),
+            eq(notifications.userId, ctx.user.id)
+          )
+        );
 
       return { success: true };
     }),
 
-  markAllAsRead: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      await db.update(notifications)
-        .set({ isRead: true, readAt: new Date() })
-        .where(and(
+  markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
+    await db
+      .update(notifications)
+      .set({ isRead: true, readAt: new Date() })
+      .where(
+        and(
           eq(notifications.userId, ctx.user.id),
-          eq(notifications.isRead, false),
-        ));
+          eq(notifications.isRead, false)
+        )
+      );
 
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
-  getPreferences: protectedProcedure
-    .query(async ({ ctx }) => {
-      let prefs = await db.query.notificationPreferences.findFirst({
-        where: eq(notificationPreferences.userId, ctx.user.id),
-      });
+  getPreferences: protectedProcedure.query(async ({ ctx }) => {
+    let prefs = await db.query.notificationPreferences.findFirst({
+      where: eq(notificationPreferences.userId, ctx.user.id),
+    });
 
-      if (!prefs) {
-        // Create default preferences
-        const [newPrefs] = await db.insert(notificationPreferences).values({
+    if (!prefs) {
+      // Create default preferences
+      const [newPrefs] = await db
+        .insert(notificationPreferences)
+        .values({
           userId: ctx.user.id,
           emailEnabled: true,
           pushEnabled: true,
           disabledTypes: [],
           createdAt: new Date(),
-        }).returning();
-        prefs = newPrefs;
-      }
+        })
+        .returning();
+      prefs = newPrefs;
+    }
 
-      return prefs;
-    }),
+    return prefs;
+  }),
 
   updatePreferences: protectedProcedure
-    .input(z.object({
-      emailEnabled: z.boolean().optional(),
-      pushEnabled: z.boolean().optional(),
-      disabledTypes: z.array(z.string()).optional(),
-    }))
+    .input(
+      z.object({
+        emailEnabled: z.boolean().optional(),
+        pushEnabled: z.boolean().optional(),
+        disabledTypes: z.array(z.string()).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      await db.update(notificationPreferences)
+      await db
+        .update(notificationPreferences)
         .set({
           ...input,
           updatedAt: new Date(),
@@ -847,16 +944,16 @@ export const notificationsRouter = router({
 ```typescript
 // server/services/notificationTriggers.ts
 
-import { createNotification, notifyRole } from './notificationService';
-import { logger } from '../lib/logger';
+import { createNotification, notifyRole } from "./notificationService";
+import { logger } from "../lib/logger";
 
 export async function onOrderCreated(order: Order): Promise<void> {
   // Notify sales team
-  await notifyRole('sales', {
-    type: 'order_created',
-    title: 'New Order',
+  await notifyRole("sales", {
+    type: "order_created",
+    title: "New Order",
     message: `Order ${order.orderNumber} created for ${order.client.name}`,
-    entityType: 'order',
+    entityType: "order",
     entityId: order.id,
     link: `/orders/${order.id}`,
   });
@@ -870,52 +967,59 @@ export async function onOrderShipped(order: Order): Promise<void> {
 
   for (const vipUser of vipUsers) {
     // VIP notifications would go to a separate table
-    logger.info('[Notifications] Would notify VIP user about shipment', { vipUserId: vipUser.id });
+    logger.info("[Notifications] Would notify VIP user about shipment", {
+      vipUserId: vipUser.id,
+    });
   }
 }
 
 export async function onInvoiceOverdue(invoice: Invoice): Promise<void> {
   // Notify accounting
-  await notifyRole('accounting', {
-    type: 'invoice_overdue',
-    title: 'Invoice Overdue',
+  await notifyRole("accounting", {
+    type: "invoice_overdue",
+    title: "Invoice Overdue",
     message: `Invoice ${invoice.invoiceNumber} for ${invoice.client.name} is overdue`,
-    entityType: 'invoice',
+    entityType: "invoice",
     entityId: invoice.id,
     link: `/invoices/${invoice.id}`,
-    priority: 'high',
+    priority: "high",
   });
 }
 
 export async function onInventoryLow(batch: Batch): Promise<void> {
-  await notifyRole('inventory', {
-    type: 'inventory_low',
-    title: 'Low Inventory Alert',
+  await notifyRole("inventory", {
+    type: "inventory_low",
+    title: "Low Inventory Alert",
     message: `${batch.product.name} (${batch.code}) is running low: ${batch.quantity} remaining`,
-    entityType: 'batch',
+    entityType: "batch",
     entityId: batch.id,
     link: `/inventory/${batch.id}`,
-    priority: 'high',
+    priority: "high",
   });
 }
 
-export async function onTaskAssigned(task: Task, assigneeId: number): Promise<void> {
+export async function onTaskAssigned(
+  task: Task,
+  assigneeId: number
+): Promise<void> {
   await createNotification(assigneeId, {
-    type: 'task_assigned',
-    title: 'Task Assigned',
+    type: "task_assigned",
+    title: "Task Assigned",
     message: `You have been assigned: ${task.title}`,
-    entityType: 'task',
+    entityType: "task",
     entityId: task.id,
     link: `/tasks/${task.id}`,
   });
 }
 
-export async function onAppointmentReminder(appointment: Appointment): Promise<void> {
+export async function onAppointmentReminder(
+  appointment: Appointment
+): Promise<void> {
   await createNotification(appointment.userId, {
-    type: 'appointment_reminder',
-    title: 'Appointment Reminder',
+    type: "appointment_reminder",
+    title: "Appointment Reminder",
     message: `Reminder: ${appointment.title} in 1 hour`,
-    entityType: 'appointment',
+    entityType: "appointment",
     entityId: appointment.id,
     link: `/calendar?date=${appointment.date}`,
   });
@@ -985,6 +1089,7 @@ Complete VIP Portal and notification system.
 ## Success Criteria
 
 ### VIP Portal
+
 - [ ] VIP login works
 - [ ] VIP can browse catalog
 - [ ] Client-specific pricing shows
@@ -994,6 +1099,7 @@ Complete VIP Portal and notification system.
 - [ ] Invoice list shows
 
 ### Notifications
+
 - [ ] Notifications created for events
 - [ ] Unread count accurate
 - [ ] Mark as read works

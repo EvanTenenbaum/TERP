@@ -214,7 +214,7 @@ export function AdvancedFilters({
           {/* Vendor Filter */}
           {vendors.length > 0 && (
             <div className="space-y-2">
-              <Label>Vendor</Label>
+              <Label>Supplier</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {vendors.map(vendor => (
                   <div key={vendor} className="flex items-center space-x-2">

@@ -18,22 +18,23 @@ Complete miscellaneous UI fixes and server-side features including navigation, b
 
 Only you will touch these files. No other agent will modify them.
 
-| File | TODOs |
-|------|-------|
-| `client/src/components/inbox/InboxItem.tsx` | Line 97 |
-| `client/src/components/inventory/BatchDetailDrawer.tsx` | Lines 324, 334, 611 |
-| `client/src/pages/ClientsListPage.tsx` | Line 877 |
-| `server/_core/calendarJobs.ts` | Lines 45, 124-127, 158, 174 |
-| `server/webhooks/github.ts` | Line 131 |
-| `server/routers/calendarMeetings.ts` | Line 111 |
-| `server/routers/calendarParticipants.ts` | Line 92 |
-| `server/paymentMethodsDb.ts` | Line 196 |
+| File                                                    | TODOs                       |
+| ------------------------------------------------------- | --------------------------- |
+| `client/src/components/inbox/InboxItem.tsx`             | Line 97                     |
+| `client/src/components/inventory/BatchDetailDrawer.tsx` | Lines 324, 334, 611         |
+| `client/src/pages/ClientsListPage.tsx`                  | Line 877                    |
+| `server/_core/calendarJobs.ts`                          | Lines 45, 124-127, 158, 174 |
+| `server/webhooks/github.ts`                             | Line 131                    |
+| `server/routers/calendarMeetings.ts`                    | Line 111                    |
+| `server/routers/calendarParticipants.ts`                | Line 92                     |
+| `server/paymentMethodsDb.ts`                            | Line 196                    |
 
 ---
 
 ## Task W3-D1: Navigate to Entity in InboxItem.tsx (Line 97)
 
 **Current Code:**
+
 ```typescript
 // TODO: Navigate to entity
 ```
@@ -82,16 +83,19 @@ const handleNavigateToEntity = () => {
 ## Task W3-D2: BatchDetailDrawer Product Relation & Avg Price (Lines 324, 334, 611)
 
 **Current Code (Line 324):**
+
 ```typescript
 // TODO: Enable when product relation is available
 ```
 
 **Current Code (Line 334):**
+
 ```typescript
 // TODO: Enable when product relation is available
 ```
 
 **Current Code (Line 611):**
+
 ```typescript
 // TODO: Calculate average price from order history
 ```
@@ -151,6 +155,7 @@ const averagePrice = useMemo(() => {
 ## Task W3-D3: Implement Client Archive (Line 877)
 
 **Current Code:**
+
 ```typescript
 // TODO: Implement archive functionality
 ```
@@ -195,13 +200,14 @@ const handleArchiveClient = async (clientId: number) => {
 ```
 
 **Server-side (if not exists):**
+
 ```typescript
 // In server/routers/clients.ts:
 archive: protectedProcedure
   .input(z.object({ clientId: z.number() }))
   .mutation(async ({ ctx, input }) => {
     const userId = getCurrentUserId(ctx);
-    
+
     await db
       .update(clients)
       .set({
@@ -219,21 +225,25 @@ archive: protectedProcedure
 ## Task W3-D4: Calendar Jobs Implementation (Lines 45, 124-127, 158, 174)
 
 **Current Code (Line 45):**
+
 ```typescript
 // TODO: Send notification
 ```
 
 **Current Code (Lines 124-127):**
+
 ```typescript
 // TODO: Implement cron job scheduling
 ```
 
 **Current Code (Line 158):**
+
 ```typescript
 // TODO: Send reminder notification
 ```
 
 **Current Code (Line 174):**
+
 ```typescript
 // TODO: Process recurring events
 ```
@@ -243,7 +253,10 @@ archive: protectedProcedure
 ```typescript
 // server/_core/calendarJobs.ts
 
-import { sendNotification, sendReminder } from "../services/notificationService";
+import {
+  sendNotification,
+  sendReminder,
+} from "../services/notificationService";
 import { db } from "./db";
 import { calendarEvents, calendarReminders } from "../../drizzle/schema";
 import { eq, and, lte, gte, isNull } from "drizzle-orm";
@@ -267,7 +280,7 @@ export async function sendEventNotification(
   if (!event) return;
 
   const participantUserIds = event.participants
-    .map((p) => p.userId)
+    .map(p => p.userId)
     .filter((id): id is number => id !== null);
 
   for (const userId of participantUserIds) {
@@ -293,7 +306,9 @@ export interface ScheduledJob {
   payload: Record<string, unknown>;
 }
 
-export async function scheduleJob(job: Omit<ScheduledJob, "id">): Promise<string> {
+export async function scheduleJob(
+  job: Omit<ScheduledJob, "id">
+): Promise<string> {
   // In production, this would integrate with a job queue (Bull, Agenda, etc.)
   // For now, store in database for polling
   const result = await db.insert(scheduledJobs).values({
@@ -398,7 +413,7 @@ async function createNextOccurrence(event: CalendarEvent): Promise<void> {
 
   // Create the next occurrence
   const duration = event.endTime.getTime() - event.startTime.getTime();
-  
+
   await db.insert(calendarEvents).values({
     ...event,
     id: undefined, // Let DB generate new ID
@@ -415,6 +430,7 @@ async function createNextOccurrence(event: CalendarEvent): Promise<void> {
 ## Task W3-D5: GitHub Webhook Background Job (Line 131)
 
 **Current Code:**
+
 ```typescript
 // TODO: Implement background job for DO polling
 ```
@@ -426,8 +442,10 @@ async function createNextOccurrence(event: CalendarEvent): Promise<void> {
 
 import { scheduleJob } from "../_core/calendarJobs";
 
-// After receiving GitHub webhook:
-export async function handleGitHubPush(payload: GitHubPushPayload): Promise<void> {
+// After intake GitHub webhook:
+export async function handleGitHubPush(
+  payload: GitHubPushPayload
+): Promise<void> {
   // 1. Log the push event
   await db.insert(deploymentEvents).values({
     source: "github",
@@ -501,6 +519,7 @@ async function checkDODeploymentStatus(commitSha: string): Promise<string> {
 ## Task W3-D6: Meeting Type Determination (Line 111)
 
 **Current Code:**
+
 ```typescript
 // TODO: Determine meeting type from context
 ```
@@ -510,7 +529,7 @@ async function checkDODeploymentStatus(commitSha: string): Promise<string> {
 ```typescript
 // server/routers/calendarMeetings.ts
 
-type MeetingType = "internal" | "client" | "vendor" | "interview" | "other";
+type MeetingType = "internal" | "client" | "supplier" | "interview" | "other";
 
 function determineMeetingType(
   participants: Participant[],
@@ -518,25 +537,25 @@ function determineMeetingType(
   description?: string
 ): MeetingType {
   // Check participant types
-  const hasExternalClient = participants.some((p) => p.type === "client");
-  const hasExternalVendor = participants.some((p) => p.type === "vendor");
-  const allInternal = participants.every((p) => p.type === "internal");
+  const hasExternalClient = participants.some(p => p.type === "client");
+  const hasExternalVendor = participants.some(p => p.type === "supplier");
+  const allInternal = participants.every(p => p.type === "internal");
 
   if (hasExternalClient) return "client";
-  if (hasExternalVendor) return "vendor";
+  if (hasExternalVendor) return "supplier";
   if (allInternal) return "internal";
 
   // Check title/description for keywords
   const text = `${title} ${description ?? ""}`.toLowerCase();
-  
+
   if (text.includes("interview") || text.includes("candidate")) {
     return "interview";
   }
   if (text.includes("client") || text.includes("customer")) {
     return "client";
   }
-  if (text.includes("vendor") || text.includes("supplier")) {
-    return "vendor";
+  if (text.includes("supplier") || text.includes("supplier")) {
+    return "supplier";
   }
 
   return "other";
@@ -555,6 +574,7 @@ const meetingType = determineMeetingType(
 ## Task W3-D7: Notification Integration for Participants (Line 92)
 
 **Current Code:**
+
 ```typescript
 // TODO: Integrate with notification service
 ```
@@ -611,6 +631,7 @@ async function addParticipant(
 ## Task W3-D8: Payment Method Usage Check (Line 196)
 
 **Current Code:**
+
 ```typescript
 // TODO: Check if payment method is in use before deletion
 ```
@@ -752,6 +773,7 @@ pnpm test
 ## Dependencies
 
 Use these Wave 0 utilities:
+
 - `getCurrentUserId(ctx)` from `server/_core/authHelpers.ts`
 - `sendNotification()` from `server/services/notificationService.ts`
 - `sendReminder()` from `server/services/notificationService.ts`

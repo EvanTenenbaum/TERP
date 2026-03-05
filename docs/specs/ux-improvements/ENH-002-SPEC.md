@@ -7,36 +7,38 @@
 ## Problem Statement
 
 Empty states across the application are inconsistent and unhelpful:
+
 - Some show only "No data found" with no guidance
 - Some have no icon or visual hierarchy
 - None provide contextual next steps
 
 ## Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | All empty states must include an icon | Must Have |
-| FR-02 | All empty states must include a title | Must Have |
+| ID    | Requirement                                 | Priority  |
+| ----- | ------------------------------------------- | --------- |
+| FR-01 | All empty states must include an icon       | Must Have |
+| FR-02 | All empty states must include a title       | Must Have |
 | FR-03 | All empty states must include a description | Must Have |
 | FR-04 | All empty states must include a primary CTA | Must Have |
-| FR-05 | CTAs must be contextually appropriate | Must Have |
-| FR-06 | Empty states must use consistent styling | Must Have |
+| FR-05 | CTAs must be contextually appropriate       | Must Have |
+| FR-06 | Empty states must use consistent styling    | Must Have |
 
 ## Empty State Content by Page
 
-| Page | Icon | Title | Description | Primary CTA |
-|------|------|-------|-------------|-------------|
-| Quotes | FileText | No quotes yet | Create quotes to send pricing to your clients. Quotes can be converted to orders once accepted. | Create Quote |
-| Orders | Package | No orders found | Orders are created when quotes are accepted or entered directly. Start by creating a quote or order. | Create Order |
-| Tasks | CheckSquare | No tasks yet | Create tasks to track to-dos, follow-ups, and reminders. Tasks can be assigned to team members. | Create Task |
-| Inventory | Box | No inventory | Add products to start tracking stock levels, costs, and availability. | Add Product |
-| Clients | Users | No clients yet | Add your first client to start managing relationships, orders, and payments. | Add Client |
-| Returns | RotateCcw | No returns | Returns will appear here when processed. Returns can be initiated from orders. | View Orders |
-| Purchase Orders | Truck | No purchase orders | Create purchase orders to track inventory procurement from vendors. | Create PO |
+| Page            | Icon        | Title              | Description                                                                                          | Primary CTA  |
+| --------------- | ----------- | ------------------ | ---------------------------------------------------------------------------------------------------- | ------------ |
+| Quotes          | FileText    | No quotes yet      | Create quotes to send pricing to your clients. Quotes can be converted to orders once accepted.      | Create Quote |
+| Orders          | Package     | No orders found    | Orders are created when quotes are accepted or entered directly. Start by creating a quote or order. | Create Order |
+| Tasks           | CheckSquare | No tasks yet       | Create tasks to track to-dos, follow-ups, and reminders. Tasks can be assigned to team members.      | Create Task  |
+| Inventory       | Box         | No inventory       | Add products to start tracking stock levels, costs, and availability.                                | Add Product  |
+| Clients         | Users       | No clients yet     | Add your first client to start managing relationships, orders, and payments.                         | Add Client   |
+| Returns         | RotateCcw   | No returns         | Returns will appear here when processed. Returns can be initiated from orders.                       | View Orders  |
+| Purchase Orders | Truck       | No purchase orders | Create purchase orders to track inventory procurement from suppliers.                                | Create PO    |
 
 ## Technical Specification
 
 ### EmptyState Component
+
 ```typescript
 interface EmptyStateProps {
   icon: LucideIcon;

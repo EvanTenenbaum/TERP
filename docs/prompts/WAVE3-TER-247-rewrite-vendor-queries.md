@@ -1,7 +1,7 @@
-# TER-247: Rewrite Vendor Queries → Client Queries
+# TER-247: Rewrite Supplier Queries → Client Queries
 
 **Classification**: Medium | **Mode**: STRICT | **Estimate**: 8h
-**Linear**: TER-247 | **Wave**: 3 (vendor migration phase 1)
+**Linear**: TER-247 | **Wave**: 3 (supplier migration phase 1)
 
 ---
 
@@ -15,29 +15,29 @@
 6. **ACTUALLY READ FILES BEFORE EDITING.** Before modifying any file, read it first. Do not assume you know what's in a file from context or memory.
 7. **STRICT MODE RULES.** This touches multiple server-side query paths and two frontend components. Full verification is required at each step.
 8. **ONE THING AT A TIME.** Complete and verify each file before starting the next.
-9. **NEVER IMPORT FROM `vendors` TABLE.** After this task, no server file outside the approved exceptions may reference `from(vendors)`. This is the whole point of the task.
+9. **NEVER IMPORT FROM `suppliers` TABLE.** After this task, no server file outside the approved exceptions may reference `from(suppliers)`. This is the whole point of the task.
 10. **USE `getAuthenticatedUserId(ctx)`.** Never use `ctx.user?.id || 1` or `ctx.user?.id ?? 1`. Never use `input.createdBy` or `input.userId` as actor.
 
 ---
 
 ## Mission Brief
 
-The `vendors` table is **DEPRECATED**. TERP's canonical model stores all business entities
+The `suppliers` table is **DEPRECATED**. TERP's canonical model stores all business entities
 in the `clients` table: suppliers have `isSeller = true`, customers have `isBuyer = true`.
 A `supplier_profiles` table holds extended supplier data (license, payment terms, contact info)
 linked 1:1 via `clientId`.
 
-Despite this, multiple server files still query `from(vendors)` directly — bypassing the
-canonical model, emitting no deprecation warnings, and making TER-235 (drop the vendors table)
+Despite this, multiple server files still query `from(suppliers)` directly — bypassing the
+canonical model, emitting no deprecation warnings, and making TER-235 (drop the suppliers table)
 impossible.
 
-This task rewrites every remaining `from(vendors)` query in the server codebase to use
+This task rewrites every remaining `from(suppliers)` query in the server codebase to use
 `from(clients).where(eq(clients.isSeller, true))` with `supplierProfile` joins where needed,
-and updates two frontend components that call the deprecated `trpc.vendors.getAll` endpoint.
+and updates two frontend components that call the deprecated `trpc.suppliers.getAll` endpoint.
 
-**After this task, the ONLY files allowed to reference `from(vendors)` are:**
+**After this task, the ONLY files allowed to reference `from(suppliers)` are:**
 
-- `server/routers/vendors.ts` — the facade that wraps clients (emits deprecation warnings)
+- `server/routers/suppliers.ts` — the facade that wraps clients (emits deprecation warnings)
 - `server/services/vendorMappingService.ts` — legacy ID mapping during transition
 - `server/db/seed/` — seed files only
 
@@ -83,7 +83,7 @@ Before writing any code, execute ALL of the following and read the output:
 ### 1. Establish the current blast radius
 
 ```bash
-grep -rn "from(vendors)" server/ --include="*.ts" | grep -v "vendors.ts" | grep -v "vendorMappingService" | grep -v "seed/"
+grep -rn "from(suppliers)" server/ --include="*.ts" | grep -v "suppliers.ts" | grep -v "vendorMappingService" | grep -v "seed/"
 ```
 
 🔒 **GATE 0a**: Paste the full output. These are the exact lines you must rewrite. Document the count.
@@ -96,18 +96,18 @@ Read the canonical schema sections:
 grep -n "isSeller\|isBuyer\|supplierProfile\|supplier_profiles\|legacyVendorId" drizzle/schema.ts | head -40
 ```
 
-Also read the `vendors` table definition so you understand the column mapping:
+Also read the `suppliers` table definition so you understand the column mapping:
 
 ```bash
-grep -n "export const vendors\|paymentTerms\|licenseNumber\|contactName\|contactEmail\|contactPhone" drizzle/schema.ts | head -30
+grep -n "export const suppliers\|paymentTerms\|licenseNumber\|contactName\|contactEmail\|contactPhone" drizzle/schema.ts | head -30
 ```
 
-### 3. Read the vendor router facade and mapping service
+### 3. Read the supplier router facade and mapping service
 
 Read these files fully before touching anything — they show the canonical query pattern
 already working in production:
 
-- `server/routers/vendors.ts`
+- `server/routers/suppliers.ts`
 - `server/services/vendorMappingService.ts`
 
 ### 4. Confirm pre-conditions (Wave 2 merge)
@@ -139,17 +139,17 @@ client/src/components/intake/IntakeGrid.tsx
 
 Use this table throughout all rewrites. Do not guess column names.
 
-| vendors column (DEPRECATED) | clients / supplierProfiles replacement |
-| --------------------------- | -------------------------------------- |
-| `vendors.id`                | `clients.id`                           |
-| `vendors.name`              | `clients.name`                         |
-| `vendors.deletedAt`         | `clients.deletedAt`                    |
-| `vendors.contactName`       | `supplierProfiles.contactName`         |
-| `vendors.contactEmail`      | `supplierProfiles.contactEmail`        |
-| `vendors.contactPhone`      | `supplierProfiles.contactPhone`        |
-| `vendors.paymentTerms`      | `supplierProfiles.paymentTerms`        |
-| `vendors.licenseNumber`     | `supplierProfiles.licenseNumber`       |
-| `vendors.notes`             | `clients.notes` (if column exists)     |
+| suppliers column (DEPRECATED) | clients / supplierProfiles replacement |
+| ----------------------------- | -------------------------------------- |
+| `suppliers.id`                | `clients.id`                           |
+| `suppliers.name`              | `clients.name`                         |
+| `suppliers.deletedAt`         | `clients.deletedAt`                    |
+| `suppliers.contactName`       | `supplierProfiles.contactName`         |
+| `suppliers.contactEmail`      | `supplierProfiles.contactEmail`        |
+| `suppliers.contactPhone`      | `supplierProfiles.contactPhone`        |
+| `suppliers.paymentTerms`      | `supplierProfiles.paymentTerms`        |
+| `suppliers.licenseNumber`     | `supplierProfiles.licenseNumber`       |
+| `suppliers.notes`             | `clients.notes` (if column exists)     |
 
 **Standard supplier query pattern** (reference this for every rewrite):
 
@@ -180,37 +180,37 @@ const suppliers = await db
 
 ## Task 1: server/dataCardMetricsDb.ts
 
-**What**: Replace `from(vendors)` supplier metric queries with `from(clients)` equivalents.
+**What**: Replace `from(suppliers)` supplier metric queries with `from(clients)` equivalents.
 
-**Step 1a**: Read the full file. Locate all `vendors` imports and query sites:
+**Step 1a**: Read the full file. Locate all `suppliers` imports and query sites:
 
 ```bash
-grep -n "vendors\|from(vendors)" server/dataCardMetricsDb.ts
+grep -n "suppliers\|from(suppliers)" server/dataCardMetricsDb.ts
 ```
 
-**Step 1b**: Remove `vendors` from the import line (around line 18). Add `clients`,
+**Step 1b**: Remove `suppliers` from the import line (around line 18). Add `clients`,
 `supplierProfiles` (if not already imported). Add `and`, `isNull` to the drizzle-orm
 imports if not present.
 
-**Step 1c**: For each `from(vendors)` query (approximately line 710 and nearby):
+**Step 1c**: For each `from(suppliers)` query (approximately line 710 and nearby):
 
-- Replace `from(vendors)` with `from(clients)`
+- Replace `from(suppliers)` with `from(clients)`
 - Add `.where(and(eq(clients.isSeller, true), isNull(clients.deletedAt)))` (or extend existing `where`)
-- If the query selects `vendors.name`, change to `clients.name`
-- If the query selects `vendors.paymentTerms` or `vendors.licenseNumber`, add a
+- If the query selects `suppliers.name`, change to `clients.name`
+- If the query selects `suppliers.paymentTerms` or `suppliers.licenseNumber`, add a
   `leftJoin(supplierProfiles, eq(supplierProfiles.clientId, clients.id))` and select
   from `supplierProfiles` instead
 
 **Acceptance Criteria**:
 
-- [ ] `vendors` import removed from `dataCardMetricsDb.ts`
-- [ ] Zero `from(vendors)` calls remain in this file
+- [ ] `suppliers` import removed from `dataCardMetricsDb.ts`
+- [ ] Zero `from(suppliers)` calls remain in this file
 - [ ] All replaced queries use `eq(clients.isSeller, true)` and `isNull(clients.deletedAt)`
 
 **Verification**:
 
 ```bash
-grep -n "from(vendors)\|vendors\." server/dataCardMetricsDb.ts
+grep -n "from(suppliers)\|suppliers\." server/dataCardMetricsDb.ts
 ```
 
 Expected: zero matches.
@@ -219,19 +219,19 @@ Expected: zero matches.
 
 ## Task 2: server/inventoryDb.ts
 
-**What**: Replace `getAllSuppliers` and related functions that query `from(vendors)`.
-The functions at lines 88, 108, 126, and 1105 use `from(vendors)` directly.
+**What**: Replace `getAllSuppliers` and related functions that query `from(suppliers)`.
+The functions at lines 88, 108, 126, and 1105 use `from(suppliers)` directly.
 
-**Step 2a**: Read the full file. Map all `vendors` references:
+**Step 2a**: Read the full file. Map all `suppliers` references:
 
 ```bash
-grep -n "vendors\|from(vendors)\|getAllSuppliers" server/inventoryDb.ts
+grep -n "suppliers\|from(suppliers)\|getAllSuppliers" server/inventoryDb.ts
 ```
 
-**Step 2b**: Remove `vendors` from imports. Add `clients`, `supplierProfiles`, `and`,
+**Step 2b**: Remove `suppliers` from imports. Add `clients`, `supplierProfiles`, `and`,
 `isNull` if not present.
 
-**Step 2c**: For each `from(vendors)` query:
+**Step 2c**: For each `from(suppliers)` query:
 
 - Replace with `from(clients).where(and(eq(clients.isSeller, true), isNull(clients.deletedAt)))`
 - Add `leftJoin(supplierProfiles, eq(supplierProfiles.clientId, clients.id))` for any
@@ -252,8 +252,8 @@ explicit interface or `typeof` inference).
 
 **Acceptance Criteria**:
 
-- [ ] `vendors` import removed from `inventoryDb.ts`
-- [ ] Zero `from(vendors)` calls remain in this file
+- [ ] `suppliers` import removed from `inventoryDb.ts`
+- [ ] Zero `from(suppliers)` calls remain in this file
 - [ ] `getAllSuppliers` return type is explicit (not `any`)
 - [ ] All call sites of `getAllSuppliers` still compile without errors
 
@@ -263,48 +263,48 @@ explicit interface or `typeof` inference).
 
 ## Task 3: server/routers/audit.ts
 
-**What**: Replace vendor references in audit trail lookups (import around line 18, query
+**What**: Replace supplier references in audit trail lookups (import around line 18, query
 around line 398).
 
 **Step 3a**: Read the full file:
 
 ```bash
-grep -n "vendors\|from(vendors)" server/routers/audit.ts
+grep -n "suppliers\|from(suppliers)" server/routers/audit.ts
 ```
 
-**Step 3b**: The audit router likely looks up vendor names to display in audit log entries.
+**Step 3b**: The audit router likely looks up supplier names to display in audit log entries.
 Understand what the query returns and what the caller uses:
 
-- If it fetches `vendors.name` for display, replace with `clients.name` from the
+- If it fetches `suppliers.name` for display, replace with `clients.name` from the
   `clients` table where `isSeller = true`
 - If the audit log stores a `vendorId` as a legacy FK, use `vendorMappingService.ts`
   (`getClientIdForVendor`) to resolve the client record during the transition period
 
 **Step 3c**: Update the import and query following the canonical pattern. The entity
-type in the audit log should map `"vendor"` references to `"client"` in display
+type in the audit log should map `"supplier"` references to `"client"` in display
 if the schema supports it — but do NOT change the stored audit trail data structure;
 only change the lookup query.
 
 **Acceptance Criteria**:
 
-- [ ] `vendors` import removed from `audit.ts`
-- [ ] Zero `from(vendors)` calls remain in this file
-- [ ] Audit log vendor lookups resolve correctly via `clients` table
+- [ ] `suppliers` import removed from `audit.ts`
+- [ ] Zero `from(suppliers)` calls remain in this file
+- [ ] Audit log supplier lookups resolve correctly via `clients` table
 
 ---
 
 ## Task 4: server/routers/debug.ts
 
-**What**: Replace `db.select().from(vendors)` debug endpoints (import around line 10,
+**What**: Replace `db.select().from(suppliers)` debug endpoints (import around line 10,
 queries around lines 499 and 564).
 
 **Step 4a**: Read the full file:
 
 ```bash
-grep -n "vendors\|from(vendors)" server/routers/debug.ts
+grep -n "suppliers\|from(suppliers)" server/routers/debug.ts
 ```
 
-**Step 4b**: Debug endpoints often dump raw table contents. Replace the `from(vendors)`
+**Step 4b**: Debug endpoints often dump raw table contents. Replace the `from(suppliers)`
 queries with `from(clients).where(eq(clients.isSeller, true))`. Include a
 `leftJoin(supplierProfiles, ...)` if the debug endpoint exposes supplier profile fields.
 
@@ -314,28 +314,28 @@ fields. Do not use `any`.
 
 **Acceptance Criteria**:
 
-- [ ] `vendors` import removed from `debug.ts`
-- [ ] Zero `from(vendors)` calls remain in this file
+- [ ] `suppliers` import removed from `debug.ts`
+- [ ] Zero `from(suppliers)` calls remain in this file
 - [ ] Response types are explicit (no `any`)
 
 ---
 
 ## Task 5: server/routers/purchaseOrders.ts
 
-**What**: Replace vendor lookups in PO creation/update flows (import around line 14,
+**What**: Replace supplier lookups in PO creation/update flows (import around line 14,
 queries around lines 872 and 893).
 
 **Step 5a**: Read the full file, paying close attention to the PO schema:
 
 ```bash
-grep -n "vendors\|from(vendors)\|supplierClientId\|vendorId" server/routers/purchaseOrders.ts
+grep -n "suppliers\|from(suppliers)\|supplierClientId\|vendorId" server/routers/purchaseOrders.ts
 ```
 
 **Step 5b**: The `purchaseOrders` table already has a `supplierClientId` column
 (not `vendorId`). This means PO queries that look up the supplier should join
 `clients` via `supplierClientId`, NOT via a legacy `vendorId` lookup.
 
-For vendor lookups used to populate dropdowns or validate PO input:
+For supplier lookups used to populate dropdowns or validate PO input:
 
 ```typescript
 // ✅ Use this pattern for PO supplier lookups
@@ -364,8 +364,8 @@ Do NOT use `input.userId` or `input.createdBy` for actor attribution — use
 
 **Acceptance Criteria**:
 
-- [ ] `vendors` import removed from `purchaseOrders.ts`
-- [ ] Zero `from(vendors)` calls remain in this file
+- [ ] `suppliers` import removed from `purchaseOrders.ts`
+- [ ] Zero `from(suppliers)` calls remain in this file
 - [ ] PO supplier lookups use `supplierClientId` (not `vendorId`)
 - [ ] No `input.createdBy` or `input.userId` used as actor
 
@@ -375,19 +375,19 @@ Do NOT use `input.userId` or `input.createdBy` for actor attribution — use
 
 ## Task 6: client/src/components/work-surface/DirectIntakeWorkSurface.tsx
 
-**What**: Replace `trpc.vendors.getAll.useQuery()` with `trpc.clients.list.useQuery({ clientTypes: ['seller'] })`.
+**What**: Replace `trpc.suppliers.getAll.useQuery()` with `trpc.clients.list.useQuery({ clientTypes: ['seller'] })`.
 
-**Step 6a**: Read the full file. Find the vendor query and every reference to its result:
+**Step 6a**: Read the full file. Find the supplier query and every reference to its result:
 
 ```bash
-grep -n "vendors\|getAll\|supplier\|vendor" client/src/components/work-surface/DirectIntakeWorkSurface.tsx
+grep -n "suppliers\|getAll\|supplier\|supplier" client/src/components/work-surface/DirectIntakeWorkSurface.tsx
 ```
 
 **Step 6b**: Replace the query hook:
 
 ```typescript
 // ❌ DEPRECATED — remove this
-const { data: vendors } = trpc.vendors.getAll.useQuery();
+const { data: suppliers } = trpc.suppliers.getAll.useQuery();
 
 // ✅ CANONICAL — use this
 const { data: suppliers } = trpc.clients.list.useQuery({
@@ -395,41 +395,41 @@ const { data: suppliers } = trpc.clients.list.useQuery({
 });
 ```
 
-**Step 6c**: Update all downstream references in this component from `vendors` to
+**Step 6c**: Update all downstream references in this component from `suppliers` to
 `suppliers`. The data shape from `trpc.clients.list` returns `clients` records with
 `id` and `name` — verify the component only uses fields available on `clients`
-(or `supplierProfile` if joined). If the component uses `vendor.licenseNumber` or
-`vendor.paymentTerms`, check whether `trpc.clients.list` returns those fields; if not,
+(or `supplierProfile` if joined). If the component uses `supplier.licenseNumber` or
+`supplier.paymentTerms`, check whether `trpc.clients.list` returns those fields; if not,
 use `trpc.clients.getById` with a `supplierProfile` include, or extend the `list`
 endpoint to include `supplierProfile`.
 
-**Step 6d**: Confirm the variable rename does not break JSX (e.g., `vendors.map(...)` →
+**Step 6d**: Confirm the variable rename does not break JSX (e.g., `suppliers.map(...)` →
 `suppliers.map(...)`). Check for loading/error states that reference the old variable name.
 
 **Acceptance Criteria**:
 
-- [ ] `trpc.vendors.getAll` removed from this file
+- [ ] `trpc.suppliers.getAll` removed from this file
 - [ ] `trpc.clients.list` used with `clientTypes: ['seller']` filter
-- [ ] All downstream references updated (no stale `vendors` variable)
+- [ ] All downstream references updated (no stale `suppliers` variable)
 - [ ] Component renders without TypeScript errors
 
 ---
 
 ## Task 7: client/src/components/intake/IntakeGrid.tsx
 
-**What**: Same pattern as Task 6 — replace `trpc.vendors.getAll.useQuery()`.
+**What**: Same pattern as Task 6 — replace `trpc.suppliers.getAll.useQuery()`.
 
 **Step 7a**: Read the full file:
 
 ```bash
-grep -n "vendors\|getAll\|supplier\|vendor" client/src/components/intake/IntakeGrid.tsx
+grep -n "suppliers\|getAll\|supplier\|supplier" client/src/components/intake/IntakeGrid.tsx
 ```
 
 **Step 7b**: Apply the same replacement as Task 6:
 
 ```typescript
 // ❌ DEPRECATED
-const { data: vendors } = trpc.vendors.getAll.useQuery();
+const { data: suppliers } = trpc.suppliers.getAll.useQuery();
 
 // ✅ CANONICAL
 const { data: suppliers } = trpc.clients.list.useQuery({
@@ -437,13 +437,13 @@ const { data: suppliers } = trpc.clients.list.useQuery({
 });
 ```
 
-**Step 7c**: Update all downstream `vendors` references to `suppliers` within this file.
+**Step 7c**: Update all downstream `suppliers` references to `suppliers` within this file.
 Verify the intake grid column definitions, filter logic, and row rendering all use the
-correct field names from `clients` (not `vendors`).
+correct field names from `clients` (not `suppliers`).
 
 **Acceptance Criteria**:
 
-- [ ] `trpc.vendors.getAll` removed from `IntakeGrid.tsx`
+- [ ] `trpc.suppliers.getAll` removed from `IntakeGrid.tsx`
 - [ ] `trpc.clients.list` used with `clientTypes: ['seller']` filter
 - [ ] All downstream references updated
 - [ ] Component renders without TypeScript errors
@@ -481,8 +481,8 @@ All four must pass before proceeding to the QA protocol.
 Run the primary verification command for this task. **This must return EMPTY output.**
 
 ```bash
-grep -rn "from(vendors)" server/ --include="*.ts" \
-  | grep -v "vendors\.ts" \
+grep -rn "from(suppliers)" server/ --include="*.ts" \
+  | grep -v "suppliers\.ts" \
   | grep -v "vendorMappingService" \
   | grep -v "seed/"
 ```
@@ -490,7 +490,7 @@ grep -rn "from(vendors)" server/ --include="*.ts" \
 Also check frontend:
 
 ```bash
-grep -rn "trpc\.vendors\.getAll" client/src/ --include="*.tsx"
+grep -rn "trpc\.suppliers\.getAll" client/src/ --include="*.tsx"
 ```
 
 Also check for forbidden patterns introduced during the rewrite:
@@ -512,7 +512,7 @@ grep -n ": any\b" \
 
 # No hard deletes introduced
 grep -rn "db\.delete(" server/ --include="*.ts" \
-  | grep -v "vendors\.ts" \
+  | grep -v "suppliers\.ts" \
   | grep -v "vendorMappingService"
 ```
 
@@ -547,10 +547,10 @@ Expected: one or more matches per file (each file must reference `isSeller`).
 
 ### Lens 3: Import Cleanliness
 
-Confirm `vendors` is no longer imported in any of the rewritten files:
+Confirm `suppliers` is no longer imported in any of the rewritten files:
 
 ```bash
-grep -n "import.*vendors\|from.*vendors" \
+grep -n "import.*suppliers\|from.*suppliers" \
   server/dataCardMetricsDb.ts \
   server/inventoryDb.ts \
   server/routers/audit.ts \
@@ -558,12 +558,12 @@ grep -n "import.*vendors\|from.*vendors" \
   server/routers/purchaseOrders.ts
 ```
 
-Expected: **zero matches** (only `vendors.ts` and `vendorMappingService.ts` may import from vendors).
+Expected: **zero matches** (only `suppliers.ts` and `vendorMappingService.ts` may import from suppliers).
 
 Also confirm frontend files no longer reference the deprecated query:
 
 ```bash
-grep -n "vendors" \
+grep -n "suppliers" \
   client/src/components/work-surface/DirectIntakeWorkSurface.tsx \
   client/src/components/intake/IntakeGrid.tsx
 ```
@@ -620,52 +620,52 @@ Do NOT declare this work complete until every box is checked with evidence:
 
 **server/dataCardMetricsDb.ts**
 
-- [ ] `vendors` import removed
-- [ ] Zero `from(vendors)` calls remain
+- [ ] `suppliers` import removed
+- [ ] Zero `from(suppliers)` calls remain
 - [ ] Replacement queries use `eq(clients.isSeller, true)` and `isNull(clients.deletedAt)`
 
 **server/inventoryDb.ts**
 
-- [ ] `vendors` import removed
-- [ ] Zero `from(vendors)` calls remain (lines 88, 108, 126, 1105 area all addressed)
+- [ ] `suppliers` import removed
+- [ ] Zero `from(suppliers)` calls remain (lines 88, 108, 126, 1105 area all addressed)
 - [ ] `getAllSuppliers` return type is explicit (not `any`)
 - [ ] Replacement queries use `eq(clients.isSeller, true)` and `isNull(clients.deletedAt)`
 
 **server/routers/audit.ts**
 
-- [ ] `vendors` import removed
-- [ ] Zero `from(vendors)` calls remain
-- [ ] Audit trail vendor lookups resolve via `clients` table
+- [ ] `suppliers` import removed
+- [ ] Zero `from(suppliers)` calls remain
+- [ ] Audit trail supplier lookups resolve via `clients` table
 
 **server/routers/debug.ts**
 
-- [ ] `vendors` import removed
-- [ ] Zero `from(vendors)` calls remain (lines 499 and 564 area addressed)
+- [ ] `suppliers` import removed
+- [ ] Zero `from(suppliers)` calls remain (lines 499 and 564 area addressed)
 - [ ] Response types are explicit (no `any`)
 
 **server/routers/purchaseOrders.ts**
 
-- [ ] `vendors` import removed
-- [ ] Zero `from(vendors)` calls remain (lines 872 and 893 area addressed)
+- [ ] `suppliers` import removed
+- [ ] Zero `from(suppliers)` calls remain (lines 872 and 893 area addressed)
 - [ ] PO supplier lookups use `supplierClientId` (not `vendorId`)
 - [ ] No `input.createdBy` or `input.userId` used as actor
 
 **client/src/components/work-surface/DirectIntakeWorkSurface.tsx**
 
-- [ ] `trpc.vendors.getAll` removed
+- [ ] `trpc.suppliers.getAll` removed
 - [ ] `trpc.clients.list` used with `clientTypes: ['seller']`
-- [ ] All downstream `vendors` variable references updated
+- [ ] All downstream `suppliers` variable references updated
 
 **client/src/components/intake/IntakeGrid.tsx**
 
-- [ ] `trpc.vendors.getAll` removed
+- [ ] `trpc.suppliers.getAll` removed
 - [ ] `trpc.clients.list` used with `clientTypes: ['seller']`
-- [ ] All downstream `vendors` variable references updated
+- [ ] All downstream `suppliers` variable references updated
 
 **Global verification gates**
 
-- [ ] Primary scan empty: `grep -rn "from(vendors)" server/ --include="*.ts" | grep -v "vendors.ts" | grep -v "vendorMappingService" | grep -v "seed/"` returns zero lines
-- [ ] Frontend scan empty: `grep -rn "trpc.vendors.getAll" client/src/ --include="*.tsx"` returns zero lines
+- [ ] Primary scan empty: `grep -rn "from(suppliers)" server/ --include="*.ts" | grep -v "suppliers.ts" | grep -v "vendorMappingService" | grep -v "seed/"` returns zero lines
+- [ ] Frontend scan empty: `grep -rn "trpc.suppliers.getAll" client/src/ --include="*.tsx"` returns zero lines
 - [ ] `pnpm check` passes (paste output)
 - [ ] `pnpm lint` passes (paste output)
 - [ ] `pnpm test` passes (paste output)
@@ -683,7 +683,7 @@ Do NOT declare this work complete until every box is checked with evidence:
 
 1. **NO PHANTOM VERIFICATION.** Show actual command output, not claims.
 2. **NO PREMATURE COMPLETION.** Every checklist item needs evidence.
-3. **PRIMARY SUCCESS CRITERION**: `grep -rn "from(vendors)" server/ --include="*.ts" | grep -v "vendors.ts" | grep -v "vendorMappingService" | grep -v "seed/"` returns **EMPTY**. If it does not, the task is not done.
+3. **PRIMARY SUCCESS CRITERION**: `grep -rn "from(suppliers)" server/ --include="*.ts" | grep -v "suppliers.ts" | grep -v "vendorMappingService" | grep -v "seed/"` returns **EMPTY**. If it does not, the task is not done.
 4. **STRICT MODE.** Read every file before touching it. Full verification at each gate.
 5. **SCOPE GUARD.** Only the seven files listed in the Mission Brief. Do not modify any other file without documenting why.
-6. **COLUMN MAPPING IS LAW.** Use the mapping table above. Do not guess vendor→client field correspondences.
+6. **COLUMN MAPPING IS LAW.** Use the mapping table above. Do not guess supplier→client field correspondences.

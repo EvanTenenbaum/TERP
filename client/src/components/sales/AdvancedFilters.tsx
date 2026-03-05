@@ -109,7 +109,7 @@ export function AdvancedFilters({
     let minPrice = Infinity;
     let maxPrice = 0;
 
-    inventory.forEach((item) => {
+    inventory.forEach(item => {
       if (item.category) categories.add(item.category);
       if (item.grade) grades.add(item.grade);
       if (item.strainFamily) strainFamilies.add(item.strainFamily);
@@ -151,7 +151,7 @@ export function AdvancedFilters({
     ) => {
       const currentValues = filters[key];
       const newValues = currentValues.includes(value)
-        ? currentValues.filter((v) => v !== value)
+        ? currentValues.filter(v => v !== value)
         : [...currentValues, value];
       onFiltersChange({ ...filters, [key]: newValues });
     },
@@ -219,7 +219,7 @@ export function AdvancedFilters({
           <div className="flex items-center gap-1">
             <Select
               value={sort.field}
-              onValueChange={(value) =>
+              onValueChange={value =>
                 onSortChange({
                   ...sort,
                   field: value as InventorySortConfig["field"],
@@ -231,7 +231,7 @@ export function AdvancedFilters({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {sortFields.map((field) => (
+                {sortFields.map(field => (
                   <SelectItem key={field.value} value={field.value}>
                     {field.label}
                   </SelectItem>
@@ -280,7 +280,7 @@ export function AdvancedFilters({
                 id="search-filter"
                 placeholder="Search by name, category, strain..."
                 value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
+                onChange={e => setLocalSearch(e.target.value)}
                 className="h-8"
               />
             </div>
@@ -289,11 +289,14 @@ export function AdvancedFilters({
               <Switch
                 id="in-stock-filter"
                 checked={filters.inStockOnly}
-                onCheckedChange={(checked) =>
+                onCheckedChange={checked =>
                   onFiltersChange({ ...filters, inStockOnly: checked })
                 }
               />
-              <Label htmlFor="in-stock-filter" className="text-sm cursor-pointer">
+              <Label
+                htmlFor="in-stock-filter"
+                className="text-sm cursor-pointer"
+              >
                 In Stock Only
               </Label>
             </div>
@@ -318,7 +321,7 @@ export function AdvancedFilters({
                 <DropdownMenuContent align="start" className="w-48">
                   <DropdownMenuLabel>Categories</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {filterOptions.categories.map((category) => (
+                  {filterOptions.categories.map(category => (
                     <DropdownMenuCheckboxItem
                       key={category}
                       checked={filters.categories.includes(category)}
@@ -350,7 +353,7 @@ export function AdvancedFilters({
                 <DropdownMenuContent align="start" className="w-32">
                   <DropdownMenuLabel>Grades</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {filterOptions.grades.map((grade) => (
+                  {filterOptions.grades.map(grade => (
                     <DropdownMenuCheckboxItem
                       key={grade}
                       checked={filters.grades.includes(grade)}
@@ -377,10 +380,13 @@ export function AdvancedFilters({
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 max-h-64 overflow-y-auto">
+                <DropdownMenuContent
+                  align="start"
+                  className="w-48 max-h-64 overflow-y-auto"
+                >
                   <DropdownMenuLabel>Strain Families</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {filterOptions.strainFamilies.map((strain) => (
+                  {filterOptions.strainFamilies.map(strain => (
                     <DropdownMenuCheckboxItem
                       key={strain}
                       checked={filters.strainFamilies.includes(strain)}
@@ -400,7 +406,7 @@ export function AdvancedFilters({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 gap-1">
-                    Vendor
+                    Supplier
                     {filters.vendors.length > 0 && (
                       <Badge variant="secondary" className="ml-1 h-4 px-1">
                         {filters.vendors.length}
@@ -409,10 +415,13 @@ export function AdvancedFilters({
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 max-h-64 overflow-y-auto">
-                  <DropdownMenuLabel>Vendors</DropdownMenuLabel>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-48 max-h-64 overflow-y-auto"
+                >
+                  <DropdownMenuLabel>Suppliers</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {filterOptions.vendors.map((vendor) => (
+                  {filterOptions.vendors.map(vendor => (
                     <DropdownMenuCheckboxItem
                       key={vendor}
                       checked={filters.vendors.includes(vendor)}
@@ -464,7 +473,7 @@ export function AdvancedFilters({
                   />
                 </Badge>
               )}
-              {filters.categories.map((cat) => (
+              {filters.categories.map(cat => (
                 <Badge key={cat} variant="secondary" className="gap-1">
                   {cat}
                   <X
@@ -473,7 +482,7 @@ export function AdvancedFilters({
                   />
                 </Badge>
               ))}
-              {filters.grades.map((grade) => (
+              {filters.grades.map(grade => (
                 <Badge key={grade} variant="secondary" className="gap-1">
                   Grade: {grade}
                   <X
@@ -482,7 +491,7 @@ export function AdvancedFilters({
                   />
                 </Badge>
               ))}
-              {filters.strainFamilies.map((strain) => (
+              {filters.strainFamilies.map(strain => (
                 <Badge key={strain} variant="secondary" className="gap-1">
                   {strain}
                   <X
@@ -491,7 +500,7 @@ export function AdvancedFilters({
                   />
                 </Badge>
               ))}
-              {filters.vendors.map((vendor) => (
+              {filters.vendors.map(vendor => (
                 <Badge key={vendor} variant="secondary" className="gap-1">
                   {vendor}
                   <X
