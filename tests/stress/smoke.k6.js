@@ -137,9 +137,9 @@ export default function () {
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 export function handleSummary(data) {
-  const p95 = data.metrics.http_req_duration?.values?.["p(95)"];
-  const errorRateVal = data.metrics.http_req_failed?.values?.rate;
-  const rps = data.metrics.http_reqs?.values?.rate;
+  const p95 = (data.metrics.http_req_duration && data.metrics.http_req_duration.values && data.metrics.http_req_duration.values["p(95)"]);
+  const errorRateVal = (data.metrics.http_req_failed && data.metrics.http_req_failed.values && data.metrics.http_req_failed.values.rate);
+  const rps = (data.metrics.http_reqs && data.metrics.http_reqs.values && data.metrics.http_reqs.values.rate);
 
   const passed =
     p95 !== undefined &&
@@ -159,6 +159,6 @@ export function handleSummary(data) {
   console.log("══════════════════════════════════════\n");
 
   return {
-    stdout: `Smoke test ${passed ? "PASSED" : "FAILED"} — p95: ${p95?.toFixed(1)}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%\n`,
+    stdout: `Smoke test ${passed ? "PASSED" : "FAILED"} — p95: ${p95 ? p95.toFixed(1) : "N/A"}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%\n`,
   };
 }

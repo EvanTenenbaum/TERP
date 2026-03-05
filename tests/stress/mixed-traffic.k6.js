@@ -214,11 +214,11 @@ export default function mixedTrafficScenario() {
 
 // ── Summary (standalone mode) ─────────────────────────────────────────────────
 export function handleSummary(data) {
-  const p95 = data.metrics.http_req_duration?.values?.["p(95)"];
-  const errorRateVal = data.metrics.http_req_failed?.values?.rate;
-  const rps = data.metrics.http_reqs?.values?.rate;
+  const p95 = (data.metrics.http_req_duration && data.metrics.http_req_duration.values && data.metrics.http_req_duration.values["p(95)"]);
+  const errorRateVal = (data.metrics.http_req_failed && data.metrics.http_req_failed.values && data.metrics.http_req_failed.values.rate);
+  const rps = (data.metrics.http_reqs && data.metrics.http_reqs.values && data.metrics.http_reqs.values.rate);
   const saturationCount =
-    data.metrics.pool_saturation_503_count?.values?.count || 0;
+    (data.metrics.pool_saturation_503_count && data.metrics.pool_saturation_503_count.values && data.metrics.pool_saturation_503_count.values.count) || 0;
 
   console.log("\n══════════════════════════════════════════════════");
   console.log("  MIXED TRAFFIC TEST SUMMARY (standalone mode)");

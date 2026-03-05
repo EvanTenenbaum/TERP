@@ -166,12 +166,12 @@ export default function () {
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 export function handleSummary(data) {
-  const p95 = data.metrics.http_req_duration?.values?.["p(95)"];
-  const p99 = data.metrics.http_req_duration?.values?.["p(99)"];
-  const p50 = data.metrics.http_req_duration?.values?.["p(50)"];
-  const errorRateVal = data.metrics.http_req_failed?.values?.rate;
-  const rps = data.metrics.http_reqs?.values?.rate;
-  const saturationEvents = data.metrics.mysql_pool_saturation_events?.values?.count || 0;
+  const p95 = (data.metrics.http_req_duration && data.metrics.http_req_duration.values && data.metrics.http_req_duration.values["p(95)"]);
+  const p99 = (data.metrics.http_req_duration && data.metrics.http_req_duration.values && data.metrics.http_req_duration.values["p(99)"]);
+  const p50 = (data.metrics.http_req_duration && data.metrics.http_req_duration.values && data.metrics.http_req_duration.values["p(50)"]);
+  const errorRateVal = (data.metrics.http_req_failed && data.metrics.http_req_failed.values && data.metrics.http_req_failed.values.rate);
+  const rps = (data.metrics.http_reqs && data.metrics.http_reqs.values && data.metrics.http_reqs.values.rate);
+  const saturationEvents = (data.metrics.mysql_pool_saturation_events && data.metrics.mysql_pool_saturation_events.values && data.metrics.mysql_pool_saturation_events.values.count) || 0;
 
   const passed =
     p95 !== undefined &&
@@ -205,6 +205,6 @@ export function handleSummary(data) {
   }
 
   return {
-    stdout: `Peak test ${passed ? "PASSED" : "FAILED"} — p95: ${p95?.toFixed(1)}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%, pool events: ${saturationEvents}\n`,
+    stdout: `Peak test ${passed ? "PASSED" : "FAILED"} — p95: ${(p95 && p95.toFixed)(1)}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%, pool events: ${saturationEvents}\n`,
   };
 }
