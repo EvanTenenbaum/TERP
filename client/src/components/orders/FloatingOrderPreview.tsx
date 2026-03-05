@@ -161,7 +161,7 @@ export function FloatingOrderPreview({
             Order Preview
           </SheetTitle>
           <SheetDescription>
-            {orderType === "QUOTE" ? "Quote" : "Sale"} for {clientName}
+            {orderType === "QUOTE" ? "Quote" : "Sales Order"} for {clientName}
           </SheetDescription>
         </SheetHeader>
         <div className="mt-4 h-full overflow-hidden flex flex-col">
@@ -188,7 +188,7 @@ export function FloatingOrderPreview({
           </CardTitle>
           <div className="flex items-center gap-1">
             <Badge variant={orderType === "QUOTE" ? "outline" : "default"}>
-              {orderType === "QUOTE" ? "Quote" : "Sale"}
+              {orderType === "QUOTE" ? "Quote" : "Sales Order"}
             </Badge>
             <TooltipProvider>
               <Tooltip>

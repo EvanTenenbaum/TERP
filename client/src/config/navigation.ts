@@ -288,10 +288,10 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
     ariaLabel: "Go to dashboard",
   },
   {
-    name: "New Sale",
+    name: "New Sales Order",
     path: "/sales?tab=create-order",
     icon: Plus,
-    ariaLabel: "Create a new sale",
+    ariaLabel: "Create a new sales order",
   },
   {
     name: "Record Intake",

@@ -124,7 +124,7 @@ describe("AppSidebar navigation", () => {
     const quickActions = within(quickActionsSection as HTMLElement);
 
     const dashboardQuickAction = quickActions.getByTitle("Dashboard");
-    const newSaleQuickAction = quickActions.getByTitle("New Sale");
+    const newSaleQuickAction = quickActions.getByTitle("New Sales Order");
     const recordReceiptQuickAction = quickActions.getByTitle("Record Intake");
     const clientsQuickAction = quickActions.getByTitle("Clients");
 

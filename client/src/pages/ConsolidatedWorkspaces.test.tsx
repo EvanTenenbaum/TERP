@@ -112,7 +112,7 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "New Sale" })
+      screen.getByRole("button", { name: "New Sales Order" })
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "New Order" })

@@ -845,7 +845,7 @@ export default function OrderCreatorPageV2() {
                   Create Sales Order
                 </h2>
                 <p className="linear-workspace-description">
-                  Build sale with COGS visibility and margin management
+                  Build sales order with COGS visibility and margin management
                 </p>
               </div>
             </div>
@@ -1370,7 +1370,7 @@ export default function OrderCreatorPageV2() {
         <ConfirmDialog
           open={showFinalizeConfirm}
           onOpenChange={setShowFinalizeConfirm}
-          title={`Finalize ${orderType === "QUOTE" ? "Quote" : "Sale"}?`}
+          title={`Finalize ${orderType === "QUOTE" ? "Quote" : "Sales Order"}?`}
           description={`Are you sure you want to finalize this ${orderType.toLowerCase()}? Total: $${totals.total.toFixed(2)}. This will create the order and cannot be undone.`}
           confirmLabel="Finalize"
           variant="default"

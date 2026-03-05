@@ -89,7 +89,11 @@ const QUOTE_STEPS: StepConfig[] = [
     label: "Accepted",
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
-  { key: "CONVERTED", label: "Sale", icon: <ArrowRight className="h-4 w-4" /> },
+  {
+    key: "CONVERTED",
+    label: "Sales Order",
+    icon: <ArrowRight className="h-4 w-4" />,
+  },
 ];
 
 const QUOTE_TERMINAL_STEPS: Record<string, StepConfig> = {
