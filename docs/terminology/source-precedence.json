@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-03-05",
+  "precedence": [
+    {
+      "rank": 1,
+      "name": "Golden flow specs",
+      "description": "Operational language in golden-flow acceptance specs.",
+      "source": "docs/golden-flows/specs/GF-001-DIRECT-INTAKE.md",
+      "citationId": "GF-001"
+    },
+    {
+      "rank": 2,
+      "name": "Meeting decisions",
+      "description": "User/owner decision record from the unified meeting report.",
+      "source": "docs/meeting-analysis-2026-01-11/TERP_Final_Unified_Report.md",
+      "citationId": "MEETING-2026-01-11"
+    },
+    {
+      "rank": 3,
+      "name": "UX charter",
+      "description": "UI/UX control-plane conventions and language guidance.",
+      "source": "docs/reviews/TERP_UIUX_Analysis_Report.md",
+      "citationId": "UX-CHARTER"
+    },
+    {
+      "rank": 4,
+      "name": "Protocol documents",
+      "description": "Engineering protocol constraints and naming standards.",
+      "source": "docs/protocols/NAMING_CONVENTIONS.md",
+      "citationId": "PROTOCOL-NAMING"
+    },
+    {
+      "rank": 5,
+      "name": "Current implementation",
+      "description": "Current codebase usage when higher-ranked sources are silent.",
+      "source": "drizzle/schema.ts",
+      "citationId": "CODEBASE-SCHEMA"
+    }
+  ]
+}

@@ -14,20 +14,20 @@
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 19, Vite 7, Tailwind CSS 4, shadcn/ui + Radix |
-| State | React Query + tRPC, React Hook Form + Zod |
-| Routing | Wouter |
-| API | tRPC v11, Express, superjson |
-| Database | MySQL 8.0, Drizzle ORM |
-| Queue | BullMQ |
-| Auth | Custom JWT (HTTP-only cookies) |
-| Testing | Vitest 4 (unit), Playwright (E2E), Argos (visual) |
-| Logging | Pino (structured) |
-| Hosting | DigitalOcean App Platform |
-| CI/CD | GitHub Actions |
-| Package Manager | pnpm 10.4.1 |
+| Layer           | Technology                                          |
+| --------------- | --------------------------------------------------- |
+| Frontend        | React 19, Vite 7, Tailwind CSS 4, shadcn/ui + Radix |
+| State           | React Query + tRPC, React Hook Form + Zod           |
+| Routing         | Wouter                                              |
+| API             | tRPC v11, Express, superjson                        |
+| Database        | MySQL 8.0, Drizzle ORM                              |
+| Queue           | BullMQ                                              |
+| Auth            | Custom JWT (HTTP-only cookies)                      |
+| Testing         | Vitest 4 (unit), Playwright (E2E), Argos (visual)   |
+| Logging         | Pino (structured)                                   |
+| Hosting         | DigitalOcean App Platform                           |
+| CI/CD           | GitHub Actions                                      |
+| Package Manager | pnpm 10.4.1                                         |
 
 ---
 
@@ -57,6 +57,16 @@ pnpm seed             # Seed database
 pnpm seed:light       # Minimal seed
 pnpm seed:full        # Comprehensive seed
 ```
+
+## Stress Command Contract
+
+- Phrase mapping: **`run stress testing`** means run:
+  - `pnpm qa:stress --env=staging --profile=peak`
+- Fast confidence variant:
+  - `pnpm qa:stress --env=staging --profile=smoke`
+- Preflight-only gate:
+  - `pnpm qa:stress:preflight --env=staging`
+- Stress runs are strict **NO_REPAIR** runs. Do not auto-install or auto-fix infrastructure during execution.
 
 ---
 
@@ -90,29 +100,34 @@ TERP/
 ## Code Conventions
 
 ### TypeScript
+
 - **Strict mode** — zero errors enforced
 - Components: PascalCase. Hooks: `use` prefix. Utilities: camelCase
 - Import aliases: `@/*` → `client/src/*`, `@shared/*` → `shared/*`
 - Type exports: `export type User = typeof users.$inferSelect`
 
 ### React
+
 - Functional components with hooks only
 - React Query for server state, `useState`/`useReducer` for local
 - Mobile-first — test at 320px minimum
 
 ### Database
+
 - Table/column names: camelCase (match surrounding conventions)
 - Soft deletes: all tables have `deletedAt`
 - All tables have `createdAt` and `updatedAt`
 - `mysqlEnum` first arg MUST match DB column name
 
 ### tRPC
+
 - One router per domain/feature
 - `protectedProcedure` for authenticated, `adminProcedure` for admin
 - All inputs validated with Zod
 - Errors via `TRPCError`
 
 ### Git
+
 - Conventional Commits: `type(scope): description`
 - Types: feat, fix, docs, style, refactor, perf, test, chore
 - Always `git pull --rebase origin main` before push
@@ -184,9 +199,9 @@ Task completion requires: commit SHA, PR link, verification outputs, blast radiu
 
 **Linear** is the source of truth: https://linear.app/terpcorp
 
-| Entity | ID |
-|--------|-----|
-| Team: Terpcorp | `d88bb32f-ea0a-4809-aac1-fde6ec81bad3` |
+| Entity                     | ID                                     |
+| -------------------------- | -------------------------------------- |
+| Team: Terpcorp             | `d88bb32f-ea0a-4809-aac1-fde6ec81bad3` |
 | Project: Golden Flows Beta | `79882db1-0cac-448b-b73c-5dd9307c85c8` |
 
 GitHub backup: `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`
@@ -195,11 +210,11 @@ GitHub backup: `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`
 
 ## Key Documents
 
-| Document | Location |
-|----------|----------|
-| Agent protocol (Claude) | `CLAUDE.md` |
-| Known bug patterns | `.claude/known-bug-patterns.md` |
-| Production migrations | `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` |
-| QA verification skill | `docs/skills/terp-qa/SKILL.md` |
-| Active sessions | `docs/ACTIVE_SESSIONS.md` |
-| Master roadmap | `docs/roadmaps/MASTER_ROADMAP.md` |
+| Document                | Location                                        |
+| ----------------------- | ----------------------------------------------- |
+| Agent protocol (Claude) | `CLAUDE.md`                                     |
+| Known bug patterns      | `.claude/known-bug-patterns.md`                 |
+| Production migrations   | `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` |
+| QA verification skill   | `docs/skills/terp-qa/SKILL.md`                  |
+| Active sessions         | `docs/ACTIVE_SESSIONS.md`                       |
+| Master roadmap          | `docs/roadmaps/MASTER_ROADMAP.md`               |

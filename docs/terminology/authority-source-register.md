@@ -21,6 +21,21 @@ Each entry defines:
 
 ---
 
+## Source Precedence (Machine-Referenceable)
+
+Source precedence is defined in [source-precedence.json](./source-precedence.json).
+When terms conflict, resolve by ascending `rank` (1 is highest authority).
+
+| Rank | Source Type            | Citation ID          | Evidence Path                                                   |
+| ---- | ---------------------- | -------------------- | --------------------------------------------------------------- |
+| 1    | Golden flow specs      | `GF-001`             | `docs/golden-flows/specs/GF-001-DIRECT-INTAKE.md`               |
+| 2    | Meeting decisions      | `MEETING-2026-01-11` | `docs/meeting-analysis-2026-01-11/TERP_Final_Unified_Report.md` |
+| 3    | UX charter             | `UX-CHARTER`         | `docs/reviews/TERP_UIUX_Analysis_Report.md`                     |
+| 4    | Protocols              | `PROTOCOL-NAMING`    | `docs/protocols/NAMING_CONVENTIONS.md`                          |
+| 5    | Current implementation | `CODEBASE-SCHEMA`    | `drizzle/schema.ts`                                             |
+
+---
+
 ## Party Family
 
 ### Client
@@ -262,18 +277,19 @@ Each entry defines:
 
 ---
 
-## Conflict Resolution Log
+## Conflict Resolution Log (Categorized By Family)
 
-The following ambiguities were identified and resolved during LEX-001:
+The following ambiguities were identified and resolved during LEX-001. Each row
+includes explicit citation IDs from the precedence chain.
 
-| Ambiguity                         | Resolution                                                     | Rationale                                                                                                 |
-| --------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| "Vendor" vs "Supplier"            | **Supplier** wins                                              | DB migration complete: `vendors` table deprecated 2025-12-16; `clients` with `isSeller=true` is canonical |
-| "Customer" vs "Buyer"             | **Buyer** in code; "Customer" acceptable in UI                 | DB column is `isBuyer`; "Customer" is more natural in user-facing contexts                                |
-| "Batch" vs "Inventory Item"       | **Batch** wins for technical contexts                          | DB table is `batches`; "Inventory Item" is too vague for code                                             |
-| "Sale" vs "Sales Order"           | **Sales Order** wins                                           | Disambiguates from the accounting concept of a "sale"                                                     |
-| "Receiving" vs "Intake"           | **Intake** wins                                                | Evan's preferred vocabulary; consistent with `intake_sessions` table name                                 |
-| "Order" (alone)                   | Context-dependent: must specify "Sales Order" or "Quote"       | `orders` table holds both; unqualified "Order" is ambiguous                                               |
-| "Farmer" vs "Brand"               | **Brand** in DB/API; "Farmer" in UI for flower categories      | `brands` table is the data model; `nomenclature.ts` governs UI label switching                            |
-| "Direct Intake" vs "Direct Entry" | **Direct Intake** wins                                         | Evan's vocabulary; consistent with overall "Intake" framing                                               |
-| "PO" vs "Purchase Order"          | **Purchase Order** in code; "PO" acceptable as UI abbreviation | Full name is clearer in code; abbreviation is standard in UI                                              |
+| Family  | Ambiguity                         | Resolution                                                | Citation IDs                                               | Rationale                                                                                           |
+| ------- | --------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| party   | "Vendor" vs "Supplier"            | **Supplier** wins                                         | `MEETING-2026-01-11`, `PROTOCOL-NAMING`, `CODEBASE-SCHEMA` | DB migration completed (`vendors` deprecated 2025-12-16); `clients` + `isSeller=true` is canonical. |
+| party   | "Customer" vs "Buyer"             | **Buyer** in code; "Customer" acceptable in UI            | `GF-001`, `UX-CHARTER`, `CODEBASE-SCHEMA`                  | `isBuyer` is schema truth; "Customer" is clearer for user-facing copy.                              |
+| product | "Batch" vs "Inventory Item"       | **Batch** wins for technical contexts                     | `GF-001`, `MEETING-2026-01-11`, `CODEBASE-SCHEMA`          | `batches` table is canonical; "Inventory Item" is UI colloquial only.                               |
+| intake  | "Receiving" vs "Intake"           | **Intake** wins                                           | `MEETING-2026-01-11`, `GF-001`, `PROTOCOL-NAMING`          | Meeting decisions and flow specs align on Intake terminology.                                       |
+| intake  | "Direct Intake" vs "Direct Entry" | **Direct Intake** wins                                    | `MEETING-2026-01-11`, `GF-001`                             | "Direct Intake" reflects approved operational wording.                                              |
+| intake  | "PO" vs "Purchase Order"          | **Purchase Order** in code; "PO" acceptable in UI         | `GF-001`, `UX-CHARTER`                                     | Full term in code reduces ambiguity; UI may abbreviate.                                             |
+| sales   | "Sale" vs "Sales Order"           | **Sales Order** wins                                      | `MEETING-2026-01-11`, `GF-001`, `PROTOCOL-NAMING`          | Distinguishes document term from accounting concept.                                                |
+| sales   | "Order" (alone)                   | Must specify "Sales Order" or "Quote"                     | `GF-001`, `CODEBASE-SCHEMA`                                | `orders` table contains both `QUOTE` and `SALE`; unqualified "Order" is ambiguous.                  |
+| brand   | "Farmer" vs "Brand"               | **Brand** in DB/API; "Farmer" in UI for flower categories | `MEETING-2026-01-11`, `UX-CHARTER`, `CODEBASE-SCHEMA`      | `brands` remains data model term; UI label is context-sensitive.                                    |

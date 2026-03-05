@@ -17,6 +17,16 @@ pnpm test           # Unit tests (Vitest)
 pnpm build          # Production build
 ```
 
+## Stress Command Contract
+
+- Phrase mapping: **`run stress testing`** means:
+  - `pnpm qa:stress --env=staging --profile=peak`
+- Smoke gate:
+  - `pnpm qa:stress --env=staging --profile=smoke`
+- Preflight-only gate:
+  - `pnpm qa:stress:preflight --env=staging`
+- Stress runs are strict **NO_REPAIR** runs: no automatic infrastructure repair during test execution.
+
 ## Forbidden Patterns (CI-Enforced)
 
 ```typescript
@@ -105,9 +115,9 @@ Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run a
 
 ## Essential References
 
-| File | Purpose |
-|------|---------|
-| `docs/roadmaps/MASTER_ROADMAP.md` | Task source of truth (backup to Linear) |
-| `docs/ACTIVE_SESSIONS.md` | Currently active agent work |
-| `.claude/known-bug-patterns.md` | Recurring bug catalog |
-| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures |
+| File                                            | Purpose                                 |
+| ----------------------------------------------- | --------------------------------------- |
+| `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear) |
+| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work             |
+| `.claude/known-bug-patterns.md`                 | Recurring bug catalog                   |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures               |

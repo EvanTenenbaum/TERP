@@ -1,278 +1,221 @@
 #!/usr/bin/env bash
-# =============================================================================
-# TERP Terminology Census (LEX-005)
-#
-# Scans all .tsx and .ts files for deprecated terms and produces a reproducible
-# report of term occurrences.
-#
-# Usage:
-#   bash scripts/terminology-census.sh
-#   bash scripts/terminology-census.sh --json        # JSON output
-#   bash scripts/terminology-census.sh --summary     # Summary only (no file list)
-#
-# Output is deterministic between runs on the same codebase state.
-# Exit code: always 0 (census never fails — use drift-audit for failure mode)
-# =============================================================================
-
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCRIPT_NAME="terminology-census"
-VERSION="1.0.0"
-RUN_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+# TERP Terminology Census (LEX-005)
+# Bash-3 compatible wrapper around a deterministic Node scanner.
 
-# ─── Output mode ──────────────────────────────────────────────────────────────
-OUTPUT_JSON=false
-SUMMARY_ONLY=false
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUTPUT_JSON="false"
+SUMMARY_ONLY="false"
 
 for arg in "$@"; do
   case "$arg" in
-    --json)    OUTPUT_JSON=true ;;
-    --summary) SUMMARY_ONLY=true ;;
+    --json) OUTPUT_JSON="true" ;;
+    --summary) SUMMARY_ONLY="true" ;;
   esac
 done
 
-# ─── Deprecated term definitions ──────────────────────────────────────────────
-# Format: "TERM|CANONICAL|FAMILY|PATTERN"
-# PATTERN is a grep-compatible extended regex
-DEPRECATED_TERMS=(
-  # Supplier family — Vendor deprecated
-  "Vendor|Supplier|party|\\bVendor\\b"
-  "vendor|Supplier|party|\\bvendor\\b"
-  "vendorId|supplierClientId|party|\\bvendorId\\b"
-  # Note: vendors table references are allowed in specific legacy files
-  "db.query.vendors|clients with isSeller|party|db\\.query\\.vendors"
+node - "$REPO_ROOT" "$OUTPUT_JSON" "$SUMMARY_ONLY" <<'NODE'
+const fs = require("fs");
+const path = require("path");
 
-  # Intake family — Receiving deprecated
-  "Receiving|Intake|intake|\\bReceiving\\b"
-  "receiving_session|intake_session|intake|\\breceiving[_-]session\\b"
-  "DirectEntry|Direct Intake|intake|\\bDirectEntry\\b"
-  "direct_entry|direct_intake|intake|\\bdirect[_-]entry\\b"
-  "ManualIntake|Direct Intake|intake|\\bManualIntake\\b"
-  "manual_intake|direct_intake|intake|\\bmanual[_-]intake\\b"
+const repoRoot = process.argv[2];
+const outputJson = process.argv[3] === "true";
+const summaryOnly = process.argv[4] === "true";
 
-  # Sales family — Sale/Estimate/Shipping deprecated as document nouns
-  "Estimate|Quote|sales|\\bEstimate\\b"
-  "Sale (noun)|Sales Order|sales|\\bSale\\b"
-  "Shipping (lifecycle)|Fulfillment|sales|\\bShipping\\b"
+const version = "1.0.0";
+const runDate = new Date().toISOString();
 
-  # Product family — InventoryItem deprecated as type name
-  "InventoryItem|Batch|product|\\bInventoryItem\\b"
-  "inventory_item|batch|product|\\binventory[_-]item\\b"
+const terms = [
+  ["Vendor", "Supplier", "party", /\bVendor\b/g],
+  ["vendor", "Supplier", "party", /\bvendor\b/g],
+  ["vendorId", "supplierClientId", "party", /\bvendorId\b/g],
+  ["db.query.vendors", "clients with isSeller", "party", /db\.query\.vendors/g],
 
-  # Brand family — Grower deprecated
-  "Grower|Farmer/Brand|brand|\\bGrower\\b"
-  "grower|farmer/brand|brand|\\bgrower\\b"
-)
+  ["Receiving", "Intake", "intake", /\bReceiving\b/g],
+  ["receiving_session", "intake_session", "intake", /\breceiving[_-]session\b/g],
+  ["DirectEntry", "Direct Intake", "intake", /\bDirectEntry\b/g],
+  ["direct_entry", "direct_intake", "intake", /\bdirect[_-]entry\b/g],
+  ["ManualIntake", "Direct Intake", "intake", /\bManualIntake\b/g],
+  ["manual_intake", "direct_intake", "intake", /\bmanual[_-]intake\b/g],
 
-# ─── Files to scan ────────────────────────────────────────────────────────────
-# Deterministic: find sorted by path, excluding build artifacts and node_modules
-mapfile -t SCAN_FILES < <(
-  find "$REPO_ROOT/client/src" "$REPO_ROOT/server" \
-    -type f \( -name "*.ts" -o -name "*.tsx" \) \
-    -not -path "*/node_modules/*" \
-    -not -path "*/dist/*" \
-    -not -path "*/.next/*" \
-    | sort
-)
+  ["Estimate", "Quote", "sales", /\bEstimate\b/g],
+  ["Sale (noun)", "Sales Order", "sales", /\bSale\b/g],
+  ["Shipping (lifecycle)", "Fulfillment", "sales", /\bShipping\b/g],
 
-TOTAL_FILES="${#SCAN_FILES[@]}"
+  ["InventoryItem", "Batch", "product", /\bInventoryItem\b/g],
+  ["inventory_item", "batch", "product", /\binventory[_-]item\b/g],
 
-# ─── Legacy exempt files (deprecated terms allowed here) ──────────────────────
-EXEMPT_PATTERNS=(
-  "drizzle/schema.ts"
-  "server/inventoryDb.ts"
-  "server/routers/vendors.ts"
-  "server/vendorContextDb.ts"
-  "server/vendorSupplyDb.ts"
-  "server/services/vendorMappingService.ts"
-  "server/services/payablesService.ts"
-  "client/src/components/vendors/"
-  "client/src/lib/nomenclature.ts"
-  "server/routers/intakeReceipts.ts"
+  ["Grower", "Farmer/Brand", "brand", /\bGrower\b/g],
+  ["grower", "farmer/brand", "brand", /\bgrower\b/g]
+];
+
+const exemptPatterns = [
+  "drizzle/schema.ts",
+  "server/inventoryDb.ts",
+  "server/routers/vendors.ts",
+  "server/vendorContextDb.ts",
+  "server/vendorSupplyDb.ts",
+  "server/services/vendorMappingService.ts",
+  "server/services/payablesService.ts",
+  "client/src/components/vendors/",
+  "client/src/lib/nomenclature.ts",
+  "server/routers/intakeReceipts.ts",
   "server/routers/pricing.ts"
-)
+];
 
-is_exempt() {
-  local file="$1"
-  local rel_file="${file#$REPO_ROOT/}"
-  for pattern in "${EXEMPT_PATTERNS[@]}"; do
-    if [[ "$rel_file" == *"$pattern"* ]]; then
-      return 0
-    fi
-  done
-  return 1
+function walkTsFiles(dir) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(current, e.name);
+      if (e.isDirectory()) {
+        if (e.name === "node_modules" || e.name === "dist" || e.name === ".next") continue;
+        stack.push(full);
+      } else if (/\.(ts|tsx)$/.test(e.name)) {
+        out.push(full);
+      }
+    }
+  }
+  return out;
 }
 
-# ─── Data collection ──────────────────────────────────────────────────────────
-declare -A TERM_TOTAL_COUNTS
-declare -A TERM_EXEMPT_COUNTS
-declare -A TERM_NON_EXEMPT_COUNTS
+function isExempt(absFile) {
+  const rel = path.relative(repoRoot, absFile).replace(/\\/g, "/");
+  return exemptPatterns.some(p => rel.includes(p));
+}
 
-# Initialize counters
-for entry in "${DEPRECATED_TERMS[@]}"; do
-  IFS='|' read -r term canonical family pattern <<< "$entry"
-  TERM_TOTAL_COUNTS["$term"]=0
-  TERM_EXEMPT_COUNTS["$term"]=0
-  TERM_NON_EXEMPT_COUNTS["$term"]=0
-done
+function countMatches(content, regex) {
+  const re = new RegExp(regex.source, regex.flags);
+  const matches = content.match(re);
+  return matches ? matches.length : 0;
+}
 
-# Per-file results for full report
-declare -A FILE_HITS  # file -> "term:count term:count ..."
+const scanFiles = [
+  ...walkTsFiles(path.join(repoRoot, "client/src")),
+  ...walkTsFiles(path.join(repoRoot, "server"))
+].sort();
 
-# Build combined pattern for fast pre-filter
-ALL_PATTERNS=""
-for entry in "${DEPRECATED_TERMS[@]}"; do
-  IFS='|' read -r term canonical family pattern <<< "$entry"
-  if [[ -n "$ALL_PATTERNS" ]]; then
-    ALL_PATTERNS="${ALL_PATTERNS}|${pattern}"
-  else
-    ALL_PATTERNS="${pattern}"
-  fi
-done
+const counters = new Map();
+for (const [term, canonical, family] of terms) {
+  counters.set(term, {
+    term,
+    canonical,
+    family,
+    total: 0,
+    exempt: 0,
+    nonExempt: 0
+  });
+}
 
-# Fast pre-filter: only process files that contain at least one deprecated term
-mapfile -t CANDIDATE_FILES < <(
-  grep -rlE "$ALL_PATTERNS" "${SCAN_FILES[@]}" 2>/dev/null || true
-)
+const fileHits = new Map();
 
-for file in "${CANDIDATE_FILES[@]}"; do
-  file_hits=""
-  for entry in "${DEPRECATED_TERMS[@]}"; do
-    IFS='|' read -r term canonical family pattern <<< "$entry"
+for (const file of scanFiles) {
+  const content = fs.readFileSync(file, "utf8");
+  const exempt = isExempt(file);
+  const perFile = [];
 
-    count=$(grep -cE "$pattern" "$file" 2>/dev/null || true)
-    if [[ "$count" -gt 0 ]]; then
-      TERM_TOTAL_COUNTS["$term"]=$((TERM_TOTAL_COUNTS["$term"] + count))
-      if is_exempt "$file"; then
-        TERM_EXEMPT_COUNTS["$term"]=$((TERM_EXEMPT_COUNTS["$term"] + count))
-      else
-        TERM_NON_EXEMPT_COUNTS["$term"]=$((TERM_NON_EXEMPT_COUNTS["$term"] + count))
-        file_hits="${file_hits}${term}:${count} "
-      fi
-    fi
-  done
+  for (const [term, _canonical, _family, regex] of terms) {
+    const count = countMatches(content, regex);
+    if (count === 0) continue;
+    const c = counters.get(term);
+    c.total += count;
+    if (exempt) {
+      c.exempt += count;
+    } else {
+      c.nonExempt += count;
+      perFile.push({ term, count });
+    }
+  }
 
-  if [[ -n "$file_hits" ]]; then
-    FILE_HITS["$file"]="${file_hits% }"
-  fi
-done
+  if (perFile.length > 0) {
+    fileHits.set(file, perFile);
+  }
+}
 
-# ─── Output ───────────────────────────────────────────────────────────────────
+if (outputJson) {
+  const results = [...counters.values()].map(v => ({
+    deprecated_term: v.term,
+    canonical_term: v.canonical,
+    family: v.family,
+    total_occurrences: v.total,
+    exempt_occurrences: v.exempt,
+    non_exempt_occurrences: v.nonExempt
+  }));
 
-if [[ "$OUTPUT_JSON" == "true" ]]; then
-  # JSON output
-  echo "{"
-  echo "  \"script\": \"$SCRIPT_NAME\","
-  echo "  \"version\": \"$VERSION\","
-  echo "  \"run_date\": \"$RUN_DATE\","
-  echo "  \"total_files_scanned\": $TOTAL_FILES,"
-  echo "  \"results\": ["
+  process.stdout.write(
+    JSON.stringify(
+      {
+        script: "terminology-census",
+        version,
+        run_date: runDate,
+        total_files_scanned: scanFiles.length,
+        results
+      },
+      null,
+      2
+    ) + "\n"
+  );
+  process.exit(0);
+}
 
-  first_term=true
-  for entry in "${DEPRECATED_TERMS[@]}"; do
-    IFS='|' read -r term canonical family pattern <<< "$entry"
-    total="${TERM_TOTAL_COUNTS[$term]:-0}"
-    exempt="${TERM_EXEMPT_COUNTS[$term]:-0}"
-    non_exempt="${TERM_NON_EXEMPT_COUNTS[$term]:-0}"
+const familyOrder = [
+  ["party", "Party (Supplier vs Vendor)"],
+  ["intake", "Intake (Intake vs Receiving)"],
+  ["sales", "Sales (Order/Quote terminology)"],
+  ["product", "Product (Batch vs InventoryItem)"],
+  ["brand", "Brand (Farmer vs Grower)"]
+];
 
-    if [[ "$first_term" == "true" ]]; then
-      first_term=false
-    else
-      echo "    ,"
-    fi
-    echo "    {"
-    echo "      \"deprecated_term\": \"$term\","
-    echo "      \"canonical_term\": \"$canonical\","
-    echo "      \"family\": \"$family\","
-    echo "      \"total_occurrences\": $total,"
-    echo "      \"exempt_occurrences\": $exempt,"
-    echo "      \"non_exempt_occurrences\": $non_exempt"
-    echo "    }"
-  done
+console.log("╔══════════════════════════════════════════════════════════════╗");
+console.log("║           TERP Terminology Census Report                     ║");
+console.log("╚══════════════════════════════════════════════════════════════╝");
+console.log("");
+console.log(`  Version : ${version}`);
+console.log(`  Run Date: ${runDate}`);
+console.log(`  Files   : ${scanFiles.length} TypeScript/TSX files scanned`);
+console.log("");
 
-  echo "  ]"
-  echo "}"
-  exit 0
-fi
+let grandTotalNonExempt = 0;
 
-# Human-readable output
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║           TERP Terminology Census Report                     ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo ""
-echo "  Version : $VERSION"
-echo "  Run Date: $RUN_DATE"
-echo "  Files   : $TOTAL_FILES TypeScript/TSX files scanned"
-echo ""
+for (const [family, label] of familyOrder) {
+  console.log(`── ${label} ──────────────────────────────────────────`);
+  for (const [term, canonical, fam] of terms) {
+    if (fam !== family) continue;
+    const c = counters.get(term);
+    grandTotalNonExempt += c.nonExempt;
+    const status = c.nonExempt > 0 ? "DRIFT" : "OK";
+    const row = `${JSON.stringify(term).padEnd(30)} → ${JSON.stringify(canonical).padEnd(25)} [${status}] total=${String(c.total).padEnd(4)} exempt=${String(c.exempt).padEnd(4)} new_code=${String(c.nonExempt).padEnd(4)}`;
+    console.log(`    ${row}`);
+  }
+  console.log("");
+}
 
-# Group by family
-FAMILIES=("party" "intake" "sales" "product" "brand")
-FAMILY_NAMES=("Party (Supplier vs Vendor)" "Intake (Intake vs Receiving)" "Sales (Order/Quote terminology)" "Product (Batch vs InventoryItem)" "Brand (Farmer vs Grower)")
+console.log("────────────────────────────────────────────────────────────────");
+if (grandTotalNonExempt === 0) {
+  console.log("  RESULT: CLEAN — No deprecated terms in non-exempt code");
+} else {
+  console.log(`  RESULT: ${grandTotalNonExempt} deprecated term occurrence(s) in non-exempt code`);
+  console.log("          Run 'pnpm terminology:audit' for strict enforcement");
+}
+console.log("────────────────────────────────────────────────────────────────");
+console.log("");
 
-GRAND_TOTAL_NON_EXEMPT=0
-
-for i in "${!FAMILIES[@]}"; do
-  family="${FAMILIES[$i]}"
-  family_name="${FAMILY_NAMES[$i]}"
-
-  family_total=0
-  family_output=""
-
-  for entry in "${DEPRECATED_TERMS[@]}"; do
-    IFS='|' read -r term canonical fam pattern <<< "$entry"
-    [[ "$fam" != "$family" ]] && continue
-
-    total="${TERM_TOTAL_COUNTS[$term]:-0}"
-    exempt="${TERM_EXEMPT_COUNTS[$term]:-0}"
-    non_exempt="${TERM_NON_EXEMPT_COUNTS[$term]:-0}"
-    family_total=$((family_total + non_exempt))
-    GRAND_TOTAL_NON_EXEMPT=$((GRAND_TOTAL_NON_EXEMPT + non_exempt))
-
-    status="OK"
-    [[ "$non_exempt" -gt 0 ]] && status="DRIFT"
-
-    family_output+=$(printf "    %-30s → %-25s  [%s] total=%-4d exempt=%-4d new_code=%-4d\n" \
-      "\"$term\"" "\"$canonical\"" "$status" "$total" "$exempt" "$non_exempt")
-    family_output+=$'\n'
-  done
-
-  echo "── $family_name ──────────────────────────────────────────"
-  printf "%s" "$family_output"
-  echo ""
-done
-
-echo "────────────────────────────────────────────────────────────────"
-if [[ "$GRAND_TOTAL_NON_EXEMPT" -eq 0 ]]; then
-  echo "  RESULT: CLEAN — No deprecated terms in non-exempt code"
-else
-  echo "  RESULT: $GRAND_TOTAL_NON_EXEMPT deprecated term occurrence(s) in non-exempt code"
-  echo "          Run 'pnpm terminology:audit' for strict enforcement"
-fi
-echo "────────────────────────────────────────────────────────────────"
-echo ""
-
-# File-level detail (unless summary-only)
-if [[ "$SUMMARY_ONLY" == "false" ]] && [[ "${#FILE_HITS[@]}" -gt 0 ]]; then
-  echo "FILES WITH DEPRECATED TERMS (non-exempt only):"
-  echo ""
-
-  # Sort file paths for determinism
-  mapfile -t SORTED_HIT_FILES < <(
-    for f in "${!FILE_HITS[@]}"; do echo "$f"; done | sort
-  )
-
-  for file in "${SORTED_HIT_FILES[@]}"; do
-    rel_file="${file#$REPO_ROOT/}"
-    hits="${FILE_HITS[$file]}"
-    echo "  $rel_file"
-
-    for hit in $hits; do
-      IFS=':' read -r term count <<< "$hit"
-      printf "    %-30s %d occurrence(s)\n" "$term" "$count"
-    done
-    echo ""
-  done
-fi
-
-exit 0
+if (!summaryOnly && fileHits.size > 0) {
+  console.log("FILES WITH DEPRECATED TERMS (non-exempt only):");
+  console.log("");
+  for (const file of [...fileHits.keys()].sort()) {
+    const rel = path.relative(repoRoot, file).replace(/\\/g, "/");
+    console.log(`  ${rel}`);
+    for (const hit of fileHits.get(file)) {
+      const left = hit.term.padEnd(30);
+      console.log(`    ${left} ${hit.count} occurrence(s)`);
+    }
+    console.log("");
+  }
+}
+NODE
