@@ -389,8 +389,8 @@
 - server/routers/userManagement.ts
 - server/routers/users.ts
 - server/routers/vendorSupply.ts
-- server/routers/vendors.test.ts
-- server/routers/vendors.ts
+- server/routers/suppliers.test.ts
+- server/routers/suppliers.ts
 - server/routers/vipPortal.liveCatalog.test.ts
 - server/routers/vipPortal.ts
 - server/routers/vipPortalAdmin.liveCatalog.test.ts

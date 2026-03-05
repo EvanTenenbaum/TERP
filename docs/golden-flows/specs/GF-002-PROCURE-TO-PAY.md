@@ -176,7 +176,7 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 
 | Endpoint                             | Method   | Input                                           | Description                        |
 | ------------------------------------ | -------- | ----------------------------------------------- | ---------------------------------- |
-| `poReceiving.receive`                | Mutation | `{ poId, receivedItems[], receivedBy, notes? }` | Basic receiving, create batches    |
+| `poReceiving.receive`                | Mutation | `{ poId, receivedItems[], receivedBy, notes? }` | Basic intake, create batches       |
 | `poReceiving.receiveGoodsWithBatch`  | Mutation | `{ purchaseOrderId, items[], receivingNotes? }` | Enhanced: location, lot, expiry    |
 | `poReceiving.getReceivingHistory`    | Query    | `{ poId: number }`                              | Inventory movements for PO         |
 | `poReceiving.getPOItemsWithReceipts` | Query    | `{ poId: number }`                              | Items with remaining qty           |
@@ -233,7 +233,7 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 | `id`                   | INT           | Primary key                                            |
 | `poNumber`             | VARCHAR(50)   | Unique PO number (e.g., PO-2026-0001)                  |
 | `supplierClientId`     | INT           | FK to clients.id (canonical)                           |
-| `vendorId`             | INT           | FK to vendors.id (DEPRECATED)                          |
+| `vendorId`             | INT           | FK to suppliers.id (DEPRECATED)                        |
 | `intakeSessionId`      | INT           | FK to intake_sessions.id (optional)                    |
 | `purchaseOrderStatus`  | ENUM          | DRAFT, SENT, CONFIRMED, RECEIVING, RECEIVED, CANCELLED |
 | `orderDate`            | DATE          | Date PO was created                                    |
@@ -275,7 +275,7 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 | `id`               | INT         | Primary key                              |
 | `code`             | VARCHAR(50) | Unique lot code (e.g., LOT-20260127-001) |
 | `supplierClientId` | INT         | FK to clients.id                         |
-| `vendorId`         | INT         | FK to vendors.id (DEPRECATED)            |
+| `vendorId`         | INT         | FK to suppliers.id (DEPRECATED)          |
 | `date`             | TIMESTAMP   | Lot date                                 |
 | `notes`            | TEXT        | Lot notes                                |
 | `deletedAt`        | TIMESTAMP   | Soft delete timestamp                    |
@@ -908,4 +908,4 @@ PurchaseOrdersWorkSurface
 ### Seeds
 
 - `scripts/seed/seeders/seed-purchase-orders.ts`
-- `scripts/seed/seeders/seed-vendor-bills.ts`
+- `scripts/seed/seeders/seed-supplier-bills.ts`

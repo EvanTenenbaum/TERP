@@ -33,7 +33,7 @@ git checkout -b feature/spreadsheet-data-fixes
 
 ## 2. Your Tasks (Wave 2)
 
-### Task 1: Fix Client Grid Vendor/Batch Code Mapping (TERP-SS-003, 24h)
+### Task 1: Fix Client Grid Supplier/Batch Code Mapping (TERP-SS-003, 24h)
 
 **Goal:** Display the correct `lot.code` or `batch.code` in the Client Grid.
 

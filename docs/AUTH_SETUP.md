@@ -197,18 +197,18 @@ tsx scripts/seed-rbac.ts
 
 ### Predefined Roles
 
-| Role               | Description                                 |
-| ------------------ | ------------------------------------------- |
-| Super Admin        | Unrestricted access to everything           |
-| Owner/Executive    | Read-only access to all financial data      |
-| Operations Manager | Full inventory, orders, POs, vendors access |
-| Sales Manager      | Full clients, orders, quotes access         |
-| Accountant         | Full accounting, credits, COGS access       |
-| Inventory Manager  | Full inventory, locations, transfers access |
-| Buyer/Procurement  | Full POs, suppliers, supplier supply access |
-| Customer Service   | Full clients, orders, returns access        |
-| Warehouse Staff    | Receive POs, adjust/transfer inventory      |
-| Read-Only Auditor  | Read-only access + full audit logs          |
+| Role               | Description                                   |
+| ------------------ | --------------------------------------------- |
+| Super Admin        | Unrestricted access to everything             |
+| Owner/Executive    | Read-only access to all financial data        |
+| Operations Manager | Full inventory, orders, POs, suppliers access |
+| Sales Manager      | Full clients, orders, quotes access           |
+| Accountant         | Full accounting, credits, COGS access         |
+| Inventory Manager  | Full inventory, locations, transfers access   |
+| Buyer/Procurement  | Full POs, suppliers, supplier supply access   |
+| Customer Service   | Full clients, orders, returns access          |
+| Warehouse Staff    | Receive POs, adjust/transfer inventory        |
+| Read-Only Auditor  | Read-only access + full audit logs            |
 
 ### Super Admin Check
 

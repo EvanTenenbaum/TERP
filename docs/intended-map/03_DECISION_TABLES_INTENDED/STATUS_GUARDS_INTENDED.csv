@@ -27,7 +27,7 @@ batch,QUARANTINED,release,LIVE,none,GF-007
 batch,*,close,CLOSED,admin only,GF-007
 purchaseOrder,DRAFT,submit,SENT,valid line items,GF-002:4
 purchaseOrder,DRAFT,cancel,CANCELLED,none,GF-002
-purchaseOrder,SENT,confirm,CONFIRMED,vendor action,GF-002:4
+purchaseOrder,SENT,confirm,CONFIRMED,supplier action,GF-002:4
 purchaseOrder,SENT,cancel,CANCELLED,none,GF-002
 purchaseOrder,CONFIRMED,partialReceive,RECEIVING,receivedQty < orderedQty,GF-002:5
 purchaseOrder,CONFIRMED,fullReceive,RECEIVED,receivedQty >= orderedQty,GF-002:5

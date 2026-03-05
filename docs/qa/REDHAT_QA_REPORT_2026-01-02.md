@@ -216,7 +216,7 @@ All navigation items tested and functional:
 
 ---
 
-## Phase 6: Sprint E Verification (Calendar, Vendors, CRM)
+## Phase 6: Sprint E Verification (Calendar, Suppliers, CRM)
 
 ### Calendar
 
@@ -239,11 +239,11 @@ All navigation items tested and functional:
 - Product Launch Event
 - Project Deadline
 
-### Vendor Routers
+### Supplier Routers
 
 | Router File          | Status | Size                          |
 | -------------------- | ------ | ----------------------------- |
-| `vendors.ts`         | ✅     | 19,730 bytes                  |
+| `suppliers.ts`       | ✅     | 19,730 bytes                  |
 | `vendorSupply.ts`    | ✅     | 8,607 bytes                   |
 | `vendorReminders.ts` | ⚠️     | 10 TS errors (db null checks) |
 
@@ -348,7 +348,7 @@ All navigation items tested and functional:
 ### Server Routers Verified
 
 - `calendar.ts`, `calendarFinancials.ts`, `calendarInvitations.ts`
-- `vendors.ts`, `vendorSupply.ts`, `vendorReminders.ts`
+- `suppliers.ts`, `vendorSupply.ts`, `vendorReminders.ts`
 - `salesSheets.ts` (draft functionality)
 - `accounting.ts`, `vipPortal*.ts`
 - `inventory.ts`, `locations.ts`

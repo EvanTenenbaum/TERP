@@ -36,6 +36,7 @@ Persona-based testing revealed **critical gaps that all previous testing approac
 **Description:** All 26 confirmed orders display "0 items" despite having dollar amounts
 
 **Examples:**
+
 - ORD-202511-0014: $665.25, 0 items
 - ORD-202511-0012: $518.83, 0 items
 - All 26 orders show same pattern
@@ -45,6 +46,7 @@ Persona-based testing revealed **critical gaps that all previous testing approac
 **Business Impact:** Cannot answer customer questions about what they ordered, cannot fulfill orders accurately
 
 **Possible Causes:**
+
 1. Line items not being saved when orders created
 2. Line items not being loaded/displayed correctly
 3. Test data created without line items
@@ -76,6 +78,7 @@ Persona-based testing revealed **critical gaps that all previous testing approac
 **Status:** Visible on Orders page
 
 **Content Exposed:**
+
 - Component mount status
 - Query states and data
 - Raw JSON order data
@@ -194,12 +197,14 @@ The clients list page demonstrates **excellent data management**:
 ### What Previous Testing Missed
 
 **Element-Focused Testing:**
+
 - Clicked "Add Item" button ✓
 - Button exists ✓
 - Button is clickable ✓
 - **Result:** PASS
 
 **Persona-Based Testing:**
+
 - Sales Manager needs to create order
 - Selects customer ✓
 - Tries to add product ✗
@@ -220,12 +225,14 @@ The clients list page demonstrates **excellent data management**:
 4. **BUG-011 (Debug dashboard):** Unprofessional, security concern
 
 **None of these would be caught by:**
+
 - Clicking buttons to verify they open modals
 - Checking if pages load
 - Verifying elements exist
 - Testing individual UI components
 
 **All of these are immediately apparent when:**
+
 - Trying to complete a real workflow
 - Adopting a user's perspective and goals
 - Attempting to accomplish actual business tasks
@@ -263,6 +270,7 @@ The clients list page demonstrates **excellent data management**:
 5. Measure success by "can user complete their job?" not "does button work?"
 
 **Hybrid Approach (Recommended):**
+
 - Element testing for comprehensive UI coverage
 - Persona testing for workflow validation
 - Both are necessary, neither is sufficient alone
@@ -279,7 +287,7 @@ The clients list page demonstrates **excellent data management**:
 4. Accountant (David) - Test AR/AP, cash collection workflows
 5. Operations Manager (Jennifer) - Test workflow queue, calendar, tasks
 6. Owner/Manager (Sarah) - Test dashboard insights, analytics
-7. Procurement Manager (Robert) - Test vendor management, purchase orders
+7. Procurement Manager (Robert) - Test supplier management, purchase orders
 8. Customer Service (Amanda) - Test returns, client support
 9. Admin (Evan) - Test user management, permissions, configuration
 

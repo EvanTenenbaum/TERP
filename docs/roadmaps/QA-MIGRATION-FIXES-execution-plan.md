@@ -60,7 +60,7 @@ SET @fk_exists = (
 
 SET @sql = IF(@fk_exists = 0,
   'ALTER TABLE `bills` ADD CONSTRAINT `fk_bills_vendor_id`
-   FOREIGN KEY (`vendorId`) REFERENCES `vendors`(`id`)
+   FOREIGN KEY (`vendorId`) REFERENCES `suppliers`(`id`)
    ON DELETE RESTRICT ON UPDATE CASCADE',
   'SELECT ''Constraint fk_bills_vendor_id already exists'' AS info');
 
@@ -179,28 +179,28 @@ AND `deleted_at` IS NOT NULL;
 **Option A: Use named system account (preferred)**
 
 ```sql
--- Use system vendor account if exists, otherwise first vendor
+-- Use system supplier account if exists, otherwise first supplier
 UPDATE `bills`
 SET `vendorId` = COALESCE(
-  (SELECT `id` FROM `vendors` WHERE `name` = 'System' OR `name` = 'Unknown' LIMIT 1),
-  (SELECT `id` FROM `vendors` ORDER BY `id` ASC LIMIT 1)
+  (SELECT `id` FROM `suppliers` WHERE `name` = 'System' OR `name` = 'Unknown' LIMIT 1),
+  (SELECT `id` FROM `suppliers` ORDER BY `id` ASC LIMIT 1)
 )
-WHERE `vendorId` NOT IN (SELECT `id` FROM `vendors`)
+WHERE `vendorId` NOT IN (SELECT `id` FROM `suppliers`)
 AND `vendorId` IS NOT NULL
-AND EXISTS (SELECT 1 FROM `vendors` LIMIT 1);
+AND EXISTS (SELECT 1 FROM `suppliers` LIMIT 1);
 ```
 
 **Option B: Create system account if missing**
 
 ```sql
--- Insert system vendor if not exists
-INSERT IGNORE INTO `vendors` (`name`, `created_at`)
-VALUES ('Unknown Vendor', CURRENT_TIMESTAMP);
+-- Insert system supplier if not exists
+INSERT IGNORE INTO `suppliers` (`name`, `created_at`)
+VALUES ('Unknown Supplier', CURRENT_TIMESTAMP);
 
 -- Then use it as fallback
 UPDATE `bills`
-SET `vendorId` = (SELECT `id` FROM `vendors` WHERE `name` = 'Unknown Vendor' LIMIT 1)
-WHERE `vendorId` NOT IN (SELECT `id` FROM `vendors`)
+SET `vendorId` = (SELECT `id` FROM `suppliers` WHERE `name` = 'Unknown Supplier' LIMIT 1)
+WHERE `vendorId` NOT IN (SELECT `id` FROM `suppliers`)
 AND `vendorId` IS NOT NULL;
 ```
 
@@ -229,14 +229,14 @@ AND `vendorId` IS NOT NULL;
 -- SELECT l.id AS lot_id, l.vendorId, v.name AS vendor_name,
 --        c.id AS client_id, c.name AS client_name
 -- FROM lots l
--- INNER JOIN vendors v ON v.id = l.vendorId AND v.deleted_at IS NULL
+-- INNER JOIN suppliers v ON v.id = l.vendorId AND v.deleted_at IS NULL
 -- INNER JOIN clients c ON LOWER(TRIM(c.name)) = LOWER(TRIM(v.name))
 --   AND c.is_seller = 1 AND c.deleted_at IS NULL
 -- WHERE (l.supplier_client_id IS NULL OR l.supplier_client_id = 0)
 --   AND l.deleted_at IS NULL;
 
 UPDATE `lots` l
-INNER JOIN `vendors` v ON v.id = l.vendorId AND v.deleted_at IS NULL
+INNER JOIN `suppliers` v ON v.id = l.vendorId AND v.deleted_at IS NULL
 INNER JOIN `clients` c ON LOWER(TRIM(c.name)) = LOWER(TRIM(v.name))
   AND c.is_seller = 1
   AND c.deleted_at IS NULL

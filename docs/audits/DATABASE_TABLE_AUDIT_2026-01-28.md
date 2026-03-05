@@ -10,12 +10,12 @@
 
 This audit identified **23 issues** across the codebase where database table/column expectations don't match reality:
 
-| Severity | Count | Description |
-|----------|-------|-------------|
-| **CRITICAL** | 3 | Tables/columns referenced that don't exist in production DB |
-| **HIGH** | 8 | Missing FK constraints or deprecated table references |
-| **MEDIUM** | 7 | Naming inconsistencies that could cause confusion |
-| **LOW** | 5 | Documentation/cleanup items |
+| Severity     | Count | Description                                                 |
+| ------------ | ----- | ----------------------------------------------------------- |
+| **CRITICAL** | 3     | Tables/columns referenced that don't exist in production DB |
+| **HIGH**     | 8     | Missing FK constraints or deprecated table references       |
+| **MEDIUM**   | 7     | Naming inconsistencies that could cause confusion           |
+| **LOW**      | 5     | Documentation/cleanup items                                 |
 
 ---
 
@@ -34,6 +34,7 @@ export const products = mysqlTable("products", {
 ```
 
 **Problem:**
+
 - The column is defined in the Drizzle schema but **does not exist in the production database**
 - 21+ queries across 8 files attempt to JOIN via `products.strainId` → `strains.id`
 - Fails at runtime with: `Unknown column 'products.strainId' in 'on clause'`
@@ -52,6 +53,7 @@ export const products = mysqlTable("products", {
 **Current Mitigation:** BUG-112 added `isSchemaError()` function with try-catch fallbacks (photography.ts:27-100)
 
 **Fix Required:** Either:
+
 1. Add the `strainId` column to the production database via migration
 2. OR remove all `strainId` references from queries and schema
 
@@ -61,18 +63,20 @@ export const products = mysqlTable("products", {
 
 **Problem:** Two separate tables exist for product/batch images with overlapping purposes:
 
-| Table | DB Name | Purpose | Used By |
-|-------|---------|---------|---------|
-| `productMedia` | `productMedia` | Product-level images | `liveCatalogService.ts:370-380` |
-| `productImages` | `product_images` | Batch-level photos | `photography.ts`, `catalogPublishingService.ts` |
+| Table           | DB Name          | Purpose              | Used By                                         |
+| --------------- | ---------------- | -------------------- | ----------------------------------------------- |
+| `productMedia`  | `productMedia`   | Product-level images | `liveCatalogService.ts:370-380`                 |
+| `productImages` | `product_images` | Batch-level photos   | `photography.ts`, `catalogPublishingService.ts` |
 
 **Specific Issues:**
+
 1. `productMedia` uses **camelCase** DB column names (`productId`, `uploadedBy`)
 2. `productImages` uses **snake_case** DB column names (`product_id`, `uploaded_by`)
 3. No clear documentation on which table to use for which purpose
 4. Both tables can store the same image data, leading to duplication
 
 **Files with Conflicting Usage:**
+
 - `server/services/liveCatalogService.ts:368-387` - Uses `productMedia`
 - `server/services/catalogPublishingService.ts:276-280` - Uses `productImages`
 - `server/routers/photography.ts` - Uses `productImages` exclusively
@@ -84,6 +88,7 @@ export const products = mysqlTable("products", {
 **Location:** `drizzle/migrations/0016_add_ws007_010_tables.sql:27-41`
 
 **Problem:** The migration creates the table conditionally with `CREATE TABLE IF NOT EXISTS`, but:
+
 - Some production databases may not have run this migration
 - Code assumes table exists (no try-catch in some paths)
 - Fallback queries in photography.ts remove image-based filtering when table is missing
@@ -97,17 +102,18 @@ export const products = mysqlTable("products", {
 ### 4. Missing FK Constraints on `vendorId` Columns
 
 Multiple tables have `vendorId` columns with **no FK constraint**, meaning:
-- No referential integrity enforcement
-- Orphaned records possible if vendors are deleted
-- No clarity on which table `vendorId` should reference (`vendors` or `clients`)
 
-| Table | Line | Column | FK Status |
-|-------|------|--------|-----------|
-| `bills` | 1178 | `vendorId: int("vendorId").notNull()` | **NO FK** |
-| `expenses` | 1421 | `vendorId: int("vendorId")` | **NO FK** |
-| `brands` | 375 | `vendorId: int("vendorId")` | **NO FK** |
-| `paymentHistory` | 669 | `vendorId: int("vendorId").notNull()` | **NO FK** |
-| `lots` | 548 | `vendorId: int("vendorId").notNull()` | **NO FK** (has `supplierClientId` with FK) |
+- No referential integrity enforcement
+- Orphaned records possible if suppliers are deleted
+- No clarity on which table `vendorId` should reference (`suppliers` or `clients`)
+
+| Table            | Line | Column                                | FK Status                                  |
+| ---------------- | ---- | ------------------------------------- | ------------------------------------------ |
+| `bills`          | 1178 | `vendorId: int("vendorId").notNull()` | **NO FK**                                  |
+| `expenses`       | 1421 | `vendorId: int("vendorId")`           | **NO FK**                                  |
+| `brands`         | 375  | `vendorId: int("vendorId")`           | **NO FK**                                  |
+| `paymentHistory` | 669  | `vendorId: int("vendorId").notNull()` | **NO FK**                                  |
+| `lots`           | 548  | `vendorId: int("vendorId").notNull()` | **NO FK** (has `supplierClientId` with FK) |
 
 ---
 
@@ -122,25 +128,26 @@ vendorId: int("vendorId").references(() => clients.id, {
 ```
 
 **Problem:**
-- Column named `vendorId` but references `clients.id`, not `vendors.id`
-- Causes confusion: developers expect FK to `vendors` table
-- Comment in schema says "NOTE: This references clients.id (as supplier), NOT vendors.id"
+
+- Column named `vendorId` but references `clients.id`, not `suppliers.id`
+- Causes confusion: developers expect FK to `suppliers` table
+- Comment in schema says "NOTE: This references clients.id (as supplier), NOT suppliers.id"
 - Should be renamed to `supplierClientId` for clarity
 
 ---
 
-### 6. Tables Using Deprecated `vendors` Table
+### 6. Tables Using Deprecated `suppliers` Table
 
-Per CLAUDE.md, the `vendors` table is **DEPRECATED** - should use `clients` with `isSeller=true`. However, these tables still reference `vendors.id`:
+Per CLAUDE.md, the `suppliers` table is **DEPRECATED** - should use `clients` with `isSeller=true`. However, these tables still reference `suppliers.id`:
 
-| Table | Line | FK Target | Migration Status |
-|-------|------|-----------|------------------|
-| `vendorNotes` | 192 | `vendors.id` | Not migrated |
-| `purchaseOrders` | 239 | `vendors.id` | Has dual FK (vendorId + supplierClientId) |
-| `calendarEvents` | 5056 | `vendors.id` | Not migrated |
-| `vendorHarvestReminders` | 6810 | `vendors.id` | Not migrated |
-| `vendorSupply` | 4134 | `vendors.id` | Not migrated |
-| `lots` | 548 | (no FK but uses vendorId) | Partial - has supplierClientId |
+| Table                    | Line | FK Target                 | Migration Status                          |
+| ------------------------ | ---- | ------------------------- | ----------------------------------------- |
+| `vendorNotes`            | 192  | `suppliers.id`            | Not migrated                              |
+| `purchaseOrders`         | 239  | `suppliers.id`            | Has dual FK (vendorId + supplierClientId) |
+| `calendarEvents`         | 5056 | `suppliers.id`            | Not migrated                              |
+| `vendorHarvestReminders` | 6810 | `suppliers.id`            | Not migrated                              |
+| `vendorSupply`           | 4134 | `suppliers.id`            | Not migrated                              |
+| `lots`                   | 548  | (no FK but uses vendorId) | Partial - has supplierClientId            |
 
 ---
 
@@ -154,13 +161,14 @@ supplierClientId: int("supplier_client_id").references(() => clients.id, {...}),
 ```
 
 **Problem:**
+
 - Both columns exist and are used
 - Code in `inventoryDb.ts` joins on BOTH (lines 886, 949)
 - Creates maintenance burden and potential data inconsistency
 
 ---
 
-### 8. `purchaseOrders` Has Dual Vendor References
+### 8. `purchaseOrders` Has Dual Supplier References
 
 **Location:** `drizzle/schema.ts:231-239`
 
@@ -168,11 +176,12 @@ supplierClientId: int("supplier_client_id").references(() => clients.id, {...}),
 // Supplier relationship (canonical - uses clients table)
 supplierClientId: int("supplier_client_id").references(() => clients.id, {...}),
 
-// Vendor relationship (DEPRECATED - use supplierClientId instead)
-vendorId: int("vendorId").notNull().references(() => vendors.id, {...}),
+// Supplier relationship (DEPRECATED - use supplierClientId instead)
+vendorId: int("vendorId").notNull().references(() => suppliers.id, {...}),
 ```
 
 **Problem:**
+
 - Both FKs required (vendorId is NOT NULL)
 - Migration to single `supplierClientId` incomplete
 - Queries must handle both columns
@@ -186,6 +195,7 @@ vendorId: int("vendorId").notNull().references(() => vendors.id, {...}),
 The schema uses **inconsistent** DB column naming:
 
 **Tables using camelCase DB columns (problematic):**
+
 - `productMedia` - `productId`, `uploadedBy`
 - `productSynonyms` - `productId`
 - `productTags` - `productId`, `tagId`
@@ -194,11 +204,13 @@ The schema uses **inconsistent** DB column naming:
 - `strains` - `parentStrainId`, `baseStrainName`
 
 **Tables using snake_case DB columns (correct pattern):**
+
 - `productImages` - `product_id`, `batch_id`, `uploaded_by`
 - `clientNeeds` - `client_id`, `strain_id`
 - `calendarEvents` - `vendor_id`, `client_id`
 
 **Impact:** Inconsistent naming makes it harder to:
+
 - Write correct raw SQL queries
 - Debug database issues
 - Maintain coding standards
@@ -216,6 +228,7 @@ strainId: int("strainId"), // No .references() call
 ```
 
 Compare to `clientNeeds.strainId` which does have proper FK (line 4064):
+
 ```typescript
 strainId: int("strainId").references(() => strains.id, { onDelete: "set null" }),
 ```
@@ -231,6 +244,7 @@ productId: int("productId").notNull(),  // No FK to products.id
 ```
 
 Should be:
+
 ```typescript
 productId: int("productId").notNull().references(() => products.id, { onDelete: "cascade" }),
 ```
@@ -253,16 +267,18 @@ All three should have `.references()` constraints.
 
 ### 13. `intakeSessions` - vendorId Naming Ambiguity
 
-**Issue:** Some `vendorId` columns reference `clients.id` (suppliers) while others reference `vendors.id`. The naming doesn't distinguish between these.
+**Issue:** Some `vendorId` columns reference `clients.id` (suppliers) while others reference `suppliers.id`. The naming doesn't distinguish between these.
 
 Per `.kiro/specs/canonical-model-unification/design.md:890`:
-> `vendorId` is context-dependent: If in `intakeSessions` → `clients.id`; else → `vendors.id` (deprecated)
+
+> `vendorId` is context-dependent: If in `intakeSessions` → `clients.id`; else → `suppliers.id` (deprecated)
 
 ---
 
 ### 14. Missing Table Documentation
 
 The `productMedia` table is marked as "UNUSED" in some QA reports but is actively used:
+
 - `server/services/liveCatalogService.ts` queries it
 - Unclear if it should be deprecated in favor of `productImages`
 
@@ -288,13 +304,13 @@ The enum name MUST match the DB column name or runtime "Unknown column" errors o
 
 ### 16-20. Documentation & Cleanup Items
 
-| Issue | Location | Description |
-|-------|----------|-------------|
-| Deprecated vendors table still in schema | `drizzle/schema.ts:167` | Should be removed after full migration |
-| Legacy seeder references | `verify-all-data.ts:28` | Uses `db.select().from(vendors)` |
-| Inconsistent image table usage docs | N/A | No clear guidance on productMedia vs productImages |
-| Orphan FK references in comments | Various | Comments reference tables that may not exist |
-| Missing index on new columns | `products.strainId` | If column is added, needs index |
+| Issue                                      | Location                | Description                                        |
+| ------------------------------------------ | ----------------------- | -------------------------------------------------- |
+| Deprecated suppliers table still in schema | `drizzle/schema.ts:167` | Should be removed after full migration             |
+| Legacy seeder references                   | `verify-all-data.ts:28` | Uses `db.select().from(suppliers)`                 |
+| Inconsistent image table usage docs        | N/A                     | No clear guidance on productMedia vs productImages |
+| Orphan FK references in comments           | Various                 | Comments reference tables that may not exist       |
+| Missing index on new columns               | `products.strainId`     | If column is added, needs index                    |
 
 ---
 
@@ -314,7 +330,7 @@ The enum name MUST match the DB column name or runtime "Unknown column" errors o
 
 ### Medium-Term (Next Quarter)
 
-7. Complete `vendors` → `clients` migration for all tables
+7. Complete `suppliers` → `clients` migration for all tables
 8. Remove dual `vendorId`/`supplierClientId` columns once migration complete
 9. Consolidate image tables to single `productImages` pattern
 10. Add missing FK constraints to all `productId`, `billId`, `lotId` columns
@@ -344,5 +360,5 @@ grep -rn "strainId.*strains\|strains.*strainId" server/
 
 - BUG-112: Schema drift fallback implementation
 - CLAUDE.md Section 4: Database standards
-- `.kiro/steering/07-deprecated-systems.md`: Deprecated vendors table guidance
+- `.kiro/steering/07-deprecated-systems.md`: Deprecated suppliers table guidance
 - `docs/jan-26-checkpoint/INVENTORY_FLOW_ANALYSIS.md`: Previous strainId analysis

@@ -6,12 +6,14 @@ Scope: Expand Calm Power redesign patterns across all TERP module entry surfaces
 ## 1) Linear Patterns Assessed
 
 Assessment sources (official docs/changelog and Linear design write-up):
+
 - [Linear redesign, part 2](https://linear.app/blog/redesigning-linear-part-2-design-system)
 - [Issue views and display options](https://linear.app/docs/issues/views)
 - [Issue filtering and view controls](https://linear.app/docs/issues/filtering)
 - [Search behavior](https://linear.app/docs/search)
 
 Patterns extracted:
+
 - List/table is the primary work surface.
 - Top chrome is quiet and compact; actions are contextual, not loud.
 - Display options (density, fields/columns, sort/filter) are first-class.
@@ -23,12 +25,14 @@ Patterns extracted:
 ## 2) TERP Constraints and Fit
 
 Non-negotiables kept:
+
 - Existing routes and module capabilities stay intact.
 - Existing backend procedures and optimistic locking remain authoritative.
 - No new database tables or migrations introduced.
 - Existing module business logic is not duplicated in frontend wrappers.
 
 Design translation for TERP:
+
 - Apply Linear-like structure to module entry pages and shared shell.
 - Keep current module internals (orders, quotes, clients, inventory, etc.) to preserve behavior.
 - Use a shared workspace frame so all modules inherit one interaction rhythm.
@@ -36,10 +40,12 @@ Design translation for TERP:
 ## 3) Module Mapping (Linear Pattern -> TERP Surface)
 
 ### Global shell
+
 - Linear concept: quiet global frame, compact nav, keyboard affordance.
 - TERP mapping: updated app shell layout, sidebar rhythm, compact header, reduced decorative container weight.
 
 ### Workspace modules
+
 - Sales, Relationships, Inventory, Demand & Supply, Credits
 - Linear concept: list-first workspace with clear tab rail and low-noise command context.
 - TERP mapping: each workspace now uses a shared `LinearWorkspaceShell` with:
@@ -50,7 +56,8 @@ Design translation for TERP:
   - consistent content viewport behavior
 
 ### Grid-heavy work surfaces
-- Purchase Orders, Direct Intake, Inventory, Orders, Invoices, Clients, Vendors, etc.
+
+- Purchase Orders, Direct Intake, Inventory, Orders, Invoices, Clients, Suppliers, etc.
 - Linear concept: dense tabular operation with strong alignment and low visual noise.
 - TERP mapping:
   - keep existing tables and AG Grid usage
@@ -59,6 +66,7 @@ Design translation for TERP:
   - keep user preference persistence (where already implemented, including slice lab)
 
 ### Mobile
+
 - Linear concept: responsive behavior without changing core interaction model.
 - TERP mapping:
   - preserve table-first behavior with controlled horizontal scroll

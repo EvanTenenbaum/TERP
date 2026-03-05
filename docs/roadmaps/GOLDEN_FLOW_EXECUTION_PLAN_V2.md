@@ -47,12 +47,12 @@
 **Duration:** ~8h (parallel execution)
 **Agents:** 4 concurrent
 
-| Agent       | Task                           | Est | Mode   | Branch                               | Files                     |
-| ----------- | ------------------------------ | --- | ------ | ------------------------------------ | ------------------------- |
-| **Agent 1** | ST-051: Transaction Boundaries | 8h  | RED    | `claude/st-051-txn-boundaries-{id}`  | ordersDb.ts, orders.ts    |
-| **Agent 2** | TERP-0014: Token Revocation    | 6h  | RED    | `claude/terp-0014-token-revoke-{id}` | simpleAuth.ts, auth.ts    |
-| **Agent 3** | TERP-0017: Protected Routers   | 8h  | STRICT | `claude/terp-0017-protected-{id}`    | vendors.ts, tags.ts, etc. |
-| **Agent 4** | SCHEMA-011: deletedAt Column   | 2h  | STRICT | `claude/schema-011-deletedat-{id}`   | pricingRules schema       |
+| Agent       | Task                           | Est | Mode   | Branch                               | Files                       |
+| ----------- | ------------------------------ | --- | ------ | ------------------------------------ | --------------------------- |
+| **Agent 1** | ST-051: Transaction Boundaries | 8h  | RED    | `claude/st-051-txn-boundaries-{id}`  | ordersDb.ts, orders.ts      |
+| **Agent 2** | TERP-0014: Token Revocation    | 6h  | RED    | `claude/terp-0014-token-revoke-{id}` | simpleAuth.ts, auth.ts      |
+| **Agent 3** | TERP-0017: Protected Routers   | 8h  | STRICT | `claude/terp-0017-protected-{id}`    | suppliers.ts, tags.ts, etc. |
+| **Agent 4** | SCHEMA-011: deletedAt Column   | 2h  | STRICT | `claude/schema-011-deletedat-{id}`   | pricingRules schema         |
 
 **Why this grouping:**
 
@@ -223,7 +223,7 @@ pnpm check && pnpm lint && pnpm test server/routers/auth.test.ts && pnpm build
 Convert remaining public routers to require authentication.
 
 ## Files to Modify
-- `server/routers/vendors.ts`
+- `server/routers/suppliers.ts`
 - `server/routers/vendorSupply.ts`
 - `server/routers/dashboardEnhanced.ts`
 - `server/routers/tags.ts`

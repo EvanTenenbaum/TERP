@@ -274,12 +274,12 @@ QUAL-008: Add feature flag middleware to routes that need gating.
 
 > **Goal:** Fix remaining UI issues
 
-| Task      | Description                                  | Hours | Impact            |
-| --------- | -------------------------------------------- | ----- | ----------------- |
-| TYPE-001  | Fix `as any` casts in Golden Flow components | 4h    | Type safety       |
-| NAV-017   | Route CreditsPage in App.tsx                 | 1h    | Navigation        |
-| FE-QA-009 | Enable VendorSupplyPage creation             | 8h    | Vendor management |
-| FE-QA-010 | Wire MatchmakingServicePage buttons          | 4h    | Matchmaking       |
+| Task      | Description                                  | Hours | Impact              |
+| --------- | -------------------------------------------- | ----- | ------------------- |
+| TYPE-001  | Fix `as any` casts in Golden Flow components | 4h    | Type safety         |
+| NAV-017   | Route CreditsPage in App.tsx                 | 1h    | Navigation          |
+| FE-QA-009 | Enable VendorSupplyPage creation             | 8h    | Supplier management |
+| FE-QA-010 | Wire MatchmakingServicePage buttons          | 4h    | Matchmaking         |
 
 **Your Action:**
 
@@ -289,7 +289,7 @@ Execute Phase 6 - Frontend Polish:
 Fix frontend issues in order of impact:
 1. NAV-017 (1h) - Simple routing fix
 2. TYPE-001 (4h) - Remove as any casts in golden flow components
-3. FE-QA-009 (8h) - Enable vendor supply page CRUD
+3. FE-QA-009 (8h) - Enable supplier supply page CRUD
 4. FE-QA-010 (4h) - Wire action buttons in matchmaking
 ```
 

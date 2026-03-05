@@ -90,12 +90,12 @@ Must be executed in order. Server-side first, then client-side.
 | Order | Task    | Title                                          | Est | Scope                                                                       |
 | ----- | ------- | ---------------------------------------------- | --- | --------------------------------------------------------------------------- |
 | 3.1   | TER-247 | Phase 1 Rewrite 9 server-side supplier queries | 6h  | purchaseOrders.ts, audit.ts, debug.ts, dataCardMetricsDb.ts, inventoryDb.ts |
-| 3.2   | TER-247 | Phase 2 Remove vendors.getAll endpoint         | 1h  | routers/vendors.ts                                                          |
-| 3.3   | TER-235 | Migrate DirectIntakeWorkSurface + IntakeGrid   | 3h  | 2 client components swap trpc.vendors.getAll → trpc.clients.list            |
+| 3.2   | TER-247 | Phase 2 Remove suppliers.getAll endpoint       | 1h  | routers/suppliers.ts                                                        |
+| 3.3   | TER-235 | Migrate DirectIntakeWorkSurface + IntakeGrid   | 3h  | 2 client components swap trpc.suppliers.getAll → trpc.clients.list          |
 
 **Wave 3 total**: ~10h
 **Critical ordering**: 3.1 before 3.2 before 3.3, or DirectIntakeWorkSurface crashes
-**Note**: IntakeGrid.tsx also uses vendors.getAll — not in TER-235's original scope but must be included
+**Note**: IntakeGrid.tsx also uses suppliers.getAll — not in TER-235's original scope but must be included
 
 ---
 

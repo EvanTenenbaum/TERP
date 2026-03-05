@@ -4,6 +4,7 @@
 > **Date**: 2026-01-20
 > **Classification**: Production Deployment Execution Plan
 > **References**:
+>
 > - `WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md` - Full deployment strategy
 > - `ACCELERATED_VALIDATION_PROTOCOL.md` - AI-executable validation (recommended)
 
@@ -42,6 +43,7 @@ This document provides the **step-by-step execution plan** for deploying Work Su
 ```
 
 ### Success Criteria
+
 - All 9 Work Surfaces deployed and accessible
 - Zero P0 bugs for 7 consecutive days
 - Feature parity verified (200+ tRPC procedures)
@@ -50,10 +52,10 @@ This document provides the **step-by-step execution plan** for deploying Work Su
 
 ### Execution Estimates
 
-| Path | Tasks | Duration | Best For |
-|------|-------|----------|----------|
-| **Accelerated (Recommended)** | 4 phases | 4-6 hours | AI agents, no active users |
-| Traditional Staged | 8 tasks | ~31h + 72h bake | Production with active users |
+| Path                          | Tasks    | Duration        | Best For                     |
+| ----------------------------- | -------- | --------------- | ---------------------------- |
+| **Accelerated (Recommended)** | 4 phases | 4-6 hours       | AI agents, no active users   |
+| Traditional Staged            | 8 tasks  | ~31h + 72h bake | Production with active users |
 
 ---
 
@@ -80,19 +82,19 @@ Infrastructure ────► Feature Parity ────► Stress Test ──
 • RBAC verify        • A/B comparison    • Invariant monitor
 ```
 
-| Phase | What It Validates | Pass Criteria |
-|-------|-------------------|---------------|
-| A | Infrastructure | Build passes, gates pass, RBAC complete |
-| B | Feature Parity | All unit tests pass, 8 Golden Flows × 7 roles |
-| C | Stability | >95% success under load, 0 invariant violations |
-| D | Rollback | Feature flag rollback <1s, data integrity preserved |
+| Phase | What It Validates | Pass Criteria                                       |
+| ----- | ----------------- | --------------------------------------------------- |
+| A     | Infrastructure    | Build passes, gates pass, RBAC complete             |
+| B     | Feature Parity    | All unit tests pass, 8 Golden Flows × 7 roles       |
+| C     | Stability         | >95% success under load, 0 invariant violations     |
+| D     | Rollback          | Feature flag rollback <1s, data integrity preserved |
 
 ### Go/No-Go After Accelerated Validation
 
-| All phases pass? | Action |
-|------------------|--------|
-| ✓ YES | Deploy to 100% immediately |
-| ✗ NO | Review logs, fix issues, re-run |
+| All phases pass? | Action                          |
+| ---------------- | ------------------------------- |
+| ✓ YES            | Deploy to 100% immediately      |
+| ✗ NO             | Review logs, fix issues, re-run |
 
 **See**: `docs/deployment/ACCELERATED_VALIDATION_PROTOCOL.md` for detailed protocol.
 
@@ -103,18 +105,20 @@ Infrastructure ────► Feature Parity ────► Stress Test ──
 **Use this path when**: Active user base, need real-world observation, regulatory requirements.
 
 ### Traditional Execution Estimate
-| Phase | Tasks | Estimate |
-|-------|-------|----------|
-| Phase 0: Infrastructure | DEPLOY-001..004 | 11h |
-| Phase 1: Internal QA | DEPLOY-005 | 8h |
-| Phase 2: Staged Rollout | DEPLOY-006..008 | 12h + 72h bake |
-| **Total** | 8 tasks | ~31h active work + 72h observation |
+
+| Phase                   | Tasks           | Estimate                           |
+| ----------------------- | --------------- | ---------------------------------- |
+| Phase 0: Infrastructure | DEPLOY-001..004 | 11h                                |
+| Phase 1: Internal QA    | DEPLOY-005      | 8h                                 |
+| Phase 2: Staged Rollout | DEPLOY-006..008 | 12h + 72h bake                     |
+| **Total**               | 8 tasks         | ~31h active work + 72h observation |
 
 ---
 
 ## Phase 0: Infrastructure Preparation
 
 ### Overview
+
 Before any user exposure, complete all infrastructure tasks to enable safe deployment.
 
 ```
@@ -141,6 +145,7 @@ Before any user exposure, complete all infrastructure tasks to enable safe deplo
 **Dependencies**: None
 
 #### Pre-Conditions
+
 - [ ] Branch created from main
 - [ ] Local dev environment working
 - [ ] TypeScript compilation passes
@@ -148,6 +153,7 @@ Before any user exposure, complete all infrastructure tasks to enable safe deplo
 #### Execution Steps
 
 **Step 1: Identify All Legacy Routes (30 min)**
+
 ```bash
 # List all page imports in App.tsx
 grep -n "import.*from.*pages" client/src/App.tsx
@@ -158,23 +164,25 @@ grep -n "import.*from.*pages" client/src/App.tsx
 ```
 
 **Step 2: Import WorkSurfaceGate (15 min)**
+
 ```typescript
 // Add to client/src/App.tsx
-import { WorkSurfaceGate } from '@/hooks/work-surface/useWorkSurfaceFeatureFlags';
+import { WorkSurfaceGate } from "@/hooks/work-surface/useWorkSurfaceFeatureFlags";
 
 // Import all WorkSurface components
-import { OrdersWorkSurface } from '@/components/work-surface/OrdersWorkSurface';
-import { InvoicesWorkSurface } from '@/components/work-surface/InvoicesWorkSurface';
-import { InventoryWorkSurface } from '@/components/work-surface/InventoryWorkSurface';
-import { ClientsWorkSurface } from '@/components/work-surface/ClientsWorkSurface';
-import { PurchaseOrdersWorkSurface } from '@/components/work-surface/PurchaseOrdersWorkSurface';
-import { PickPackWorkSurface } from '@/components/work-surface/PickPackWorkSurface';
-import { ClientLedgerWorkSurface } from '@/components/work-surface/ClientLedgerWorkSurface';
-import { QuotesWorkSurface } from '@/components/work-surface/QuotesWorkSurface';
-import { DirectIntakeWorkSurface } from '@/components/work-surface/DirectIntakeWorkSurface';
+import { OrdersWorkSurface } from "@/components/work-surface/OrdersWorkSurface";
+import { InvoicesWorkSurface } from "@/components/work-surface/InvoicesWorkSurface";
+import { InventoryWorkSurface } from "@/components/work-surface/InventoryWorkSurface";
+import { ClientsWorkSurface } from "@/components/work-surface/ClientsWorkSurface";
+import { PurchaseOrdersWorkSurface } from "@/components/work-surface/PurchaseOrdersWorkSurface";
+import { PickPackWorkSurface } from "@/components/work-surface/PickPackWorkSurface";
+import { ClientLedgerWorkSurface } from "@/components/work-surface/ClientLedgerWorkSurface";
+import { QuotesWorkSurface } from "@/components/work-surface/QuotesWorkSurface";
+import { DirectIntakeWorkSurface } from "@/components/work-surface/DirectIntakeWorkSurface";
 ```
 
 **Step 3: Wrap Each Route (2 hours)**
+
 ```typescript
 // Replace each legacy route with WorkSurfaceGate wrapper
 // Example for Orders:
@@ -197,19 +205,20 @@ import { DirectIntakeWorkSurface } from '@/components/work-surface/DirectIntakeW
 
 **Step 4: Route Mapping Table**
 
-| Route | Feature Flag | Legacy Component | WorkSurface Component |
-|-------|--------------|------------------|----------------------|
-| `/orders` | `WORK_SURFACE_ORDERS` | `Orders` | `OrdersWorkSurface` |
-| `/accounting/invoices` | `WORK_SURFACE_ACCOUNTING` | `Invoices` | `InvoicesWorkSurface` |
-| `/inventory` | `WORK_SURFACE_INVENTORY` | `Inventory` | `InventoryWorkSurface` |
-| `/clients` | `WORK_SURFACE_ORDERS` | `ClientsListPage` | `ClientsWorkSurface` |
-| `/purchase-orders` | `WORK_SURFACE_INTAKE` | `PurchaseOrdersPage` | `PurchaseOrdersWorkSurface` |
-| `/orders/pick-pack` | `WORK_SURFACE_INVENTORY` | `PickPackPage` | `PickPackWorkSurface` |
-| `/clients/:id/ledger` | `WORK_SURFACE_ACCOUNTING` | `ClientLedger` | `ClientLedgerWorkSurface` |
-| `/quotes` | `WORK_SURFACE_ORDERS` | `Quotes` | `QuotesWorkSurface` |
-| `/spreadsheet` | `WORK_SURFACE_INTAKE` | `SpreadsheetViewPage` | `DirectIntakeWorkSurface` |
+| Route                  | Feature Flag              | Legacy Component      | WorkSurface Component       |
+| ---------------------- | ------------------------- | --------------------- | --------------------------- |
+| `/orders`              | `WORK_SURFACE_ORDERS`     | `Orders`              | `OrdersWorkSurface`         |
+| `/accounting/invoices` | `WORK_SURFACE_ACCOUNTING` | `Invoices`            | `InvoicesWorkSurface`       |
+| `/inventory`           | `WORK_SURFACE_INVENTORY`  | `Inventory`           | `InventoryWorkSurface`      |
+| `/clients`             | `WORK_SURFACE_ORDERS`     | `ClientsListPage`     | `ClientsWorkSurface`        |
+| `/purchase-orders`     | `WORK_SURFACE_INTAKE`     | `PurchaseOrdersPage`  | `PurchaseOrdersWorkSurface` |
+| `/orders/pick-pack`    | `WORK_SURFACE_INVENTORY`  | `PickPackPage`        | `PickPackWorkSurface`       |
+| `/clients/:id/ledger`  | `WORK_SURFACE_ACCOUNTING` | `ClientLedger`        | `ClientLedgerWorkSurface`   |
+| `/quotes`              | `WORK_SURFACE_ORDERS`     | `Quotes`              | `QuotesWorkSurface`         |
+| `/spreadsheet`         | `WORK_SURFACE_INTAKE`     | `SpreadsheetViewPage` | `DirectIntakeWorkSurface`   |
 
 **Step 5: Verify Compilation (30 min)**
+
 ```bash
 # Must pass
 pnpm typecheck
@@ -221,6 +230,7 @@ grep -c "WorkSurfaceGate" client/src/App.tsx
 ```
 
 **Step 6: Manual Smoke Test (45 min)**
+
 ```bash
 # Start dev server
 pnpm dev
@@ -230,6 +240,7 @@ pnpm dev
 ```
 
 #### Verification Checklist
+
 - [ ] `grep -c "WorkSurfaceGate" client/src/App.tsx` returns 9
 - [ ] TypeScript compilation passes
 - [ ] Build succeeds
@@ -238,11 +249,12 @@ pnpm dev
 - [ ] No console errors in browser
 
 #### Go/No-Go Criteria
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| Routes wrapped | 9 | | |
-| Build passes | Yes | | |
-| Manual test | All pass | | |
+
+| Criteria       | Required | Actual | Status |
+| -------------- | -------- | ------ | ------ |
+| Routes wrapped | 9        |        |        |
+| Build passes   | Yes      |        |        |
+| Manual test    | All pass |        |        |
 
 ---
 
@@ -253,12 +265,14 @@ pnpm dev
 **Dependencies**: None
 
 #### Pre-Conditions
+
 - [ ] Scripts exist in `scripts/qa/`
 - [ ] Scripts are executable (`chmod +x`)
 
 #### Execution Steps
 
 **Step 1: Verify Scripts Exist (10 min)**
+
 ```bash
 ls -la scripts/qa/
 # Expected files:
@@ -271,11 +285,13 @@ ls -la scripts/qa/
 ```
 
 **Step 2: Make Scripts Executable (5 min)**
+
 ```bash
 chmod +x scripts/qa/*.sh
 ```
 
 **Step 3: Add npm Scripts to package.json (15 min)**
+
 ```json
 {
   "scripts": {
@@ -291,6 +307,7 @@ chmod +x scripts/qa/*.sh
 ```
 
 **Step 4: Test Each Gate (30 min)**
+
 ```bash
 # Run each gate individually
 npm run gate:placeholder
@@ -303,6 +320,7 @@ npm run gate:all
 ```
 
 #### Verification Checklist
+
 - [ ] All 6 scripts executable
 - [ ] `npm run gate:placeholder` exits 0
 - [ ] `npm run gate:rbac` exits 0
@@ -311,10 +329,11 @@ npm run gate:all
 - [ ] `npm run gate:all` exits 0
 
 #### Go/No-Go Criteria
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| Scripts added | 6 | | |
-| gate:all passes | Yes | | |
+
+| Criteria        | Required | Actual | Status |
+| --------------- | -------- | ------ | ------ |
+| Scripts added   | 6        |        |        |
+| gate:all passes | Yes      |        |        |
 
 ---
 
@@ -325,6 +344,7 @@ npm run gate:all
 **Dependencies**: None
 
 #### Pre-Conditions
+
 - [ ] Database access available
 - [ ] USER_FLOW_MATRIX.csv accessible
 - [ ] rbacDefinitions.ts understood
@@ -332,6 +352,7 @@ npm run gate:all
 #### Execution Steps
 
 **Step 1: Extract Required Permissions from USER_FLOW_MATRIX (30 min)**
+
 ```bash
 # Extract all permission strings from USER_FLOW_MATRIX.csv
 cut -d',' -f8 docs/reference/USER_FLOW_MATRIX.csv | \
@@ -345,6 +366,7 @@ wc -l /tmp/required_perms.txt
 ```
 
 **Step 2: Extract Current Seeded Permissions (30 min)**
+
 ```bash
 # From rbacDefinitions.ts
 grep -oh '"[a-z_]*:[a-z_]*"' server/services/rbacDefinitions.ts | \
@@ -369,29 +391,30 @@ export const permissions = {
   // ... existing permissions
 
   // Accounting - Added for Work Surfaces
-  'accounting:view_ar_aging': {
-    name: 'accounting:view_ar_aging',
-    description: 'View AR aging report',
-    roles: ['accounting', 'super_admin', 'sales_manager']
+  "accounting:view_ar_aging": {
+    name: "accounting:view_ar_aging",
+    description: "View AR aging report",
+    roles: ["accounting", "super_admin", "sales_manager"],
   },
-  'accounting:view_ap_aging': {
-    name: 'accounting:view_ap_aging',
-    description: 'View AP aging report',
-    roles: ['accounting', 'super_admin']
+  "accounting:view_ap_aging": {
+    name: "accounting:view_ap_aging",
+    description: "View AP aging report",
+    roles: ["accounting", "super_admin"],
   },
   // ... add all missing permissions
 };
 ```
 
 **Step 4: Create Migration for Permission Seeding (30 min)**
+
 ```typescript
 // db/migrations/YYYYMMDD_seed_worksurface_permissions.ts
-import { permissions } from '@/services/rbacDefinitions';
+import { permissions } from "@/services/rbacDefinitions";
 
 export async function up(db) {
   const newPerms = [
-    'accounting:view_ar_aging',
-    'accounting:view_ap_aging',
+    "accounting:view_ar_aging",
+    "accounting:view_ap_aging",
     // ... list all new permissions
   ];
 
@@ -401,7 +424,7 @@ export async function up(db) {
       await db.permission.upsert({
         where: { name: perm.name },
         create: { name: perm.name, description: perm.description },
-        update: {}
+        update: {},
       });
     }
   }
@@ -409,6 +432,7 @@ export async function up(db) {
 ```
 
 **Step 5: Run Migration and Verify (30 min)**
+
 ```bash
 # Run migration
 pnpm db:migrate
@@ -423,6 +447,7 @@ npm run gate:rbac
 ```
 
 #### Verification Checklist
+
 - [ ] All permissions from USER_FLOW_MATRIX extracted
 - [ ] Missing permissions identified
 - [ ] rbacDefinitions.ts updated
@@ -431,11 +456,12 @@ npm run gate:rbac
 - [ ] `npm run gate:rbac` passes
 
 #### Go/No-Go Criteria
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| Missing perms added | 40+ | | |
-| Migration runs | Yes | | |
-| gate:rbac passes | Yes | | |
+
+| Criteria            | Required | Actual | Status |
+| ------------------- | -------- | ------ | ------ |
+| Missing perms added | 40+      |        |        |
+| Migration runs      | Yes      |        |        |
+| gate:rbac passes    | Yes      |        |        |
 
 ---
 
@@ -446,6 +472,7 @@ npm run gate:rbac
 **Dependencies**: None
 
 #### Pre-Conditions
+
 - [ ] Access to production observability stack
 - [ ] Sentry dashboard access
 - [ ] Application logs accessible
@@ -456,17 +483,17 @@ npm run gate:rbac
 
 Query your observability platform for each endpoint:
 
-| Endpoint | P50 (ms) | P95 (ms) | P99 (ms) | Error Rate (%) |
-|----------|----------|----------|----------|----------------|
-| `/api/trpc/orders.getAll` | | | | |
-| `/api/trpc/invoices.list` | | | | |
-| `/api/trpc/inventory.getEnhanced` | | | | |
-| `/api/trpc/clients.list` | | | | |
-| `/api/trpc/purchaseOrders.list` | | | | |
-| `/api/trpc/orders.getPickPackList` | | | | |
-| `/api/trpc/clients.getLedger` | | | | |
-| `/api/trpc/quotes.list` | | | | |
-| `/api/trpc/batches.list` | | | | |
+| Endpoint                           | P50 (ms) | P95 (ms) | P99 (ms) | Error Rate (%) |
+| ---------------------------------- | -------- | -------- | -------- | -------------- |
+| `/api/trpc/orders.getAll`          |          |          |          |                |
+| `/api/trpc/invoices.list`          |          |          |          |                |
+| `/api/trpc/inventory.getEnhanced`  |          |          |          |                |
+| `/api/trpc/clients.list`           |          |          |          |                |
+| `/api/trpc/purchaseOrders.list`    |          |          |          |                |
+| `/api/trpc/orders.getPickPackList` |          |          |          |                |
+| `/api/trpc/clients.getLedger`      |          |          |          |                |
+| `/api/trpc/quotes.list`            |          |          |          |                |
+| `/api/trpc/batches.list`           |          |          |          |                |
 
 **Step 2: Capture Error Rates (30 min)**
 
@@ -486,16 +513,17 @@ ORDER BY error_rate DESC;
 
 **Step 3: Define Alert Thresholds (30 min)**
 
-| Metric | Baseline | Warning Threshold | Critical Threshold |
-|--------|----------|-------------------|-------------------|
-| P95 Latency | _baseline_ | +50% | +100% |
-| Error Rate | _baseline_ | +1% | +5% |
-| 500 Errors/min | _baseline_ | 10 | 50 |
-| Invariant Violations | 0 | 1 | 5 |
+| Metric               | Baseline   | Warning Threshold | Critical Threshold |
+| -------------------- | ---------- | ----------------- | ------------------ |
+| P95 Latency          | _baseline_ | +50%              | +100%              |
+| Error Rate           | _baseline_ | +1%               | +5%                |
+| 500 Errors/min       | _baseline_ | 10                | 50                 |
+| Invariant Violations | 0          | 1                 | 5                  |
 
 **Step 4: Create Monitoring Dashboard (30 min)**
 
 Dashboard panels:
+
 1. **Latency by Endpoint** - Time series graph
 2. **Error Rate by Endpoint** - Time series graph
 3. **Work Surface vs Legacy** - Comparison view
@@ -526,6 +554,7 @@ alerts:
 ```
 
 #### Verification Checklist
+
 - [ ] Baseline latency captured for all 9 endpoints
 - [ ] Baseline error rates captured
 - [ ] Alert thresholds defined
@@ -543,33 +572,38 @@ Create `docs/deployment/BASELINE_METRICS_YYYYMMDD.md`:
 **Captured By**: [Name]
 
 ## Latency Baselines
-| Endpoint | P50 | P95 | P99 |
-|----------|-----|-----|-----|
+
+| Endpoint      | P50 | P95 | P99 |
+| ------------- | --- | --- | --- |
 | orders.getAll | Xms | Xms | Xms |
-| ... | | | |
+| ...           |     |     |     |
 
 ## Error Rate Baselines
-| Endpoint | 7-day Error Rate |
-|----------|------------------|
-| orders.getAll | X.XX% |
-| ... | |
+
+| Endpoint      | 7-day Error Rate |
+| ------------- | ---------------- |
+| orders.getAll | X.XX%            |
+| ...           |                  |
 
 ## Alert Thresholds
-| Metric | Warning | Critical |
-|--------|---------|----------|
-| P95 Latency | +50% | +100% |
-| Error Rate | +1% | +5% |
+
+| Metric      | Warning | Critical |
+| ----------- | ------- | -------- |
+| P95 Latency | +50%    | +100%    |
+| Error Rate  | +1%     | +5%      |
 
 ## Dashboard URL
+
 [Link to monitoring dashboard]
 ```
 
 #### Go/No-Go Criteria
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| Baselines captured | 9 endpoints | | |
-| Dashboard created | Yes | | |
-| Alerts configured | Yes | | |
+
+| Criteria           | Required    | Actual | Status |
+| ------------------ | ----------- | ------ | ------ |
+| Baselines captured | 9 endpoints |        |        |
+| Dashboard created  | Yes         |        |        |
+| Alerts configured  | Yes         |        |        |
 
 ---
 
@@ -606,6 +640,7 @@ Create `docs/deployment/BASELINE_METRICS_YYYYMMDD.md`:
 **Dependencies**: DEPLOY-001, DEPLOY-002, DEPLOY-003, DEPLOY-004
 
 #### Pre-Conditions
+
 - [ ] Phase 0 complete
 - [ ] Code deployed to production (flags OFF)
 - [ ] Internal user accounts identified
@@ -643,16 +678,16 @@ echo "Exit code: $?"
 
 For each Golden Flow, test with appropriate role:
 
-| Flow ID | Flow Name | Test Role | Steps | Expected Result |
-|---------|-----------|-----------|-------|-----------------|
-| GF-001 | Direct Intake | Inventory | Create batch via spreadsheet | Batch created, inventory updated |
-| GF-002 | Standard PO | Purchasing | Create PO, receive goods | PO completed, inventory increased |
-| GF-003 | Sales Order | Sales Rep | Create order, add items, confirm | Order confirmed, inventory reserved |
-| GF-004 | Invoice & Payment | Accounting | Generate invoice, record payment | Invoice paid, AR reduced |
-| GF-005 | Pick & Pack | Fulfillment | Pick items, pack, ship | Order shipped, inventory decreased |
-| GF-006 | Client Ledger | Sales Rep | View ledger, check balance | Correct balance displayed |
-| GF-007 | Inventory Adjust | Inventory | Adjust qty, add reason | Adjustment recorded with audit |
-| GF-008 | Sample Request | Sales Rep | Create sample, track | Sample created, inventory reserved |
+| Flow ID | Flow Name         | Test Role   | Steps                            | Expected Result                     |
+| ------- | ----------------- | ----------- | -------------------------------- | ----------------------------------- |
+| GF-001  | Direct Intake     | Inventory   | Create batch via spreadsheet     | Batch created, inventory updated    |
+| GF-002  | Standard PO       | Purchasing  | Create PO, receive goods         | PO completed, inventory increased   |
+| GF-003  | Sales Order       | Sales Rep   | Create order, add items, confirm | Order confirmed, inventory reserved |
+| GF-004  | Invoice & Payment | Accounting  | Generate invoice, record payment | Invoice paid, AR reduced            |
+| GF-005  | Pick & Pack       | Fulfillment | Pick items, pack, ship           | Order shipped, inventory decreased  |
+| GF-006  | Client Ledger     | Sales Rep   | View ledger, check balance       | Correct balance displayed           |
+| GF-007  | Inventory Adjust  | Inventory   | Adjust qty, add reason           | Adjustment recorded with audit      |
+| GF-008  | Sample Request    | Sales Rep   | Create sample, track             | Sample created, inventory reserved  |
 
 **Golden Flow Test Template:**
 
@@ -664,17 +699,20 @@ For each Golden Flow, test with appropriate role:
 **Role**: Inventory Manager
 
 ### Steps
+
 1. Navigate to /spreadsheet
-2. Enter batch data: Strain, Qty, Vendor
+2. Enter batch data: Strain, Qty, Supplier
 3. Click "Create Batch"
 4. Verify batch appears in inventory
 
 ### Expected
+
 - Batch created with correct data
 - Inventory qty increased
 - Movement record created
 
 ### Actual
+
 - [ ] Batch created:
 - [ ] Inventory updated:
 - [ ] Movement recorded:
@@ -682,6 +720,7 @@ For each Golden Flow, test with appropriate role:
 ### Status: PASS / FAIL
 
 ### Notes:
+
 [Any observations]
 ```
 
@@ -714,37 +753,43 @@ Create `docs/qa/STAGE0_QA_REPORT_YYYYMMDD.md`:
 **Duration**: X hours
 
 ## Gate Results
-| Gate | Status | Notes |
-|------|--------|-------|
-| placeholder-scan | PASS/FAIL | |
-| rbac-verify | PASS/FAIL | |
-| feature-parity | PASS/FAIL | |
-| invariant-checks | PASS/FAIL | |
+
+| Gate             | Status    | Notes |
+| ---------------- | --------- | ----- |
+| placeholder-scan | PASS/FAIL |       |
+| rbac-verify      | PASS/FAIL |       |
+| feature-parity   | PASS/FAIL |       |
+| invariant-checks | PASS/FAIL |       |
 
 ## Golden Flow Results
-| Flow | Status | Notes |
-|------|--------|-------|
-| GF-001 | PASS/FAIL | |
-| GF-002 | PASS/FAIL | |
-| ... | | |
+
+| Flow   | Status    | Notes |
+| ------ | --------- | ----- |
+| GF-001 | PASS/FAIL |       |
+| GF-002 | PASS/FAIL |       |
+| ...    |           |       |
 
 ## Issues Found
-| ID | Severity | Description | Status |
-|----|----------|-------------|--------|
-| | | | |
+
+| ID  | Severity | Description | Status |
+| --- | -------- | ----------- | ------ |
+|     |          |             |        |
 
 ## Metrics Comparison
-| Metric | Baseline | Observed | Delta |
-|--------|----------|----------|-------|
-| P95 Latency | Xms | Xms | +X% |
-| Error Rate | X% | X% | +X% |
+
+| Metric      | Baseline | Observed | Delta |
+| ----------- | -------- | -------- | ----- |
+| P95 Latency | Xms      | Xms      | +X%   |
+| Error Rate  | X%       | X%       | +X%   |
 
 ## Recommendation
+
 [ ] Proceed to Stage 1
 [ ] Requires fixes before proceeding
 ```
 
 #### Verification Checklist
+
 - [ ] Internal users can access Work Surfaces
 - [ ] All gate scripts pass
 - [ ] All 8 Golden Flows pass
@@ -755,15 +800,15 @@ Create `docs/qa/STAGE0_QA_REPORT_YYYYMMDD.md`:
 
 #### Go/No-Go Criteria for Stage 1
 
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| Gates pass | 4/4 | | |
-| Golden Flows pass | 8/8 | | |
-| P0 bugs | 0 | | |
-| P1 bugs | ≤3 | | |
-| Invariant violations | 0 | | |
-| Latency regression | <50% | | |
-| Error rate regression | <1% | | |
+| Criteria              | Required | Actual | Status |
+| --------------------- | -------- | ------ | ------ |
+| Gates pass            | 4/4      |        |        |
+| Golden Flows pass     | 8/8      |        |        |
+| P0 bugs               | 0        |        |        |
+| P1 bugs               | ≤3       |        |        |
+| Invariant violations  | 0        |        |        |
+| Latency regression    | <50%     |        |        |
+| Error rate regression | <1%      |        |        |
 
 **Decision**: [ ] GO / [ ] NO-GO
 
@@ -800,6 +845,7 @@ Create `docs/qa/STAGE0_QA_REPORT_YYYYMMDD.md`:
 **Dependencies**: DEPLOY-005 signed off
 
 #### Pre-Conditions
+
 - [ ] Stage 0 signed off
 - [ ] On-call engineer briefed
 - [ ] Rollback procedure reviewed
@@ -856,6 +902,7 @@ WHERE name LIKE 'WORK_SURFACE_%';
 **Step 3: Monitor First Hour (1 hour)**
 
 Every 15 minutes:
+
 - [ ] Check error rate dashboard
 - [ ] Check latency dashboard
 - [ ] Check invariant violations
@@ -883,23 +930,27 @@ Monitoring schedule:
 **Duration**: 24 hours
 
 ## Metrics
-| Metric | Baseline | Stage 1 | Delta |
-|--------|----------|---------|-------|
-| P95 Latency | Xms | Xms | +X% |
-| Error Rate | X% | X% | +X% |
-| Invariant Violations | 0 | 0 | 0 |
+
+| Metric               | Baseline | Stage 1 | Delta |
+| -------------------- | -------- | ------- | ----- |
+| P95 Latency          | Xms      | Xms     | +X%   |
+| Error Rate           | X%       | X%      | +X%   |
+| Invariant Violations | 0        | 0       | 0     |
 
 ## User Feedback
-| Source | Count | Summary |
-|--------|-------|---------|
-| Support tickets | X | |
-| Slack reports | X | |
+
+| Source          | Count | Summary |
+| --------------- | ----- | ------- |
+| Support tickets | X     |         |
+| Slack reports   | X     |         |
 
 ## Issues
-| ID | Severity | Description | Resolution |
-|----|----------|-------------|------------|
+
+| ID  | Severity | Description | Resolution |
+| --- | -------- | ----------- | ---------- |
 
 ## Decision
+
 [ ] Proceed to Stage 2
 [ ] Extend bake period
 [ ] Rollback required
@@ -928,14 +979,14 @@ Time to rollback: **< 60 seconds**
 
 #### Go/No-Go Criteria for Stage 2
 
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| 24h bake complete | Yes | | |
-| P0 bugs | 0 | | |
-| Invariant violations | 0 | | |
-| Latency regression | <50% | | |
-| Error rate regression | <2% | | |
-| User complaints | <5 | | |
+| Criteria              | Required | Actual | Status |
+| --------------------- | -------- | ------ | ------ |
+| 24h bake complete     | Yes      |        |        |
+| P0 bugs               | 0        |        |        |
+| Invariant violations  | 0        |        |        |
+| Latency regression    | <50%     |        |        |
+| Error rate regression | <2%      |        |        |
+| User complaints       | <5       |        |        |
 
 ---
 
@@ -958,14 +1009,14 @@ WHERE name LIKE 'WORK_SURFACE_%';
 
 #### Go/No-Go Criteria for Stage 3
 
-| Criteria | Required | Actual | Status |
-|----------|----------|--------|--------|
-| 24h bake complete | Yes | | |
-| P0 bugs | 0 | | |
-| Invariant violations | 0 | | |
-| Latency regression | <30% | | |
-| Error rate regression | <1% | | |
-| User complaints | <10 | | |
+| Criteria              | Required | Actual | Status |
+| --------------------- | -------- | ------ | ------ |
+| 24h bake complete     | Yes      |        |        |
+| P0 bugs               | 0        |        |        |
+| Invariant violations  | 0        |        |        |
+| Latency regression    | <30%     |        |        |
+| Error rate regression | <1%      |        |        |
+| User complaints       | <10      |        |        |
 
 ---
 
@@ -983,17 +1034,20 @@ WHERE name LIKE 'WORK_SURFACE_%';
 ## 100% Rollout Readiness Checklist
 
 ### Technical
+
 - [ ] All gates still passing
 - [ ] No open P0/P1 bugs
 - [ ] Monitoring dashboard healthy
 - [ ] Rollback procedure tested
 
 ### Business
+
 - [ ] Product owner sign-off
 - [ ] Support team briefed
 - [ ] Documentation updated
 
 ### Communication
+
 - [ ] User announcement drafted
 - [ ] Internal announcement drafted
 ```
@@ -1043,6 +1097,7 @@ Same monitoring pattern as Stage 1 and 2.
 **Step 5: Declare Success (or Issues)**
 
 After 24 hours with:
+
 - Zero P0 bugs
 - Zero invariant violations
 - Metrics within threshold
@@ -1050,6 +1105,7 @@ After 24 hours with:
 **DECLARE: Work Surfaces 100% Rollout Complete**
 
 Update documentation:
+
 - [ ] CHANGELOG.md
 - [ ] ATOMIC_ROADMAP.md → 100% deployed
 - [ ] Session documentation
@@ -1092,6 +1148,7 @@ git push origin main
 **When to use**: Never - migrations are forward-only
 
 If schema change causes issues:
+
 1. Create forward migration to fix
 2. Deploy fix
 3. Do NOT attempt backward migration
@@ -1102,17 +1159,18 @@ If schema change causes issues:
 
 ### Stakeholder Matrix
 
-| Stakeholder | Communication Channel | Frequency | Owner |
-|-------------|----------------------|-----------|-------|
-| Internal Dev Team | Slack #terp-dev | Real-time | DevOps |
-| Product Team | Email + Slack | Daily during rollout | Product |
-| Support Team | Slack #terp-support | Before each stage | Product |
-| Users | In-app banner | Stage 3 only | Product |
-| Executives | Email summary | Post-completion | Product Lead |
+| Stakeholder       | Communication Channel | Frequency            | Owner        |
+| ----------------- | --------------------- | -------------------- | ------------ |
+| Internal Dev Team | Slack #terp-dev       | Real-time            | DevOps       |
+| Product Team      | Email + Slack         | Daily during rollout | Product      |
+| Support Team      | Slack #terp-support   | Before each stage    | Product      |
+| Users             | In-app banner         | Stage 3 only         | Product      |
+| Executives        | Email summary         | Post-completion      | Product Lead |
 
 ### Communication Templates
 
 **Stage Start**:
+
 ```
 [TERP] Work Surfaces Stage X Starting
 - What: X% of users will see Work Surfaces
@@ -1122,6 +1180,7 @@ If schema change causes issues:
 ```
 
 **Stage Complete**:
+
 ```
 [TERP] Work Surfaces Stage X Complete
 - Duration: X hours
@@ -1131,6 +1190,7 @@ If schema change causes issues:
 ```
 
 **Incident**:
+
 ```
 [TERP] Work Surfaces Rollback Initiated
 - Trigger: [Error rate / Latency / Invariant]
@@ -1145,14 +1205,14 @@ If schema change causes issues:
 
 ### Definition of Done
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Rollout % | 100% | Feature flag setting |
-| P0 Bugs | 0 for 7 days | Jira/Linear tracking |
-| Invariant Violations | 0 for 7 days | invariant-checks.ts |
-| Latency Regression | <20% | Monitoring dashboard |
-| Error Rate Regression | <0.5% | Monitoring dashboard |
-| User Satisfaction | NPS ≥ baseline | Survey |
+| Metric                | Target         | Measurement          |
+| --------------------- | -------------- | -------------------- |
+| Rollout %             | 100%           | Feature flag setting |
+| P0 Bugs               | 0 for 7 days   | Jira/Linear tracking |
+| Invariant Violations  | 0 for 7 days   | invariant-checks.ts  |
+| Latency Regression    | <20%           | Monitoring dashboard |
+| Error Rate Regression | <0.5%          | Monitoring dashboard |
+| User Satisfaction     | NPS ≥ baseline | Survey               |
 
 ### Post-Rollout Checklist
 
@@ -1191,12 +1251,12 @@ npm run gate:invariants
 
 ## Appendix B: Escalation Path
 
-| Level | Condition | Contact | Response Time |
-|-------|-----------|---------|---------------|
-| L1 | Warning threshold | On-call Slack | 15 min |
-| L2 | Critical threshold | On-call page | 5 min |
-| L3 | Invariant violation | Engineering Lead | Immediate |
-| L4 | Data corruption | CTO | Immediate |
+| Level | Condition           | Contact          | Response Time |
+| ----- | ------------------- | ---------------- | ------------- |
+| L1    | Warning threshold   | On-call Slack    | 15 min        |
+| L2    | Critical threshold  | On-call page     | 5 min         |
+| L3    | Invariant violation | Engineering Lead | Immediate     |
+| L4    | Data corruption     | CTO              | Immediate     |
 
 ---
 

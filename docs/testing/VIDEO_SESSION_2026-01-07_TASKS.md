@@ -6,71 +6,70 @@
 > **Total Tasks:** 46
 > **Documentation:** `docs/testing/VIDEO_SESSION_2026-01-07.md`
 
-
 ### 🐛 Critical Bugs from Video Testing
 
-| Task | Description | Priority | Estimate | Status |
-|------|-------------|----------|----------|--------|
-| BUG-070 | Fix Client List Click Handlers Not Working | HIGH | 4-8h | ready |
-| BUG-071 | Fix Create Client Form Submission Failure | HIGH | 4-8h | ready |
-| BUG-072 | Fix Inventory Data Not Loading in Dashboard | HIGH | 8h | ready |
-| BUG-073 | Fix Live Shopping Feature Not Accessible | HIGH | 8h | ready |
-| BUG-074 | Fix Spreadsheet View Empty Grid | HIGH | 8h | ready |
-| BUG-075 | Fix Settings Users Tab Authentication Error | HIGH | 4-8h | ready |
-| BUG-076 | Fix Search and Filter Functionality | HIGH | 16h | ready |
-| BUG-077 | Fix Notification System Not Working | HIGH | 8h | ready |
+| Task    | Description                                 | Priority | Estimate | Status |
+| ------- | ------------------------------------------- | -------- | -------- | ------ |
+| BUG-070 | Fix Client List Click Handlers Not Working  | HIGH     | 4-8h     | ready  |
+| BUG-071 | Fix Create Client Form Submission Failure   | HIGH     | 4-8h     | ready  |
+| BUG-072 | Fix Inventory Data Not Loading in Dashboard | HIGH     | 8h       | ready  |
+| BUG-073 | Fix Live Shopping Feature Not Accessible    | HIGH     | 8h       | ready  |
+| BUG-074 | Fix Spreadsheet View Empty Grid             | HIGH     | 8h       | ready  |
+| BUG-075 | Fix Settings Users Tab Authentication Error | HIGH     | 4-8h     | ready  |
+| BUG-076 | Fix Search and Filter Functionality         | HIGH     | 16h      | ready  |
+| BUG-077 | Fix Notification System Not Working         | HIGH     | 8h       | ready  |
 
 ### 🎨 UI/UX Issues from Video Testing
 
-| Task | Description | Priority | Estimate | Status |
-|------|-------------|----------|----------|--------|
-| UX-001 | Reorganize Navigation - Dashboard Separate from Sales | HIGH | 8h | ready |
-| UX-002 | Improve Form Validation Error Messages | MEDIUM | 8h | ready |
-| UX-003 | Visual Distinction Between Actionable and Informational Cards | MEDIUM | 8h | ready |
-| UX-004 | Add Confirmation Dialogs for Destructive Actions | MEDIUM | 4-8h | ready |
-| UX-005 | Fix Horizontal Scrolling Issues | MEDIUM | 4-8h | ready |
-| UX-006 | Improve Search/Filter UI Integration | MEDIUM | 8h | ready |
-| UX-007 | Fix User/Permission Management UI Confusion | MEDIUM | 8h | ready |
-| UX-008 | Add Quick Add Functionality for Related Entities | MEDIUM | 8h | ready |
-| UX-009 | Fix Sidebar Slide Animation | LOW | 2-4h | ready |
-| UX-010 | Clarify My Account vs User Settings Navigation | LOW | 2-4h | ready |
-| UX-011 | Fix Two Export Buttons Issue | LOW | 1-2h | ready |
-| UX-012 | Fix Period Display Formatting | LOW | 1-2h | ready |
-| UX-013 | Fix Mirrored Elements Issue | LOW | 2-4h | ready |
-| UX-014 | Make Optional Fields Clear | LOW | 2-4h | ready |
+| Task   | Description                                                   | Priority | Estimate | Status |
+| ------ | ------------------------------------------------------------- | -------- | -------- | ------ |
+| UX-001 | Reorganize Navigation - Dashboard Separate from Sales         | HIGH     | 8h       | ready  |
+| UX-002 | Improve Form Validation Error Messages                        | MEDIUM   | 8h       | ready  |
+| UX-003 | Visual Distinction Between Actionable and Informational Cards | MEDIUM   | 8h       | ready  |
+| UX-004 | Add Confirmation Dialogs for Destructive Actions              | MEDIUM   | 4-8h     | ready  |
+| UX-005 | Fix Horizontal Scrolling Issues                               | MEDIUM   | 4-8h     | ready  |
+| UX-006 | Improve Search/Filter UI Integration                          | MEDIUM   | 8h       | ready  |
+| UX-007 | Fix User/Permission Management UI Confusion                   | MEDIUM   | 8h       | ready  |
+| UX-008 | Add Quick Add Functionality for Related Entities              | MEDIUM   | 8h       | ready  |
+| UX-009 | Fix Sidebar Slide Animation                                   | LOW      | 2-4h     | ready  |
+| UX-010 | Clarify My Account vs User Settings Navigation                | LOW      | 2-4h     | ready  |
+| UX-011 | Fix Two Export Buttons Issue                                  | LOW      | 1-2h     | ready  |
+| UX-012 | Fix Period Display Formatting                                 | LOW      | 1-2h     | ready  |
+| UX-013 | Fix Mirrored Elements Issue                                   | LOW      | 2-4h     | ready  |
+| UX-014 | Make Optional Fields Clear                                    | LOW      | 2-4h     | ready  |
 
 ### 📋 Feature Tasks from Video Testing
 
-| Task | Description | Priority | Estimate | Status |
-|------|-------------|----------|----------|--------|
-| FEAT-001 | Client Form Field Updates | MEDIUM | 4-8h | ready |
-| FEAT-002 | Tag System Revamp for Clients and Products | HIGH | 16h | ready |
-| FEAT-003 | Order Creator Quick Add Quantity Field | MEDIUM | 4-8h | ready |
-| FEAT-004 | Add Dollar Amount Discount Option | MEDIUM | 4-8h | ready |
-| FEAT-005 | Merge Draft and Quote Workflows | MEDIUM | 8h | ready |
-| FEAT-006 | Show Product Name Instead of SKU in Order Creator | MEDIUM | 2-4h | ready |
-| FEAT-007 | Add Payment Recording Against Invoices | HIGH | 16h | ready |
-| FEAT-008 | Invoice Editing from Order View | MEDIUM | 8h | ready |
-| FEAT-009 | Add Product Subcategories (Smalls, Trim, etc.) | MEDIUM | 8h | ready |
-| FEAT-010 | Default Warehouse Selection | LOW | 2-4h | ready |
-| FEAT-011 | COGS Logic and Sales Flow Integration | HIGH | 16h | ready |
-| FEAT-012 | Make Grade Field Optional/Customizable | LOW | 4-8h | ready |
-| FEAT-013 | Add Packaged Unit Type for Products | MEDIUM | 4-8h | ready |
-| FEAT-014 | Remove Expected Delivery from Purchases | LOW | 2-4h | ready |
-| FEAT-015 | Finance Status Customization | MEDIUM | 8h | ready |
-| FEAT-016 | Rename Credits to Credit Settings | LOW | 1-2h | ready |
-| FEAT-017 | Feature Flags Direct Access | LOW | 2-4h | ready |
-| FEAT-018 | Remove Development-Only Features from User-Facing UI | MEDIUM | 4-8h | ready |
-| FEAT-019 | VIP Status and Tiers Implementation | MEDIUM | 16h | ready |
-| FEAT-020 | Product Subcategory and Strain Matching | MEDIUM | 8h | ready |
-| FEAT-021 | Settings Changes Apply to Entire Team | MEDIUM | 4-8h | ready |
-| FEAT-022 | Show Role Names Instead of Count in Permissions | LOW | 2-4h | ready |
-| FEAT-023 | Notification Preferences - System vs User Level | MEDIUM | 8h | ready |
-| FEAT-024 | Inline Notifications Without Page Navigation | MEDIUM | 4-8h | ready |
+| Task     | Description                                          | Priority | Estimate | Status |
+| -------- | ---------------------------------------------------- | -------- | -------- | ------ |
+| FEAT-001 | Client Form Field Updates                            | MEDIUM   | 4-8h     | ready  |
+| FEAT-002 | Tag System Revamp for Clients and Products           | HIGH     | 16h      | ready  |
+| FEAT-003 | Order Creator Quick Add Quantity Field               | MEDIUM   | 4-8h     | ready  |
+| FEAT-004 | Add Dollar Amount Discount Option                    | MEDIUM   | 4-8h     | ready  |
+| FEAT-005 | Merge Draft and Quote Workflows                      | MEDIUM   | 8h       | ready  |
+| FEAT-006 | Show Product Name Instead of SKU in Order Creator    | MEDIUM   | 2-4h     | ready  |
+| FEAT-007 | Add Payment Recording Against Invoices               | HIGH     | 16h      | ready  |
+| FEAT-008 | Invoice Editing from Order View                      | MEDIUM   | 8h       | ready  |
+| FEAT-009 | Add Product Subcategories (Smalls, Trim, etc.)       | MEDIUM   | 8h       | ready  |
+| FEAT-010 | Default Warehouse Selection                          | LOW      | 2-4h     | ready  |
+| FEAT-011 | COGS Logic and Sales Flow Integration                | HIGH     | 16h      | ready  |
+| FEAT-012 | Make Grade Field Optional/Customizable               | LOW      | 4-8h     | ready  |
+| FEAT-013 | Add Packaged Unit Type for Products                  | MEDIUM   | 4-8h     | ready  |
+| FEAT-014 | Remove Expected Delivery from Purchases              | LOW      | 2-4h     | ready  |
+| FEAT-015 | Finance Status Customization                         | MEDIUM   | 8h       | ready  |
+| FEAT-016 | Rename Credits to Credit Settings                    | LOW      | 1-2h     | ready  |
+| FEAT-017 | Feature Flags Direct Access                          | LOW      | 2-4h     | ready  |
+| FEAT-018 | Remove Development-Only Features from User-Facing UI | MEDIUM   | 4-8h     | ready  |
+| FEAT-019 | VIP Status and Tiers Implementation                  | MEDIUM   | 16h      | ready  |
+| FEAT-020 | Product Subcategory and Strain Matching              | MEDIUM   | 8h       | ready  |
+| FEAT-021 | Settings Changes Apply to Entire Team                | MEDIUM   | 4-8h     | ready  |
+| FEAT-022 | Show Role Names Instead of Count in Permissions      | LOW      | 2-4h     | ready  |
+| FEAT-023 | Notification Preferences - System vs User Level      | MEDIUM   | 8h       | ready  |
+| FEAT-024 | Inline Notifications Without Page Navigation         | MEDIUM   | 4-8h     | ready  |
+
 ---
 
 ## 📝 Detailed Task Specifications (Video Testing Session)
-
 
 ### BUG-070: Fix Client List Click Handlers Not Working
 
@@ -532,17 +531,17 @@ User and permission management UI is confusing. View and Edit should be combined
 **Prompt:** `docs/prompts/UX-008.md`
 
 **Problem:**
-When adding a purchase and vendor doesn't exist, there's no way to quickly add the vendor. Same for other related entities.
+When adding a purchase and supplier doesn't exist, there's no way to quickly add the supplier. Same for other related entities.
 
 **Objectives:**
 
-1. Add inline quick-add for vendors in purchase form
+1. Add inline quick-add for suppliers in purchase form
 2. Add inline quick-add for clients in order form
 3. Implement consistent quick-add pattern
 
 **Deliverables:**
 
-- [ ] Quick add vendor from purchase form
+- [ ] Quick add supplier from purchase form
 - [ ] Quick add client from order form
 - [ ] Quick add product from order form
 - [ ] Modal-based quick add component

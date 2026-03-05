@@ -111,7 +111,7 @@ IF invoices.amountDue > 0 AND invoices.amountPaid > 0 THEN invoices.status = 'PA
 
 **Source of Truth**: `vendorReturns`, `bills`, `lots` (for consignment)
 
-AP tracks money owed to suppliers/vendors.
+AP tracks money owed to suppliers/suppliers.
 
 #### Truth Tables
 
@@ -128,7 +128,7 @@ AP tracks money owed to suppliers/vendors.
 vendorReturns.totalValue = SUM(vendorReturnItems.quantity * vendorReturnItems.unitCost)
 
 -- AP-002: Consignment payable tracks with lot sales
-payable_to_supplier = SUM(lots.totalCost WHERE lots.vendorId = vendor.id AND status = 'SOLD')
+payable_to_supplier = SUM(lots.totalCost WHERE lots.vendorId = supplier.id AND status = 'SOLD')
 
 -- AP-003: Credit received cannot exceed return value
 vendorReturns.creditReceived <= vendorReturns.totalValue
@@ -215,7 +215,7 @@ Lots, PurchaseOrders only for clients WHERE isSeller = true
 -- CLI-004: No orphan profiles
 Every supplierProfiles.clientId must exist in clients.id
 
--- CLI-005: Legacy vendor ID mapping is unique
+-- CLI-005: Legacy supplier ID mapping is unique
 supplierProfiles.legacyVendorId is unique when not null
 ```
 

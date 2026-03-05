@@ -304,7 +304,7 @@ const paymentTermsDays = row.paymentTerms ?? 30;
    └── Task 7: Dashboard widgets (investigate)
 
 3. Wave 3 (P1 - Navigation)
-   ├── Task 8: Vendors button
+   ├── Task 8: Suppliers button
    ├── Task 9: PO button
    ├── Task 10: Returns button
    └── Task 11: Locations button

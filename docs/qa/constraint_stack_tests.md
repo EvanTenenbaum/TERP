@@ -169,7 +169,7 @@ Source references: `docs/reference/USER_FLOW_MATRIX.csv`, `docs/reference/FLOW_G
   1. Create a purchase order with two items.
   2. Receive only one item and generate a batch with a lot identifier.
   3. Attempt to receive the second item using the same lot identifier.
-- **Expected result**: Duplicate lot identifier rejected; receiving remains partial with clear error messaging.
+- **Expected result**: Duplicate lot identifier rejected; intake remains partial with clear error messaging.
 - **What to log on failure**: PO ID, receipt IDs, lot identifier, batch IDs.
 - **Severity**: High
 
@@ -347,9 +347,9 @@ Source references: `docs/reference/USER_FLOW_MATRIX.csv`, `docs/reference/FLOW_G
 
 - Act as an Inventory Manager. Confirm an order that exceeds available inventory. Fulfill the available quantity, adjust inventory upward, then retry fulfillment. Confirm inventory movements are correct and no double-decrement occurs.
 
-7. **Prompt: Duplicate Lot Identifier on PO Receiving**
+7. **Prompt: Duplicate Lot Identifier on PO Intake**
 
-- Act as a Purchasing Manager. Receive a PO line item and assign a lot identifier, then attempt to receive another item using the same lot identifier. Confirm the system rejects the duplicate and keeps receiving status accurate.
+- Act as a Purchasing Manager. Receive a PO line item and assign a lot identifier, then attempt to receive another item using the same lot identifier. Confirm the system rejects the duplicate and keeps intake status accurate.
 
 8. **Prompt: Invoice Void With Partial Payment**
 

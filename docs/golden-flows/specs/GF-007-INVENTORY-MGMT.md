@@ -48,7 +48,7 @@ Inventory is tracked at the **batch** level, where each batch represents a discr
 │                                                                              │
 │  2. FILTER & SEARCH                                                          │
 │     └─> Use search bar (SKU, batch code, product name)                       │
-│         └─> Apply advanced filters (status, category, vendor, grade, etc.)   │
+│         └─> Apply advanced filters (status, category, supplier, grade, etc.)   │
 │             └─> Sort by columns (SKU, on-hand, available, age, status)       │
 │                 └─> Save views for quick access                              │
 │                                                                              │

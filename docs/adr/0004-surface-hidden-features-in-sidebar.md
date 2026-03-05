@@ -115,10 +115,10 @@ Changes are made to `/client/src/config/navigation.ts`:
   group: "inventory",
   ariaLabel: "Product photography queue and workflow management",
 },
-// NAV-004: Added Suppliers (legacy /vendors route) for supplier management and inventory visibility
+// NAV-004: Added Suppliers (legacy /suppliers route) for supplier management and inventory visibility
 {
-  name: "Vendors",
-  path: "/vendors",
+  name: "Suppliers",
+  path: "/suppliers",
   icon: Building2,
   group: "inventory",
   ariaLabel: "Supplier management with products and inventory",

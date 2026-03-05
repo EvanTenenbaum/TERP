@@ -236,7 +236,7 @@ is_seller: Math.random() < 0.2 ? 1 : 0,   // Whale clients
 
 ```typescript
 supplierClientId: int("supplier_client_id").references(() => clients.id, { onDelete: "restrict" }),
-// Vendor reference (DEPRECATED - use supplierClientId instead)
+// Supplier reference (DEPRECATED - use supplierClientId instead)
 vendorId: int("vendorId").notNull(),
 ```
 
@@ -251,7 +251,7 @@ vendorId: int("vendorId").notNull(),
 | Table                     | Status     | Notes                                         |
 | ------------------------- | ---------- | --------------------------------------------- |
 | users                     | ✅ OK      | All columns match                             |
-| vendors                   | ✅ OK      | All columns match                             |
+| suppliers                 | ✅ OK      | All columns match                             |
 | clients                   | ✅ OK      | Uses boolean for is_buyer/is_seller correctly |
 | brands                    | ✅ OK      | All columns match                             |
 | strains                   | ✅ OK      | All columns match                             |
@@ -315,7 +315,7 @@ The inventory query (`server/inventoryDb.ts:838-886`) performs these JOINs:
 
 ```sql
 batches → products → brands
-batches → lots → vendors
+batches → lots → suppliers
 ```
 
 **Potential Causes**:

@@ -48,7 +48,7 @@
 - **Why it breaks**: Feature appears complete but clicking triggers no action - user dead-end
 - **Minimal Fix**: Either implement the view or remove/disable the UI control
 
-### 4. MEDIUM: returnProcessing.ts Vendor ID Validation Missing
+### 4. MEDIUM: returnProcessing.ts Supplier ID Validation Missing
 
 - **File**: `server/services/returnProcessing.ts:135-140`
 - **Evidence**: `processVendorReturn` accepts vendorId without validating it exists
@@ -56,14 +56,14 @@
 ```typescript
 export async function processVendorReturn(
   orderId: number,
-  vendorId: number, // No validation that this vendor exists
+  vendorId: number, // No validation that this supplier exists
   returnReason: string,
   userId: number
 ): Promise<number>;
 ```
 
-- **Why it breaks**: Can create orphan vendor return records with invalid vendorId
-- **Minimal Fix**: Add vendor existence check before creating return
+- **Why it breaks**: Can create orphan supplier return records with invalid vendorId
+- **Minimal Fix**: Add supplier existence check before creating return
 
 ### 5. MEDIUM: Type Bypass via `as any` in Work Surface Components
 
@@ -84,7 +84,7 @@ export async function processVendorReturn(
 | Critical | Performance  | Silent Web Vitals failure | usePerformanceMonitor.ts:375,387,403 | Deploy, check console   | Add debug logging   |
 | High     | Tests        | Hook test suite fails     | 14 tests "DOM element" error         | `npm test`              | Fix JSDOM setup     |
 | High     | LiveShopping | Session console dead-end  | LiveShoppingPage.tsx:410             | Click session row       | Implement or remove |
-| Medium   | Returns      | Orphan vendor returns     | returnProcessing.ts:135-140          | Call with fake vendorId | Add validation      |
+| Medium   | Returns      | Orphan supplier returns   | returnProcessing.ts:135-140          | Call with fake vendorId | Add validation      |
 | Medium   | Types        | Type safety bypassed      | 50+ `as any` casts in work surfaces  | TypeScript check        | Define proper types |
 | Medium   | Catalog      | Missing brand extraction  | liveCatalogService.ts:357            | Query live catalog      | Implement or stub   |
 | Low      | Catalog      | Missing price range       | liveCatalogService.ts:367            | Query live catalog      | Implement or stub   |
@@ -137,7 +137,7 @@ export async function processVendorReturn(
 - **Proof step**: Set `FEATURE_FLAGS.EMAIL_ENABLED=true` without API keys, send email
 - **Result**: If returns `success: true` with mock provider, potential data loss
 
-### H4: Vendor Returns Created Without Vendor Validation
+### H4: Supplier Returns Created Without Supplier Validation
 
 - **Suspicion**: `processVendorReturn` doesn't verify vendorId exists
 - **Proof step**: Call with vendorId=99999, check if record created

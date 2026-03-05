@@ -133,7 +133,7 @@ This document merges the newly generated specifications from the Strategic Imple
 ```
 PHASE 1 (Backend - Can Execute in Parallel):
 ├── FEAT-001 (Enhanced Inventory API) → Required by ENH-001, ENH-004
-├── MERGED-001/FEAT-002 (Vendor Context API) → Required by ENH-002
+├── MERGED-001/FEAT-002 (Supplier Context API) → Required by ENH-002
 ├── FEAT-003-INLINE (In-line Product) → Required by ENH-003
 ├── MERGED-002/FEAT-004 (Pricing & Credit) → Required by ENH-004
 └── MERGED-003/FEAT-005 (Scheduling & Referrals) → Required by ENH-005, FEAT-006

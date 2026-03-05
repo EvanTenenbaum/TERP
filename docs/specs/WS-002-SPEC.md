@@ -56,7 +56,7 @@ Paying suppliers in cash is a frequent operation that currently requires navigat
 -- Uses existing tables:
 -- - vendor_payments (for recording the payment)
 -- - journal_entries (for double-entry accounting)
--- - vendors (for balance tracking)
+-- - suppliers (for balance tracking)
 
 -- Ensure vendor_payments table has:
 -- - payment_type ENUM('CASH', 'CHECK', 'WIRE', 'ACH', 'OTHER')
@@ -90,10 +90,10 @@ accounting.payVendor = adminProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
-    // 1. Get current vendor balance (amount owed)
-    // 2. Create vendor payment record
+    // 1. Get current supplier balance (amount owed)
+    // 2. Create supplier payment record
     // 3. Create journal entry (debit AP, credit cash/bank)
-    // 4. Update vendor balance
+    // 4. Update supplier balance
     // 5. Generate confirmation if requested
     // 6. Return new balance and confirmation URL
   });

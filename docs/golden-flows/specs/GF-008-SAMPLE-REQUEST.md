@@ -114,7 +114,7 @@ The Sample Request flow manages sales samples distributed to clients and prospec
 
 1. **Request Supplier Return** (RETURNED or FULFILLED → VENDOR_RETURN_REQUESTED)
    - User clicks "Request Supplier Return" action
-   - SampleReturnDialog opens with type="vendor"
+   - SampleReturnDialog opens with type="supplier"
    - Fields:
      - Reason (required textarea only)
    - Calls `samples.requestVendorReturn`
@@ -212,12 +212,12 @@ The Sample Request flow manages sales samples distributed to clients and prospec
 **Action Menu Logic by Status**:
 
 ```typescript
-FULFILLED → [Request Return, Request Vendor Return, Update Location, Delete]
+FULFILLED → [Request Return, Request Supplier Return, Update Location, Delete]
 RETURN_REQUESTED → [Approve Return, Update Location, Delete]
 RETURN_APPROVED → [Complete Return, Update Location, Delete]
-RETURNED → [Request Vendor Return, Update Location, Delete]
-VENDOR_RETURN_REQUESTED → [Ship to Vendor, Update Location, Delete]
-SHIPPED_TO_VENDOR → [Confirm Vendor Received, Update Location, Delete]
+RETURNED → [Request Supplier Return, Update Location, Delete]
+VENDOR_RETURN_REQUESTED → [Ship to Supplier, Update Location, Delete]
+SHIPPED_TO_VENDOR → [Confirm Supplier Received, Update Location, Delete]
 CANCELLED, VENDOR_CONFIRMED → [Delete only]
 PENDING → [Delete only]  // Note: No Fulfill action in UI
 ```
@@ -243,10 +243,10 @@ PENDING → [Delete only]  // Note: No Fulfill action in UI
 }
 ```
 
-| Mode                          | Trigger                       | Fields Shown                            |
-| ----------------------------- | ----------------------------- | --------------------------------------- |
-| Sample Return (type="sample") | Request Return clicked        | Reason, Condition, Expected Return Date |
-| Vendor Return (type="vendor") | Request Vendor Return clicked | Reason only                             |
+| Mode                              | Trigger                         | Fields Shown                            |
+| --------------------------------- | ------------------------------- | --------------------------------------- |
+| Sample Return (type="sample")     | Request Return clicked          | Reason, Condition, Expected Return Date |
+| Supplier Return (type="supplier") | Request Supplier Return clicked | Reason only                             |
 
 ### LocationUpdateDialog Component (`client/src/components/samples/LocationUpdateDialog.tsx`)
 

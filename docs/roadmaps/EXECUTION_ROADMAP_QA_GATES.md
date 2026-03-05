@@ -496,7 +496,7 @@ These pages use legacy data table patterns and should be refactored to Work Surf
 # Products Work Surface tests
 pnpm test client/src/components/work-surface/ProductsWorkSurface.test.tsx
 
-# Vendors Work Surface tests
+# Suppliers Work Surface tests
 pnpm test client/src/components/work-surface/VendorsWorkSurface.test.tsx
 
 # Golden Flows
@@ -827,7 +827,7 @@ Phase 4 (Work Surfaces Core) - Days 10-14
          ▼
 Phase 4.5 (Work Surface Coverage) - Days 15-17 [NEW]
 ├── WS-PROD-001 (Products → Work Surface)
-├── WS-VEND-001 (Vendors → Work Surface)
+├── WS-VEND-001 (Suppliers → Work Surface)
 └── WS-GF-001 (Golden Flows → AR/AP)
          │
          ▼
@@ -1024,11 +1024,11 @@ These tasks are important but not blocking MVP. They can be worked on in paralle
 
 ### Deprecation & Cleanup (P2)
 
-| Task     | Description                             | Est. | Module            |
-| -------- | --------------------------------------- | ---- | ----------------- |
-| DEPR-001 | Migrate Deprecated Vendor Router Usages | 8h   | vendors.ts        |
-| DEPR-002 | Remove Deprecated PO Procedures (3)     | 2h   | purchaseOrders.ts |
-| BUG-102  | Fix Property Test Bugs                  | 4h   | property tests    |
+| Task     | Description                               | Est. | Module            |
+| -------- | ----------------------------------------- | ---- | ----------------- |
+| DEPR-001 | Migrate Deprecated Supplier Router Usages | 8h   | suppliers.ts      |
+| DEPR-002 | Remove Deprecated PO Procedures (3)       | 2h   | purchaseOrders.ts |
+| BUG-102  | Fix Property Test Bugs                    | 4h   | property tests    |
 
 ### Mobile & UX (P2)
 

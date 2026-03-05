@@ -12,13 +12,13 @@ This protocol defines database schema standards for consistency, performance, an
 
 ### Numeric Types
 
-| Data Category | Type | Example |
-|---------------|------|---------|
-| Monetary values | `decimal(15, 2)` | Prices, totals, payments |
-| Quantities | `decimal(15, 4)` | Stock counts, order quantities |
-| Percentages | `decimal(5, 2)` | Tax rates, discount rates |
-| IDs | `int` auto-increment | Primary keys |
-| External IDs | `varchar(50)` | UUIDs, external system IDs |
+| Data Category   | Type                 | Example                        |
+| --------------- | -------------------- | ------------------------------ |
+| Monetary values | `decimal(15, 2)`     | Prices, totals, payments       |
+| Quantities      | `decimal(15, 4)`     | Stock counts, order quantities |
+| Percentages     | `decimal(5, 2)`      | Tax rates, discount rates      |
+| IDs             | `int` auto-increment | Primary keys                   |
+| External IDs    | `varchar(50)`        | UUIDs, external system IDs     |
 
 ```typescript
 // ✅ CORRECT
@@ -45,12 +45,12 @@ isSample: int('isSample').notNull().default(0), // NO! Use boolean
 
 ### String Types
 
-| Data Category | Type | Example |
-|---------------|------|---------|
-| Short text (< 255 chars) | `varchar(length)` | Names, codes, statuses |
-| Long text | `text` | Descriptions, notes |
-| Fixed-length codes | `char(length)` | Country codes, currency codes |
-| Enums | `varchar` with enum type | Status values |
+| Data Category            | Type                     | Example                       |
+| ------------------------ | ------------------------ | ----------------------------- |
+| Short text (< 255 chars) | `varchar(length)`        | Names, codes, statuses        |
+| Long text                | `text`                   | Descriptions, notes           |
+| Fixed-length codes       | `char(length)`           | Country codes, currency codes |
+| Enums                    | `varchar` with enum type | Status values                 |
 
 ```typescript
 // ✅ CORRECT
@@ -83,10 +83,10 @@ created: int('created'), // NO! Use timestamp
 
 ### Tables
 
-| Convention | Example |
-|------------|---------|
-| Plural | `orders`, `clients`, `products` |
-| snake_case | `order_line_items`, `client_contacts` |
+| Convention  | Example                               |
+| ----------- | ------------------------------------- |
+| Plural      | `orders`, `clients`, `products`       |
+| snake_case  | `order_line_items`, `client_contacts` |
 | Descriptive | `purchase_order_items` not `po_items` |
 
 ```typescript
@@ -101,12 +101,12 @@ export const oli = mysqlTable('oli', { ... }); // Abbreviations
 
 ### Columns
 
-| Convention | Example |
-|------------|---------|
-| snake_case | `created_at`, `client_id`, `unit_price` |
-| Foreign keys end with `_id` | `client_id`, `order_id` |
-| Boolean prefix `is_` or `has_` | `is_active`, `has_shipping` |
-| Timestamps end with `_at` | `created_at`, `shipped_at` |
+| Convention                     | Example                                 |
+| ------------------------------ | --------------------------------------- |
+| snake_case                     | `created_at`, `client_id`, `unit_price` |
+| Foreign keys end with `_id`    | `client_id`, `order_id`                 |
+| Boolean prefix `is_` or `has_` | `is_active`, `has_shipping`             |
+| Timestamps end with `_at`      | `created_at`, `shipped_at`              |
 
 ```typescript
 // ✅ CORRECT
@@ -139,10 +139,10 @@ index1: index('index1').on(orders.clientId), // Non-descriptive
 ### All Tables MUST Have
 
 ```typescript
-export const myTable = mysqlTable('my_table', {
-  id: int('id').primaryKey().autoincrement(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+export const myTable = mysqlTable("my_table", {
+  id: int("id").primaryKey().autoincrement(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   // ... other columns
 });
 ```
@@ -152,12 +152,12 @@ export const myTable = mysqlTable('my_table', {
 For tables where records can be "deleted" but should be retained:
 
 ```typescript
-export const orders = mysqlTable('orders', {
-  id: int('id').primaryKey().autoincrement(),
+export const orders = mysqlTable("orders", {
+  id: int("id").primaryKey().autoincrement(),
   // ... other columns
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-  deletedAt: timestamp('deleted_at'), // Soft delete
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  deletedAt: timestamp("deleted_at"), // Soft delete
 });
 ```
 
@@ -180,11 +180,11 @@ orderId: int('order_id')
 
 ### OnDelete Strategies
 
-| Relationship | Strategy | Example |
-|--------------|----------|---------|
-| Parent-child (required) | `cascade` | Order → Line items |
-| Reference (required) | `restrict` | Order → Client |
-| Reference (optional) | `set null` | Order → Sales rep |
+| Relationship            | Strategy   | Example            |
+| ----------------------- | ---------- | ------------------ |
+| Parent-child (required) | `cascade`  | Order → Line items |
+| Reference (required)    | `restrict` | Order → Client     |
+| Reference (optional)    | `set null` | Order → Sales rep  |
 
 ```typescript
 // Line items deleted when order deleted
@@ -208,12 +208,12 @@ salesRepId: int('sales_rep_id')
 
 ### MUST Have Index
 
-| Column Type | Reason |
-|-------------|--------|
-| All foreign keys | Join performance |
-| Columns in WHERE clauses | Query performance |
-| Columns in ORDER BY | Sort performance |
-| Unique constraints | Enforcement + lookup |
+| Column Type              | Reason               |
+| ------------------------ | -------------------- |
+| All foreign keys         | Join performance     |
+| Columns in WHERE clauses | Query performance    |
+| Columns in ORDER BY      | Sort performance     |
+| Unique constraints       | Enforcement + lookup |
 
 ### Composite Indexes
 
@@ -233,13 +233,13 @@ dateStatusIdx: index('idx_orders_created_status')
 
 ```typescript
 // Single column: idx_table_column
-idx_orders_client_id
+idx_orders_client_id;
 
 // Composite: idx_table_col1_col2
-idx_orders_status_created
+idx_orders_status_created;
 
 // Unique: uniq_table_column
-uniq_users_email
+uniq_users_email;
 ```
 
 ---
@@ -287,12 +287,12 @@ status: varchar('status', { length: 50 })
 
 ### When to Use JSON
 
-| Use Case | Appropriate |
-|----------|-------------|
-| Dynamic/flexible config | ✅ Yes |
-| Metadata without queries | ✅ Yes |
-| Frequently queried data | ❌ No (use columns) |
-| Relational data | ❌ No (use tables) |
+| Use Case                 | Appropriate         |
+| ------------------------ | ------------------- |
+| Dynamic/flexible config  | ✅ Yes              |
+| Metadata without queries | ✅ Yes              |
+| Frequently queried data  | ❌ No (use columns) |
+| Relational data          | ❌ No (use tables)  |
 
 ### Always Type JSON Columns
 
@@ -321,9 +321,9 @@ metadata: json('metadata'), // No type!
 
 ```typescript
 // In schema
-export const orders = mysqlTable('orders', {
+export const orders = mysqlTable("orders", {
   // ... columns
-  deletedAt: timestamp('deleted_at'),
+  deletedAt: timestamp("deleted_at"),
 });
 
 // In queries - ALWAYS filter
@@ -332,7 +332,8 @@ const activeOrders = await db.query.orders.findMany({
 });
 
 // Soft delete
-await db.update(orders)
+await db
+  .update(orders)
   .set({ deletedAt: new Date() })
   .where(eq(orders.id, orderId));
 ```
@@ -341,9 +342,7 @@ await db.update(orders)
 
 ```typescript
 // db/helpers.ts
-export function notDeleted<T extends { deletedAt: unknown }>(
-  table: T
-) {
+export function notDeleted<T extends { deletedAt: unknown }>(table: T) {
   return isNull(table.deletedAt);
 }
 
@@ -403,26 +402,26 @@ ALTER TABLE batches CHANGE quantity_new quantity DECIMAL(15, 4) NOT NULL;
 
 ### When to Denormalize
 
-| Scenario | Approach |
-|----------|----------|
-| Expensive aggregations | Denormalize with scheduled refresh |
-| Frequently read, rarely changed | Denormalize with trigger |
-| Real-time required | Calculate on read |
+| Scenario                        | Approach                           |
+| ------------------------------- | ---------------------------------- |
+| Expensive aggregations          | Denormalize with scheduled refresh |
+| Frequently read, rarely changed | Denormalize with trigger           |
+| Real-time required              | Calculate on read                  |
 
 ### Document Denormalized Fields
 
 ```typescript
 // ✅ CORRECT: Document the denormalization
-export const clients = mysqlTable('clients', {
+export const clients = mysqlTable("clients", {
   // ...
 
   // DENORMALIZED: Updated by cron job every hour
   // Source: SUM(orders.total) WHERE status != 'CANCELLED'
-  totalSpent: decimal('total_spent', { precision: 15, scale: 2 }).default('0'),
+  totalSpent: decimal("total_spent", { precision: 15, scale: 2 }).default("0"),
 
   // DENORMALIZED: Updated on order completion
   // Source: COUNT(orders) WHERE status = 'DELIVERED'
-  orderCount: int('order_count').default(0),
+  orderCount: int("order_count").default(0),
 });
 ```
 
@@ -440,16 +439,15 @@ export async function refreshClientTotals(clientId?: number) {
       totalSpent: sum(orders.total),
     })
     .from(orders)
-    .where(and(
-      ne(orders.status, 'CANCELLED'),
-      isNull(orders.deletedAt),
-      condition,
-    ))
+    .where(
+      and(ne(orders.status, "CANCELLED"), isNull(orders.deletedAt), condition)
+    )
     .groupBy(orders.clientId);
 
   // Update denormalized fields
   for (const { clientId, totalSpent } of totals) {
-    await db.update(clients)
+    await db
+      .update(clients)
       .set({ totalSpent })
       .where(eq(clients.id, clientId));
   }
@@ -469,7 +467,7 @@ import { mysqlTable, int, varchar, ... } from 'drizzle-orm/mysql-core';
 // 2. Enums
 export const orderStatusEnum = mysqlEnum('order_status', [...]);
 
-// 3. Core tables (users, clients, vendors)
+// 3. Core tables (users, clients, suppliers)
 export const users = mysqlTable('users', { ... });
 export const clients = mysqlTable('clients', { ... });
 

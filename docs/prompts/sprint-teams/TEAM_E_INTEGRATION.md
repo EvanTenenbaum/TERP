@@ -26,14 +26,15 @@ You are **Sprint Team E**, responsible for Work Surfaces QA blockers, Reliabilit
 
 Before starting, verify:
 
-| Team | Tasks | Status |
-|------|-------|--------|
-| Team A | TS-001, BUG-100, ACC-001 | Must pass `pnpm check && pnpm test` |
-| Team B | NAV-017, App.tsx routes | Routes must work |
-| Team C | BE-QA-006..008, API-011..013 | APIs must exist |
-| Team D | SEC-023, DATA-012 | Security + feature flags |
+| Team   | Tasks                        | Status                              |
+| ------ | ---------------------------- | ----------------------------------- |
+| Team A | TS-001, BUG-100, ACC-001     | Must pass `pnpm check && pnpm test` |
+| Team B | NAV-017, App.tsx routes      | Routes must work                    |
+| Team C | BE-QA-006..008, API-011..013 | APIs must exist                     |
+| Team D | SEC-023, DATA-012            | Security + feature flags            |
 
 **Verification:**
+
 ```bash
 pnpm check   # 0 errors
 pnpm test    # >95% pass
@@ -58,6 +59,7 @@ scripts/validation/**
 ```
 
 **DO NOT MODIFY:**
+
 - `server/routers/**` (Team C owns)
 - `client/src/pages/*.tsx` (Team B owns)
 - `scripts/seed/**` (Team D owns)
@@ -119,6 +121,7 @@ const handlePaymentSubmit = (data: PaymentFormData) => {
 ```
 
 **Deliverables:**
+
 - [ ] Payment mutation connected to backend
 - [ ] Loading state during mutation
 - [ ] Error handling displays server errors
@@ -130,6 +133,7 @@ const handlePaymentSubmit = (data: PaymentFormData) => {
 #### WSQA-002: Implement Flexible Lot Selection (2 days)
 
 **Files:**
+
 - `server/db/schema.ts` (coordinate with Team D)
 - `client/src/components/order/BatchSelectionDialog.tsx` (new)
 - `server/routers/orders.ts`
@@ -137,20 +141,27 @@ const handlePaymentSubmit = (data: PaymentFormData) => {
 **Problem:** Users cannot select specific batches for orders.
 
 **Step 1: Schema (request from Team D):**
+
 ```typescript
 // Create coordination ticket for Team D to add:
-export const orderLineItemAllocations = mysqlTable('order_line_item_allocations', {
-  id: int('id').primaryKey().autoIncrement(),
-  orderLineItemId: int('order_line_item_id').references(() => orderLineItems.id),
-  batchId: int('batch_id').references(() => batches.id),
-  quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
-  unitCogs: decimal('unit_cogs', { precision: 10, scale: 4 }),
-  allocatedAt: timestamp('allocated_at').defaultNow(),
-  allocatedBy: int('allocated_by').references(() => users.id),
-});
+export const orderLineItemAllocations = mysqlTable(
+  "order_line_item_allocations",
+  {
+    id: int("id").primaryKey().autoIncrement(),
+    orderLineItemId: int("order_line_item_id").references(
+      () => orderLineItems.id
+    ),
+    batchId: int("batch_id").references(() => batches.id),
+    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+    unitCogs: decimal("unit_cogs", { precision: 10, scale: 4 }),
+    allocatedAt: timestamp("allocated_at").defaultNow(),
+    allocatedBy: int("allocated_by").references(() => users.id),
+  }
+);
 ```
 
 **Step 2: Backend API:**
+
 ```typescript
 // In server/routers/orders.ts
 getAvailableForProduct: protectedProcedure
@@ -226,6 +237,7 @@ allocateBatchesToLineItem: protectedProcedure
 ```
 
 **Step 3: Frontend Component:**
+
 ```typescript
 // client/src/components/order/BatchSelectionDialog.tsx
 export function BatchSelectionDialog({
@@ -306,12 +318,14 @@ export function BatchSelectionDialog({
 #### WSQA-003: Add RETURNED Order Status (2 days)
 
 **Files:**
+
 - `server/db/schema.ts` (coordinate with Team D)
 - `server/services/orderStateMachine.ts`
 - `server/services/returnProcessing.ts`
 - `client/src/components/work-surface/OrdersWorkSurface.tsx`
 
 **Step 1: Schema (request from Team D):**
+
 ```sql
 -- Add new enum values
 ALTER TABLE orders MODIFY COLUMN fulfillment_status
@@ -340,40 +354,47 @@ CREATE TABLE vendor_return_items (
 ```
 
 **Step 2: State Machine:**
+
 ```typescript
 // server/services/orderStateMachine.ts
 const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PICKING', 'CANCELLED'],
-  PICKING: ['PACKED', 'CANCELLED'],
-  PACKED: ['SHIPPED', 'CANCELLED'],
-  SHIPPED: ['DELIVERED', 'RETURNED'],
-  DELIVERED: ['RETURNED'],
-  RETURNED: ['RESTOCKED', 'RETURNED_TO_VENDOR'], // New transitions
+  PENDING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PICKING", "CANCELLED"],
+  PICKING: ["PACKED", "CANCELLED"],
+  PACKED: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
+  RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"], // New transitions
   RESTOCKED: [], // Terminal
   RETURNED_TO_VENDOR: [], // Terminal
   CANCELLED: [], // Terminal
 };
 
-export function canTransitionTo(current: OrderStatus, target: OrderStatus): boolean {
+export function canTransitionTo(
+  current: OrderStatus,
+  target: OrderStatus
+): boolean {
   return ORDER_TRANSITIONS[current]?.includes(target) ?? false;
 }
 
 export async function transitionOrder(
   orderId: number,
   targetStatus: OrderStatus,
-  userId: number,
+  userId: number
 ): Promise<void> {
-  const order = await db.query.orders.findFirst({ where: eq(orders.id, orderId) });
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+  });
 
   if (!canTransitionTo(order.status, targetStatus)) {
     throw new TRPCError({
-      code: 'BAD_REQUEST',
+      code: "BAD_REQUEST",
       message: `Cannot transition from ${order.status} to ${targetStatus}`,
     });
   }
 
-  await db.update(orders)
+  await db
+    .update(orders)
     .set({
       status: targetStatus,
       statusUpdatedAt: new Date(),
@@ -392,10 +413,14 @@ export async function transitionOrder(
 ```
 
 **Step 3: Return Processing:**
+
 ```typescript
 // server/services/returnProcessing.ts
-export async function processRestock(orderId: number, userId: number): Promise<void> {
-  return db.transaction(async (tx) => {
+export async function processRestock(
+  orderId: number,
+  userId: number
+): Promise<void> {
+  return db.transaction(async tx => {
     // Get order with line items and allocations
     const order = await tx.query.orders.findFirst({
       where: eq(orders.id, orderId),
@@ -410,7 +435,8 @@ export async function processRestock(orderId: number, userId: number): Promise<v
     for (const lineItem of order.lineItems) {
       for (const allocation of lineItem.allocations) {
         // Increase batch quantity
-        await tx.update(batches)
+        await tx
+          .update(batches)
           .set({
             onHandQty: sql`on_hand_qty + ${allocation.quantity}`,
           })
@@ -419,9 +445,9 @@ export async function processRestock(orderId: number, userId: number): Promise<v
         // Log inventory movement
         await tx.insert(inventoryMovements).values({
           batchId: allocation.batchId,
-          type: 'RETURN_RESTOCK',
+          type: "RETURN_RESTOCK",
           quantity: allocation.quantity,
-          referenceType: 'order',
+          referenceType: "order",
           referenceId: orderId,
           createdBy: userId,
         });
@@ -429,7 +455,7 @@ export async function processRestock(orderId: number, userId: number): Promise<v
     }
 
     // Update order status
-    await transitionOrder(orderId, 'RESTOCKED', userId);
+    await transitionOrder(orderId, "RESTOCKED", userId);
   });
 }
 
@@ -437,21 +463,21 @@ export async function processVendorReturn(
   orderId: number,
   vendorId: number,
   reason: string,
-  userId: number,
+  userId: number
 ): Promise<number> {
-  // Validate vendor exists (DI-009 fix)
-  const vendor = await db.query.clients.findFirst({
+  // Validate supplier exists (DI-009 fix)
+  const supplier = await db.query.clients.findFirst({
     where: and(eq(clients.id, vendorId), eq(clients.isSeller, true)),
   });
 
-  if (!vendor) {
+  if (!supplier) {
     throw new TRPCError({
-      code: 'NOT_FOUND',
-      message: 'Vendor not found',
+      code: "NOT_FOUND",
+      message: "Supplier not found",
     });
   }
 
-  return db.transaction(async (tx) => {
+  return db.transaction(async tx => {
     const order = await tx.query.orders.findFirst({
       where: eq(orders.id, orderId),
       with: {
@@ -477,14 +503,17 @@ export async function processVendorReturn(
       }
     }
 
-    // Create vendor return record
-    const [vendorReturn] = await tx.insert(vendorReturns).values({
-      orderId,
-      vendorId,
-      reason,
-      totalValue,
-      createdBy: userId,
-    }).returning();
+    // Create supplier return record
+    const [vendorReturn] = await tx
+      .insert(vendorReturns)
+      .values({
+        orderId,
+        vendorId,
+        reason,
+        totalValue,
+        createdBy: userId,
+      })
+      .returning();
 
     // Insert return items
     for (const item of returnItems) {
@@ -495,7 +524,7 @@ export async function processVendorReturn(
     }
 
     // Update order status
-    await transitionOrder(orderId, 'RETURNED_TO_VENDOR', userId);
+    await transitionOrder(orderId, "RETURNED_TO_VENDOR", userId);
 
     return vendorReturn.id;
   });
@@ -503,6 +532,7 @@ export async function processVendorReturn(
 ```
 
 **Step 4: Frontend UI:**
+
 ```typescript
 // In OrdersWorkSurface.tsx, add return actions
 {order.status === 'RETURNED' && (
@@ -511,7 +541,7 @@ export async function processVendorReturn(
       Restock to Inventory
     </Button>
     <Button onClick={() => setReturnToVendorDialog(order)}>
-      Return to Vendor
+      Return to Supplier
     </Button>
   </div>
 )}
@@ -528,6 +558,7 @@ These are Beta milestone tasks but can start after Work Surfaces blockers.
 **Create:** `docs/architecture/TRUTH_MODEL.md`
 
 Document:
+
 1. Inventory truth source: `batches.onHandQty` + `inventoryMovements`
 2. Money truth source: `invoices`, `payments`, `glEntries`
 3. AR/AP truth source: `invoices.amountDue - payments.amount`
@@ -540,9 +571,9 @@ Document:
 **File:** `server/_core/criticalMutation.ts`
 
 ```typescript
-import { db } from '@/server/db';
-import { TRPCError } from '@trpc/server';
-import { logger } from '@/server/_core/logger';
+import { db } from "@/server/db";
+import { TRPCError } from "@trpc/server";
+import { logger } from "@/server/_core/logger";
 
 interface CriticalMutationOptions {
   maxRetries?: number;
@@ -551,7 +582,7 @@ interface CriticalMutationOptions {
 
 export async function criticalMutation<T>(
   fn: () => Promise<T>,
-  options: CriticalMutationOptions = {},
+  options: CriticalMutationOptions = {}
 ): Promise<T> {
   const { maxRetries = 3, idempotencyKey } = options;
 
@@ -561,7 +592,7 @@ export async function criticalMutation<T>(
       where: eq(idempotencyKeys.key, idempotencyKey),
     });
     if (existing) {
-      logger.info({ idempotencyKey }, 'Returning cached result');
+      logger.info({ idempotencyKey }, "Returning cached result");
       return existing.result as T;
     }
   }
@@ -570,7 +601,7 @@ export async function criticalMutation<T>(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async tx => {
         return fn();
       });
 
@@ -586,16 +617,19 @@ export async function criticalMutation<T>(
       return result;
     } catch (error) {
       lastError = error as Error;
-      logger.warn({ attempt, error: lastError.message }, 'Critical mutation failed, retrying');
+      logger.warn(
+        { attempt, error: lastError.message },
+        "Critical mutation failed, retrying"
+      );
 
       if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 100 * Math.pow(2, attempt)));
+        await new Promise(r => setTimeout(r, 100 * Math.pow(2, attempt)));
       }
     }
   }
 
   throw new TRPCError({
-    code: 'INTERNAL_SERVER_ERROR',
+    code: "INTERNAL_SERVER_ERROR",
     message: `Critical mutation failed after ${maxRetries} attempts: ${lastError?.message}`,
   });
 }
@@ -611,16 +645,16 @@ Implement row-level locking for inventory operations:
 // server/_core/inventoryLocking.ts
 export async function withBatchLock<T>(
   batchId: number,
-  fn: (batch: Batch) => Promise<T>,
+  fn: (batch: Batch) => Promise<T>
 ): Promise<T> {
-  return db.transaction(async (tx) => {
+  return db.transaction(async tx => {
     // Lock the batch row for update
     const [batch] = await tx.execute(sql`
       SELECT * FROM batches WHERE id = ${batchId} FOR UPDATE
     `);
 
     if (!batch) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch not found' });
+      throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
     }
 
     return fn(batch as Batch);
@@ -666,13 +700,13 @@ export const PERMISSIONS = {
   // Existing...
 
   // Accounting (40+ missing)
-  'accounting:ar:read': 'View accounts receivable',
-  'accounting:ar:write': 'Manage accounts receivable',
-  'accounting:ap:read': 'View accounts payable',
-  'accounting:ap:write': 'Manage accounts payable',
-  'accounting:gl:read': 'View general ledger',
-  'accounting:gl:write': 'Post to general ledger',
-  'accounting:reports:generate': 'Generate financial reports',
+  "accounting:ar:read": "View accounts receivable",
+  "accounting:ar:write": "Manage accounts receivable",
+  "accounting:ap:read": "View accounts payable",
+  "accounting:ap:write": "Manage accounts payable",
+  "accounting:gl:read": "View general ledger",
+  "accounting:gl:write": "Post to general ledger",
+  "accounting:reports:generate": "Generate financial reports",
   // ... add all from matrix
 };
 ```
@@ -682,6 +716,7 @@ export const PERMISSIONS = {
 #### DEPLOY-005: Execute Stage 0 (Internal QA) (8 hours)
 
 Checklist:
+
 - [ ] Enable feature flags for internal users
 - [ ] Run all gate scripts
 - [ ] Execute Golden Flows GF-001 through GF-008
@@ -732,7 +767,7 @@ gh pr create --base staging/integration-sprint-2026-01-25 \
 ## Work Surfaces QA
 - [x] Payment recording works end-to-end
 - [x] Batch selection dialog functional
-- [x] Return flow with restock/vendor options
+- [x] Return flow with restock/supplier options
 - [x] All Golden Flows pass
 
 ## Reliability
@@ -759,6 +794,7 @@ EOF
 ## Cross-Team Dependencies
 
 **Waiting on:**
+
 - Team A: TypeScript + tests must pass
 - Team B: Navigation routes working
 - Team C: All APIs implemented

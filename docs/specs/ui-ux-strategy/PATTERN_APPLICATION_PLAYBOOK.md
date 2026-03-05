@@ -210,7 +210,7 @@ All spacing follows an 8px base unit:
 // Recommended component hierarchy
 <WorkSurfaceShell>
   <ContextHeader>
-    <ContextHeaderField label="Vendor" value={vendor} />
+    <ContextHeaderField label="Supplier" value={supplier} />
     <ContextHeaderField label="Location" value={location} />
     <ContextHeaderActions>
       <Button>Save Draft</Button>

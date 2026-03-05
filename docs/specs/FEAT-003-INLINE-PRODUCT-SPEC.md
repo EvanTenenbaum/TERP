@@ -47,7 +47,7 @@ Currently, when a user is creating a Purchase Order and encounters a new product
 | ----- | ----------------------------------------------------------- | --------------------------------------------------- |
 | BR-01 | SKU format: {BRAND_CODE}-{STRAIN/PRODUCT}-{CATEGORY}-{SEQ}  | ABC-BLUEDREAM-FLW-001                               |
 | BR-02 | Brand code derived from first 3 chars of brand name         | "Blue River" → "BLU"                                |
-| BR-03 | If brand doesn't exist, create and link to vendor           | New brand "Blue River" → brandId linked to vendorId |
+| BR-03 | If brand doesn't exist, create and link to supplier         | New brand "Blue River" → brandId linked to vendorId |
 | BR-04 | Strain must be validated against strain library if provided | Unknown strain creates new entry                    |
 | BR-05 | Initial batch created in AWAITING_INTAKE status             | Can be moved to LIVE after QC                       |
 

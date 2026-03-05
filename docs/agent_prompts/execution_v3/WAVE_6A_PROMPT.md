@@ -42,10 +42,12 @@ Complete the VIP Portal - a client-facing portal where clients can browse the li
 export const vipAuthRouter = router({
   // Client login
   login: publicProcedure
-    .input(z.object({
-      email: z.string().email(),
-      password: z.string(),
-    }))
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string(),
+      })
+    )
     .mutation(async ({ input }) => {
       const client = await db.query.clients.findFirst({
         where: eq(clients.email, input.email),
@@ -53,16 +55,19 @@ export const vipAuthRouter = router({
 
       if (!client || !client.portalEnabled) {
         throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Invalid credentials or portal access not enabled',
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials or portal access not enabled",
         });
       }
 
-      const validPassword = await verifyPassword(input.password, client.portalPasswordHash);
+      const validPassword = await verifyPassword(
+        input.password,
+        client.portalPasswordHash
+      );
       if (!validPassword) {
         throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Invalid credentials',
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
         });
       }
 
@@ -80,16 +85,15 @@ export const vipAuthRouter = router({
     }),
 
   // Get current client
-  me: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      return {
-        id: ctx.client.id,
-        name: ctx.client.name,
-        email: ctx.client.email,
-        creditLimit: ctx.client.creditLimit,
-        arBalance: await calculateARBalance(ctx.client.id),
-      };
-    }),
+  me: vipProtectedProcedure.query(async ({ ctx }) => {
+    return {
+      id: ctx.client.id,
+      name: ctx.client.name,
+      email: ctx.client.email,
+      creditLimit: ctx.client.creditLimit,
+      arBalance: await calculateARBalance(ctx.client.id),
+    };
+  }),
 
   // Request password reset
   requestPasswordReset: publicProcedure
@@ -115,39 +119,41 @@ export const vipAuthRouter = router({
 ```typescript
 // server/_core/vipTrpc.ts
 
-export const vipProtectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
-  const token = ctx.req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!token) {
-    throw new TRPCError({
-      code: 'UNAUTHORIZED',
-      message: 'Please log in to access the VIP portal',
+export const vipProtectedProcedure = publicProcedure.use(
+  async ({ ctx, next }) => {
+    const token = ctx.req.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Please log in to access the VIP portal",
+      });
+    }
+
+    const session = await db.query.clientSessions.findFirst({
+      where: and(
+        eq(clientSessions.token, token),
+        gt(clientSessions.expiresAt, new Date())
+      ),
+      with: { client: true },
+    });
+
+    if (!session) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Session expired. Please log in again.",
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        client: session.client,
+        clientSession: session,
+      },
     });
   }
-
-  const session = await db.query.clientSessions.findFirst({
-    where: and(
-      eq(clientSessions.token, token),
-      gt(clientSessions.expiresAt, new Date())
-    ),
-    with: { client: true },
-  });
-
-  if (!session) {
-    throw new TRPCError({
-      code: 'UNAUTHORIZED',
-      message: 'Session expired. Please log in again.',
-    });
-  }
-
-  return next({
-    ctx: {
-      ...ctx,
-      client: session.client,
-      clientSession: session,
-    },
-  });
-});
+);
 ```
 
 ### Frontend: VIP Login Page
@@ -233,12 +239,14 @@ export function VIPLoginPage() {
 export const vipCatalogRouter = router({
   // Get catalog items with client-specific pricing
   getCatalog: vipProtectedProcedure
-    .input(z.object({
-      category: z.string().optional(),
-      search: z.string().optional(),
-      page: z.number().default(1),
-      limit: z.number().default(20),
-    }))
+    .input(
+      z.object({
+        category: z.string().optional(),
+        search: z.string().optional(),
+        page: z.number().default(1),
+        limit: z.number().default(20),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const clientPricing = await getClientPricingRules(ctx.client.id);
 
@@ -246,10 +254,12 @@ export const vipCatalogRouter = router({
         where: and(
           eq(catalogItems.isActive, true),
           input.category ? eq(products.category, input.category) : undefined,
-          input.search ? or(
-            ilike(products.name, `%${input.search}%`),
-            ilike(products.strain, `%${input.search}%`)
-          ) : undefined
+          input.search
+            ? or(
+                ilike(products.name, `%${input.search}%`),
+                ilike(products.strain, `%${input.search}%`)
+              )
+            : undefined
         ),
         with: {
           batch: {
@@ -285,7 +295,7 @@ export const vipCatalogRouter = router({
             with: {
               photos: true,
               product: true,
-              vendor: true,
+              supplier: true,
               labResults: true,
             },
           },
@@ -293,7 +303,7 @@ export const vipCatalogRouter = router({
       });
 
       if (!item) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Item not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
       }
 
       const clientPricing = await getClientPricingRules(ctx.client.id);
@@ -307,16 +317,16 @@ export const vipCatalogRouter = router({
     }),
 
   // Get categories
-  getCategories: vipProtectedProcedure
-    .query(async () => {
-      const categories = await db.selectDistinct({ category: products.category })
-        .from(products)
-        .innerJoin(batches, eq(products.id, batches.productId))
-        .innerJoin(catalogItems, eq(batches.id, catalogItems.batchId))
-        .where(eq(catalogItems.isActive, true));
+  getCategories: vipProtectedProcedure.query(async () => {
+    const categories = await db
+      .selectDistinct({ category: products.category })
+      .from(products)
+      .innerJoin(batches, eq(products.id, batches.productId))
+      .innerJoin(catalogItems, eq(batches.id, catalogItems.batchId))
+      .where(eq(catalogItems.isActive, true));
 
-      return categories.map(c => c.category).filter(Boolean);
-    }),
+    return categories.map(c => c.category).filter(Boolean);
+  }),
 });
 ```
 
@@ -405,8 +415,8 @@ function CatalogItemCard({ item }: { item: CatalogItem }) {
             {item.availableQuantity} available
           </span>
         </div>
-        <Button 
-          className="w-full mt-4" 
+        <Button
+          className="w-full mt-4"
           onClick={() => addToCart(item)}
           disabled={item.availableQuantity === 0}
         >
@@ -429,50 +439,53 @@ function CatalogItemCard({ item }: { item: CatalogItem }) {
 
 export const vipOrdersRouter = router({
   // Get cart
-  getCart: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      const cart = await db.query.vipCarts.findFirst({
-        where: eq(vipCarts.clientId, ctx.client.id),
-        with: {
-          items: {
-            with: {
-              batch: {
-                with: { product: true, photos: { limit: 1 } },
-              },
+  getCart: vipProtectedProcedure.query(async ({ ctx }) => {
+    const cart = await db.query.vipCarts.findFirst({
+      where: eq(vipCarts.clientId, ctx.client.id),
+      with: {
+        items: {
+          with: {
+            batch: {
+              with: { product: true, photos: { limit: 1 } },
             },
           },
         },
-      });
+      },
+    });
 
-      if (!cart) return { items: [], total: 0 };
+    if (!cart) return { items: [], total: 0 };
 
-      const clientPricing = await getClientPricingRules(ctx.client.id);
-      const itemsWithPricing = cart.items.map(item => ({
-        ...item,
-        unitPrice: calculateClientPrice(item.batch, clientPricing, item.quantity),
-        lineTotal: calculateClientPrice(item.batch, clientPricing, item.quantity) * item.quantity,
-      }));
+    const clientPricing = await getClientPricingRules(ctx.client.id);
+    const itemsWithPricing = cart.items.map(item => ({
+      ...item,
+      unitPrice: calculateClientPrice(item.batch, clientPricing, item.quantity),
+      lineTotal:
+        calculateClientPrice(item.batch, clientPricing, item.quantity) *
+        item.quantity,
+    }));
 
-      return {
-        items: itemsWithPricing,
-        total: itemsWithPricing.reduce((sum, item) => sum + item.lineTotal, 0),
-      };
-    }),
+    return {
+      items: itemsWithPricing,
+      total: itemsWithPricing.reduce((sum, item) => sum + item.lineTotal, 0),
+    };
+  }),
 
   // Add to cart
   addToCart: vipProtectedProcedure
-    .input(z.object({
-      batchId: z.number(),
-      quantity: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        batchId: z.number(),
+        quantity: z.number().positive(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       // Verify availability
       const batch = await getBatch(input.batchId);
       const available = batch.quantity - batch.reservedQuantity;
-      
+
       if (input.quantity > available) {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
+          code: "BAD_REQUEST",
           message: `Only ${available} units available`,
         });
       }
@@ -483,7 +496,8 @@ export const vipOrdersRouter = router({
       });
 
       if (!cart) {
-        [cart] = await db.insert(vipCarts)
+        [cart] = await db
+          .insert(vipCarts)
           .values({ clientId: ctx.client.id })
           .returning();
       }
@@ -497,7 +511,8 @@ export const vipOrdersRouter = router({
       });
 
       if (existingItem) {
-        await db.update(vipCartItems)
+        await db
+          .update(vipCartItems)
           .set({ quantity: existingItem.quantity + input.quantity })
           .where(eq(vipCartItems.id, existingItem.id));
       } else {
@@ -513,51 +528,64 @@ export const vipOrdersRouter = router({
 
   // Submit order
   submitOrder: vipProtectedProcedure
-    .input(z.object({
-      notes: z.string().optional(),
-      requestedDeliveryDate: z.date().optional(),
-    }))
+    .input(
+      z.object({
+        notes: z.string().optional(),
+        requestedDeliveryDate: z.date().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const cart = await getCartWithItems(ctx.client.id);
-      
+
       if (!cart?.items.length) {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Cart is empty',
+          code: "BAD_REQUEST",
+          message: "Cart is empty",
         });
       }
 
       // Credit check
       const clientPricing = await getClientPricingRules(ctx.client.id);
       const orderTotal = cart.items.reduce((sum, item) => {
-        const price = calculateClientPrice(item.batch, clientPricing, item.quantity);
-        return sum + (price * item.quantity);
+        const price = calculateClientPrice(
+          item.batch,
+          clientPricing,
+          item.quantity
+        );
+        return sum + price * item.quantity;
       }, 0);
 
       const creditCheck = await checkClientCredit(ctx.client.id, orderTotal);
       if (!creditCheck.canProceed) {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: creditCheck.creditHold 
-            ? 'Your account is on credit hold. Please contact us.'
+          code: "BAD_REQUEST",
+          message: creditCheck.creditHold
+            ? "Your account is on credit hold. Please contact us."
             : `Order exceeds available credit by ${formatCurrency(creditCheck.shortfall)}`,
         });
       }
 
       // Create order
-      const order = await db.transaction(async (tx) => {
-        const [order] = await tx.insert(orders).values({
-          clientId: ctx.client.id,
-          status: 'pending',
-          source: 'vip_portal',
-          notes: input.notes,
-          requestedDeliveryDate: input.requestedDeliveryDate,
-        }).returning();
+      const order = await db.transaction(async tx => {
+        const [order] = await tx
+          .insert(orders)
+          .values({
+            clientId: ctx.client.id,
+            status: "pending",
+            source: "vip_portal",
+            notes: input.notes,
+            requestedDeliveryDate: input.requestedDeliveryDate,
+          })
+          .returning();
 
         // Create order items and reserve inventory
         for (const item of cart.items) {
-          const price = calculateClientPrice(item.batch, clientPricing, item.quantity);
-          
+          const price = calculateClientPrice(
+            item.batch,
+            clientPricing,
+            item.quantity
+          );
+
           await tx.insert(orderItems).values({
             orderId: order.id,
             batchId: item.batchId,
@@ -567,8 +595,11 @@ export const vipOrdersRouter = router({
           });
 
           // Reserve inventory
-          await tx.update(batches)
-            .set({ reservedQuantity: sql`${batches.reservedQuantity} + ${item.quantity}` })
+          await tx
+            .update(batches)
+            .set({
+              reservedQuantity: sql`${batches.reservedQuantity} + ${item.quantity}`,
+            })
             .where(eq(batches.id, item.batchId));
         }
 
@@ -582,17 +613,19 @@ export const vipOrdersRouter = router({
       await sendOrderConfirmationEmail(ctx.client, order);
 
       // Notify sales team
-      await notifySalesTeam('new_vip_order', { order, client: ctx.client });
+      await notifySalesTeam("new_vip_order", { order, client: ctx.client });
 
       return { orderId: order.id };
     }),
 
   // Get order history
   getOrders: vipProtectedProcedure
-    .input(z.object({
-      page: z.number().default(1),
-      limit: z.number().default(20),
-    }))
+    .input(
+      z.object({
+        page: z.number().default(1),
+        limit: z.number().default(20),
+      })
+    )
     .query(async ({ ctx, input }) => {
       return db.query.orders.findMany({
         where: eq(orders.clientId, ctx.client.id),
@@ -653,7 +686,7 @@ export function VIPCartPage() {
       <div className="grid grid-cols-3 gap-8">
         <div className="col-span-2 space-y-4">
           <h1 className="text-2xl font-bold">Shopping Cart</h1>
-          
+
           {cart.items.map(item => (
             <Card key={item.id}>
               <CardContent className="flex gap-4 p-4">
@@ -748,9 +781,9 @@ export function VIPCartPage() {
 // server/routers/vipAccount.ts
 
 export const vipAccountRouter = router({
-  getAccountSummary: vipProtectedProcedure
-    .query(async ({ ctx }) => {
-      const [arBalance, creditInfo, recentInvoices, recentPayments] = await Promise.all([
+  getAccountSummary: vipProtectedProcedure.query(async ({ ctx }) => {
+    const [arBalance, creditInfo, recentInvoices, recentPayments] =
+      await Promise.all([
         calculateARBalance(ctx.client.id),
         getClientCredit(ctx.client.id),
         db.query.invoices.findMany({
@@ -765,31 +798,33 @@ export const vipAccountRouter = router({
         }),
       ]);
 
-      return {
-        arBalance,
-        creditLimit: creditInfo.creditLimit,
-        availableCredit: creditInfo.availableCredit,
-        creditHold: creditInfo.creditHold,
-        recentInvoices,
-        recentPayments,
-      };
-    }),
+    return {
+      arBalance,
+      creditLimit: creditInfo.creditLimit,
+      availableCredit: creditInfo.availableCredit,
+      creditHold: creditInfo.creditHold,
+      recentInvoices,
+      recentPayments,
+    };
+  }),
 
   getInvoices: vipProtectedProcedure
-    .input(z.object({
-      status: z.enum(['all', 'pending', 'paid', 'overdue']).default('all'),
-      page: z.number().default(1),
-    }))
+    .input(
+      z.object({
+        status: z.enum(["all", "pending", "paid", "overdue"]).default("all"),
+        page: z.number().default(1),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const where = [eq(invoices.clientId, ctx.client.id)];
-      
-      if (input.status === 'pending') {
-        where.push(eq(invoices.status, 'pending'));
-      } else if (input.status === 'paid') {
-        where.push(eq(invoices.status, 'paid'));
-      } else if (input.status === 'overdue') {
+
+      if (input.status === "pending") {
+        where.push(eq(invoices.status, "pending"));
+      } else if (input.status === "paid") {
+        where.push(eq(invoices.status, "paid"));
+      } else if (input.status === "overdue") {
         where.push(
-          eq(invoices.status, 'pending'),
+          eq(invoices.status, "pending"),
           lt(invoices.dueDate, new Date())
         );
       }
@@ -804,30 +839,44 @@ export const vipAccountRouter = router({
     }),
 
   getStatements: vipProtectedProcedure
-    .input(z.object({
-      startDate: z.date(),
-      endDate: z.date(),
-    }))
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       // Get all transactions in date range
-      const transactions = await db.select({
-        date: sql<Date>`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`,
-        type: sql<string>`CASE WHEN ${invoices.id} IS NOT NULL THEN 'invoice' ELSE 'payment' END`,
-        reference: sql<string>`COALESCE(${invoices.invoiceNumber}, ${payments.reference})`,
-        debit: sql<number>`COALESCE(${invoices.total}, 0)`,
-        credit: sql<number>`COALESCE(${payments.amount}, 0)`,
-      })
-      .from(invoices)
-      .fullJoin(payments, sql`false`) // Union-like behavior
-      .where(and(
-        eq(invoices.clientId, ctx.client.id),
-        gte(sql`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`, input.startDate),
-        lte(sql`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`, input.endDate)
-      ))
-      .orderBy(sql`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`);
+      const transactions = await db
+        .select({
+          date: sql<Date>`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`,
+          type: sql<string>`CASE WHEN ${invoices.id} IS NOT NULL THEN 'invoice' ELSE 'payment' END`,
+          reference: sql<string>`COALESCE(${invoices.invoiceNumber}, ${payments.reference})`,
+          debit: sql<number>`COALESCE(${invoices.total}, 0)`,
+          credit: sql<number>`COALESCE(${payments.amount}, 0)`,
+        })
+        .from(invoices)
+        .fullJoin(payments, sql`false`) // Union-like behavior
+        .where(
+          and(
+            eq(invoices.clientId, ctx.client.id),
+            gte(
+              sql`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`,
+              input.startDate
+            ),
+            lte(
+              sql`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`,
+              input.endDate
+            )
+          )
+        )
+        .orderBy(sql`COALESCE(${invoices.createdAt}, ${payments.receivedAt})`);
 
       // Calculate running balance
-      let balance = await calculateARBalanceAsOf(ctx.client.id, input.startDate);
+      let balance = await calculateARBalanceAsOf(
+        ctx.client.id,
+        input.startDate
+      );
       const statement = transactions.map(t => {
         balance = balance + t.debit - t.credit;
         return { ...t, balance };

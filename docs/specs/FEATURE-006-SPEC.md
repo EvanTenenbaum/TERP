@@ -52,7 +52,7 @@ Currently, this is done via phone/text, which is inefficient and error-prone.
 -- VIP bookings
 CREATE TABLE vip_bookings (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  vendor_id INT NOT NULL REFERENCES vendors(id),
+  vendor_id INT NOT NULL REFERENCES suppliers(id),
   booking_date DATE NOT NULL,
   booking_time_slot VARCHAR(50), -- e.g., "Morning", "Afternoon"
   status ENUM('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
@@ -73,7 +73,7 @@ CREATE TABLE vip_bookings (
 -- VIP portal access
 CREATE TABLE vip_users (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  vendor_id INT NOT NULL REFERENCES vendors(id),
+  vendor_id INT NOT NULL REFERENCES suppliers(id),
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,

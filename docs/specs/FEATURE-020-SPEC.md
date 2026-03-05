@@ -6,13 +6,14 @@
 **Module:** Core/Tags  
 **Dependencies:** None  
 **Spec Author:** Manus AI  
-**Spec Date:** 2025-12-30  
+**Spec Date:** 2025-12-30
 
 ---
 
 ## 1. Problem Statement
 
 The current tagging system is inconsistent and underutilized. A revamped, unified tagging system would enable:
+
 - Flexible categorization across all entities
 - Better filtering and search
 - Custom workflows based on tags
@@ -27,15 +28,15 @@ The current tagging system is inconsistent and underutilized. A revamped, unifie
 
 ## 3. Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Add/remove tags on any entity | Must Have |
-| FR-02 | Tag management (create, edit, delete) | Must Have |
-| FR-03 | Tag colors/icons | Should Have |
-| FR-04 | Tag categories/groups | Should Have |
-| FR-05 | Filter by tags | Must Have |
-| FR-06 | Tag suggestions (autocomplete) | Should Have |
-| FR-07 | Bulk tagging | Nice to Have |
+| ID    | Requirement                           | Priority     |
+| ----- | ------------------------------------- | ------------ |
+| FR-01 | Add/remove tags on any entity         | Must Have    |
+| FR-02 | Tag management (create, edit, delete) | Must Have    |
+| FR-03 | Tag colors/icons                      | Should Have  |
+| FR-04 | Tag categories/groups                 | Should Have  |
+| FR-05 | Filter by tags                        | Must Have    |
+| FR-06 | Tag suggestions (autocomplete)        | Should Have  |
+| FR-07 | Bulk tagging                          | Nice to Have |
 
 ## 4. Technical Specification
 
@@ -60,7 +61,7 @@ CREATE TABLE tags (
 CREATE TABLE tag_assignments (
   id INT PRIMARY KEY AUTO_INCREMENT,
   tag_id INT NOT NULL REFERENCES tags(id),
-  entity_type VARCHAR(50) NOT NULL, -- 'product', 'batch', 'order', 'customer', 'vendor'
+  entity_type VARCHAR(50) NOT NULL, -- 'product', 'batch', 'order', 'customer', 'supplier'
   entity_id INT NOT NULL,
   created_by INT REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -74,60 +75,81 @@ CREATE TABLE tag_assignments (
 ```typescript
 // Tag CRUD
 tags.create = adminProcedure
-  .input(z.object({
-    name: z.string().min(1).max(50),
-    color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
-    category: z.string().optional(),
-    description: z.string().optional()
-  }))
+  .input(
+    z.object({
+      name: z.string().min(1).max(50),
+      color: z
+        .string()
+        .regex(/^#[0-9A-F]{6}$/i)
+        .optional(),
+      category: z.string().optional(),
+      description: z.string().optional(),
+    })
+  )
   .output(z.object({ tagId: z.number(), slug: z.string() }))
   .mutation(async ({ input }) => {});
 
 tags.list = adminProcedure
-  .input(z.object({
-    category: z.string().optional(),
-    search: z.string().optional()
-  }))
-  .output(z.array(z.object({
-    id: z.number(),
-    name: z.string(),
-    slug: z.string(),
-    color: z.string(),
-    category: z.string().nullable(),
-    usageCount: z.number()
-  })))
+  .input(
+    z.object({
+      category: z.string().optional(),
+      search: z.string().optional(),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        slug: z.string(),
+        color: z.string(),
+        category: z.string().nullable(),
+        usageCount: z.number(),
+      })
+    )
+  )
   .query(async ({ input }) => {});
 
 // Assign/remove tags
 tags.assign = adminProcedure
-  .input(z.object({
-    tagId: z.number(),
-    entityType: z.enum(['product', 'batch', 'order', 'customer', 'vendor']),
-    entityId: z.number()
-  }))
+  .input(
+    z.object({
+      tagId: z.number(),
+      entityType: z.enum(["product", "batch", "order", "customer", "supplier"]),
+      entityId: z.number(),
+    })
+  )
   .output(z.object({ success: z.boolean() }))
   .mutation(async ({ input, ctx }) => {});
 
 tags.remove = adminProcedure
-  .input(z.object({
-    tagId: z.number(),
-    entityType: z.string(),
-    entityId: z.number()
-  }))
+  .input(
+    z.object({
+      tagId: z.number(),
+      entityType: z.string(),
+      entityId: z.number(),
+    })
+  )
   .output(z.object({ success: z.boolean() }))
   .mutation(async ({ input }) => {});
 
 // Get tags for entity
 tags.getForEntity = adminProcedure
-  .input(z.object({
-    entityType: z.string(),
-    entityId: z.number()
-  }))
-  .output(z.array(z.object({
-    id: z.number(),
-    name: z.string(),
-    color: z.string()
-  })))
+  .input(
+    z.object({
+      entityType: z.string(),
+      entityId: z.number(),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        color: z.string(),
+      })
+    )
+  )
   .query(async ({ input }) => {});
 ```
 
@@ -169,6 +191,7 @@ tags.getForEntity = adminProcedure
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

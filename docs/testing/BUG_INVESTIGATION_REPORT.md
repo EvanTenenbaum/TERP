@@ -20,14 +20,17 @@
 ### Investigation Findings
 
 #### 1. Router Configuration ✅ VERIFIED
+
 The route is properly configured in the application:
 
 **File:** `client/src/App.tsx` (Line 117)
+
 ```tsx
 <Route path="/purchase-orders" component={PurchaseOrdersPage} />
 ```
 
 **File:** `client/src/components/DashboardLayout.tsx` (Lines 60)
+
 ```tsx
 { icon: FileText, label: "Purchase Orders", path: "/purchase-orders" }
 ```
@@ -41,10 +44,11 @@ The route is properly configured in the application:
 **File:** `client/src/pages/PurchaseOrdersPage.tsx`
 
 The component structure appears sound:
+
 - Imports are correct
 - tRPC queries properly defined:
   - `trpc.purchaseOrders.getAll.useQuery()` (Line 44)
-  - `trpc.vendors.getAll.useQuery()` (Line 45)
+  - `trpc.suppliers.getAll.useQuery()` (Line 45)
   - `trpc.inventory.getAll.useQuery()` (Line 46)
 - Mutations properly defined
 - Error handling implemented with toast notifications
@@ -59,6 +63,7 @@ The component structure appears sound:
 **File:** `server/routers/purchaseOrders.ts`
 
 The backend router is properly implemented:
+
 - Exported as `purchaseOrdersRouter`
 - Registered in `server/routers.ts` (Line 106)
 - `getAll` procedure properly defined (Lines 68-97)
@@ -74,39 +79,49 @@ The backend router is properly implemented:
 Based on the investigation, the most likely causes are:
 
 ##### Hypothesis 1: Database Schema Issue (MOST LIKELY)
+
 The crash may be caused by a database schema mismatch or missing table:
+
 - The `purchaseOrders` table may not exist in the database
 - The table schema may not match the Drizzle schema definition
 - Database migration may not have been run
 
 **Evidence:**
+
 - The error occurs immediately on page load when `getAll` query executes
 - Other pages that don't query purchase orders work fine
-- Similar pattern seen with vendors (0 records) and locations (0 records)
+- Similar pattern seen with suppliers (0 records) and locations (0 records)
 
 **Next Steps:**
+
 1. Check if `purchaseOrders` table exists in database
 2. Verify table schema matches Drizzle schema
 3. Check if database migrations have been run
 4. Review database seed data
 
 ##### Hypothesis 2: Database Connection Issue
+
 The database connection may be failing specifically for this query:
+
 - Database may be timing out
 - Connection pool may be exhausted
 - Query may be malformed for the specific database engine
 
 **Evidence:**
+
 - Error ID suggests unhandled exception
 - Other queries work, suggesting partial database connectivity
 
 ##### Hypothesis 3: Data Type Mismatch
+
 There may be a data type mismatch in the query or response:
+
 - The `total` field is stored as string but may be expected as number
 - Date fields may have format issues
 - Enum values may not match
 
 **Evidence:**
+
 - Line 291 in PurchaseOrdersPage.tsx: `${parseFloat(po.total).toFixed(2)}`
 - This suggests `total` is expected to be parseable as float
 
@@ -117,15 +132,17 @@ There may be a data type mismatch in the query or response:
 #### Immediate Actions (Priority Order)
 
 1. **Verify Database Schema**
+
    ```bash
    # Check if table exists
    mysql> SHOW TABLES LIKE 'purchaseOrders';
-   
+
    # Check table structure
    mysql> DESCRIBE purchaseOrders;
    ```
 
 2. **Run Database Migrations**
+
    ```bash
    cd /home/ubuntu/TERP
    pnpm db:push
@@ -138,9 +155,14 @@ There may be a data type mismatch in the query or response:
 
 4. **Add Detailed Logging**
    Add console.log to identify exact failure point:
+
    ```tsx
-   const { data: pos = [], refetch, error } = trpc.purchaseOrders.getAll.useQuery();
-   
+   const {
+     data: pos = [],
+     refetch,
+     error,
+   } = trpc.purchaseOrders.getAll.useQuery();
+
    useEffect(() => {
      if (error) {
        console.error("Purchase Orders Query Error:", error);
@@ -166,14 +188,14 @@ Once fix is implemented:
    - Update purchase order
    - Delete purchase order
 5. **Test error handling:** Verify graceful error display
-6. **Test with multiple vendors:** Verify vendor dropdown works
+6. **Test with multiple suppliers:** Verify supplier dropdown works
 7. **Test search and filter:** Verify search and status filter work
 
 ---
 
 ### Related Issues
 
-- **Vendors:** 0 vendors in database (may cause issues with PO creation)
+- **Suppliers:** 0 suppliers in database (may cause issues with PO creation)
 - **Locations:** 0 locations in database
 - **Pattern:** Multiple features have missing seed data
 
@@ -242,7 +264,6 @@ Searching for create-order route...
 **Document Version:** 1.0  
 **Last Updated:** November 22, 2025
 
-
 ---
 
 ## BUG-009 Investigation Update
@@ -254,6 +275,7 @@ Searching for create-order route...
 **Evidence:**
 
 1. **Sidebar Configuration** (`client/src/components/DashboardLayout.tsx`, Line 53):
+
    ```tsx
    { icon: Package, label: "Create Order", path: "/create-order" }
    ```
@@ -272,11 +294,13 @@ Searching for create-order route...
 **File:** `client/src/components/DashboardLayout.tsx`  
 **Line:** 53  
 **Current:**
+
 ```tsx
 { icon: Package, label: "Create Order", path: "/create-order" }
 ```
 
 **Should Be:**
+
 ```tsx
 { icon: Package, label: "Create Order", path: "/orders/create" }
 ```
@@ -286,11 +310,13 @@ Searching for create-order route...
 ### Impact Analysis
 
 **Current Impact:**
+
 - Users clicking "Create Order" in sidebar get 404 error
 - Order creation is still accessible via `/orders/create` direct URL
 - No data loss or system instability
 
 **After Fix:**
+
 - Users can click "Create Order" in sidebar successfully
 - Consistent navigation experience
 - No breaking changes to existing functionality
@@ -316,6 +342,7 @@ Once fix is implemented:
 **Estimated Fix Time:** 5 minutes
 
 **Implementation:**
+
 ```bash
 # Edit the file
 cd /home/ubuntu/TERP
@@ -325,6 +352,7 @@ cd /home/ubuntu/TERP
 ```
 
 **Commit Message:**
+
 ```
 Fix BUG-009: Correct Create Order sidebar link
 

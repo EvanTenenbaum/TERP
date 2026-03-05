@@ -6,7 +6,7 @@ Copy and paste the appropriate prompt to launch each Claude agent.
 
 ## Team A: Core Stability
 
-```
+````
 You are Sprint Team A for the TERP parallel sprint execution.
 
 ## MANDATORY: Read These Files First (In Order)
@@ -43,7 +43,7 @@ Fix critical stability issues: TypeScript errors, failing tests, security issues
 
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
-```
+````
 
 ## Definition of Done
 
@@ -56,6 +56,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 2. Create session file in `/docs/sessions/active/`
 3. Create your branch and start with P0 tasks
 4. Work through tasks in priority order
+
 ```
 
 ---
@@ -63,6 +64,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 ## Team B: Frontend UX
 
 ```
+
 You are Sprint Team B for the TERP parallel sprint execution.
 
 ## MANDATORY: Read These Files First (In Order)
@@ -112,6 +114,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 2. Create session file in `/docs/sessions/active/`
 3. Create your branch and start with navigation tasks (quick wins)
 4. Work through tasks in priority order
+
 ```
 
 ---
@@ -119,6 +122,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 ## Team C: Backend API
 
 ```
+
 You are Sprint Team C for the TERP parallel sprint execution.
 
 ## MANDATORY: Read These Files First (In Order)
@@ -169,6 +173,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 2. Create session file in `/docs/sessions/active/`
 3. Create your branch and start with P1 API tasks
 4. Work through tasks in priority order
+
 ```
 
 ---
@@ -176,6 +181,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 ## Team D: Data & Schema
 
 ```
+
 You are Sprint Team D for the TERP parallel sprint execution.
 
 ## MANDATORY: Read These Files First (In Order)
@@ -230,6 +236,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 2. Create session file in `/docs/sessions/active/`
 3. Create your branch and START WITH SEC-023 (credential rotation)
 4. Then work through seeding tasks in priority order
+
 ```
 
 ---
@@ -237,6 +244,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 ## Team E: Integration & Work Surfaces
 
 ```
+
 You are Sprint Team E for the TERP parallel sprint execution.
 
 ## MANDATORY: Read These Files First (In Order)
@@ -253,6 +261,7 @@ Work Surfaces QA blockers, Reliability Program, final integration.
 ## IMPORTANT: You Start AFTER Teams A-D Complete P0 Tasks
 
 Before starting, verify:
+
 - `pnpm check` passes (Team A must fix TypeScript)
 - `pnpm test` passes >95% (Team A must fix tests)
 - Feature flags seeded (Team D must complete DATA-012)
@@ -293,6 +302,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 2. Verify Teams A-D P0 tasks are complete
 3. Create session file in `/docs/sessions/active/`
 4. Create your branch and start with WSQA-001 (payment recording)
+
 ```
 
 ---
@@ -300,6 +310,7 @@ All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
 ## Integration Coordinator
 
 ```
+
 You are the Integration Coordinator for the TERP parallel sprint execution.
 
 ## MANDATORY: Read These Files First (In Order)
@@ -315,11 +326,13 @@ Merge all team PRs to staging, run integration tests, create release PR to main.
 ## IMPORTANT: You Run AFTER All 5 Teams Have Created PRs
 
 Before starting, verify all 5 PRs exist:
+
 ```bash
 gh pr list --base staging/integration-sprint-2026-01
 ```
 
 Expected PRs:
+
 - Team A: Core Stability Fixes
 - Team B: Frontend UX & Navigation
 - Team C: Backend & API Implementations
@@ -356,7 +369,8 @@ pnpm test:e2e
 2. Verify all 5 team PRs exist
 3. Begin merging in order: D → A → C → B → E
 4. Create release PR when all tests pass
-```
+
+````
 
 ---
 
@@ -371,7 +385,7 @@ pnpm check        # TypeScript - 0 errors
 pnpm lint         # ESLint - 0 errors
 pnpm test         # Tests - must pass
 pnpm build        # Build - must succeed
-```
+````
 
 ### Prohibited Behaviors
 
@@ -389,7 +403,7 @@ pnpm build        # Build - must succeed
 clients table = Single source of truth
 - isSeller = true → supplier
 - isBuyer = true → customer
-- NEVER use deprecated `vendors` table
+- NEVER use deprecated `suppliers` table
 ```
 
 ### PR Target

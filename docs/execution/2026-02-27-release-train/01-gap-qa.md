@@ -42,7 +42,7 @@ Scope: Validate seed gaps, correct stale anchors, and add high-impact missing ga
 
 - Severity: **High**
 - User impact: "Location" filtering can return false positives/negatives and does not align with physical location fields.
-- Blast radius: Inventory operations, receiving, pick/pack readiness.
+- Blast radius: Inventory operations, intake, pick/pack readiness.
 - Acceptance criteria:
   - Location filter uses semantic fields (site/zone/rack/shelf/bin) from persisted location model.
   - UI data model includes location representation from API.

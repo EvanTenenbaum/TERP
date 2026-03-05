@@ -15,7 +15,7 @@ This roadmap prioritizes **end-to-end workflow completeness** over individual fe
 
 ```
 LIFECYCLE 1: INVENTORY INTAKE
-Vendor → Purchase Order → Receive Goods → Create Batch → Assign Location → Photography → Publish
+Supplier → Purchase Order → Receive Goods → Create Batch → Assign Location → Photography → Publish
 
 LIFECYCLE 2: SALES CYCLE
 Client → Browse Catalog → Create Quote → Convert to Order → Pick & Pack → Ship → Invoice → Payment

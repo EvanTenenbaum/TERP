@@ -272,12 +272,12 @@ originalUserId: int("original_user_id").references(() => users.id), // For escal
 | `PICK_PACK`        | Pick & Pack        | Order fulfillment and packaging             | orders     | Package        |
 | `SCHEDULING`       | Scheduling         | Appointment and calendar management         | calendar   | Calendar       |
 | `MATCHMAKING`      | Matchmaking        | Client-product matching and recommendations | sales      | Users          |
-| `INTAKE`           | Product Intake     | Receiving and processing new inventory      | inventory  | PackagePlus    |
+| `INTAKE`           | Product Intake     | Intake and processing new inventory         | inventory  | PackagePlus    |
 | `QUALITY_CONTROL`  | Quality Control    | Product quality inspection                  | inventory  | CheckCircle    |
 | `SHIPPING`         | Shipping           | Order shipping and logistics                | orders     | Truck          |
 | `RETURNS`          | Returns Processing | Handling returns and refunds                | orders     | RotateCcw      |
 | `CLIENT_SUPPORT`   | Client Support     | Client inquiries and support                | clients    | HeadphonesIcon |
-| `VENDOR_RELATIONS` | Supplier Relations | Supplier communication and management       | vendors    | Building       |
+| `VENDOR_RELATIONS` | Supplier Relations | Supplier communication and management       | suppliers  | Building       |
 | `ACCOUNTING`       | Accounting         | Financial tasks and reconciliation          | accounting | Calculator     |
 | `COMPLIANCE`       | Compliance         | Regulatory compliance tasks                 | admin      | Shield         |
 
@@ -378,7 +378,7 @@ const RESPONSIBILITY_AREAS = [
 | Shipping           | `order.ready_for_ship`   | Order packed, ready for shipping      | Normal   |
 | Returns            | `return.received`        | Return received, needs processing     | Normal   |
 | Client Support     | `client.inquiry`         | Client submitted inquiry              | Normal   |
-| Supplier Relations | `vendor.payment_due`     | Supplier payment coming due           | Normal   |
+| Supplier Relations | `supplier.payment_due`   | Supplier payment coming due           | Normal   |
 | Accounting         | `invoice.overdue`        | Invoice past due date                 | High     |
 | Compliance         | `license.expiring`       | License expiring soon                 | Urgent   |
 

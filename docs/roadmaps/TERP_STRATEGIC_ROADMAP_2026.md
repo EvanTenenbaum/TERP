@@ -60,9 +60,9 @@ WAVE 2: Core Operations (Daily Workflow)
     │   (MEET-014, 026, FEAT-004, ENH-004)                      │
     │   "Negotiating price adjustment on the fly"               │
     │                                                           │
-    └── Vendor/Brand Clarity ───────────────────────────────────┘
+    └── Supplier/Brand Clarity ───────────────────────────────────┘
         (MEET-027, 028, 029, 030, FEAT-002)
-        "Vendor and brand are two different things"
+        "Supplier and brand are two different things"
 
 WAVE 3: Enhanced Capability (Efficiency)
     │

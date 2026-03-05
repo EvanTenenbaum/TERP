@@ -26,38 +26,45 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Dashboard Page
 
 **Header Elements:**
+
 - [ ] Global search bar - Test with query, verify results
 - [ ] Inbox button - Open, check notifications
 - [ ] Settings button - Navigate to settings
 - [ ] User Profile button - Open menu, check options
 
 **Metrics Cards:**
+
 - [ ] Cash Balance card - Click to see details?
 - [ ] AR Aging card - Click to see aging report?
 - [ ] AP Aging card - Click to see payables?
 - [ ] Inventory Value card - Click to see inventory?
 
 **Charts:**
+
 - [ ] CashFlow chart - Test time period dropdown (All Time, This Month, This Quarter, This Year)
 - [ ] Sales chart - Test time period dropdown
 - [ ] Chart hover interactions - Do tooltips appear?
 - [ ] Chart click interactions - Can I drill down?
 
 **Sales Table:**
+
 - [ ] Client name links - Click to navigate to client profile?
 - [ ] Sort by columns - Click headers to sort?
 - [ ] Pagination - Navigate through pages?
 
 **Matchmaking Section:**
+
 - [ ] View All link - Navigate to matchmaking page
 - [ ] Individual opportunity cards - Click to see details?
 
 **Dashboard Customization:**
+
 - [ ] Customize button - Open modal
 - [ ] Widget toggles - Enable/disable widgets
 - [ ] Save customization - Persist changes?
 
 **Comments Panel:**
+
 - [ ] Comments button - Open panel
 - [ ] Add comment field - Input text
 - [ ] Submit comment - Post comment
@@ -68,27 +75,32 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Orders Page
 
 **Header Actions:**
+
 - [ ] New Order button - Navigate to create order
 - [ ] Export CSV button - Download orders data
 - [ ] Customize Metrics button - Open modal, toggle metrics
 
 **Tabs:**
+
 - [ ] Confirmed Orders tab - Switch view
 - [ ] Draft Orders tab - Switch view
 - [ ] All Orders tab - Switch view?
 
 **Filters:**
+
 - [ ] Status filter dropdown - Select Pending, Shipped, Delivered, Cancelled
 - [ ] Date range filter - Select date range
 - [ ] Client filter - Filter by client
 - [ ] Search bar - Search orders
 
 **Order Cards:**
+
 - [ ] Click order card - Open order details modal
 - [ ] Order actions - Edit, Delete, Duplicate?
 - [ ] Status change - Update order status?
 
 **Order Details Modal:**
+
 - [ ] View all order details
 - [ ] Edit order - Modify line items?
 - [ ] Change status - Update order status?
@@ -96,6 +108,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Close modal - X button or Escape
 
 **Debug Dashboard (BUG-M002):**
+
 - [ ] Verify it shouldn't be there in production
 
 ---
@@ -103,6 +116,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Create Order Page (BUG-009 - 404)
 
 **If accessible:**
+
 - [ ] Customer selector - Select customer
 - [ ] Add Item button - Add products to order
 - [ ] Product search - Search for products
@@ -121,17 +135,20 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Inventory Page
 
 **Header Actions:**
+
 - [ ] New Purchase button - Open modal, test full form
 - [ ] Export button - Download inventory data
 - [ ] Saved Views dropdown - Select saved views
 
 **Search and Filters:**
+
 - [ ] Search bar - Search for products (test with actual product names)
 - [ ] Category filter - Filter by category
 - [ ] Location filter - Filter by location
 - [ ] Status filter - Filter by status (In Stock, Low Stock, Out of Stock)
 
 **Inventory Table (BUG-013 - Empty):**
+
 - [ ] Verify table should display data
 - [ ] Column sorting - Click headers
 - [ ] Row click - Open product details?
@@ -139,8 +156,9 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Pagination - Navigate pages
 
 **New Purchase Modal:**
+
 - [ ] Product selector - Select product
-- [ ] Vendor selector - Select vendor
+- [ ] Supplier selector - Select supplier
 - [ ] Quantity input - Enter quantity
 - [ ] Unit Cost input - Enter cost
 - [ ] Total Cost calculation - Auto-calculate?
@@ -157,18 +175,21 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Calendar Page
 
 **View Modes:**
+
 - [ ] Month view - Test navigation (Previous, Today, Next)
 - [ ] Week view - Test week navigation
 - [ ] Day view - Test day navigation
 - [ ] Agenda view - Test list view
 
 **Filters:**
+
 - [ ] Filters button - Open filters panel
 - [ ] Event type filters - Filter by type
 - [ ] User filters - Filter by user
 - [ ] Apply filters - Update calendar
 
 **Create Event Modal:**
+
 - [ ] Title field - Enter title
 - [ ] Description field - Enter description
 - [ ] Location field - Enter location
@@ -187,6 +208,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Cancel - Close modal
 
 **Event Interactions:**
+
 - [ ] Click event - Open event details
 - [ ] Edit event - Modify event
 - [ ] Delete event - Remove event
@@ -197,23 +219,27 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Clients Page
 
 **Header Actions:**
+
 - [ ] New Client button - Open create client modal
 - [ ] Export button - Download clients data
 - [ ] Import button - Import clients?
 
 **Search and Filters:**
+
 - [ ] Search bar - Search clients
 - [ ] Status filter - Filter by status
 - [ ] Type filter - Filter by client type
 - [ ] Sort dropdown - Sort by name, date, etc.
 
 **Clients Table:**
+
 - [ ] Click client row - Navigate to client profile
 - [ ] Column sorting - Click headers
 - [ ] Pagination - Navigate pages
 - [ ] Bulk actions - Select multiple clients?
 
 **Client Profile Page:**
+
 - [ ] Overview tab - View client details
 - [ ] Orders tab - View client orders
 - [ ] Invoices tab - View invoices
@@ -224,6 +250,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Settings tab - Edit client settings
 
 **Client Profile Actions:**
+
 - [ ] Edit client - Modify details
 - [ ] Create order - New order for client
 - [ ] Create invoice - New invoice
@@ -237,6 +264,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Accounting Page
 
 **Dashboard Metrics:**
+
 - [ ] Total Revenue card - Click for details?
 - [ ] Total Expenses card - Click for details?
 - [ ] Net Profit card - Click for details?
@@ -244,6 +272,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] AP Aging card - Click for payables report?
 
 **Navigation:**
+
 - [ ] Chart of Accounts link - Navigate to COA
 - [ ] General Ledger link - Navigate to GL
 - [ ] Invoices link - Navigate to invoices
@@ -251,6 +280,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Payments link - Navigate to payments
 
 **Reports:**
+
 - [ ] Profit & Loss report - Generate report
 - [ ] Balance Sheet report - Generate report
 - [ ] Cash Flow report - Generate report
@@ -263,6 +293,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Settings Page
 
 **Tabs:**
+
 - [ ] General tab - Company settings
 - [ ] User Roles tab - RBAC settings
 - [ ] Integrations tab - Third-party integrations
@@ -270,6 +301,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Security tab - Security settings
 
 **General Settings:**
+
 - [ ] Company name field - Edit name
 - [ ] Company logo upload - Upload logo
 - [ ] Address fields - Edit address
@@ -280,6 +312,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Save button - Save changes
 
 **User Roles (RBAC):**
+
 - [ ] Create role button - Create new role
 - [ ] Edit role - Modify permissions
 - [ ] Delete role - Remove role
@@ -291,16 +324,19 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Analytics Page
 
 **Tabs:**
+
 - [ ] Overview tab - General analytics
 - [ ] Sales tab - Sales analytics
 - [ ] Inventory tab - Inventory analytics
 - [ ] Clients tab - Client analytics
 
 **Date Range Filters:**
+
 - [ ] Date range picker - Select custom range
 - [ ] Quick filters - Today, This Week, This Month, This Quarter, This Year
 
 **Charts and Visualizations:**
+
 - [ ] Sales over time chart - Interactive?
 - [ ] Top products chart - Click to drill down?
 - [ ] Top clients chart - Click to see details?
@@ -312,6 +348,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Workflow Queue Page
 
 **Kanban Board:**
+
 - [ ] Drag and drop cards - Move between columns
 - [ ] Click card - Open task details
 - [ ] Add new task - Create task
@@ -321,6 +358,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Search tasks - Search for tasks
 
 **Task Details Modal:**
+
 - [ ] Title field - Edit title
 - [ ] Description field - Edit description
 - [ ] Assignee dropdown - Assign to user
@@ -337,12 +375,14 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Matchmaking Page
 
 **Filters:**
+
 - [ ] Buyer filter - Filter by buyer
 - [ ] Seller filter - Filter by seller
 - [ ] Product filter - Filter by product
 - [ ] Status filter - Filter by status
 
 **Matchmaking Cards:**
+
 - [ ] Click card - View match details
 - [ ] Accept match - Confirm match
 - [ ] Reject match - Decline match
@@ -353,10 +393,12 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Sales Sheets Page
 
 **Client Selection:**
+
 - [ ] Client dropdown - Select client
 - [ ] Load client pricing - Load pricing rules
 
 **Product Selection:**
+
 - [ ] Product search - Search products
 - [ ] Add product - Add to sales sheet
 - [ ] Remove product - Remove from sheet
@@ -364,6 +406,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 - [ ] Price display - Show calculated price
 
 **Sales Sheet Actions:**
+
 - [ ] Preview button - Preview PDF
 - [ ] Generate PDF button - Download PDF
 - [ ] Email button - Email to client
@@ -374,16 +417,19 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Pricing Rules Page
 
 **Header Actions:**
+
 - [ ] New Rule button - Create pricing rule
 - [ ] Export button - Download rules
 
 **Rules Table:**
+
 - [ ] Click rule - Edit rule
 - [ ] Enable/disable toggle - Toggle rule status
 - [ ] Delete rule - Remove rule
 - [ ] Sort rules - Sort by priority, date, etc.
 
 **Create/Edit Rule Modal:**
+
 - [ ] Rule name field - Enter name
 - [ ] Rule type dropdown - Select type (Markup, Discount, etc.)
 - [ ] Value field - Enter value
@@ -397,15 +443,18 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Pricing Profiles Page
 
 **Header Actions:**
+
 - [ ] New Profile button - Create profile
 - [ ] Export button - Download profiles
 
 **Profiles Table:**
+
 - [ ] Click profile - Edit profile
 - [ ] Delete profile - Remove profile
 - [ ] Assign to clients - Assign profile
 
 **Create/Edit Profile Modal:**
+
 - [ ] Profile name field - Enter name
 - [ ] Select rules - Assign pricing rules
 - [ ] Default toggle - Set as default
@@ -416,6 +465,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Credit Settings Page
 
 **Credit Limit Settings:**
+
 - [ ] Default credit limit field - Set default
 - [ ] Credit terms dropdown - Select terms
 - [ ] Auto-approve checkbox - Toggle auto-approve
@@ -426,32 +476,37 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### COGS Settings Page
 
 **COGS Calculation:**
+
 - [ ] Method dropdown - Select method (FIFO, LIFO, Average)
 - [ ] Auto-calculate toggle - Enable/disable
 - [ ] Save - Save settings
 
 ---
 
-### Vendors Page
+### Suppliers Page
 
 **Header Actions:**
-- [ ] New Vendor button - Create vendor
-- [ ] Export button - Download vendors
 
-**Vendors Table:**
-- [ ] Click vendor - View vendor details
-- [ ] Edit vendor - Modify vendor
-- [ ] Delete vendor - Remove vendor
+- [ ] New Supplier button - Create supplier
+- [ ] Export button - Download suppliers
+
+**Suppliers Table:**
+
+- [ ] Click supplier - View supplier details
+- [ ] Edit supplier - Modify supplier
+- [ ] Delete supplier - Remove supplier
 
 ---
 
 ### Locations Page
 
 **Header Actions:**
+
 - [ ] New Location button - Create location
 - [ ] Export button - Download locations
 
 **Locations Table:**
+
 - [ ] Click location - View location details
 - [ ] Edit location - Modify location
 - [ ] Delete location - Remove location
@@ -461,10 +516,12 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Returns Page
 
 **Header Actions:**
+
 - [ ] New Return button - Create return
 - [ ] Export button - Download returns
 
 **Returns Table:**
+
 - [ ] Click return - View return details
 - [ ] Process return - Complete return workflow
 - [ ] Restock - Add items back to inventory
@@ -474,6 +531,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Purchase Orders Page (BUG-008 - Crash)
 
 **If accessible:**
+
 - [ ] New PO button - Create purchase order
 - [ ] Export button - Download POs
 - [ ] Click PO - View PO details
@@ -486,6 +544,7 @@ The user is correct - my previous testing was superficial. I visited pages but d
 ### Help Page
 
 **Help Content:**
+
 - [ ] Search help - Search for help topics
 - [ ] Browse categories - Navigate help sections
 - [ ] Contact support - Submit support ticket

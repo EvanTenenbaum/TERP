@@ -17,7 +17,7 @@ This document defines the canonical terms, table mappings, ID field rules, and a
 | **Client**   | Any business entity that interacts with TERP (buyer, seller, or both)      | `clients`                       |
 | **Supplier** | A client with `isSeller=true` who sells products to TERP                   | `clients` + `supplier_profiles` |
 | **Customer** | A client who purchases products from TERP                                  | `clients`                       |
-| **Vendor**   | **DEPRECATED** - Legacy term for supplier, use Client with `isSeller=true` | `vendors` (deprecated)          |
+| **Supplier** | **DEPRECATED** - Legacy term for supplier, use Client with `isSeller=true` | `suppliers` (deprecated)        |
 | **User**     | An internal TERP system user (employee, admin)                             | `users`                         |
 
 ### Transaction Model
@@ -66,14 +66,14 @@ This document defines the canonical terms, table mappings, ID field rules, and a
 ├─────────────────────────────────────────────────────────────┤
 │  id              │ Primary key                               │
 │  clientId        │ FK → clients.id                           │
-│  legacyVendorId  │ FK → vendors.id (migration tracking)      │
+│  legacyVendorId  │ FK → suppliers.id (migration tracking)      │
 │  licenseNumber   │ State license                             │
 │  paymentTerms    │ Net 30, etc.                              │
 │  preferredPayment│ Check, ACH, etc.                          │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│                    vendors (DEPRECATED)                      │
+│                    suppliers (DEPRECATED)                      │
 │  DO NOT USE - Migrate to clients + supplier_profiles        │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -85,7 +85,7 @@ This document defines the canonical terms, table mappings, ID field rules, and a
 | `clientId`                   | `clients.id`                   | Canonical party reference                           |
 | `customerId`                 | `clients.id`                   | **LEGACY** - Will be renamed to `clientId`          |
 | `vendorId` (in payments)     | `clients.id`                   | References supplier (client with `isSeller=true`)   |
-| `vendorId` (in lots, brands) | `vendors.id`                   | **LEGACY** - Will be migrated to `supplierClientId` |
+| `vendorId` (in lots, brands) | `suppliers.id`                 | **LEGACY** - Will be migrated to `supplierClientId` |
 | `userId`                     | `users.id`                     | Internal user reference                             |
 | `createdBy`                  | `users.id`                     | Actor who created the record                        |
 | `updatedBy`                  | `users.id`                     | Actor who last updated the record                   |
@@ -101,9 +101,9 @@ payments.vendorId → clients.id        // AP payment to supplier (isSeller=true
 sales.customerId → clients.id         // Customer who made purchase
 
 // ⚠️ LEGACY - Existing code, will be migrated
-lots.vendorId → vendors.id            // Will become supplierClientId → clients.id
-brands.vendorId → vendors.id          // Will become supplierClientId → clients.id
-expenses.vendorId → vendors.id        // Will become supplierClientId → clients.id
+lots.vendorId → suppliers.id            // Will become supplierClientId → clients.id
+brands.vendorId → suppliers.id          // Will become supplierClientId → clients.id
+expenses.vendorId → suppliers.id        // Will become supplierClientId → clients.id
 ```
 
 ---
@@ -162,18 +162,18 @@ expenses.vendorId → vendors.id        // Will become supplierClientId → clie
 
 ## Migration Timeline
 
-### Phase 1: Vendor Migration (Current)
+### Phase 1: Supplier Migration (Current)
 
 **Status**: Complete ✅
 
 1. Create `supplier_profiles` table ✅
-2. Migrate vendors to clients with `isSeller=true` ✅
-3. Create supplier profile for each migrated vendor ✅
+2. Migrate suppliers to clients with `isSeller=true` ✅
+3. Create supplier profile for each migrated supplier ✅
 4. Update FK references to use `clients.id` ✅
-5. Backend: vendors router facades over clients table ✅
-6. Frontend: /vendors routes redirect to /clients?clientTypes=seller ✅
+5. Backend: suppliers router facades over clients table ✅
+6. Frontend: /suppliers routes redirect to /clients?clientTypes=seller ✅
 7. Frontend: PurchaseOrdersPage uses clients with supplierClientId ✅
-8. Frontend: "Vendor" terminology updated to "Supplier" ✅
+8. Frontend: "Supplier" terminology updated to "Supplier" ✅
 
 ### Phase 2: Column Normalization (Planned)
 
@@ -184,14 +184,14 @@ expenses.vendorId → vendors.id        // Will become supplierClientId → clie
 3. Update application code to use `clientId`
 4. Remove `customerId` columns
 
-### Phase 3: Vendor Table Deprecation (Planned)
+### Phase 3: Supplier Table Deprecation (Planned)
 
 **Target**: Q2 2026
 
-1. Mark `vendors` table as deprecated
-2. Add console warnings on vendor queries
-3. Create vendor query mapping layer
-4. Remove `vendors` table after verification
+1. Mark `suppliers` table as deprecated
+2. Add console warnings on supplier queries
+3. Create supplier query mapping layer
+4. Remove `suppliers` table after verification
 
 ---
 
@@ -244,8 +244,8 @@ const suppliers = await db.query.clients.findMany({
   },
 });
 
-// ❌ DEPRECATED - Don't query vendors table directly
-const vendors = await db.query.vendors.findMany();
+// ❌ DEPRECATED - Don't query suppliers table directly
+const suppliers = await db.query.suppliers.findMany();
 ```
 
 ### Finding Customers
@@ -257,7 +257,7 @@ const customers = await db.query.clients.findMany({
 });
 ```
 
-### Getting Supplier by Legacy Vendor ID
+### Getting Supplier by Legacy Supplier ID
 
 ```typescript
 // For migration compatibility

@@ -12,7 +12,7 @@
 
 ## 1. Problem Statement
 
-The business needs to proactively source inventory before running out. Currently, there's no automated way to track low stock levels or communicate needs to VIP vendors. The solution must serve two purposes:
+The business needs to proactively source inventory before running out. Currently, there's no automated way to track low stock levels or communicate needs to VIP suppliers. The solution must serve two purposes:
 
 1. **Internal:** Alert staff when inventory drops below target levels
 2. **External:** Automatically populate "Needs" on the VIP Portal for suppliers to see
@@ -222,8 +222,8 @@ vipPortal.createNeed = adminProcedure
     // Create manual need
   });
 
-// Get VIP Portal needs (for vendors)
-vipPortal.getNeeds = publicProcedure // Or vendor-authenticated
+// Get VIP Portal needs (for suppliers)
+vipPortal.getNeeds = publicProcedure // Or supplier-authenticated
   .input(
     z.object({
       categoryId: z.number().optional(),

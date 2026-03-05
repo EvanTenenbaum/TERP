@@ -17,6 +17,7 @@ Fix silent error handling patterns across the codebase that swallow errors, retu
 ## Philosophy
 
 **Before (Bad)**:
+
 ```typescript
 try {
   return await doSomething();
@@ -26,14 +27,15 @@ try {
 ```
 
 **After (Good)**:
+
 ```typescript
 try {
   return await doSomething();
 } catch (error) {
-  console.error('[doSomething] Failed:', error);
+  console.error("[doSomething] Failed:", error);
   throw new TRPCError({
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'Failed to do something. Please try again.',
+    code: "INTERNAL_SERVER_ERROR",
+    message: "Failed to do something. Please try again.",
     cause: error,
   });
 }
@@ -65,7 +67,7 @@ try {
     <AppointmentCard key={apt.id} {...apt} />
   ))
 ) : (
-  <EmptyState 
+  <EmptyState
     title="No appointment requests"
     description="Appointment requests will appear here"
   />
@@ -141,11 +143,11 @@ const batchResults = await db
     productName: products.name,
     strain: products.strain,
     category: products.category,
-    vendor: vendors.name,
+    supplier: suppliers.name,
   })
   .from(batches)
   .leftJoin(products, eq(batches.productId, products.id))
-  .leftJoin(vendors, eq(batches.vendorId, vendors.id))
+  .leftJoin(suppliers, eq(batches.vendorId, suppliers.id))
   .where(
     or(
       ilike(batches.code, `%${query}%`),
@@ -153,7 +155,7 @@ const batchResults = await db
       ilike(products.name, `%${query}%`),
       ilike(products.strain, `%${query}%`),
       ilike(products.category, `%${query}%`),
-      ilike(vendors.name, `%${query}%`)
+      ilike(suppliers.name, `%${query}%`)
     )
   )
   .limit(10);
@@ -163,24 +165,24 @@ const batchResults = await db
 
 ```sql
 -- migrations/add_search_indexes.sql
-CREATE INDEX CONCURRENTLY idx_products_name_gin 
+CREATE INDEX CONCURRENTLY idx_products_name_gin
   ON products USING gin(name gin_trgm_ops);
-  
-CREATE INDEX CONCURRENTLY idx_products_strain_gin 
+
+CREATE INDEX CONCURRENTLY idx_products_strain_gin
   ON products USING gin(strain gin_trgm_ops);
 ```
 
 ### Test
 
 ```typescript
-describe('Global Search', () => {
-  it('finds products by name', async () => {
-    const results = await caller.search.global({ query: 'OG Kush' });
+describe("Global Search", () => {
+  it("finds products by name", async () => {
+    const results = await caller.search.global({ query: "OG Kush" });
     expect(results.batches.length).toBeGreaterThan(0);
   });
 
-  it('finds products by strain', async () => {
-    const results = await caller.search.global({ query: 'Indica' });
+  it("finds products by strain", async () => {
+    const results = await caller.search.global({ query: "Indica" });
     expect(results.batches.length).toBeGreaterThan(0);
   });
 });
@@ -215,14 +217,14 @@ export async function getSessionUser(sessionId: string) {
       where: eq(sessions.id, sessionId),
       with: { user: true },
     });
-    
+
     if (!session) {
-      console.debug('[Auth] Session not found:', sessionId);
+      console.debug("[Auth] Session not found:", sessionId);
     }
-    
+
     return session;
   } catch (error) {
-    console.error('[Auth] Failed to get session user:', {
+    console.error("[Auth] Failed to get session user:", {
       sessionId,
       error: error instanceof Error ? error.message : error,
     });
@@ -256,20 +258,23 @@ export async function getBatchAvailability(batchId: number) {
     const batch = await db.query.batches.findFirst({
       where: eq(batches.id, batchId),
     });
-    
+
     if (!batch) {
-      console.warn('[Inventory] Batch not found for availability check:', batchId);
-      return { available: 0, reserved: 0, total: 0, error: 'BATCH_NOT_FOUND' };
+      console.warn(
+        "[Inventory] Batch not found for availability check:",
+        batchId
+      );
+      return { available: 0, reserved: 0, total: 0, error: "BATCH_NOT_FOUND" };
     }
-    
+
     // ... calculation
     return availability;
   } catch (error) {
-    console.error('[Inventory] Failed to get batch availability:', {
+    console.error("[Inventory] Failed to get batch availability:", {
       batchId,
       error: error instanceof Error ? error.message : error,
     });
-    return { available: 0, reserved: 0, total: 0, error: 'CALCULATION_FAILED' };
+    return { available: 0, reserved: 0, total: 0, error: "CALCULATION_FAILED" };
   }
 }
 ```
@@ -312,20 +317,20 @@ getAuditLogs: protectedProcedure
         ),
         orderBy: desc(auditLogs.createdAt),
       });
-      
+
       console.debug('[Audit] Retrieved logs:', {
         entityType: input.entityType,
         entityId: input.entityId,
         count: logs.length,
       });
-      
+
       return logs;
     } catch (error) {
       console.error('[Audit] Failed to get audit logs:', {
         input,
         error: error instanceof Error ? error.message : error,
       });
-      
+
       // Return empty array but log the error
       // Consider throwing if audit logs are critical
       return [];
@@ -346,15 +351,15 @@ getAuditLogs: protectedProcedure
 // BEFORE
 if (!hasPermission) {
   throw new TRPCError({
-    code: 'UNAUTHORIZED',
-    message: 'Unauthorized',
+    code: "UNAUTHORIZED",
+    message: "Unauthorized",
   });
 }
 
 // AFTER
 if (!hasPermission) {
   throw new TRPCError({
-    code: 'FORBIDDEN',
+    code: "FORBIDDEN",
     message: `You don't have permission to ${action} ${resource}. Required: ${requiredPermission}`,
   });
 }
@@ -368,16 +373,17 @@ if (!hasPermission) {
 // BEFORE
 if (!canViewCalendar) {
   throw new TRPCError({
-    code: 'FORBIDDEN',
-    message: 'Permission denied',
+    code: "FORBIDDEN",
+    message: "Permission denied",
   });
 }
 
 // AFTER
 if (!canViewCalendar) {
   throw new TRPCError({
-    code: 'FORBIDDEN',
-    message: 'You don\'t have permission to view this calendar. Contact your administrator to request access.',
+    code: "FORBIDDEN",
+    message:
+      "You don't have permission to view this calendar. Contact your administrator to request access.",
   });
 }
 ```
@@ -389,21 +395,18 @@ if (!canViewCalendar) {
 
 export const ERROR_MESSAGES = {
   // Auth
-  AUTH_REQUIRED: 'Please log in to continue.',
-  SESSION_EXPIRED: 'Your session has expired. Please log in again.',
-  
+  AUTH_REQUIRED: "Please log in to continue.",
+  SESSION_EXPIRED: "Your session has expired. Please log in again.",
+
   // Permissions
   PERMISSION_DENIED: (action: string, resource: string) =>
     `You don't have permission to ${action} ${resource}.`,
-  ROLE_REQUIRED: (role: string) =>
-    `This action requires the ${role} role.`,
-  
+  ROLE_REQUIRED: (role: string) => `This action requires the ${role} role.`,
+
   // Resources
-  NOT_FOUND: (resource: string) =>
-    `${resource} not found.`,
-  ALREADY_EXISTS: (resource: string) =>
-    `${resource} already exists.`,
-  
+  NOT_FOUND: (resource: string) => `${resource} not found.`,
+  ALREADY_EXISTS: (resource: string) => `${resource} already exists.`,
+
   // Operations
   CREATE_FAILED: (resource: string) =>
     `Failed to create ${resource}. Please try again.`,
@@ -435,7 +438,7 @@ git commit -m "fix(BUG-054,055,056): Add null checks for .map() calls
 git add server/routers/search.ts
 git commit -m "fix(BUG-057): Expand global search to include product fields
 
-Now searches: code, sku, product name, strain, category, vendor"
+Now searches: code, sku, product name, strain, category, supplier"
 
 # Fix silent returns
 git add server/_core/authHelpers.ts
@@ -470,31 +473,31 @@ gh pr create --title "fix(Wave-4C): Silent error fixes and improved error messag
 ```typescript
 // server/__tests__/errorHandling.test.ts
 
-describe('Error Handling', () => {
-  describe('authHelpers', () => {
-    it('logs when session not found', async () => {
-      const consoleSpy = jest.spyOn(console, 'debug');
-      await getSessionUser('nonexistent-id');
+describe("Error Handling", () => {
+  describe("authHelpers", () => {
+    it("logs when session not found", async () => {
+      const consoleSpy = jest.spyOn(console, "debug");
+      await getSessionUser("nonexistent-id");
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Auth] Session not found')
+        expect.stringContaining("[Auth] Session not found")
       );
     });
   });
 
-  describe('search', () => {
-    it('finds products by name', async () => {
+  describe("search", () => {
+    it("finds products by name", async () => {
       // Seed test product
-      const results = await search({ query: 'Test Product' });
+      const results = await search({ query: "Test Product" });
       expect(results.length).toBeGreaterThan(0);
     });
   });
 
-  describe('error messages', () => {
-    it('provides specific permission error', async () => {
+  describe("error messages", () => {
+    it("provides specific permission error", async () => {
       // Try to access without permission
-      await expect(
-        caller.accounting.createInvoice({})
-      ).rejects.toThrow(/don't have permission/);
+      await expect(caller.accounting.createInvoice({})).rejects.toThrow(
+        /don't have permission/
+      );
     });
   });
 });

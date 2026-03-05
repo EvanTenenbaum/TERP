@@ -65,7 +65,7 @@ import {
   Sparkles, // Matchmaking
   FileQuestion, // Quotes
   PackageX, // Returns
-  PackagePlus, // Vendor Supply
+  PackagePlus, // Supplier Supply
   DollarSign, // Pricing Rules (verify not already imported)
   ListOrdered, // Workflow Queue
 } from "lucide-react";
@@ -121,8 +121,8 @@ import {
 // === INVENTORY GROUP (after Suppliers) ===
 // NAV-011: Supplier Supply items
 {
-  name: "Vendor Supply",
-  path: "/vendor-supply",
+  name: "Supplier Supply",
+  path: "/supplier-supply",
   icon: PackagePlus,
   group: "inventory",
   ariaLabel: "Manage supplier supply items and availability",
@@ -217,11 +217,11 @@ import {
   },
 },
 {
-  id: "vendor-supply",
-  label: "Vendor Supply",
+  id: "supplier-supply",
+  label: "Supplier Supply",
   icon: PackagePlus,
   action: () => {
-    setLocation("/vendor-supply");
+    setLocation("/supplier-supply");
     onOpenChange(false);
   },
 },

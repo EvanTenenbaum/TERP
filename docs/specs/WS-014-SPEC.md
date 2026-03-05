@@ -35,13 +35,13 @@ Maintaining supplier relationships requires proactive outreach, especially aroun
 ### 4.1 Data Model Changes
 
 ```sql
-ALTER TABLE vendors ADD COLUMN expected_harvest_date DATE;
-ALTER TABLE vendors ADD COLUMN harvest_reminder_days INT DEFAULT 7;
-ALTER TABLE vendors ADD COLUMN harvest_notes TEXT;
+ALTER TABLE suppliers ADD COLUMN expected_harvest_date DATE;
+ALTER TABLE suppliers ADD COLUMN harvest_reminder_days INT DEFAULT 7;
+ALTER TABLE suppliers ADD COLUMN harvest_notes TEXT;
 
 CREATE TABLE vendor_outreach_log (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  vendor_id INT NOT NULL REFERENCES vendors(id),
+  vendor_id INT NOT NULL REFERENCES suppliers(id),
   outreach_type ENUM('CALL', 'TEXT', 'EMAIL', 'VISIT', 'OTHER') NOT NULL,
   notes TEXT,
   next_harvest_date DATE,
@@ -53,7 +53,7 @@ CREATE TABLE vendor_outreach_log (
 ### 4.2 API Contracts
 
 ```typescript
-vendors.setHarvestDate = adminProcedure
+suppliers.setHarvestDate = adminProcedure
   .input(
     z.object({
       vendorId: z.number(),
@@ -65,7 +65,7 @@ vendors.setHarvestDate = adminProcedure
   .output(z.object({ success: z.boolean() }))
   .mutation(async ({ input }) => {});
 
-vendors.getUpcomingHarvests = adminProcedure
+suppliers.getUpcomingHarvests = adminProcedure
   .input(z.object({ daysAhead: z.number().default(30) }))
   .output(
     z.array(
@@ -81,7 +81,7 @@ vendors.getUpcomingHarvests = adminProcedure
   )
   .query(async ({ input }) => {});
 
-vendors.logOutreach = adminProcedure
+suppliers.logOutreach = adminProcedure
   .input(
     z.object({
       vendorId: z.number(),

@@ -211,7 +211,7 @@
 - `batches` - Core inventory batches
 - `products` - Product catalog
 - `brands` - Brand information
-- `vendors` - Supplier management (deprecated table; use `clients` with `isSeller=true`)
+- `suppliers` - Supplier management (deprecated table; use `clients` with `isSeller=true`)
 - `strains` - Cannabis strain data (if applicable)
 
 **API Endpoints (tRPC):**
@@ -975,7 +975,7 @@ pnpm tsc --noEmit
 - batches
 - products
 - brands
-- vendors
+- suppliers
 - strains
 
 **Accounting Module (12 tables):**

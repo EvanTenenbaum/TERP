@@ -249,7 +249,7 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 - `server/routers/calendarRecurrence.ts`
 - `server/routers/calendarReminders.ts`
 - `server/routers/calendarViews.ts`
-- `server/routers/vendors.ts`
+- `server/routers/suppliers.ts`
 - `server/routers/vendorSupply.ts`
 - `server/routers/vendorReminders.ts`
 - `server/routers/inbox.ts`
@@ -261,7 +261,7 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 - `client/src/pages/InboxPage.tsx`
 - `client/src/pages/NeedsManagementPage.tsx`
 - `client/src/components/calendar/`
-- `client/src/components/vendors/`
+- `client/src/components/suppliers/`
 - `client/src/components/inbox/`
 
 ### Tasks
@@ -309,7 +309,7 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 | `client/src/pages/LocationsPage.tsx`     | ❌       | ❌       | ❌       | ✅ WRITE | ❌       |
 | `tests/`, `docs/`                        | ❌       | ❌       | ❌       | ✅ WRITE | ❌       |
 | `server/routers/calendar*.ts`            | ❌       | ❌       | ❌       | ❌       | ✅ WRITE |
-| `server/routers/vendor*.ts`              | ❌       | ❌       | ❌       | ❌       | ✅ WRITE |
+| `server/routers/supplier*.ts`            | ❌       | ❌       | ❌       | ❌       | ✅ WRITE |
 | `server/routers/inbox.ts`                | ❌       | ❌       | ❌       | ❌       | ✅ WRITE |
 | `client/src/pages/CalendarPage.tsx`      | ❌       | ❌       | ❌       | ❌       | ✅ WRITE |
 | `client/src/pages/VendorSupplyPage.tsx`  | ❌       | ❌       | ❌       | ❌       | ✅ WRITE |

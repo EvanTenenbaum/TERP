@@ -58,7 +58,7 @@ CREATE TABLE cash_events (
 
   -- Source reference
   customer_id INT REFERENCES customers(id),
-  vendor_id INT REFERENCES vendors(id),
+  vendor_id INT REFERENCES suppliers(id),
   order_id INT REFERENCES orders(id),
 
   -- Event details

@@ -14,6 +14,7 @@
 ### ❌ FORBIDDEN FILES (BUG-034 Scope)
 
 **Router Files:**
+
 - `server/routers/accounting.ts`
 - `server/routers/clients.ts`
 - `server/routers/inbox.ts`
@@ -24,9 +25,10 @@
 - `server/routers/strains.ts`
 - `server/routers/todoLists.ts`
 - `server/routers/todoTasks.ts`
-- `server/routers/vendors.ts`
+- `server/routers/suppliers.ts`
 
 **DB Files:**
+
 - `server/inventoryDb.ts`
 - `server/ordersDb.ts`
 - `server/clientsDb.ts`
@@ -48,6 +50,7 @@
 ### QUAL-002: Input Validation - Safe Routers
 
 You MAY work on these routers:
+
 - `server/routers/calendar.ts` ✅
 - `server/routers/calendarParticipants.ts` ✅
 - `server/routers/calendarReminders.ts` ✅
@@ -68,6 +71,7 @@ You MAY work on these routers:
 ### DATA-004: N+1 Optimization - Safe Scope
 
 You MAY work on:
+
 - **Frontend query optimization** (all `client/src/**/*.tsx` files)
 - **React Query deduplication** (`client/src/lib/trpc.ts`)
 - **Non-conflicting DB files** (calendarDb.ts, commentsDb.ts, etc.)
@@ -77,11 +81,13 @@ You MAY work on:
 ## 📋 QUAL-002: Comprehensive Input Validation
 
 ### Objective
+
 Add or improve Zod validation schemas on API endpoints that lack proper validation.
 
 ### Audit Checklist
 
 For each allowed router, check:
+
 1. [ ] All `.input()` calls have Zod schemas
 2. [ ] String fields have `.min()` and `.max()` constraints
 3. [ ] Number fields have `.min()` and `.max()` constraints
@@ -92,6 +98,7 @@ For each allowed router, check:
 ### Known Issues to Fix
 
 **pricing.ts** - Uses `z.any()`:
+
 ```typescript
 // ❌ CURRENT
 conditions: z.record(z.string(), z.any()),
@@ -119,6 +126,7 @@ conditions: z.array(pricingConditionSchema),
 ## 📋 DATA-004: N+1 Query Optimization (Frontend Focus)
 
 ### Objective
+
 Optimize frontend data fetching to reduce redundant API calls.
 
 ### Scope (Frontend Only)
@@ -222,6 +230,7 @@ git push origin main
 ## 📊 Success Criteria
 
 ### QUAL-002 Complete When:
+
 - [ ] All allowed routers audited
 - [ ] No `z.any()` types in allowed routers
 - [ ] Shared validation schemas created
@@ -229,6 +238,7 @@ git push origin main
 - [ ] TypeScript compiles without errors
 
 ### DATA-004 Complete When:
+
 - [ ] Frontend query audit complete
 - [ ] Top redundant queries documented
 - [ ] At least 5 optimizations implemented
@@ -247,6 +257,7 @@ If you encounter a merge conflict:
 4. **If no** - Resolve normally with `git pull --rebase`
 
 If BUG-034 completes before you:
+
 - Pull latest: `git pull origin main`
 - Your changes to allowed files should merge cleanly
 - Continue with remaining work

@@ -10,6 +10,7 @@
 **Previous Testing Flaw:** Element-focused testing (clicking buttons, opening modals) without understanding **why** a user would do that or **what** they're trying to accomplish.
 
 **Persona-Based Testing:** Adopt the mindset, goals, and workflows of actual users to identify:
+
 - Missing features that users need
 - Broken workflows that prevent task completion
 - Confusing UX that doesn't match user mental models
@@ -21,9 +22,11 @@
 ## TERP User Personas
 
 ### Persona 1: Owner/Manager (Sarah)
+
 **Role:** Business owner of cannabis dispensary  
 **Goals:** Monitor business health, make strategic decisions, track profitability  
 **Daily Tasks:**
+
 - Check dashboard for sales, cash flow, inventory value
 - Review analytics for trends and insights
 - Monitor debt (AR/AP)
@@ -32,6 +35,7 @@
 
 **Modules Used:** Dashboard, Analytics, Accounting (high-level), Settings  
 **Key Workflows:**
+
 1. Morning business health check
 2. Weekly sales trend analysis
 3. Monthly profitability review
@@ -40,9 +44,11 @@
 ---
 
 ### Persona 2: Sales Manager (Marcus)
+
 **Role:** Manages client relationships and sales operations  
 **Goals:** Maximize sales, maintain client satisfaction, optimize pricing  
 **Daily Tasks:**
+
 - Create and manage orders for clients
 - Generate sales sheets for client meetings
 - Update pricing rules and profiles
@@ -52,6 +58,7 @@
 
 **Modules Used:** Orders, Clients, Sales Sheets, Pricing Rules, Pricing Profiles, Matchmaking  
 **Key Workflows:**
+
 1. Create new order for existing client
 2. Onboard new client and set pricing profile
 3. Generate sales sheet for client meeting
@@ -62,9 +69,11 @@
 ---
 
 ### Persona 3: Inventory Manager (Lisa)
+
 **Role:** Manages product inventory and stock levels  
 **Goals:** Prevent stockouts, minimize waste, track batches, optimize storage  
 **Daily Tasks:**
+
 - Monitor inventory levels across locations
 - Record new product purchases (batches)
 - Adjust inventory for waste, samples, theft
@@ -72,8 +81,9 @@
 - Track batch compliance data
 - Generate inventory reports
 
-**Modules Used:** Inventory, Locations, Purchase Orders (receiving)  
+**Modules Used:** Inventory, Locations, Purchase Orders (intake)  
 **Key Workflows:**
+
 1. Receive new product purchase and create batch
 2. Adjust inventory for waste/samples
 3. Transfer inventory between locations
@@ -84,11 +94,13 @@
 ---
 
 ### Persona 4: Accountant (David)
+
 **Role:** Manages financial records and compliance  
-**Goals:** Accurate books, timely collections, vendor payment management, tax compliance  
+**Goals:** Accurate books, timely collections, supplier payment management, tax compliance  
 **Daily Tasks:**
+
 - Record cash collections from clients
-- Record payments to vendors
+- Record payments to suppliers
 - Track accounts receivable aging
 - Track accounts payable aging
 - Reconcile cash accounts
@@ -97,19 +109,22 @@
 
 **Modules Used:** Accounting, Orders (invoicing), Purchase Orders (bills)  
 **Key Workflows:**
+
 1. Record daily cash collections
 2. Apply payment to specific invoices
 3. Review AR aging and follow up on overdue accounts
-4. Process vendor bills and schedule payments
+4. Process supplier bills and schedule payments
 5. Month-end close and reconciliation
 6. Generate financial statements
 
 ---
 
 ### Persona 5: Operations Manager (Jennifer)
+
 **Role:** Coordinates daily operations and team tasks  
 **Goals:** Ensure smooth operations, meet deadlines, coordinate team  
 **Daily Tasks:**
+
 - Manage workflow queue (orders to fulfill, tasks to complete)
 - Schedule team meetings and deliveries
 - Assign and track tasks
@@ -118,6 +133,7 @@
 
 **Modules Used:** Workflow Queue, Calendar, Todo Lists  
 **Key Workflows:**
+
 1. Morning standup - review workflow queue
 2. Assign order fulfillment tasks to team
 3. Schedule delivery appointments
@@ -128,31 +144,36 @@
 ---
 
 ### Persona 6: Procurement Manager (Robert)
-**Role:** Manages vendor relationships and purchasing  
-**Goals:** Secure reliable supply, negotiate prices, manage vendor performance  
+
+**Role:** Manages supplier relationships and purchasing  
+**Goals:** Secure reliable supply, negotiate prices, manage supplier performance  
 **Daily Tasks:**
-- Create purchase orders for vendors
+
+- Create purchase orders for suppliers
 - Track purchase order status
 - Receive and verify deliveries
-- Manage vendor relationships
+- Manage supplier relationships
 - Negotiate pricing and terms
-- Monitor vendor performance
+- Monitor supplier performance
 
-**Modules Used:** Vendors, Purchase Orders, Inventory (receiving)  
+**Modules Used:** Suppliers, Purchase Orders, Inventory (intake)  
 **Key Workflows:**
+
 1. Create purchase order for restock
-2. Send PO to vendor
+2. Send PO to supplier
 3. Track PO delivery status
 4. Receive delivery and verify against PO
-5. Resolve discrepancies with vendor
-6. Evaluate vendor performance
+5. Resolve discrepancies with supplier
+6. Evaluate supplier performance
 
 ---
 
 ### Persona 7: Customer Service Rep (Amanda)
+
 **Role:** Handles client issues and returns  
 **Goals:** Resolve client issues quickly, maintain satisfaction, process returns  
 **Daily Tasks:**
+
 - Process product returns
 - Handle client complaints
 - Update client information
@@ -161,6 +182,7 @@
 
 **Modules Used:** Returns, Clients, Orders  
 **Key Workflows:**
+
 1. Process client return request
 2. Determine return eligibility
 3. Issue credit or refund
@@ -171,9 +193,11 @@
 ---
 
 ### Persona 8: VIP Client (Michael - Dispensary Owner)
+
 **Role:** Wholesale buyer purchasing from cannabis distributor  
 **Goals:** Browse available products, place orders easily, track order status  
 **Daily Tasks:**
+
 - Browse product catalog
 - Check product availability and pricing
 - Place orders for store inventory
@@ -183,6 +207,7 @@
 
 **Modules Used:** VIP Portal (separate interface)  
 **Key Workflows:**
+
 1. Log into VIP portal
 2. Browse product catalog by category
 3. Add products to cart
@@ -193,9 +218,11 @@
 ---
 
 ### Persona 9: Admin (Evan)
+
 **Role:** System administrator and configuration  
 **Goals:** Configure system, manage users, set business rules  
 **Daily Tasks:**
+
 - Create and manage user accounts
 - Set user roles and permissions
 - Configure COGS settings
@@ -205,6 +232,7 @@
 
 **Modules Used:** Settings, User Roles, COGS Settings, Credit Settings, Pricing Rules  
 **Key Workflows:**
+
 1. Onboard new employee (create user account)
 2. Set role-based permissions
 3. Configure COGS calculation method
@@ -243,16 +271,19 @@ This approach will likely reveal:
 ## Execution Strategy
 
 **Phase 1: High-Impact Personas (6-8 hours)**
+
 - Sales Manager (Marcus) - Most complex workflows
 - Inventory Manager (Lisa) - Critical for operations
 - VIP Client (Michael) - Unique interface, customer-facing
 
 **Phase 2: Financial & Operations (4-6 hours)**
+
 - Accountant (David) - Financial accuracy critical
 - Operations Manager (Jennifer) - Coordination workflows
 - Owner/Manager (Sarah) - Executive view
 
 **Phase 3: Supporting Roles (3-4 hours)**
+
 - Procurement Manager (Robert) - Supply chain
 - Customer Service (Amanda) - Returns and support
 - Admin (Evan) - Configuration and permissions
@@ -264,11 +295,13 @@ This approach will likely reveal:
 ## Success Criteria
 
 **Minimum Success:**
+
 - Each persona can complete at least 1 critical workflow end-to-end
 - All workflow blockers documented
 - All integration gaps identified
 
 **Full Success:**
+
 - Each persona can complete all key workflows
 - All UX issues documented
 - All data validation gaps identified

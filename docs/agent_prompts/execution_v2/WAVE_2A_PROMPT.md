@@ -11,6 +11,7 @@
 ## Stability Requirements (READ FIRST)
 
 Every fix in this wave MUST:
+
 1. ✅ Include performance considerations
 2. ✅ Not introduce security vulnerabilities
 3. ✅ Include unit tests
@@ -27,7 +28,7 @@ Every fix in this wave MUST:
 
 ### Problem Analysis
 
-Current search only queries `batches.code` and `batches.sku`. Users expect to search by product name, strain, vendor, etc.
+Current search only queries `batches.code` and `batches.sku`. Users expect to search by product name, strain, supplier, etc.
 
 ### Performance Considerations (CRITICAL)
 
@@ -42,24 +43,24 @@ Adding ILIKE queries on multiple columns WITHOUT indexes will be SLOW.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Add GIN indexes for text search
-CREATE INDEX CONCURRENTLY idx_products_name_trgm 
+CREATE INDEX CONCURRENTLY idx_products_name_trgm
   ON products USING gin(name gin_trgm_ops);
 
-CREATE INDEX CONCURRENTLY idx_products_strain_trgm 
+CREATE INDEX CONCURRENTLY idx_products_strain_trgm
   ON products USING gin(strain gin_trgm_ops);
 
-CREATE INDEX CONCURRENTLY idx_batches_code_trgm 
+CREATE INDEX CONCURRENTLY idx_batches_code_trgm
   ON batches USING gin(code gin_trgm_ops);
 
-CREATE INDEX CONCURRENTLY idx_batches_sku_trgm 
+CREATE INDEX CONCURRENTLY idx_batches_sku_trgm
   ON batches USING gin(sku gin_trgm_ops);
 
-CREATE INDEX CONCURRENTLY idx_clients_name_trgm 
+CREATE INDEX CONCURRENTLY idx_clients_name_trgm
   ON clients USING gin(name gin_trgm_ops);
 
 -- Verify indexes were created
-SELECT indexname, indexdef 
-FROM pg_indexes 
+SELECT indexname, indexdef
+FROM pg_indexes
 WHERE tablename IN ('products', 'batches', 'clients')
 AND indexname LIKE '%trgm%';
 ```
@@ -69,10 +70,10 @@ AND indexname LIKE '%trgm%';
 ```typescript
 // server/routers/search.ts
 
-import { sql, or, ilike } from 'drizzle-orm';
+import { sql, or, ilike } from "drizzle-orm";
 
 interface SearchResult {
-  type: 'product' | 'batch' | 'client' | 'order';
+  type: "product" | "batch" | "client" | "order";
   id: number;
   title: string;
   subtitle: string;
@@ -80,144 +81,157 @@ interface SearchResult {
   relevance: number;
 }
 
-search: protectedProcedure
-  .input(z.object({
-    query: z.string().min(1).max(100),
-    limit: z.number().min(1).max(50).default(20),
-    types: z.array(z.enum(['product', 'batch', 'client', 'order'])).optional(),
-  }))
+search: (protectedProcedure
+  .input(
+    z.object({
+      query: z.string().min(1).max(100),
+      limit: z.number().min(1).max(50).default(20),
+      types: z
+        .array(z.enum(["product", "batch", "client", "order"]))
+        .optional(),
+    })
+  )
   .query(async ({ ctx, input }) => {
     const { query, limit, types } = input;
-    
+
     // Sanitize search input
-    const sanitizedQuery = query
-      .trim()
-      .replace(/[%_]/g, '\\$&'); // Escape SQL wildcards
-    
+    const sanitizedQuery = query.trim().replace(/[%_]/g, "\\$&"); // Escape SQL wildcards
+
     const searchPattern = `%${sanitizedQuery}%`;
-    
+
     // Log search for analytics
     console.log(`[Search] User ${ctx.user.id} searched: "${query}"`);
-    
+
     const results: SearchResult[] = [];
-    
+
     // Search Products (if not filtered out)
-    if (!types || types.includes('product')) {
-      const products = await db.select({
-        id: productsTable.id,
-        name: productsTable.name,
-        strain: productsTable.strain,
-        category: productsTable.category,
-      })
-      .from(productsTable)
-      .where(
-        or(
-          ilike(productsTable.name, searchPattern),
-          ilike(productsTable.strain, searchPattern),
-          ilike(productsTable.category, searchPattern),
-          ilike(productsTable.sku, searchPattern),
+    if (!types || types.includes("product")) {
+      const products = await db
+        .select({
+          id: productsTable.id,
+          name: productsTable.name,
+          strain: productsTable.strain,
+          category: productsTable.category,
+        })
+        .from(productsTable)
+        .where(
+          or(
+            ilike(productsTable.name, searchPattern),
+            ilike(productsTable.strain, searchPattern),
+            ilike(productsTable.category, searchPattern),
+            ilike(productsTable.sku, searchPattern)
+          )
         )
-      )
-      .limit(limit);
-      
-      results.push(...products.map(p => ({
-        type: 'product' as const,
-        id: p.id,
-        title: p.name,
-        subtitle: `${p.strain || ''} - ${p.category || ''}`.trim(),
-        url: `/products/${p.id}`,
-        relevance: calculateRelevance(query, p.name, p.strain),
-      })));
+        .limit(limit);
+
+      results.push(
+        ...products.map(p => ({
+          type: "product" as const,
+          id: p.id,
+          title: p.name,
+          subtitle: `${p.strain || ""} - ${p.category || ""}`.trim(),
+          url: `/products/${p.id}`,
+          relevance: calculateRelevance(query, p.name, p.strain),
+        }))
+      );
     }
-    
+
     // Search Batches
-    if (!types || types.includes('batch')) {
-      const batches = await db.select({
-        id: batchesTable.id,
-        code: batchesTable.code,
-        sku: batchesTable.sku,
-        productName: productsTable.name,
-      })
-      .from(batchesTable)
-      .leftJoin(productsTable, eq(batchesTable.productId, productsTable.id))
-      .where(
-        or(
-          ilike(batchesTable.code, searchPattern),
-          ilike(batchesTable.sku, searchPattern),
-          ilike(productsTable.name, searchPattern),
+    if (!types || types.includes("batch")) {
+      const batches = await db
+        .select({
+          id: batchesTable.id,
+          code: batchesTable.code,
+          sku: batchesTable.sku,
+          productName: productsTable.name,
+        })
+        .from(batchesTable)
+        .leftJoin(productsTable, eq(batchesTable.productId, productsTable.id))
+        .where(
+          or(
+            ilike(batchesTable.code, searchPattern),
+            ilike(batchesTable.sku, searchPattern),
+            ilike(productsTable.name, searchPattern)
+          )
         )
-      )
-      .limit(limit);
-      
-      results.push(...batches.map(b => ({
-        type: 'batch' as const,
-        id: b.id,
-        title: b.code,
-        subtitle: b.productName || b.sku || '',
-        url: `/inventory?batch=${b.id}`,
-        relevance: calculateRelevance(query, b.code, b.productName),
-      })));
+        .limit(limit);
+
+      results.push(
+        ...batches.map(b => ({
+          type: "batch" as const,
+          id: b.id,
+          title: b.code,
+          subtitle: b.productName || b.sku || "",
+          url: `/inventory?batch=${b.id}`,
+          relevance: calculateRelevance(query, b.code, b.productName),
+        }))
+      );
     }
-    
+
     // Search Clients
-    if (!types || types.includes('client')) {
-      const clients = await db.select({
-        id: clientsTable.id,
-        name: clientsTable.name,
-        email: clientsTable.email,
-      })
-      .from(clientsTable)
-      .where(
-        or(
-          ilike(clientsTable.name, searchPattern),
-          ilike(clientsTable.email, searchPattern),
+    if (!types || types.includes("client")) {
+      const clients = await db
+        .select({
+          id: clientsTable.id,
+          name: clientsTable.name,
+          email: clientsTable.email,
+        })
+        .from(clientsTable)
+        .where(
+          or(
+            ilike(clientsTable.name, searchPattern),
+            ilike(clientsTable.email, searchPattern)
+          )
         )
-      )
-      .limit(limit);
-      
-      results.push(...clients.map(c => ({
-        type: 'client' as const,
-        id: c.id,
-        title: c.name,
-        subtitle: c.email || '',
-        url: `/clients/${c.id}`,
-        relevance: calculateRelevance(query, c.name),
-      })));
+        .limit(limit);
+
+      results.push(
+        ...clients.map(c => ({
+          type: "client" as const,
+          id: c.id,
+          title: c.name,
+          subtitle: c.email || "",
+          url: `/clients/${c.id}`,
+          relevance: calculateRelevance(query, c.name),
+        }))
+      );
     }
-    
+
     // Sort by relevance and limit
     results.sort((a, b) => b.relevance - a.relevance);
-    
+
     console.log(`[Search] Found ${results.length} results for "${query}"`);
-    
+
     return results.slice(0, limit);
   }),
+  // Helper function for relevance scoring
+  function calculateRelevance(
+    query: string,
+    ...fields: (string | null | undefined)[]
+  ): number {
+    const lowerQuery = query.toLowerCase();
+    let score = 0;
 
-// Helper function for relevance scoring
-function calculateRelevance(query: string, ...fields: (string | null | undefined)[]): number {
-  const lowerQuery = query.toLowerCase();
-  let score = 0;
-  
-  for (const field of fields) {
-    if (!field) continue;
-    const lowerField = field.toLowerCase();
-    
-    // Exact match = highest score
-    if (lowerField === lowerQuery) {
-      score += 100;
+    for (const field of fields) {
+      if (!field) continue;
+      const lowerField = field.toLowerCase();
+
+      // Exact match = highest score
+      if (lowerField === lowerQuery) {
+        score += 100;
+      }
+      // Starts with = high score
+      else if (lowerField.startsWith(lowerQuery)) {
+        score += 75;
+      }
+      // Contains = medium score
+      else if (lowerField.includes(lowerQuery)) {
+        score += 50;
+      }
     }
-    // Starts with = high score
-    else if (lowerField.startsWith(lowerQuery)) {
-      score += 75;
-    }
-    // Contains = medium score
-    else if (lowerField.includes(lowerQuery)) {
-      score += 50;
-    }
-  }
-  
-  return score;
-}
+
+    return score;
+  });
 ```
 
 ### Unit Tests Required
@@ -225,72 +239,74 @@ function calculateRelevance(query: string, ...fields: (string | null | undefined
 ```typescript
 // server/__tests__/search.test.ts
 
-describe('search', () => {
+describe("search", () => {
   beforeAll(async () => {
     // Seed test data
-    await seedTestProduct({ name: 'OG Kush', strain: 'OG' });
-    await seedTestProduct({ name: 'Blue Dream', strain: 'Sativa' });
-    await seedTestBatch({ code: 'BATCH-001', productName: 'OG Kush' });
-    await seedTestClient({ name: 'Test Client', email: 'test@example.com' });
+    await seedTestProduct({ name: "OG Kush", strain: "OG" });
+    await seedTestProduct({ name: "Blue Dream", strain: "Sativa" });
+    await seedTestBatch({ code: "BATCH-001", productName: "OG Kush" });
+    await seedTestClient({ name: "Test Client", email: "test@example.com" });
   });
 
-  it('finds products by name', async () => {
-    const results = await search({ query: 'OG Kush', limit: 10 });
-    
-    expect(results.some(r => r.type === 'product' && r.title === 'OG Kush')).toBe(true);
+  it("finds products by name", async () => {
+    const results = await search({ query: "OG Kush", limit: 10 });
+
+    expect(
+      results.some(r => r.type === "product" && r.title === "OG Kush")
+    ).toBe(true);
   });
 
-  it('finds products by strain', async () => {
-    const results = await search({ query: 'Sativa', limit: 10 });
-    
-    expect(results.some(r => r.title === 'Blue Dream')).toBe(true);
+  it("finds products by strain", async () => {
+    const results = await search({ query: "Sativa", limit: 10 });
+
+    expect(results.some(r => r.title === "Blue Dream")).toBe(true);
   });
 
-  it('finds batches by code', async () => {
-    const results = await search({ query: 'BATCH-001', limit: 10 });
-    
-    expect(results.some(r => r.type === 'batch')).toBe(true);
+  it("finds batches by code", async () => {
+    const results = await search({ query: "BATCH-001", limit: 10 });
+
+    expect(results.some(r => r.type === "batch")).toBe(true);
   });
 
-  it('finds batches by product name', async () => {
-    const results = await search({ query: 'OG Kush', limit: 10 });
-    
-    expect(results.some(r => r.type === 'batch')).toBe(true);
+  it("finds batches by product name", async () => {
+    const results = await search({ query: "OG Kush", limit: 10 });
+
+    expect(results.some(r => r.type === "batch")).toBe(true);
   });
 
-  it('finds clients by name', async () => {
-    const results = await search({ query: 'Test Client', limit: 10 });
-    
-    expect(results.some(r => r.type === 'client')).toBe(true);
+  it("finds clients by name", async () => {
+    const results = await search({ query: "Test Client", limit: 10 });
+
+    expect(results.some(r => r.type === "client")).toBe(true);
   });
 
-  it('handles empty results gracefully', async () => {
-    const results = await search({ query: 'xyznonexistent123', limit: 10 });
-    
+  it("handles empty results gracefully", async () => {
+    const results = await search({ query: "xyznonexistent123", limit: 10 });
+
     expect(results).toEqual([]);
   });
 
-  it('sanitizes SQL wildcards', async () => {
+  it("sanitizes SQL wildcards", async () => {
     // Should not cause SQL injection
-    const results = await search({ query: '%_test', limit: 10 });
-    
+    const results = await search({ query: "%_test", limit: 10 });
+
     expect(Array.isArray(results)).toBe(true);
   });
 
-  it('respects limit parameter', async () => {
-    const results = await search({ query: 'a', limit: 5 });
-    
+  it("respects limit parameter", async () => {
+    const results = await search({ query: "a", limit: 5 });
+
     expect(results.length).toBeLessThanOrEqual(5);
   });
 
-  it('filters by type', async () => {
-    const results = await search({ 
-      query: 'OG', 
-      limit: 10, 
-      types: ['product'] 
+  it("filters by type", async () => {
+    const results = await search({
+      query: "OG",
+      limit: 10,
+      types: ["product"],
     });
-    
-    expect(results.every(r => r.type === 'product')).toBe(true);
+
+    expect(results.every(r => r.type === "product")).toBe(true);
   });
 });
 ```
@@ -327,13 +343,15 @@ export function useRetryableQuery<T>(
 
   const handleRetry = useCallback(async () => {
     if (retryCount >= maxRetries) {
-      console.warn('[useRetryableQuery] Max retries reached');
+      console.warn("[useRetryableQuery] Max retries reached");
       onMaxRetriesReached?.();
       return;
     }
 
     setRetryCount(prev => prev + 1);
-    console.log(`[useRetryableQuery] Retry attempt ${retryCount + 1}/${maxRetries}`);
+    console.log(
+      `[useRetryableQuery] Retry attempt ${retryCount + 1}/${maxRetries}`
+    );
 
     try {
       // First, invalidate the cache
@@ -341,7 +359,7 @@ export function useRetryableQuery<T>(
       // Then refetch
       await queryResult.refetch();
     } catch (error) {
-      console.error('[useRetryableQuery] Retry failed:', error);
+      console.error("[useRetryableQuery] Retry failed:", error);
     }
   }, [retryCount, maxRetries, queryClient, queryResult, onMaxRetriesReached]);
 
@@ -369,7 +387,7 @@ export function useRetryableQuery<T>(
 
 export function OrderCreatorPage() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
-  
+
   const inventoryQuery = useRetryableQuery(
     trpc.salesSheets.getInventory.useQuery(
       { clientId: selectedClientId! },
@@ -393,9 +411,9 @@ export function OrderCreatorPage() {
             {inventoryQuery.error.message}
           </AlertDescription>
         </Alert>
-        
+
         {inventoryQuery.canRetry ? (
-          <Button 
+          <Button
             onClick={inventoryQuery.handleRetry}
             className="mt-4"
           >
@@ -457,6 +475,7 @@ export function ClientsListPage() {
 ### Problem Analysis
 
 Same error message "Authentication required" used for:
+
 1. Not logged in
 2. Logged in as demo user
 3. Logged in but lacking permission
@@ -471,20 +490,20 @@ Same error message "Authentication required" used for:
 // Define specific error types
 export const AuthErrors = {
   NOT_AUTHENTICATED: {
-    code: 'UNAUTHORIZED' as const,
-    message: 'Please log in to continue',
+    code: "UNAUTHORIZED" as const,
+    message: "Please log in to continue",
   },
   SESSION_EXPIRED: {
-    code: 'UNAUTHORIZED' as const,
-    message: 'Your session has expired. Please log in again.',
+    code: "UNAUTHORIZED" as const,
+    message: "Your session has expired. Please log in again.",
   },
   DEMO_USER_RESTRICTED: {
-    code: 'FORBIDDEN' as const,
-    message: 'This feature is not available in demo mode',
+    code: "FORBIDDEN" as const,
+    message: "This feature is not available in demo mode",
   },
   PERMISSION_DENIED: {
-    code: 'FORBIDDEN' as const,
-    message: 'You do not have permission to perform this action',
+    code: "FORBIDDEN" as const,
+    message: "You do not have permission to perform this action",
   },
 } as const;
 
@@ -518,10 +537,12 @@ export function requirePermission(permission: string) {
     }
 
     const hasPermission = await checkPermission(ctx.user.id, permission);
-    
+
     if (!hasPermission) {
       // Log for security audit
-      console.warn(`[Auth] Permission denied: user=${ctx.user.id}, permission=${permission}`);
+      console.warn(
+        `[Auth] Permission denied: user=${ctx.user.id}, permission=${permission}`
+      );
       throw new TRPCError({
         ...AuthErrors.PERMISSION_DENIED,
         message: `You need the "${permission}" permission to perform this action`,
@@ -538,39 +559,40 @@ export function requirePermission(permission: string) {
 ```typescript
 // client/src/utils/errorHandler.ts
 
-import { TRPCClientError } from '@trpc/client';
+import { TRPCClientError } from "@trpc/client";
 
 export function handleTRPCError(error: TRPCClientError<any>) {
   const code = error.data?.code;
   const message = error.message;
 
   switch (code) {
-    case 'UNAUTHORIZED':
+    case "UNAUTHORIZED":
       // Redirect to login
-      toast.error(message || 'Please log in to continue');
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      toast.error(message || "Please log in to continue");
+      window.location.href =
+        "/login?redirect=" + encodeURIComponent(window.location.pathname);
       break;
-      
-    case 'FORBIDDEN':
+
+    case "FORBIDDEN":
       // Show permission error (don't redirect)
-      if (message.includes('demo')) {
+      if (message.includes("demo")) {
         toast.warning(message, {
           action: {
-            label: 'Upgrade',
-            onClick: () => window.location.href = '/upgrade',
+            label: "Upgrade",
+            onClick: () => (window.location.href = "/upgrade"),
           },
         });
       } else {
-        toast.error(message || 'You do not have permission for this action');
+        toast.error(message || "You do not have permission for this action");
       }
       break;
-      
-    case 'NOT_FOUND':
-      toast.error('The requested resource was not found');
+
+    case "NOT_FOUND":
+      toast.error("The requested resource was not found");
       break;
-      
+
     default:
-      toast.error(message || 'An unexpected error occurred');
+      toast.error(message || "An unexpected error occurred");
   }
 }
 
@@ -590,7 +612,7 @@ export function UserManagement() {
 
   if (error) {
     const code = error.data?.code;
-    
+
     if (code === 'FORBIDDEN') {
       return (
         <Alert variant="warning">
@@ -606,7 +628,7 @@ export function UserManagement() {
         </Alert>
       );
     }
-    
+
     if (code === 'UNAUTHORIZED') {
       return (
         <Alert variant="destructive">
@@ -619,7 +641,7 @@ export function UserManagement() {
         </Alert>
       );
     }
-    
+
     return <ErrorState message={error.message} />;
   }
 
@@ -695,6 +717,7 @@ git push origin fix/wave-2a-search-forms-stable
 ## Handoff
 
 When complete:
+
 1. Create PR with all commits
 2. Note: Database migration needs to run
 3. Notify Wave 3 lead

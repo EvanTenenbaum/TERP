@@ -60,24 +60,24 @@ When a sales rep selects a client/supplier during the Purchase Order or Sales wo
 ```sql
 -- No schema changes required
 -- Query aggregates from existing tables:
--- - lots: vendor supply events (via supplierClientId)
+-- - lots: supplier supply events (via supplierClientId)
 -- - batches: individual products supplied
 -- - sales: sale transactions linked to batches
--- - clients: vendor information (isSeller=true)
--- - supplier_profiles: vendor-specific data
+-- - clients: supplier information (isSeller=true)
+-- - supplier_profiles: supplier-specific data
 ```
 
 ### 4.2 API Contracts
 
-**File:** `/home/user/TERP/server/routers/vendors.ts`
+**File:** `/home/user/TERP/server/routers/suppliers.ts`
 
 ```typescript
-// Vendor Context API - comprehensive vendor history
-vendors.getContext = protectedProcedure
-  .use(requirePermission("vendors:read"))
+// Supplier Context API - comprehensive supplier history
+suppliers.getContext = protectedProcedure
+  .use(requirePermission("suppliers:read"))
   .input(
     z.object({
-      clientId: z.number(), // Vendor's client ID (isSeller=true)
+      clientId: z.number(), // Supplier's client ID (isSeller=true)
       dateRange: z
         .object({
           startDate: z.string().optional(), // ISO date
@@ -90,14 +90,14 @@ vendors.getContext = protectedProcedure
   )
   .output(
     z.object({
-      vendor: z.object({
+      supplier: z.object({
         clientId: z.number(),
         name: z.string(),
         contactName: z.string().nullable(),
         contactEmail: z.string().nullable(),
         contactPhone: z.string().nullable(),
         paymentTerms: z.string().nullable(),
-        totalLifetimeValue: z.number(), // Total revenue from this vendor's products
+        totalLifetimeValue: z.number(), // Total revenue from this supplier's products
         relationshipStartDate: z.string(), // First lot date
       }),
 
@@ -205,7 +205,7 @@ import {
 } from "../drizzle/schema";
 
 export interface VendorContext {
-  vendor: VendorInfo;
+  supplier: VendorInfo;
   supplyHistory: SupplyHistoryEntry[];
   productPerformance: ProductPerformanceEntry[];
   aggregateMetrics: AggregateMetrics;
@@ -223,7 +223,7 @@ export async function getVendorContext(params: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // 1. Get vendor info from clients + supplier_profiles
+  // 1. Get supplier info from clients + supplier_profiles
   const vendorInfo = await getVendorInfo(db, params.clientId);
 
   // 2. Get supply history (lots with batches)
@@ -261,7 +261,7 @@ export async function getVendorContext(params: {
     : undefined;
 
   return {
-    vendor: vendorInfo,
+    supplier: vendorInfo,
     supplyHistory,
     productPerformance,
     aggregateMetrics,
@@ -300,7 +300,7 @@ async function getActiveInventory(
   db: any,
   clientId: number
 ): Promise<ActiveInventoryEntry[]> {
-  // Get batches with available qty from this vendor's lots
+  // Get batches with available qty from this supplier's lots
 }
 
 async function getPaymentHistory(
@@ -309,7 +309,7 @@ async function getPaymentHistory(
   startDate?: Date,
   endDate?: Date
 ): Promise<PaymentHistoryEntry[]> {
-  // Get payments made to this vendor
+  // Get payments made to this supplier
 }
 ```
 
@@ -330,9 +330,9 @@ async function getPaymentHistory(
 ### 5.1 User Flow
 
 ```
-[User selects vendor in PO form]
-    → [API fetches vendor context]
-    → [Vendor Info Pod displays with tabs:]
+[User selects supplier in PO form]
+    → [API fetches supplier context]
+    → [Supplier Info Pod displays with tabs:]
         → [History Tab: Supply timeline]
         → [Performance Tab: Product metrics]
         → [Inventory Tab: Current stock]
@@ -345,7 +345,7 @@ Not applicable - this is a backend API spec. See ENH-002 for frontend implementa
 
 ### 5.3 Acceptance Criteria (API)
 
-- [ ] `GET /api/trpc/vendors.getContext` returns complete vendor context
+- [ ] `GET /api/trpc/suppliers.getContext` returns complete supplier context
 - [ ] Supply history includes all lots from this supplier with product details
 - [ ] Product performance includes accurate sell-through rates
 - [ ] Sell-through rate calculated correctly: (sold / supplied) \* 100

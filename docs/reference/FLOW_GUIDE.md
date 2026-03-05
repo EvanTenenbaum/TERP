@@ -84,7 +84,7 @@ DRAFT → SENT → VIEWED → PARTIAL → PAID
 | ---------------------- | ---------------------------------- | -------- | --------- | ----------------- | ------------------------------------- |
 | Preview Balance        | `accounting.previewPaymentBalance` | query    | protected | accounting:read   | Preview client balance before payment |
 | Receive Client Payment | `accounting.receiveClientPayment`  | mutation | protected | accounting:create | WS-001: Cash drop-off from client     |
-| Pay Vendor             | `accounting.payVendor`             | mutation | protected | accounting:create | WS-002: Cash out to vendor            |
+| Pay Supplier           | `accounting.payVendor`             | mutation | protected | accounting:create | WS-002: Cash out to supplier          |
 | Record Payment         | `accounting.recordPayment`         | mutation | protected | accounting:update | Record payment against invoice/bill   |
 
 ### 1.3 Accounts Receivable Reports

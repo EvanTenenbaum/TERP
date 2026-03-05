@@ -40,7 +40,7 @@ These 5 agents work on **completely independent** areas with no code overlap:
 
 ### Routes Already Verified to Exist
 
-- `/vendors` → VendorsPage.tsx ✅
+- `/suppliers` → VendorsPage.tsx ✅
 - `/purchase-orders` → PurchaseOrdersPage.tsx ✅
 - `/todo` and `/todos` → TodoListsPage.tsx ✅
 - `/accounting` → AccountingDashboard.tsx ✅

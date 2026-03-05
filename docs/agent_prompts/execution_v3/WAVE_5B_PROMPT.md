@@ -10,7 +10,7 @@
 
 ## Overview
 
-Complete the end-to-end inventory workflow from vendor creation through batch publishing to the catalog.
+Complete the end-to-end inventory workflow from supplier creation through batch publishing to the catalog.
 
 ---
 
@@ -19,7 +19,7 @@ Complete the end-to-end inventory workflow from vendor creation through batch pu
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │   Create    │───▶│   Create    │───▶│   Receive   │
-│   Vendor    │    │     PO      │    │    Goods    │
+│   Supplier    │    │     PO      │    │    Goods    │
 └─────────────┘    └─────────────┘    └─────────────┘
                                             │
                                             ▼
@@ -31,68 +31,71 @@ Complete the end-to-end inventory workflow from vendor creation through batch pu
 
 ---
 
-## Task 1: Vendor Creation (1.5 hours)
+## Task 1: Supplier Creation (1.5 hours)
 
 ### Verify Current State
 
 ```bash
-grep -rn "vendor" server/routers/ --include="*.ts"
-grep -rn "Vendor" client/src/pages/ --include="*.tsx"
+grep -rn "supplier" server/routers/ --include="*.ts"
+grep -rn "Supplier" client/src/pages/ --include="*.tsx"
 ```
 
-### Backend: Vendor Router
+### Backend: Supplier Router
 
 ```typescript
-// server/routers/vendors.ts
+// server/routers/suppliers.ts
 
 export const vendorsRouter = router({
   create: protectedProcedure
     .input(createVendorSchema)
     .mutation(async ({ ctx, input }) => {
       // Check for duplicate
-      const existing = await db.query.vendors.findFirst({
+      const existing = await db.query.suppliers.findFirst({
         where: or(
-          eq(vendors.name, input.name),
-          input.email ? eq(vendors.email, input.email) : undefined
+          eq(suppliers.name, input.name),
+          input.email ? eq(suppliers.email, input.email) : undefined
         ),
       });
-      
+
       if (existing) {
         throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'A vendor with this name or email already exists',
+          code: "CONFLICT",
+          message: "A supplier with this name or email already exists",
         });
       }
 
-      const [vendor] = await db.insert(vendors).values({
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        address: input.address,
-        contactName: input.contactName,
-        paymentTerms: input.paymentTerms ?? 30,
-        notes: input.notes,
-        createdBy: ctx.user.id,
-      }).returning();
+      const [supplier] = await db
+        .insert(suppliers)
+        .values({
+          name: input.name,
+          email: input.email,
+          phone: input.phone,
+          address: input.address,
+          contactName: input.contactName,
+          paymentTerms: input.paymentTerms ?? 30,
+          notes: input.notes,
+          createdBy: ctx.user.id,
+        })
+        .returning();
 
       await logAudit({
-        action: 'CREATE',
-        entityType: 'vendor',
-        entityId: vendor.id,
+        action: "CREATE",
+        entityType: "supplier",
+        entityId: supplier.id,
         userId: ctx.user.id,
       });
 
-      return vendor;
+      return supplier;
     }),
 
   list: protectedProcedure
     .input(listVendorsSchema.optional())
     .query(async ({ input }) => {
-      return db.query.vendors.findMany({
-        where: input?.search 
-          ? ilike(vendors.name, `%${input.search}%`)
+      return db.query.suppliers.findMany({
+        where: input?.search
+          ? ilike(suppliers.name, `%${input.search}%`)
           : undefined,
-        orderBy: asc(vendors.name),
+        orderBy: asc(suppliers.name),
         limit: input?.limit ?? 100,
       });
     }),
@@ -100,8 +103,8 @@ export const vendorsRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const vendor = await db.query.vendors.findFirst({
-        where: eq(vendors.id, input.id),
+      const supplier = await db.query.suppliers.findFirst({
+        where: eq(suppliers.id, input.id),
         with: {
           purchaseOrders: {
             orderBy: desc(purchaseOrders.createdAt),
@@ -114,25 +117,29 @@ export const vendorsRouter = router({
         },
       });
 
-      if (!vendor) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Vendor not found' });
+      if (!supplier) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Supplier not found",
+        });
       }
 
-      return vendor;
+      return supplier;
     }),
 
   update: protectedProcedure
     .input(updateVendorSchema)
     .mutation(async ({ ctx, input }) => {
       const { id, ...updates } = input;
-      
-      await db.update(vendors)
+
+      await db
+        .update(suppliers)
         .set({ ...updates, updatedAt: new Date() })
-        .where(eq(vendors.id, id));
+        .where(eq(suppliers.id, id));
 
       await logAudit({
-        action: 'UPDATE',
-        entityType: 'vendor',
+        action: "UPDATE",
+        entityType: "supplier",
         entityId: id,
         userId: ctx.user.id,
         details: updates,
@@ -143,10 +150,10 @@ export const vendorsRouter = router({
 });
 ```
 
-### Frontend: Vendor Form
+### Frontend: Supplier Form
 
 ```typescript
-// client/src/components/vendors/VendorForm.tsx
+// client/src/components/suppliers/VendorForm.tsx
 
 const vendorFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -158,29 +165,29 @@ const vendorFormSchema = z.object({
   notes: z.string().optional(),
 });
 
-export function VendorForm({ vendor, onSuccess }: VendorFormProps) {
+export function VendorForm({ supplier, onSuccess }: VendorFormProps) {
   const form = useForm<z.infer<typeof vendorFormSchema>>({
     resolver: zodResolver(vendorFormSchema),
-    defaultValues: vendor ?? { paymentTerms: 30 },
+    defaultValues: supplier ?? { paymentTerms: 30 },
   });
 
-  const createVendor = trpc.vendors.create.useMutation({
+  const createVendor = trpc.suppliers.create.useMutation({
     onSuccess: (data) => {
-      toast.success('Vendor created');
+      toast.success('Supplier created');
       onSuccess?.(data);
     },
   });
 
-  const updateVendor = trpc.vendors.update.useMutation({
+  const updateVendor = trpc.suppliers.update.useMutation({
     onSuccess: () => {
-      toast.success('Vendor updated');
+      toast.success('Supplier updated');
       onSuccess?.();
     },
   });
 
   const onSubmit = (data: z.infer<typeof vendorFormSchema>) => {
-    if (vendor) {
-      updateVendor.mutate({ id: vendor.id, ...data });
+    if (supplier) {
+      updateVendor.mutate({ id: supplier.id, ...data });
     } else {
       createVendor.mutate(data);
     }
@@ -189,16 +196,16 @@ export function VendorForm({ vendor, onSuccess }: VendorFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField name="name" label="Vendor Name" required />
+        <FormField name="name" label="Supplier Name" required />
         <FormField name="contactName" label="Contact Name" />
         <FormField name="email" label="Email" type="email" />
         <FormField name="phone" label="Phone" />
         <FormField name="address" label="Address" />
         <FormField name="paymentTerms" label="Payment Terms (days)" type="number" />
         <FormField name="notes" label="Notes" multiline />
-        
+
         <Button type="submit" disabled={createVendor.isLoading || updateVendor.isLoading}>
-          {vendor ? 'Update Vendor' : 'Create Vendor'}
+          {supplier ? 'Update Supplier' : 'Create Supplier'}
         </Button>
       </form>
     </Form>
@@ -219,20 +226,26 @@ export const purchaseOrdersRouter = router({
   create: protectedProcedure
     .input(createPOSchema)
     .mutation(async ({ ctx, input }) => {
-      const vendor = await getVendor(input.vendorId);
-      if (!vendor) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Vendor not found' });
+      const supplier = await getVendor(input.vendorId);
+      if (!supplier) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Supplier not found",
+        });
       }
 
-      const po = await db.transaction(async (tx) => {
-        const [po] = await tx.insert(purchaseOrders).values({
-          vendorId: input.vendorId,
-          poNumber: await generatePONumber(tx),
-          status: 'draft',
-          expectedDeliveryDate: input.expectedDeliveryDate,
-          notes: input.notes,
-          createdBy: ctx.user.id,
-        }).returning();
+      const po = await db.transaction(async tx => {
+        const [po] = await tx
+          .insert(purchaseOrders)
+          .values({
+            vendorId: input.vendorId,
+            poNumber: await generatePONumber(tx),
+            status: "draft",
+            expectedDeliveryDate: input.expectedDeliveryDate,
+            notes: input.notes,
+            createdBy: ctx.user.id,
+          })
+          .returning();
 
         if (input.items?.length > 0) {
           await tx.insert(purchaseOrderItems).values(
@@ -255,26 +268,27 @@ export const purchaseOrdersRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const po = await getPO(input.id);
-      
-      if (po.status !== 'draft') {
+
+      if (po.status !== "draft") {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Only draft POs can be submitted',
+          code: "BAD_REQUEST",
+          message: "Only draft POs can be submitted",
         });
       }
 
-      await db.update(purchaseOrders)
-        .set({ 
-          status: 'submitted',
+      await db
+        .update(purchaseOrders)
+        .set({
+          status: "submitted",
           submittedAt: new Date(),
           submittedBy: ctx.user.id,
         })
         .where(eq(purchaseOrders.id, input.id));
 
-      // Send to vendor if email configured
-      const vendor = await getVendor(po.vendorId);
-      if (vendor.email) {
-        await sendPOEmail(po, vendor);
+      // Send to supplier if email configured
+      const supplier = await getVendor(po.vendorId);
+      if (supplier.email) {
+        await sendPOEmail(po, supplier);
       }
 
       return { success: true };
@@ -284,15 +298,15 @@ export const purchaseOrdersRouter = router({
     .input(receivePOSchema)
     .mutation(async ({ ctx, input }) => {
       const po = await getPOWithItems(input.id);
-      
-      if (!['submitted', 'partial'].includes(po.status)) {
+
+      if (!["submitted", "partial"].includes(po.status)) {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'PO is not in a receivable state',
+          code: "BAD_REQUEST",
+          message: "PO is not in a receivable state",
         });
       }
 
-      const batches = await db.transaction(async (tx) => {
+      const batches = await db.transaction(async tx => {
         const createdBatches = [];
 
         for (const receipt of input.receipts) {
@@ -300,24 +314,28 @@ export const purchaseOrdersRouter = router({
           if (!poItem) continue;
 
           // Create batch for received goods
-          const [batch] = await tx.insert(batches).values({
-            productId: poItem.productId,
-            vendorId: po.vendorId,
-            purchaseOrderId: po.id,
-            code: await generateBatchCode(tx),
-            quantity: receipt.receivedQuantity,
-            unitCost: poItem.unitCost,
-            status: 'received',
-            receivedAt: new Date(),
-            receivedBy: ctx.user.id,
-            locationId: receipt.locationId,
-          }).returning();
+          const [batch] = await tx
+            .insert(batches)
+            .values({
+              productId: poItem.productId,
+              vendorId: po.vendorId,
+              purchaseOrderId: po.id,
+              code: await generateBatchCode(tx),
+              quantity: receipt.receivedQuantity,
+              unitCost: poItem.unitCost,
+              status: "received",
+              receivedAt: new Date(),
+              receivedBy: ctx.user.id,
+              locationId: receipt.locationId,
+            })
+            .returning();
 
           createdBatches.push(batch);
 
           // Update PO item received quantity
-          await tx.update(purchaseOrderItems)
-            .set({ 
+          await tx
+            .update(purchaseOrderItems)
+            .set({
               receivedQuantity: sql`${purchaseOrderItems.receivedQuantity} + ${receipt.receivedQuantity}`,
             })
             .where(eq(purchaseOrderItems.id, receipt.poItemId));
@@ -325,9 +343,10 @@ export const purchaseOrdersRouter = router({
 
         // Update PO status
         const allReceived = await checkAllItemsReceived(tx, po.id);
-        await tx.update(purchaseOrders)
-          .set({ 
-            status: allReceived ? 'received' : 'partial',
+        await tx
+          .update(purchaseOrders)
+          .set({
+            status: allReceived ? "received" : "partial",
             receivedAt: allReceived ? new Date() : null,
           })
           .where(eq(purchaseOrders.id, po.id));
@@ -342,7 +361,7 @@ export const purchaseOrdersRouter = router({
 
 ---
 
-## Task 3: Goods Receiving & Batch Creation (2 hours)
+## Task 3: Goods Intake & Batch Creation (2 hours)
 
 ### BUG-028: Batch Form Input Fields
 
@@ -369,8 +388,8 @@ export function BatchForm({ batch, onSuccess }: BatchFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Product</FormLabel>
-              <ProductSelector 
-                value={field.value} 
+              <ProductSelector
+                value={field.value}
                 onChange={field.onChange}
               />
               <FormMessage />
@@ -385,8 +404,8 @@ export function BatchForm({ batch, onSuccess }: BatchFormProps) {
             <FormItem>
               <FormLabel>Quantity</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   {...field}
                   onChange={e => field.onChange(Number(e.target.value))}
                 />
@@ -403,8 +422,8 @@ export function BatchForm({ batch, onSuccess }: BatchFormProps) {
             <FormItem>
               <FormLabel>Unit Cost</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   step="0.01"
                   {...field}
                   onChange={e => field.onChange(Number(e.target.value))}
@@ -422,7 +441,7 @@ export function BatchForm({ batch, onSuccess }: BatchFormProps) {
 }
 ```
 
-### Receiving Interface
+### Intake Interface
 
 ```typescript
 // client/src/pages/ReceiveGoodsPage.tsx
@@ -430,9 +449,9 @@ export function BatchForm({ batch, onSuccess }: BatchFormProps) {
 export function ReceiveGoodsPage() {
   const { poId } = useParams();
   const { data: po } = trpc.purchaseOrders.getById.useQuery({ id: Number(poId) });
-  
+
   const [receipts, setReceipts] = useState<Receipt[]>([]);
-  
+
   const receivePO = trpc.purchaseOrders.receive.useMutation({
     onSuccess: ({ batches }) => {
       toast.success(`Received ${batches.length} batches`);
@@ -443,7 +462,7 @@ export function ReceiveGoodsPage() {
   return (
     <div className="space-y-6">
       <h1>Receive Goods - PO #{po?.poNumber}</h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Items to Receive</CardTitle>
@@ -455,7 +474,7 @@ export function ReceiveGoodsPage() {
                 <TableHead>Product</TableHead>
                 <TableHead>Ordered</TableHead>
                 <TableHead>Previously Received</TableHead>
-                <TableHead>Receiving Now</TableHead>
+                <TableHead>Intake Now</TableHead>
                 <TableHead>Location</TableHead>
               </TableRow>
             </TableHeader>
@@ -468,7 +487,7 @@ export function ReceiveGoodsPage() {
                   onReceiptChange={(receipt) => {
                     setReceipts(prev => {
                       const filtered = prev.filter(r => r.poItemId !== item.id);
-                      return receipt.receivedQuantity > 0 
+                      return receipt.receivedQuantity > 0
                         ? [...filtered, receipt]
                         : filtered;
                     });
@@ -480,7 +499,7 @@ export function ReceiveGoodsPage() {
         </CardContent>
       </Card>
 
-      <Button 
+      <Button
         onClick={() => receivePO.mutate({ id: Number(poId), receipts })}
         disabled={receipts.length === 0 || receivePO.isLoading}
       >
@@ -551,7 +570,7 @@ uploadPhotos: protectedProcedure
 export function BatchPhotoUpload({ batchId }: { batchId: number }) {
   const [uploading, setUploading] = useState(false);
   const { data: batch, refetch } = trpc.batches.getById.useQuery({ id: batchId });
-  
+
   const uploadPhotos = trpc.batches.uploadPhotos.useMutation({
     onSuccess: () => {
       toast.success('Photos uploaded');
@@ -565,7 +584,7 @@ export function BatchPhotoUpload({ batchId }: { batchId: number }) {
       const uploadedUrls = await Promise.all(
         Array.from(files).map(file => uploadToS3(file))
       );
-      
+
       await uploadPhotos.mutateAsync({
         batchId,
         photos: uploadedUrls.map((url, i) => ({
@@ -590,7 +609,7 @@ export function BatchPhotoUpload({ batchId }: { batchId: number }) {
           </div>
         ))}
       </div>
-      
+
       <div className="border-2 border-dashed rounded-lg p-8 text-center">
         <input
           type="file"
@@ -630,7 +649,7 @@ publish: protectedProcedure
   }))
   .mutation(async ({ ctx, input }) => {
     const batch = await getBatchWithPhotos(input.batchId);
-    
+
     if (!batch) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch not found' });
     }
@@ -760,7 +779,7 @@ export function PublishBatchDialog({ batch, open, onClose }: Props) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button 
+          <Button
             onClick={() => publish.mutate({
               batchId: batch.id,
               pricing: { basePrice, tierPricing },
@@ -780,9 +799,9 @@ export function PublishBatchDialog({ batch, open, onClose }: Props) {
 
 ## QA Tasks
 
-### QA-054: Vendor Supply Management Backend
+### QA-054: Supplier Supply Management Backend
 
-Ensure all vendor-related endpoints are complete and tested.
+Ensure all supplier-related endpoints are complete and tested.
 
 ---
 
@@ -793,39 +812,39 @@ Ensure all vendor-related endpoints are complete and tested.
 ```typescript
 // tests/e2e/inventoryWorkflow.spec.ts
 
-test.describe('Inventory Workflow', () => {
-  test('complete inventory cycle', async ({ page }) => {
-    // 1. Create vendor
-    await page.goto('/vendors/new');
-    await page.fill('[name="name"]', 'Test Vendor');
+test.describe("Inventory Workflow", () => {
+  test("complete inventory cycle", async ({ page }) => {
+    // 1. Create supplier
+    await page.goto("/suppliers/new");
+    await page.fill('[name="name"]', "Test Supplier");
     await page.click('button[type="submit"]');
-    
+
     // 2. Create PO
-    await page.goto('/purchase-orders/new');
-    await page.click('[data-testid="vendor-selector"]');
-    await page.click('text=Test Vendor');
+    await page.goto("/purchase-orders/new");
+    await page.click('[data-testid="supplier-selector"]');
+    await page.click("text=Test Supplier");
     // ... add items
-    await page.click('text=Create PO');
-    await page.click('text=Submit PO');
-    
+    await page.click("text=Create PO");
+    await page.click("text=Submit PO");
+
     // 3. Receive goods
-    await page.click('text=Receive');
-    await page.fill('[data-testid="receive-qty-0"]', '100');
-    await page.click('text=Receive Selected');
-    
+    await page.click("text=Receive");
+    await page.fill('[data-testid="receive-qty-0"]', "100");
+    await page.click("text=Receive Selected");
+
     // 4. Photograph batch
-    await page.goto('/inventory');
-    await page.click('text=View'); // First batch
-    await page.setInputFiles('input[type="file"]', 'test-photo.jpg');
-    
+    await page.goto("/inventory");
+    await page.click("text=View"); // First batch
+    await page.setInputFiles('input[type="file"]', "test-photo.jpg");
+
     // 5. Publish to catalog
-    await page.click('text=Publish');
-    await page.fill('[name="basePrice"]', '50.00');
-    await page.click('text=Publish');
-    
+    await page.click("text=Publish");
+    await page.fill('[name="basePrice"]', "50.00");
+    await page.click("text=Publish");
+
     // Verify in catalog
-    await page.goto('/catalog');
-    await expect(page.locator('text=Test Product')).toBeVisible();
+    await page.goto("/catalog");
+    await expect(page.locator("text=Test Product")).toBeVisible();
   });
 });
 ```
@@ -837,14 +856,14 @@ test.describe('Inventory Workflow', () => {
 ```bash
 git checkout -b feat/wave-5b-inventory-workflow
 
-git add server/routers/vendors.ts client/src/components/vendors/
-git commit -m "feat(INV-1): Implement vendor management"
+git add server/routers/suppliers.ts client/src/components/suppliers/
+git commit -m "feat(INV-1): Implement supplier management"
 
 git add server/routers/purchaseOrders.ts client/src/pages/PurchaseOrdersPage.tsx
 git commit -m "feat(INV-2): Implement purchase order creation"
 
 git add server/routers/purchaseOrders.ts client/src/pages/ReceiveGoodsPage.tsx
-git commit -m "feat(INV-3): Implement goods receiving and batch creation"
+git commit -m "feat(INV-3): Implement goods intake and batch creation"
 
 git add server/routers/batches.ts client/src/components/inventory/BatchPhotoUpload.tsx
 git commit -m "feat(INV-4): Implement batch photography"
@@ -859,7 +878,7 @@ git push origin feat/wave-5b-inventory-workflow
 
 ## Success Criteria
 
-- [ ] Can create vendor
+- [ ] Can create supplier
 - [ ] Can create purchase order
 - [ ] Can receive goods and create batch
 - [ ] Can photograph batch

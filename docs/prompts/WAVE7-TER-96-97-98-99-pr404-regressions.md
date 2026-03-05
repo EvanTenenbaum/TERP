@@ -48,9 +48,11 @@ PR #404 was merged then its branch deleted before the fixes landed on `main`. Th
 **What**: Add a sidebar navigation entry for Client Ledger. The route `/client-ledger` already exists in `App.tsx` and works. The component `ClientLedgerWorkSurface` renders correctly. The only problem is there's no nav item pointing to it.
 
 **Files**:
+
 - `client/src/config/navigation.ts` — add nav item + import `BookOpen`
 
 **Acceptance Criteria**:
+
 - [ ] `BookOpen` icon imported from `lucide-react`
 - [ ] New `NavigationItem` added in the `finance` group after the Credits entry (around line 183)
 - [ ] Nav item points to `/client-ledger` (the generic route with client picker)
@@ -60,11 +62,13 @@ PR #404 was merged then its branch deleted before the fixes landed on `main`. Th
 **Implementation**:
 
 Add to the lucide-react import:
+
 ```typescript
 BookOpen, // TER-99: Client Ledger navigation
 ```
 
 Add after the Credits entry (line 183), before Reports:
+
 ```typescript
 // TER-99: Client Ledger — direct access to client transaction history
 {
@@ -77,6 +81,7 @@ Add after the Credits entry (line 183), before Reports:
 ```
 
 **Verification**:
+
 ```bash
 pnpm check 2>&1 | tail -5
 # Must show no errors
@@ -93,9 +98,11 @@ pnpm check 2>&1 | tail -5
 **Root Cause**: In `handleCellValueChanged` (line 443-470 of `IntakeGrid.tsx`), the AG Grid `setDataValue("site", location.site)` call updates the grid node, but `event.data` (used in the `setRows` call at line 464-468) still has the OLD value. The `setRows` spread `{ ...row, ...event.data }` overwrites `site` back to `""`.
 
 **Files**:
+
 - `client/src/components/spreadsheet/IntakeGrid.tsx` — fix `handleCellValueChanged`
 
 **Acceptance Criteria**:
+
 - [ ] When `event.colDef.field === "locationName"`, the `setRows` call explicitly includes `site: location.site` and `locationId: location.id`
 - [ ] Same pattern applied for `strainId` sync when `event.colDef.field === "item"` (also has same bug)
 - [ ] Early return after location/strain handlers to skip the generic `setRows` at line 464
@@ -116,7 +123,12 @@ if (event.colDef.field === "locationName") {
     setRows(prevRows =>
       prevRows.map(row =>
         row.id === event.data?.id
-          ? { ...row, ...event.data, site: location.site, locationId: location.id }
+          ? {
+              ...row,
+              ...event.data,
+              site: location.site,
+              locationId: location.id,
+            }
           : row
       )
     );
@@ -127,8 +139,7 @@ if (event.colDef.field === "locationName") {
 // Update strainId when item/product changes
 if (event.colDef.field === "item") {
   const strain = strains.find(
-    s =>
-      s.standardizedName === event.newValue || s.name === event.newValue
+    s => s.standardizedName === event.newValue || s.name === event.newValue
   );
   if (strain) {
     event.node.setDataValue("strainId", strain.id);
@@ -152,6 +163,7 @@ setRows(prevRows =>
 ```
 
 **Verification**:
+
 ```bash
 pnpm check 2>&1 | tail -5
 ```
@@ -160,28 +172,31 @@ pnpm check 2>&1 | tail -5
 
 ---
 
-## Task 3: TER-97 — Fix purchaseOrders.create Vendor Mapping 500 (RED)
+## Task 3: TER-97 — Fix purchaseOrders.create Supplier Mapping 500 (RED)
 
 **What**: `purchaseOrders.create` throws 500 when called with `supplierClientId` because `resolveOrCreateLegacyVendorId()` can fail (unique constraint violations, missing supplier profile). The schema requires `vendorId NOT NULL`, forcing the legacy mapping.
 
-**Root Cause**: `purchaseOrders.vendorId` is `NOT NULL` in `drizzle/schema.ts:598`, forcing every PO create to resolve a legacy vendor ID even when `supplierClientId` is provided. The bridge function `resolveOrCreateLegacyVendorId()` has multiple failure paths (race on vendors.name unique index, missing supplierProfile, clientId unique constraint on supplierProfiles).
+**Root Cause**: `purchaseOrders.vendorId` is `NOT NULL` in `drizzle/schema.ts:598`, forcing every PO create to resolve a legacy supplier ID even when `supplierClientId` is provided. The bridge function `resolveOrCreateLegacyVendorId()` has multiple failure paths (race on suppliers.name unique index, missing supplierProfile, clientId unique constraint on supplierProfiles).
 
 **Files**:
+
 - `drizzle/schema.ts` — make `purchaseOrders.vendorId` nullable
 - `server/autoMigrate.ts` — add migration block to make the column nullable in DB
 - `server/routers/purchaseOrders.ts` — remove hard-fail when vendorId can't be resolved; wrap in try/catch
 - `server/services/vendorMappingService.ts` — harden `resolveOrCreateLegacyVendorId()` to never throw
 
 **Acceptance Criteria**:
+
 - [ ] `purchaseOrders.vendorId` changed from `.notNull()` to nullable in `drizzle/schema.ts`
 - [ ] `autoMigrate.ts` has a new block: `ALTER TABLE purchaseOrders MODIFY COLUMN vendorId INT NULL`
 - [ ] Router wraps `resolveOrCreateLegacyVendorId()` in try/catch, logs warning, proceeds with null vendorId
 - [ ] Hard-fail block (lines 210-217 of purchaseOrders.ts) changed to only throw if BOTH vendorId AND supplierClientId are missing
 - [ ] `resolveOrCreateLegacyVendorId()` returns `null` instead of throwing on failure
 - [ ] Existing PO creation with vendorId still works (backward compat)
-- [ ] PO creation with only supplierClientId works even if vendor mapping fails
+- [ ] PO creation with only supplierClientId works even if supplier mapping fails
 
 **Implementation Guide for purchaseOrders.ts** (lines 203-217):
+
 ```typescript
 // If only supplierClientId provided, try to resolve vendorId for backward compat
 if (resolvedSupplierClientId && !resolvedVendorId) {
@@ -190,7 +205,7 @@ if (resolvedSupplierClientId && !resolvedVendorId) {
       resolvedSupplierClientId
     );
   } catch (e) {
-    // Legacy vendor mapping is best-effort during deprecation period
+    // Legacy supplier mapping is best-effort during deprecation period
     logger.warn(
       { supplierClientId: resolvedSupplierClientId, error: e },
       "[PO] Could not resolve legacy vendorId — proceeding with supplierClientId only"
@@ -210,12 +225,14 @@ if (!resolvedVendorId && !resolvedSupplierClientId) {
 ```
 
 **Implementation Guide for vendorMappingService.ts** — `resolveOrCreateLegacyVendorId()`:
+
 - Wrap the entire function body in try/catch
 - Return `null` from the catch block instead of throwing
 - Log a warning with the specific failure reason
 
 **Implementation Guide for autoMigrate.ts**:
 Add a new migration block following existing patterns (check-then-alter):
+
 ```typescript
 // TER-97: Make purchaseOrders.vendorId nullable for supplierClientId-only PO creation
 const [poVendorIdCol] = await db.execute(sql`
@@ -224,13 +241,19 @@ const [poVendorIdCol] = await db.execute(sql`
     AND TABLE_NAME = 'purchaseOrders'
     AND COLUMN_NAME = 'vendorId'
 `);
-if (poVendorIdCol && (poVendorIdCol as Record<string, string>).IS_NULLABLE === 'NO') {
-  await db.execute(sql`ALTER TABLE purchaseOrders MODIFY COLUMN vendorId INT NULL`);
+if (
+  poVendorIdCol &&
+  (poVendorIdCol as Record<string, string>).IS_NULLABLE === "NO"
+) {
+  await db.execute(
+    sql`ALTER TABLE purchaseOrders MODIFY COLUMN vendorId INT NULL`
+  );
   logger.info("[autoMigrate] TER-97: Made purchaseOrders.vendorId nullable");
 }
 ```
 
 **Verification**:
+
 ```bash
 pnpm check 2>&1 | tail -5
 pnpm test -- --grep "purchaseOrder" 2>&1 | tail -20
@@ -245,6 +268,7 @@ pnpm test -- --grep "purchaseOrder" 2>&1 | tail -20
 **What**: `samples.createRequest` throws 500 because `drizzle/schema.ts` defines columns and enum values on `sampleRequests` that don't exist in the DB. The schema was extended for SAMPLE-006 through SAMPLE-009 (return workflow, location tracking) but no migration was ever created or run.
 
 **Root Cause**: Schema drift. `drizzle/schema.ts` has:
+
 - `sampleRequestStatusEnum` with 9 values, but DB only has 3 (`PENDING`, `FULFILLED`, `CANCELLED`)
 - `sampleLocationEnum` defined but the `location` column doesn't exist in DB
 - Return workflow columns (`returnRequestedDate`, etc.) defined but not in DB
@@ -254,9 +278,11 @@ pnpm test -- --grep "purchaseOrder" 2>&1 | tail -20
 **Approach**: Add the missing columns/tables/enum-values to the DB via `autoMigrate.ts`. The schema.ts is already correct (it's "ahead" of the DB). We just need the DB to catch up.
 
 **Files**:
+
 - `server/autoMigrate.ts` — add migration blocks for all missing sample schema elements
 
 **Acceptance Criteria**:
+
 - [ ] `autoMigrate.ts` adds the expanded enum values to `sampleRequestStatus` column
 - [ ] `autoMigrate.ts` adds the `location` column with `sampleLocation` enum type
 - [ ] `autoMigrate.ts` adds all return workflow columns to `sampleRequests`
@@ -271,6 +297,7 @@ pnpm test -- --grep "purchaseOrder" 2>&1 | tail -20
 Add a section `// === TER-98: Sample Schema Migrations ===` with these blocks:
 
 1. Alter `sampleRequestStatus` enum:
+
 ```sql
 ALTER TABLE sampleRequests
   MODIFY COLUMN sampleRequestStatus
@@ -280,6 +307,7 @@ ALTER TABLE sampleRequests
 ```
 
 2. Add `location` column:
+
 ```sql
 ALTER TABLE sampleRequests
   ADD COLUMN location ENUM('WAREHOUSE','WITH_CLIENT','WITH_SALES_REP','RETURNED','LOST')
@@ -287,6 +315,7 @@ ALTER TABLE sampleRequests
 ```
 
 3. Add return workflow columns (all nullable timestamps/text/varchar):
+
 ```sql
 ALTER TABLE sampleRequests
   ADD COLUMN returnRequestedDate TIMESTAMP NULL,
@@ -301,6 +330,7 @@ ALTER TABLE sampleRequests
 Each block must be idempotent — check `information_schema.COLUMNS` or `information_schema.TABLES` before altering.
 
 **Verification**:
+
 ```bash
 pnpm check 2>&1 | tail -5
 pnpm test -- --grep "sample" 2>&1 | tail -20
@@ -331,24 +361,32 @@ pnpm build 2>&1 | tail -5
 After all tasks pass Gate 5, run the adversarial QA:
 
 ### Lens 1: Static Pattern Scan
+
 ```bash
 git diff HEAD~1..HEAD | grep -E "(ctx\.user\?\.(id|name)\s*\|\|)|(\.delete\()|(: any[^_])|(input\.userId)|(input\.createdBy)"
 ```
+
 Must find ZERO matches (P0 auto-reject patterns).
 
 ### Lens 2: Execution Path Tracing
+
 Trace these functions through all branches:
+
 - `purchaseOrders.create` — vendorId provided, supplierClientId provided, neither provided, both provided
 - `handleCellValueChanged` — locationName change, item change, other field change
 - `createSampleRequest` — allocation passes, allocation fails, insert succeeds, insert fails
 
 ### Lens 3: Data Flow Analysis
+
 Map INPUT → TRANSFORMS → OUTPUT for:
-- `resolveOrCreateLegacyVendorId()` — client → supplierProfile → vendors → vendorId (or null)
+
+- `resolveOrCreateLegacyVendorId()` — client → supplierProfile → suppliers → vendorId (or null)
 - `handleCellValueChanged` → `setRows` — AG Grid event → React state (site, locationId, strainId)
 
 ### Lens 4: Adversarial Scenarios (minimum 10)
+
 Test at minimum:
+
 1. PO create with supplierClientId that has NO supplierProfile
 2. PO create with supplierClientId that has supplierProfile but NO legacyVendorId
 3. PO create with vendorId only (backward compat)
@@ -361,6 +399,7 @@ Test at minimum:
 10. Navigation: Client Ledger appears in sidebar under Finance group
 
 ### Lens 5: Integration & Blast Radius
+
 Map what other code calls each modified function/endpoint and verify no regressions.
 
 ---
@@ -368,6 +407,7 @@ Map what other code calls each modified function/endpoint and verify no regressi
 ## Fix Cycle
 
 For each issue found by QA:
+
 1. Fix the issue
 2. Re-run the specific verification that failed
 3. Paste the new output showing it passes

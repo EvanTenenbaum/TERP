@@ -899,7 +899,7 @@ Expected: **0 matches** (down from 7).
 grep -rn " as any" /home/user/TERP/server/routers/ --include="*.ts" | grep -v ".backup" | grep -v ".test.ts" | grep -v "permission-checks"
 ```
 
-Expected: **0 matches in business logic files** (down from 11 — note `vendors.ts`, `vipPortal.ts`, and `vendorSupply.ts` are OUT OF SCOPE for this task, do not count those as failures).
+Expected: **0 matches in business logic files** (down from 11 — note `suppliers.ts`, `vipPortal.ts`, and `vendorSupply.ts` are OUT OF SCOPE for this task, do not count those as failures).
 
 ```bash
 grep -rn "headers.*as any\|res.*as any" /home/user/TERP/server/routers/*.test.ts 2>/dev/null
@@ -1045,9 +1045,9 @@ The following `as any` instances were identified during research but are NOT in 
 
 | File                                          | Pattern                        | Suggested Task                     |
 | --------------------------------------------- | ------------------------------ | ---------------------------------- |
-| `server/routers/vendors.ts:468`               | `(result as any).insertId`     | Fix with typed insert result       |
+| `server/routers/suppliers.ts:468`             | `(result as any).insertId`     | Fix with typed insert result       |
 | `server/routers/vipPortal.ts:752,810,869,873` | `status as any`, `type as any` | Requires VIP Portal enum alignment |
-| `server/routers/vendorSupply.ts:48`           | `} as any`                     | Part of vendor migration work      |
+| `server/routers/vendorSupply.ts:48`           | `} as any`                     | Part of supplier migration work    |
 | `server/configurationManager.ts:200`          | Internal `any`                 | Separate config refactor task      |
 | `server/needsMatchingService.ts:47`           | `Promise<any>` return type     | Separate matching service task     |
 

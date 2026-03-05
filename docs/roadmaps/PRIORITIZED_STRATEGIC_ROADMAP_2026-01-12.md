@@ -362,9 +362,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 [ ] Live Shopping price negotiation works
 [ ] Variable markups calculate correctly by age/quantity
 [ ] Real-time price adjustment applies immediately
-[ ] Vendor and Brand distinguished in UI
+[ ] Supplier and Brand distinguished in UI
 [ ] Brand renamed to "Farmer Code" throughout
-[ ] Vendor search shows associated brands
+[ ] Supplier search shows associated brands
 [ ] Payables mark due when SKU hits zero
 [ ] Office-owned inventory tracked separately
 [ ] Payment recording against invoices works
@@ -570,7 +570,7 @@ VALIDATION CHECKLIST (Must all pass for MVP Complete):
 [ ] Payment terms (consignment/cash/COD) work
 [ ] Product grades selectable
 [ ] Simple task management works (WS-013)
-[ ] Vendor harvest reminders fire correctly (WS-014)
+[ ] Supplier harvest reminders fire correctly (WS-014)
 [ ] Storage zones functional
 [ ] Full E2E test suite: 0 FAIL, 0 BLOCKED
 ```
@@ -685,12 +685,12 @@ SPRINT 2 (Wave 1 - Stop the Bleeding)
 SPRINT 3 (Wave 2 - Core Operations)
 ├─ Track A: Live Shopping ◄─ BUG-094 fixed
 ├─ Track B: Pricing Engine ◄─ BUG-084 fixed
-├─ Track C: Vendor/Brand (independent)
+├─ Track C: Supplier/Brand (independent)
 └─ Track D: Payables ◄─ Client Ledger (2.D) complete
 
 SPRINT 4 (Wave 3 - Enhanced Capability)
 ├─ Track A: Enhanced Inventory (independent)
-├─ Track B: Client 360 ◄─ Vendor Context (3.C.1) complete
+├─ Track B: Client 360 ◄─ Supplier Context (3.C.1) complete
 ├─ Track C: In-line Product (independent)
 └─ Track D: Scheduling (independent)
 

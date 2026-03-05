@@ -136,7 +136,7 @@ All take single object arg: `{ rows, selectedRowIds: Set<string>, getRowId, ... 
 | ------------------------------- | -------------------------------------------------------- | ------------------------------- |
 | `/inventory`                    | `InventoryWorkspacePage` → `InventoryWorkSurface`        | `LinearWorkspaceShell` (3 tabs) |
 | `/orders/create`, `/orders/new` | `OrderCreatorPage`                                       | None (standalone)               |
-| `/direct-intake`, `/receiving`  | `DirectIntakeWorkSurface`                                | None (manual CSS)               |
+| `/direct-intake`, `/intake`     | `DirectIntakeWorkSurface`                                | None (manual CSS)               |
 | `/purchase-orders`              | `ProcurementWorkspacePage` → `PurchaseOrdersWorkSurface` | `LinearWorkspaceShell` (3 tabs) |
 | `/pick-pack`                    | `PickPackWorkSurface`                                    | None (standalone)               |
 

@@ -25,11 +25,11 @@ Release fix branch merged via PR: `codex/ter464-rt07-fixes` → `main`
 
 - Artifact index: `docs/execution/2026-02-27-release-train/ui-evidence/post-merge/route-final-urls-post-merge.txt`
 - Captured routes:
-  - `/spreadsheet-view` → `/purchase-orders?tab=receiving&mode=spreadsheet`
+  - `/spreadsheet-view` → `/purchase-orders?tab=intake&mode=spreadsheet`
   - `/purchase-orders/classic` → `/purchase-orders?tab=purchase-orders`
   - `/inventory/1` → `/inventory?tab=inventory&batchId=1`
   - `/orders/create` → `/sales?tab=create-order`
-  - `/receiving` → `/purchase-orders?tab=receiving`
+  - `/intake` → `/purchase-orders?tab=intake`
 
 5. RT-07 destructive flow closure and TER-463 blocked-delete UX check completed.
 
@@ -108,7 +108,7 @@ Status after 2026-03-01 revalidation: resolved (`/health` back to `healthy`).
 - Result: `1 passed (28.1s)`.
 - Evidence:
   - `qa-results/live-qa-20260228/lane-b/evidence.json`
-  - route screenshots (`route-spreadsheet-view.png`, `route-purchase-orders-classic.png`, `route-inventory-1.png`, `route-orders-create.png`, `route-receiving.png`)
+  - route screenshots (`route-spreadsheet-view.png`, `route-purchase-orders-classic.png`, `route-inventory-1.png`, `route-orders-create.png`, `route-intake.png`)
   - blocked-delete screenshot: `blocked-delete-guidance-message.png`
   - delete/undo screenshots: `delete-undo-selected-row.png`, `delete-undo-after-delete.png`, `delete-undo-clicked-undo.png`, `delete-undo-restored.png`
 

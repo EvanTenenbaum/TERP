@@ -95,7 +95,7 @@ The spreadsheet view should be a **presentation layer** over existing functional
 **Spreadsheet Columns:**
 | Column | Maps To | Required | Notes |
 |--------|---------|----------|-------|
-| Vendor | `vendorName` | Yes | Autocomplete from existing vendors |
+| Supplier | `vendorName` | Yes | Autocomplete from existing suppliers |
 | Category | `category` | Yes | Dropdown |
 | Item | `productName` | Yes | Autocomplete from existing products |
 | Qty | `quantity` | Yes | Numeric |

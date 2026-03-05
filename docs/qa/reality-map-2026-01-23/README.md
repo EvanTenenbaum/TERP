@@ -27,6 +27,7 @@ This execution completed **Phases 1-3** (reconnaissance) and was **blocked by mi
 ### Key Findings
 
 **✅ Strengths**:
+
 - **509 flows documented** with comprehensive metadata
 - **83% UI coverage** (421/509 flows are CLIENT_WIRED)
 - **100% Golden Paths coverage** (all 12 critical flows have UI)
@@ -34,6 +35,7 @@ This execution completed **Phases 1-3** (reconnaissance) and was **blocked by mi
 - **Rich staging data** (100+ customers, 30K+ inventory units)
 
 **⚠️ Issues**:
+
 - **S2 Blocker**: QA test data missing (blocks automated testing)
 - **S3 Issue**: Accounting UI gap (43/52 flows are API-only)
 
@@ -42,6 +44,7 @@ This execution completed **Phases 1-3** (reconnaissance) and was **blocked by mi
 **Status**: ⚠️ **CONDITIONAL GO**
 
 **Can release if**:
+
 - ✅ Manual QA validates 12 Golden Paths
 - ✅ No S1 data integrity issues found
 - ⚠️ Accept S2 test data blocker as technical debt
@@ -99,6 +102,7 @@ docs/qa/reality-map-2026-01-23/
 **Audience**: Engineering Lead, Product Manager, QA Lead
 
 **Contents**:
+
 - TL;DR and release recommendation
 - Coverage analysis (509 flows, 83% UI coverage)
 - Critical issues (S2: Missing test data, S3: Accounting UI gap)
@@ -111,6 +115,7 @@ docs/qa/reality-map-2026-01-23/
 **Audience**: QA Engineers, Developers
 
 **Contents**:
+
 - Comprehensive flow breakdown by domain (30+ domains)
 - Implementation status (CLIENT_WIRED vs API_ONLY vs DEPRECATED)
 - Priority classification (P0/P1/P2)
@@ -125,6 +130,7 @@ docs/qa/reality-map-2026-01-23/
 **Audience**: Engineering Team, Release Manager
 
 **Contents**:
+
 - **S1**: Data Integrity Issues (none found - requires browser testing)
 - **S2**: Workflow Dead-Ends (1 issue: Missing QA test data)
 - **S3**: RBAC/Security Issues (1 issue: Accounting UI gap)
@@ -137,6 +143,7 @@ docs/qa/reality-map-2026-01-23/
 **Audience**: QA Lead, Engineering Lead
 
 **Contents**:
+
 - **Day 1**: Create test data seeding script
 - **Day 2**: Prepare Golden Paths test suite
 - **Day 3**: Execute Golden Paths testing (36 runs)
@@ -150,6 +157,7 @@ docs/qa/reality-map-2026-01-23/
 **Audience**: QA Engineers, Automation Engineers
 
 **Contents**:
+
 - 509 flows with complete metadata
 - Priority (P0/P1/P2), implementation status, required roles
 - UI entry paths, tRPC procedures
@@ -164,11 +172,13 @@ docs/qa/reality-map-2026-01-23/
 **Audience**: QA Engineers
 
 **Contents**:
+
 - 12 critical cross-module flows
 - Priority testing targets
 - Covers Orders, Inventory, Accounting, CRM domains
 
 **Golden Paths**:
+
 1. Update Status (Orders / Pick Pack)
 2. Update Order Status (Orders / Order Status)
 3. Update Order (Orders / Orders)
@@ -184,32 +194,32 @@ docs/qa/reality-map-2026-01-23/
 
 ## Coverage Statistics
 
-| Metric | Value | Assessment |
-|--------|-------|------------|
-| **Total Flows** | 509 | Comprehensive |
-| **CLIENT_WIRED** | 421 (83%) | ✅ Excellent |
-| **API_ONLY** | 81 (16%) | ⚠️ Needs UI work |
-| **DEPRECATED** | 6 (1%) | Normal |
-| **P0 Priority** | 194 (38%) | Well-prioritized |
-| **P0 CLIENT_WIRED** | 146 | ✅ Good coverage |
+| Metric              | Value        | Assessment                |
+| ------------------- | ------------ | ------------------------- |
+| **Total Flows**     | 509          | Comprehensive             |
+| **CLIENT_WIRED**    | 421 (83%)    | ✅ Excellent              |
+| **API_ONLY**        | 81 (16%)     | ⚠️ Needs UI work          |
+| **DEPRECATED**      | 6 (1%)       | Normal                    |
+| **P0 Priority**     | 194 (38%)    | Well-prioritized          |
+| **P0 CLIENT_WIRED** | 146          | ✅ Good coverage          |
 | **Golden Paths UI** | 12/12 (100%) | ✅ Critical flows covered |
 
 ## Domain Health
 
 ### Top Domains by Flow Count
 
-| Domain | Total | CLIENT_WIRED | API_ONLY | Health |
-|--------|-------|--------------|----------|--------|
-| **Accounting** | 52 | 8 (15%) | 43 (83%) | ⚠️ **UI GAP** |
-| **Orders** | 37 | 37 (100%) | 0 | ✅ Excellent |
-| **Inventory** | 37 | 35 (95%) | 2 | ✅ Excellent |
-| **Calendar** | 34 | 34 (100%) | 0 | ✅ Excellent |
-| **CRM** | 28 | 28 (100%) | 0 | ✅ Excellent |
-| **Admin** | 27 | 24 (89%) | 3 | ✅ Good |
-| **Scheduling** | 24 | 24 (100%) | 0 | ✅ Excellent |
-| **VIP Portal** | 22 | 22 (100%) | 0 | ✅ Excellent |
-| **Live Shopping** | 20 | 20 (100%) | 0 | ✅ Excellent |
-| **Purchase Orders** | 16 | 13 (81%) | 3 | ✅ Good |
+| Domain              | Total | CLIENT_WIRED | API_ONLY | Health        |
+| ------------------- | ----- | ------------ | -------- | ------------- |
+| **Accounting**      | 52    | 8 (15%)      | 43 (83%) | ⚠️ **UI GAP** |
+| **Orders**          | 37    | 37 (100%)    | 0        | ✅ Excellent  |
+| **Inventory**       | 37    | 35 (95%)     | 2        | ✅ Excellent  |
+| **Calendar**        | 34    | 34 (100%)    | 0        | ✅ Excellent  |
+| **CRM**             | 28    | 28 (100%)    | 0        | ✅ Excellent  |
+| **Admin**           | 27    | 24 (89%)     | 3        | ✅ Good       |
+| **Scheduling**      | 24    | 24 (100%)    | 0        | ✅ Excellent  |
+| **VIP Portal**      | 22    | 22 (100%)    | 0        | ✅ Excellent  |
+| **Live Shopping**   | 20    | 20 (100%)    | 0        | ✅ Excellent  |
+| **Purchase Orders** | 16    | 13 (81%)     | 3        | ✅ Good       |
 
 **Key Observation**: Accounting domain requires immediate attention - 83% of flows lack UI implementation.
 
@@ -221,10 +231,11 @@ docs/qa/reality-map-2026-01-23/
 **Impact**: Blocks automated testing of 146 P0 charters
 
 **Problem**: No QA-prefixed entities exist in staging database
-- ❌ QA_CUSTOMER_* (0 found)
-- ❌ QA_SKU_* (not checked, assumed missing)
-- ❌ QA_LOCATION_* (not checked, assumed missing)
-- ❌ QA_VENDOR_* (not checked, assumed missing)
+
+- ❌ QA*CUSTOMER*\* (0 found)
+- ❌ QA*SKU*\* (not checked, assumed missing)
+- ❌ QA*LOCATION*\* (not checked, assumed missing)
+- ❌ QA*VENDOR*\* (not checked, assumed missing)
 
 **Solution**: Create `scripts/seed-qa-data.ts` to generate test entities
 
@@ -241,8 +252,9 @@ docs/qa/reality-map-2026-01-23/
 **Problem**: 43/52 Accounting flows are API_ONLY
 
 **Affected Flows**:
+
 - Receive Client Payment (WS-001)
-- Pay Vendor (WS-002)
+- Pay Supplier (WS-002)
 - Record Payment
 - AR/AP Summaries
 - Aging Reports
@@ -260,28 +272,30 @@ docs/qa/reality-map-2026-01-23/
 ### Before Release (1-2 days)
 
 1. **Create Test Data Seeding Script** (2-4 hours)
+
    ```bash
    # Create script
    touch scripts/seed-qa-data.ts
-   
+
    # Implement seeding for:
    # - 2 QA Locations
    # - 2 QA Customers
    # - 2 QA SKUs
-   # - 1 QA Vendor
-   
+   # - 1 QA Supplier
+
    # Add to package.json
    "seed:qa-data": "tsx scripts/seed-qa-data.ts"
    ```
 
 2. **Execute Golden Paths Testing** (4-8 hours)
+
    ```bash
    # Run seeding
    pnpm seed:qa-data
-   
+
    # Run Playwright tests
    playwright test tests-e2e/golden-paths.spec.ts
-   
+
    # 12 flows × 3 quorum runs = 36 tests
    ```
 
@@ -311,28 +325,33 @@ docs/qa/reality-map-2026-01-23/
 ### Execution Phases
 
 ✅ **Phase 1: Repo Intake** (Completed)
+
 - Cloned TERP repo (EvanTenenbaum/TERP)
 - Located canonical docs (USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, QA_AUTH.md)
 - Verified documentation completeness
 
 ✅ **Phase 2: Charter Library Generation** (Completed)
+
 - Parsed 509 flows from USER_FLOW_MATRIX.csv
 - Classified by priority (P0/P1/P2)
 - Identified implementation status (CLIENT_WIRED/API_ONLY/DEPRECATED)
 - Selected 12 Golden Paths (critical cross-module flows)
 
 ✅ **Phase 3: Test Data Assessment** (Completed)
+
 - Checked staging environment accessibility
 - Authenticated as QA Super Admin
 - Searched for QA-prefixed entities
 - Discovered BLOCKED_DATA condition (no test entities found)
 
 ⚠️ **Phase 4-6: Browser-Based Testing** (BLOCKED)
+
 - **Blocker**: Missing QA test data
 - **Impact**: Cannot execute Playwright tests with quorum runs
 - **Resolution**: Create test data seeding script (see 7-Day Plan)
 
 ⚠️ **Phase 7: Evidence-Based Ticket Generation** (BLOCKED)
+
 - **Blocker**: Requires test execution results
 - **Impact**: Cannot generate tickets for broken flows
 - **Resolution**: Execute after test data created
@@ -358,6 +377,7 @@ The Reality Mapper uses a **quorum-based classification** approach:
 This Reality Map is based on **reconnaissance only** (Phases 1-3). Full browser-based testing (Phases 4-6) was blocked by missing test data.
 
 **What was validated**:
+
 - ✅ Flow documentation completeness
 - ✅ Implementation status (CLIENT_WIRED vs API_ONLY)
 - ✅ Staging environment accessibility
@@ -365,6 +385,7 @@ This Reality Map is based on **reconnaissance only** (Phases 1-3). Full browser-
 - ✅ Test data availability
 
 **What was NOT validated** (requires browser testing):
+
 - ❌ Functional correctness of flows
 - ❌ Data integrity (inventory counts, money totals, ledger balances)
 - ❌ State machine correctness
@@ -398,25 +419,28 @@ pnpm seed:qa-data
 ## Questions?
 
 ### For QA Questions
+
 - Review `analysis/REALITY_MAP.md` (comprehensive findings)
 - Check `exports/NEXT_7_DAYS_PLAN.md` (execution guide)
 - See `test-data/test_data_contract.md` (test data requirements)
 
 ### For Development Questions
+
 - Review `charters/charters_master.json` (all 509 flows)
 - Check `exports/TOP_RELEASE_BLOCKERS.md` (assigned issues)
 - See `analysis/REALITY_MAP.md` (Domain Breakdown section)
 
 ### For Leadership Questions
+
 - Review `exports/EXECUTIVE_SUMMARY.md` (high-level findings)
 - Check `exports/TOP_RELEASE_BLOCKERS.md` (release decision)
 - See `exports/NEXT_7_DAYS_PLAN.md` (stabilization roadmap)
 
 ## Version History
 
-| Date | Version | Changes |
-|------|---------|---------|
-| 2026-01-23 | 1.0 | Initial Reality Map (reconnaissance phase) |
+| Date       | Version | Changes                                    |
+| ---------- | ------- | ------------------------------------------ |
+| 2026-01-23 | 1.0     | Initial Reality Map (reconnaissance phase) |
 
 ---
 

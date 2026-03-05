@@ -18,6 +18,7 @@ During comprehensive QA review, the following pre-existing issues were identifie
 **Line:** 29
 
 **Issue:** PII masking fails for short email addresses like `a.a@a.aa`
+
 - The masking reveals more than 2 characters of the local part
 - Counterexample: `["a.a@a.aa"]`
 
@@ -31,6 +32,7 @@ During comprehensive QA review, the following pre-existing issues were identifie
 **Line:** 143
 
 **Issue:** `validateQuantityConsistency` fails for edge case batches
+
 - Counterexample: `{"onHandQty":"0.02","reservedQty":"0.01","quarantineQty":"0.01","holdQty":"0.01"}`
 - Sum of reserved+quarantine+hold (0.03) exceeds onHand (0.02)
 
@@ -46,10 +48,12 @@ During comprehensive QA review, the following pre-existing issues were identifie
 **Lines:** 131, 221, 287, 353, 418, 483, 579, 580
 
 **Issue:** 8 instances of `any` type usage
+
 - `Promise<any[]>` return types on GL posting functions
 - `as any` casts in seedStandardAccounts
 
 **Recommendation:** Create proper TypeScript interfaces:
+
 ```typescript
 interface JournalEntryResult {
   account: number;
@@ -68,8 +72,9 @@ interface JournalEntryResult {
 **Issue:** `tx: any` parameter in decrementInventoryForOrder function
 
 **Recommendation:** Use proper Drizzle transaction type:
+
 ```typescript
-tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
+tx: Parameters < Parameters < typeof db.transaction > [0] > [0];
 ```
 
 ---
@@ -81,11 +86,12 @@ tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
 **Files:** 9 test files in `scripts/seed/seeders/*.test.ts`
 
 **Issue:** Tests fail when DATABASE_URL environment variable is not set
+
 - seed-batches.test.ts
 - seed-orders.test.ts
 - seed-payments.test.ts
 - seed-purchase-orders.test.ts
-- seed-vendor-bills.test.ts
+- seed-supplier-bills.test.ts
 - And 4 others
 
 **Recommendation:** Configure test database or skip these tests in CI when no database is available.
@@ -98,6 +104,7 @@ tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
 **Line:** 36
 
 **Issue:** `Cannot access 'mockCreateMutation' before initialization`
+
 - Mock variable hoisting issue
 
 **Recommendation:** Move mock definition before vi.mock() call or use factory function.
@@ -109,6 +116,7 @@ tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
 **File:** `client/src/hooks/work-surface/usePerformanceMonitor.ts`
 
 **Issue:** ESLint warnings about console methods
+
 - `no-console` rule violations for performance logging
 - `no-undef` for `performance` and `PerformanceObserver` browser globals
 
@@ -121,9 +129,10 @@ tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
 ### 8. Large Bundle Size Warning
 
 **Issue:** Some chunks exceed 800 kB after minification
-- react-vendor: 903 kB
+
+- react-supplier: 903 kB
 - index: 1,529 kB
-- vendor: 1,820 kB
+- supplier: 1,820 kB
 
 **Recommendation:** Implement code splitting with dynamic imports.
 
@@ -135,6 +144,7 @@ tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
 **Lines:** 512-526
 
 **Issue:** Reversal entries in `reverseGLEntries` are created sequentially
+
 - If one fails, previous reversals remain, potentially unbalancing GL
 
 **Recommendation:** Wrap all reversals in a single transaction.
@@ -145,14 +155,14 @@ tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 The following issues were fixed during this QA session:
 
-| Issue | File | Fix Applied |
-|-------|------|-------------|
-| `?? 1` pattern | ordersDb.ts | Made parameters required, added validation |
-| Hard deletes | ordersDb.ts | Converted to soft deletes with deletedAt |
-| Missing transaction | accountingHooks.ts | Added transaction wrapper for journal entries |
-| console.debug (forbidden) | usePerformanceMonitor.ts | Removed/replaced with silent catch |
-| Permission cache TTL | permissionService.ts | Reduced from 5min to 60sec |
-| Negative inventory | inventoryDb.ts, inventory.ts | Added validation at 3 layers |
+| Issue                     | File                         | Fix Applied                                   |
+| ------------------------- | ---------------------------- | --------------------------------------------- |
+| `?? 1` pattern            | ordersDb.ts                  | Made parameters required, added validation    |
+| Hard deletes              | ordersDb.ts                  | Converted to soft deletes with deletedAt      |
+| Missing transaction       | accountingHooks.ts           | Added transaction wrapper for journal entries |
+| console.debug (forbidden) | usePerformanceMonitor.ts     | Removed/replaced with silent catch            |
+| Permission cache TTL      | permissionService.ts         | Reduced from 5min to 60sec                    |
+| Negative inventory        | inventoryDb.ts, inventory.ts | Added validation at 3 layers                  |
 
 ---
 
@@ -160,13 +170,13 @@ The following issues were fixed during this QA session:
 
 These pre-existing issues should be added to the roadmap as separate tasks:
 
-| Issue | Suggested Task ID | Priority |
-|-------|-------------------|----------|
-| PII masking edge case | BUG-XXX | MEDIUM |
-| Inventory validation test | BUG-XXX | LOW |
-| accountingHooks any types | TECH-DEBT-XXX | MEDIUM |
-| ordersDb any types | TECH-DEBT-XXX | LOW |
-| Seed test infrastructure | TEST-INFRA-02 | MEDIUM |
-| EventFormDialog mock | BUG-XXX | LOW |
-| Bundle size optimization | PERF-XXX | LOW |
-| Reversal atomicity | FIN-XXX | MEDIUM |
+| Issue                     | Suggested Task ID | Priority |
+| ------------------------- | ----------------- | -------- |
+| PII masking edge case     | BUG-XXX           | MEDIUM   |
+| Inventory validation test | BUG-XXX           | LOW      |
+| accountingHooks any types | TECH-DEBT-XXX     | MEDIUM   |
+| ordersDb any types        | TECH-DEBT-XXX     | LOW      |
+| Seed test infrastructure  | TEST-INFRA-02     | MEDIUM   |
+| EventFormDialog mock      | BUG-XXX           | LOW      |
+| Bundle size optimization  | PERF-XXX          | LOW      |
+| Reversal atomicity        | FIN-XXX           | MEDIUM   |

@@ -125,7 +125,7 @@ Components:
 
 ## 4) Acceptance Checklist Mapping
 
-- Partial PO fulfillment: supported by picker subset + editable intake qty and existing PO receiving backend
+- Partial PO fulfillment: supported by picker subset + editable intake qty and existing PO intake backend
 - SKU only on Receive: preserved via backend receive endpoint
 - Errors block Receive: enforced by review gating
 - Column settings persist: local per-user/per-grid preferences

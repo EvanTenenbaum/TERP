@@ -28,6 +28,7 @@ FEAT-020 has been **successfully implemented** with comprehensive strain and sub
 **Key Functions:**
 
 #### `findProductsByStrain(options)`
+
 - Finds products by strain name or ID
 - Includes related strains from the same family
 - Returns match types: `exact`, `family`, `related`
@@ -49,21 +50,23 @@ interface ProductMatch {
 ```
 
 **Example Usage:**
+
 ```typescript
 // Find exact strain matches
 const matches = await findProductsByStrain({
   strainName: "Blue Dream",
-  includeRelated: false
+  includeRelated: false,
 });
 
 // Find strain family matches (includes variants)
 const familyMatches = await findProductsByStrain({
   strainId: 123,
-  includeRelated: true // Includes "Blue Dream Haze", "Blue Dream Kush", etc.
+  includeRelated: true, // Includes "Blue Dream Haze", "Blue Dream Kush", etc.
 });
 ```
 
 #### `groupProductsBySubcategory(options)`
+
 - Groups products by their subcategory
 - Useful for catalog views and inventory organization
 - Supports filtering by category
@@ -85,22 +88,25 @@ interface SubcategoryGroup {
 ```
 
 **Example Usage:**
+
 ```typescript
 // Group all flower products by subcategory
 const groups = await groupProductsBySubcategory({
   category: "Flower",
-  includeOutOfStock: false
+  includeOutOfStock: false,
 });
 
 // Result: { "Smalls": {...}, "Trim": {...}, "Shake": {...} }
 ```
 
 #### `findSimilarStrains(strainId, limit)`
+
 - Finds similar strains based on characteristics
 - Considers strain family, category, and name similarity
 - Returns ranked results with similarity scores (60-95%)
 
 **Similarity Logic:**
+
 - **95%**: Parent strain
 - **90%**: Same strain family (siblings)
 - **70%**: Same type (Indica/Sativa/Hybrid)
@@ -126,8 +132,8 @@ function calculateSimilarity(str1: string, str2: string): number {
   if (normalized1 === normalized2) return 100;
 
   // 3. Check word order (tokenize and sort)
-  const tokens1 = normalized1.split('-').sort().join('-');
-  const tokens2 = normalized2.split('-').sort().join('-');
+  const tokens1 = normalized1.split("-").sort().join("-");
+  const tokens2 = normalized2.split("-").sort().join("-");
   if (tokens1 === tokens2) return 95; // Same words, different order
 
   // 4. Levenshtein distance
@@ -137,7 +143,9 @@ function calculateSimilarity(str1: string, str2: string): number {
 
   // 5. Bonus for matching prefixes
   const prefixLen = Math.min(5, normalized1.length, normalized2.length);
-  if (normalized1.substring(0, prefixLen) === normalized2.substring(0, prefixLen)) {
+  if (
+    normalized1.substring(0, prefixLen) === normalized2.substring(0, prefixLen)
+  ) {
     similarity = Math.min(100, similarity + 5);
   }
 
@@ -146,6 +154,7 @@ function calculateSimilarity(str1: string, str2: string): number {
 ```
 
 **Example Results:**
+
 - `"Blue Dream"` vs `"Blue Dream"` → **100%** (exact)
 - `"Blue Dream"` vs `"Dream Blue"` → **95%** (word order)
 - `"Blue Dream"` vs `"Blue Dream Haze"` → **~85%** (fuzzy)
@@ -155,6 +164,7 @@ function calculateSimilarity(str1: string, str2: string): number {
 #### `levenshteinDistance(str1, str2): number`
 
 Space-optimized implementation:
+
 - Uses rolling array (2 rows instead of full matrix)
 - Limits string length to 100 chars for performance
 - Early exit for strings with >50 char length difference
@@ -171,6 +181,7 @@ Space-optimized implementation:
 #### `calculateSubcategoryScore(needSubcat, supplySubcat): number`
 
 Returns score 0-100:
+
 - **100**: Exact match
 - **50**: Related subcategory (e.g., Smalls ↔ Trim)
 - **30**: Partial string match
@@ -181,57 +192,58 @@ Returns score 0-100:
 ```typescript
 const SUBCATEGORY_RELATIONSHIPS = {
   // Flower variants (same harvest)
-  "Smalls": ["Trim", "Shake", "Popcorn"],
-  "Popcorn": ["Smalls", "Trim"],
-  "Trim": ["Shake", "Smalls"],
-  "Shake": ["Trim"],
+  Smalls: ["Trim", "Shake", "Popcorn"],
+  Popcorn: ["Smalls", "Trim"],
+  Trim: ["Shake", "Smalls"],
+  Shake: ["Trim"],
 
   // Pre-rolls
   "Pre-Roll": ["Joints", "Blunts"],
-  "Joints": ["Pre-Roll", "Blunts"],
+  Joints: ["Pre-Roll", "Blunts"],
 
   // Concentrates
-  "Shatter": ["Wax", "Crumble", "Budder"],
-  "Wax": ["Shatter", "Crumble", "Budder"],
+  Shatter: ["Wax", "Crumble", "Budder"],
+  Wax: ["Shatter", "Crumble", "Budder"],
   "Live Resin": ["Sauce", "Diamonds"],
 
   // Edibles
-  "Gummies": ["Edibles", "Candies"],
-  "Chocolates": ["Edibles"],
-  "Beverages": ["Drinks", "Tinctures"],
+  Gummies: ["Edibles", "Candies"],
+  Chocolates: ["Edibles"],
+  Beverages: ["Drinks", "Tinctures"],
 
   // Topicals
-  "Cream": ["Lotion", "Balm"],
-  "Lotion": ["Cream", "Balm"],
+  Cream: ["Lotion", "Balm"],
+  Lotion: ["Cream", "Balm"],
 };
 ```
 
 **Example Usage:**
+
 ```typescript
 // Exact match
-calculateSubcategoryScore("Smalls", "Smalls") // 100
+calculateSubcategoryScore("Smalls", "Smalls"); // 100
 
 // Related products (same harvest)
-calculateSubcategoryScore("Smalls", "Trim")   // 50
-calculateSubcategoryScore("Smalls", "Shake")  // 50
+calculateSubcategoryScore("Smalls", "Trim"); // 50
+calculateSubcategoryScore("Smalls", "Shake"); // 50
 
 // Unrelated
-calculateSubcategoryScore("Smalls", "Gummies") // 0
+calculateSubcategoryScore("Smalls", "Gummies"); // 0
 ```
 
 **Helper Functions:**
 
 ```typescript
 // Get all related subcategories
-getRelatedSubcategories("Smalls")
+getRelatedSubcategories("Smalls");
 // → ["Trim", "Shake", "Popcorn"]
 
 // Check if two subcategories are related
-areSubcategoriesRelated("Smalls", "Trim")
+areSubcategoriesRelated("Smalls", "Trim");
 // → true
 
 // Get human-readable match reason
-getSubcategoryMatchReason("Smalls", "Trim")
+getSubcategoryMatchReason("Smalls", "Trim");
 // → "Related subcategory (Trim ≈ Smalls)"
 ```
 
@@ -248,22 +260,23 @@ Minimum threshold: **50 points** for a match
 
 **Scoring Breakdown:**
 
-| Factor | Points | Notes |
-|--------|--------|-------|
-| **Product Name** | 25 | Non-flower products only |
-| **Strain Match** | 40/20 | 40 for flower, 20 for non-flower |
-| **Strain Family** | 30/15 | 75% of strain weight |
-| **Strain Type** | 15 | Indica/Sativa/Hybrid/CBD |
-| **Category** | 30 | Product category |
-| **Subcategory** | 15 | NEW: Enhanced with relationships |
-| - Exact match | 15 | Full points |
-| - Related match | 7.5 | 50% penalty (e.g., Smalls → Trim) |
-| - Partial match | 4.5 | 70% penalty |
-| **Grade** | 10 | A+, A, B+, etc. |
-| **Price (bonus)** | +5/-10 | Within budget / over budget |
-| **Quantity (bonus)** | +5 | Within range or ±10-20% tolerance |
+| Factor               | Points | Notes                             |
+| -------------------- | ------ | --------------------------------- |
+| **Product Name**     | 25     | Non-flower products only          |
+| **Strain Match**     | 40/20  | 40 for flower, 20 for non-flower  |
+| **Strain Family**    | 30/15  | 75% of strain weight              |
+| **Strain Type**      | 15     | Indica/Sativa/Hybrid/CBD          |
+| **Category**         | 30     | Product category                  |
+| **Subcategory**      | 15     | NEW: Enhanced with relationships  |
+| - Exact match        | 15     | Full points                       |
+| - Related match      | 7.5    | 50% penalty (e.g., Smalls → Trim) |
+| - Partial match      | 4.5    | 70% penalty                       |
+| **Grade**            | 10     | A+, A, B+, etc.                   |
+| **Price (bonus)**    | +5/-10 | Within budget / over budget       |
+| **Quantity (bonus)** | +5     | Within range or ±10-20% tolerance |
 
 **Match Type Classification:**
+
 - **EXACT** (≥80%): High confidence match
 - **CLOSE** (50-79%): Good match, may need review
 - **HISTORICAL** (<50%): Based on purchase patterns
@@ -317,6 +330,7 @@ Minimum threshold: **50 points** for a match
 ### Available Endpoints:
 
 #### `findProductsByStrain`
+
 ```typescript
 trpc.matching.findProductsByStrain.useQuery({
   strainName: "Blue Dream",
@@ -326,6 +340,7 @@ trpc.matching.findProductsByStrain.useQuery({
 ```
 
 #### `groupProductsBySubcategory`
+
 ```typescript
 trpc.matching.groupProductsBySubcategory.useQuery({
   category: "Flower",
@@ -334,6 +349,7 @@ trpc.matching.groupProductsBySubcategory.useQuery({
 ```
 
 #### `findSimilarStrains`
+
 ```typescript
 trpc.matching.findSimilarStrains.useQuery({
   strainId: 123,
@@ -342,6 +358,7 @@ trpc.matching.findSimilarStrains.useQuery({
 ```
 
 #### `findMatchesForNeed`
+
 ```typescript
 trpc.matching.findMatchesForNeed.useQuery({
   needId: 456,
@@ -349,6 +366,7 @@ trpc.matching.findMatchesForNeed.useQuery({
 ```
 
 #### `getAllActiveNeedsWithMatches`
+
 ```typescript
 trpc.matching.getAllActiveNeedsWithMatches.useQuery();
 ```
@@ -358,6 +376,7 @@ trpc.matching.getAllActiveNeedsWithMatches.useQuery();
 ## 3. Database Schema
 
 ### Strains Table
+
 ```sql
 CREATE TABLE strains (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -373,6 +392,7 @@ CREATE TABLE strains (
 ```
 
 ### Client Needs Table
+
 ```sql
 CREATE TABLE client_needs (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -392,7 +412,8 @@ CREATE TABLE client_needs (
 );
 ```
 
-### Vendor Supply Table
+### Supplier Supply Table
+
 ```sql
 CREATE TABLE vendor_supply (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -416,6 +437,7 @@ CREATE TABLE vendor_supply (
 ### ✅ Implemented
 
 #### A. Inventory Filters (`/client/src/hooks/useInventoryFilters.ts`)
+
 ```typescript
 interface InventoryFilters {
   category: string | null;
@@ -425,22 +447,26 @@ interface InventoryFilters {
 ```
 
 #### B. Filter Chips Component (`/client/src/components/inventory/FilterChips.tsx`)
+
 - Displays active subcategory filters
 - Removable chips with X button
 - Shows: "Subcategory: Smalls"
 
 #### C. Need Form (`/client/src/components/needs/NeedForm.tsx`)
+
 - Strain input with autocomplete
 - Subcategory text input
 - StrainType selector (INDICA, SATIVA, HYBRID, CBD)
 
 #### D. Match Card (`/client/src/components/needs/MatchCard.tsx`)
+
 - Displays strain and subcategory in match details
 - Shows: "Blue Dream • Flower • Smalls • Grade A"
 
 ### ⚠️ Partially Implemented
 
 #### Matchmaking Service Page (`/client/src/pages/MatchmakingServicePage.tsx`)
+
 - **Has:** Search by strain, productName, category
 - **Missing:** Subcategory filter dropdown
 - **Missing:** StrainType filter (INDICA, SATIVA, etc.)
@@ -479,6 +505,7 @@ interface InventoryFilters {
 **Location:** `/home/user/TERP/server/utils/__tests__/subcategoryMatcher.test.ts`
 
 **Coverage:**
+
 - ✅ Exact subcategory matching
 - ✅ Related subcategory scoring (50 points)
 - ✅ Case-insensitive matching
@@ -489,6 +516,7 @@ interface InventoryFilters {
 - ✅ Real-world scenarios (flower, concentrates, edibles)
 
 **Test Highlights:**
+
 ```typescript
 describe("calculateSubcategoryScore", () => {
   it("should return 100 for exact match", () => {
@@ -507,6 +535,7 @@ describe("calculateSubcategoryScore", () => {
 ```
 
 **Run Tests:**
+
 ```bash
 npm test -- server/utils/__tests__/subcategoryMatcher.test.ts
 ```
@@ -517,19 +546,19 @@ npm test -- server/utils/__tests__/subcategoryMatcher.test.ts
 
 ### Complete Scoring Matrix
 
-| Scenario | Strain | Type | Cat | Subcat | Grade | Price | Qty | Total | Match |
-|----------|--------|------|-----|--------|-------|-------|-----|-------|-------|
-| **Perfect Flower** | 40 | 15 | 30 | 15 | 10 | +5 | +5 | **120** | EXACT |
-| **Perfect Non-Flower** | 20 | 15 | 30 | 15 | 10 | +5 | +5 | **100** | EXACT |
-| **Strain Family** | 30 | 15 | 30 | 15 | 10 | +5 | +5 | **110** | EXACT |
-| **Related Subcat** | 40 | 15 | 30 | 7.5 | 10 | +5 | +5 | **112.5** | EXACT |
-| **Text Strain Match** | 20 | 15 | 30 | 15 | 10 | +5 | +5 | **100** | EXACT |
-| **Hybrid Flex** | 40 | 7 | 30 | 15 | 10 | +5 | +5 | **112** | EXACT |
-| **Partial Subcat** | 40 | 15 | 30 | 4.5 | 10 | +5 | +5 | **109.5** | EXACT |
-| **Over Budget** | 40 | 15 | 30 | 15 | 10 | -10 | +5 | **105** | EXACT |
-| **Low Qty** | 40 | 15 | 30 | 15 | 10 | +5 | -10 | **105** | EXACT |
-| **Basic Match** | 40 | 0 | 30 | 0 | 0 | 0 | 0 | **70** | CLOSE |
-| **Minimum Match** | 20 | 0 | 30 | 0 | 0 | 0 | 0 | **50** | CLOSE |
+| Scenario               | Strain | Type | Cat | Subcat | Grade | Price | Qty | Total     | Match |
+| ---------------------- | ------ | ---- | --- | ------ | ----- | ----- | --- | --------- | ----- |
+| **Perfect Flower**     | 40     | 15   | 30  | 15     | 10    | +5    | +5  | **120**   | EXACT |
+| **Perfect Non-Flower** | 20     | 15   | 30  | 15     | 10    | +5    | +5  | **100**   | EXACT |
+| **Strain Family**      | 30     | 15   | 30  | 15     | 10    | +5    | +5  | **110**   | EXACT |
+| **Related Subcat**     | 40     | 15   | 30  | 7.5    | 10    | +5    | +5  | **112.5** | EXACT |
+| **Text Strain Match**  | 20     | 15   | 30  | 15     | 10    | +5    | +5  | **100**   | EXACT |
+| **Hybrid Flex**        | 40     | 7    | 30  | 15     | 10    | +5    | +5  | **112**   | EXACT |
+| **Partial Subcat**     | 40     | 15   | 30  | 4.5    | 10    | +5    | +5  | **109.5** | EXACT |
+| **Over Budget**        | 40     | 15   | 30  | 15     | 10    | -10   | +5  | **105**   | EXACT |
+| **Low Qty**            | 40     | 15   | 30  | 15     | 10    | +5    | -10 | **105**   | EXACT |
+| **Basic Match**        | 40     | 0    | 30  | 0      | 0     | 0     | 0   | **70**    | CLOSE |
+| **Minimum Match**      | 20     | 0    | 30  | 0      | 0     | 0     | 0   | **50**    | CLOSE |
 
 ---
 
@@ -537,31 +566,31 @@ npm test -- server/utils/__tests__/subcategoryMatcher.test.ts
 
 ### Core Files
 
-| File | Purpose | Status |
-|------|---------|--------|
+| File                                        | Purpose                         | Status      |
+| ------------------------------------------- | ------------------------------- | ----------- |
 | `/server/services/strainMatchingService.ts` | Strain and subcategory matching | ✅ Complete |
-| `/server/strainMatcher.ts` | Levenshtein fuzzy matching | ✅ Complete |
-| `/server/utils/subcategoryMatcher.ts` | Subcategory weighting | ✅ NEW |
-| `/server/matchingEngineEnhanced.ts` | Core matching algorithm | ✅ Enhanced |
-| `/server/routers/matchingEnhanced.ts` | tRPC endpoints | ✅ Complete |
-| `/server/services/strainService.ts` | Strain family service | ✅ Complete |
+| `/server/strainMatcher.ts`                  | Levenshtein fuzzy matching      | ✅ Complete |
+| `/server/utils/subcategoryMatcher.ts`       | Subcategory weighting           | ✅ NEW      |
+| `/server/matchingEngineEnhanced.ts`         | Core matching algorithm         | ✅ Enhanced |
+| `/server/routers/matchingEnhanced.ts`       | tRPC endpoints                  | ✅ Complete |
+| `/server/services/strainService.ts`         | Strain family service           | ✅ Complete |
 
 ### UI Files
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `/client/src/hooks/useInventoryFilters.ts` | Filter state management | ✅ Complete |
-| `/client/src/components/inventory/FilterChips.tsx` | Filter display | ✅ Complete |
-| `/client/src/components/needs/NeedForm.tsx` | Need creation form | ✅ Complete |
-| `/client/src/components/needs/MatchCard.tsx` | Match display | ✅ Complete |
-| `/client/src/pages/MatchmakingServicePage.tsx` | Matchmaking hub | ⚠️ Partial |
+| File                                               | Purpose                 | Status      |
+| -------------------------------------------------- | ----------------------- | ----------- |
+| `/client/src/hooks/useInventoryFilters.ts`         | Filter state management | ✅ Complete |
+| `/client/src/components/inventory/FilterChips.tsx` | Filter display          | ✅ Complete |
+| `/client/src/components/needs/NeedForm.tsx`        | Need creation form      | ✅ Complete |
+| `/client/src/components/needs/MatchCard.tsx`       | Match display           | ✅ Complete |
+| `/client/src/pages/MatchmakingServicePage.tsx`     | Matchmaking hub         | ⚠️ Partial  |
 
 ### Test Files
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `/server/utils/__tests__/subcategoryMatcher.test.ts` | Subcategory tests | ✅ NEW |
-| `/server/tests/matchingEngine.test.ts` | Matching engine tests | ✅ Existing |
+| File                                                 | Purpose               | Status      |
+| ---------------------------------------------------- | --------------------- | ----------- |
+| `/server/utils/__tests__/subcategoryMatcher.test.ts` | Subcategory tests     | ✅ NEW      |
+| `/server/tests/matchingEngine.test.ts`               | Matching engine tests | ✅ Existing |
 
 ---
 
@@ -615,19 +644,19 @@ const results = await findProductsByStrain({
   {
     strainName: "Blue Dream",
     matchType: "exact",
-    matchConfidence: 100
+    matchConfidence: 100,
   },
   {
     strainName: "Blue Dream Haze",
     matchType: "family",
-    matchConfidence: 85
+    matchConfidence: 85,
   },
   {
     strainName: "Blue Dream Kush",
     matchType: "family",
-    matchConfidence: 85
-  }
-]
+    matchConfidence: 85,
+  },
+];
 ```
 
 ### Example 3: Subcategory Grouping
@@ -676,15 +705,15 @@ In `/server/matchingEngineEnhanced.ts`:
 
 ```typescript
 // Current thresholds
-const MIN_MATCH_CONFIDENCE = 50;  // Minimum score for a match
+const MIN_MATCH_CONFIDENCE = 50; // Minimum score for a match
 const EXACT_MATCH_THRESHOLD = 80; // Minimum for "EXACT" classification
 
 // To make matching more strict:
-const MIN_MATCH_CONFIDENCE = 60;  // Fewer low-quality matches
+const MIN_MATCH_CONFIDENCE = 60; // Fewer low-quality matches
 const EXACT_MATCH_THRESHOLD = 85; // Fewer "EXACT" labels
 
 // To make matching more lenient:
-const MIN_MATCH_CONFIDENCE = 40;  // More potential matches
+const MIN_MATCH_CONFIDENCE = 40; // More potential matches
 const EXACT_MATCH_THRESHOLD = 75; // More "EXACT" labels
 ```
 
@@ -695,11 +724,11 @@ In `/server/strainMatcher.ts`:
 ```typescript
 // Current thresholds
 const AUTO_ASSIGN_THRESHOLD = 95; // Auto-assign strains above this
-const SUGGEST_THRESHOLD = 80;      // Suggest matches above this
+const SUGGEST_THRESHOLD = 80; // Suggest matches above this
 
 // More examples:
 await findFuzzyStrainMatches("Blue Dream", 90, 5); // Top 5 with 90%+ match
-await getOrCreateStrain("Blue Dream Haze", 'hybrid', 90); // Custom threshold
+await getOrCreateStrain("Blue Dream Haze", "hybrid", 90); // Custom threshold
 ```
 
 ---
@@ -797,15 +826,16 @@ await getOrCreateStrain("Blue Dream Haze", 'hybrid', 90); // Custom threshold
 
 ### Performance Benchmarks
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| `findExactStrainMatch()` | ~5ms | Single index lookup |
-| `findFuzzyStrainMatches()` | ~50ms | 100 candidates, in-memory scoring |
-| `findProductsByStrain()` | ~100ms | Includes family lookups |
-| `calculateMatchConfidence()` | ~2ms | Pure computation |
-| `findMatchesForNeed()` | ~200ms | Full scan + scoring |
+| Operation                    | Time   | Notes                             |
+| ---------------------------- | ------ | --------------------------------- |
+| `findExactStrainMatch()`     | ~5ms   | Single index lookup               |
+| `findFuzzyStrainMatches()`   | ~50ms  | 100 candidates, in-memory scoring |
+| `findProductsByStrain()`     | ~100ms | Includes family lookups           |
+| `calculateMatchConfidence()` | ~2ms   | Pure computation                  |
+| `findMatchesForNeed()`       | ~200ms | Full scan + scoring               |
 
 **Recommendations for Scale:**
+
 - Add Redis cache for high-traffic scenarios
 - Implement background job for match pre-computation
 - Use Elasticsearch for full-text strain search
@@ -817,6 +847,7 @@ await getOrCreateStrain("Blue Dream Haze", 'hybrid', 90); // Custom threshold
 FEAT-020 is **successfully implemented** with comprehensive strain and subcategory matching:
 
 ✅ **Implemented:**
+
 - Complete strain matching with family relationships
 - Levenshtein fuzzy matching (0-100% similarity)
 - NEW: Subcategory weighting with related product scoring
@@ -825,9 +856,11 @@ FEAT-020 is **successfully implemented** with comprehensive strain and subcatego
 - Comprehensive unit tests
 
 ⚠️ **Partial:**
+
 - UI filters exist in inventory but not in all matching views
 
 🎯 **Match Scoring:**
+
 - Strain: 40 points (flower) / 20 points (non-flower)
 - Strain Family: 75% of strain weight
 - StrainType: 15 points
@@ -837,6 +870,7 @@ FEAT-020 is **successfully implemented** with comprehensive strain and subcatego
 - Price/Qty bonuses: ±15 points
 
 📊 **Current Status:**
+
 - **Backend:** 100% complete
 - **Testing:** 100% complete
 - **UI Integration:** 70% complete

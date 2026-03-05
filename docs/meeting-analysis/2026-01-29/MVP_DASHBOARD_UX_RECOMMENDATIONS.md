@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The customer's workflow is described as **"Tetris"** - constantly balancing multiple competing priorities. The dashboard should serve as a **decision support cockpit** that answers the daily question: *"What do I need to focus on today?"*
+The customer's workflow is described as **"Tetris"** - constantly balancing multiple competing priorities. The dashboard should serve as a **decision support cockpit** that answers the daily question: _"What do I need to focus on today?"_
 
 The good news: **Most required widgets already exist**. The MVP dashboard can be achieved primarily through **configuration and minor enhancements** rather than new development.
 
@@ -21,6 +21,7 @@ The good news: **Most required widgets already exist**. The MVP dashboard can be
 The customer explicitly described their daily workflow:
 
 > "This job is like Tetris and it's like:
+>
 > - What are you out of?
 > - What do you have too much of?
 > - What's about to go bad?
@@ -41,21 +42,21 @@ When asked "What's the first thing you want to see?", the customer listed:
 
 ## Existing Widgets Mapped to Customer Needs
 
-| Customer Need | Existing Widget | Status | Notes |
-|---------------|-----------------|--------|-------|
-| Inventory snapshot | `InventorySnapshotWidget` | ✅ Exists | Needs category/price bracket enhancement |
-| Aging inventory | `AgingInventoryWidget` | ✅ Exists | Shows 5-10 oldest items, exactly what customer asked for |
-| Cash on hand | `AvailableCashWidget` | ✅ Exists | Shows Cash on Hand, Scheduled Payables, Available Cash |
-| Payables due | `AvailableCashWidget` | ✅ Exists | "Scheduled Payables" section already present |
-| Total debt | `TotalDebtWidget` | ✅ Exists | Shows total outstanding debt |
-| Client debt quality | `ClientDebtLeaderboard` | ✅ Exists | Hidden by default, should enable |
-| Overdue clients | `MatchmakingOpportunitiesWidget` | ✅ Exists | Shows "overdue reorders" |
+| Customer Need       | Existing Widget                  | Status    | Notes                                                    |
+| ------------------- | -------------------------------- | --------- | -------------------------------------------------------- |
+| Inventory snapshot  | `InventorySnapshotWidget`        | ✅ Exists | Needs category/price bracket enhancement                 |
+| Aging inventory     | `AgingInventoryWidget`           | ✅ Exists | Shows 5-10 oldest items, exactly what customer asked for |
+| Cash on hand        | `AvailableCashWidget`            | ✅ Exists | Shows Cash on Hand, Scheduled Payables, Available Cash   |
+| Payables due        | `AvailableCashWidget`            | ✅ Exists | "Scheduled Payables" section already present             |
+| Total debt          | `TotalDebtWidget`                | ✅ Exists | Shows total outstanding debt                             |
+| Client debt quality | `ClientDebtLeaderboard`          | ✅ Exists | Hidden by default, should enable                         |
+| Overdue clients     | `MatchmakingOpportunitiesWidget` | ✅ Exists | Shows "overdue reorders"                                 |
 
 ### Widgets NOT Needed for MVP
 
 Based on customer feedback, these can remain hidden or deprioritized:
 
-- Calendar integration - *"that's a later version thing"*
+- Calendar integration - _"that's a later version thing"_
 - Workflow Queue - not mentioned
 - Sales Comparison - not mentioned as priority
 - Profitability charts - not mentioned as priority
@@ -140,11 +141,13 @@ mvp_owner: {
 ### 1. Action-Oriented, Not Report-Oriented
 
 The customer doesn't want to "analyze" data - they want to know **what to do**. Widgets should:
+
 - Highlight items needing attention (red/amber indicators)
 - Be clickable to take action
 - Show "focus on me" items prominently
 
 **Evidence:**
+
 > "highlight of like a window of like the five, 10 oldest things, you know, kind of like focus on me"
 
 ### 2. Simplicity Over Comprehensiveness
@@ -183,9 +186,11 @@ The customer prefers phone for some tasks:
 **Enhancement:** Add price bracket sub-grouping within categories.
 
 **Customer Quote:**
+
 > "depths from one to 200, from two to 300, from three to four, you know, just like some basic flower categories"
 
 **Implementation:**
+
 - Add expandable rows showing price brackets
 - Brackets: $100-200, $200-300, $300-400, $400-500, $500+
 - Already has expand/collapse UI pattern
@@ -197,6 +202,7 @@ The customer prefers phone for some tasks:
 **Current:** Several useful widgets are hidden by default in the "operations" preset.
 
 **Change:** Enable these in the new MVP preset:
+
 - `aging-inventory` → **Enable** (customer explicitly requested)
 - `client-debt-leaderboard` → **Enable** (supports debt quality visibility)
 - `matchmaking-opportunities` → **Enable** (shows overdue clients)
@@ -208,6 +214,7 @@ The customer prefers phone for some tasks:
 **Current:** AgingInventoryWidget shows oldest items.
 
 **Enhancement:** Add visual emphasis to make it feel like "focus on me":
+
 - Larger card size
 - Amber/red border for critical items
 - "Needs Attention" header
@@ -221,12 +228,14 @@ The customer prefers phone for some tasks:
 ### Hide Unnecessary Fields
 
 **Customer Quote:**
+
 > "I just like, I don't know any of my clients emails"
 > "we don't need address information"
 
 **Current State:** QuickCreateClient already supports minimal fields.
 
 **Recommendation:** Ensure the full client form also hides non-essential fields by default. Use feature flags to hide:
+
 - Email (optional)
 - Address fields
 - Fax (if present)
@@ -234,6 +243,7 @@ The customer prefers phone for some tasks:
 ### Sortable Columns Requested
 
 **Customer Quote:**
+
 > "who we haven't seen in a while, who do I need to reach out to"
 > "overdue for an order or overdue for a drop"
 
@@ -248,6 +258,7 @@ The customer prefers phone for some tasks:
 ### Add Metric Explanations
 
 **Customer Quote:**
+
 > "We'll need a little explanation on these"
 > "what's reliability, like how often they show up or this is their payment behavior actually"
 
@@ -255,21 +266,23 @@ The customer prefers phone for some tasks:
 
 **Recommendation:** Add info icons with tooltips explaining each metric:
 
-| Metric | Current Description | Enhanced Tooltip |
-|--------|--------------------|--------------------|
-| Financial | "Revenue, LTV, margins" | "Combines total revenue, lifetime value, and your profit margin on this client" |
-| Engagement | "Order frequency, recency" | "How often they order and how recently - high engagement = frequent, recent orders" |
-| Reliability | "Payment behavior" | "How quickly they pay their debts - high reliability = fast payment" |
-| Growth | "YoY trends" | "Whether their spending with you is increasing or decreasing year-over-year" |
+| Metric      | Current Description        | Enhanced Tooltip                                                                    |
+| ----------- | -------------------------- | ----------------------------------------------------------------------------------- |
+| Financial   | "Revenue, LTV, margins"    | "Combines total revenue, lifetime value, and your profit margin on this client"     |
+| Engagement  | "Order frequency, recency" | "How often they order and how recently - high engagement = frequent, recent orders" |
+| Reliability | "Payment behavior"         | "How quickly they pay their debts - high reliability = fast payment"                |
+| Growth      | "YoY trends"               | "Whether their spending with you is increasing or decreasing year-over-year"        |
 
 **Effort:** ~3 hours (add Tooltip components)
 
 ### Consider Metric Consolidation
 
 **Customer Quote:**
+
 > "maybe we can just combine them into, into less things"
 
 **Recommendation:** For MVP, keep current metrics but:
+
 - Default to showing only Master Score + Reliability
 - Let users expand to see all metrics
 - Consider "Simple View" toggle
@@ -281,13 +294,15 @@ The customer prefers phone for some tasks:
 ### Role-Based Quick Actions
 
 **Customer Quote:**
-> "she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk"
 
-**Context:** Accounting staff (Z) handles vendor payments, owner handles receiving client payments.
+> "she only needs like low risk farmers. I feel like intake payments is a little bit higher risk"
 
-**Recommendation:** 
+**Context:** Accounting staff (Z) handles supplier payments, owner handles intake client payments.
+
+**Recommendation:**
+
 - "Receive Payment" button should require elevated permissions
-- "Pay Vendor" can be available to accounting role
+- "Pay Supplier" can be available to accounting role
 - Add role check to ReceivePaymentModal
 
 **Effort:** ~2 hours (add permission check)
@@ -304,12 +319,12 @@ The customer prefers phone for some tasks:
 
 ### Minimal Code Changes (~10 hours total)
 
-| Enhancement | Effort | Impact |
-|-------------|--------|--------|
-| Inventory price bracket grouping | 4h | High - directly requested |
-| Leaderboard metric tooltips | 3h | Medium - improves understanding |
-| Aging inventory "focus" styling | 2h | Medium - visual emphasis |
-| Payment permission check | 2h | Medium - security/workflow |
+| Enhancement                      | Effort | Impact                          |
+| -------------------------------- | ------ | ------------------------------- |
+| Inventory price bracket grouping | 4h     | High - directly requested       |
+| Leaderboard metric tooltips      | 3h     | Medium - improves understanding |
+| Aging inventory "focus" styling  | 2h     | Medium - visual emphasis        |
+| Payment permission check         | 2h     | Medium - security/workflow      |
 
 ### Deferred (Not MVP)
 
@@ -322,19 +337,19 @@ The customer prefers phone for some tasks:
 
 ## Appendix: Key Customer Quotes
 
-| Topic | Quote | Timestamp |
-|-------|-------|-----------|
-| Dashboard priority | "my question about the dashboards and what we just talked about was probably the most important one" | 16:22 |
-| Workflow metaphor | "this job is like Tetris" | 02:10 |
-| Inventory focus | "inventory would be where I'd like it to pop up" | 01:52 |
-| Aging highlight | "highlight of like a window of like the five, 10 oldest things, kind of like focus on me" | 05:07 |
-| Category breakdown | "depths, indoor, out, smalls, candy ends in various price brackets" | 04:28 |
-| Simplicity | "there could be even far less options on that sheet" | 11:35 |
-| Metric explanations | "We'll need a little explanation on these" | 12:34 |
-| Calendar deprioritized | "I think that's a later version thing" | 05:34 |
-| Email not needed | "I don't know any of my clients emails" | 08:04 |
-| Payment permissions | "receiving payments is a little bit higher risk" | 15:57 |
+| Topic                  | Quote                                                                                                | Timestamp |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- | --------- |
+| Dashboard priority     | "my question about the dashboards and what we just talked about was probably the most important one" | 16:22     |
+| Workflow metaphor      | "this job is like Tetris"                                                                            | 02:10     |
+| Inventory focus        | "inventory would be where I'd like it to pop up"                                                     | 01:52     |
+| Aging highlight        | "highlight of like a window of like the five, 10 oldest things, kind of like focus on me"            | 05:07     |
+| Category breakdown     | "depths, indoor, out, smalls, candy ends in various price brackets"                                  | 04:28     |
+| Simplicity             | "there could be even far less options on that sheet"                                                 | 11:35     |
+| Metric explanations    | "We'll need a little explanation on these"                                                           | 12:34     |
+| Calendar deprioritized | "I think that's a later version thing"                                                               | 05:34     |
+| Email not needed       | "I don't know any of my clients emails"                                                              | 08:04     |
+| Payment permissions    | "intake payments is a little bit higher risk"                                                        | 15:57     |
 
 ---
 
-*UX/UI Analysis completed: January 29, 2026*
+_UX/UI Analysis completed: January 29, 2026_

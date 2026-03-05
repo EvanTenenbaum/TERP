@@ -742,11 +742,11 @@ pnpm build    # ✅ PASS
 
 ##### Wave 3C: UX & Type Safety (3 agents parallel, 14h) - ✅ COMPLETE
 
-| Task      | Description                             | Priority | Status   | Est | Module                                                  | GF Impact      |
-| --------- | --------------------------------------- | -------- | -------- | --- | ------------------------------------------------------- | -------------- |
-| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | complete | 8h  | ordersDb, orders.ts, Orders.tsx                         | GF-001, GF-003 |
-| PARTY-004 | Convert vendor hard deletes to soft     | MEDIUM   | complete | 2h  | `vendorSupplyDb.ts:47,79,223-235`, `vendors.ts:360,552` | All GF         |
-| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | complete | 4h  | Dashboard widgets, inventoryDb.ts                       | GF-003         |
+| Task      | Description                             | Priority | Status   | Est | Module                                                    | GF Impact      |
+| --------- | --------------------------------------- | -------- | -------- | --- | --------------------------------------------------------- | -------------- |
+| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | complete | 8h  | ordersDb, orders.ts, Orders.tsx                           | GF-001, GF-003 |
+| PARTY-004 | Convert supplier hard deletes to soft   | MEDIUM   | complete | 2h  | `vendorSupplyDb.ts:47,79,223-235`, `suppliers.ts:360,552` | All GF         |
+| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | complete | 4h  | Dashboard widgets, inventoryDb.ts                         | GF-003         |
 
 **Completed:** 2026-01-29
 **Key Commits:** `c1ce37fd` (TERP-0019 SQL aliases)
@@ -867,7 +867,7 @@ export function getTransitionError(statusType, currentStatus, newStatus) {...}
 
 ```typescript
 // CURRENT - server/inventoryDb.ts:887
-.leftJoin(vendors, eq(lots.vendorId, vendors.id))  // DEPRECATED
+.leftJoin(suppliers, eq(lots.vendorId, suppliers.id))  // DEPRECATED
 
 // FIX: Use clients table with isSeller=true
 .leftJoin(clients, eq(lots.supplierClientId, clients.id))
@@ -917,7 +917,7 @@ const confirmCancel = useCallback(...);  // Line 165 - never called
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 # All 8 failing tests now pass
-# Inventory queries work without vendors table
+# Inventory queries work without suppliers table
 # getTransitionError properly exported
 ```
 
@@ -2538,7 +2538,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 | FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | COMPLETE    | 4h       | MatchmakingServicePage.tsx     |
 | API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
 | DATA-022   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
-| DEPR-001   | Migrate Deprecated Vendor Router Usages       | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
+| DEPR-001   | Migrate Deprecated Supplier Router Usages     | MEDIUM   | NOT STARTED | 8h       | suppliers.ts, multiple callers |
 | SCHEMA-001 | Fix products.name vs nameCanonical Mismatch   | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
 | SCHEMA-002 | Document batches.quantity vs onHandQty        | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
 | SCHEMA-003 | Add clients.tier and clients.isActive Columns | MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
@@ -3481,7 +3481,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Verification:**
 
 - [ ] `grep -r "vendorId" server/` returns 0 results
-- [ ] `grep -r "vendors" server/` returns 0 results (except deprecated comments)
+- [ ] `grep -r "suppliers" server/` returns 0 results (except deprecated comments)
 - [ ] All supplier queries use clients table
 
 ---
@@ -5083,7 +5083,7 @@ Order processing and financial calculations lack key guardrails and precision co
 **Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 4-8h
-**Module:** `server/routers/vendors.ts`, `server/routers/vendorSupply.ts`, `server/routers/dashboardEnhanced.ts`, `server/routers/tags.ts`
+**Module:** `server/routers/suppliers.ts`, `server/routers/vendorSupply.ts`, `server/routers/dashboardEnhanced.ts`, `server/routers/tags.ts`
 **Dependencies:** None
 
 **Problem / Goal:**
@@ -5895,7 +5895,7 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 | PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | complete | 4h       | `drizzle/schema.ts`, `purchaseOrders.ts`           |
 | PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | complete | 2h       | `drizzle/schema.ts`                                |
 | PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | complete | 2h       | `server/routers/vendors.ts`                        |
+| PARTY-004 | Convert Supplier Hard Deletes to Soft Deletes    | MEDIUM   | complete | 2h       | `server/routers/suppliers.ts`                      |
 
 ---
 
@@ -6821,7 +6821,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 
 **Fix Applied:**
 
-- BUG-122 removed all `vendors` table joins from `inventoryDb.ts` (lines 887, 950)
+- BUG-122 removed all `suppliers` table joins from `inventoryDb.ts` (lines 887, 950)
 - Updated to use `clients` table with `isSeller=true` per Party Model
 - Also fixed in `spreadsheetViewService.ts`, `inventory.ts`, `Inventory.tsx`
 
@@ -6859,7 +6859,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 **Prompt:** `docs/prompts/BUG-111.md`
 
 **Problem / Goal:**
-Users with the `QA Sales Rep` role cannot view the client list, receiving a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
+Users with the `QA Sales Rep` role cannot view the client list, intake a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
 
 **Context / Evidence:**
 

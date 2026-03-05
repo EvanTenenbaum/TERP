@@ -54,7 +54,7 @@
 - **Invoices** (`/accounting/invoices`)
   - **Data Required:** invoices, clients, payments
 - **Bills** (`/accounting/bills`)
-  - **Data Required:** bills, vendors, payments
+  - **Data Required:** bills, suppliers, payments
 - **Payments** (`/accounting/payments`)
   - **Data Required:** payments, invoices, bills
 - **BankAccounts** (`/accounting/bank-accounts`)
@@ -70,16 +70,16 @@
 - **FiscalPeriods** (`/accounting/fiscal-periods`)
   - **Data Required:** fiscal_periods
 
-### 7. Vendors & Purchasing
+### 7. Suppliers & Purchasing
 
-- **VendorsPage** (`/vendors`)
-  - **Data Required:** vendors
-- **VendorProfilePage** (`/vendors/:id`)
-  - **Data Required:** vendors, purchase_orders, bills, lots
-- **VendorSupplyPage** (`/vendor-supply`)
-  - **Data Required:** vendors, products, lots
+- **VendorsPage** (`/suppliers`)
+  - **Data Required:** suppliers
+- **VendorProfilePage** (`/suppliers/:id`)
+  - **Data Required:** suppliers, purchase_orders, bills, lots
+- **VendorSupplyPage** (`/supplier-supply`)
+  - **Data Required:** suppliers, products, lots
 - **PurchaseOrdersPage** (`/purchase-orders`)
-  - **Data Required:** purchase_orders, vendors, products
+  - **Data Required:** purchase_orders, suppliers, products
 
 ### 8. Matchmaking & Needs
 
@@ -132,15 +132,15 @@
 
 ### ⚠️ Partially Seeded (Features May Have Gaps)
 
-| Feature                | Required Data                         | Missing Data                 | Impact             |
-| ---------------------- | ------------------------------------- | ---------------------------- | ------------------ |
-| Invoices (Accounting)  | invoices, clients, payments           | ✅ All exist                 | Should work        |
-| VendorsPage            | vendors                               | Only 1 test vendor           | Limited data       |
-| VendorProfilePage      | vendors, purchase_orders, bills, lots | No purchase_orders, no bills | Empty sections     |
-| MatchmakingServicePage | client_needs, batches, clients        | No client_needs              | Feature won't work |
-| NeedsManagementPage    | client_needs                          | No client_needs              | Feature won't work |
-| ReturnsPage            | returns                               | No returns                   | Empty page         |
-| LocationsPage          | locations                             | Unknown if seeded            | May be empty       |
+| Feature                | Required Data                           | Missing Data                 | Impact             |
+| ---------------------- | --------------------------------------- | ---------------------------- | ------------------ |
+| Invoices (Accounting)  | invoices, clients, payments             | ✅ All exist                 | Should work        |
+| VendorsPage            | suppliers                               | Only 1 test supplier         | Limited data       |
+| VendorProfilePage      | suppliers, purchase_orders, bills, lots | No purchase_orders, no bills | Empty sections     |
+| MatchmakingServicePage | client_needs, batches, clients          | No client_needs              | Feature won't work |
+| NeedsManagementPage    | client_needs                            | No client_needs              | Feature won't work |
+| ReturnsPage            | returns                                 | No returns                   | Empty page         |
+| LocationsPage          | locations                               | Unknown if seeded            | May be empty       |
 
 ### ❌ Not Seeded (Features Will Be Empty)
 
@@ -179,7 +179,7 @@
 
 ### Phase 3: Tertiary Features (Low Priority)
 
-11. ⏳ Vendors page
+11. ⏳ Suppliers page
 12. ⏳ Matchmaking (needs client_needs data)
 13. ⏳ Returns page
 14. ⏳ Locations page

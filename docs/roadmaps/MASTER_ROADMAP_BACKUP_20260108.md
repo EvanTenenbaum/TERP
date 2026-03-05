@@ -182,9 +182,9 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 #### Data & Migration
 
-| Task     | Description                        | File                        | Status  | Priority |
-| -------- | ---------------------------------- | --------------------------- | ------- | -------- |
-| DATA-012 | Complete Vendors→Clients Migration | `server/routers/vendors.ts` | 🟡 OPEN | MEDIUM   |
+| Task     | Description                          | File                          | Status  | Priority |
+| -------- | ------------------------------------ | ----------------------------- | ------- | -------- |
+| DATA-012 | Complete Suppliers→Clients Migration | `server/routers/suppliers.ts` | 🟡 OPEN | MEDIUM   |
 
 #### Documentation
 
@@ -2592,7 +2592,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 **Problem:** The application has unclear terminology and navigation around suppliers, buyers, and clients. The supplier page exists but is not visible in the sidebar navigation, and the distinction between these entity types is confusing for users.
 
-**Resolution:** Completed as part of the Canonical Model Unification initiative. Vendors are now unified into the `clients` table with `isSeller=true` flag. Supplier-specific data stored in `supplier_profiles` table. Created `SupplierProfileSection.tsx` component and `vendorMappingService.ts` for backward compatibility. Documentation added in `docs/protocols/CANONICAL_DICTIONARY.md` and `docs/protocols/NAMING_CONVENTIONS.md`.
+**Resolution:** Completed as part of the Canonical Model Unification initiative. Suppliers are now unified into the `clients` table with `isSeller=true` flag. Supplier-specific data stored in `supplier_profiles` table. Created `SupplierProfileSection.tsx` component and `vendorMappingService.ts` for backward compatibility. Documentation added in `docs/protocols/CANONICAL_DICTIONARY.md` and `docs/protocols/NAMING_CONVENTIONS.md`.
 
 **Deliverables:**
 
@@ -2607,7 +2607,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 **Technical Implementation:**
 
 - Suppliers → `clients` with `isSeller=true` + `supplier_profiles` table
-- `supplier_profiles.legacyVendorId` maps to old `vendors.id` for migration
+- `supplier_profiles.legacyVendorId` maps to old `suppliers.id` for migration
 - See `07-deprecated-systems.md` for deprecation details
 
 ---
@@ -4996,7 +4996,7 @@ logger.error({ err: error }, "Error message");
     - Pick & Pack: Order fulfillment and packaging
     - Scheduling: Appointment and calendar management
     - Matchmaking: Client-product matching and recommendations
-    - Product Intake: Receiving and processing new inventory
+    - Product Intake: Intake and processing new inventory
     - Quality Control: Product quality inspection
     - Shipping: Order shipping and logistics
     - Returns Processing: Handling returns and refunds
@@ -8672,7 +8672,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - `server/routers/todoLists.ts` (2 procedures)
     - `server/routers/todoTasks.ts` (2 procedures)
     - `server/routers/clients.ts` (1 procedure)
-    - `server/routers/vendors.ts` (1 procedure)
+    - `server/routers/suppliers.ts` (1 procedure)
     - `server/routers/purchaseOrders.ts` (1 procedure)
     - `server/routers/orders.ts` (1 procedure)
     - `server/routers/accounting.ts` (8 procedures)

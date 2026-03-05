@@ -8,17 +8,17 @@
 
 ### Checklist
 
-| Requirement | Status | Notes |
-|-------------|--------|-------|
-| 3-click flow (Select Client → Enter Amount → Confirm) | ✅ PASS | Implemented as designed |
-| Real-time balance preview | ✅ PASS | Uses `previewPaymentBalance` query |
-| Credit warning when overpaying | ✅ PASS | Shows alert when `willCreateCredit` is true |
-| Payment method selection | ✅ PASS | CASH, CHECK, WIRE, ACH, OTHER |
-| Optional note field | ✅ PASS | Implemented |
-| Receipt generation flag | ✅ PASS | `generateReceipt` parameter (URL returned) |
-| Client transaction record created | ✅ PASS | Creates audit trail entry |
-| Client `totalOwed` updated | ✅ PASS | Direct update in mutation |
-| Payment record created | ✅ PASS | Uses `payments` table |
+| Requirement                                           | Status  | Notes                                       |
+| ----------------------------------------------------- | ------- | ------------------------------------------- |
+| 3-click flow (Select Client → Enter Amount → Confirm) | ✅ PASS | Implemented as designed                     |
+| Real-time balance preview                             | ✅ PASS | Uses `previewPaymentBalance` query          |
+| Credit warning when overpaying                        | ✅ PASS | Shows alert when `willCreateCredit` is true |
+| Payment method selection                              | ✅ PASS | CASH, CHECK, WIRE, ACH, OTHER               |
+| Optional note field                                   | ✅ PASS | Implemented                                 |
+| Receipt generation flag                               | ✅ PASS | `generateReceipt` parameter (URL returned)  |
+| Client transaction record created                     | ✅ PASS | Creates audit trail entry                   |
+| Client `totalOwed` updated                            | ✅ PASS | Direct update in mutation                   |
+| Payment record created                                | ✅ PASS | Uses `payments` table                       |
 
 ### Issues Found
 
@@ -36,29 +36,29 @@
 
 ---
 
-## WS-002: Quick Action - Pay Vendor
+## WS-002: Quick Action - Pay Supplier
 
 ### Checklist
 
-| Requirement | Status | Notes |
-|-------------|--------|-------|
-| Vendor selection | ✅ PASS | Uses `isSeller=true` filter |
-| Amount entry | ✅ PASS | Implemented |
-| Optional bill linking | ✅ PASS | Auto-fills amount from bill |
-| Bill payment status update | ✅ PASS | Calls `recordBillPayment` |
-| Payment method selection | ✅ PASS | CASH, CHECK, WIRE, ACH, OTHER |
-| Optional note field | ✅ PASS | Implemented |
+| Requirement                | Status  | Notes                         |
+| -------------------------- | ------- | ----------------------------- |
+| Supplier selection         | ✅ PASS | Uses `isSeller=true` filter   |
+| Amount entry               | ✅ PASS | Implemented                   |
+| Optional bill linking      | ✅ PASS | Auto-fills amount from bill   |
+| Bill payment status update | ✅ PASS | Calls `recordBillPayment`     |
+| Payment method selection   | ✅ PASS | CASH, CHECK, WIRE, ACH, OTHER |
+| Optional note field        | ✅ PASS | Implemented                   |
 
 ### Issues Found
 
 1. **MINOR:** No validation that the payment amount doesn't exceed the bill's `amountDue` when linked to a bill.
 
-2. **MINOR:** The vendor list only shows recent vendors. A search capability would improve UX for large vendor lists.
+2. **MINOR:** The supplier list only shows recent suppliers. A search capability would improve UX for large supplier lists.
 
 ### Recommendations
 
 - [ ] Add validation for bill overpayment
-- [ ] Add vendor search capability
+- [ ] Add supplier search capability
 - [ ] Consider adding a "Pay Full Amount" button when bill is selected
 
 ---
@@ -77,4 +77,4 @@
 
 ### Commit
 
-`229ee4e3` - FEATURE: WS-001 & WS-002 - Quick Action modals for Receive Payment and Pay Vendor
+`229ee4e3` - FEATURE: WS-001 & WS-002 - Quick Action modals for Receive Payment and Pay Supplier

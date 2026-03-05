@@ -43,7 +43,7 @@ Inventory router handles batches, media uploads, saved views, bulk actions, and 
 - **Method & Path:** `POST /api/trpc/inventory.intake`
 - **Type:** Mutation
 - **Permissions:** `inventory:read`
-- **Input Schema:** `intakeSchema` (vendor, brand, product metadata, quantity, pricing, compliance fields).
+- **Input Schema:** `intakeSchema` (supplier, brand, product metadata, quantity, pricing, compliance fields).
 - **Output Schema:** `{ success: true, batch: Batch }`
 
 ### inventory.updateStatus
@@ -64,13 +64,13 @@ Inventory router handles batches, media uploads, saved views, bulk actions, and 
 
 ## Reference Data
 
-### inventory.vendors / inventory.brands
+### inventory.suppliers / inventory.brands
 
-- **Method & Path:** `GET /api/trpc/inventory.vendors` and `GET /api/trpc/inventory.brands`
+- **Method & Path:** `GET /api/trpc/inventory.suppliers` and `GET /api/trpc/inventory.brands`
 - **Type:** Query
 - **Permissions:** `inventory:read`
 - **Input:** `{ "query"?: string }`
-- **Output:** Paginated arrays of vendor/brand suggestions.
+- **Output:** Paginated arrays of supplier/brand suggestions.
 
 ### inventory.getBatchesByVendor
 
@@ -78,7 +78,7 @@ Inventory router handles batches, media uploads, saved views, bulk actions, and 
 - **Type:** Query
 - **Permissions:** `inventory:read`
 - **Input:** `{ "vendorId": number }`
-- **Output:** Paginated list of batches for the vendor.
+- **Output:** Paginated list of batches for the supplier.
 
 ### inventory.seed
 

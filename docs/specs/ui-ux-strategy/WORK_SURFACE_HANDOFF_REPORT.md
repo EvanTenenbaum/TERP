@@ -129,7 +129,7 @@ A **Work Surface** is the universal execution shell for high-frequency workflows
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ CONTEXT HEADER (sticky)                            h: 64-80px   │
-│ [Vendor: Acme Corp ▼] [Location: Warehouse A ▼] [Date: Today]   │
+│ [Supplier: Acme Corp ▼] [Location: Warehouse A ▼] [Date: Today]   │
 ├─────────────────────────────────────────────────────┬───────────┤
 │                                                     │           │
 │                                                     │  INSPECTOR│
@@ -524,7 +524,7 @@ These require product input before implementation:
 ### Work Surface Components
 
 ```
-Context Header → Batch defaults (vendor, location, date)
+Context Header → Batch defaults (supplier, location, date)
 Primary Grid   → Fast row entry, keyboard-first
 Inspector      → Complex edits, non-modal, Esc closes
 Status Bar     → Save state, totals, errors

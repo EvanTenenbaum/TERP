@@ -28,13 +28,13 @@ This task rewrites the test to cover the full P2P lifecycle:
 1. **Create PO**: Navigate to `/purchase-orders`, create a new PO with a supplier and at least one line item
 2. **Submit PO**: Transition status DRAFT → SENT via the submit action
 3. **Confirm PO**: Transition status SENT → CONFIRMED via the confirm action
-4. **Receive Items**: Call `poReceiving.receiveGoodsWithBatch` via API (no receiving UI exists)
-5. **Record Bill**: Create a vendor bill linked to the PO via `accounting.bills.create`
+4. **Receive Items**: Call `poReceiving.receiveGoodsWithBatch` via API (no intake UI exists)
+5. **Record Bill**: Create a supplier bill linked to the PO via `accounting.bills.create`
 6. **Pay Bill**: Record full payment via `accounting.bills.recordPayment`
 
 The companion oracle YAML (`tests-e2e/oracles/procurement/gf-002-procure-to-pay.oracle.yaml`) must be created with `expected_db` assertions for each step.
 
-**Critical constraint**: PO receiving has no dedicated frontend UI. Steps 4–6 must use the tRPC API directly via `page.request` (not UI interactions). This is documented in the spec and is an expected limitation of the current implementation.
+**Critical constraint**: PO intake has no dedicated frontend UI. Steps 4–6 must use the tRPC API directly via `page.request` (not UI interactions). This is documented in the spec and is an expected limitation of the current implementation.
 
 **Spec**: `docs/golden-flows/specs/GF-002-PROCURE-TO-PAY.md` (880 lines — read it)
 
@@ -88,10 +88,10 @@ GATE 0: Before writing any test code, document:
 
 ## Architecture Decision: API-Backed Test Strategy
 
-Because receiving, bill creation, and payment have no dedicated UI, the test uses a **hybrid approach**:
+Because intake, bill creation, and payment have no dedicated UI, the test uses a **hybrid approach**:
 
 - **UI steps** (PO creation, status updates): Use Playwright browser interactions
-- **API steps** (receiving, bills, payment): Use `page.request.post` to call tRPC endpoints directly
+- **API steps** (intake, bills, payment): Use `page.request.post` to call tRPC endpoints directly
 
 This is the correct approach for testing APIs without a UI. It mirrors what a real user would do — the API IS the interface until the UI is built.
 
@@ -354,7 +354,7 @@ Each step should include an `expect` assertion before moving to the next. If a s
  *
  * Full lifecycle: PO creation → submit → confirm → receive → bill → payment
  *
- * Architecture note: PO receiving, bill creation, and payment have no dedicated UI.
+ * Architecture note: PO intake, bill creation, and payment have no dedicated UI.
  * Steps 4–6 use the tRPC API directly via page.request.post (hybrid approach).
  * This is intentional — see GF-002 spec section "Not Yet Implemented".
  *
@@ -404,7 +404,7 @@ The oracle follows the same format as existing oracles (see `tests-e2e/oracles/i
 # Linear: TER-239
 
 flow_id: "P2P.GF002.FullLifecycle"
-description: "Verify DB state after complete Procure-to-Pay lifecycle: PO creation, submission, confirmation, receiving, bill recording, and full payment"
+description: "Verify DB state after complete Procure-to-Pay lifecycle: PO creation, submission, confirmation, intake, bill recording, and full payment"
 role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
@@ -442,7 +442,7 @@ preconditions:
 
 The oracle steps exercise the full lifecycle using API actions. Follow the `steps` pattern from existing oracles, using `action: navigate` and `action: wait` for UI, and `action: api_call` (or the equivalent pattern in the oracle executor — check `tests-e2e/oracles/executor.ts` for supported action types) for API steps.
 
-If the oracle executor does not support `action: api_call`, use UI navigation steps to the PO page, and document in the oracle file that receiving/billing assertions are DB-only (precondition data created via seed).
+If the oracle executor does not support `action: api_call`, use UI navigation steps to the PO page, and document in the oracle file that intake/billing assertions are DB-only (precondition data created via seed).
 
 ### `expected_db` Block
 
@@ -471,7 +471,7 @@ expected_db:
         totalCost_not_null: true
       count_gte: 1
 
-  # 3. Batch created from receiving
+  # 3. Batch created from intake
   batches:
     - where:
         deletedAt_null: true
@@ -482,7 +482,7 @@ expected_db:
         lotId_not_null: true
       count_gte: 1
 
-  # 4. Lot created during receiving session
+  # 4. Lot created during intake session
   lots:
     - where:
         deletedAt_null: true
@@ -635,8 +635,8 @@ All four must pass with zero errors before proceeding to QA.
 # No `any` types in new test file
 grep -n ": any\b" tests-e2e/golden-flows/gf-002-procure-to-pay.spec.ts
 
-# No vendor table references (use clients with isSeller)
-grep -n "vendor\b" tests-e2e/golden-flows/gf-002-procure-to-pay.spec.ts
+# No supplier table references (use clients with isSeller)
+grep -n "supplier\b" tests-e2e/golden-flows/gf-002-procure-to-pay.spec.ts
 
 # No fallback user IDs
 grep -n "|| 1\|?? 1\|input\.userId\|input\.createdBy" tests-e2e/golden-flows/gf-002-procure-to-pay.spec.ts
@@ -700,9 +700,9 @@ For each issue found by QA:
 The GF-002 spec documents these known issues. If you encounter them, note them in your return report but do NOT fix them:
 
 1. **`purchaseOrders.create` accepts `createdBy` from input** — Security violation noted in spec (line 548–561). The test should use the API as-is and document the issue.
-2. **PO receiving has no UI** — By design. Use API approach documented in Task 1.
+2. **PO intake has no UI** — By design. Use API approach documented in Task 1.
 3. **Duplicate inventory movements in `receiveGoodsWithBatch`** — Spec line 850. The test should pass even if two movements are created per item; use `count_gte: 1` in the oracle, not `count: 1`.
-4. **`vendorId` still required in schema** — If the API requires a `vendorId` alongside `supplierClientId`, pass a valid vendor ID or skip the `vendorId` and document whether the API accepts `supplierClientId` alone.
+4. **`vendorId` still required in schema** — If the API requires a `vendorId` alongside `supplierClientId`, pass a valid supplier ID or skip the `vendorId` and document whether the API accepts `supplierClientId` alone.
 5. **Hard delete on POs** — If you need to clean up test data between tests, note that `purchaseOrders.delete` is a hard delete. Do not add cleanup logic — use unique test data per test run.
 
 ---
@@ -758,4 +758,4 @@ Do NOT declare this work complete until every box is checked with evidence:
 2. **NO PREMATURE COMPLETION.** Every checklist item needs evidence.
 3. **SCOPE GUARD.** Only `tests-e2e/golden-flows/gf-002-procure-to-pay.spec.ts` and `tests-e2e/oracles/procurement/gf-002-procure-to-pay.oracle.yaml`. No router fixes. No UI changes.
 4. **STRICT MODE.** Read every file before modifying it. Do not assume API shapes — verify them.
-5. **API HYBRID APPROACH IS INTENTIONAL.** The receiving, bill, and payment steps have no UI. Use `page.request.post` to call tRPC directly. This is correct and documented.
+5. **API HYBRID APPROACH IS INTENTIONAL.** The intake, bill, and payment steps have no UI. Use `page.request.post` to call tRPC directly. This is correct and documented.

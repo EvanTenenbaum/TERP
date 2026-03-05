@@ -21,7 +21,7 @@ Live browser testing on 2026-01-29 revealed 6 S1-Critical bugs blocking release.
                     ┌─────────────────────────────────────┐
                     │  POCKET 0: Foundation (Sequential)  │
                     │         SCHEMA-015 (4h)             │
-                    │   Remove strainId + vendors joins   │
+                    │   Remove strainId + suppliers joins   │
                     └──────────────┬──────────────────────┘
                                    │
         ┌──────────────────────────┼──────────────────────────┐
@@ -138,7 +138,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 ```typescript
 // server/salesSheetsDb.ts:117-129
-// Remove: .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+// Remove: .leftJoin(suppliers, eq(lots.vendorId, suppliers.id))
 // Remove: .leftJoin(strains, eq(products.strainId, strains.id))
 // Add: .leftJoin(clients, eq(lots.supplierClientId, clients.id))
 
@@ -147,7 +147,7 @@ const inventoryWithDetails = await db
     batch: batches,
     product: products,
     lot: lots,
-    supplier: clients, // Changed from vendor
+    supplier: clients, // Changed from supplier
     // strain: REMOVED until column exists
   })
   .from(batches)
@@ -462,9 +462,9 @@ Test each Golden Flow in staging:
 
 ```
 Hour 0-4:   POCKET 0 - SCHEMA-015 (1 agent)
-            ├── Fix salesSheetsDb.ts strainId+vendors joins
+            ├── Fix salesSheetsDb.ts strainId+suppliers joins
             ├── Fix productsDb.ts strainId join
-            ├── Fix inventoryDb.ts vendors join
+            ├── Fix inventoryDb.ts suppliers join
             └── Audit remaining 24 files
 
 Hour 4-7:   POCKET 1 - Parallel (6 agents)

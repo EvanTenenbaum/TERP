@@ -3,11 +3,13 @@ Here is the RedHat QA Review for Phase 3.
 # RedHat QA Report: Phase 3
 
 ## Summary
+
 **PASS WITH CONDITIONS**
 
 The implementation provides a solid security foundation for the VIP Portal, correctly isolating session access to the specific authenticated client. However, the Real-Time implementation (SSE) lacks keep-alive mechanisms required for production environments (especially Vercel/AWS ALB), and there is a potential data leak in the batch details query.
 
 ## Checklist Results
+
 - [x] **VIP Portal Page**: **PASS** - Auth checks and state management are handled correctly.
 - [ ] **Client SSE Hook**: **FAIL** - Missing heartbeat/keep-alive mechanism. Connection will timeout on most cloud platforms.
 - [x] **Cart Interaction**: **PASS** - Strict session ownership enforcement on all mutations.
@@ -16,6 +18,7 @@ The implementation provides a solid security foundation for the VIP Portal, corr
 ## Critical Issues (Must Fix Before Commit)
 
 ### 1. SSE Connection Timeout (Infrastructure)
+
 **Severity: P0**
 **Location:** `src/pages/api/sse/vip/live-shopping/[roomCode].ts`
 
@@ -26,7 +29,7 @@ The implementation provides a solid security foundation for the VIP Portal, corr
 ```typescript
 // Add inside the handler, before subscription setup
 const heartbeat = setInterval(() => {
-  res.write(': ping\n\n'); // SSE comment format for keep-alive
+  res.write(": ping\n\n"); // SSE comment format for keep-alive
   if ((res as any).flush) (res as any).flush();
 }, 15000); // 15 seconds
 
@@ -39,12 +42,13 @@ req.on("close", () => {
 ```
 
 ### 2. Batch Data Leak / ID Enumeration
+
 **Severity: P0**
 **Location:** `server/routers/vipPortalLiveShopping.ts` -> `getBatchDetails`
 
 **Issue:** The `getBatchDetails` procedure takes a `batchId` and returns product details. It does **not** verify that the Batch is actually relevant to the current Session. A malicious authenticated client could script calls to this endpoint iterating through `batchId` 1...10000 to scrape the entire product catalog (images, descriptions, base prices), violating tenant isolation.
 
-**Fix:** Join with `liveShoppingSessions` or `sessionCartItems` (if it's in the cart) or verify the batch belongs to the vendor hosting the session.
+**Fix:** Join with `liveShoppingSessions` or `sessionCartItems` (if it's in the cart) or verify the batch belongs to the supplier hosting the session.
 
 ```typescript
 // Proposed Fix Logic
@@ -62,6 +66,7 @@ const result = await db
 ## High Priority Issues (Should Fix)
 
 ### 3. Token Exposure in URL
+
 **Severity: P1**
 **Location:** `src/hooks/useLiveSessionClient.ts`
 
@@ -69,36 +74,45 @@ const result = await db
 **Recommendation:** Use a "Ticket" system. Call a TRPC mutation `generateSSETicket` (authenticated via headers) that returns a short-lived (10s) one-time-use ticket, then pass that ticket to the SSE URL.
 
 ### 4. Cart State Desynchronization
+
 **Severity: P1**
 **Location:** `src/hooks/useLiveSessionClient.ts`
 
 **Issue:** The SSE listener for `CART_UPDATED` has logic to calculate totals manually if an array is received:
+
 ```typescript
-total += (parseFloat(item.quantity) * parseFloat(item.unitPrice));
+total += parseFloat(item.quantity) * parseFloat(item.unitPrice);
 ```
-However, the `addToCart` mutation returns the *full cart object* from the service. If the calculation logic in the frontend differs even slightly from the backend (rounding errors, tax, special session discounts), the UI will "jump" between values.
+
+However, the `addToCart` mutation returns the _full cart object_ from the service. If the calculation logic in the frontend differs even slightly from the backend (rounding errors, tax, special session discounts), the UI will "jump" between values.
 **Recommendation:** Ensure the backend `CART_UPDATED` event sends the exact same shape as `addToCart` return (pre-calculated totals).
 
 ## Required Changes Before Commit
 
 ### 1. Update `src/pages/api/sse/vip/live-shopping/[roomCode].ts`
+
 Apply the heartbeat logic to prevent connection drops.
 
 ```typescript
 // ... imports
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   // ... existing auth checks ...
 
   // 4. Setup SSE Headers
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
-    "Connection": "keep-alive",
+    Connection: "keep-alive",
     "X-Accel-Buffering": "no",
   });
 
-  res.write(`data: ${JSON.stringify({ type: "CONNECTED", sessionId: session.id })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({ type: "CONNECTED", sessionId: session.id })}\n\n`
+  );
 
   // [REQUIRED CHANGE] Heartbeat
   const heartbeatInterval = setInterval(() => {
@@ -123,6 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 ```
 
 ### 2. Update `server/routers/vipPortalLiveShopping.ts`
+
 Secure the `getBatchDetails` endpoint.
 
 ```typescript
@@ -136,7 +151,7 @@ Secure the `getBatchDetails` endpoint.
       const session = await db.query.liveShoppingSessions.findFirst({
          where: eq(liveShoppingSessions.id, input.sessionId)
       });
-      
+
       if (!session || session.clientId !== ctx.clientId) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Invalid Session" });
       }
@@ -154,14 +169,15 @@ Secure the `getBatchDetails` endpoint.
 ```
 
 ### 3. Update Frontend Call
+
 Update `src/pages/vip/live-session/[roomCode].tsx` to pass the `sessionId` to `getBatchDetails`.
 
 ```typescript
 const batchDetailsQuery = trpc.vipPortalLiveShopping.getBatchDetails.useQuery(
-    { 
-      batchId: highlightedProduct?.batchId,
-      sessionId: joinMutation.data?.session.id // Pass session ID
-    },
-    { enabled: !!highlightedProduct?.batchId && !!joinMutation.data?.session.id }
+  {
+    batchId: highlightedProduct?.batchId,
+    sessionId: joinMutation.data?.session.id, // Pass session ID
+  },
+  { enabled: !!highlightedProduct?.batchId && !!joinMutation.data?.session.id }
 );
 ```

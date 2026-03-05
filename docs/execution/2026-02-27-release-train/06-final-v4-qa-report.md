@@ -36,7 +36,7 @@ Original release-candidate reference: PR #446 (`03133aff36626f97a0190352bdf12253
   - `route-purchase-orders-classic.png`
   - `route-inventory-1.png`
   - `route-orders-create.png`
-  - `route-receiving.png`
+  - `route-intake.png`
   - `delete-undo-selected-row.png`
   - `delete-undo-after-delete.png`
   - `delete-undo-clicked-undo.png`

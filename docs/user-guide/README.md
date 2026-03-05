@@ -59,7 +59,7 @@ TERP is a comprehensive Cannabis ERP (Enterprise Resource Planning) system desig
 
 ### Supplier Management
 
-- [Supplier Features](./vendors.md) - Supplier relationships
+- [Supplier Features](./suppliers.md) - Supplier relationships
   - WS-014: Supplier "Harvesting Again" Reminder
 
 ---

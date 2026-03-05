@@ -87,7 +87,7 @@ CREATE TABLE products (
 -- Batches reference products
 ALTER TABLE batches ADD COLUMN product_id INT REFERENCES products(id);
 ALTER TABLE batches ADD COLUMN batch_number VARCHAR(50) UNIQUE;
-ALTER TABLE batches ADD COLUMN vendor_id INT REFERENCES vendors(id);
+ALTER TABLE batches ADD COLUMN vendor_id INT REFERENCES suppliers(id);
 ALTER TABLE batches ADD COLUMN intake_date DATE;
 ALTER TABLE batches ADD COLUMN expiration_date DATE;
 ALTER TABLE batches ADD COLUMN cost_per_unit DECIMAL(10,2);
