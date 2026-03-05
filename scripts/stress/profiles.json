@@ -1,0 +1,55 @@
+{
+  "smoke": {
+    "description": "Quick confidence gate",
+    "duration": "30s",
+    "vus": 8,
+    "ramp": "10s",
+    "thresholdSet": "smoke",
+    "lanes": {
+      "browser": true,
+      "apiLoad": true,
+      "invariants": true
+    }
+  },
+  "peak": {
+    "description": "Primary release gate profile",
+    "duration": "2m",
+    "vus": 35,
+    "ramp": "30s",
+    "thresholdSet": "peak",
+    "lanes": {
+      "browser": true,
+      "apiLoad": true,
+      "invariants": true
+    }
+  },
+  "soak": {
+    "description": "Long stability validation",
+    "duration": "10m",
+    "vus": 18,
+    "ramp": "60s",
+    "thresholdSet": "soak",
+    "lanes": {
+      "browser": true,
+      "apiLoad": true,
+      "invariants": true
+    }
+  },
+  "thresholds": {
+    "smoke": {
+      "p95Ms": 500,
+      "errorRate": 0.01,
+      "abortOnFail": true
+    },
+    "peak": {
+      "p95Ms": 2000,
+      "errorRate": 0.05,
+      "abortOnFail": true
+    },
+    "soak": {
+      "p95Ms": 1000,
+      "errorRate": 0.02,
+      "abortOnFail": true
+    }
+  }
+}

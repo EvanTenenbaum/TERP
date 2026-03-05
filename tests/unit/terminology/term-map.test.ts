@@ -10,9 +10,16 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync } from "fs";
+import {
+  readFileSync,
+  existsSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
+import { tmpdir } from "os";
 
 // ─── Load term map ─────────────────────────────────────────────────────────────
 // process.cwd() is the repo root when vitest is run from the repo root
@@ -21,6 +28,7 @@ const termMapPath = join(REPO_ROOT, "docs/terminology/term-map.json");
 const schemaPath = join(REPO_ROOT, "docs/terminology/schema.json");
 const censusSriptPath = join(REPO_ROOT, "scripts/terminology-census.sh");
 const driftScriptPath = join(REPO_ROOT, "scripts/terminology-drift-audit.sh");
+const reportScriptPath = join(REPO_ROOT, "scripts/terminology-audit-report.sh");
 
 interface PolicyLock {
   locked: boolean;
@@ -521,5 +529,159 @@ function getSupplier(supplierClientId: number) {
 
     // Must have --json flag support (for deterministic output)
     expect(scriptContent).toContain("--json");
+  });
+});
+
+describe("Drift Audit Script — Strict Mode Behavior", () => {
+  it("fails in strict mode when a forbidden alias appears", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "terp-terminology-bad-"));
+    const badFile = join(tempDir, "bad.ts");
+
+    try {
+      writeFileSync(
+        badFile,
+        "export const uiLabel = 'Vendor';\nconst vendorId = 1;\n",
+        "utf8"
+      );
+
+      const run = spawnSync(
+        "bash",
+        [driftScriptPath, "--strict", "--files", badFile],
+        { cwd: REPO_ROOT, encoding: "utf8" }
+      );
+
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain("[error]");
+      expect(run.stdout).toContain("use 'Supplier'");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes in strict mode when canonical terminology is used", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "terp-terminology-good-"));
+    const goodFile = join(tempDir, "good.ts");
+
+    try {
+      writeFileSync(
+        goodFile,
+        "export const uiLabel = 'Supplier';\nconst supplierClientId = 1;\n",
+        "utf8"
+      );
+
+      const run = spawnSync(
+        "bash",
+        [driftScriptPath, "--strict", "--files", goodFile],
+        { cwd: REPO_ROOT, encoding: "utf8" }
+      );
+
+      expect(run.status).toBe(0);
+      expect(run.stdout).toContain("PASS");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("Terminology Report Pipeline — Generation and Severity Mapping", () => {
+  it("generates JSON/Markdown report with severity counts for violations", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "terp-terminology-report-bad-"));
+    const badFile = join(tempDir, "bad.ts");
+    const outDir = join(tempDir, "out");
+
+    try {
+      writeFileSync(
+        badFile,
+        "export const uiLabel = 'Vendor';\nconst vendorId = 1;\n",
+        "utf8"
+      );
+
+      const run = spawnSync(
+        "bash",
+        [
+          reportScriptPath,
+          "--audit-mode",
+          "files",
+          "--files",
+          badFile,
+          "--strict",
+          "--skip-census",
+          "--output-dir",
+          outDir,
+        ],
+        { cwd: REPO_ROOT, encoding: "utf8" }
+      );
+
+      expect(run.status).toBe(1);
+
+      const auditJsonPath = join(outDir, "terminology-audit.json");
+      const auditMdPath = join(outDir, "terminology-audit.md");
+      expect(existsSync(auditJsonPath)).toBe(true);
+      expect(existsSync(auditMdPath)).toBe(true);
+
+      const payload = JSON.parse(readFileSync(auditJsonPath, "utf8")) as {
+        status: string;
+        severityCounts: { error: number; warning: number };
+        violationCount: number;
+      };
+
+      expect(payload.status).toBe("FAIL");
+      expect(payload.violationCount).toBeGreaterThan(0);
+      expect(payload.severityCounts.error).toBeGreaterThan(0);
+
+      const md = readFileSync(auditMdPath, "utf8");
+      expect(md).toContain("Violations");
+      expect(md).toContain("[error]");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("generates PASS report for allowed canonical terminology", () => {
+    const tempDir = mkdtempSync(
+      join(tmpdir(), "terp-terminology-report-good-")
+    );
+    const goodFile = join(tempDir, "good.ts");
+    const outDir = join(tempDir, "out");
+
+    try {
+      writeFileSync(
+        goodFile,
+        "export const label = 'Supplier';\nconst supplierClientId = 42;\n",
+        "utf8"
+      );
+
+      const run = spawnSync(
+        "bash",
+        [
+          reportScriptPath,
+          "--audit-mode",
+          "files",
+          "--files",
+          goodFile,
+          "--strict",
+          "--skip-census",
+          "--output-dir",
+          outDir,
+        ],
+        { cwd: REPO_ROOT, encoding: "utf8" }
+      );
+
+      expect(run.status).toBe(0);
+
+      const payload = JSON.parse(
+        readFileSync(join(outDir, "terminology-audit.json"), "utf8")
+      ) as {
+        status: string;
+        severityCounts: { error: number; warning: number };
+        violationCount: number;
+      };
+
+      expect(payload.status).toBe("PASS");
+      expect(payload.violationCount).toBe(0);
+      expect(payload.severityCounts.error).toBe(0);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
