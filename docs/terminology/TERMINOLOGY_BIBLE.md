@@ -72,7 +72,7 @@ A product line or label. Brands are separate entities in the `brands` table link
 
 ### Batch
 
-A discrete received quantity of a specific Product within a Lot. The atomic unit of inventory.
+All pounds of a certain SKU — a discrete received quantity of a specific Product within a Lot. The atomic unit of inventory.
 
 **Use**: "Batch" and `batchId` in all technical contexts.
 **Never use**: "Inventory Item" as a type name, "Item" as a standalone identifier
@@ -290,7 +290,7 @@ const itemId = batch.id;  // use batchId
 
 ## Policy 4: Intake vs Purchase Boundaries
 
-**Policy**: "Intake" is the canonical term for receiving inventory. "Purchase Order" (or "PO") is the pre-receipt commitment document. These are distinct concepts with clear boundaries.
+**Policy**: "Purchasing" is for acquiring product (the commercial decision). "Intake" is for the process of physically receiving it from the supplier. "Purchase Order" (or "PO") is the pre-receipt commitment document. These are distinct concepts with clear boundaries.
 
 ### Boundary Definitions
 
@@ -424,14 +424,17 @@ If you need to use a deprecated term (e.g., in a backward-compatibility shim):
 
 ---
 
-## FLAG FOR EVAN REVIEW (Gate 1)
+## Gate 1 Review — APPROVED
 
-This document represents the first authoritative terminology definition for TERP. Before downstream UI normalization tasks (LEX-008 through LEX-012) begin, Evan should confirm:
+**Reviewed by**: Evan Tenenbaum
+**Date**: 2026-03-05
 
-1. **Supplier vs Vendor**: Confirm "Supplier" is the correct UI term for entities we buy from.
-2. **Brand/Farmer boundary**: Confirm the category list that triggers "Farmer" is complete and correct.
-3. **Sales Order vs Order**: Confirm navigation can show "Orders" as a tab while detail pages say "Sales Order".
-4. **Intake vs Receiving**: Confirm "Intake" is the preferred operational term (not "Receiving").
-5. **Any missing terms**: Are there business terms in Evan's vocabulary not covered here?
+All 5 policy locks confirmed with the following clarifications:
 
-Once Evan confirms, the downstream UI normalization tasks can proceed.
+1. **Supplier** (not Vendor) — Approved
+2. **Farmer** for flower/pre-roll category brands — Approved
+3. **Batch** — "A batch is all pounds of a certain SKU" — Approved
+4. **Intake vs Purchasing** — "Purchasing is for acquiring product, intake is for the process of receiving it physically from the supplier" — Approved
+5. **Sales Order** — Approved
+
+Downstream UI normalization tasks (LEX-008 through LEX-012) are authorized to proceed.
