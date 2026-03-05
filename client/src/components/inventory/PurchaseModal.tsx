@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
 import { StrainInput } from "@/components/inventory/StrainInput";
 import { useDebounce } from "@/hooks/useDebounce";
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel } from "@/lib/nomenclature";
 
 interface PurchaseModalProps {
   open: boolean;
@@ -380,7 +382,7 @@ export function PurchaseModal({
 
           {/* Brand Autocomplete */}
           <div className="space-y-2">
-            <Label htmlFor="brand">Brand *</Label>
+            <Label htmlFor="brand">{getBrandLabel(formData.category)} *</Label>
             <div className="relative">
               <Input
                 id="brand"

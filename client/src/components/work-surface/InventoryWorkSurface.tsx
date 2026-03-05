@@ -104,6 +104,9 @@ import {
   Download,
 } from "lucide-react";
 
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel, getMixedBrandLabel } from "@/lib/nomenclature";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -436,7 +439,7 @@ function BatchInspectorContent({
             </InspectorField>
           )}
           {brand && (
-            <InspectorField label="Brand">
+            <InspectorField label={getBrandLabel(product?.category)}>
               <p>{brand.name}</p>
             </InspectorField>
           )}
@@ -1594,7 +1597,7 @@ export function InventoryWorkSurface() {
           { key: "category", label: "Category" },
           { key: "subcategory", label: "Subcategory" },
           { key: "vendor", label: "Supplier" },
-          { key: "brand", label: "Brand" },
+          { key: "brand", label: getMixedBrandLabel(categoryOptions) },
           { key: "grade", label: "Grade" },
           { key: "status", label: "Status" },
           { key: "onHand", label: "On Hand" },
@@ -1623,7 +1626,7 @@ export function InventoryWorkSurface() {
       const message = error instanceof Error ? error.message : "Export failed";
       toast.error(message);
     }
-  }, [displayItems, exportCSV]);
+  }, [displayItems, exportCSV, categoryOptions]);
 
   const handleApplySavedView = useCallback(
     (savedFilters: Partial<InventoryFilters>): void => {
@@ -2040,7 +2043,8 @@ export function InventoryWorkSurface() {
                         onClick={() => handleSort("brand")}
                       >
                         <span className="flex items-center">
-                          Brand <SortIcon column="brand" />
+                          {getMixedBrandLabel(categoryOptions)}{" "}
+                          <SortIcon column="brand" />
                         </span>
                       </TableHead>
                       <TableHead

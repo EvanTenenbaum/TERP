@@ -71,6 +71,9 @@ import {
 import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
 import { KeyboardHintBar } from "./KeyboardHintBar";
 
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel } from "@/lib/nomenclature";
+
 // Icons
 import {
   Plus,
@@ -402,7 +405,7 @@ function RowInspectorContent({
           )}
         </InspectorField>
 
-        <InspectorField label="Brand / Farmer" required>
+        <InspectorField label={getBrandLabel(row.category)} required>
           <Input
             value={row.brandName}
             onChange={e => {
@@ -1649,7 +1652,7 @@ export function DirectIntakeWorkSurface() {
       await exportCSV(rowsRef.current as IntakeExportRow[], {
         columns: [
           { key: "vendorName", label: "Supplier" },
-          { key: "brandName", label: "Brand" },
+          { key: "brandName", label: "Brand/Farmer" },
           { key: "item", label: "Product" },
           { key: "category", label: "Category" },
           { key: "subcategory", label: "Subcategory" },
