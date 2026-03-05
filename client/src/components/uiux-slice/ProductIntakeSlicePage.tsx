@@ -1279,7 +1279,7 @@ export function ProductIntakeSlicePage() {
             validation.errorCount > 0
           }
         >
-          {receiveMutation.isPending ? "Receiving..." : "Receive"}
+          {receiveMutation.isPending ? "Intaking..." : "Receive"}
         </Button>
 
         <Button
@@ -1653,7 +1653,7 @@ export function ProductIntakeSlicePage() {
           <DialogHeader>
             <DialogTitle>Review Intake</DialogTitle>
             <DialogDescription className="sr-only">
-              Review totals and blocking errors before receiving intake.
+              Review totals and blocking errors before completing intake.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">

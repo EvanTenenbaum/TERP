@@ -27,7 +27,7 @@ import {
   Workflow, // NAV-013: Workflow Queue
   Clock, // MEET-048: Time Clock
   Inbox, // TERP-0005: Inbox navigation
-  Download, // TERP-0005: Receiving
+  Download, // TERP-0005: Intake
   MapPin, // TERP-0005: Locations
   BookOpen, // TER-99: Client Ledger navigation
   type LucideIcon,
@@ -164,13 +164,13 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Product photography queue and workflow management",
   },
   { name: "Samples", path: "/samples", icon: Beaker, group: "inventory" },
-  // TERP-0005: Rename Direct Intake to Receiving while preserving route alias
+  // TERP-0005: Rename Direct Intake to Intake while preserving route alias
   {
-    name: "Receiving",
+    name: "Intake",
     path: "/purchase-orders?tab=receiving",
     icon: Download,
     group: "inventory",
-    ariaLabel: "Receive inventory into the system",
+    ariaLabel: "Intake inventory into the system",
   },
   {
     name: "Purchase Orders",
@@ -294,10 +294,10 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
     ariaLabel: "Create a new sale",
   },
   {
-    name: "Record Receipt",
+    name: "Record Intake",
     path: "/purchase-orders?tab=receiving",
     icon: Download,
-    ariaLabel: "Record a receiving intake",
+    ariaLabel: "Record a product intake",
   },
   {
     name: "Clients",

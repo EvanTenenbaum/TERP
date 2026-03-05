@@ -20,7 +20,7 @@ type ProcurementTab =
 const PROCUREMENT_TABS = [
   { value: "purchase-orders", label: "Purchase Orders" },
   { value: "product-intake", label: "Product Intake" },
-  { value: "receiving", label: "Receiving" },
+  { value: "receiving", label: "PO Intake" },
   { value: "inventory-browse", label: "Inventory Browse" },
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
@@ -35,7 +35,7 @@ export default function ProcurementWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title="Procurement"
-      description="Run the complete procurement spine from Purchase Order to Product Intake to Received corrections."
+      description="Run the complete procurement spine from Purchase Order to Product Intake to Intake corrections."
       section="Buy"
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}
@@ -43,7 +43,7 @@ export default function ProcurementWorkspacePage() {
       meta={[
         {
           label: "Operational spine",
-          value: "Purchase Order -> Product Intake -> Receive -> Corrections",
+          value: "Purchase Order -> Product Intake -> Intake -> Corrections",
         },
         {
           label: "Mode",
@@ -80,7 +80,7 @@ export default function ProcurementWorkspacePage() {
             variant={activeTab === "receiving" ? "default" : "outline"}
             onClick={() => setActiveTab("receiving")}
           >
-            Receiving
+            PO Intake
           </Button>
         </>
       }

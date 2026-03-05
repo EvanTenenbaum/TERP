@@ -138,7 +138,9 @@ export function PurchaseOrdersSlicePage() {
   const [route, navigate] = useLocation();
   const { user } = useAuth();
   const userId = user?.id;
-  const preferenceUserId = route.startsWith("/slice-v1-lab") ? "slice-lab" : userId;
+  const preferenceUserId = route.startsWith("/slice-v1-lab")
+    ? "slice-lab"
+    : userId;
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -227,7 +229,9 @@ export function PurchaseOrdersSlicePage() {
       ) as SupplierLike | undefined;
       if (supplierByClient?.name?.trim()) return supplierByClient.name.trim();
 
-      const vendorByLegacyId = vendors.find(vendor => vendor.id === po.vendorId);
+      const vendorByLegacyId = vendors.find(
+        vendor => vendor.id === po.vendorId
+      );
       if (vendorByLegacyId?.name?.trim()) return vendorByLegacyId.name.trim();
 
       const vendorByClient = vendors.find(
@@ -277,7 +281,9 @@ export function PurchaseOrdersSlicePage() {
       {
         viewMode: nextViewMode,
         columnOrder: nextColumns.map(c => c.id),
-        columnVisibility: Object.fromEntries(nextColumns.map(c => [c.id, c.visible])),
+        columnVisibility: Object.fromEntries(
+          nextColumns.map(c => [c.id, c.visible])
+        ),
       },
       preferenceUserId
     );
@@ -299,7 +305,9 @@ export function PurchaseOrdersSlicePage() {
     savePreference(columns, next);
   };
 
-  const visibleColumnIds = new Set(columns.filter(c => c.visible).map(c => c.id));
+  const visibleColumnIds = new Set(
+    columns.filter(c => c.visible).map(c => c.id)
+  );
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -475,8 +483,7 @@ export function PurchaseOrdersSlicePage() {
       return;
     }
 
-    const supplierName =
-      getSupplierName(po);
+    const supplierName = getSupplierName(po);
 
     const defaultWarehouse =
       locations.find(loc => (loc.site ?? "").toLowerCase().includes("main")) ??
@@ -571,7 +578,9 @@ export function PurchaseOrdersSlicePage() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-6 py-4 border-b">
-        <h1 className="text-2xl font-semibold tracking-tight">Purchase Orders</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Purchase Orders
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Purchase Order to Product Intake routing surface.
         </p>
@@ -597,12 +606,15 @@ export function PurchaseOrdersSlicePage() {
             <SelectItem value="DRAFT">Draft</SelectItem>
             <SelectItem value="SENT">Sent</SelectItem>
             <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="RECEIVING">Receiving</SelectItem>
+            <SelectItem value="RECEIVING">Intaking</SelectItem>
             <SelectItem value="RECEIVED">Received</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={viewMode} onValueChange={v => setViewModeAndPersist(v as GridViewMode)}>
+        <Select
+          value={viewMode}
+          onValueChange={v => setViewModeAndPersist(v as GridViewMode)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="View" />
           </SelectTrigger>
@@ -613,7 +625,11 @@ export function PurchaseOrdersSlicePage() {
           </SelectContent>
         </Select>
 
-        <GridColumnsPopover columns={columns} onChange={setColumnsAndPersist} onReset={resetColumns} />
+        <GridColumnsPopover
+          columns={columns}
+          onChange={setColumnsAndPersist}
+          onReset={resetColumns}
+        />
       </div>
 
       <div className="px-6 py-2 border-b flex items-center gap-2 flex-wrap text-sm">
@@ -626,7 +642,11 @@ export function PurchaseOrdersSlicePage() {
           size="sm"
           variant="outline"
           onClick={() => selectedPoId && placeOrder(selectedPoId)}
-          disabled={!selectedPoId || submitPoMutation.isPending || confirmPoMutation.isPending}
+          disabled={
+            !selectedPoId ||
+            submitPoMutation.isPending ||
+            confirmPoMutation.isPending
+          }
         >
           <Truck className="h-4 w-4 mr-1" />
           Place Order
@@ -642,7 +662,11 @@ export function PurchaseOrdersSlicePage() {
           Place Order (Bulk)
         </Button>
 
-        <Button size="sm" onClick={openIntakePicker} disabled={!activePoForIntake}>
+        <Button
+          size="sm"
+          onClick={openIntakePicker}
+          disabled={!activePoForIntake}
+        >
           <ClipboardPlus className="h-4 w-4 mr-1" />
           Create Product Intake
         </Button>
@@ -671,7 +695,9 @@ export function PurchaseOrdersSlicePage() {
         </Button>
       </div>
 
-      <div className="px-6 py-2 border-b text-xs text-muted-foreground">{contextLine}</div>
+      <div className="px-6 py-2 border-b text-xs text-muted-foreground">
+        {contextLine}
+      </div>
 
       <div className="flex-1 overflow-auto">
         <table className="w-full">
@@ -689,12 +715,24 @@ export function PurchaseOrdersSlicePage() {
                   }}
                 />
               </th>
-              {visibleColumnIds.has("po") && <th className="text-left p-2">PO</th>}
-              {visibleColumnIds.has("supplier") && <th className="text-left p-2">Supplier</th>}
-              {visibleColumnIds.has("status") && <th className="text-left p-2">Status</th>}
-              {visibleColumnIds.has("orderDate") && <th className="text-left p-2">Order Date</th>}
-              {visibleColumnIds.has("expected") && <th className="text-left p-2">Expected</th>}
-              {visibleColumnIds.has("total") && <th className="text-right p-2">Total</th>}
+              {visibleColumnIds.has("po") && (
+                <th className="text-left p-2">PO</th>
+              )}
+              {visibleColumnIds.has("supplier") && (
+                <th className="text-left p-2">Supplier</th>
+              )}
+              {visibleColumnIds.has("status") && (
+                <th className="text-left p-2">Status</th>
+              )}
+              {visibleColumnIds.has("orderDate") && (
+                <th className="text-left p-2">Order Date</th>
+              )}
+              {visibleColumnIds.has("expected") && (
+                <th className="text-left p-2">Expected</th>
+              )}
+              {visibleColumnIds.has("total") && (
+                <th className="text-right p-2">Total</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -720,32 +758,46 @@ export function PurchaseOrdersSlicePage() {
                       }}
                     />
                   </td>
-                  {visibleColumnIds.has("po") && <td className="p-2">{po.poNumber}</td>}
-                  {visibleColumnIds.has("supplier") && <td className="p-2">{supplier}</td>}
+                  {visibleColumnIds.has("po") && (
+                    <td className="p-2">{po.poNumber}</td>
+                  )}
+                  {visibleColumnIds.has("supplier") && (
+                    <td className="p-2">{supplier}</td>
+                  )}
                   {visibleColumnIds.has("status") && (
                     <td className="p-2">
-                      <Badge className={statusColor[po.purchaseOrderStatus] ?? statusColor.DRAFT}>
+                      <Badge
+                        className={
+                          statusColor[po.purchaseOrderStatus] ??
+                          statusColor.DRAFT
+                        }
+                      >
                         {po.purchaseOrderStatus}
                       </Badge>
                     </td>
                   )}
                   {visibleColumnIds.has("orderDate") && (
-                    <td className="p-2">
-                      {formatDateCell(po.orderDate)}
-                    </td>
+                    <td className="p-2">{formatDateCell(po.orderDate)}</td>
                   )}
                   {visibleColumnIds.has("expected") && (
-                    <td className="p-2">{formatDateCell(po.expectedDeliveryDate)}</td>
+                    <td className="p-2">
+                      {formatDateCell(po.expectedDeliveryDate)}
+                    </td>
                   )}
                   {visibleColumnIds.has("total") && (
-                    <td className="p-2 text-right">${Number(po.total ?? 0).toFixed(2)}</td>
+                    <td className="p-2 text-right">
+                      ${Number(po.total ?? 0).toFixed(2)}
+                    </td>
                   )}
                 </tr>
               );
             })}
             {filtered.length === 0 && (
               <tr>
-                <td className="p-8 text-center text-muted-foreground" colSpan={8}>
+                <td
+                  className="p-8 text-center text-muted-foreground"
+                  colSpan={8}
+                >
                   No purchase orders found.
                 </td>
               </tr>
@@ -758,7 +810,8 @@ export function PurchaseOrdersSlicePage() {
         <DrawerContent className="w-[760px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>
-              Create Product Intake{activePoForIntake ? ` from ${activePoForIntake.poNumber}` : ""}
+              Create Product Intake
+              {activePoForIntake ? ` from ${activePoForIntake.poNumber}` : ""}
             </DrawerTitle>
             <DrawerDescription className="sr-only">
               Select PO lines and quantities to start a Product Intake draft.
@@ -784,15 +837,21 @@ export function PurchaseOrdersSlicePage() {
                         onCheckedChange={checked => {
                           setPickerLines(prev =>
                             prev.map(p =>
-                              p.poItemId === line.poItemId ? { ...p, selected: !!checked } : p
+                              p.poItemId === line.poItemId
+                                ? { ...p, selected: !!checked }
+                                : p
                             )
                           );
                         }}
                       />
                     </td>
                     <td className="p-2">{line.productName}</td>
-                    <td className="p-2 text-right">{line.remainingQty.toFixed(2)}</td>
-                    <td className="p-2 text-right">${line.unitCost.toFixed(2)}</td>
+                    <td className="p-2 text-right">
+                      {line.remainingQty.toFixed(2)}
+                    </td>
+                    <td className="p-2 text-right">
+                      ${line.unitCost.toFixed(2)}
+                    </td>
                     <td className="p-2">
                       <Input
                         type="number"
@@ -805,7 +864,12 @@ export function PurchaseOrdersSlicePage() {
                           setPickerLines(prev =>
                             prev.map(p =>
                               p.poItemId === line.poItemId
-                                ? { ...p, intakeQty: Number.isFinite(value) ? value : 0 }
+                                ? {
+                                    ...p,
+                                    intakeQty: Number.isFinite(value)
+                                      ? value
+                                      : 0,
+                                  }
                                 : p
                             )
                           );
@@ -828,7 +892,11 @@ export function PurchaseOrdersSlicePage() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={activityOpen} onOpenChange={setActivityOpen} direction="right">
+      <Drawer
+        open={activityOpen}
+        onOpenChange={setActivityOpen}
+        direction="right"
+      >
         <DrawerContent className="w-[520px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>Activity Log</DrawerTitle>
@@ -840,12 +908,18 @@ export function PurchaseOrdersSlicePage() {
             {(activityQuery.data ?? []).map(item => (
               <div key={item.id} className="border-b pb-2 text-sm">
                 <p className="font-medium">{item.inventoryMovementType}</p>
-                <p className="text-xs text-muted-foreground">Qty {item.quantityChange}</p>
-                <p className="text-xs text-muted-foreground">{item.notes ?? "-"}</p>
+                <p className="text-xs text-muted-foreground">
+                  Qty {item.quantityChange}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {item.notes ?? "-"}
+                </p>
               </div>
             ))}
             {(activityQuery.data ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground">No activity yet for this PO.</p>
+              <p className="text-sm text-muted-foreground">
+                No activity yet for this PO.
+              </p>
             )}
           </div>
           <DrawerFooter>
@@ -894,7 +968,10 @@ export function PurchaseOrdersSlicePage() {
                   type="date"
                   value={createForm.orderDate}
                   onChange={e =>
-                    setCreateForm(prev => ({ ...prev, orderDate: e.target.value }))
+                    setCreateForm(prev => ({
+                      ...prev,
+                      orderDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -904,7 +981,10 @@ export function PurchaseOrdersSlicePage() {
                   type="date"
                   value={createForm.expectedDeliveryDate}
                   onChange={e =>
-                    setCreateForm(prev => ({ ...prev, expectedDeliveryDate: e.target.value }))
+                    setCreateForm(prev => ({
+                      ...prev,
+                      expectedDeliveryDate: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -915,7 +995,10 @@ export function PurchaseOrdersSlicePage() {
               <Input
                 value={createForm.paymentTerms}
                 onChange={e =>
-                  setCreateForm(prev => ({ ...prev, paymentTerms: e.target.value }))
+                  setCreateForm(prev => ({
+                    ...prev,
+                    paymentTerms: e.target.value,
+                  }))
                 }
                 placeholder="Net 30"
               />
@@ -941,7 +1024,10 @@ export function PurchaseOrdersSlicePage() {
 
               <div className="space-y-2">
                 {createForm.items.map((line, index) => (
-                  <div key={line.id} className="grid grid-cols-[1.4fr_0.6fr_0.6fr_auto] gap-2">
+                  <div
+                    key={line.id}
+                    className="grid grid-cols-[1.4fr_0.6fr_0.6fr_auto] gap-2"
+                  >
                     <Select
                       value={line.productId}
                       onValueChange={value => {
@@ -958,7 +1044,10 @@ export function PurchaseOrdersSlicePage() {
                       </SelectTrigger>
                       <SelectContent>
                         {products.map(product => (
-                          <SelectItem key={product.id} value={String(product.id)}>
+                          <SelectItem
+                            key={product.id}
+                            value={String(product.id)}
+                          >
                             {product.nameCanonical}
                           </SelectItem>
                         ))}
@@ -976,7 +1065,9 @@ export function PurchaseOrdersSlicePage() {
                         setCreateForm(prev => ({
                           ...prev,
                           items: prev.items.map((item, i) =>
-                            i === index ? { ...item, quantityOrdered: value } : item
+                            i === index
+                              ? { ...item, quantityOrdered: value }
+                              : item
                           ),
                         }));
                       }}
@@ -1031,7 +1122,10 @@ export function PurchaseOrdersSlicePage() {
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={createPurchaseOrder} disabled={createPoMutation.isPending}>
+            <Button
+              onClick={createPurchaseOrder}
+              disabled={createPoMutation.isPending}
+            >
               {createPoMutation.isPending ? "Creating..." : "Create PO"}
             </Button>
           </DialogFooter>

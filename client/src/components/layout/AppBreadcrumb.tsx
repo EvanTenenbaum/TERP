@@ -33,8 +33,8 @@ const customRouteNames: Record<string, string> = {
   edit: "Edit",
   new: "New",
   dashboard: "Dashboard",
-  receiving: "Receiving",
-  "direct-intake": "Receiving",
+  receiving: "Intake",
+  "direct-intake": "Intake",
   rules: "Rules",
   profiles: "Profiles",
 };

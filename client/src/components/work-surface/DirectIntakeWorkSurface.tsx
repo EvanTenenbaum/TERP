@@ -1842,7 +1842,7 @@ export function DirectIntakeWorkSurface() {
           <div>
             <h2 className="linear-workspace-title flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Receiving
+              Intake
             </h2>
             <p className="linear-workspace-description">
               Keep key fields front and center, then use row details for

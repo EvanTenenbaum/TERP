@@ -335,14 +335,14 @@ export function PurchaseModal({
           <DialogTitle>New Product Intake</DialogTitle>
           <DialogDescription>
             Record a new product intake. You can add detailed location and other
-            information after receiving.
+            information after intake.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vendor Autocomplete */}
           <div className="space-y-2">
-            <Label htmlFor="vendor">Vendor *</Label>
+            <Label htmlFor="vendor">Supplier *</Label>
             <div className="relative">
               <Input
                 id="vendor"
@@ -353,7 +353,7 @@ export function PurchaseModal({
                   setShowVendorDropdown(true);
                 }}
                 onFocus={() => setShowVendorDropdown(true)}
-                placeholder="Start typing vendor name..."
+                placeholder="Start typing supplier name..."
                 required
               />
               {showVendorDropdown &&
