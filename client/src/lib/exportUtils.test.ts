@@ -29,7 +29,7 @@ describe("exportToCSV validation", () => {
     const data = [{ id: 1, name: "Test Vendor", email: "test@example.com" }];
 
     const columns = [
-      { key: "name" as const, label: "Vendor Name" },
+      { key: "name" as const, label: "Supplier Name" },
       { key: "email" as const, label: "Email Address" },
     ];
 

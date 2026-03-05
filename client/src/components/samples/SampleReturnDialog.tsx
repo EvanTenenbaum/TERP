@@ -85,11 +85,11 @@ export const SampleReturnDialog = React.memo(function SampleReturnDialog({
   });
 
   const title =
-    type === "sample" ? "Request Sample Return" : "Request Vendor Return";
+    type === "sample" ? "Request Sample Return" : "Request Supplier Return";
   const description =
     type === "sample"
       ? "Submit a request to return this sample. An admin will review and approve the return."
-      : "Submit a request to return this sample to the vendor.";
+      : "Submit a request to return this sample to the supplier.";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -22,13 +22,13 @@ This audit covered navigation integrity, modal/drawer behavior, and error handli
 
 ### Investigation Summary
 
-| Check | Result |
-|-------|--------|
-| Route exists in App.tsx | ✅ Yes (`/spreadsheet-view`) |
-| Component exists | ✅ Yes (`SpreadsheetViewPage.tsx`) |
-| Navigation config correct | ✅ Yes (`navigation.ts:68-74`) |
-| Behind feature flag | ✅ Yes (`spreadsheet-view`) |
-| Feature flag default | ❌ Was `false`, now `true` |
+| Check                     | Result                             |
+| ------------------------- | ---------------------------------- |
+| Route exists in App.tsx   | ✅ Yes (`/spreadsheet-view`)       |
+| Component exists          | ✅ Yes (`SpreadsheetViewPage.tsx`) |
+| Navigation config correct | ✅ Yes (`navigation.ts:68-74`)     |
+| Behind feature flag       | ✅ Yes (`spreadsheet-view`)        |
+| Feature flag default      | ❌ Was `false`, now `true`         |
 
 ### Root Cause
 
@@ -56,21 +56,21 @@ The "404" reported was actually the feature flag being disabled by default. The 
 
 ### All Navigation Links Valid
 
-| Route | Component | Status |
-|-------|-----------|--------|
-| `/` | Dashboard | ✅ |
-| `/clients` | ClientsListPage | ✅ |
-| `/orders` | Orders | ✅ |
-| `/inventory` | Inventory | ✅ |
-| `/products` | ProductsPage | ✅ |
-| `/samples` | SampleManagement | ✅ |
-| `/calendar` | CalendarPage | ✅ |
-| `/settings` | Settings | ✅ |
-| `/accounting` | AccountingDashboard | ✅ |
-| `/analytics` | AnalyticsPage | ✅ |
-| `/users` | UsersPage | ✅ |
-| `/purchase-orders` | PurchaseOrdersPage | ✅ |
-| `/vendors` | VendorsPage | ✅ |
+| Route               | Component           | Status     |
+| ------------------- | ------------------- | ---------- |
+| `/`                 | Dashboard           | ✅         |
+| `/clients`          | ClientsListPage     | ✅         |
+| `/orders`           | Orders              | ✅         |
+| `/inventory`        | Inventory           | ✅         |
+| `/products`         | ProductsPage        | ✅         |
+| `/samples`          | SampleManagement    | ✅         |
+| `/calendar`         | CalendarPage        | ✅         |
+| `/settings`         | Settings            | ✅         |
+| `/accounting`       | AccountingDashboard | ✅         |
+| `/analytics`        | AnalyticsPage       | ✅         |
+| `/users`            | UsersPage           | ✅         |
+| `/purchase-orders`  | PurchaseOrdersPage  | ✅         |
+| `/suppliers`        | VendorsPage         | ✅         |
 | `/spreadsheet-view` | SpreadsheetViewPage | ✅ (fixed) |
 
 ### Navigation Components Verified
@@ -99,12 +99,14 @@ The "404" reported was actually the feature flag being disabled by default. The 
 **EventFormDialog** - Did not use Dialog component from shadcn/ui
 
 **Before:**
+
 - Custom implementation
 - No ESC key handling
 - No backdrop click handling
 - No close button (X)
 
 **After (Fixed):**
+
 - Uses Radix UI Dialog component
 - ✅ ESC key support
 - ✅ Backdrop click support
@@ -113,16 +115,16 @@ The "404" reported was actually the feature flag being disabled by default. The 
 
 ### All Modals/Drawers Verified
 
-| Component | ESC | Backdrop | Close Button | State Cleanup | Status |
-|-----------|-----|----------|--------------|---------------|--------|
-| Dialog (UI) | ✅ | ✅ | ✅ | ✅ | OK |
-| Sheet (UI) | ✅ | ✅ | ✅ | ✅ | OK |
-| BatchDetailDrawer | ✅ | ✅ | ✅ | ✅ | OK |
-| CogsEditModal | ✅ | ✅ | ✅ | ✅ | OK |
-| ReceivePaymentModal | ✅ | ✅ | ✅ | ✅ | OK |
-| AddClientWizard | ✅ | ✅ | ✅ | ✅ | OK |
-| EventFormDialog | ✅ | ✅ | ✅ | ✅ | Fixed |
-| (34 others) | ✅ | ✅ | ✅ | ✅ | OK |
+| Component           | ESC | Backdrop | Close Button | State Cleanup | Status |
+| ------------------- | --- | -------- | ------------ | ------------- | ------ |
+| Dialog (UI)         | ✅  | ✅       | ✅           | ✅            | OK     |
+| Sheet (UI)          | ✅  | ✅       | ✅           | ✅            | OK     |
+| BatchDetailDrawer   | ✅  | ✅       | ✅           | ✅            | OK     |
+| CogsEditModal       | ✅  | ✅       | ✅           | ✅            | OK     |
+| ReceivePaymentModal | ✅  | ✅       | ✅           | ✅            | OK     |
+| AddClientWizard     | ✅  | ✅       | ✅           | ✅            | OK     |
+| EventFormDialog     | ✅  | ✅       | ✅           | ✅            | Fixed  |
+| (34 others)         | ✅  | ✅       | ✅           | ✅            | OK     |
 
 ---
 
@@ -137,13 +139,13 @@ The "404" reported was actually the feature flag being disabled by default. The 
 
 ### Pages with Proper Error Handling
 
-| Page | Loading | Error | Empty | Status |
-|------|---------|-------|-------|--------|
-| ClientsListPage | ✅ | ✅ | ✅ | OK |
-| Orders | ✅ | ✅ | ✅ | OK |
-| Inventory | ✅ | ✅ | ✅ | OK |
-| ProductsPage | ✅ | ✅ | ✅ | OK |
-| Dashboard | ✅ | ⚠️ | ⚠️ | Partial |
+| Page            | Loading | Error | Empty | Status  |
+| --------------- | ------- | ----- | ----- | ------- |
+| ClientsListPage | ✅      | ✅    | ✅    | OK      |
+| Orders          | ✅      | ✅    | ✅    | OK      |
+| Inventory       | ✅      | ✅    | ✅    | OK      |
+| ProductsPage    | ✅      | ✅    | ✅    | OK      |
+| Dashboard       | ✅      | ⚠️    | ⚠️    | Partial |
 
 ### Recommendations (Not Blocking)
 
@@ -162,18 +164,18 @@ The "404" reported was actually the feature flag being disabled by default. The 
 
 ### Test Coverage
 
-| Category | Tests | Description |
-|----------|-------|-------------|
-| Navigation Routes | 14 | All main routes load without 404 |
-| Error Handling | 2 | 404 page, JS error detection |
-| Modal Behavior | 3 | Open/close, ESC key, backdrop click |
-| Critical Flows | 4 | Client list, order creator, inventory, settings |
-| Empty States | 2 | Proper handling of empty data |
-| Form Validation | 1 | Required field validation |
-| Keyboard Accessibility | 2 | Shortcuts, tab navigation |
-| Spreadsheet View (BUG-070) | 2 | Route and UI verification |
-| Calendar Event Dialog | 1 | Modal fix verification |
-| Accounting Routes | 5 | All accounting subroutes |
+| Category                   | Tests | Description                                     |
+| -------------------------- | ----- | ----------------------------------------------- |
+| Navigation Routes          | 14    | All main routes load without 404                |
+| Error Handling             | 2     | 404 page, JS error detection                    |
+| Modal Behavior             | 3     | Open/close, ESC key, backdrop click             |
+| Critical Flows             | 4     | Client list, order creator, inventory, settings |
+| Empty States               | 2     | Proper handling of empty data                   |
+| Form Validation            | 1     | Required field validation                       |
+| Keyboard Accessibility     | 2     | Shortcuts, tab navigation                       |
+| Spreadsheet View (BUG-070) | 2     | Route and UI verification                       |
+| Calendar Event Dialog      | 1     | Modal fix verification                          |
+| Accounting Routes          | 5     | All accounting subroutes                        |
 
 ### Running Tests
 

@@ -6,7 +6,7 @@
 **Module:** Photography (New Module)  
 **Dependencies:** None  
 **Spec Author:** Manus AI  
-**Spec Date:** 2025-12-30  
+**Spec Date:** 2025-12-30
 
 ---
 
@@ -35,29 +35,29 @@ The business needs a simple, dedicated module to streamline the photography work
 
 ### 3.1 Core Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Upload photos (drag-and-drop, multi-select) | Must Have |
-| FR-02 | Link photos to batches/products | Must Have |
-| FR-03 | View all photos for a product/batch | Must Have |
-| FR-04 | Set primary photo for product | Must Have |
-| FR-05 | "Needs Photo" queue/dashboard | Must Have |
-| FR-06 | Delete/replace photos | Must Have |
-| FR-07 | Photo approval workflow | Should Have |
-| FR-08 | Bulk upload with auto-matching | Should Have |
-| FR-09 | Image optimization (resize, compress) | Should Have |
-| FR-10 | Photo tags/categories | Nice to Have |
+| ID    | Requirement                                 | Priority     |
+| ----- | ------------------------------------------- | ------------ |
+| FR-01 | Upload photos (drag-and-drop, multi-select) | Must Have    |
+| FR-02 | Link photos to batches/products             | Must Have    |
+| FR-03 | View all photos for a product/batch         | Must Have    |
+| FR-04 | Set primary photo for product               | Must Have    |
+| FR-05 | "Needs Photo" queue/dashboard               | Must Have    |
+| FR-06 | Delete/replace photos                       | Must Have    |
+| FR-07 | Photo approval workflow                     | Should Have  |
+| FR-08 | Bulk upload with auto-matching              | Should Have  |
+| FR-09 | Image optimization (resize, compress)       | Should Have  |
+| FR-10 | Photo tags/categories                       | Nice to Have |
 
 ### 3.2 Business Rules
 
-| ID | Rule | Example |
-|----|------|---------|
-| BR-01 | Each batch can have multiple photos | Gallery view |
-| BR-02 | One photo designated as "primary" | Shows in listings |
-| BR-03 | Photos auto-linked to product when linked to batch | Inheritance |
-| BR-04 | Supported formats: JPG, PNG, WEBP | Standard web formats |
-| BR-05 | Max file size: 10MB per photo | Performance |
-| BR-06 | Photos stored in cloud storage (S3) | Scalability |
+| ID    | Rule                                               | Example              |
+| ----- | -------------------------------------------------- | -------------------- |
+| BR-01 | Each batch can have multiple photos                | Gallery view         |
+| BR-02 | One photo designated as "primary"                  | Shows in listings    |
+| BR-03 | Photos auto-linked to product when linked to batch | Inheritance          |
+| BR-04 | Supported formats: JPG, PNG, WEBP                  | Standard web formats |
+| BR-05 | Max file size: 10MB per photo                      | Performance          |
+| BR-06 | Photos stored in cloud storage (S3)                | Scalability          |
 
 ## 4. Technical Specification
 
@@ -69,30 +69,30 @@ CREATE TABLE product_photos (
   id INT PRIMARY KEY AUTO_INCREMENT,
   batch_id INT REFERENCES batches(id),
   product_id INT REFERENCES products(id),
-  
+
   -- File info
   original_filename VARCHAR(255) NOT NULL,
   storage_key VARCHAR(500) NOT NULL, -- S3 key
   storage_url VARCHAR(500) NOT NULL, -- Public URL
   thumbnail_url VARCHAR(500), -- Resized thumbnail
-  
+
   -- Metadata
   file_size INT NOT NULL, -- bytes
   width INT,
   height INT,
   mime_type VARCHAR(50) NOT NULL,
-  
+
   -- Status
   is_primary BOOLEAN DEFAULT FALSE,
   status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'APPROVED',
   rejection_reason TEXT,
-  
+
   -- Audit
   uploaded_by INT NOT NULL REFERENCES users(id),
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   approved_by INT REFERENCES users(id),
   approved_at TIMESTAMP,
-  
+
   INDEX idx_batch_photos (batch_id),
   INDEX idx_product_photos (product_id),
   INDEX idx_primary (product_id, is_primary)
@@ -116,24 +116,32 @@ WHERE pp.id IS NULL
 ```typescript
 // Upload photo(s)
 photos.upload = adminProcedure
-  .input(z.object({
-    batchId: z.number().optional(),
-    productId: z.number().optional(),
-    files: z.array(z.object({
-      filename: z.string(),
-      base64: z.string(), // Or use presigned URL flow
-      mimeType: z.string()
-    })),
-    setAsPrimary: z.boolean().default(false)
-  }))
-  .output(z.object({
-    uploadedPhotos: z.array(z.object({
-      id: z.number(),
-      url: z.string(),
-      thumbnailUrl: z.string()
-    })),
-    success: z.boolean()
-  }))
+  .input(
+    z.object({
+      batchId: z.number().optional(),
+      productId: z.number().optional(),
+      files: z.array(
+        z.object({
+          filename: z.string(),
+          base64: z.string(), // Or use presigned URL flow
+          mimeType: z.string(),
+        })
+      ),
+      setAsPrimary: z.boolean().default(false),
+    })
+  )
+  .output(
+    z.object({
+      uploadedPhotos: z.array(
+        z.object({
+          id: z.number(),
+          url: z.string(),
+          thumbnailUrl: z.string(),
+        })
+      ),
+      success: z.boolean(),
+    })
+  )
   .mutation(async ({ input, ctx }) => {
     // 1. Validate file types and sizes
     // 2. Upload to S3
@@ -145,47 +153,59 @@ photos.upload = adminProcedure
 
 // Get presigned upload URL (alternative to base64)
 photos.getUploadUrl = adminProcedure
-  .input(z.object({
-    filename: z.string(),
-    mimeType: z.string(),
-    batchId: z.number().optional(),
-    productId: z.number().optional()
-  }))
-  .output(z.object({
-    uploadUrl: z.string(),
-    photoId: z.number(),
-    expiresAt: z.date()
-  }))
+  .input(
+    z.object({
+      filename: z.string(),
+      mimeType: z.string(),
+      batchId: z.number().optional(),
+      productId: z.number().optional(),
+    })
+  )
+  .output(
+    z.object({
+      uploadUrl: z.string(),
+      photoId: z.number(),
+      expiresAt: z.date(),
+    })
+  )
   .mutation(async ({ input }) => {
     // Generate presigned S3 URL for direct upload
   });
 
 // Get photos for batch/product
 photos.getPhotos = publicProcedure
-  .input(z.object({
-    batchId: z.number().optional(),
-    productId: z.number().optional(),
-    includeRejected: z.boolean().default(false)
-  }))
-  .output(z.array(z.object({
-    id: z.number(),
-    url: z.string(),
-    thumbnailUrl: z.string(),
-    isPrimary: z.boolean(),
-    status: z.string(),
-    uploadedBy: z.string(),
-    uploadedAt: z.date()
-  })))
+  .input(
+    z.object({
+      batchId: z.number().optional(),
+      productId: z.number().optional(),
+      includeRejected: z.boolean().default(false),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        url: z.string(),
+        thumbnailUrl: z.string(),
+        isPrimary: z.boolean(),
+        status: z.string(),
+        uploadedBy: z.string(),
+        uploadedAt: z.date(),
+      })
+    )
+  )
   .query(async ({ input }) => {
     // Return photos for batch or product
   });
 
 // Set primary photo
 photos.setPrimary = adminProcedure
-  .input(z.object({
-    photoId: z.number(),
-    productId: z.number()
-  }))
+  .input(
+    z.object({
+      photoId: z.number(),
+      productId: z.number(),
+    })
+  )
   .output(z.object({ success: z.boolean() }))
   .mutation(async ({ input }) => {
     // 1. Unset current primary for product
@@ -203,29 +223,37 @@ photos.delete = adminProcedure
 
 // Get products needing photos
 photos.getNeedsPhotoQueue = adminProcedure
-  .input(z.object({
-    categoryId: z.number().optional(),
-    limit: z.number().default(50)
-  }))
-  .output(z.array(z.object({
-    productId: z.number(),
-    productName: z.string(),
-    categoryName: z.string(),
-    batchId: z.number(),
-    batchNumber: z.string(),
-    quantity: z.number()
-  })))
+  .input(
+    z.object({
+      categoryId: z.number().optional(),
+      limit: z.number().default(50),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        productId: z.number(),
+        productName: z.string(),
+        categoryName: z.string(),
+        batchId: z.number(),
+        batchNumber: z.string(),
+        quantity: z.number(),
+      })
+    )
+  )
   .query(async ({ input }) => {
     // Return products/batches without photos
   });
 
 // Approve/reject photo (if approval workflow enabled)
 photos.review = adminProcedure
-  .input(z.object({
-    photoId: z.number(),
-    action: z.enum(['APPROVE', 'REJECT']),
-    rejectionReason: z.string().optional()
-  }))
+  .input(
+    z.object({
+      photoId: z.number(),
+      action: z.enum(["APPROVE", "REJECT"]),
+      rejectionReason: z.string().optional(),
+    })
+  )
   .output(z.object({ success: z.boolean() }))
   .mutation(async ({ input, ctx }) => {
     // Update photo status
@@ -234,13 +262,13 @@ photos.review = adminProcedure
 
 ### 4.3 Integration Points
 
-| System | Integration Type | Description |
-|--------|-----------------|-------------|
-| S3/Cloud Storage | Write/Read | Store and retrieve photos |
-| Batches | Read | Link photos to batches |
-| Products | Read | Link photos to products |
-| Sales/Orders | Read | Display photos in order flow |
-| VIP Portal | Read | Display photos to vendors |
+| System           | Integration Type | Description                  |
+| ---------------- | ---------------- | ---------------------------- |
+| S3/Cloud Storage | Write/Read       | Store and retrieve photos    |
+| Batches          | Read             | Link photos to batches       |
+| Products         | Read             | Link photos to products      |
+| Sales/Orders     | Read             | Display photos in order flow |
+| VIP Portal       | Read             | Display photos to suppliers  |
 
 ## 5. UI/UX Specification
 
@@ -352,14 +380,14 @@ photos.review = adminProcedure
 
 ## 6. Edge Cases & Error Handling
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| File too large (>10MB) | Validation error before upload |
-| Unsupported file type | Validation error, show supported types |
-| Upload fails mid-way | Retry option, partial uploads cleaned up |
-| Delete primary photo | Next photo becomes primary, or none |
+| Scenario                  | Expected Behavior                          |
+| ------------------------- | ------------------------------------------ |
+| File too large (>10MB)    | Validation error before upload             |
+| Unsupported file type     | Validation error, show supported types     |
+| Upload fails mid-way      | Retry option, partial uploads cleaned up   |
+| Delete primary photo      | Next photo becomes primary, or none        |
 | Batch deleted with photos | Photos orphaned but accessible via product |
-| No batch/product selected | Require selection before upload |
+| No batch/product selected | Require selection before upload            |
 
 ## 7. Testing Requirements
 
@@ -403,11 +431,11 @@ No migration required. New module with empty tables.
 
 ## 9. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Products with photos | 90%+ | Photo coverage report |
-| Time to photograph new batch | <24 hours | Intake → photo time |
-| Photo usage in sales | Track views | Analytics |
+| Metric                       | Target      | Measurement Method    |
+| ---------------------------- | ----------- | --------------------- |
+| Products with photos         | 90%+        | Photo coverage report |
+| Time to photograph new batch | <24 hours   | Intake → photo time   |
+| Photo usage in sales         | Track views | Analytics             |
 
 ## 10. Open Questions
 
@@ -418,6 +446,7 @@ No migration required. New module with empty tables.
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

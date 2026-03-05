@@ -1,4 +1,4 @@
-# TER-235: Deprecate Vendor Table — Phase 2 (supplierClientId Migration)
+# TER-235: Deprecate Supplier Table — Phase 2 (supplierClientId Migration)
 
 **Classification**: High | **Mode**: RED | **Estimate**: 16h (2 sub-waves recommended)
 **Linear**: TER-235 | **Wave**: 3
@@ -18,14 +18,14 @@
 9. **NEVER USE `db.delete(`.** TERP convention is soft deletes with `deletedAt`. Hard deletes are CI-blocked.
 10. **NEVER USE `any` TYPE.** TypeScript strict mode is enforced. Use proper types or `unknown` with type guards.
 11. **DEPENDENCY GATE.** TER-247 must be COMPLETE before this task begins. Verify this explicitly before writing a single line of code.
-12. **NO VENDOR TABLE QUERIES IN NEW CODE.** All new code must use `clients` with `isSeller=true` and `supplierClientId`. Never write `db.query.vendors.findMany()` or `.from(vendors)` in new code paths.
+12. **NO VENDOR TABLE QUERIES IN NEW CODE.** All new code must use `clients` with `isSeller=true` and `supplierClientId`. Never write `db.query.suppliers.findMany()` or `.from(suppliers)` in new code paths.
 13. **SCOPE GUARD.** Do not fix unrelated issues you discover. Note them in your return report and move on.
 
 ---
 
 ## Mission Brief
 
-Phase 1 of the vendor migration (TER-247) rewrote `from(vendors)` queries to use the canonical `clients` table. This task is **Phase 2**: add `supplierClientId` columns to the tables that still only have `vendorId`, backfill those columns using the existing `supplierProfiles.legacyVendorId` mapping, then update all code to prefer `supplierClientId` over `vendorId`.
+Phase 1 of the supplier migration (TER-247) rewrote `from(suppliers)` queries to use the canonical `clients` table. This task is **Phase 2**: add `supplierClientId` columns to the tables that still only have `vendorId`, backfill those columns using the existing `supplierProfiles.legacyVendorId` mapping, then update all code to prefer `supplierClientId` over `vendorId`.
 
 The end state: every table that stores a supplier reference has a `supplierClientId INT NULL` column pointing to `clients.id`, fully backfilled, with `vendorId` remaining as a read-only deprecated column (not dropped — that is Phase 3).
 
@@ -98,11 +98,11 @@ TER-247 must be merged and deployed before this task begins. Verify it:
 # Check git log for TER-247 completion commit
 git log --oneline --all | grep -i "TER-247\|ter-247\|247"
 
-# Verify no remaining from(vendors) in new routers (excluding legacy files)
-grep -rn "\.from(vendors)" /home/user/TERP/server/routers/ --include="*.ts" | grep -v "vendors\.ts\|adminSchemaPush\|audit\.ts"
+# Verify no remaining from(suppliers) in new routers (excluding legacy files)
+grep -rn "\.from(suppliers)" /home/user/TERP/server/routers/ --include="*.ts" | grep -v "suppliers\.ts\|adminSchemaPush\|audit\.ts"
 ```
 
-GATE 0a: If `from(vendors)` queries appear in non-legacy routers, STOP. TER-247 is not complete. Do not proceed.
+GATE 0a: If `from(suppliers)` queries appear in non-legacy routers, STOP. TER-247 is not complete. Do not proceed.
 
 ### Step 0b: Audit current column state for each target table
 
@@ -148,7 +148,7 @@ GATE 0c: Confirm you have read and understand the backfill pattern from the exis
 
 **File**: `drizzle/schema.ts`
 
-The `batches` table (around line 589) currently has NO `supplierClientId` column. Its `vendorId` column does not exist at all — batches track the vendor relationship through their parent `lots` table.
+The `batches` table (around line 589) currently has NO `supplierClientId` column. Its `vendorId` column does not exist at all — batches track the supplier relationship through their parent `lots` table.
 
 Before editing, re-read the exact current `batches` table definition:
 
@@ -193,7 +193,7 @@ supplierClientId: int("supplier_client_id").references(() => clients.id, {
   onDelete: "restrict",
 }),
 
-// Vendor reference (DEPRECATED - use supplierClientId instead)
+// Supplier reference (DEPRECATED - use supplierClientId instead)
 // Retained for backward compatibility during migration
 vendorId: int("vendorId"),
 ```
@@ -240,7 +240,7 @@ supplierClientId: int("supplier_client_id").references(() => clients.id, {
   onDelete: "set null",
 }),
 
-// Vendor reference (DEPRECATED - use supplierClientId instead)
+// Supplier reference (DEPRECATED - use supplierClientId instead)
 // Added alongside supplierClientId for backward compatibility during migration
 vendorId: int("vendorId"),
 ```
@@ -283,7 +283,7 @@ grep -n "supplierClientId\|supplier_client_id\|vendorId" /home/user/TERP/drizzle
 
 **File**: `drizzle/schema.ts`
 
-The `vendorNotes` table (line 189) has `vendorId` pointing to `vendors.id`. The long-term replacement is a `client_notes` table or notes attached to the `supplierProfiles` table, but the prompt spec calls for adding `clientId` as the migration step (keeping `vendorNotes` table itself in place for now).
+The `vendorNotes` table (line 189) has `vendorId` pointing to `suppliers.id`. The long-term replacement is a `client_notes` table or notes attached to the `supplierProfiles` table, but the prompt spec calls for adding `clientId` as the migration step (keeping `vendorNotes` table itself in place for now).
 
 Before editing, read the exact current definition:
 
@@ -302,10 +302,10 @@ export const vendorNotes = mysqlTable(
     clientId: int("client_id").references(() => clients.id, {
       onDelete: "cascade",
     }),
-    // DEPRECATED: points to vendors.id — use clientId instead
+    // DEPRECATED: points to suppliers.id — use clientId instead
     vendorId: int("vendorId")
       .notNull()
-      .references(() => vendors.id, { onDelete: "cascade" }),
+      .references(() => suppliers.id, { onDelete: "cascade" }),
     userId: int("userId")
       .notNull()
       .references(() => users.id),
@@ -351,7 +351,7 @@ Find the end of the existing migrations section and add the following four block
 #### Block A: purchaseOrderItems.supplier_client_id
 
 ```typescript
-// Add purchaseOrderItems.supplier_client_id column (TER-235 vendor deprecation)
+// Add purchaseOrderItems.supplier_client_id column (TER-235 supplier deprecation)
 try {
   await db.execute(
     sql`ALTER TABLE purchaseOrderItems ADD COLUMN supplier_client_id INT NULL`
@@ -385,7 +385,7 @@ try {
 #### Block B: products.supplier_client_id
 
 ```typescript
-// Add products.supplier_client_id column (TER-235 vendor deprecation)
+// Add products.supplier_client_id column (TER-235 supplier deprecation)
 try {
   await db.execute(
     sql`ALTER TABLE products ADD COLUMN supplier_client_id INT NULL`
@@ -419,7 +419,7 @@ try {
 #### Block C: vendorNotes.client_id
 
 ```typescript
-// Add vendorNotes.client_id column (TER-235 vendor deprecation)
+// Add vendorNotes.client_id column (TER-235 supplier deprecation)
 try {
   await db.execute(sql`ALTER TABLE vendorNotes ADD COLUMN client_id INT NULL`);
   console.info("  ✅ Added client_id column to vendorNotes");
@@ -527,7 +527,7 @@ async function main(): Promise<void> {
   });
 
   try {
-    // Load vendor → client mapping
+    // Load supplier → client mapping
     const [rows] = (await connection.query(
       "SELECT legacy_vendor_id AS legacyVendorId, client_id AS clientId FROM supplier_profiles WHERE legacy_vendor_id IS NOT NULL"
     )) as [VendorMapping[], unknown];
@@ -535,7 +535,7 @@ async function main(): Promise<void> {
     const mappingMap = new Map<number, number>(
       rows.map(r => [r.legacyVendorId, r.clientId])
     );
-    console.log(`Loaded ${mappingMap.size} vendor-to-client mappings`);
+    console.log(`Loaded ${mappingMap.size} supplier-to-client mappings`);
 
     // --- Table 1: purchaseOrderItems ---
     await backfillPurchaseOrderItems(connection, mappingMap, dryRun);
@@ -596,7 +596,7 @@ FROM vendorNotes WHERE deleted_at IS NULL;
 - [ ] Script file exists at `scripts/backfill-ter235-supplier-client-ids.ts`
 - [ ] `--dry-run` mode reports without writing
 - [ ] `--confirm-production` mode writes changes
-- [ ] Missing-mapping rows are warned, not errored (some products may have no vendor)
+- [ ] Missing-mapping rows are warned, not errored (some products may have no supplier)
 - [ ] Verification report shows 0 `still_missing` rows for rows that had a mapped vendorId
 - [ ] No `any` types in the script
 
@@ -787,8 +787,8 @@ pnpm build 2>&1 | tail -20
 ### Lens 1: Forbidden Pattern Scan
 
 ```bash
-# No new code queries vendors table (outside legacy routers)
-grep -rn "from(vendors)\|\.from(vendors)" /home/user/TERP/server/routers/ --include="*.ts" | grep -v "vendors\.ts\|adminSchemaPush\|audit\.ts"
+# No new code queries suppliers table (outside legacy routers)
+grep -rn "from(suppliers)\|\.from(suppliers)" /home/user/TERP/server/routers/ --include="*.ts" | grep -v "suppliers\.ts\|adminSchemaPush\|audit\.ts"
 
 # No fallback user IDs introduced
 grep -rn "ctx\.user?.id \|\| 1\|ctx\.user?.id ?? 1" /home/user/TERP/server/ --include="*.ts"
@@ -803,7 +803,7 @@ grep -rn "db\.delete(\|database\.delete(" /home/user/TERP/server/routers/ --incl
 grep -n "supplier_client_id\|client_id" /home/user/TERP/drizzle/schema.ts | grep "purchaseOrderItems\|products\|vendorNotes"
 ```
 
-Expected for `from(vendors)` in routers: zero matches outside legacy files.
+Expected for `from(suppliers)` in routers: zero matches outside legacy files.
 Expected for fallback user IDs: zero matches.
 Expected for `any` types: zero matches.
 Expected for hard deletes: zero matches.
@@ -819,7 +819,7 @@ npx tsx /home/user/TERP/scripts/backfill-ter235-supplier-client-ids.ts --dry-run
 
 The verification report must show `still_missing: 0` for all three tables for any row that has a matching `legacyVendorId` in `supplier_profiles`.
 
-If rows show `no mapping found` (vendor exists but no `supplierProfiles` entry), those are pre-existing data issues from incomplete Phase 1 migration and must be noted in the return report — they are NOT a blocker for this task.
+If rows show `no mapping found` (supplier exists but no `supplierProfiles` entry), those are pre-existing data issues from incomplete Phase 1 migration and must be noted in the return report — they are NOT a blocker for this task.
 
 ### Lens 3: Schema Consistency Audit
 
@@ -911,7 +911,7 @@ Do NOT declare this work complete until every box is checked with evidence:
 - [ ] All inserts to migrated tables write both `supplierClientId` and `vendorId`
 - [ ] `vendorNotes` inserts write both `clientId` and `vendorId`
 - [ ] All `vendorId` columns in migrated tables have `// DEPRECATED (TER-235):` comment in schema
-- [ ] Zero `from(vendors)` queries in non-legacy routers (excluding `vendors.ts`, `adminSchemaPush.ts`, `audit.ts`)
+- [ ] Zero `from(suppliers)` queries in non-legacy routers (excluding `suppliers.ts`, `adminSchemaPush.ts`, `audit.ts`)
 - [ ] Zero `any` types introduced
 - [ ] Zero hard deletes introduced
 - [ ] `pnpm check` passes Phase 2 (paste output)

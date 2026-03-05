@@ -67,9 +67,9 @@ export const VendorShipDialog = React.memo(function VendorShipDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Ship to Vendor</DialogTitle>
+          <DialogTitle>Ship to Supplier</DialogTitle>
           <DialogDescription>
-            Enter the tracking number for this vendor return shipment.
+            Enter the tracking number for this supplier return shipment.
           </DialogDescription>
         </DialogHeader>
 

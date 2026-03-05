@@ -116,7 +116,7 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   const columnDefs = useMemo<ColDef<IntakeRow>[]>(
     () => [
       {
-        headerName: "Vendor Code",
+        headerName: "Supplier Code",
         field: "vendorCode",
         editable: true,
         width: 140,

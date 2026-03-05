@@ -183,7 +183,7 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
             Bills
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage vendor bills and accounts payable
+            Manage supplier bills and accounts payable
           </p>
         </div>
         <div className="flex gap-2">
@@ -395,7 +395,7 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
                   </div>
                   {selectedBill.vendorName && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vendor:</span>
+                      <span className="text-muted-foreground">Supplier:</span>
                       <span>{selectedBill.vendorName}</span>
                     </div>
                   )}

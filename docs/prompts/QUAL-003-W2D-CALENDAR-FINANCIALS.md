@@ -18,8 +18,8 @@ Complete the calendar financials integration by connecting calendar events to th
 
 Only you will touch these files. No other agent will modify them.
 
-| File | TODOs |
-|------|-------|
+| File                                   | TODOs                 |
+| -------------------------------------- | --------------------- |
 | `server/routers/calendarFinancials.ts` | Lines 25, 62, 87, 134 |
 
 ---
@@ -27,16 +27,19 @@ Only you will touch these files. No other agent will modify them.
 ## Task W2-D1: Integrate with Accounting Module (Lines 25, 62, 87)
 
 **Current Code (Line 25):**
+
 ```typescript
 // TODO: Integrate with accounting module
 ```
 
 **Current Code (Line 62):**
+
 ```typescript
 // TODO: Integrate with accounting module
 ```
 
 **Current Code (Line 87):**
+
 ```typescript
 // TODO: Integrate with accounting module
 ```
@@ -56,10 +59,12 @@ import { z } from "zod";
 export const calendarFinancialsRouter = router({
   // Get financial summary for calendar period
   getFinancialSummary: protectedProcedure
-    .input(z.object({
-      startDate: z.date(),
-      endDate: z.date(),
-    }))
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = getCurrentUserId(ctx);
       const { startDate, endDate } = input;
@@ -86,12 +91,7 @@ export const calendarFinancialsRouter = router({
           billCount: sql<number>`COUNT(*)`,
         })
         .from(bills)
-        .where(
-          and(
-            gte(bills.dueDate, startDate),
-            lte(bills.dueDate, endDate)
-          )
-        );
+        .where(and(gte(bills.dueDate, startDate), lte(bills.dueDate, endDate)));
 
       // Get calendar events with financial impact
       const financialEvents = await db.query.calendarEvents.findMany({
@@ -106,7 +106,9 @@ export const calendarFinancialsRouter = router({
         period: { startDate, endDate },
         revenue: revenueData[0]?.totalRevenue ?? 0,
         expenses: expenseData[0]?.totalExpenses ?? 0,
-        netIncome: (revenueData[0]?.totalRevenue ?? 0) - (expenseData[0]?.totalExpenses ?? 0),
+        netIncome:
+          (revenueData[0]?.totalRevenue ?? 0) -
+          (expenseData[0]?.totalExpenses ?? 0),
         orderCount: revenueData[0]?.orderCount ?? 0,
         billCount: expenseData[0]?.billCount ?? 0,
         financialEventCount: financialEvents.length,
@@ -115,11 +117,13 @@ export const calendarFinancialsRouter = router({
 
   // Link calendar event to financial transaction
   linkEventToTransaction: protectedProcedure
-    .input(z.object({
-      eventId: z.number(),
-      transactionType: z.enum(["invoice", "bill", "payment", "expense"]),
-      transactionId: z.number(),
-    }))
+    .input(
+      z.object({
+        eventId: z.number(),
+        transactionType: z.enum(["invoice", "bill", "payment", "expense"]),
+        transactionId: z.number(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = getCurrentUserId(ctx);
       const { eventId, transactionType, transactionId } = input;
@@ -152,16 +156,24 @@ export const calendarFinancialsRouter = router({
 
   // Get financial events for calendar view
   getFinancialEvents: protectedProcedure
-    .input(z.object({
-      startDate: z.date(),
-      endDate: z.date(),
-      includeInvoices: z.boolean().default(true),
-      includeBills: z.boolean().default(true),
-      includePayments: z.boolean().default(true),
-    }))
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+        includeInvoices: z.boolean().default(true),
+        includeBills: z.boolean().default(true),
+        includePayments: z.boolean().default(true),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = getCurrentUserId(ctx);
-      const { startDate, endDate, includeInvoices, includeBills, includePayments } = input;
+      const {
+        startDate,
+        endDate,
+        includeInvoices,
+        includeBills,
+        includePayments,
+      } = input;
 
       const events: FinancialCalendarEvent[] = [];
 
@@ -176,16 +188,18 @@ export const calendarFinancialsRouter = router({
           with: { customer: true },
         });
 
-        events.push(...invoicesDue.map((inv) => ({
-          id: `invoice-${inv.id}`,
-          type: "invoice" as const,
-          title: `Invoice #${inv.id} due`,
-          date: inv.dueDate,
-          amount: inv.total,
-          entityId: inv.id,
-          entityName: inv.customer?.name ?? "Unknown",
-          status: inv.status,
-        })));
+        events.push(
+          ...invoicesDue.map(inv => ({
+            id: `invoice-${inv.id}`,
+            type: "invoice" as const,
+            title: `Invoice #${inv.id} due`,
+            date: inv.dueDate,
+            amount: inv.total,
+            entityId: inv.id,
+            entityName: inv.customer?.name ?? "Unknown",
+            status: inv.status,
+          }))
+        );
       }
 
       // Get bill due dates
@@ -196,19 +210,21 @@ export const calendarFinancialsRouter = router({
             lte(bills.dueDate, endDate),
             eq(bills.status, "open")
           ),
-          with: { vendor: true },
+          with: { supplier: true },
         });
 
-        events.push(...billsDue.map((bill) => ({
-          id: `bill-${bill.id}`,
-          type: "bill" as const,
-          title: `Bill #${bill.id} due`,
-          date: bill.dueDate,
-          amount: bill.amount,
-          entityId: bill.id,
-          entityName: bill.vendor?.name ?? "Unknown",
-          status: bill.status,
-        })));
+        events.push(
+          ...billsDue.map(bill => ({
+            id: `bill-${bill.id}`,
+            type: "bill" as const,
+            title: `Bill #${bill.id} due`,
+            date: bill.dueDate,
+            amount: bill.amount,
+            entityId: bill.id,
+            entityName: bill.supplier?.name ?? "Unknown",
+            status: bill.status,
+          }))
+        );
       }
 
       // Get scheduled payments
@@ -221,16 +237,18 @@ export const calendarFinancialsRouter = router({
           ),
         });
 
-        events.push(...scheduledPayments.map((pmt) => ({
-          id: `payment-${pmt.id}`,
-          type: "payment" as const,
-          title: `Scheduled payment`,
-          date: pmt.scheduledDate,
-          amount: pmt.amount,
-          entityId: pmt.id,
-          entityName: pmt.description ?? "Payment",
-          status: pmt.status,
-        })));
+        events.push(
+          ...scheduledPayments.map(pmt => ({
+            id: `payment-${pmt.id}`,
+            type: "payment" as const,
+            title: `Scheduled payment`,
+            date: pmt.scheduledDate,
+            amount: pmt.amount,
+            entityId: pmt.id,
+            entityName: pmt.description ?? "Payment",
+            status: pmt.status,
+          }))
+        );
       }
 
       // Sort by date
@@ -246,6 +264,7 @@ export const calendarFinancialsRouter = router({
 ## Task W2-D2: Implement Timezone Handling (Line 134)
 
 **Current Code:**
+
 ```typescript
 // TODO: Use user's timezone
 ```
@@ -261,7 +280,7 @@ async function getUserTimezone(userId: number): Promise<string> {
     where: eq(users.id, userId),
     columns: { timezone: true },
   });
-  
+
   return user?.timezone ?? "America/Los_Angeles"; // Default to Pacific
 }
 
@@ -274,18 +293,18 @@ getEventsInUserTimezone: protectedProcedure
   .query(async ({ ctx, input }) => {
     const userId = getCurrentUserId(ctx);
     const userTimezone = await getUserTimezone(userId);
-    
+
     // Convert input dates to user's timezone
     const startInTz = toZonedTime(input.startDate, userTimezone);
     const endInTz = toZonedTime(input.endDate, userTimezone);
-    
+
     const events = await db.query.calendarEvents.findMany({
       where: and(
         gte(calendarEvents.startTime, startInTz),
         lte(calendarEvents.endTime, endInTz)
       ),
     });
-    
+
     // Format event times in user's timezone
     return events.map((event) => ({
       ...event,
@@ -315,7 +334,7 @@ createEventWithTimezone: protectedProcedure
   .mutation(async ({ ctx, input }) => {
     const userId = getCurrentUserId(ctx);
     const userTimezone = input.timezone ?? await getUserTimezone(userId);
-    
+
     // Store times in UTC but record the original timezone
     const event = await db.insert(calendarEvents).values({
       title: input.title,
@@ -325,7 +344,7 @@ createEventWithTimezone: protectedProcedure
       createdBy: userId,
       createdAt: new Date(),
     });
-    
+
     return event;
   }),
 ```
@@ -413,10 +432,12 @@ pnpm test calendarFinancials
 ## Dependencies
 
 Use these Wave 0 utilities:
+
 - `getCurrentUserId(ctx)` from `server/_core/authHelpers.ts`
 - `getFiscalPeriodId(date)` from `server/_core/fiscalPeriod.ts`
 
 External dependencies (should already be installed):
+
 - `date-fns-tz` for timezone handling
 
 ---

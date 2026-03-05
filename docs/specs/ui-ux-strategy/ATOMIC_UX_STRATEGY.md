@@ -64,7 +64,7 @@ Each primitive is a **buildable unit** with guarantees, tradeoffs, metrics, and 
 
 ### P2. Sticky Context Header
 
-- **What**: Always‑visible header defining batch/session scope (vendor/customer, location, date, terms).
+- **What**: Always‑visible header defining batch/session scope (supplier/customer, location, date, terms).
 - **Problem**: reduces repeated entry and context loss.
 - **Guarantees**: defaults applied to new rows; never scrolls away.
 - **Tradeoffs**: limited space; must prevent clutter.
@@ -112,7 +112,7 @@ Each primitive is a **buildable unit** with guarantees, tradeoffs, metrics, and 
 
 ### P7. Defaults + Smart Constraints
 
-- **What**: Visible, editable defaults derived from context (vendor, location, last‑used).
+- **What**: Visible, editable defaults derived from context (supplier, location, last‑used).
 - **Problem**: eliminate repeated entry and errors.
 - **Guarantees**: defaults always visible and changeable; never implicit.
 - **Tradeoffs**: incorrect defaults can cause silent errors if not visible.
@@ -173,7 +173,7 @@ Each primitive is a **buildable unit** with guarantees, tradeoffs, metrics, and 
 | Validation Timing     | Flow‑safe errors            | All Work Surfaces                 | None                         |
 | Cmd+K Palette         | Actions + navigation        | Global shortcuts                  | Field selection              |
 | Smart Defaults        | Reduce repetition           | Intake, orders                    | Where defaults are dangerous |
-| Quick Create          | Avoid flow breaks           | inline new vendor/product         | if it opens nested modals    |
+| Quick Create          | Avoid flow breaks           | inline new supplier/product       | if it opens nested modals    |
 
 ---
 
@@ -310,7 +310,7 @@ Each primitive is a **buildable unit** with guarantees, tradeoffs, metrics, and 
 Modules covered:
 
 - Inventory & Intake (sessions, receipts, batches)
-- Purchase Orders & Receiving
+- Purchase Orders & Intake
 - Sales Orders & Quotes
 - Accounting (Invoices, Payments, AR/AP, General Ledger, Fiscal Periods)
 - Pick & Pack / Fulfillment
@@ -347,6 +347,7 @@ This section captures additional findings from a comprehensive adversarial revie
 **Risk**: Warehouse staff often use tablets; sales reps use phones for quick lookups.
 
 **Required Specifications**:
+
 - **Desktop (≥1280px)**: Full Work Surface with grid + inspector side-by-side
 - **Tablet (768-1279px)**: Grid full-width; inspector as slide-over sheet
 - **Mobile (<768px)**: Single-column view; inspector replaces grid temporarily
@@ -354,11 +355,11 @@ This section captures additional findings from a comprehensive adversarial revie
 **Breakpoint Behavior**:
 | Breakpoint | Grid Columns | Inspector | Context Header |
 |------------|--------------|-----------|----------------|
-| ≥1440px    | Full         | 400px fixed right | Full sticky |
-| 1280-1439px| Full         | 360px fixed right | Full sticky |
-| 1024-1279px| Full         | Slide-over sheet | Collapsible |
+| ≥1440px | Full | 400px fixed right | Full sticky |
+| 1280-1439px| Full | 360px fixed right | Full sticky |
+| 1024-1279px| Full | Slide-over sheet | Collapsible |
 | 768-1023px | Reduced cols | Full-screen sheet | Collapsed by default |
-| <768px     | Card layout  | Full-screen | Summary only |
+| <768px | Card layout | Full-screen | Summary only |
 
 #### T-002: Offline/Degraded Network Handling
 
@@ -367,12 +368,14 @@ This section captures additional findings from a comprehensive adversarial revie
 **Risk**: Users lose work; silent data loss; duplicate submissions.
 
 **Required Patterns**:
+
 - **Optimistic UI**: Show success immediately, queue for sync
 - **Offline Queue**: Store mutations in IndexedDB when offline
 - **Conflict Resolution**: Last-write-wins with user notification for conflicts
 - **Retry Strategy**: Exponential backoff (1s, 2s, 4s, 8s, max 30s)
 
 **Save State Extensions**:
+
 ```
 ✅ Saved              - Persisted to server
 🟡 Saving…            - Request in flight
@@ -386,6 +389,7 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for loading states during data fetch.
 
 **Required Patterns**:
+
 - **Initial Load**: Full skeleton matching grid layout
 - **Pagination Load**: Inline spinner at grid bottom
 - **Inspector Load**: Skeleton for inspector content only
@@ -393,6 +397,7 @@ This section captures additional findings from a comprehensive adversarial revie
 - **Refresh**: Subtle overlay; keep stale data visible
 
 **Skeleton Rules**:
+
 - Skeleton shape must match actual content layout
 - Animation: subtle pulse (opacity 0.6 → 1.0, 1.5s cycle)
 - Never show spinner + skeleton simultaneously
@@ -403,12 +408,14 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for handling unexpected errors.
 
 **Required Patterns**:
+
 - **Component-level**: Catch errors in grids; show inline "Something went wrong" + retry
 - **Page-level**: Full error boundary with "Go back" option
 - **Network errors**: Toast notification + automatic retry for GET; manual retry for mutations
 - **Validation errors**: Inline field errors + summary in status bar
 
 **Error Display Hierarchy**:
+
 1. Field-level errors (inline, below field)
 2. Row-level errors (row highlight + icon)
 3. Form-level errors (status bar summary)
@@ -420,6 +427,7 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for motion design.
 
 **Required Specifications**:
+
 - **Inspector open/close**: slide-in 200ms ease-out
 - **Row creation**: fade-in 150ms
 - **Row deletion**: fade-out 150ms + collapse 100ms
@@ -428,6 +436,7 @@ This section captures additional findings from a comprehensive adversarial revie
 - **Bulk selection**: checkbox scale 100ms
 
 **Motion Principles**:
+
 - Never animate during typing
 - Reduce motion when `prefers-reduced-motion: reduce`
 - No animations longer than 300ms
@@ -441,21 +450,22 @@ This section captures additional findings from a comprehensive adversarial revie
 
 **Required Specifications**:
 
-| Aspect | Work Surface | Review Surface |
-|--------|--------------|----------------|
-| Primary action | Create/Edit | Filter/Export |
-| Status bar | Save state + errors | Totals + filters |
-| Inspector | Edit form | Read-only details |
-| Grid behavior | Inline edit | Click to navigate |
-| Context header | Editable defaults | Filter controls |
-| Background | `bg-background` | `bg-muted/30` |
-| Border | None | `border-l-4 border-primary/20` |
+| Aspect         | Work Surface        | Review Surface                 |
+| -------------- | ------------------- | ------------------------------ |
+| Primary action | Create/Edit         | Filter/Export                  |
+| Status bar     | Save state + errors | Totals + filters               |
+| Inspector      | Edit form           | Read-only details              |
+| Grid behavior  | Inline edit         | Click to navigate              |
+| Context header | Editable defaults   | Filter controls                |
+| Background     | `bg-background`     | `bg-muted/30`                  |
+| Border         | None                | `border-l-4 border-primary/20` |
 
 #### U-002: Data Density Guidelines
 
 **Finding**: No specification for grid column limits and density.
 
 **Required Specifications**:
+
 - **Maximum visible columns (no scroll)**: 8-10 on desktop
 - **Minimum column width**: 80px (prevents text truncation issues)
 - **Optimal row height**: 40px (touch-friendly)
@@ -463,6 +473,7 @@ This section captures additional findings from a comprehensive adversarial revie
 - **Column resize**: Minimum 60px, maximum 400px
 
 **Column Priority Tiers**:
+
 1. **Always visible**: ID, primary name, status, primary amount
 2. **Default visible**: Date, secondary fields
 3. **Hidden by default**: Notes, metadata, timestamps
@@ -473,12 +484,14 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for empty states.
 
 **Required Patterns**:
+
 - **No data yet**: Illustration + "No [items] yet" + primary action button
 - **No search results**: "No results for [query]" + clear filters link
 - **Filtered to empty**: "No [items] match filters" + reset button
 - **Error state**: "Couldn't load [items]" + retry button
 
 **Empty State Content Template**:
+
 ```
 [Illustration - optional]
 [Headline - what's empty]
@@ -492,6 +505,7 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for toast positioning and behavior.
 
 **Required Specifications**:
+
 - **Position**: Bottom-right, above status bar
 - **Stack**: Maximum 3 visible, FIFO
 - **Duration**: Success 3s, Info 5s, Warning 7s, Error persistent
@@ -499,6 +513,7 @@ This section captures additional findings from a comprehensive adversarial revie
 - **Action toasts**: Include undo button, persist until action taken or dismissed
 
 **Toast vs Inline Error Rules**:
+
 - Use toast for: Success confirmations, background operations, undo prompts
 - Use inline for: Validation errors, field-specific issues
 - Never use toast for: Errors that require user action on specific fields
@@ -508,6 +523,7 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for grid scrolling strategy.
 
 **Required Specifications**:
+
 - **Virtualization**: Enable for >100 rows
 - **Infinite scroll**: Trigger at 80% scroll depth
 - **Page size**: 50 rows per fetch
@@ -515,6 +531,7 @@ This section captures additional findings from a comprehensive adversarial revie
 - **Fixed elements**: Header + status bar always visible
 
 **Keyboard Scrolling**:
+
 - Page Up/Down: Scroll by viewport height
 - Home/End: Jump to first/last row
 - Ctrl+Home/End: Jump and select first/last row
@@ -526,18 +543,20 @@ This section captures additional findings from a comprehensive adversarial revie
 **Finding**: No specification for handling multiple users editing same records.
 
 **Required Specifications**:
+
 - **Locking Strategy**: Optimistic locking via `version` field (exists in schema)
 - **Conflict Detection**: Compare version on save; reject if stale
 - **User Notification**: "This record was modified by [user]. Reload to see changes."
 - **Resolution Options**: Reload (lose changes) or Force save (overwrite)
 
 **Implementation**:
+
 ```typescript
 // On save attempt
 if (serverVersion > localVersion) {
   showConflictDialog({
     message: `Modified by ${lastModifiedBy} at ${lastModifiedAt}`,
-    options: ['Reload', 'Force Save', 'Cancel']
+    options: ["Reload", "Force Save", "Cancel"],
   });
 }
 ```
@@ -547,12 +566,14 @@ if (serverVersion > localVersion) {
 **Finding**: No specification for how long undo is available.
 
 **Required Specifications**:
+
 - **Destructive actions**: 10 seconds to undo
 - **Soft delete**: 30 days recovery period (from `deletedAt`)
 - **Bulk operations**: 10 seconds, all-or-nothing undo
 - **Cross-session**: No undo across page navigation
 
 **Undo Implementation**:
+
 - Queue deleted records client-side for undo window
 - Show "Deleted. Undo" toast with countdown
 - On undo: restore from client queue
@@ -563,6 +584,7 @@ if (serverVersion > localVersion) {
 **Finding**: No specification for client vs server validation order.
 
 **Required Specifications**:
+
 1. **Client-side first**: Type validation, required fields, format
 2. **Debounced async**: Uniqueness checks, availability (300ms debounce)
 3. **Server-side always**: Business rules, permissions, invariants
@@ -583,12 +605,14 @@ if (serverVersion > localVersion) {
 **Finding**: No specification for handling session timeout during long data entry.
 
 **Required Specifications**:
+
 - **Warning**: Show at 5 minutes before timeout
 - **Auto-save**: Draft saved to localStorage before session expires
 - **Recovery**: On re-login, prompt to restore unsaved work
 - **Heartbeat**: Silent ping every 5 minutes to extend session
 
 **Session Timeout Flow**:
+
 1. User inactive for 25 minutes → Show "Session expiring" warning
 2. User continues inactivity → Auto-save draft at 29 minutes
 3. Session expires → Redirect to login with return URL
@@ -599,12 +623,14 @@ if (serverVersion > localVersion) {
 **Finding**: No specification for bulk operation limits.
 
 **Required Specifications**:
+
 - **Bulk select maximum**: 500 rows
 - **Bulk update maximum**: 100 rows per request
 - **Bulk delete maximum**: 50 rows per request
 - **Export maximum**: 10,000 rows (paginated download for more)
 
 **User Feedback for Large Operations**:
+
 ```
 Selecting 100+ items → "100 selected. Select all 1,234?"
 Bulk action on 50+ → "Processing 50 items..." with progress
@@ -618,6 +644,7 @@ Export 1000+ → "Preparing export... This may take a moment"
 **Finding**: Only keyboard navigation specified; broader accessibility missing.
 
 **Required Specifications**:
+
 - **Focus indicators**: 2px solid ring, contrast ratio ≥3:1
 - **Color independence**: Never use color alone to convey meaning
 - **Screen reader labels**: All interactive elements have accessible names
@@ -626,6 +653,7 @@ Export 1000+ → "Preparing export... This may take a moment"
 - **Minimum target size**: 44x44px for touch targets
 
 **ARIA Patterns**:
+
 - Grid: `role="grid"`, `role="row"`, `role="gridcell"`
 - Inspector: `role="complementary"`, `aria-label="Details panel"`
 - Status bar: `role="status"`, `aria-live="polite"`
@@ -636,6 +664,7 @@ Export 1000+ → "Preparing export... This may take a moment"
 **Finding**: No i18n specifications.
 
 **Required Specifications**:
+
 - **Text direction**: Support LTR and RTL layouts
 - **Date formats**: Use Intl.DateTimeFormat (respects locale)
 - **Number formats**: Use Intl.NumberFormat (respects locale)
@@ -643,6 +672,7 @@ Export 1000+ → "Preparing export... This may take a moment"
 - **Pluralization**: Use proper plural rules (not just +s)
 
 **Layout Adjustments for RTL**:
+
 - Inspector panel: Appears on left instead of right
 - Grid: Columns reverse order
 - Icons: Mirror directional icons (arrows, chevrons)
@@ -652,17 +682,27 @@ Export 1000+ → "Preparing export... This may take a moment"
 **Finding**: No print stylesheet or export specifications.
 
 **Required Specifications**:
+
 - **Print view**: Hide navigation, inspector; grid fills page
 - **Page breaks**: Avoid breaking rows across pages
 - **Headers**: Repeat context header on each page
 - **Export formats**: CSV (default), Excel, PDF
 
 **Print Media Styles**:
+
 ```css
 @media print {
-  .inspector-panel, .navigation, .status-bar { display: none; }
-  .work-surface-grid { width: 100%; }
-  .context-header { position: static; }
+  .inspector-panel,
+  .navigation,
+  .status-bar {
+    display: none;
+  }
+  .work-surface-grid {
+    width: 100%;
+  }
+  .context-header {
+    position: static;
+  }
 }
 ```
 
@@ -679,6 +719,7 @@ Export 1000+ → "Preparing export... This may take a moment"
 | Edge | 90+ | Chromium-based |
 
 **Polyfills Required**:
+
 - ResizeObserver (for grid virtualization)
 - IntersectionObserver (for infinite scroll)
 - IndexedDB (for offline support)
@@ -711,6 +752,7 @@ Building on Section 5, add these anti-patterns:
 | Save roundtrip | <500ms | Network + server |
 
 **Monitoring**:
+
 - Log performance marks for critical operations
 - Alert on P95 exceeding 2x budget
 - Dashboard for performance trends
@@ -722,6 +764,7 @@ Building on Section 5, add these anti-patterns:
 Based on red hat findings, prioritize implementation:
 
 ### P0 - Must have before any Work Surface deployment
+
 - [ ] Save state indicator component (P9)
 - [ ] Keyboard contract hook (P11)
 - [ ] Validation timing helper (P6)
@@ -729,6 +772,7 @@ Based on red hat findings, prioritize implementation:
 - [ ] Loading skeleton components
 
 ### P1 - Required for production readiness
+
 - [ ] Responsive breakpoint handling
 - [ ] Offline queue + sync
 - [ ] Concurrent edit detection
@@ -736,6 +780,7 @@ Based on red hat findings, prioritize implementation:
 - [ ] Accessibility audit + fixes
 
 ### P2 - Required for scale
+
 - [ ] Performance monitoring
 - [ ] Bulk operation limits
 - [ ] Export functionality

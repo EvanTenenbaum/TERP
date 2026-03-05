@@ -4,7 +4,7 @@
 **Priority:** HIGH
 **Estimate:** 12h
 **Module:** Frontend / Sales
-**Dependencies:** FEAT-002 (Vendor Context API)
+**Dependencies:** FEAT-002 (Supplier Context API)
 **Spec Author:** Claude AI
 **Spec Date:** 2026-01-12
 
@@ -15,6 +15,7 @@
 When sales reps select a client during order creation, they need quick access to contextual information about that client, including purchase history, pricing rules, and saved filter views. Currently this information requires navigating to a separate client profile page, breaking the workflow.
 
 **User Quote:**
+
 > "Maybe it was just like a little client box that has like the, their role pricing and then also their. Invoice, or their purchase history, and then he saved, like, filter short views, but that should be something collapsible."
 
 ## 2. User Stories
@@ -29,24 +30,24 @@ When sales reps select a client during order creation, they need quick access to
 
 ### 3.1 Core Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Pod must display client name and basic info | Must Have |
-| FR-02 | Pod must display pricing profile name and key rules | Must Have |
-| FR-03 | Pod must display recent purchase history (last 5 orders) | Must Have |
-| FR-04 | Pod must be collapsible/expandable | Must Have |
-| FR-05 | Pod must display credit limit and available credit | Must Have |
-| FR-06 | Pod must display saved filter shortcuts | Should Have |
-| FR-07 | Pod must update when client selection changes | Must Have |
+| ID    | Requirement                                              | Priority    |
+| ----- | -------------------------------------------------------- | ----------- |
+| FR-01 | Pod must display client name and basic info              | Must Have   |
+| FR-02 | Pod must display pricing profile name and key rules      | Must Have   |
+| FR-03 | Pod must display recent purchase history (last 5 orders) | Must Have   |
+| FR-04 | Pod must be collapsible/expandable                       | Must Have   |
+| FR-05 | Pod must display credit limit and available credit       | Must Have   |
+| FR-06 | Pod must display saved filter shortcuts                  | Should Have |
+| FR-07 | Pod must update when client selection changes            | Must Have   |
 
 ### 3.2 Business Rules
 
-| ID | Rule | Example |
-|----|------|---------|
+| ID    | Rule                                     | Example             |
+| ----- | ---------------------------------------- | ------------------- |
 | BR-01 | Purchase history shows most recent first | Latest order at top |
-| BR-02 | Credit warning if < 20% available | Yellow indicator |
-| BR-03 | Credit critical if exceeds limit | Red indicator |
-| BR-04 | Collapsed state persists per session | User preference |
+| BR-02 | Credit warning if < 20% available        | Yellow indicator    |
+| BR-03 | Credit critical if exceeds limit         | Red indicator       |
+| BR-04 | Collapsed state persists per session     | User preference     |
 
 ## 4. Technical Specification
 
@@ -408,13 +409,13 @@ import { ClientInfoPod } from "@/components/clients/ClientInfoPod";
 
 ## 6. Edge Cases & Error Handling
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Client with no orders | Show "No recent orders" message |
-| Client with no pricing profile | Show "Default" profile |
-| Client with no credit limit | Show "Unlimited" |
-| Credit exceeded (negative) | Show red warning indicator |
-| No saved filters | Hide quick filters section |
+| Scenario                       | Expected Behavior               |
+| ------------------------------ | ------------------------------- |
+| Client with no orders          | Show "No recent orders" message |
+| Client with no pricing profile | Show "Default" profile          |
+| Client with no credit limit    | Show "Unlimited"                |
+| Credit exceeded (negative)     | Show red warning indicator      |
+| No saved filters               | Hide quick filters section      |
 
 ## 7. Testing Requirements
 
@@ -452,11 +453,11 @@ Add new component to Sales Sheet layout.
 
 ## 9. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| User engagement | 60% expand pod | Analytics |
-| Quick filter usage | 20% of sessions | Click tracking |
-| Load time | < 300ms | Performance monitoring |
+| Metric             | Target          | Measurement Method     |
+| ------------------ | --------------- | ---------------------- |
+| User engagement    | 60% expand pod  | Analytics              |
+| Quick filter usage | 20% of sessions | Click tracking         |
+| Load time          | < 300ms         | Performance monitoring |
 
 ## 10. Open Questions
 
@@ -466,6 +467,7 @@ Add new component to Sales Sheet layout.
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

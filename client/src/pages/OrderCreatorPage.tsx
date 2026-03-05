@@ -831,14 +831,21 @@ export default function OrderCreatorPageV2() {
         <section className="linear-workspace-shell">
           <header className="linear-workspace-header">
             <div className="linear-workspace-title-wrap">
-              <p className="linear-workspace-eyebrow">Order Workspace</p>
+              <p className="linear-workspace-eyebrow">
+                <span className="linear-workspace-eyebrow-section">Sell</span>
+                <span className="linear-workspace-eyebrow-sep" aria-hidden>
+                  {" "}
+                  /{" "}
+                </span>
+                Order Workspace
+              </p>
               <div>
                 <h2 className="linear-workspace-title flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
                   Create Sales Order
                 </h2>
                 <p className="linear-workspace-description">
-                  Build sale with COGS visibility and margin management
+                  Build sales order with COGS visibility and margin management
                 </p>
               </div>
             </div>
@@ -1363,7 +1370,7 @@ export default function OrderCreatorPageV2() {
         <ConfirmDialog
           open={showFinalizeConfirm}
           onOpenChange={setShowFinalizeConfirm}
-          title={`Finalize ${orderType === "QUOTE" ? "Quote" : "Sale"}?`}
+          title={`Finalize ${orderType === "QUOTE" ? "Quote" : "Sales Order"}?`}
           description={`Are you sure you want to finalize this ${orderType.toLowerCase()}? Total: $${totals.total.toFixed(2)}. This will create the order and cannot be undone.`}
           confirmLabel="Finalize"
           variant="default"

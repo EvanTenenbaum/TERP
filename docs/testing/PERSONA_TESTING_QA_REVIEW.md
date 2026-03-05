@@ -33,6 +33,7 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** Most personas only had 1-2 workflows tested, not their complete job function
 
 **Examples:**
+
 - Sales Manager: Only tested "Create Order", not "View Order Status", "Generate Sales Sheet", "Manage Pricing"
 - Inventory Manager: Only tested "View New Purchase Modal", not "Actually Create Batch", "Adjust Inventory", "Transfer Between Locations"
 - Accountant: Only tested "View Dashboard", not "Record Payment", "Create Invoice", "Reconcile Accounts"
@@ -50,6 +51,7 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** Modals were opened and viewed, but forms were not filled out and submitted
 
 **Examples:**
+
 - New Purchase modal: Opened ✓, Viewed fields ✓, Filled out form ✗, Submitted ✗
 - Create Event modal: Opened ✓, Viewed fields ✓, Filled out form ✗, Submitted ✗
 - Edit Client: Never attempted
@@ -67,6 +69,7 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** Only tested "happy path" workflows, not error scenarios
 
 **Examples:**
+
 - What happens if you submit a form with missing required fields?
 - What happens if you try to create an order with invalid data?
 - What happens if you try to delete something that's in use?
@@ -96,6 +99,7 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** Didn't measure how long workflows take or if they're fast enough for real users
 
 **Examples:**
+
 - How long does it take to create an order?
 - How long does inventory page take to load?
 - Are there any slow/laggy interactions?
@@ -125,8 +129,9 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** Tested each persona in isolation, not workflows that span multiple personas
 
 **Examples:**
+
 - Sales Manager creates order → Inventory Manager fulfills order → Accountant invoices client
-- Procurement Manager creates PO → Inventory Manager receives goods → Accountant pays vendor
+- Procurement Manager creates PO → Inventory Manager receives goods → Accountant pays supplier
 
 **Impact:** Don't know if hand-offs between personas work smoothly
 
@@ -143,6 +148,7 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** Some personas tested thoroughly (Sales Manager), others barely tested (VIP Client)
 
 **Examples:**
+
 - Sales Manager: Detailed step-by-step testing with screenshots and findings
 - VIP Client: Just navigated to /vip, saw 404, done
 
@@ -171,6 +177,7 @@ I have conducted a comprehensive QA review of all persona-based testing document
 **Issue:** All assessments are qualitative ("works", "doesn't work", "looks good")
 
 **Examples:**
+
 - No measurement of task completion time
 - No measurement of error rates
 - No measurement of user satisfaction (though can't measure without real users)
@@ -290,12 +297,14 @@ I have conducted a comprehensive QA review of all persona-based testing document
 The persona-based testing reports are **fundamentally sound** and have identified critical issues that other testing methods missed. However, there are **significant gaps in depth and completeness** that should be acknowledged in the final report.
 
 **Key Strengths:**
+
 - User-centric approach
 - Workflow-focused testing
 - Comprehensive persona coverage
 - Clear prioritization
 
 **Key Gaps:**
+
 - Incomplete workflow testing (1-2 workflows per persona vs. 3-5 needed)
 - No actual form submission testing
 - No error scenario testing

@@ -56,7 +56,7 @@
 
 **Deliverables:**
 
-- [ ] Pagination added to priority endpoints (accounting, inventory, orders, clients, vendors)
+- [ ] Pagination added to priority endpoints (accounting, inventory, orders, clients, suppliers)
 - [ ] Pagination added to all remaining list endpoints
 - [ ] Tests for pagination with large datasets
 - [ ] Documentation of pagination parameters (limit/offset)
@@ -164,7 +164,6 @@
 **Note:** Currently blocked - requires authProvider and dataProvider abstraction layer to be complete first.
 
 ---
-
 
 ### FEATURE-021: Unified Spreadsheet View
 

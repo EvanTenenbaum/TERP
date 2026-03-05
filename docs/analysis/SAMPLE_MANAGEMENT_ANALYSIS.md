@@ -21,7 +21,7 @@ This report provides a comprehensive analysis of the sample management functiona
 | Conversion Tracking       | ✅ Implemented     | 75%          |
 | Analytics & Reporting     | ✅ Implemented     | 85%          |
 | Sample Returns            | ❌ Not Implemented | 0%           |
-| Vendor Sample Returns     | ❌ Not Implemented | 0%           |
+| Supplier Sample Returns   | ❌ Not Implemented | 0%           |
 | Sample Deletion/Archival  | ⚠️ Partial         | 30%          |
 | Frontend UI               | ⚠️ Minimal         | 20%          |
 
@@ -200,7 +200,7 @@ isSample: boolean("is_sample").notNull().default(false),
 | -------------------- | --------------------------------- | -------- |
 | `deleteRequest`      | Soft delete sample request        | HIGH     |
 | `returnSample`       | Record sample return from client  | HIGH     |
-| `returnToVendor`     | Return sample to vendor           | MEDIUM   |
+| `returnToVendor`     | Return sample to supplier         | MEDIUM   |
 | `getSampleHistory`   | Full sample history for a product | MEDIUM   |
 | `bulkAllocate`       | Bulk allocation updates           | LOW      |
 | `exportSampleReport` | Export analytics to CSV/PDF       | LOW      |
@@ -231,7 +231,7 @@ isSample: boolean("is_sample").notNull().default(false),
 │                                                                              │
 │  ❌ MISSING STATES:                                                          │
 │  - RETURNED (sample returned by client)                                     │
-│  - RETURNED_TO_VENDOR (sample returned to vendor)                           │
+│  - RETURNED_TO_VENDOR (sample returned to supplier)                           │
 │  - EXPIRED (sample past expiration)                                         │
 │  - DELETED (soft delete)                                                    │
 │                                                                              │
@@ -247,8 +247,8 @@ isSample: boolean("is_sample").notNull().default(false),
 | **Fulfilling Samples**       | ✅ Yes      | Reduces sampleQty, creates inventory movement |
 | **Tracking Sample Status**   | ✅ Yes      | PENDING, FULFILLED, CANCELLED                 |
 | **Linking to Orders**        | ✅ Yes      | Conversion tracking with relatedOrderId       |
-| **Receiving Samples Back**   | ❌ No       | No return workflow                            |
-| **Returning to Vendors**     | ❌ No       | No vendor return workflow                     |
+| **Intake Samples Back**      | ❌ No       | No return workflow                            |
+| **Returning to Suppliers**   | ❌ No       | No supplier return workflow                   |
 | **Including in Orders**      | ✅ Yes      | isSample flag on order items                  |
 | **Deleting Samples**         | ⚠️ Partial  | RBAC permission exists, no endpoint           |
 | **Sample Cost Tracking**     | ✅ Yes      | Uses batch COGS                               |
@@ -268,12 +268,12 @@ isSample: boolean("is_sample").notNull().default(false),
 
 ### 5.2 High Priority Gaps (P1)
 
-| Gap                               | Impact                                    | Effort |
-| --------------------------------- | ----------------------------------------- | ------ |
-| **No Vendor Sample Returns**      | Cannot track samples sent back to vendors | 12h    |
-| **No Sample Expiration Tracking** | Cannot manage sample shelf life           | 8h     |
-| **No Sample Location Tracking**   | Cannot track where samples are physically | 8h     |
-| **No Sample Notifications**       | No alerts for pending requests            | 6h     |
+| Gap                               | Impact                                      | Effort |
+| --------------------------------- | ------------------------------------------- | ------ |
+| **No Supplier Sample Returns**    | Cannot track samples sent back to suppliers | 12h    |
+| **No Sample Expiration Tracking** | Cannot manage sample shelf life             | 8h     |
+| **No Sample Location Tracking**   | Cannot track where samples are physically   | 8h     |
+| **No Sample Notifications**       | No alerts for pending requests              | 6h     |
 
 ### 5.3 Medium Priority Gaps (P2)
 
@@ -349,10 +349,10 @@ The MASTER_ROADMAP.md mentions samples in several contexts:
 
 ### 7.2 Sprint Alignment
 
-| Sprint                         | Sample-Related Opportunities           |
-| ------------------------------ | -------------------------------------- |
-| **Sprint B (Frontend UX)**     | Build Sample Management UI             |
-| **Sprint D (Sales/Inventory)** | Sample return workflow, vendor returns |
+| Sprint                         | Sample-Related Opportunities             |
+| ------------------------------ | ---------------------------------------- |
+| **Sprint B (Frontend UX)**     | Build Sample Management UI               |
+| **Sprint D (Sales/Inventory)** | Sample return workflow, supplier returns |
 
 ---
 
@@ -418,7 +418,7 @@ samples.returnSample({ requestId, returnedBy, reason, condition });
 samples.getReturnedSamples({ startDate, endDate });
 ```
 
-#### R5: Vendor Sample Return Workflow
+#### R5: Supplier Sample Return Workflow
 
 **Priority:** P1  
 **Effort:** 12 hours  
@@ -493,13 +493,13 @@ isExpired: boolean("isExpired").default(false),
 
 ### 9.2 Phase 2: Returns & Tracking (Sprint D)
 
-| Task                             | Hours   | Dependencies |
-| -------------------------------- | ------- | ------------ |
-| Implement sample return workflow | 16h     | Phase 1      |
-| Implement vendor return workflow | 12h     | Phase 1      |
-| Add location tracking            | 8h      | Phase 1      |
-| Add expiration tracking          | 8h      | Phase 1      |
-| **Total**                        | **44h** |              |
+| Task                               | Hours   | Dependencies |
+| ---------------------------------- | ------- | ------------ |
+| Implement sample return workflow   | 16h     | Phase 1      |
+| Implement supplier return workflow | 12h     | Phase 1      |
+| Add location tracking              | 8h      | Phase 1      |
+| Add expiration tracking            | 8h      | Phase 1      |
+| **Total**                          | **44h** |              |
 
 ### 9.3 Total Effort Summary
 

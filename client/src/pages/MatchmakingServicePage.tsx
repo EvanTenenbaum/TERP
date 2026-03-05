@@ -290,7 +290,8 @@ export default function MatchmakingServicePage({
               Matchmaking Service
             </h1>
             <p className="text-muted-foreground">
-              Connect client needs with vendor supply using intelligent matching
+              Connect client needs with supplier supply using intelligent
+              matching
             </p>
           </div>
           <div className="flex gap-2">
@@ -314,7 +315,7 @@ export default function MatchmakingServicePage({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search strain, category, client, vendor..."
+                placeholder="Search strain, category, client, supplier..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -487,9 +488,9 @@ export default function MatchmakingServicePage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Vendor Supply ({filteredSupply.length})
+              Supplier Supply ({filteredSupply.length})
             </CardTitle>
-            <CardDescription>Available products from vendors</CardDescription>
+            <CardDescription>Available products from suppliers</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
@@ -497,7 +498,7 @@ export default function MatchmakingServicePage({
                 <ListSkeleton items={4} showAvatar={false} showSecondary />
               ) : filteredSupply.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No vendor supply found
+                  No supplier supply found
                 </div>
               ) : (
                 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -524,7 +525,7 @@ export default function MatchmakingServicePage({
                         ` • ${item.quantityAvailable} lbs`}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Vendor: {item.vendorName}
+                      Supplier: {item.vendorName}
                     </p>
                     {item.unitPrice && (
                       <p className="text-xs font-medium text-green-600">

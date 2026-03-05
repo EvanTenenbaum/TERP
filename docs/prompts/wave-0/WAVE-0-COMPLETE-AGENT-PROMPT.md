@@ -9,7 +9,8 @@
 ## 🏢 Project Overview
 
 **TERP** is a comprehensive ERP (Enterprise Resource Planning) system for cannabis businesses. It manages:
-- **Inventory**: Products, batches, vendors, purchase orders
+
+- **Inventory**: Products, batches, suppliers, purchase orders
 - **Sales**: Clients, orders, quotes, invoices, payments
 - **VIP Portal**: Client-facing mobile/desktop portal for self-service
 - **Accounting**: AR/AP, ledger, bank reconciliation
@@ -22,14 +23,14 @@
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|-------|------------|
+| Layer        | Technology                                         |
+| ------------ | -------------------------------------------------- |
 | **Frontend** | React 18, TypeScript, Vite, TailwindCSS, shadcn/ui |
-| **Backend** | Node.js, Express, tRPC |
-| **Database** | MySQL (TiDB), Drizzle ORM |
-| **Auth** | Custom JWT-based auth |
-| **Hosting** | DigitalOcean App Platform |
-| **Testing** | Vitest (unit), Playwright (e2e) |
+| **Backend**  | Node.js, Express, tRPC                             |
+| **Database** | MySQL (TiDB), Drizzle ORM                          |
+| **Auth**     | Custom JWT-based auth                              |
+| **Hosting**  | DigitalOcean App Platform                          |
+| **Testing**  | Vitest (unit), Playwright (e2e)                    |
 
 ---
 
@@ -63,6 +64,7 @@ TERP/
 ## 🚨 CRITICAL CONSTRAINTS
 
 ### NEVER DO (Will Break Production):
+
 ```
 ❌ Modify drizzle/schema.ts
 ❌ Run migrations
@@ -75,6 +77,7 @@ TERP/
 ```
 
 ### ALWAYS DO:
+
 ```
 ✅ Run pnpm check after EVERY code change
 ✅ Run pnpm test after EVERY code change
@@ -107,42 +110,45 @@ pnpm lint
 ## 📋 Schema Reference (Actual Column Names)
 
 ### Products Table
+
 ```typescript
 // ✅ EXIST:
-products.id, products.brandId, products.strainId
-products.nameCanonical  // NOT "name"
-products.category, products.subcategory
+(products.id, products.brandId, products.strainId);
+products.nameCanonical; // NOT "name"
+(products.category, products.subcategory);
 
 // ❌ DO NOT EXIST:
-products.name           // Use nameCanonical
-products.sku            // SKU is on batches
-products.minStockLevel  // Does not exist
+products.name; // Use nameCanonical
+products.sku; // SKU is on batches
+products.minStockLevel; // Does not exist
 ```
 
 ### Batches Table
+
 ```typescript
 // ✅ EXIST:
-batches.id, batches.code, batches.sku
-batches.productId, batches.lotId
-batches.onHandQty       // NOT "quantity"
-batches.metadata        // JSON field
+(batches.id, batches.code, batches.sku);
+(batches.productId, batches.lotId);
+batches.onHandQty; // NOT "quantity"
+batches.metadata; // JSON field
 
 // ❌ DO NOT EXIST:
-batches.quantity        // Use onHandQty
-batches.batchNumber     // Use code
+batches.quantity; // Use onHandQty
+batches.batchNumber; // Use code
 ```
 
 ### Clients Table
+
 ```typescript
 // ✅ EXIST:
-clients.id, clients.teriCode, clients.name
-clients.email, clients.phone
-clients.isBuyer, clients.isSeller
-clients.vipPortalEnabled, clients.creditLimit
+(clients.id, clients.teriCode, clients.name);
+(clients.email, clients.phone);
+(clients.isBuyer, clients.isSeller);
+(clients.vipPortalEnabled, clients.creditLimit);
 
 // ❌ DO NOT EXIST:
-clients.tier            // Does not exist
-clients.clientType      // Use isBuyer/isSeller flags
+clients.tier; // Does not exist
+clients.clientType; // Use isBuyer/isSeller flags
 ```
 
 ---
@@ -182,18 +188,22 @@ Remove `@ts-nocheck` from the 4 core workflow pages so users can complete end-to
 ## 📁 Target Files (Priority Order)
 
 ### 1. Inventory.tsx (Inventory Lifecycle)
+
 **Path:** `client/src/pages/Inventory.tsx`
 **Impact:** Users cannot view inventory batches
 
 ### 2. OrderCreatorPage.tsx (Sales Lifecycle)
+
 **Path:** `client/src/pages/OrderCreatorPage.tsx`
 **Impact:** Users cannot create orders
 
 ### 3. VIPDashboard.tsx (VIP Portal Lifecycle)
+
 **Path:** `client/src/pages/vip-portal/VIPDashboard.tsx`
 **Impact:** Clients cannot use VIP portal
 
 ### 4. Invoices.tsx (Financial Lifecycle)
+
 **Path:** `client/src/pages/accounting/Invoices.tsx`
 **Impact:** Users cannot manage invoices
 
@@ -217,24 +227,26 @@ pnpm check 2>&1 | grep "Inventory.tsx"
 
 Most errors will be one of these types:
 
-| Error Type | Example | Fix |
-|------------|---------|-----|
-| **Null/undefined mismatch** | `Type 'string \| undefined' is not assignable to type 'string'` | Add `?.` or `??` |
-| **Property doesn't exist** | `Property 'name' does not exist on type` | Use correct property name |
-| **Type inference failure** | `Argument of type 'X' is not assignable` | Add explicit type annotations |
+| Error Type                  | Example                                                         | Fix                           |
+| --------------------------- | --------------------------------------------------------------- | ----------------------------- |
+| **Null/undefined mismatch** | `Type 'string \| undefined' is not assignable to type 'string'` | Add `?.` or `??`              |
+| **Property doesn't exist**  | `Property 'name' does not exist on type`                        | Use correct property name     |
+| **Type inference failure**  | `Argument of type 'X' is not assignable`                        | Add explicit type annotations |
 
 ### Step 3: Common Fixes
 
 #### Fix 1: Null/Undefined Handling
+
 ```typescript
 // Before (error)
 const name = client.name;
 
 // After (fixed)
-const name = client?.name ?? 'Unknown';
+const name = client?.name ?? "Unknown";
 ```
 
 #### Fix 2: Property Name Mismatch
+
 ```typescript
 // Before (error - products.name doesn't exist)
 const productName = product.name;
@@ -244,6 +256,7 @@ const productName = product.nameCanonical;
 ```
 
 #### Fix 3: Type Narrowing
+
 ```typescript
 // Before (error)
 function handleClient(client: Client | undefined) {
@@ -252,12 +265,13 @@ function handleClient(client: Client | undefined) {
 
 // After (fixed)
 function handleClient(client: Client | undefined) {
-  if (!client) return 'Unknown';
+  if (!client) return "Unknown";
   return client.name;
 }
 ```
 
 #### Fix 4: Explicit Type Annotations
+
 ```typescript
 // Before (error - type inference fails)
 const [data, setData] = useState([]);
@@ -271,13 +285,17 @@ const [data, setData] = useState<BatchWithDetails[]>([]);
 ## 📝 File-Specific Guidance
 
 ### Inventory.tsx
+
 **Likely Issues:**
+
 1. Batch type mismatches (quantity vs onHandQty)
 2. Product name references (name vs nameCanonical)
 3. Null handling for optional fields
 
 ### OrderCreatorPage.tsx
+
 **Likely Issues:**
+
 1. Client type mismatches
 2. Order item type definitions
 3. Price calculation types (string vs number)
@@ -285,13 +303,17 @@ const [data, setData] = useState<BatchWithDetails[]>([]);
 **Note:** Prices in the schema are often `varchar` (strings), not numbers.
 
 ### VIPDashboard.tsx
+
 **Likely Issues:**
+
 1. VIP portal config type mismatches
 2. Module enable/disable flags
 3. Client data type mismatches
 
 ### Invoices.tsx
+
 **Likely Issues:**
+
 1. Invoice line item types
 2. Payment status types
 3. Date handling (Date vs string)

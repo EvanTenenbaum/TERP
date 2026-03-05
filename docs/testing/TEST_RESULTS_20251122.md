@@ -1,6 +1,7 @@
 # E2E Test Results - November 22, 2025
 
 ## Test Session Information
+
 - **Date:** November 22, 2025
 - **Tester:** Manus AI (Roadmap Manager)
 - **Production URL:** https://terp-app-b9s35.ondigitalocean.app
@@ -11,6 +12,7 @@
 ## TS-1.1: Admin Login ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /login
 2. Enter username: Evan
 3. Enter password: oliver
@@ -29,12 +31,14 @@
 ## TS-2.1: KPI & Widgets ✅ PASSED
 
 **Test Steps:**
+
 1. Verify dashboard loads with KPI cards
 2. Check for 4 main KPI widgets
 
 **Expected Result:** Dashboard shows Revenue, Orders, and other key metrics
 
 **Actual Result:** ✅ Dashboard displays multiple KPI widgets:
+
 - CashFlow widget (Cash Collected: $128,737,570.80, Cash Spent: $0.00)
 - Sales widget (top 25 customers by total sales)
 - Transaction Snapshot (Today/This Week metrics)
@@ -51,10 +55,10 @@
 
 ## Testing in Progress...
 
-
 ## TS-001: Global Shortcuts ⚠️ PARTIAL
 
 **Test Steps:**
+
 1. Press Cmd+K to open command palette
 
 **Expected Result:** Command palette opens
@@ -70,6 +74,7 @@
 ## TS-3.1: Inventory Search & Filter ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /inventory
 2. Enter "Flower" in search box
 3. Verify filtering works
@@ -80,7 +85,8 @@
 
 **Status:** PASSED - Search functionality working
 
-**Evidence:** 
+**Evidence:**
+
 - Total Inventory Value: $161,095.72 (6731 units)
 - Stock Levels by Category showing Flower: 6,731 units
 - Stock Levels by Subcategory: Greenhouse (2,126), Indoor (2,642), Outdoor (1,963)
@@ -90,6 +96,7 @@
 ## TS-5.1: Orders Management ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /orders
 2. Verify order list displays
 3. Check KPI metrics
@@ -97,6 +104,7 @@
 **Expected Result:** Orders page shows confirmed and draft orders with metrics
 
 **Actual Result:** ✅ Orders page fully functional
+
 - Total Orders: 26
 - Pending: 10 (awaiting fulfillment)
 - Packed: 8 (ready to ship)
@@ -115,6 +123,7 @@
 ## TS-6.1: Client Profiles ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /clients
 2. Verify client list displays
 3. Check metrics
@@ -122,6 +131,7 @@
 **Expected Result:** Client management page shows all clients with metrics
 
 **Actual Result:** ✅ Clients page fully functional
+
 - Total Clients: 68
 - Active Buyers: 60
 - Clients with Debt: 0
@@ -137,6 +147,7 @@
 ## TS-4.1: Accounting Dashboard ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /accounting/dashboard
 2. Verify KPIs display
 3. Check AR/AP aging
@@ -144,6 +155,7 @@
 **Expected Result:** Accounting dashboard shows financial metrics
 
 **Actual Result:** ✅ Accounting dashboard fully functional
+
 - Cash Balance: $0.00
 - Accounts Receivable: $6,988.42
 - Accounts Payable: $0.00
@@ -160,12 +172,14 @@
 ## TS-2.2: Analytics Reporting ⚠️ PARTIAL
 
 **Test Steps:**
+
 1. Navigate to /analytics
 2. Verify analytics tabs and data
 
 **Expected Result:** Analytics page shows business intelligence data
 
 **Actual Result:** ⚠️ Analytics module active but showing placeholder data
+
 - Total Revenue: $0.00 (Analytics data coming soon)
 - Total Orders: 0 (Analytics data coming soon)
 - Active Clients: 0 (Analytics data coming soon)
@@ -180,6 +194,7 @@
 ## TS-9.2: RBAC (Role-Based Access Control) ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /settings
 2. Click User Roles tab
 3. Verify RBAC interface
@@ -187,6 +202,7 @@
 **Expected Result:** RBAC management interface displays
 
 **Actual Result:** ✅ RBAC interface functional
+
 - Tabs: Users, User Roles, Roles, Permissions, Locations, Categories, Grades
 - Assign Role to User section visible
 - Users and Their Roles section visible
@@ -201,6 +217,7 @@
 ## Bugs Identified So Far
 
 ### BUG-001: Command Palette (Cmd+K) Not Responding
+
 - **Severity:** Medium
 - **Description:** Pressing Cmd+K does not open command palette
 - **Expected:** Command palette should open for quick navigation
@@ -208,6 +225,7 @@
 - **Test:** TS-001
 
 ### BUG-002: Debug Dashboard Visible in Production
+
 - **Severity:** Low
 - **Description:** Orders page shows debug information at top of page
 - **Expected:** Debug dashboard should not be visible in production
@@ -216,6 +234,7 @@
 - **Location:** /orders
 
 ### BUG-003: Analytics Data Not Populated
+
 - **Severity:** Medium
 - **Description:** Analytics page shows all metrics as $0.00 or 0 with "Analytics data coming soon"
 - **Expected:** Analytics should show actual business data
@@ -236,7 +255,7 @@
 - TS-5.2: Sales Sheets
 - TS-5.3: Unified Order Flow
 - TS-6.2: Matchmaking
-- TS-7.1: Vendor Management
+- TS-7.1: Supplier Management
 - TS-7.2: Purchase Orders
 - TS-8.1: Calendar
 - TS-8.2: Task Management
@@ -258,10 +277,10 @@
 
 ---
 
-
 ## TS-11.1: 404 Handling ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /vip (non-existent route)
 2. Navigate to /nonexistent-page-test
 3. Verify 404 page displays
@@ -269,6 +288,7 @@
 **Expected Result:** User-friendly 404 page with navigation options
 
 **Actual Result:** ✅ Professional 404 page displays
+
 - Red warning icon
 - "404" heading
 - "Page Not Found" message
@@ -284,6 +304,7 @@
 ## TS-12.1: Workflow Board DND Physics ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /workflow-queue
 2. Verify workflow board displays
 3. Check status columns
@@ -291,6 +312,7 @@
 **Expected Result:** Workflow board with drag-and-drop columns
 
 **Actual Result:** ✅ Workflow board displays with columns
+
 - Intake Queue (0 batches)
 - Quality Check (0 batches)
 - Lab Testing (0 batches)
@@ -305,19 +327,21 @@
 ## TS-6.2: Matchmaking ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /matchmaking
 2. Verify matchmaking interface
-3. Check client needs and vendor supply
+3. Check client needs and supplier supply
 
 **Expected Result:** Matchmaking service displays needs and supply
 
 **Actual Result:** ✅ Matchmaking fully functional
+
 - Active Needs: 15 (0 with matches)
 - Available Supply: 3 (0 with buyers)
 - Suggested Matches: 0
 - Urgent Needs: 0
 - Client Needs list showing 15 purchase requests (Blue Dream, OG Kush concentrates, etc.)
-- Vendor Supply list showing 3 products (Fruit Gummies, 510 Cartridge, Blue Dream flower)
+- Supplier Supply list showing 3 products (Fruit Gummies, 510 Cartridge, Blue Dream flower)
 - Add Need and Add Supply buttons functional
 - Search and filter options available
 
@@ -330,6 +354,7 @@
 ## TS-8.1: Calendar ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /calendar
 2. Verify calendar displays
 3. Check view options
@@ -337,6 +362,7 @@
 **Expected Result:** Calendar with month/week/day/agenda views
 
 **Actual Result:** ✅ Calendar fully functional
+
 - November 2025 month view displayed
 - View options: Month, Week, Day, Agenda
 - Navigation: Previous, Today, Next buttons
@@ -353,6 +379,7 @@
 ## TS-8.2: Task Management ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /todos
 2. Verify todo lists display
 3. Check list creation
@@ -360,6 +387,7 @@
 **Expected Result:** Todo list management interface
 
 **Actual Result:** ✅ Todo lists fully functional
+
 - Multiple todo lists displayed (Financial Close, Marketing Campaign, Customer Support, etc.)
 - "New List" button available
 - Lists show titles, descriptions, and "Shared" status
@@ -375,12 +403,14 @@
 ## TS-5.2: Sales Sheets ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /sales-sheets
 2. Verify sales sheet creator interface
 
 **Expected Result:** Sales sheet creation interface
 
 **Actual Result:** ✅ Sales Sheet Creator functional
+
 - "Select Client" dropdown available
 - Message: "Select a client to start creating a sales sheet"
 - Clean, professional interface
@@ -395,6 +425,7 @@
 ## TS-9.1: COGS Settings ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /settings/cogs
 2. Verify COGS configuration options
 3. Check global settings and client adjustments tabs
@@ -402,6 +433,7 @@
 **Expected Result:** COGS configuration interface
 
 **Actual Result:** ✅ COGS Settings fully functional
+
 - Global Settings tab active
 - Client Adjustments tab available
 - Default COGS Behavior section with FIXED/RANGE mode explanation
@@ -426,12 +458,14 @@
 ## TS-9.2: Credit Settings ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /credit-settings
 2. Verify credit intelligence configuration
 
 **Expected Result:** Credit limit calculation settings
 
 **Actual Result:** ✅ Credit Intelligence Settings fully functional
+
 - Signal Weights configuration:
   - Revenue Momentum: 20%
   - Cash Collection Strength: 25%
@@ -454,6 +488,7 @@
 ## TS-2.1: Dashboard & KPIs ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to / (dashboard)
 2. Verify KPI widgets display
 3. Check data accuracy
@@ -461,6 +496,7 @@
 **Expected Result:** Dashboard with business KPIs
 
 **Actual Result:** ✅ Dashboard fully functional with comprehensive widgets
+
 - CashFlow widget:
   - Cash Collected: $128,737,570.80
   - Cash Spent: $0.00
@@ -483,6 +519,7 @@
 ## Additional Tests Completed
 
 ### TS-3.1: Pricing Rules ✅ PASSED
+
 - Navigate to /pricing/rules
 - 8 active pricing rules displayed
 - Rules include: Bulk Discounts, Medical Patient Discount, Clearance Markdown, etc.
@@ -495,6 +532,7 @@
 ## Summary of Testing Progress
 
 ### Tests Completed: 15/42
+
 - TS-001: Global Shortcuts ⚠️ PARTIAL
 - TS-2.1: Dashboard & KPIs ✅ PASSED
 - TS-2.2: Analytics Reporting ⚠️ PARTIAL
@@ -512,11 +550,13 @@
 - TS-12.1: Workflow Board ✅ PASSED
 
 ### Bugs Identified: 3
+
 1. BUG-005: Command Palette (Cmd+K) Not Responding - P2 MEDIUM
 2. BUG-006: Debug Dashboard Visible in Production - P3 LOW
 3. BUG-007: Analytics Data Not Populated - P2 MEDIUM
 
 ### Tests Remaining: 27
+
 - TS-002: Theme Toggling
 - TS-1.2: VIP Portal Access
 - TS-3.2: Batch Lifecycle
@@ -524,7 +564,7 @@
 - TS-4.2: Accounts Receivable (detailed)
 - TS-4.3: Accounts Payable (detailed)
 - TS-5.3: Unified Order Flow
-- TS-7.1: Vendor Management
+- TS-7.1: Supplier Management
 - TS-7.2: Purchase Orders
 - TS-10.1: VIP Portal Catalog View
 - TS-10.2: VIP Portal Self-Service Order
@@ -539,41 +579,44 @@
 - TS-15.2: VIP Portal Interest List Blocking
 - TS-15.3: VIP Portal Price Alerts
 
-
-## TS-7.1: Vendor Management ⚠️ PARTIAL
+## TS-7.1: Supplier Management ⚠️ PARTIAL
 
 **Test Steps:**
-1. Navigate to /vendors
-2. Verify vendor list displays
-3. Check vendor management features
 
-**Expected Result:** Vendor management interface with vendor list
+1. Navigate to /suppliers
+2. Verify supplier list displays
+3. Check supplier management features
 
-**Actual Result:** ⚠️ Vendor management interface loads but shows no data
-- Total Vendors: 0
+**Expected Result:** Supplier management interface with supplier list
+
+**Actual Result:** ⚠️ Supplier management interface loads but shows no data
+
+- Total Suppliers: 0
 - With Payment Terms: 0
 - With Contacts: 0
 - Filtered Results: 0
-- Message: "No vendors yet. Create one to get started."
-- Add Vendor button available
+- Message: "No suppliers yet. Create one to get started."
+- Add Supplier button available
 - Search and filter options available
 - Export CSV button available
 
-**Status:** PARTIAL - Interface is functional but no seed data for vendors
+**Status:** PARTIAL - Interface is functional but no seed data for suppliers
 
-**Evidence:** Vendor management page is accessible and ready for use, but empty
+**Evidence:** Supplier management page is accessible and ready for use, but empty
 
 ---
 
 ## TS-7.2: Purchase Orders 🔴 FAILED
 
 **Test Steps:**
+
 1. Navigate to /purchase-orders
 2. Verify purchase order interface
 
 **Expected Result:** Purchase order management interface
 
 **Actual Result:** 🔴 APPLICATION ERROR
+
 - Error message: "An unexpected error occurred."
 - Error ID: f7826da2e91648ebb82ddbbec10f2bc6
 - "This error has been automatically reported to our team."
@@ -590,6 +633,7 @@
 ## TS-14.1: Returns Dynamic Forms ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /returns
 2. Verify returns management interface
 3. Check return reasons and metrics
@@ -597,6 +641,7 @@
 **Expected Result:** Returns management interface
 
 **Actual Result:** ✅ Returns management fully functional
+
 - Total Returns: 0
 - Defective Items: 0
 - Return Reasons displayed:
@@ -618,12 +663,14 @@
 ## TS-3.3: Location Management ⚠️ PARTIAL
 
 **Test Steps:**
+
 1. Navigate to /locations
 2. Verify warehouse locations interface
 
 **Expected Result:** Location management with warehouse list
 
 **Actual Result:** ⚠️ Location management interface loads but shows no data
+
 - "All Locations" section displayed
 - Message: "No locations found"
 - Clean, professional interface
@@ -638,12 +685,14 @@
 ## Pricing Profiles ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /pricing/profiles
 2. Verify pricing profiles management
 
 **Expected Result:** Pricing profiles list with management options
 
 **Actual Result:** ✅ Pricing profiles fully functional
+
 - 5 pricing profiles displayed:
   - Retail Standard (35% margin)
   - Wholesale Tier 1 ($1000+ orders)
@@ -663,6 +712,7 @@
 ## Additional Bugs Identified
 
 ### BUG-008: Purchase Orders Page Crashes with Application Error 🔴 CRITICAL
+
 - **Severity:** P0 (CRITICAL - APPLICATION CRASH)
 - **Location:** /purchase-orders
 - **Error ID:** f7826da2e91648ebb82ddbbec10f2bc6
@@ -678,6 +728,7 @@
 ## Testing Progress Update
 
 ### Tests Completed: 21/42
+
 - TS-001: Global Shortcuts ⚠️ PARTIAL
 - TS-2.1: Dashboard & KPIs ✅ PASSED
 - TS-2.2: Analytics Reporting ⚠️ PARTIAL
@@ -688,7 +739,7 @@
 - TS-5.2: Sales Sheets ✅ PASSED
 - TS-6.1: Client Profiles ✅ PASSED
 - TS-6.2: Matchmaking ✅ PASSED
-- TS-7.1: Vendor Management ⚠️ PARTIAL
+- TS-7.1: Supplier Management ⚠️ PARTIAL
 - TS-7.2: Purchase Orders 🔴 FAILED
 - TS-8.1: Calendar ✅ PASSED
 - TS-8.2: Task Management ✅ PASSED
@@ -701,12 +752,14 @@
 - Pricing Profiles ✅ PASSED
 
 ### Bugs Identified: 4
+
 1. BUG-005: Command Palette (Cmd+K) Not Responding - P2 MEDIUM
 2. BUG-006: Debug Dashboard Visible in Production - P3 LOW
 3. BUG-007: Analytics Data Not Populated - P2 MEDIUM
 4. BUG-008: Purchase Orders Page Crashes - P0 CRITICAL 🔴
 
 ### Tests Remaining: 21
+
 - TS-002: Theme Toggling
 - TS-1.1: Authentication (login tested, need logout/session)
 - TS-1.2: VIP Portal Access
@@ -726,10 +779,10 @@
 - TS-15.2: VIP Portal Interest List Blocking
 - TS-15.3: VIP Portal Price Alerts
 
-
 ## TS-002: Theme Toggling ❌ NOT FOUND
 
 **Test Steps:**
+
 1. Check for theme toggle in settings
 2. Check for theme toggle in user menu
 3. Look for dark mode/light mode switcher
@@ -737,6 +790,7 @@
 **Expected Result:** Theme toggle control to switch between light and dark modes
 
 **Actual Result:** ❌ No theme toggle found
+
 - Settings page has tabs for Users, User Roles, Roles, Permissions, Locations, Categories, Grades
 - No theme or appearance settings visible
 - No dark mode toggle in header or user menu
@@ -750,12 +804,14 @@
 ## TS-5.3: Unified Order Flow ❌ FAILED
 
 **Test Steps:**
+
 1. Navigate to /create-order
 2. Verify order creation interface
 
 **Expected Result:** Order creation interface
 
 **Actual Result:** ❌ 404 Page Not Found
+
 - Error message: "Page Not Found"
 - "Sorry, the page you are looking for doesn't exist. It may have been moved or deleted."
 - Go Home button displayed
@@ -769,6 +825,7 @@
 ## TS-3.2: Batch Lifecycle ✅ PASSED
 
 **Test Steps:**
+
 1. Navigate to /inventory
 2. Verify batch management interface
 3. Check New Purchase button
@@ -776,6 +833,7 @@
 **Expected Result:** Inventory management with batch tracking
 
 **Actual Result:** ✅ Inventory management fully functional
+
 - Total Inventory Value: $161,095.72 (6,731 units)
 - Avg Value per Unit: $24.53
 - Low Stock: 1 item (≤100 units available)
@@ -802,12 +860,14 @@
 ### Total Tests Executed: 24/42 (57%)
 
 ### Test Results Breakdown:
+
 - ✅ **PASSED:** 16 tests (67%)
 - ⚠️ **PARTIAL:** 5 tests (21%)
 - 🔴 **FAILED:** 2 tests (8%)
 - ❌ **NOT FOUND:** 1 test (4%)
 
 ### Passed Tests (16):
+
 1. TS-2.1: Dashboard & KPIs
 2. TS-3.1: Inventory Search & Filter
 3. TS-3.2: Batch Lifecycle
@@ -826,16 +886,19 @@
 16. Pricing Rules & Profiles
 
 ### Partial Tests (5):
+
 1. TS-001: Global Shortcuts (Cmd+K not working)
 2. TS-2.2: Analytics Reporting (no data populated)
 3. TS-3.3: Location Management (no seed data)
-4. TS-7.1: Vendor Management (no seed data)
+4. TS-7.1: Supplier Management (no seed data)
 
 ### Failed Tests (2):
+
 1. TS-7.2: Purchase Orders (application crash)
 2. TS-5.3: Unified Order Flow (404 error)
 
 ### Not Found Tests (1):
+
 1. TS-002: Theme Toggling (feature not implemented)
 
 ---
@@ -843,24 +906,31 @@
 ## Critical Bugs Identified (4)
 
 ### 🔴 P0 - CRITICAL (1)
+
 **BUG-008:** Purchase Orders Page Crashes with Application Error
+
 - **Impact:** Complete feature failure, users cannot access purchase orders
 - **Location:** /purchase-orders
 - **Status:** Requires immediate attention
 
 ### 🟡 P2 - MEDIUM (2)
+
 **BUG-005:** Command Palette (Cmd+K) Not Responding
+
 - **Impact:** Users cannot use keyboard shortcut for quick navigation
 - **Location:** Global shortcut
 - **Status:** UX enhancement needed
 
 **BUG-007:** Analytics Data Not Populated
+
 - **Impact:** Analytics module shows placeholder data only
 - **Location:** /analytics
 - **Status:** Feature incomplete
 
 ### 🟢 P3 - LOW (1)
+
 **BUG-006:** Debug Dashboard Visible in Production
+
 - **Impact:** Unprofessional appearance, exposes internal details
 - **Location:** /orders
 - **Status:** Cosmetic issue
@@ -870,6 +940,7 @@
 ## Additional Bugs to Add to Roadmap
 
 ### BUG-009: Create Order Route Returns 404
+
 - **Severity:** Medium-High
 - **Location:** /create-order
 - **Description:** Navigating to create order page returns 404 error
@@ -904,6 +975,7 @@ Due to time constraints and discovered blocking issues, the following tests were
 ## Overall Assessment
 
 ### Strengths:
+
 1. **Core Business Features Work Well:** Orders, Clients, Inventory, Accounting all functional
 2. **Professional UI/UX:** Clean interface, good navigation, helpful error pages
 3. **Comprehensive Settings:** COGS, Credit Intelligence, Pricing Rules all well-designed
@@ -911,21 +983,24 @@ Due to time constraints and discovered blocking issues, the following tests were
 5. **Robust RBAC:** User roles and permissions system is implemented
 
 ### Critical Issues:
+
 1. **Purchase Orders Completely Broken:** P0 bug blocking critical supply chain feature
 2. **Create Order Route 404:** Alternative order creation path may exist but direct route fails
 3. **Analytics Not Functional:** Shows only placeholder data
-4. **Missing Seed Data:** Vendors and Locations have no test data
+4. **Missing Seed Data:** Suppliers and Locations have no test data
 
 ### Recommendations:
+
 1. **Immediate:** Fix BUG-008 (Purchase Orders crash) - this is a critical feature
 2. **High Priority:** Fix BUG-009 (Create Order 404) and BUG-007 (Analytics data)
-3. **Medium Priority:** Implement BUG-005 (Command Palette) and add seed data for Vendors/Locations
+3. **Medium Priority:** Implement BUG-005 (Command Palette) and add seed data for Suppliers/Locations
 4. **Low Priority:** Remove BUG-006 (Debug dashboard) from production
 5. **Future:** Consider implementing TS-002 (Theme Toggle) for better UX
 6. **Testing:** Complete remaining 18 tests, especially VIP Portal and advanced features
 
 ### Data Quality Note:
-The system has excellent seed data for Clients (68), Orders (26), Inventory (6,731 units), and other core features. However, Vendors (0) and Locations (0) have no seed data, which limits testing of supply chain features.
+
+The system has excellent seed data for Clients (68), Orders (26), Inventory (6,731 units), and other core features. However, Suppliers (0) and Locations (0) have no seed data, which limits testing of supply chain features.
 
 ---
 
@@ -943,4 +1018,3 @@ The system has excellent seed data for Clients (68), Orders (26), Inventory (6,7
 - **Total Bugs Found:** 4
 
 ---
-

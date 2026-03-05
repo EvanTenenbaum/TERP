@@ -36,13 +36,13 @@ Jobs run inside the VPC and have direct database access through the `${db-compon
 
 ### Parameter naming is inconsistent across tools:
 
-| Tool | ID Parameter Name |
-|------|-------------------|
-| `apps-get-deployment-status` | `AppID` |
-| `apps-update` | `app_id` (nested inside `update.app_id`) |
-| `apps-get-logs` | `AppID` |
-| `db-cluster-update-firewall-rules` | `id` |
-| `db-cluster-list` | `{}` (no params) |
+| Tool                               | ID Parameter Name                        |
+| ---------------------------------- | ---------------------------------------- |
+| `apps-get-deployment-status`       | `AppID`                                  |
+| `apps-update`                      | `app_id` (nested inside `update.app_id`) |
+| `apps-get-logs`                    | `AppID`                                  |
+| `db-cluster-update-firewall-rules` | `id`                                     |
+| `db-cluster-list`                  | `{}` (no params)                         |
 
 Always run `manus-mcp-cli tool get <tool-name> --server digitalocean` to check exact parameter names before calling a tool.
 
@@ -102,7 +102,7 @@ Job logs are available via `apps-get-logs` with `LogType: "DEPLOY"` and the spec
 The firewall rules use a `type` field that can be `app`, `ip_addr`, `droplet`, or `tag`. For production, the safest configuration is:
 
 ```json
-{"type": "app", "value": "<app-id>"}
+{ "type": "app", "value": "<app-id>" }
 ```
 
 This allows only the App Platform app to connect. If you add IP addresses for debugging, **always restore to app-only access afterward**.
@@ -113,12 +113,12 @@ This allows only the App Platform app to connect. If you add IP addresses for de
 
 Typical deployment cycle for TERP on DigitalOcean App Platform:
 
-| Phase | Duration |
-|-------|----------|
-| Build (Docker) | 4-5 minutes |
-| Deploy (health check) | 3-5 minutes |
-| Job execution | 1-2 minutes |
-| **Total** | **8-12 minutes** |
+| Phase                 | Duration         |
+| --------------------- | ---------------- |
+| Build (Docker)        | 4-5 minutes      |
+| Deploy (health check) | 3-5 minutes      |
+| Job execution         | 1-2 minutes      |
+| **Total**             | **8-12 minutes** |
 
 The health check has `initial_delay_seconds: 120` configured, which accounts for most of the deploy phase duration.
 
@@ -137,6 +137,7 @@ doctl apps get <app-id> --format json > /tmp/current-spec.json
 # 6. Clean up: Remove job from spec, re-deploy
 # 7. Restore firewall: app-only access
 ```
+
 # TERP Production Migration Runbook
 
 ## Overview
@@ -147,12 +148,12 @@ This runbook documents the process for running manual database migrations and ba
 
 The TERP production stack consists of three components on DigitalOcean App Platform:
 
-| Component | Type | Name | Details |
-|-----------|------|------|---------|
-| Web Service | `service` | `web` | Node.js app built from `Dockerfile` on `main` branch |
-| Database | `database` | `terp-mysql-db` | DigitalOcean Managed MySQL cluster |
-| App ID | — | `1fd40be5-b9af-4e71-ab1d-3af0864a7da4` | Used in all MCP API calls |
-| DB Cluster ID | — | `03cd0216-a4df-42c6-9bff-d9dc7dadec83` | Used for firewall rule management |
+| Component     | Type       | Name                                   | Details                                              |
+| ------------- | ---------- | -------------------------------------- | ---------------------------------------------------- |
+| Web Service   | `service`  | `web`                                  | Node.js app built from `Dockerfile` on `main` branch |
+| Database      | `database` | `terp-mysql-db`                        | DigitalOcean Managed MySQL cluster                   |
+| App ID        | —          | `1fd40be5-b9af-4e71-ab1d-3af0864a7da4` | Used in all MCP API calls                            |
+| DB Cluster ID | —          | `03cd0216-a4df-42c6-9bff-d9dc7dadec83` | Used for firewall rule management                    |
 
 ## Why Direct Database Access Does Not Work
 
@@ -196,8 +197,12 @@ Example job spec:
   "dockerfile_path": "Dockerfile",
   "run_command": "npx tsx scripts/your-migration-script.ts --confirm-production",
   "envs": [
-    {"key": "DATABASE_URL", "value": "${terp-mysql-db.DATABASE_URL}", "scope": "RUN_AND_BUILD_TIME"},
-    {"key": "NODE_ENV", "value": "production", "scope": "RUN_AND_BUILD_TIME"}
+    {
+      "key": "DATABASE_URL",
+      "value": "${terp-mysql-db.DATABASE_URL}",
+      "scope": "RUN_AND_BUILD_TIME"
+    },
+    { "key": "NODE_ENV", "value": "production", "scope": "RUN_AND_BUILD_TIME" }
   ],
   "instance_size_slug": "apps-s-1vcpu-0.5gb",
   "kind": "POST_DEPLOY"
@@ -295,6 +300,7 @@ If the web service has `deploy_on_push: true` (which it does), any push to `main
 The TER-235 migration involved two concerns:
 
 **Automatic (via autoMigrate on startup):**
+
 - `purchaseOrders.supplier_client_id`
 - `purchaseOrderItems.supplier_client_id`
 - `lots.supplier_client_id`
@@ -302,25 +308,27 @@ The TER-235 migration involved two concerns:
 - `vendorNotes.client_id`
 
 **Manual (via scripts):**
+
 - `scripts/apply-ter235-column-migrations.ts` — Creates `purchaseOrderItems.supplier_client_id` and `vendorNotes.client_id` with indexes and FK constraints (redundant with autoMigrate but useful as standalone verification)
 - `scripts/backfill-ter235-supplier-client-ids.ts` — Reads `supplier_profiles.legacy_vendor_id → client_id` mapping and backfills the new columns
 
 **Runtime fallback:**
-- `server/services/vendorMappingService.ts` resolves vendor IDs to client IDs at query time, so queries work even before the backfill runs.
+
+- `server/services/vendorMappingService.ts` resolves supplier IDs to client IDs at query time, so queries work even before the backfill runs.
 
 ## Deployment Timeline (TER-235)
 
-| Time (UTC) | Event |
-|------------|-------|
-| 2026-02-18 00:00 | PR #428 merged to main |
-| 2026-02-18 00:10 | Auto-deploy triggered, build started |
-| 2026-02-18 00:25 | Deployment ACTIVE, health OK, autoMigrate ran |
-| 2026-02-18 00:35 | First migration job deployed (column creation + backfill) |
-| 2026-02-18 00:44 | Column migration succeeded, backfill not visible in logs |
+| Time (UTC)       | Event                                                                     |
+| ---------------- | ------------------------------------------------------------------------- |
+| 2026-02-18 00:00 | PR #428 merged to main                                                    |
+| 2026-02-18 00:10 | Auto-deploy triggered, build started                                      |
+| 2026-02-18 00:25 | Deployment ACTIVE, health OK, autoMigrate ran                             |
+| 2026-02-18 00:35 | First migration job deployed (column creation + backfill)                 |
+| 2026-02-18 00:44 | Column migration succeeded, backfill not visible in logs                  |
 | 2026-02-18 00:50 | Second attempt (backfill only) — failed: `Unknown column 'poi.deletedAt'` |
-| 2026-02-18 00:50 | Auto-rollback triggered |
-| 2026-02-18 01:00 | Fix pushed to main (removed deletedAt filter) |
-| 2026-02-18 01:01 | Third attempt auto-triggered by push |
-| 2026-02-18 01:11 | Backfill completed successfully (0 rows to backfill — tables empty) |
-| 2026-02-18 01:15 | Cleanup: removed job, restored firewall |
-| 2026-02-18 01:22 | Final verification: health OK, no jobs, app-only firewall |
+| 2026-02-18 00:50 | Auto-rollback triggered                                                   |
+| 2026-02-18 01:00 | Fix pushed to main (removed deletedAt filter)                             |
+| 2026-02-18 01:01 | Third attempt auto-triggered by push                                      |
+| 2026-02-18 01:11 | Backfill completed successfully (0 rows to backfill — tables empty)       |
+| 2026-02-18 01:15 | Cleanup: removed job, restored firewall                                   |
+| 2026-02-18 01:22 | Final verification: health OK, no jobs, app-only firewall                 |

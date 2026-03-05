@@ -84,6 +84,7 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 **Status:** PASSED
 
 **Data Displayed:**
+
 - **Value:** $161,095.72
 - **Units:** 6,731 total units
 - **Icon:** Dollar sign
@@ -101,6 +102,7 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 **Status:** PASSED
 
 **Data Displayed:**
+
 - **Value:** $24.53
 - **Description:** Average COGS per unit
 - **Icon:** Trending up arrow
@@ -118,6 +120,7 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 **Status:** PASSED
 
 **Data Displayed:**
+
 - **Count:** 1
 - **Threshold:** ≤100 units available
 - **Icon:** Alert/warning icon
@@ -137,6 +140,7 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 **Status:** PASSED
 
 **Data Displayed:**
+
 - **Flower:** 6,731 units, $161,096 (full bar)
 
 **Priority:** HIGH - Inventory overview  
@@ -152,6 +156,7 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 **Status:** PASSED
 
 **Data Displayed:**
+
 - **Greenhouse:** 2,126 units, $61,797
 - **Indoor:** 2,642 units, $53,733
 - **Outdoor:** 1,963 units, $45,566
@@ -197,11 +202,12 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 **Status:** NEEDS TESTING
 
 **Columns Visible:**
+
 1. Checkbox (select all)
 2. SKU
 3. Product
 4. Brand
-5. Vendor
+5. Supplier
 6. Grade
 7. Status
 8. On Hand
@@ -231,20 +237,20 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 
 ### Elements Tested: 16
 
-| Status | Count | Elements |
-|--------|-------|----------|
-| ✅ Working | 5 | Metrics cards, stock visualizations |
-| ⚠️ Untested | 10 | Buttons, search, filters, sorting |
-| 🔴 Broken | 0 | None identified yet |
-| 📋 Needs Scrolling | 1 | Table data rows |
+| Status             | Count | Elements                            |
+| ------------------ | ----- | ----------------------------------- |
+| ✅ Working         | 5     | Metrics cards, stock visualizations |
+| ⚠️ Untested        | 10    | Buttons, search, filters, sorting   |
+| 🔴 Broken          | 0     | None identified yet                 |
+| 📋 Needs Scrolling | 1     | Table data rows                     |
 
 ### Priority Breakdown
 
-| Priority | Count | Elements |
-|----------|-------|----------|
-| CRITICAL | 2 | New Purchase, Table Data |
-| HIGH | 9 | Metrics, Export, Search, Filters, Sorting |
-| MEDIUM | 5 | View management, Customize |
+| Priority | Count | Elements                                  |
+| -------- | ----- | ----------------------------------------- |
+| CRITICAL | 2     | New Purchase, Table Data                  |
+| HIGH     | 9     | Metrics, Export, Search, Filters, Sorting |
+| MEDIUM   | 5     | View management, Customize                |
 
 ---
 
@@ -268,4 +274,3 @@ The Inventory page provides comprehensive batch management, stock tracking, and 
 - Professional UI/UX design
 - No console errors observed on page load
 - Table structure is present but data needs scrolling to view
-

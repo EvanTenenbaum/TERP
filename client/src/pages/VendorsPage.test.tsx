@@ -60,7 +60,9 @@ describe("VendorsPage", () => {
     );
 
     // VendorsWorkSurface shows a Loader2 spinner during loading
-    expect(screen.getByRole("heading", { name: /Vendors/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Suppliers/i })
+    ).toBeInTheDocument();
   });
 
   it("renders vendor (supplier) rows when data is ready", () => {
@@ -136,6 +138,6 @@ describe("VendorsPage", () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByText(/No vendors found/i)).toBeInTheDocument();
+    expect(screen.getByText(/No suppliers found/i)).toBeInTheDocument();
   });
 });

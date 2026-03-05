@@ -73,6 +73,9 @@ import {
   Box,
 } from "lucide-react";
 
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel, getMixedBrandLabel } from "@/lib/nomenclature";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -206,7 +209,7 @@ function ProductInspectorContent({
           )}
         </div>
 
-        <InspectorField label="Brand">
+        <InspectorField label={getBrandLabel(product.category)}>
           <p className="font-medium">
             {brand?.name || product.brandName || "Unknown"}
           </p>
@@ -341,7 +344,7 @@ function ProductFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="brand">Brand *</Label>
+            <Label htmlFor="brand">{getBrandLabel(formData.category)} *</Label>
             <Select
               value={formData.brandId?.toString() ?? ""}
               onValueChange={v =>
@@ -900,7 +903,9 @@ export function ProductsWorkSurface() {
                   <TableHead>Product Name</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Subcategory</TableHead>
-                  <TableHead>Brand</TableHead>
+                  <TableHead>
+                    {getMixedBrandLabel(displayProducts.map(p => p.category))}
+                  </TableHead>
                   <TableHead>Strain</TableHead>
                   <TableHead>UOM</TableHead>
                   <TableHead></TableHead>

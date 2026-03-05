@@ -99,7 +99,7 @@ curl https://terp-app/api/trpc/debug.rawMysqlTest
 ```
 
 **Failure Mode:**
-Any authenticated user can create, update, delete vendor supply records regardless of role.
+Any authenticated user can create, update, delete supplier supply records regardless of role.
 
 **Fix:**
 
@@ -316,7 +316,7 @@ const result = await db.execute(
 
 ```
 (!) Some chunks are larger than 800 kB after minification
-vendor-D2tc-cz3.js: 1,820.11 kB
+supplier-D2tc-cz3.js: 1,820.11 kB
 ```
 
 **Fix:** Implement code splitting, tracked as BUILD-002.
@@ -396,7 +396,7 @@ See Placeholder Eradication Ledger below.
 | 1   | Create invoice with missing line items | Reject                   | Likely accepts (no validation found) | P2       |
 | 2   | Partial fulfillment then cancellation  | Proper inventory restore | Unknown - needs E2E                  | P2       |
 | 3   | Refund after posting                   | GL reversal              | BLOCKED (ACC-003)                    | P1       |
-| 4   | Vendor purchase received twice         | Idempotent rejection     | Unknown                              | P2       |
+| 4   | Supplier purchase received twice       | Idempotent rejection     | Unknown                              | P2       |
 | 5   | Negative inventory attempt             | Block                    | PASS - validated                     | OK       |
 | 6   | Duplicate SKU conflict                 | Unique constraint        | PASS - DB enforced                   | OK       |
 | 7   | Concurrent order confirmations         | FOR UPDATE lock          | PASS - implemented                   | OK       |

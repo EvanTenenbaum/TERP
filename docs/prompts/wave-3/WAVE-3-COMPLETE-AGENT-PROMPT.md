@@ -10,7 +10,8 @@
 ## 🏢 Project Overview
 
 **TERP** is a comprehensive ERP system for cannabis businesses. The **Inventory Lifecycle** covers:
-- Vendor management
+
+- Supplier management
 - Purchase order creation
 - Goods receipt and batch creation
 - Photography and media
@@ -23,17 +24,18 @@
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|-------|------------|
+| Layer        | Technology                                         |
+| ------------ | -------------------------------------------------- |
 | **Frontend** | React 18, TypeScript, Vite, TailwindCSS, shadcn/ui |
-| **Backend** | Node.js, Express, tRPC |
-| **Database** | MySQL (TiDB), Drizzle ORM |
+| **Backend**  | Node.js, Express, tRPC                             |
+| **Database** | MySQL (TiDB), Drizzle ORM                          |
 
 ---
 
 ## 🚨 CRITICAL CONSTRAINTS
 
 ### NEVER DO:
+
 ```
 ❌ Modify drizzle/schema.ts
 ❌ Run migrations
@@ -43,6 +45,7 @@
 ```
 
 ### ALWAYS DO:
+
 ```
 ✅ Run pnpm check after EVERY change
 ✅ Run pnpm test after EVERY change
@@ -53,41 +56,45 @@
 
 ## 📋 Schema Reference
 
-### Vendors Table
+### Suppliers Table
+
 ```typescript
 // ✅ EXIST:
-vendors.id, vendors.name, vendors.code
-vendors.email, vendors.phone
-vendors.address, vendors.notes
-vendors.isActive
+(suppliers.id, suppliers.name, suppliers.code);
+(suppliers.email, suppliers.phone);
+(suppliers.address, suppliers.notes);
+suppliers.isActive;
 ```
 
 ### Products Table
+
 ```typescript
 // ✅ EXIST:
-products.id, products.brandId, products.strainId
-products.nameCanonical  // NOT "name"
-products.category, products.subcategory
+(products.id, products.brandId, products.strainId);
+products.nameCanonical; // NOT "name"
+(products.category, products.subcategory);
 ```
 
 ### Batches Table
+
 ```typescript
 // ✅ EXIST:
-batches.id, batches.code, batches.sku
-batches.productId, batches.lotId
-batches.batchStatus
-batches.onHandQty       // NOT "quantity"
-batches.metadata        // JSON field for extra data
-batches.publishEcom, batches.publishB2b
+(batches.id, batches.code, batches.sku);
+(batches.productId, batches.lotId);
+batches.batchStatus;
+batches.onHandQty; // NOT "quantity"
+batches.metadata; // JSON field for extra data
+(batches.publishEcom, batches.publishB2b);
 ```
 
 ### Purchase Orders Table
+
 ```typescript
 // ✅ EXIST:
-purchaseOrders.id, purchaseOrders.poNumber
-purchaseOrders.vendorId, purchaseOrders.status
-purchaseOrders.expectedDeliveryDate
-purchaseOrders.totalAmount
+(purchaseOrders.id, purchaseOrders.poNumber);
+(purchaseOrders.vendorId, purchaseOrders.status);
+purchaseOrders.expectedDeliveryDate;
+purchaseOrders.totalAmount;
 ```
 
 ---
@@ -96,9 +103,9 @@ purchaseOrders.totalAmount
 
 ## 🎯 Mission
 
-Ensure users can complete the entire inventory intake process from vendor to published catalog.
+Ensure users can complete the entire inventory intake process from supplier to published catalog.
 
-**Goal:** User can: Vendor → PO → Receive → Batch → Photo → Publish
+**Goal:** User can: Supplier → PO → Receive → Batch → Photo → Publish
 **Estimated Time:** 12-17 hours
 **Dependencies:** Wave 0 complete
 
@@ -108,14 +115,14 @@ Ensure users can complete the entire inventory intake process from vendor to pub
 
 ```
 client/src/pages/
-├── VendorsPage.tsx           # Vendor management (OK)
+├── VendorsPage.tsx           # Supplier management (OK)
 ├── PurchaseOrdersPage.tsx    # PO management (OK)
 ├── Inventory.tsx             # Batch management (Fixed in Wave 0)
 ├── ProductsPage.tsx          # Product catalog (OK)
 ├── PhotographyPage.tsx       # Photo workflow (@ts-nocheck - NEEDS FIX)
 
 server/routers/
-├── vendors.ts                # Vendor API (OK)
+├── suppliers.ts                # Supplier API (OK)
 ├── purchaseOrders.ts         # PO API (OK)
 ├── inventory.ts              # Inventory API (OK)
 ├── products.ts               # Products API (OK)
@@ -127,6 +134,7 @@ server/routers/
 ## 📋 Task Checklist
 
 ### Task 1: Fix PhotographyPage (3-4 hours)
+
 **Path:** `client/src/pages/PhotographyPage.tsx`
 
 ```bash
@@ -136,11 +144,13 @@ pnpm check 2>&1 | grep "PhotographyPage"
 ```
 
 **Likely Issues:**
+
 - Batch type mismatches (code vs batchNumber)
 - Product name references (nameCanonical)
 - Image upload type handling
 
 ### Task 2: Fix Photography Router (3-4 hours)
+
 **Path:** `server/routers/photography.ts`
 
 ```bash
@@ -150,6 +160,7 @@ pnpm check 2>&1 | grep "photography.ts"
 ```
 
 **Likely Issues:**
+
 - Batch/product joins
 - Strain name lookups (need to join strains table)
 - Image metadata types
@@ -157,19 +168,22 @@ pnpm check 2>&1 | grep "photography.ts"
 ### Task 3: Verify Intake Flow (2-3 hours)
 
 Test the complete flow:
-1. Create or select a vendor
+
+1. Create or select a supplier
 2. Create a purchase order
 3. Receive goods (create batch)
 4. Verify batch appears in inventory
 
 **Files to check:**
-- `server/routers/vendors.ts`
+
+- `server/routers/suppliers.ts`
 - `server/routers/purchaseOrders.ts`
 - `server/routers/inventory.ts`
 
 ### Task 4: Verify Photography Flow (2-3 hours)
 
 Test the complete flow:
+
 1. Select a batch needing photos
 2. Upload images
 3. Set primary image
@@ -178,6 +192,7 @@ Test the complete flow:
 ### Task 5: Verify Publish Flow (2-3 hours)
 
 Test the complete flow:
+
 1. Select a batch with photos
 2. Set publishEcom or publishB2b to true
 3. Verify batch appears in live catalog
@@ -188,6 +203,7 @@ Test the complete flow:
 ## 🔧 Common Photography Fixes
 
 ### Fix 1: Batch Code vs BatchNumber
+
 ```typescript
 // Before (error - batchNumber doesn't exist)
 const batchNumber = batch.batchNumber;
@@ -197,6 +213,7 @@ const batchCode = batch.code;
 ```
 
 ### Fix 2: Product Name
+
 ```typescript
 // Before (error - name doesn't exist)
 const productName = product.name;
@@ -206,6 +223,7 @@ const productName = product.nameCanonical;
 ```
 
 ### Fix 3: Strain Name (requires join)
+
 ```typescript
 // The batches table doesn't have strain directly
 // Need to join: batches → products → strains
@@ -216,14 +234,14 @@ const batchWithStrain = await db.query.batches.findFirst({
   with: {
     product: {
       with: {
-        strain: true
-      }
-    }
-  }
+        strain: true,
+      },
+    },
+  },
 });
 
 // Access strain name:
-const strainName = batchWithStrain?.product?.strain?.name ?? 'Unknown';
+const strainName = batchWithStrain?.product?.strain?.name ?? "Unknown";
 ```
 
 ---
@@ -232,16 +250,16 @@ const strainName = batchWithStrain?.product?.strain?.name ?? 'Unknown';
 
 ```typescript
 // tests/e2e/inventory-lifecycle.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Inventory Lifecycle', () => {
-  test('complete intake flow', async ({ page }) => {
-    // 1. Go to vendors
-    await page.goto('/vendors');
-    await expect(page.locator('[data-testid="vendor-list"]')).toBeVisible();
+test.describe("Inventory Lifecycle", () => {
+  test("complete intake flow", async ({ page }) => {
+    // 1. Go to suppliers
+    await page.goto("/suppliers");
+    await expect(page.locator('[data-testid="supplier-list"]')).toBeVisible();
 
     // 2. Create PO
-    await page.goto('/purchase-orders');
+    await page.goto("/purchase-orders");
     await page.click('[data-testid="new-po"]');
     // ... fill PO form
 
@@ -250,20 +268,22 @@ test.describe('Inventory Lifecycle', () => {
     // ... create batch
 
     // 4. Verify in inventory
-    await page.goto('/inventory');
-    await expect(page.locator('[data-testid="batch-row"]').first()).toBeVisible();
+    await page.goto("/inventory");
+    await expect(
+      page.locator('[data-testid="batch-row"]').first()
+    ).toBeVisible();
   });
 
-  test('photography workflow', async ({ page }) => {
-    await page.goto('/photography');
-    
+  test("photography workflow", async ({ page }) => {
+    await page.goto("/photography");
+
     // Select batch needing photos
     await page.click('[data-testid="batch-needing-photos"]');
-    
+
     // Upload image
     const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles('test-image.jpg');
-    
+    await fileInput.setInputFiles("test-image.jpg");
+
     // Verify upload
     await expect(page.locator('[data-testid="uploaded-image"]')).toBeVisible();
   });
@@ -278,7 +298,7 @@ Wave 3 is complete when:
 
 - [ ] `PhotographyPage.tsx` has no @ts-nocheck
 - [ ] `server/routers/photography.ts` has no @ts-nocheck
-- [ ] Can create vendor
+- [ ] Can create supplier
 - [ ] Can create purchase order
 - [ ] Can receive goods and create batch
 - [ ] Can photograph batch
@@ -308,6 +328,7 @@ git show origin/build-status:.github/BUILD_STATUS.md
 ## 🆘 Escalation
 
 If you encounter issues:
+
 1. Document in `WAVE_3_BLOCKERS.md`
 2. Include file, line, error, attempts
 3. Move to next task

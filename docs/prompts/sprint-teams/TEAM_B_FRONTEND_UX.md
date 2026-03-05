@@ -38,6 +38,7 @@ client/src/pages/MatchmakingServicePage.tsx
 ```
 
 **DO NOT MODIFY:**
+
 - `server/**` (Teams A, C own)
 - `client/src/components/work-surface/**` (Team E owns)
 - `scripts/seed/**` (Team D owns)
@@ -97,13 +98,13 @@ Add these navigation items in order:
   ariaLabel: "Process returns and refunds",
 },
 
-// In Inventory group (after Vendors):
+// In Inventory group (after Suppliers):
 {
-  name: "Vendor Supply",
-  path: "/vendor-supply",
+  name: "Supplier Supply",
+  path: "/supplier-supply",
   icon: PackagePlus,
   group: "inventory",
-  ariaLabel: "View vendor supply offerings",
+  ariaLabel: "View supplier supply offerings",
 },
 
 // In Finance group (after Credit Settings):
@@ -167,6 +168,7 @@ pnpm check
 #### NAV-016: Manual QA Verification
 
 Test each new nav item:
+
 1. Click the sidebar item
 2. Verify route loads
 3. Check Command Palette (Cmd+K)
@@ -180,6 +182,7 @@ Test each new nav item:
 **Problem:** CreditsPage is imported but no route is defined.
 
 **Fix:**
+
 ```typescript
 // Find the routes section and add:
 <Route path="/credits" element={<CreditsPage />} />
@@ -212,6 +215,7 @@ trpc.hourTracking.getTimesheet.useQuery();
 ```
 
 **Add route in App.tsx:**
+
 ```typescript
 <Route path="/time-clock" element={<HourTrackingPage />} />
 ```
@@ -227,6 +231,7 @@ trpc.hourTracking.getTimesheet.useQuery();
 **Problem:** PhotographyModule component (689 lines) exists but is never used.
 
 **Fix:**
+
 ```typescript
 // Import the module:
 import { PhotographyModule } from '@/components/inventory/PhotographyModule';
@@ -248,10 +253,12 @@ import { PhotographyModule } from '@/components/inventory/PhotographyModule';
 **Problem:** TODO comment indicates session console unimplemented.
 
 **Options:**
+
 1. **Implement:** Create session detail view with SSE events
 2. **Remove:** Disable the clickable session row
 
 Choose based on effort. If implementing:
+
 ```typescript
 // Session detail view shows:
 // - Current cart items
@@ -272,6 +279,7 @@ Choose based on effort. If implementing:
 **Problem:** "Add Supply" button shows alert instead of form.
 
 **Fix:**
+
 1. Create SupplyCreationForm component
 2. Wire to `vendorSupply.create` mutation
 3. Add edit functionality
@@ -284,12 +292,14 @@ Choose based on effort. If implementing:
 **File:** `client/src/pages/MatchmakingServicePage.tsx`
 
 **Problem:** Four action buttons have no handlers:
+
 - Line 385: "View Buyers" - no handler
 - Line 388: "Reserve" - no handler
 - Line 456: "Create Quote" - may not connect
 - Line 459: "Dismiss" - no dismissal logic
 
 **Fix each button:**
+
 ```typescript
 // View Buyers
 onClick={() => setShowBuyersModal(true)}
@@ -311,6 +321,7 @@ onClick={() => dismissMutation.mutate({ matchId, reason })}
 **Directory:** `client/src/components/dashboard/widgets-v2/`
 
 **Unused widgets to integrate:**
+
 - CashCollectedLeaderboard
 - ClientDebtLeaderboard
 - ClientProfitMarginLeaderboard
@@ -342,6 +353,7 @@ onClick={() => dismissMutation.mutate({ matchId, reason })}
 **File:** `client/src/config/navigation.ts`
 
 **Changes:**
+
 - Move Pick & Pack from Sales to Inventory group
 - Move Invoices from Sales to Finance group
 - Add Direct Intake (`/intake`) to Inventory
@@ -357,6 +369,7 @@ onClick={() => dismissMutation.mutate({ matchId, reason })}
 **Problem:** Non-sellable batches shown without status indicators.
 
 **Fix:**
+
 1. Add status badges for QUARANTINED, ON_HOLD, AWAITING_INTAKE
 2. Block or warn when adding non-sellable to order
 3. Validate batch status before submission
@@ -370,6 +383,7 @@ onClick={() => dismissMutation.mutate({ matchId, reason })}
 **Coordinate with Team E** - they own work surfaces but you can fix types.
 
 **Files:**
+
 - OrderCreationFlow.tsx: lines 582, 587, 593, 596, 613, 650
 - InvoiceToPaymentFlow.tsx: lines 655, 665, 679, 689
 - OrderToInvoiceFlow.tsx: lines 658, 661, 668, 678
@@ -383,6 +397,7 @@ onClick={() => dismissMutation.mutate({ matchId, reason })}
 Address 38 mobile responsiveness issues across components.
 
 **Priority:**
+
 1. Navigation sidebar collapse
 2. Data tables horizontal scroll
 3. Form layout on mobile
@@ -419,7 +434,7 @@ gh pr create --base staging/integration-sprint-2026-01-25 \
 
 ## Navigation Changes
 - Leaderboard, Client Needs, Matchmaking, Quotes, Returns added to Sales
-- Vendor Supply added to Inventory
+- Supplier Supply added to Inventory
 - Pricing Rules added to Finance
 - Workflow Queue added to Admin
 - All routes accessible via Command Palette
@@ -438,12 +453,15 @@ EOF
 ## Cross-Team Dependencies
 
 **Blocking you:**
+
 - Team A (TypeScript must compile)
 
 **You block:**
+
 - Team E (needs routes to work)
 
 **Coordination needed:**
+
 - Team E: Before modifying any work-surface files
 - Team C: For any API changes needed
 

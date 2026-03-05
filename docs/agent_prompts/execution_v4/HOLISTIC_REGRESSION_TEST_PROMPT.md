@@ -22,64 +22,71 @@ Perform a comprehensive holistic test of ALL work completed in the last two week
 ## Work Completed in Last Two Weeks
 
 ### Critical Bug Fixes (Wave 1A)
-| ID | Fix | Expected Impact |
-|----|-----|-----------------|
-| BUG-040 | Order Creator inventory loading | Can create orders for any client |
-| BUG-041 | Batch Detail View crash | Can view any batch without app crash |
-| BUG-042 | Global Search | Search finds products by name/strain |
-| BUG-043 | Permission Service SQL | No crashes for users without roles |
-| BUG-045 | Retry button behavior | Retry reloads data, doesn't reset form |
-| BUG-046 | Settings Users tab | Shows permission error, not auth error |
+
+| ID      | Fix                             | Expected Impact                        |
+| ------- | ------------------------------- | -------------------------------------- |
+| BUG-040 | Order Creator inventory loading | Can create orders for any client       |
+| BUG-041 | Batch Detail View crash         | Can view any batch without app crash   |
+| BUG-042 | Global Search                   | Search finds products by name/strain   |
+| BUG-043 | Permission Service SQL          | No crashes for users without roles     |
+| BUG-045 | Retry button behavior           | Retry reloads data, doesn't reset form |
+| BUG-046 | Settings Users tab              | Shows permission error, not auth error |
 
 ### Data Display Fixes (Wave 1B)
-| ID | Fix | Expected Impact |
-|----|-----|-----------------|
+
+| ID     | Fix                 | Expected Impact         |
+| ------ | ------------------- | ----------------------- |
 | QA-049 | Products page empty | Shows all 121+ products |
-| QA-050 | Samples page empty | Shows all samples |
+| QA-050 | Samples page empty  | Shows all samples       |
 
 ### SQL Safety (Wave 4A)
-| ID | Fix | Expected Impact |
-|----|-----|-----------------|
-| BUG-044 | VIP Portal empty arrays | No SQL errors with empty carts |
-| BUG-049 | Live Catalog SQL | No injection vulnerabilities |
-| BUG-052 | Tag Management | No crashes with empty tag arrays |
-| BUG-053 | Credit Engine | No crashes with empty sessions |
+
+| ID      | Fix                     | Expected Impact                  |
+| ------- | ----------------------- | -------------------------------- |
+| BUG-044 | VIP Portal empty arrays | No SQL errors with empty carts   |
+| BUG-049 | Live Catalog SQL        | No injection vulnerabilities     |
+| BUG-052 | Tag Management          | No crashes with empty tag arrays |
+| BUG-053 | Credit Engine           | No crashes with empty sessions   |
 
 ### UX Improvements
-| Feature | Expected Impact |
-|---------|-----------------|
-| Loading skeletons | Smooth loading states on all pages |
-| Mobile responsiveness | All dialogs/modals work on mobile |
-| Skeleton loaders | Perceived performance improvement |
-| Empty states | Helpful messaging when no data |
+
+| Feature               | Expected Impact                    |
+| --------------------- | ---------------------------------- |
+| Loading skeletons     | Smooth loading states on all pages |
+| Mobile responsiveness | All dialogs/modals work on mobile  |
+| Skeleton loaders      | Perceived performance improvement  |
+| Empty states          | Helpful messaging when no data     |
 
 ### Infrastructure
-| Feature | Expected Impact |
-|---------|-----------------|
-| Sentry integration | Errors tracked and reported |
-| Database backups | Automated backup system |
-| Health endpoint | `/health` returns status |
-| Memory optimization | No OOM crashes on basic-xs |
+
+| Feature             | Expected Impact             |
+| ------------------- | --------------------------- |
+| Sentry integration  | Errors tracked and reported |
+| Database backups    | Automated backup system     |
+| Health endpoint     | `/health` returns status    |
+| Memory optimization | No OOM crashes on basic-xs  |
 
 ### Features
-| Feature | Expected Impact |
-|---------|-----------------|
-| Spreadsheet View | AG-Grid inventory management |
-| Intake/Pick-Pack grids | Warehouse operations |
-| Order draft auto-save | No lost work on orders |
-| Unified Product Catalogue | CRUD for products |
-| Admin setup scripts | Easy admin account creation |
-| Notification center | User notifications work |
+
+| Feature                   | Expected Impact              |
+| ------------------------- | ---------------------------- |
+| Spreadsheet View          | AG-Grid inventory management |
+| Intake/Pick-Pack grids    | Warehouse operations         |
+| Order draft auto-save     | No lost work on orders       |
+| Unified Product Catalogue | CRUD for products            |
+| Admin setup scripts       | Easy admin account creation  |
+| Notification center       | User notifications work      |
 
 ### Navigation Fixes
-| Page | Expected Impact |
-|------|-----------------|
-| Todo Lists | Loads without 404 |
-| Accounting | Full AR/AP dashboard |
-| Vendors | Vendor management works |
-| Purchase Orders | PO workflow works |
-| Returns | Returns processing works |
-| Locations | Location management works |
+
+| Page            | Expected Impact           |
+| --------------- | ------------------------- |
+| Todo Lists      | Loads without 404         |
+| Accounting      | Full AR/AP dashboard      |
+| Suppliers       | Supplier management works |
+| Purchase Orders | PO workflow works         |
+| Returns         | Returns processing works  |
+| Locations       | Location management works |
 
 ---
 
@@ -387,7 +394,7 @@ Navigation Audit
 ├── Invoices → VERIFY: Loads
 ├── Accounting/AR-AP → VERIFY: Loads
 ├── Purchase Orders → VERIFY: Loads
-├── Vendors → VERIFY: Loads
+├── Suppliers → VERIFY: Loads
 ├── Returns → VERIFY: Loads
 ├── Calendar → VERIFY: Loads
 ├── Todo → VERIFY: Loads
@@ -509,104 +516,134 @@ Create `/home/ubuntu/TERP/test-flows/HOLISTIC_REGRESSION_REPORT.md`:
 
 ```markdown
 # Holistic Regression Test Report
+
 **Date**: [DATE]
 **Tester**: [AGENT]
 **Duration**: [X hours]
 **Live Site**: https://terp-app-b9s35.ondigitalocean.app
 
 ## Executive Summary
+
 - Overall Health: [GOOD/FAIR/POOR]
 - Critical Issues: [COUNT]
 - Regressions Found: [COUNT]
 - UX Issues: [COUNT]
 
 ## Part 1: Technical Verification
+
 ### Bug Fix Status
-| Bug ID | Status | Notes |
-|--------|--------|-------|
-| BUG-040 | ✅/❌ | |
-| BUG-041 | ✅/❌ | |
-| ... | | |
+
+| Bug ID  | Status | Notes |
+| ------- | ------ | ----- |
+| BUG-040 | ✅/❌  |       |
+| BUG-041 | ✅/❌  |       |
+| ...     |        |       |
 
 ### SQL Safety
+
 [Findings]
 
 ### Infrastructure
+
 [Findings]
 
 ## Part 2: Logical Integrity
+
 ### Sales Workflow
+
 - Status: [PASS/FAIL]
 - Issues: [List]
 
 ### Inventory Workflow
+
 - Status: [PASS/FAIL]
 - Issues: [List]
 
 ### Accounting Workflow
+
 - Status: [PASS/FAIL]
 - Issues: [List]
 
 ### Data Consistency
+
 [Findings]
 
 ## Part 3: User Experience
+
 ### Loading States
+
 - Coverage: [X/Y pages]
 - Missing: [List]
 
 ### Empty States
+
 - Coverage: [X/Y scenarios]
 - Missing: [List]
 
 ### Error States
+
 - Quality: [GOOD/FAIR/POOR]
 - Issues: [List]
 
 ### Mobile Responsiveness
+
 - Status: [PASS/FAIL]
 - Issues: [List]
 
 ### Navigation
+
 - Working: [X/Y links]
 - Broken: [List]
 
 ## Part 4: Regressions
+
 ### Feature Interactions
+
 [Findings]
 
 ### Console Errors
+
 [List with severity]
 
 ### Network Issues
+
 [List]
 
 ## Part 5: Integration Health
+
 ### API Responses
+
 [Findings]
 
 ### State Management
+
 [Findings]
 
 ## Issue Summary
 
 ### P0 - Critical (Blocks Usage)
+
 1. [Issue]
 
 ### P1 - High (Degrades Experience)
+
 1. [Issue]
 
 ### P2 - Medium (Should Fix)
+
 1. [Issue]
 
 ### P3 - Low (Nice to Have)
+
 1. [Issue]
 
 ## Recommendations
+
 1. [Recommendation]
 2. [Recommendation]
 
 ## Conclusion
+
 [Overall assessment and next steps]
 ```
 
@@ -651,14 +688,14 @@ git push origin qa/holistic-regression-test
 
 ## Time Allocation
 
-| Part | Duration | Focus |
-|------|----------|-------|
-| 1. Technical | 2 hours | Bug fixes, SQL safety, infra |
-| 2. Logical | 2 hours | End-to-end workflows |
-| 3. UX | 1.5 hours | Loading, empty, error, mobile |
-| 4. Regression | 1 hour | Interactions, console, network |
-| 5. Integration | 30 min | API, state |
-| **Total** | **7 hours** | |
+| Part           | Duration    | Focus                          |
+| -------------- | ----------- | ------------------------------ |
+| 1. Technical   | 2 hours     | Bug fixes, SQL safety, infra   |
+| 2. Logical     | 2 hours     | End-to-end workflows           |
+| 3. UX          | 1.5 hours   | Loading, empty, error, mobile  |
+| 4. Regression  | 1 hour      | Interactions, console, network |
+| 5. Integration | 30 min      | API, state                     |
+| **Total**      | **7 hours** |                                |
 
 ---
 

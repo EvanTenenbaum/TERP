@@ -72,7 +72,7 @@ const TYPE_CONFIG: Record<string, { icon: typeof AlertCircle; label: string }> =
     LOW_STOCK: { icon: Package, label: "Low Stock" },
     OUT_OF_STOCK: { icon: AlertCircle, label: "Out of Stock" },
     CLIENT_NEED: { icon: Users, label: "Client Need" },
-    VENDOR_HARVEST: { icon: Package, label: "Vendor Harvest" },
+    VENDOR_HARVEST: { icon: Package, label: "Supplier Harvest" },
     PENDING_VALUATION: { icon: AlertTriangle, label: "Pending Valuation" },
   };
 

@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://terp.internal/terminology/schema.json",
+  "title": "TERP Terminology Entry Schema",
+  "description": "JSON Schema for a single entry in the TERP canonical term map. Every term in term-map.json must validate against this schema.",
+  "type": "object",
+  "required": [
+    "term",
+    "canonical",
+    "family",
+    "source",
+    "policy_lock",
+    "context",
+    "deprecated_aliases"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "term": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The unique identifier key for this term (snake_case, e.g. 'sales_order')"
+    },
+    "canonical": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The canonical human-readable name for this term (e.g. 'Sales Order'). This is what must appear in code, APIs, and documentation."
+    },
+    "family": {
+      "type": "string",
+      "enum": ["party", "product", "intake", "sales", "brand"],
+      "description": "Which vocabulary family this term belongs to. Must be one of the 5 defined families."
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "authority",
+        "db_table",
+        "db_column",
+        "api_field",
+        "ui_label"
+      ],
+      "additionalProperties": false,
+      "description": "Authority source mapping for this term",
+      "properties": {
+        "authority": {
+          "type": "string",
+          "enum": [
+            "db_schema",
+            "evan_vocabulary",
+            "db_schema+evan_vocabulary",
+            "ui_only"
+          ],
+          "description": "The authoritative source that defines this term. 'db_schema' means the Drizzle schema is the single source of truth. 'evan_vocabulary' means Evan's spoken/written preference overrides any technical naming. 'db_schema+evan_vocabulary' means both agree. 'ui_only' means the term exists only in the UI layer (no DB/API equivalent)."
+        },
+        "db_table": {
+          "type": ["string", "null"],
+          "description": "The Drizzle schema table where this term lives. Null if no DB equivalent (ui_only terms)."
+        },
+        "db_column": {
+          "type": ["string", "null"],
+          "description": "The primary DB column reference for this term. Null if no DB equivalent."
+        },
+        "api_field": {
+          "type": ["string", "null"],
+          "description": "The tRPC/API field name that represents this term. Null if no API equivalent."
+        },
+        "ui_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The exact string that appears (or should appear) in the UI for this term."
+        },
+        "code_file": {
+          "type": ["string", "null"],
+          "description": "Optional: path to the primary source file that implements or defines this term (relative to repo root)."
+        }
+      }
+    },
+    "deprecated_aliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "List of deprecated names for this term that MUST NOT appear in new code. These are scanned by the terminology census and drift audit scripts."
+    },
+    "context": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A concise explanation of what this term means in the TERP system and how to use it correctly. Must be sufficient for a new developer to understand correct usage without additional research."
+    },
+    "policy_lock": {
+      "type": "object",
+      "required": ["locked", "rule"],
+      "additionalProperties": false,
+      "description": "Policy enforcement configuration for this term",
+      "properties": {
+        "locked": {
+          "type": "boolean",
+          "description": "If true, the deprecated_aliases for this term are actively enforced by the drift audit script and CI. Any new code using a deprecated alias will fail the CI gate."
+        },
+        "rule": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable statement of the policy rule for this term. Example: 'Never use Vendor in UI. Always use Supplier.'"
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Optional list of file patterns where deprecated aliases are still tolerated (for legacy backward-compatibility shims). Format: glob patterns relative to repo root."
+        }
+      }
+    },
+    "dynamic_variants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["condition", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "condition": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The condition under which the variant label is used (e.g. 'product category is flower, pre-roll, smalls, shake, or trim')"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The label to use when the condition is met (e.g. 'Farmer')"
+          }
+        }
+      },
+      "description": "Optional: dynamic UI label variants based on context (e.g. Brand vs Farmer based on product category). Only used for terms that have context-dependent labels."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional: additional notes, migration status, or cross-references."
+    }
+  }
+}

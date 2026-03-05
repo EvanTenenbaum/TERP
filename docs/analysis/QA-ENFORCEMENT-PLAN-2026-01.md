@@ -30,7 +30,7 @@ This document captures the complete analysis and implementation plan for improvi
 | ------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------- |
 | **Documentation without enforcement** | Rules exist in docs but nothing blocks violations | Only 23% of documented rules had any enforcement mechanism    |
 | **Fallback patterns**                 | Unsafe defaults like `\|\| 1` for user IDs        | Found in `salesSheetsDb.ts:255` and documented in QA findings |
-| **Deprecated systems still in use**   | `vendors` table still actively queried            | 10+ files still reference deprecated table                    |
+| **Deprecated systems still in use**   | `suppliers` table still actively queried          | 10+ files still reference deprecated table                    |
 | **Any types everywhere**              | 515 `any` types in codebase                       | Allows type errors to slip through                            |
 | **Skipped tests accumulate**          | Tests marked `.skip()` never get fixed            | 43 skipped tests before cleanup                               |
 
@@ -42,7 +42,7 @@ This document captures the complete analysis and implementation plan for improvi
 | POST-002   | Fallback user ID (`ctx.user?.id \|\| 1`)    | HIGH     | 1 confirmed (salesSheetsDb.ts) |
 | POST-003   | Actor from input (`input.createdBy`)        | HIGH     | 0 in production code           |
 | POST-004   | Hard deletes instead of soft deletes        | MEDIUM   | Multiple (legacy code)         |
-| POST-005   | Vendors table usage                         | MEDIUM   | 10+ files                      |
+| POST-005   | Suppliers table usage                       | MEDIUM   | 10+ files                      |
 
 ### 1.3 Enforcement Audit Results
 
@@ -54,7 +54,7 @@ This document captures the complete analysis and implementation plan for improvi
 | No fallback user ID | CLAUDE.md         | Nothing               | ❌ Not enforced |
 | No actor from input | CLAUDE.md         | pre-merge.yml grep    | ✅ Now enforced |
 | Soft deletes only   | CLAUDE.md         | pre-merge.yml grep    | ⚠️ Warning only |
-| No vendors table    | CLAUDE.md         | Nothing               | ❌ Not enforced |
+| No suppliers table  | CLAUDE.md         | Nothing               | ❌ Not enforced |
 | mysqlEnum naming    | CLAUDE.md         | Nothing               | ❌ Not enforced |
 | Roadmap validation  | Protocol docs     | pnpm roadmap:validate | ✅ Enforced     |
 | TypeScript strict   | tsconfig.json     | pnpm check            | ✅ Enforced     |
@@ -145,14 +145,14 @@ export async function saveSalesSheet(data: {
 
 ### 3.1 ESLint Rules (Rejected)
 
-**Proposed:** Add ESLint rules for `|| 1`, `any` types, `vendors` table
+**Proposed:** Add ESLint rules for `|| 1`, `any` types, `suppliers` table
 
 **Why rejected:**
 | Rule | Violations | Impact |
 |------|------------|--------|
 | `|| 1` pattern | 40+ legitimate uses | Too many false positives (pagination, quantity defaults) |
 | `any` → error | 515 violations | Would break build immediately |
-| `vendors` table | 10+ files | Would break build immediately |
+| `suppliers` table | 10+ files | Would break build immediately |
 
 **Conclusion:** Broad ESLint rules require major cleanup first. Not viable without dedicated sprint.
 
@@ -191,11 +191,11 @@ export async function saveSalesSheet(data: {
 
 ### 4.3 What's Not Checked
 
-| Pattern               | Why Not                       |
-| --------------------- | ----------------------------- |
-| `vendors` table usage | Would break build (10+ files) |
-| mysqlEnum naming      | No automated way to verify    |
-| Soft delete presence  | Would require schema analysis |
+| Pattern                 | Why Not                       |
+| ----------------------- | ----------------------------- |
+| `suppliers` table usage | Would break build (10+ files) |
+| mysqlEnum naming        | No automated way to verify    |
+| Soft delete presence    | Would require schema analysis |
 
 ---
 
@@ -277,7 +277,7 @@ grep -B5 -A5 "saveSalesSheet(" server/services/live-shopping/sessionOrderService
 | Comment false positives        | Pattern matches code in comments     | Human can dismiss during review       |
 | 11 pre-existing violations     | Grandfathered in 3 files             | Cleanup task needed (see 6.3)         |
 | 515 `any` types exist          | Type safety holes                    | Future cleanup sprint                 |
-| `vendors` table still used     | Deprecated system debt               | Party model migration (Q2 2026)       |
+| `suppliers` table still used   | Deprecated system debt               | Party model migration (Q2 2026)       |
 | mysqlEnum not enforced         | Runtime errors possible              | Documentation + review                |
 
 ### 6.3 Pre-existing Violations (FIXED)
@@ -319,7 +319,7 @@ All instances now use `getAuthenticatedUserId(ctx)` which throws UNAUTHORIZED if
 
 ### Long-term (Q2 2026)
 
-- [ ] Complete Party Model migration (eliminates vendors table)
+- [ ] Complete Party Model migration (eliminates suppliers table)
 - [ ] Dedicated sprint to eliminate `any` types
 - [ ] Consider AST-based enforcement (ts-morph or custom ESLint plugin)
 

@@ -12,12 +12,12 @@ This protocol defines performance standards for both frontend and backend code.
 
 ### Memoization Requirements
 
-| Component Type | React.memo | useCallback | useMemo |
-|----------------|------------|-------------|---------|
-| List items | REQUIRED | REQUIRED | As needed |
-| Reusable components | REQUIRED | REQUIRED | As needed |
-| Page components | Optional | REQUIRED | As needed |
-| One-off components | Optional | As needed | As needed |
+| Component Type      | React.memo | useCallback | useMemo   |
+| ------------------- | ---------- | ----------- | --------- |
+| List items          | REQUIRED   | REQUIRED    | As needed |
+| Reusable components | REQUIRED   | REQUIRED    | As needed |
+| Page components     | Optional   | REQUIRED    | As needed |
+| One-off components  | Optional   | As needed   | As needed |
 
 ### When to Use Each
 
@@ -26,7 +26,7 @@ This protocol defines performance standards for both frontend and backend code.
 ```typescript
 // ✅ REQUIRED for:
 // - Components rendered in lists
-// - Components receiving stable props
+// - Components intake stable props
 // - Reusable/shared components
 
 export const OrderRow = memo(function OrderRow({
@@ -132,7 +132,7 @@ const activeItems = useMemo(() => items.filter(i => i.active), [items]);
 const { data } = trpc.orders.list.useQuery({
   clientId,
   limit: 20,
-  fields: ['id', 'status', 'total'], // Only needed fields
+  fields: ["id", "status", "total"], // Only needed fields
 });
 
 // ❌ BAD: Fetching everything
@@ -176,7 +176,7 @@ const { data: clients } = trpc.clients.list.useQuery({
 // ✅ BETTER: Cursor pagination for large datasets
 const { data } = trpc.clients.list.useInfiniteQuery(
   { limit: 50 },
-  { getNextPageParam: (lastPage) => lastPage.nextCursor }
+  { getNextPageParam: lastPage => lastPage.nextCursor }
 );
 ```
 
@@ -191,11 +191,13 @@ const { data } = trpc.clients.list.useInfiniteQuery(
 const orders = await db.select().from(orders);
 
 // ✅ REQUIRED: Select specific columns
-const orders = await db.select({
-  id: orders.id,
-  status: orders.status,
-  total: orders.total,
-}).from(orders);
+const orders = await db
+  .select({
+    id: orders.id,
+    status: orders.status,
+    total: orders.total,
+  })
+  .from(orders);
 ```
 
 ### Always Use Indexes
@@ -203,14 +205,14 @@ const orders = await db.select({
 ```typescript
 // ❌ BAD: Unindexed column in WHERE
 const orders = await db.query.orders.findMany({
-  where: eq(orders.notes, 'urgent'), // 'notes' not indexed!
+  where: eq(orders.notes, "urgent"), // 'notes' not indexed!
 });
 
 // ✅ GOOD: Query on indexed columns
 const orders = await db.query.orders.findMany({
   where: and(
     eq(orders.clientId, clientId), // Indexed FK
-    eq(orders.status, 'PENDING'),   // Indexed status
+    eq(orders.status, "PENDING") // Indexed status
   ),
 });
 ```
@@ -297,12 +299,12 @@ await db.transaction(async (tx) => {
 
 ### Dependency Guidelines
 
-| Dependency Size | Requirement |
-|-----------------|-------------|
-| < 10KB | Add freely |
-| 10KB - 50KB | Justify in PR |
-| > 50KB | Requires ADR |
-| > 100KB | Must be lazy loaded |
+| Dependency Size | Requirement         |
+| --------------- | ------------------- |
+| < 10KB          | Add freely          |
+| 10KB - 50KB     | Justify in PR       |
+| > 50KB          | Requires ADR        |
+| > 100KB         | Must be lazy loaded |
 
 ### Lazy Loading
 
@@ -345,12 +347,12 @@ npx vite-bundle-visualizer
 
 ### Response Time Targets
 
-| Endpoint Type | Target | Maximum |
-|---------------|--------|---------|
-| Simple read | < 50ms | 200ms |
-| List with pagination | < 100ms | 500ms |
-| Complex aggregation | < 200ms | 1000ms |
-| Write operation | < 100ms | 500ms |
+| Endpoint Type        | Target  | Maximum |
+| -------------------- | ------- | ------- |
+| Simple read          | < 50ms  | 200ms   |
+| List with pagination | < 100ms | 500ms   |
+| Complex aggregation  | < 200ms | 1000ms  |
+| Write operation      | < 100ms | 500ms   |
 
 ### Slow Query Detection
 
@@ -395,7 +397,7 @@ const { data: config } = trpc.settings.get.useQuery(undefined, {
 
 ```typescript
 // Cache expensive computations
-import { cache } from '../_core/cache';
+import { cache } from "../_core/cache";
 
 export async function getClientStats(clientId: number) {
   return cache.getOrSet(
@@ -423,6 +425,7 @@ export async function createOrder(data: OrderInput) {
 ### Required Metrics
 
 Track and alert on:
+
 - API response times (p50, p95, p99)
 - Database query times
 - Error rates
@@ -432,7 +435,7 @@ Track and alert on:
 
 ```typescript
 // Add to critical path tests
-it('fetches orders within performance target', async () => {
+it("fetches orders within performance target", async () => {
   const start = performance.now();
 
   await caller.orders.list({ clientId: 1, limit: 50 });
@@ -450,6 +453,7 @@ it('fetches orders within performance target', async () => {
 ## Performance Checklist
 
 ### React Components
+
 - [ ] List item components use React.memo
 - [ ] Event handlers use useCallback
 - [ ] Expensive computations use useMemo
@@ -457,11 +461,13 @@ it('fetches orders within performance target', async () => {
 - [ ] No inline functions passed to children
 
 ### Data Fetching
+
 - [ ] Queries have appropriate limits
 - [ ] Using cache invalidation (not refetch)
 - [ ] No unbounded list queries
 
 ### Backend
+
 - [ ] Queries select specific columns
 - [ ] Queries use indexed columns in WHERE
 - [ ] No N+1 query patterns
@@ -469,6 +475,7 @@ it('fetches orders within performance target', async () => {
 - [ ] Response times within targets
 
 ### Bundle
+
 - [ ] No new dependencies > 50KB without justification
 - [ ] Heavy components lazy loaded
 ```

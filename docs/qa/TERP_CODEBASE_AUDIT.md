@@ -45,14 +45,14 @@
 | payments.recordPayment           | server/routers/payments.ts           | Write      | Payment/GL             | protected + accounting:create    | protected + requirePermission("accounting:create") | Money movement & GL                     | P0       |
 | accounting.postJournalEntry      | server/routers/accounting.ts         | Write      | GL                     | protected + accounting:create    | protected + requirePermission("accounting:create") | Direct ledger postings                  | P0       |
 | accounting.receiveClientPayment  | server/routers/accounting.ts         | Write      | Payment/Client balance | protected + accounting:create    | protected + requirePermission("accounting:create") | Updates payments + client totals        | P0       |
-| accounting.payVendor             | server/routers/accounting.ts         | Write      | Payment/AP             | protected + accounting:create    | protected + requirePermission("accounting:create") | Vendor payment & AP                     | P0       |
+| accounting.payVendor             | server/routers/accounting.ts         | Write      | Payment/AP             | protected + accounting:create    | protected + requirePermission("accounting:create") | Supplier payment & AP                   | P0       |
 | clientLedger.addLedgerAdjustment | server/routers/clientLedger.ts       | Write      | Ledger                 | protected + accounting:create    | protected + requirePermission("accounting:create") | Manual credit/debit                     | P0       |
 | cogs.updateBatchCogs             | server/routers/cogs.ts               | Write      | COGS                   | protected + cogs:update          | protected + requirePermission("cogs:update")       | Updates COGS + margins                  | P0       |
 | credits.issue                    | server/routers/credits.ts            | Write      | Credit                 | protected + credits:create       | protected + requirePermission("credits:create")    | Issues credit value                     | P0       |
 | credits.applyCredit              | server/routers/credits.ts            | Write      | Credit/Invoice         | protected + credits:update       | protected + requirePermission("credits:update")    | Applies credits to invoices             | P0       |
 | purchaseOrders.create            | server/routers/purchaseOrders.ts     | Write      | Purchase Order         | protected + purchasing:create    | protected only (no permission middleware)          | Any user can create POs                 | P0       |
 | poReceiving.receive              | server/routers/poReceiving.ts        | Write      | PO/Inventory           | protected + inventory/purchasing | protected only (no permission middleware)          | Any user can receive POs                | P0       |
-| vendorSupply.create              | server/routers/vendorSupply.ts       | Write      | Vendor Supply          | protected + vendor permission    | publicProcedure (no auth)                          | Unauthenticated supply creation         | P0       |
+| vendorSupply.create              | server/routers/vendorSupply.ts       | Write      | Supplier Supply        | protected + supplier permission  | publicProcedure (no auth)                          | Unauthenticated supply creation         | P0       |
 
 ---
 
@@ -64,13 +64,13 @@
    - **Location:** `server/routers/purchaseOrders.ts`.
    - **Minimal fix:** add `.use(requirePermission("purchasing:create"))` (or equivalent).
 
-2. **PO receiving lacks RBAC enforcement**
+2. **PO intake lacks RBAC enforcement**
    - **What’s wrong:** `poReceiving.receive` has no permission middleware.
    - **Why it matters:** Unauthorized users can receive inventory and change PO status.
    - **Location:** `server/routers/poReceiving.ts`.
    - **Minimal fix:** add `.use(requirePermission("inventory:update"))` or a purchasing permission.
 
-3. **PO receiving allows spoofed `receivedBy`**
+3. **PO intake allows spoofed `receivedBy`**
    - **What’s wrong:** `receivedBy` is user‑supplied input.
    - **Why it matters:** Audit attribution can be falsified.
    - **Location:** `server/routers/poReceiving.ts`.
@@ -82,13 +82,13 @@
    - **Location:** `server/routers/purchaseOrders.ts`.
    - **Minimal fix:** use authenticated user ID; remove input field.
 
-5. **Vendor supply mutations are public**
+5. **Supplier supply mutations are public**
    - **What’s wrong:** `vendorSupply.create/update/reserve/purchase` are public.
    - **Why it matters:** unauthenticated tampering of marketplace data.
    - **Location:** `server/routers/vendorSupply.ts`.
    - **Minimal fix:** require auth + role permission checks.
 
-6. **Vendor supply uses `createdBy` input + `any` cast**
+6. **Supplier supply uses `createdBy` input + `any` cast**
    - **What’s wrong:** `createdBy` is passed in and updates use `any`.
    - **Why it matters:** audit spoofing and unsafe updates.
    - **Location:** `server/routers/vendorSupply.ts`.
@@ -124,7 +124,7 @@
     - **Location:** `server/routers/accounting.ts` quick action.
     - **Minimal fix:** wrap in `db.transaction` + add idempotency key.
 
-12. **Vendor payment is non‑transactional**
+12. **Supplier payment is non‑transactional**
     - **What’s wrong:** payment insert + bill update are not atomic.
     - **Why it matters:** AP ledger drift.
     - **Location:** `server/routers/accounting.ts` quick action.

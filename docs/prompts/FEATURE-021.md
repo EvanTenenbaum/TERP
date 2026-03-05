@@ -34,6 +34,7 @@ To improve user adoption and reduce friction for users accustomed to spreadsheet
 Implement the Spreadsheet View feature according to the specification, ensuring it is a pure presentation layer over the existing TERP backend and enforces all existing security and data integrity rules.
 
 **Success Criteria:**
+
 - [ ] All features from the specification are implemented.
 - [ ] The spreadsheet view is a pure presentation layer with no new business logic.
 - [ ] All data operations use existing tRPC procedures.
@@ -51,13 +52,13 @@ Implement the Spreadsheet View feature according to the specification, ensuring 
 
 This principle is non-negotiable and must be enforced throughout the implementation:
 
-| Principle | Requirement |
-|-----------|-------------|
-| **Same Backend** | All data operations MUST flow through the existing tRPC routers and services. No direct database access. No new business logic. |
-| **Same Validation** | All input validation, business rules, and constraints enforced in the standard ERP views MUST apply identically in the spreadsheet view. |
-| **Same Permissions** | All role-based access controls (RBAC) and permission checks MUST be enforced. Users cannot access or modify data they couldn't access in the standard view. |
-| **Same Audit Trail** | All actions MUST be logged through the existing `auditLogs` system. Every create, update, and delete is traceable. |
-| **Bidirectional Sync** | Changes made in the spreadsheet view MUST appear immediately in the standard ERP views, and vice versa. There is ONE source of truth: the database. |
+| Principle              | Requirement                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Same Backend**       | All data operations MUST flow through the existing tRPC routers and services. No direct database access. No new business logic.                             |
+| **Same Validation**    | All input validation, business rules, and constraints enforced in the standard ERP views MUST apply identically in the spreadsheet view.                    |
+| **Same Permissions**   | All role-based access controls (RBAC) and permission checks MUST be enforced. Users cannot access or modify data they couldn't access in the standard view. |
+| **Same Audit Trail**   | All actions MUST be logged through the existing `auditLogs` system. Every create, update, and delete is traceable.                                          |
+| **Bidirectional Sync** | Changes made in the spreadsheet view MUST appear immediately in the standard ERP views, and vice versa. There is ONE source of truth: the database.         |
 
 ---
 
@@ -124,7 +125,7 @@ npm run dev
 
 1. **Create `IntakeGrid.tsx`:**
    - Create a grid for entering new inventory batches.
-   - Use autocomplete for Vendor and Item fields.
+   - Use autocomplete for Supplier and Item fields.
 2. **Integrate with `inventoryIntakeService`:**
    - The "Submit Intake" button MUST process each row via `inventoryIntakeService.processIntake`.
    - Ensure all validation from the standard intake form is applied.

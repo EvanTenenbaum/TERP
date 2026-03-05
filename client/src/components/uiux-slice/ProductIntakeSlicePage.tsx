@@ -68,9 +68,11 @@ import {
 } from "@/lib/productIntakeDrafts";
 import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 import { usePowersheetSelection } from "../../hooks/work-surface";
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getMixedBrandLabel } from "@/lib/nomenclature";
 
 const defaultColumns: GridColumnOption[] = [
-  { id: "brand", label: "Brand", visible: true },
+  { id: "brand", label: "Brand/Farmer", visible: true },
   { id: "strain", label: "Strain", visible: true },
   { id: "category", label: "Category", visible: true },
   { id: "packaging", label: "Packaging", visible: true },
@@ -1279,7 +1281,7 @@ export function ProductIntakeSlicePage() {
             validation.errorCount > 0
           }
         >
-          {receiveMutation.isPending ? "Receiving..." : "Receive"}
+          {receiveMutation.isPending ? "Intaking..." : "Receive"}
         </Button>
 
         <Button
@@ -1407,7 +1409,11 @@ export function ProductIntakeSlicePage() {
               </th>
               <th className="text-left p-2 w-10"></th>
               {visibleColumnIds.has("brand") && (
-                <th className="text-left p-2">Brand</th>
+                <th className="text-left p-2">
+                  {getMixedBrandLabel(
+                    (selectedDraft?.lines ?? []).map(l => l.category)
+                  )}
+                </th>
               )}
               {visibleColumnIds.has("strain") && (
                 <th className="text-left p-2">Strain</th>
@@ -1653,7 +1659,7 @@ export function ProductIntakeSlicePage() {
           <DialogHeader>
             <DialogTitle>Review Intake</DialogTitle>
             <DialogDescription className="sr-only">
-              Review totals and blocking errors before receiving intake.
+              Review totals and blocking errors before completing intake.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">

@@ -48,6 +48,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
@@ -103,6 +109,9 @@ import {
   ArrowDown,
   Download,
 } from "lucide-react";
+
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel, getMixedBrandLabel } from "@/lib/nomenclature";
 
 // ============================================================================
 // TYPES
@@ -436,7 +445,7 @@ function BatchInspectorContent({
             </InspectorField>
           )}
           {brand && (
-            <InspectorField label="Brand">
+            <InspectorField label={getBrandLabel(product?.category)}>
               <p>{brand.name}</p>
             </InspectorField>
           )}
@@ -585,6 +594,7 @@ export function InventoryWorkSurface() {
   const [editRack, setEditRack] = useState("");
   const [editStatus, setEditStatus] = useState<InventoryBatchStatus>("LIVE");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
   const pageSize = 50;
   const useEnhancedApi = true;
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
@@ -1044,6 +1054,22 @@ export function InventoryWorkSurface() {
   const toggleBatchSelection = selection.toggle;
   const toggleAllVisibleSelection = selection.toggleAll;
 
+  // H1: Pre-compute eligible vs blocked sets for batch deletion
+  const { _eligibleForDelete, blockedFromDelete } = useMemo(() => {
+    const eligible = new Set<number>();
+    const blocked = new Set<number>();
+    for (const batchId of selectedBatchIds) {
+      const item = items.find(i => i.batch?.id === batchId);
+      const onHand = parseFloat(item?.batch?.onHandQty || "0");
+      if (onHand > 0) {
+        blocked.add(batchId);
+      } else {
+        eligible.add(batchId);
+      }
+    }
+    return { _eligibleForDelete: eligible, blockedFromDelete: blocked };
+  }, [selectedBatchIds, items]);
+
   // Status-filter-exit notification (TER-518 / XP-A-004-INV)
   const notifyStatusFilterExit = useCallback(
     (batch: { sku?: string; id: number }, newStatus: string) => {
@@ -1158,7 +1184,10 @@ export function InventoryWorkSurface() {
     },
     onError: err => {
       pendingBulkDeleteRef.current = [];
-      toast.error(err.message || "Failed to delete selected batches");
+      setBulkDeleteError(
+        err.message ||
+          "Failed to delete selected batches. Check that all selected batches have zero on-hand quantity."
+      );
       setError(err.message);
     },
   });
@@ -1503,17 +1532,20 @@ export function InventoryWorkSurface() {
 
   const handleBulkDelete = useCallback(() => {
     if (selectedBatchIds.size === 0) return;
+    setBulkDeleteError(null);
     setShowBulkDeleteConfirm(true);
   }, [selectedBatchIds]);
 
   const handleConfirmBulkDelete = useCallback(() => {
-    const batchIds = Array.from(selectedBatchIds);
+    const batchIds = Array.from(selectedBatchIds).filter(
+      id => !blockedFromDelete.has(id)
+    );
     if (batchIds.length === 0) {
       setShowBulkDeleteConfirm(false);
       return;
     }
     bulkDeleteMutation.mutate(batchIds);
-  }, [selectedBatchIds, bulkDeleteMutation]);
+  }, [selectedBatchIds, blockedFromDelete, bulkDeleteMutation]);
 
   const handleExportCsv = useCallback(async () => {
     if (displayItems.length === 0) {
@@ -1570,8 +1602,8 @@ export function InventoryWorkSurface() {
           { key: "productName", label: "Product Name" },
           { key: "category", label: "Category" },
           { key: "subcategory", label: "Subcategory" },
-          { key: "vendor", label: "Vendor" },
-          { key: "brand", label: "Brand" },
+          { key: "vendor", label: "Supplier" },
+          { key: "brand", label: getMixedBrandLabel(categoryOptions) },
           { key: "grade", label: "Grade" },
           { key: "status", label: "Status" },
           { key: "onHand", label: "On Hand" },
@@ -1600,7 +1632,7 @@ export function InventoryWorkSurface() {
       const message = error instanceof Error ? error.message : "Export failed";
       toast.error(message);
     }
-  }, [displayItems, exportCSV]);
+  }, [displayItems, exportCSV, categoryOptions]);
 
   const handleApplySavedView = useCallback(
     (savedFilters: Partial<InventoryFilters>): void => {
@@ -1736,6 +1768,7 @@ export function InventoryWorkSurface() {
             <Input
               ref={searchInputRef}
               placeholder="Search inventory... (Cmd+K)"
+              aria-label="Search inventory"
               value={search}
               onChange={e => {
                 setSearch(e.target.value);
@@ -1782,20 +1815,23 @@ export function InventoryWorkSurface() {
           </Button>
         </div>
 
-        <AdvancedFilters
-          filters={filters}
-          onUpdateFilter={(key, value) => {
-            updateFilter(key, value);
-            setPage(0);
-          }}
-          vendors={vendorOptions}
-          brands={brandOptions}
-          categories={categoryOptions}
-          subcategories={subcategoryOptions}
-          grades={gradeOptions}
-        />
+        {/* H3: Collapse filters during multi-select for focused selection mode */}
+        {selectedBatchIds.size === 0 && (
+          <AdvancedFilters
+            filters={filters}
+            onUpdateFilter={(key, value) => {
+              updateFilter(key, value);
+              setPage(0);
+            }}
+            vendors={vendorOptions}
+            brands={brandOptions}
+            categories={categoryOptions}
+            subcategories={subcategoryOptions}
+            grades={gradeOptions}
+          />
+        )}
 
-        {hasActiveFilters ? (
+        {selectedBatchIds.size === 0 && hasActiveFilters ? (
           <FilterChips
             filters={filters}
             onRemoveFilter={handleRemoveFilterChip}
@@ -1843,49 +1879,127 @@ export function InventoryWorkSurface() {
           >
             Apply Status
           </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={
+                    bulkDeleteMutation.isPending || blockedFromDelete.size > 0
+                  }
+                  aria-label={
+                    blockedFromDelete.size > 0
+                      ? `Cannot delete: ${blockedFromDelete.size} batch${blockedFromDelete.size === 1 ? " has" : "es have"} remaining inventory`
+                      : `Delete ${selectedBatchIds.size} selected batch${selectedBatchIds.size === 1 ? "" : "es"}`
+                  }
+                >
+                  Delete Selected
+                </Button>
+              </TooltipTrigger>
+              {blockedFromDelete.size > 0 && (
+                <TooltipContent>
+                  <p>
+                    {blockedFromDelete.size} batch
+                    {blockedFromDelete.size === 1 ? " has" : "es have"}{" "}
+                    remaining inventory — reduce on-hand to 0 first
+                  </p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          {blockedFromDelete.size > 0 && (
+            <span className="text-xs text-destructive" role="alert">
+              {blockedFromDelete.size} batch
+              {blockedFromDelete.size === 1 ? "" : "es"}{" "}
+              {blockedFromDelete.size === 1 ? "has" : "have"} remaining
+              inventory
+            </span>
+          )}
           <Button
             size="sm"
-            variant="destructive"
-            onClick={handleBulkDelete}
-            disabled={bulkDeleteMutation.isPending}
+            variant="ghost"
+            onClick={() => selection.clear()}
+            aria-label="Clear batch selection"
           >
-            Delete Selected
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => selection.clear()}>
             Clear Selection
           </Button>
         </div>
       )}
 
-      {(dashboardStats?.statusCounts ||
-        enhancedData?.summary.byStockStatus) && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-3 border-b bg-muted/10">
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Critical</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.critical ?? 0}
-            </div>
-          </div>
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Low</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.low ?? 0}
-            </div>
-          </div>
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Optimal</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.optimal ?? 0}
-            </div>
-          </div>
-          <div className="rounded-md border p-2">
-            <div className="text-xs text-muted-foreground">Out Of Stock</div>
-            <div className="font-semibold">
-              {enhancedData?.summary.byStockStatus.outOfStock ?? 0}
-            </div>
+      {/* H2: Single error banner for bulk delete failures */}
+      {bulkDeleteError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          <span>{bulkDeleteError}</span>
+          <div className="flex items-center gap-2">
+            {blockedFromDelete.size === 1 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const blockedId = Array.from(blockedFromDelete)[0];
+                  setBulkDeleteError(null);
+                  selection.clear();
+                  const blockedItem = items.find(
+                    i => i.batch?.id === blockedId
+                  );
+                  if (blockedItem?.batch) {
+                    setSelectedBatchId(blockedItem.batch.id);
+                    inspector.open();
+                  }
+                }}
+              >
+                Adjust quantity
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setBulkDeleteError(null)}
+              aria-label="Dismiss error"
+            >
+              Dismiss
+            </Button>
           </div>
         </div>
       )}
+
+      {/* H3: Hide stats grid during selection for focused mode */}
+      {selectedBatchIds.size === 0 &&
+        (dashboardStats?.statusCounts ||
+          enhancedData?.summary.byStockStatus) && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-3 border-b bg-muted/10">
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Critical</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.critical ?? 0}
+              </div>
+            </div>
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Low</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.low ?? 0}
+              </div>
+            </div>
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Optimal</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.optimal ?? 0}
+              </div>
+            </div>
+            <div className="rounded-md border p-2">
+              <div className="text-xs text-muted-foreground">Out Of Stock</div>
+              <div className="font-semibold">
+                {enhancedData?.summary.byStockStatus.outOfStock ?? 0}
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -1909,7 +2023,11 @@ export function InventoryWorkSurface() {
           ) : (
             <>
               <div className="hidden md:block">
-                <Table data-testid="inventory-table" className="inventory-list">
+                <Table
+                  data-testid="inventory-table"
+                  className="inventory-list"
+                  aria-label="Inventory batches"
+                >
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40px]">
@@ -1928,6 +2046,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("sku")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "sku"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("sku");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           SKU <SortIcon column="sku" />
@@ -1936,6 +2069,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("product")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "product"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("product");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Product <SortIcon column="product" />
@@ -1944,22 +2092,68 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("brand")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "brand"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("brand");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
-                          Brand <SortIcon column="brand" />
+                          {getMixedBrandLabel(categoryOptions)}{" "}
+                          <SortIcon column="brand" />
                         </span>
                       </TableHead>
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("vendor")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "vendor"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("vendor");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
-                          Vendor <SortIcon column="vendor" />
+                          Supplier <SortIcon column="vendor" />
                         </span>
                       </TableHead>
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("grade")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "grade"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("grade");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Grade <SortIcon column="grade" />
@@ -1968,6 +2162,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("status")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "status"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("status");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Status <SortIcon column="status" />
@@ -1976,6 +2185,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("onHandQty")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "onHandQty"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("onHandQty");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           On Hand <SortIcon column="onHandQty" />
@@ -1984,6 +2208,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("reservedQty")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "reservedQty"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("reservedQty");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           Reserved <SortIcon column="reservedQty" />
@@ -1992,6 +2231,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("availableQty")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "availableQty"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("availableQty");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           Available <SortIcon column="availableQty" />
@@ -2002,6 +2256,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("unitCogs")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "unitCogs"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("unitCogs");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           Cost <SortIcon column="unitCogs" />

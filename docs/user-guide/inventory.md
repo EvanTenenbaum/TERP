@@ -41,7 +41,7 @@ Filter by:
 - **Status:** Active, Low Stock, Out of Stock
 - **Category:** Flower, Concentrate, Edible, etc.
 - **Location:** Warehouse section
-- **Vendor:** Source supplier
+- **Supplier:** Source supplier
 
 ---
 
@@ -56,7 +56,7 @@ Handle incoming flower shipments with full documentation.
 1. Navigate to **Inventory → Intake**
 2. Click **"+ New Intake"**
 3. Enter shipment details:
-   - Vendor
+   - Supplier
    - Expected items
    - PO number (if applicable)
 
@@ -105,7 +105,7 @@ Attach required documents:
 1. Review all entries
 2. Click **"Complete Intake"**
 3. Inventory is updated
-4. Vendor bill is optionally created
+4. Supplier bill is optionally created
 
 ---
 
@@ -149,7 +149,7 @@ Track inventory movements with proper procedures.
 
 | Type           | Description              |
 | -------------- | ------------------------ |
-| **Intake**     | Receiving new inventory  |
+| **Intake**     | Incoming new inventory   |
 | **Transfer**   | Moving between locations |
 | **Adjustment** | Correcting quantities    |
 | **Sale**       | Sold to customer         |
@@ -289,7 +289,7 @@ View total inventory value:
 
 - By category
 - By location
-- By vendor
+- By supplier
 - At cost vs. market value
 
 ### Movement History
@@ -313,7 +313,7 @@ See how long inventory has been on hand:
 
 ## Tips & Best Practices
 
-1. **Complete Intake Thoroughly** - Document everything during receiving
+1. **Complete Intake Thoroughly** - Document everything during intake
 
 2. **Set Appropriate Thresholds** - Avoid stockouts with proper alerts
 

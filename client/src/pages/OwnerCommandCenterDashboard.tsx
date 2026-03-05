@@ -6,6 +6,8 @@ import { OwnerCashDecisionPanel } from "@/components/dashboard/owner/OwnerCashDe
 import { OwnerDebtPositionWidget } from "@/components/dashboard/owner/OwnerDebtPositionWidget";
 import { OwnerVendorsNeedPaymentWidget } from "@/components/dashboard/owner/OwnerVendorsNeedPaymentWidget";
 import { OwnerQuickCardsWidget } from "@/components/dashboard/owner/OwnerQuickCardsWidget";
+import { OwnerAppointmentsWidget } from "@/components/dashboard/owner/OwnerAppointmentsWidget";
+import { OwnerSkuStatusBrowserWidget } from "@/components/dashboard/owner/OwnerSkuStatusBrowserWidget";
 import { Badge } from "@/components/ui/badge";
 
 export default function OwnerCommandCenterDashboard() {
@@ -15,58 +17,70 @@ export default function OwnerCommandCenterDashboard() {
     minute: "2-digit",
   });
   const todayLabel = now.toLocaleDateString([], {
-    weekday: "short",
+    weekday: "long",
     month: "short",
     day: "numeric",
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-5">
+      {/* Header: identity + date + freshness */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <Badge
+            variant="outline"
+            className="rounded-full border-emerald-300 bg-emerald-50 px-3 py-1 text-emerald-800 mb-2"
+          >
+            OWNER COMMAND CENTER
+          </Badge>
+          <p className="text-sm text-muted-foreground">
+            {todayLabel} &mdash; here&apos;s what needs your attention today.
+          </p>
+        </div>
         <Badge
           variant="outline"
-          className="rounded-full border-emerald-300 bg-emerald-50 px-3 py-1 text-emerald-800"
+          className="rounded-full px-3 py-1 font-normal text-xs shrink-0"
         >
-          TERP OWNER COMMAND CENTER
+          Live &middot; Updated {updatedAt}
         </Badge>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge
-            variant="outline"
-            className="rounded-full px-3 py-1 font-normal"
-          >
-            Updated {updatedAt}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="rounded-full px-3 py-1 font-normal"
-          >
-            {todayLabel}
-          </Badge>
-        </div>
       </div>
 
+      {/* Row 1: Daily pulse — today's sales + appointments + cash */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-5">
-          <InventorySnapshotWidget />
+        <div className="lg:col-span-4">
+          <OwnerQuickCardsWidget />
         </div>
         <div className="lg:col-span-4">
-          <AgingInventoryWidget />
+          <OwnerAppointmentsWidget />
         </div>
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-4">
           <OwnerCashDecisionPanel />
         </div>
       </div>
 
+      {/* Row 2: Money in vs. money out */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <OwnerDebtPositionWidget />
         </div>
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-7">
           <OwnerVendorsNeedPaymentWidget />
         </div>
-        <div className="lg:col-span-3">
-          <OwnerQuickCardsWidget />
+      </div>
+
+      {/* Row 3: Inventory health */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-6">
+          <InventorySnapshotWidget />
         </div>
+        <div className="lg:col-span-6">
+          <AgingInventoryWidget />
+        </div>
+      </div>
+
+      {/* Row 4: SKU Status Browser (hidden by default, collapsed) */}
+      <div>
+        <OwnerSkuStatusBrowserWidget />
       </div>
     </div>
   );

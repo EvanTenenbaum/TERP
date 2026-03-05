@@ -11,18 +11,23 @@ You are a Senior QA Engineer executing a comprehensive testing suite for TERP Wo
 **These rules prevent context overflow errors. Follow them exactly.**
 
 ### Rule 1: Batched Agent Execution
+
 Launch agents in batches of **2-3 maximum**, not all at once.
 
 ### Rule 2: Sequential Output Retrieval
+
 Call `TaskOutput` **one at a time**. Never call multiple TaskOutput in the same message.
 
 ### Rule 3: File-Based Results
+
 Agents must write detailed findings to `docs/qa/outputs/`. Return only summaries.
 
 ### Rule 4: Incremental Context Loading
+
 Load files **per-batch**, not all upfront. Never read all 9 Work Surface files at once.
 
 ### Rule 5: Create Output Directory First
+
 ```bash
 mkdir -p docs/qa/outputs
 ```
@@ -32,6 +37,7 @@ mkdir -p docs/qa/outputs
 ## Phase 0: Minimal Context Load
 
 Read ONLY these files to start:
+
 ```
 docs/auth/QA_AUTH.md                           # Role definitions
 docs/specs/ui-ux-strategy/ATOMIC_ROADMAP.md    # Work Surface specs
@@ -44,6 +50,7 @@ docs/specs/ui-ux-strategy/ATOMIC_ROADMAP.md    # Work Surface specs
 ## Phase 1: Test Matrix (Reference Only)
 
 ### Work Surfaces to Test
+
 1. OrdersWorkSurface
 2. InvoicesWorkSurface
 3. InventoryWorkSurface
@@ -55,13 +62,16 @@ docs/specs/ui-ux-strategy/ATOMIC_ROADMAP.md    # Work Surface specs
 9. DirectIntakeWorkSurface
 
 ### QA Roles
+
 - qa.superadmin, qa.salesmanager, qa.salesrep, qa.fulfillment
 - qa.accounting, qa.inventory, qa.auditor
 
 ### States to Test
+
 - Empty, Single Item, Many Items (100+), Loading, Error, Stale Data, Offline
 
 ### Feature Flags
+
 - WORK_SURFACE_INTAKE, WORK_SURFACE_ORDERS, WORK_SURFACE_INVENTORY, WORK_SURFACE_ACCOUNTING
 
 ---
@@ -73,6 +83,7 @@ docs/specs/ui-ux-strategy/ATOMIC_ROADMAP.md    # Work Surface specs
 **Launch these 2 agents in parallel:**
 
 #### Agent 1: Static Analysis
+
 ```
 TASK: Analyze Work Surface components for code quality issues
 
@@ -98,6 +109,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 #### Agent 2: RBAC Validation
+
 ```
 TASK: Validate role-based access control for Work Surfaces
 
@@ -123,6 +135,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 **After Batch 1 completes:**
+
 1. Call TaskOutput for Agent 1, note summary
 2. Call TaskOutput for Agent 2, note summary
 3. Proceed to Batch 2
@@ -134,6 +147,7 @@ RETURN FORMAT (under 300 tokens):
 **Launch these 2 agents in parallel:**
 
 #### Agent 3: Business Logic Validation
+
 ```
 TASK: Validate business rules in Work Surface components
 
@@ -170,6 +184,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 #### Agent 4: tRPC Integration Testing
+
 ```
 TASK: Map and validate tRPC procedure usage in Work Surfaces
 
@@ -195,6 +210,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 **After Batch 2 completes:**
+
 1. Call TaskOutput for Agent 3, note summary
 2. Call TaskOutput for Agent 4, note summary
 3. Proceed to Batch 3
@@ -206,6 +222,7 @@ RETURN FORMAT (under 300 tokens):
 **Launch these 2 agents in parallel:**
 
 #### Agent 5: Feature Flag Testing
+
 ```
 TASK: Validate feature flag behavior for Work Surfaces
 
@@ -238,6 +255,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 #### Agent 6: Golden Flow Analysis
+
 ```
 TASK: Analyze golden user flows for correctness
 
@@ -245,7 +263,7 @@ GOLDEN FLOWS TO ANALYZE:
 
 1. Intake -> Inventory Flow:
    - Direct intake creates inventory record
-   - Proper vendor association
+   - Proper supplier association
    - Location assignment
    - Quantity tracking
 
@@ -279,6 +297,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 **After Batch 3 completes:**
+
 1. Call TaskOutput for Agent 5, note summary
 2. Call TaskOutput for Agent 6, note summary
 3. Proceed to Batch 4
@@ -290,6 +309,7 @@ RETURN FORMAT (under 300 tokens):
 **Launch these 2 agents in parallel:**
 
 #### Agent 7: Adversarial Testing Analysis
+
 ```
 TASK: Identify vulnerabilities through adversarial analysis
 
@@ -332,6 +352,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 #### Agent 8: Unit Test Coverage Analysis
+
 ```
 TASK: Analyze existing test coverage for Work Surfaces
 
@@ -359,6 +380,7 @@ RETURN FORMAT (under 300 tokens):
 ```
 
 **After Batch 4 completes:**
+
 1. Call TaskOutput for Agent 7, note summary
 2. Call TaskOutput for Agent 8, note summary
 3. Proceed to Phase 3
@@ -376,41 +398,50 @@ ls -la docs/qa/outputs/
 Read each file and compile the final deliverables:
 
 ### Deliverable 1: QA_ISSUE_LEDGER.md
+
 Create `docs/qa/QA_ISSUE_LEDGER.md` with all issues sorted by severity:
 
 ```markdown
 # QA Issue Ledger - Work Surfaces
 
 ## P0 - Blockers
-| ID | Component | File:Line | Description | Suggested Fix |
-|----|-----------|-----------|-------------|---------------|
+
+| ID  | Component | File:Line | Description | Suggested Fix |
+| --- | --------- | --------- | ----------- | ------------- |
 
 ## P1 - Critical
+
 ...
 
 ## P2 - Important
+
 ...
 
 ## P3 - Minor
+
 ...
 ```
 
 ### Deliverable 2: COVERAGE_MATRIX.md
+
 Create `docs/qa/COVERAGE_MATRIX.md`:
 
 ```markdown
 # Test Coverage Matrix
 
 | Work Surface | Static | RBAC | Logic | tRPC | Flags | Flows | Adversarial | Unit Tests |
-|--------------|--------|------|-------|------|-------|-------|-------------|------------|
+| ------------ | ------ | ---- | ----- | ---- | ----- | ----- | ----------- | ---------- |
 | Orders       | ✓/✗    | ✓/✗  | ✓/✗   | ✓/✗  | ✓/✗   | ✓/✗   | ✓/✗         | ✓/✗        |
+
 ...
 ```
 
 ### Deliverable 3: FIX_PATCH_SET.md (P0/P1 only)
+
 Create `docs/qa/FIX_PATCH_SET.md` with code fixes for critical issues.
 
 ### Deliverable 4: RECOMMENDATIONS.md
+
 Create `docs/qa/RECOMMENDATIONS.md` with architectural recommendations.
 
 ---
@@ -440,6 +471,7 @@ Use this to track progress:
 ## Success Criteria
 
 Testing is COMPLETE when:
+
 1. All 8 agents have completed successfully
 2. All output files exist in docs/qa/outputs/
 3. All 4 deliverables are created
@@ -458,6 +490,7 @@ claude --prompt "Execute docs/prompts/WORK_SURFACES_EXHAUSTIVE_TEST_PROMPT.md"
 ## Error Recovery
 
 If context limit is approached:
+
 1. Stop launching new agents
 2. Ensure partial results are written to files
 3. Start new session and resume from last completed batch

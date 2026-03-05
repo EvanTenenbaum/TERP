@@ -28,7 +28,7 @@ TERP is a comprehensive Cannabis ERP (Enterprise Resource Planning) system desig
 
 - [Accounting Features](./accounting.md) - Quick payments, journal entries, chart of accounts
   - WS-001: Receive Client Payment (Cash Drop-off)
-  - WS-002: Pay Vendor (Cash Out)
+  - WS-002: Pay Supplier (Cash Out)
   - WS-006: Immediate Tab Screenshot/Receipt
 
 ### Warehouse Operations
@@ -57,10 +57,10 @@ TERP is a comprehensive Cannabis ERP (Enterprise Resource Planning) system desig
 - [Task Management](./tasks.md) - SOPs and task tracking
   - WS-013: Simple Task Management (Non-Inventory SOPs)
 
-### Vendor Management
+### Supplier Management
 
-- [Vendor Features](./vendors.md) - Supplier relationships
-  - WS-014: Vendor "Harvesting Again" Reminder
+- [Supplier Features](./suppliers.md) - Supplier relationships
+  - WS-014: Supplier "Harvesting Again" Reminder
 
 ---
 
@@ -113,7 +113,7 @@ Access common tasks quickly from the Dashboard:
 - **+ New Order** - Create a sales order
 - **+ New Client** - Add a customer
 - **Receive Payment** - Record client payment
-- **Pay Vendor** - Record vendor payment
+- **Pay Supplier** - Record supplier payment
 
 ---
 

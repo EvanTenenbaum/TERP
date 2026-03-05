@@ -10,33 +10,34 @@ Dashboard widgets display valuable summary data but are dead ends. Users see "To
 
 ## Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Every row in a widget table must be clickable | Must Have |
-| FR-02 | Every segment in a widget chart must be clickable | Must Have |
-| FR-03 | Every numeric value in a widget must be clickable | Must Have |
+| ID    | Requirement                                                    | Priority  |
+| ----- | -------------------------------------------------------------- | --------- |
+| FR-01 | Every row in a widget table must be clickable                  | Must Have |
+| FR-02 | Every segment in a widget chart must be clickable              | Must Have |
+| FR-03 | Every numeric value in a widget must be clickable              | Must Have |
 | FR-04 | Clicks must navigate to relevant page with appropriate filters | Must Have |
-| FR-05 | Hover states must indicate clickability | Must Have |
+| FR-05 | Hover states must indicate clickability                        | Must Have |
 
 ## Widget Actions
 
-| Widget | Clickable Element | Action |
-|--------|-------------------|--------|
-| **CashFlow** | "Cash Collected" value | Navigate to `/accounting/payments?period=today` |
-| **CashFlow** | "Cash Spent" value | Navigate to `/accounting/bills?period=today` |
-| **Top Clients** | Client row | Navigate to `/clients/{id}` |
-| **Top Clients** | "View All" | Navigate to `/clients?sort=totalSpent` |
-| **Transaction Snapshot** | "Sales" value | Navigate to `/orders?period={today/week}` |
-| **Inventory Snapshot** | Category row | Navigate to `/inventory?category={category}` |
-| **Inventory Snapshot** | Subcategory row | Navigate to `/inventory?subcategory={subcategory}` |
-| **Total Debt** | "Owed to Me" value | Navigate to `/clients?filter=hasDebt` |
-| **Total Debt** | "I Owe Vendors" value | Navigate to `/accounting/bills?status=unpaid` |
-| **Sales Comparison** | Period row | Navigate to `/orders?period={period}` |
-| **Matchmaking** | Opportunity card | Navigate to `/matchmaking?id={id}` |
+| Widget                   | Clickable Element       | Action                                             |
+| ------------------------ | ----------------------- | -------------------------------------------------- |
+| **CashFlow**             | "Cash Collected" value  | Navigate to `/accounting/payments?period=today`    |
+| **CashFlow**             | "Cash Spent" value      | Navigate to `/accounting/bills?period=today`       |
+| **Top Clients**          | Client row              | Navigate to `/clients/{id}`                        |
+| **Top Clients**          | "View All"              | Navigate to `/clients?sort=totalSpent`             |
+| **Transaction Snapshot** | "Sales" value           | Navigate to `/orders?period={today/week}`          |
+| **Inventory Snapshot**   | Category row            | Navigate to `/inventory?category={category}`       |
+| **Inventory Snapshot**   | Subcategory row         | Navigate to `/inventory?subcategory={subcategory}` |
+| **Total Debt**           | "Owed to Me" value      | Navigate to `/clients?filter=hasDebt`              |
+| **Total Debt**           | "I Owe Suppliers" value | Navigate to `/accounting/bills?status=unpaid`      |
+| **Sales Comparison**     | Period row              | Navigate to `/orders?period={period}`              |
+| **Matchmaking**          | Opportunity card        | Navigate to `/matchmaking?id={id}`                 |
 
 ## Technical Specification
 
 ### Clickable Widget Row Component
+
 ```typescript
 interface WidgetRowProps {
   children: React.ReactNode;
@@ -60,6 +61,7 @@ export const WidgetRow: React.FC<WidgetRowProps> = ({ children, href }) => {
 ```
 
 ### Clickable Value Component
+
 ```typescript
 interface ClickableValueProps {
   value: string | number;
@@ -69,10 +71,10 @@ interface ClickableValueProps {
 
 export const ClickableValue: React.FC<ClickableValueProps> = ({ value, href, format }) => {
   const navigate = useNavigate();
-  const formattedValue = format === 'currency' 
+  const formattedValue = format === 'currency'
     ? formatCurrency(value as number)
     : formatNumber(value as number);
-  
+
   return (
     <button
       className="font-bold text-2xl hover:text-primary hover:underline"

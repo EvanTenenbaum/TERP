@@ -20,7 +20,7 @@ The Accounting router provides comprehensive financial management capabilities i
 | `ledger`        | General Ledger entries                  |
 | `fiscalPeriods` | Fiscal period management                |
 | `invoices`      | Accounts Receivable (customer invoices) |
-| `bills`         | Accounts Payable (vendor bills)         |
+| `bills`         | Accounts Payable (supplier bills)       |
 | `payments`      | Payment recording                       |
 | `cashExpenses`  | Cash expense tracking                   |
 | `quickActions`  | Quick payment actions (WS-001, WS-002)  |
@@ -464,7 +464,7 @@ These endpoints implement the WS-001 and WS-002 features for rapid payment proce
 
 ### quickActions.payVendor
 
-**WS-002:** Quick action to pay a vendor (cash out).
+**WS-002:** Quick action to pay a supplier (cash out).
 
 **Type:** Mutation  
 **Permission:** `accounting:create`

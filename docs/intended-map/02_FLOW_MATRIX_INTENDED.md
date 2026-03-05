@@ -8,26 +8,26 @@
 
 ## Flow Types
 
-| Type | Description | Count |
-|------|-------------|-------|
-| GoldenFlow | Critical user journeys, must work for release | 8 |
-| SupportingFlow | Supporting operations used by golden flows | 5+ |
-| AdminFlow | Administrative operations | TBD |
+| Type           | Description                                   | Count |
+| -------------- | --------------------------------------------- | ----- |
+| GoldenFlow     | Critical user journeys, must work for release | 8     |
+| SupportingFlow | Supporting operations used by golden flows    | 5+    |
+| AdminFlow      | Administrative operations                     | TBD   |
 
 ---
 
 ## Golden Flow Summary
 
-| ID | Name | Module | Status | Blockers |
-|----|------|--------|--------|----------|
-| GF-001 | Direct Intake | Inventory | BLOCKED | BUG-112: Form fields not rendering |
-| GF-002 | Procure-to-Pay | Purchasing | PARTIAL | PO Receiving UI not implemented |
-| GF-003 | Order-to-Cash | Sales | BLOCKED | SQL error on inventory load |
-| GF-004 | Invoice & Payment | Accounting | IMPLEMENTED | PDF generation timeout (minor) |
-| GF-005 | Pick & Pack | Fulfillment | FUNCTIONAL | Depends on GF-003 |
-| GF-006 | Client Ledger | Accounting | FUNCTIONAL | Data inconsistencies |
-| GF-007 | Inventory Management | Inventory | BLOCKED | Shows 0 batches |
-| GF-008 | Sample Request | Sales | PARTIAL | Fulfillment UI gap |
+| ID     | Name                 | Module      | Status      | Blockers                           |
+| ------ | -------------------- | ----------- | ----------- | ---------------------------------- |
+| GF-001 | Direct Intake        | Inventory   | BLOCKED     | BUG-112: Form fields not rendering |
+| GF-002 | Procure-to-Pay       | Purchasing  | PARTIAL     | PO Intake UI not implemented       |
+| GF-003 | Order-to-Cash        | Sales       | BLOCKED     | SQL error on inventory load        |
+| GF-004 | Invoice & Payment    | Accounting  | IMPLEMENTED | PDF generation timeout (minor)     |
+| GF-005 | Pick & Pack          | Fulfillment | FUNCTIONAL  | Depends on GF-003                  |
+| GF-006 | Client Ledger        | Accounting  | FUNCTIONAL  | Data inconsistencies               |
+| GF-007 | Inventory Management | Inventory   | BLOCKED     | Shows 0 batches                    |
+| GF-008 | Sample Request       | Sales       | PARTIAL     | Fulfillment UI gap                 |
 
 ---
 
@@ -60,16 +60,16 @@ GF-008 (Sample Request)
 
 ### Dependency Matrix
 
-| Flow | Depends On | Depended By |
-|------|------------|-------------|
-| GF-001 | - | GF-007, FEAT-008 |
-| GF-002 | - | GF-007, GF-004 (AP) |
-| GF-003 | GF-007 | GF-004, GF-005 |
-| GF-004 | GF-003 | GF-006 |
-| GF-005 | GF-003 | - |
-| GF-006 | GF-003, GF-004 | - |
-| GF-007 | GF-001, GF-002 | GF-003, GF-008 |
-| GF-008 | GF-007 | GF-003 (optional) |
+| Flow   | Depends On     | Depended By         |
+| ------ | -------------- | ------------------- |
+| GF-001 | -              | GF-007, FEAT-008    |
+| GF-002 | -              | GF-007, GF-004 (AP) |
+| GF-003 | GF-007         | GF-004, GF-005      |
+| GF-004 | GF-003         | GF-006              |
+| GF-005 | GF-003         | -                   |
+| GF-006 | GF-003, GF-004 | -                   |
+| GF-007 | GF-001, GF-002 | GF-003, GF-008      |
+| GF-008 | GF-007         | GF-003 (optional)   |
 
 ---
 
@@ -82,16 +82,18 @@ GF-008 (Sample Request)
 **Owner Role:** Inventory Manager
 
 #### Preconditions
+
 - [ ] User authenticated with `inventory:create` permission
 - [ ] At least one supplier exists (client with `isSeller=true`)
 - [ ] Product categories configured in settings
 
 #### Steps (Happy Path)
+
 1. **Navigate** to Inventory page (`/inventory`)
 2. **Click** "New Intake" button in header
 3. **PurchaseModal** opens with form
 4. **Enter** supplier information:
-   - Vendor Name (required, autocomplete)
+   - Supplier Name (required, autocomplete)
    - Brand Name (required, autocomplete)
 5. **Enter** product information:
    - Category (required, dropdown)
@@ -100,7 +102,7 @@ GF-008 (Sample Request)
    - Grade (optional/required per settings)
 6. **Enter** quantity: positive decimal
 7. **Enter** cost: COGS Mode (Fixed/Range), amounts
-8. **Enter** payment terms: COD, NET_*, CONSIGNMENT, PARTIAL
+8. **Enter** payment terms: COD, NET\_\*, CONSIGNMENT, PARTIAL
 9. **Select** storage location (optional)
 10. **Upload** media files (optional)
 11. **Click** "Create Intake"
@@ -111,13 +113,15 @@ GF-008 (Sample Request)
 16. **Inventory list** refreshes with new batch
 
 #### Error Paths
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| Validation error | Required field missing | Show field-level error |
-| API error | Server failure | Show toast, allow retry |
+
+| Error             | Cause                       | Recovery                           |
+| ----------------- | --------------------------- | ---------------------------------- |
+| Validation error  | Required field missing      | Show field-level error             |
+| API error         | Server failure              | Show toast, allow retry            |
 | Media upload fail | File too large/invalid type | Show error, continue without media |
 
 #### Side Effects
+
 - Creates record in `lots` table
 - Creates record in `batches` table with `status='AWAITING_INTAKE'`
 - Creates record in `inventory_movements` with `type='INTAKE'`
@@ -125,6 +129,7 @@ GF-008 (Sample Request)
 - Audit: `createdBy` set to current user
 
 #### Invariants Enforced
+
 - INV-001: `onHandQty >= 0` (initialized positive)
 - INV-006: `onHandQty` matches intake quantity
 - INV-007: `createdBy` populated
@@ -138,11 +143,13 @@ GF-008 (Sample Request)
 **Owner Role:** Sales Rep, Sales Manager
 
 #### Preconditions
+
 - [ ] User authenticated with `orders:create` permission
 - [ ] At least one customer exists (client with `isBuyer=true`)
 - [ ] Sellable batches available (`status='LIVE'`, `availableQty > 0`)
 
 #### Steps (Happy Path)
+
 1. **Navigate** to Orders page (`/orders`)
 2. **Click** "Create Order" or "New Order"
 3. **Select** customer from dropdown
@@ -154,7 +161,7 @@ GF-008 (Sample Request)
 5. **Set** order type: QUOTE or SALE
 6. **Review** order totals
 7. **Save** as draft OR **Confirm** immediately
-8. *If confirming:*
+8. _If confirming:_
    - System validates inventory availability
    - System reserves inventory (`reservedQty += qty`)
    - Order status → `confirmed`
@@ -163,6 +170,7 @@ GF-008 (Sample Request)
 11. **Fulfill Order** (via GF-005)
 
 #### State Transitions
+
 ```
 draft → confirmed → invoiced → shipped → delivered
   │                    │
@@ -170,12 +178,14 @@ draft → confirmed → invoiced → shipped → delivered
 ```
 
 #### Side Effects
+
 - Creates `orders` record
 - Creates `order_items` records
 - On confirm: updates `batches.reservedQty`
 - On ship: updates `batches.onHandQty`, creates `inventory_movements`
 
 #### Invariants Enforced
+
 - INV-001: Cannot oversell (`availableQty >= requestedQty`)
 - INV-002: `order.total = sum(line_items.subtotal)`
 - INV-008: Only valid state transitions
@@ -189,11 +199,13 @@ draft → confirmed → invoiced → shipped → delivered
 **Owner Role:** Accounting Manager
 
 #### Preconditions
+
 - [ ] User authenticated with `accounting:read` permission
 - [ ] Invoice exists (generated from confirmed order)
 - [ ] For payment: `accounting:create` permission
 
 #### Steps (Happy Path)
+
 1. **Navigate** to Invoices (`/accounting/invoices`)
 2. **View** invoice list with status filters
 3. **Select** invoice to view in inspector panel
@@ -222,6 +234,7 @@ draft → confirmed → invoiced → shipped → delivered
 13. **Success** toast shown
 
 #### Multi-Invoice Payment (Alternative)
+
 1. Navigate to client payment screen
 2. View outstanding invoices
 3. Select multiple invoices
@@ -230,6 +243,7 @@ draft → confirmed → invoiced → shipped → delivered
 6. System creates single payment, multiple junction records
 
 #### Side Effects
+
 - Creates `payments` record
 - Creates `invoice_payments` junction records
 - Creates `gl_entries` (Debit Cash, Credit AR)
@@ -246,6 +260,7 @@ draft → confirmed → invoiced → shipped → delivered
 **Roles:** All
 
 **Steps:**
+
 1. Navigate to login page
 2. Enter email and password
 3. Submit credentials
@@ -261,6 +276,7 @@ draft → confirmed → invoiced → shipped → delivered
 **Roles:** Sales Manager, Super Admin
 
 **Steps:**
+
 1. Navigate to Clients
 2. Click "Create Client"
 3. Fill required fields (name)
@@ -275,22 +291,22 @@ draft → confirmed → invoiced → shipped → delivered
 
 ### By Role
 
-| Role | Must-Work Flows |
-|------|-----------------|
-| Super Admin | All flows |
-| Sales Manager | GF-003, GF-008, FLOW-002 |
-| Sales Rep | GF-003 (own), GF-008 |
-| Inventory Manager | GF-001, GF-002, GF-007 |
-| Accounting Manager | GF-004, GF-006 |
-| Fulfillment | GF-005 |
-| Auditor | Read-only all |
+| Role               | Must-Work Flows          |
+| ------------------ | ------------------------ |
+| Super Admin        | All flows                |
+| Sales Manager      | GF-003, GF-008, FLOW-002 |
+| Sales Rep          | GF-003 (own), GF-008     |
+| Inventory Manager  | GF-001, GF-002, GF-007   |
+| Accounting Manager | GF-004, GF-006           |
+| Fulfillment        | GF-005                   |
+| Auditor            | Read-only all            |
 
 ### By Module
 
-| Module | Flows |
-|--------|-------|
-| Inventory | GF-001, GF-007 |
-| Purchasing | GF-002 |
-| Sales | GF-003, GF-008 |
-| Accounting | GF-004, GF-006 |
-| Fulfillment | GF-005 |
+| Module      | Flows          |
+| ----------- | -------------- |
+| Inventory   | GF-001, GF-007 |
+| Purchasing  | GF-002         |
+| Sales       | GF-003, GF-008 |
+| Accounting  | GF-004, GF-006 |
+| Fulfillment | GF-005         |

@@ -1,4 +1,4 @@
-# WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
+# WSQA-003: Add RETURNED Order Status with Restock/Supplier-Return Paths
 
 **Source:** Work Surfaces QA Report (P0-003)
 **Priority:** HIGH (P0 Blocker)
@@ -7,21 +7,21 @@
 ## Problem Statement
 
 The order status machine only accepts PENDING/PACKED/SHIPPED states. Orders cannot be marked as returned, and there's no workflow for:
+
 1. Restocking returned items to inventory
-2. Returning items to vendor for credit
+2. Returning items to supplier for credit
 
 **Product Decision:** Add RETURNED status with two terminal paths:
+
 - **RESTOCKED** - Items returned to inventory (increases batch quantities)
-- **RETURNED_TO_VENDOR** - Items sent back to vendor (creates vendor return record)
+- **RETURNED_TO_VENDOR** - Items sent back to supplier (creates supplier return record)
 
 ## Current State
 
 ```typescript
 // ordersDb.ts:1564-1570 (CURRENT - INCOMPLETE)
 const validStatus =
-  newStatus === "PENDING" ||
-  newStatus === "PACKED" ||
-  newStatus === "SHIPPED"
+  newStatus === "PENDING" || newStatus === "PACKED" || newStatus === "SHIPPED"
     ? newStatus
     : "PENDING"; // Default to PENDING for unsupported statuses
 ```
@@ -37,56 +37,56 @@ const validStatus =
 Update the fulfillment status enum:
 
 ```typescript
-export const fulfillmentStatusEnum = pgEnum('fulfillment_status', [
-  'DRAFT',
-  'CONFIRMED',
-  'PENDING',
-  'PACKED',
-  'SHIPPED',
-  'DELIVERED',
-  'RETURNED',           // NEW
-  'RESTOCKED',          // NEW - terminal: items back in inventory
-  'RETURNED_TO_VENDOR', // NEW - terminal: items sent to vendor
-  'CANCELLED',
+export const fulfillmentStatusEnum = pgEnum("fulfillment_status", [
+  "DRAFT",
+  "CONFIRMED",
+  "PENDING",
+  "PACKED",
+  "SHIPPED",
+  "DELIVERED",
+  "RETURNED", // NEW
+  "RESTOCKED", // NEW - terminal: items back in inventory
+  "RETURNED_TO_VENDOR", // NEW - terminal: items sent to supplier
+  "CANCELLED",
 ]);
 ```
 
-#### Step 1.2: Create Vendor Returns Table
+#### Step 1.2: Create Supplier Returns Table
 
 **File:** `server/db/schema.ts`
 
-Add table to track vendor returns:
+Add table to track supplier returns:
 
 ```typescript
-export const vendorReturns = pgTable('vendor_returns', {
-  id: serial('id').primaryKey(),
-  orderId: integer('order_id')
+export const vendorReturns = pgTable("vendor_returns", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id")
     .notNull()
     .references(() => orders.id),
-  vendorId: integer('vendor_id')
+  vendorId: integer("vendor_id")
     .notNull()
-    .references(() => clients.id), // Vendors are clients with isSeller=true
-  status: varchar('status', { length: 50 })
+    .references(() => clients.id), // Suppliers are clients with isSeller=true
+  status: varchar("status", { length: 50 })
     .notNull()
-    .default('PENDING_VENDOR_CREDIT'),
-  returnReason: text('return_reason'),
-  totalValue: decimal('total_value', { precision: 10, scale: 2 }),
-  creditReceived: decimal('credit_received', { precision: 10, scale: 2 }),
-  creditReceivedAt: timestamp('credit_received_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  createdBy: integer('created_by').references(() => users.id),
+    .default("PENDING_VENDOR_CREDIT"),
+  returnReason: text("return_reason"),
+  totalValue: decimal("total_value", { precision: 10, scale: 2 }),
+  creditReceived: decimal("credit_received", { precision: 10, scale: 2 }),
+  creditReceivedAt: timestamp("credit_received_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: integer("created_by").references(() => users.id),
 });
 
-export const vendorReturnItems = pgTable('vendor_return_items', {
-  id: serial('id').primaryKey(),
-  vendorReturnId: integer('vendor_return_id')
+export const vendorReturnItems = pgTable("vendor_return_items", {
+  id: serial("id").primaryKey(),
+  vendorReturnId: integer("vendor_return_id")
     .notNull()
-    .references(() => vendorReturns.id, { onDelete: 'cascade' }),
-  batchId: integer('batch_id')
+    .references(() => vendorReturns.id, { onDelete: "cascade" }),
+  batchId: integer("batch_id")
     .notNull()
     .references(() => batches.id),
-  quantity: integer('quantity').notNull(),
-  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  quantity: integer("quantity").notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
 });
 ```
 
@@ -147,16 +147,16 @@ CREATE INDEX idx_vendor_return_items_return ON vendor_return_items(vendor_return
 
 ```typescript
 export const ORDER_STATUS_TRANSITIONS: Record<string, string[]> = {
-  'DRAFT': ['CONFIRMED', 'CANCELLED'],
-  'CONFIRMED': ['PENDING', 'CANCELLED'],
-  'PENDING': ['PACKED', 'CANCELLED'],
-  'PACKED': ['SHIPPED'],
-  'SHIPPED': ['DELIVERED', 'RETURNED'],
-  'DELIVERED': ['RETURNED'],
-  'RETURNED': ['RESTOCKED', 'RETURNED_TO_VENDOR'],
-  'RESTOCKED': [],          // Terminal
-  'RETURNED_TO_VENDOR': [], // Terminal
-  'CANCELLED': [],          // Terminal
+  DRAFT: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PENDING", "CANCELLED"],
+  PENDING: ["PACKED", "CANCELLED"],
+  PACKED: ["SHIPPED"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
+  RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
+  RESTOCKED: [], // Terminal
+  RETURNED_TO_VENDOR: [], // Terminal
+  CANCELLED: [], // Terminal
 };
 
 export function canTransition(from: string, to: string): boolean {
@@ -175,15 +175,15 @@ export function getNextStatuses(current: string): string[] {
 Replace hardcoded validation at lines 1564-1570:
 
 ```typescript
-import { canTransition, getNextStatuses } from './services/orderStateMachine';
+import { canTransition, getNextStatuses } from "./services/orderStateMachine";
 
 // In updateOrderStatus function
 const currentStatus = existingOrder.fulfillmentStatus;
 if (!canTransition(currentStatus, newStatus)) {
   const validNext = getNextStatuses(currentStatus);
   throw new TRPCError({
-    code: 'BAD_REQUEST',
-    message: `Cannot transition from ${currentStatus} to ${newStatus}. Valid transitions: ${validNext.join(', ')}`,
+    code: "BAD_REQUEST",
+    message: `Cannot transition from ${currentStatus} to ${newStatus}. Valid transitions: ${validNext.join(", ")}`,
   });
 }
 ```
@@ -195,34 +195,41 @@ if (!canTransition(currentStatus, newStatus)) {
 **File:** `server/services/returnProcessing.ts`
 
 ```typescript
-export async function processRestock(orderId: number, userId: number): Promise<void> {
-  await db.transaction(async (tx) => {
+export async function processRestock(
+  orderId: number,
+  userId: number
+): Promise<void> {
+  await db.transaction(async tx => {
     // Get order with line items and allocations
-    const order = await tx.select()
+    const order = await tx
+      .select()
       .from(orders)
       .where(eq(orders.id, orderId))
       .then(rows => rows[0]);
 
-    if (order.fulfillmentStatus !== 'RETURNED') {
+    if (order.fulfillmentStatus !== "RETURNED") {
       throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Order must be in RETURNED status to restock',
+        code: "BAD_REQUEST",
+        message: "Order must be in RETURNED status to restock",
       });
     }
 
     // Get line items with allocations
-    const lineItems = await tx.select()
+    const lineItems = await tx
+      .select()
       .from(orderLineItems)
       .where(eq(orderLineItems.orderId, orderId));
 
     for (const item of lineItems) {
-      const allocations = await tx.select()
+      const allocations = await tx
+        .select()
         .from(orderLineItemAllocations)
         .where(eq(orderLineItemAllocations.orderLineItemId, item.id));
 
       for (const alloc of allocations) {
         // Increase batch quantity (with row lock)
-        await tx.update(batches)
+        await tx
+          .update(batches)
           .set({
             onHandQty: sql`${batches.onHandQty} + ${alloc.quantityAllocated}`,
             availableQty: sql`${batches.availableQty} + ${alloc.quantityAllocated}`,
@@ -232,7 +239,7 @@ export async function processRestock(orderId: number, userId: number): Promise<v
         // Record inventory movement
         await tx.insert(inventoryMovements).values({
           batchId: alloc.batchId,
-          movementType: 'RESTOCK',
+          movementType: "RESTOCK",
           quantity: alloc.quantityAllocated,
           notes: `Restocked from returned order #${orderId}`,
           createdBy: userId,
@@ -241,9 +248,10 @@ export async function processRestock(orderId: number, userId: number): Promise<v
     }
 
     // Update order status to RESTOCKED
-    await tx.update(orders)
+    await tx
+      .update(orders)
       .set({
-        fulfillmentStatus: 'RESTOCKED',
+        fulfillmentStatus: "RESTOCKED",
         updatedAt: new Date(),
       })
       .where(eq(orders.id, orderId));
@@ -251,15 +259,15 @@ export async function processRestock(orderId: number, userId: number): Promise<v
     // Log status change
     await tx.insert(orderStatusHistory).values({
       orderId,
-      status: 'RESTOCKED',
+      status: "RESTOCKED",
       changedBy: userId,
-      notes: 'Items restocked to inventory',
+      notes: "Items restocked to inventory",
     });
   });
 }
 ```
 
-#### Step 3.2: Vendor Return Processing
+#### Step 3.2: Supplier Return Processing
 
 **File:** `server/services/returnProcessing.ts`
 
@@ -270,30 +278,37 @@ export async function processVendorReturn(
   returnReason: string,
   userId: number
 ): Promise<number> {
-  return await db.transaction(async (tx) => {
+  return await db.transaction(async tx => {
     // Validate order status
-    const order = await tx.select()
+    const order = await tx
+      .select()
       .from(orders)
       .where(eq(orders.id, orderId))
       .then(rows => rows[0]);
 
-    if (order.fulfillmentStatus !== 'RETURNED') {
+    if (order.fulfillmentStatus !== "RETURNED") {
       throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Order must be in RETURNED status to return to vendor',
+        code: "BAD_REQUEST",
+        message: "Order must be in RETURNED status to return to supplier",
       });
     }
 
     // Get line items and calculate total value
-    const lineItems = await tx.select()
+    const lineItems = await tx
+      .select()
       .from(orderLineItems)
       .where(eq(orderLineItems.orderId, orderId));
 
     let totalValue = 0;
-    const itemsToReturn: { batchId: number; quantity: number; unitCost: number }[] = [];
+    const itemsToReturn: {
+      batchId: number;
+      quantity: number;
+      unitCost: number;
+    }[] = [];
 
     for (const item of lineItems) {
-      const allocations = await tx.select()
+      const allocations = await tx
+        .select()
         .from(orderLineItemAllocations)
         .where(eq(orderLineItemAllocations.orderLineItemId, item.id));
 
@@ -307,15 +322,18 @@ export async function processVendorReturn(
       }
     }
 
-    // Create vendor return record
-    const [vendorReturn] = await tx.insert(vendorReturns).values({
-      orderId,
-      vendorId,
-      status: 'PENDING_VENDOR_CREDIT',
-      returnReason,
-      totalValue: totalValue.toString(),
-      createdBy: userId,
-    }).returning();
+    // Create supplier return record
+    const [vendorReturn] = await tx
+      .insert(vendorReturns)
+      .values({
+        orderId,
+        vendorId,
+        status: "PENDING_VENDOR_CREDIT",
+        returnReason,
+        totalValue: totalValue.toString(),
+        createdBy: userId,
+      })
+      .returning();
 
     // Create return item records
     for (const item of itemsToReturn) {
@@ -328,9 +346,10 @@ export async function processVendorReturn(
     }
 
     // Update order status
-    await tx.update(orders)
+    await tx
+      .update(orders)
       .set({
-        fulfillmentStatus: 'RETURNED_TO_VENDOR',
+        fulfillmentStatus: "RETURNED_TO_VENDOR",
         updatedAt: new Date(),
       })
       .where(eq(orders.id, orderId));
@@ -338,9 +357,9 @@ export async function processVendorReturn(
     // Log status change
     await tx.insert(orderStatusHistory).values({
       orderId,
-      status: 'RETURNED_TO_VENDOR',
+      status: "RETURNED_TO_VENDOR",
       changedBy: userId,
-      notes: `Items returned to vendor. Vendor return #${vendorReturn.id}`,
+      notes: `Items returned to supplier. Supplier return #${vendorReturn.id}`,
     });
 
     return vendorReturn.id;
@@ -418,16 +437,16 @@ Add status colors for new states:
 
 ```typescript
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  CONFIRMED: 'bg-blue-100 text-blue-800',
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  PACKED: 'bg-purple-100 text-purple-800',
-  SHIPPED: 'bg-indigo-100 text-indigo-800',
-  DELIVERED: 'bg-green-100 text-green-800',
-  RETURNED: 'bg-orange-100 text-orange-800',
-  RESTOCKED: 'bg-emerald-100 text-emerald-800',
-  RETURNED_TO_VENDOR: 'bg-amber-100 text-amber-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+  DRAFT: "bg-gray-100 text-gray-800",
+  CONFIRMED: "bg-blue-100 text-blue-800",
+  PENDING: "bg-yellow-100 text-yellow-800",
+  PACKED: "bg-purple-100 text-purple-800",
+  SHIPPED: "bg-indigo-100 text-indigo-800",
+  DELIVERED: "bg-green-100 text-green-800",
+  RETURNED: "bg-orange-100 text-orange-800",
+  RESTOCKED: "bg-emerald-100 text-emerald-800",
+  RETURNED_TO_VENDOR: "bg-amber-100 text-amber-800",
+  CANCELLED: "bg-red-100 text-red-800",
 };
 ```
 
@@ -448,7 +467,7 @@ Add buttons in order inspector when status allows:
       Restock to Inventory
     </Button>
     <Button variant="outline" onClick={() => setShowVendorReturnDialog(true)}>
-      Return to Vendor
+      Return to Supplier
     </Button>
   </div>
 )}
@@ -457,30 +476,31 @@ Add buttons in order inspector when status allows:
 #### Step 5.3: Create Return Processing Dialogs
 
 Create dialogs for:
+
 - Initial return reason entry
 - Restock confirmation
-- Vendor return with vendor selection
+- Supplier return with supplier selection
 
 ### Phase 6: Testing (2h)
 
 #### Step 6.1: State Machine Tests
 
 ```typescript
-describe('Order State Machine', () => {
-  it('allows DELIVERED → RETURNED transition', () => {
-    expect(canTransition('DELIVERED', 'RETURNED')).toBe(true);
+describe("Order State Machine", () => {
+  it("allows DELIVERED → RETURNED transition", () => {
+    expect(canTransition("DELIVERED", "RETURNED")).toBe(true);
   });
 
-  it('allows RETURNED → RESTOCKED transition', () => {
-    expect(canTransition('RETURNED', 'RESTOCKED')).toBe(true);
+  it("allows RETURNED → RESTOCKED transition", () => {
+    expect(canTransition("RETURNED", "RESTOCKED")).toBe(true);
   });
 
-  it('allows RETURNED → RETURNED_TO_VENDOR transition', () => {
-    expect(canTransition('RETURNED', 'RETURNED_TO_VENDOR')).toBe(true);
+  it("allows RETURNED → RETURNED_TO_VENDOR transition", () => {
+    expect(canTransition("RETURNED", "RETURNED_TO_VENDOR")).toBe(true);
   });
 
-  it('disallows RESTOCKED → any transition (terminal)', () => {
-    expect(getNextStatuses('RESTOCKED')).toEqual([]);
+  it("disallows RESTOCKED → any transition (terminal)", () => {
+    expect(getNextStatuses("RESTOCKED")).toEqual([]);
   });
 });
 ```
@@ -488,7 +508,7 @@ describe('Order State Machine', () => {
 #### Step 6.2: Integration Tests
 
 - Test restock increases batch quantities
-- Test vendor return creates records
+- Test supplier return creates records
 - Test inventory movements logged correctly
 
 ## Acceptance Criteria
@@ -500,7 +520,7 @@ describe('Order State Machine', () => {
 - [ ] RETURNED orders can transition to RESTOCKED or RETURNED_TO_VENDOR
 - [ ] Restock processing increases batch on_hand_qty and available_qty
 - [ ] Restock creates inventory_movements records
-- [ ] Vendor return creates vendor_returns and vendor_return_items records
+- [ ] Supplier return creates vendor_returns and vendor_return_items records
 - [ ] UI shows new statuses with appropriate colors
 - [ ] UI shows return actions when order status allows
 - [ ] Terminal states (RESTOCKED, RETURNED_TO_VENDOR, CANCELLED) show no actions
@@ -508,6 +528,7 @@ describe('Order State Machine', () => {
 ## Rollback
 
 If issues discovered:
+
 1. New enum values cannot be removed from PostgreSQL (add only)
 2. Disable return actions via feature flag
 3. Orders in new states will need manual SQL update

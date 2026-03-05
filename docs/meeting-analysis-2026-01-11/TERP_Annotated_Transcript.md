@@ -10,6 +10,7 @@
 ## How to Read This Document
 
 Each section of the transcript includes:
+
 - **[VISUAL CONTEXT]** blocks describing what's visible on screen
 - **[UI ELEMENT]** tags identifying specific interface components
 - **[USER ACTION]** notes when the user interacts with the interface
@@ -52,6 +53,7 @@ Each section of the transcript includes:
 **[SCREEN TRANSITION: Navigating to Dashboard]**
 
 **[VISUAL CONTEXT: The TERP Dashboard screen is now visible. This is the main landing page after login. The dashboard displays several key metrics in widget/card format:]**
+
 - **[UI ELEMENT: Available Money Widget]** - Shows total cash on hand minus scheduled payables
 - **[UI ELEMENT: Actual Cash Widget]** - Shows raw cash amount before payables deduction
 - **[UI ELEMENT: Payables Scheduled Widget]** - Shows total upcoming payment obligations
@@ -75,6 +77,7 @@ Each section of the transcript includes:
 **[SCREEN TRANSITION: Doc shows a separate tab/sheet for Z's cash tracking]**
 
 **[VISUAL CONTEXT: A simple ledger view showing Z's (employee) cash tracking. This is a workaround Doc created to solve weekly audit discrepancies. The layout is:]**
+
 - **[UI ELEMENT: Starting Balance]** - Amount Z starts the week with
 - **[UI ELEMENT: In/Out Transactions]** - Simple list of money in (positive) and money out (negative)
 - **[UI ELEMENT: Current Total]** - Running balance
@@ -135,6 +138,7 @@ Each section of the transcript includes:
 [07:54.0 - 08:02.0] Do you have many clients that are buyers and suppliers? Yes. I have probably half a dozen.
 
 **[VISUAL CONTEXT: Viewing a specific client "Jesse" who is both a buyer and supplier. His tab/ledger is complex because it tracks multiple types of transactions:]**
+
 - **[UI ELEMENT: Credits]** - Shipping credits, product credits, consignment flower brought in
 - **[UI ELEMENT: Debits]** - Purchases, payments made
 - **[UI ELEMENT: Running Balance]** - Net amount owed/owing
@@ -185,6 +189,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: Product listing showing inventory items. Each item has a base price and markup. Key feature request: markups should be variable based on age and quantity.]**
 
 **[UI ELEMENT: Product Card/Row]** showing:
+
 - Product name
 - Farmer code (source)
 - Quantity on hand
@@ -196,6 +201,7 @@ Each section of the transcript includes:
 [14:30.0 - 15:30.0] So like, you know, if I have a product that's been sitting for a while, I might want to lower the markup. Or if I have a lot of it, I might want to lower the markup. So I need to be able to edit the markup at both the product level and the order level.
 
 **[BUSINESS RULE: Markups can vary based on:]**
+
 - **Age** - Older inventory may have lower markup
 - **Quantity** - Bulk purchases may have lower markup
 - **Customer tier** - VIP customers may get better pricing
@@ -211,6 +217,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: Order creation/editing screen. Shows line items, totals, and payment terms section.]**
 
 **[UI ELEMENT: Payment Terms Dropdown]** with options:
+
 - COD (Cash on Delivery)
 - Consignment
 - Installments
@@ -223,6 +230,7 @@ Each section of the transcript includes:
 [18:00.0 - 19:00.0] And then I have the transport fee. So like, you know, if I have a client that uses a specific transport company, I can set that. And then the fee is saved so I don't have to enter it every time.
 
 **[UI ELEMENT: Transport Settings per Client]**:
+
 - Transport company name
 - Fee percentage (2-4% typically)
 - Payment split configuration
@@ -242,9 +250,10 @@ Each section of the transcript includes:
 
 **[SCREEN TRANSITION: Navigating to Intake/Receipt module]**
 
-**[VISUAL CONTEXT: The Intake screen is used when receiving inventory from suppliers. It creates a "receipt" documenting what was received.]**
+**[VISUAL CONTEXT: The Intake screen is used when intake inventory from suppliers. It creates a "receipt" documenting what was received.]**
 
 **[UI ELEMENT: Intake Form]** showing:
+
 - Supplier selection (linked to Farmer Code)
 - Product details (strain, weight, quality)
 - Pricing (cost per unit, total)
@@ -262,6 +271,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: Intake verification workflow - a second person verifies the receipt matches actual inventory received]**
 
 **[UI ELEMENT: Verification Status]**:
+
 - Pending verification
 - Verified (with verifier name and timestamp)
 - Discrepancy flagged
@@ -279,6 +289,7 @@ Each section of the transcript includes:
 **[BUG IDENTIFIED: Calendar navigation disappears after code changes - P1 bug]**
 
 **[UI ELEMENT: Calendar Grid]** showing:
+
 - Time slots
 - Scheduled appointments
 - Room/bay assignments (2 meeting rooms + 2 loading bays)
@@ -296,6 +307,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: When viewing inventory, system suggests potential buyers based on their purchase history and preferences]**
 
 **[UI ELEMENT: Suggested Buyers Panel]** showing:
+
 - Buyer name
 - Match reason (past purchases, preferences)
 - Contact info
@@ -316,6 +328,7 @@ Each section of the transcript includes:
 **[DECISION: Categories are customizable, not fixed]**
 
 **[UI ELEMENT: Category Management]**:
+
 - Add/edit/delete categories
 - Assign products to categories
 - Filter inventory by category
@@ -335,6 +348,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: VIP tier system configuration - customers are ranked into tiers based on purchase volume]**
 
 **[UI ELEMENT: VIP Tier Configuration]**:
+
 - Tier names (Diamond, Platinum, Gold, Bronze)
 - Thresholds (customizable - can be relative ranking OR absolute numbers)
 - Benefits per tier (markup discounts)
@@ -344,6 +358,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: Leaderboard gamification - shows top buyers with their tier and rewards]**
 
 **[UI ELEMENT: Leaderboard Display]**:
+
 - Ranking by purchase volume
 - Tier badges
 - Reward indicators
@@ -371,6 +386,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: "Office Needs" feature - system tracks what inventory is running low and auto-populates a needs list]**
 
 **[UI ELEMENT: Office Needs Dashboard]**:
+
 - Low inventory alerts
 - Auto-populated shopping list
 - Threshold configuration (customizable)
@@ -380,6 +396,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: Aging inventory indicators - visual cues for inventory that's been sitting too long]**
 
 **[UI ELEMENT: Aging Indicators]**:
+
 - Color coding (green = fresh, yellow = aging, red = old)
 - Days in inventory counter
 - Suggested markdown alerts
@@ -393,6 +410,7 @@ Each section of the transcript includes:
 **[VISUAL CONTEXT: Matchmaking between suppliers and buyers - when a supplier has product, suggest buyers who might want it]**
 
 **[UI ELEMENT: Matchmaking Panel]**:
+
 - Supplier's available inventory
 - Matched buyers based on preferences
 - One-click introduction/order creation
@@ -445,34 +463,34 @@ Each section of the transcript includes:
 
 For AI agents working with this transcript, here is a summary of the key screens and their purposes:
 
-| Screen | Purpose | Key Elements |
-|--------|---------|--------------|
-| **Dashboard** | Main landing page with KPIs | Available Money, Payables Due, Shift Payments, Office Owned |
-| **Clients** | Customer/supplier management | Client list, Buyer/Supplier flags, Referrer tracking, Farmer Code |
-| **Client Detail** | Individual client view | Ledger (ins/outs), Balance, Referrals, Contact info |
-| **Products/Inventory** | Inventory management | Product cards, Quantity, Pricing, Markups, Age indicators |
-| **Orders** | Order creation/management | Line items, Payment terms, Transport fees, Payment splits |
-| **Intake/Receipt** | Receiving inventory | Supplier, Products, Pricing, Zone assignment, Verification |
-| **Calendar** | Scheduling | Appointments, Room/bay booking, Live shopping sessions |
-| **Payables** | Payment tracking | Due amounts, SKU-based triggers, Payment history |
-| **VIP/Leaderboard** | Customer tiers | Rankings, Tier thresholds, Rewards |
-| **Office Needs** | Low inventory alerts | Auto-populated needs, Threshold config |
+| Screen                 | Purpose                      | Key Elements                                                      |
+| ---------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| **Dashboard**          | Main landing page with KPIs  | Available Money, Payables Due, Shift Payments, Office Owned       |
+| **Clients**            | Customer/supplier management | Client list, Buyer/Supplier flags, Referrer tracking, Farmer Code |
+| **Client Detail**      | Individual client view       | Ledger (ins/outs), Balance, Referrals, Contact info               |
+| **Products/Inventory** | Inventory management         | Product cards, Quantity, Pricing, Markups, Age indicators         |
+| **Orders**             | Order creation/management    | Line items, Payment terms, Transport fees, Payment splits         |
+| **Intake/Receipt**     | Intake inventory             | Supplier, Products, Pricing, Zone assignment, Verification        |
+| **Calendar**           | Scheduling                   | Appointments, Room/bay booking, Live shopping sessions            |
+| **Payables**           | Payment tracking             | Due amounts, SKU-based triggers, Payment history                  |
+| **VIP/Leaderboard**    | Customer tiers               | Rankings, Tier thresholds, Rewards                                |
+| **Office Needs**       | Low inventory alerts         | Auto-populated needs, Threshold config                            |
 
 ---
 
 ## Key Terminology
 
-| Term | Meaning |
-|------|---------|
-| **Farmer Code** | Short identifier for supplier/source (formerly "Brand") |
+| Term              | Meaning                                                   |
+| ----------------- | --------------------------------------------------------- |
+| **Farmer Code**   | Short identifier for supplier/source (formerly "Brand")   |
 | **Live Shopping** | In-person shopping session at the office (NOT e-commerce) |
-| **Consignment** | Inventory received but not yet paid for |
-| **Office Owned** | Inventory that has been paid for but not yet sold |
-| **Z's Cash** | Cash held by employee Z, tracked separately |
-| **Payables Due** | Payments that have become due because SKU hit zero |
-| **Intake** | Process of receiving inventory from supplier |
-| **Verification** | Second person confirms intake matches actual inventory |
+| **Consignment**   | Inventory received but not yet paid for                   |
+| **Office Owned**  | Inventory that has been paid for but not yet sold         |
+| **Z's Cash**      | Cash held by employee Z, tracked separately               |
+| **Payables Due**  | Payments that have become due because SKU hit zero        |
+| **Intake**        | Process of intake inventory from supplier                 |
+| **Verification**  | Second person confirms intake matches actual inventory    |
 
 ---
 
-*This annotated transcript was generated by Manus AI based on the meeting recording and analysis. Visual context descriptions are inferred from the conversation content and knowledge of the TERP system architecture.*
+_This annotated transcript was generated by Manus AI based on the meeting recording and analysis. Visual context descriptions are inferred from the conversation content and knowledge of the TERP system architecture._

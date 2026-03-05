@@ -4,7 +4,7 @@
 **Last Updated:** 2025-12-01
 **Status:** Active & Enforced
 
-This protocol defines testing quality standards beyond the basic TDD workflow. It focuses on *what* to test and *how well* to test it.
+This protocol defines testing quality standards beyond the basic TDD workflow. It focuses on _what_ to test and _how well_ to test it.
 
 ---
 
@@ -12,16 +12,17 @@ This protocol defines testing quality standards beyond the basic TDD workflow. I
 
 Not all code is equally critical. Testing effort should be proportional to risk.
 
-| Tier | Module Type | Coverage Target | Examples |
-|------|-------------|-----------------|----------|
-| **Tier 1** | Financial/Payment | 90%+ | `creditEngine.ts`, `cogsCalculation.ts`, payment processing |
-| **Tier 2** | Business Core | 80%+ | Orders, inventory, client management |
-| **Tier 3** | Support Features | 60%+ | Calendar, todos, notifications |
-| **Tier 4** | UI Components | 40%+ | Presentational components, forms |
+| Tier       | Module Type       | Coverage Target | Examples                                                    |
+| ---------- | ----------------- | --------------- | ----------------------------------------------------------- |
+| **Tier 1** | Financial/Payment | 90%+            | `creditEngine.ts`, `cogsCalculation.ts`, payment processing |
+| **Tier 2** | Business Core     | 80%+            | Orders, inventory, client management                        |
+| **Tier 3** | Support Features  | 60%+            | Calendar, todos, notifications                              |
+| **Tier 4** | UI Components     | 40%+            | Presentational components, forms                            |
 
 ### Tier 1: Financial Operations (90%+ Coverage)
 
 **MANDATORY** comprehensive testing for:
+
 - Credit limit enforcement
 - COGS calculations
 - Invoice generation
@@ -40,15 +41,17 @@ Not all code is equally critical. Testing effort should be proportional to risk.
 ### Tier 2: Business Core (80%+ Coverage)
 
 **Required** testing for:
+
 - Order creation, modification, cancellation
 - Inventory adjustments
-- Client/vendor CRUD operations
+- Client/supplier CRUD operations
 - Pricing rule application
 - Permission enforcement
 
 ### Tier 3: Support Features (60%+ Coverage)
 
 **Standard** testing for:
+
 - Calendar events
 - Todo management
 - Dashboard widgets
@@ -57,6 +60,7 @@ Not all code is equally critical. Testing effort should be proportional to risk.
 ### Tier 4: UI Components (40%+ Coverage)
 
 **Basic** testing for:
+
 - Component renders without error
 - Props are passed correctly
 - User interactions work
@@ -70,24 +74,24 @@ Not all code is equally critical. Testing effort should be proportional to risk.
 
 ```typescript
 // ❌ BAD: Testing implementation details
-it('calls parseFloat on quantity', () => {
-  const spy = vi.spyOn(global, 'parseFloat');
+it("calls parseFloat on quantity", () => {
+  const spy = vi.spyOn(global, "parseFloat");
   calculateTotal(order);
   expect(spy).toHaveBeenCalled(); // WHO CARES?
 });
 
 // ✅ GOOD: Testing behavior
-it('calculates correct total for order with multiple items', () => {
+it("calculates correct total for order with multiple items", () => {
   const order = createOrder({
     items: [
-      { quantity: 2, price: 10.00 },
-      { quantity: 1, price: 25.00 },
+      { quantity: 2, price: 10.0 },
+      { quantity: 1, price: 25.0 },
     ],
   });
 
   const result = calculateTotal(order);
 
-  expect(result).toBe(45.00);
+  expect(result).toBe(45.0);
 });
 ```
 
@@ -96,7 +100,7 @@ it('calculates correct total for order with multiple items', () => {
 Every test MUST follow AAA pattern:
 
 ```typescript
-it('should apply discount for orders over $1000', () => {
+it("should apply discount for orders over $1000", () => {
   // Arrange - Set up test data
   const order = createOrder({ subtotal: 1500 });
   const discountRule = createDiscountRule({ threshold: 1000, percent: 10 });
@@ -147,11 +151,11 @@ it('updates an order', () => {
 
 ```typescript
 // ❌ FORBIDDEN: Always passes, tests nothing
-it('should work', () => {
+it("should work", () => {
   expect(true).toBe(true);
 });
 
-it('placeholder for future test', () => {
+it("placeholder for future test", () => {
   // TODO: implement
 });
 ```
@@ -160,7 +164,7 @@ it('placeholder for future test', () => {
 
 ```typescript
 // ❌ FORBIDDEN: Tests the mock, not the code
-it('returns mocked value', () => {
+it("returns mocked value", () => {
   vi.mocked(getData).mockReturnValue({ id: 1 });
   const result = getData();
   expect(result).toEqual({ id: 1 }); // You just tested vi.mock works
@@ -171,7 +175,7 @@ it('returns mocked value', () => {
 
 ```typescript
 // ❌ FORBIDDEN: Re-implementing the logic in test
-it('calculates confidence score', () => {
+it("calculates confidence score", () => {
   let confidence = 0;
   if (need.strain === candidate.strain) confidence += 40;
   if (need.category === candidate.category) confidence += 30;
@@ -182,13 +186,14 @@ it('calculates confidence score', () => {
 });
 
 // ✅ GOOD: Test expected outcomes
-it('gives higher confidence for exact strain match', () => {
-  const need = { strain: 'Blue Dream' };
-  const exactMatch = { strain: 'Blue Dream' };
-  const noMatch = { strain: 'OG Kush' };
+it("gives higher confidence for exact strain match", () => {
+  const need = { strain: "Blue Dream" };
+  const exactMatch = { strain: "Blue Dream" };
+  const noMatch = { strain: "OG Kush" };
 
-  expect(calculateConfidence(need, exactMatch))
-    .toBeGreaterThan(calculateConfidence(need, noMatch));
+  expect(calculateConfidence(need, exactMatch)).toBeGreaterThan(
+    calculateConfidence(need, noMatch)
+  );
 });
 ```
 
@@ -217,13 +222,13 @@ it('creates order', async () => {
 
 ```typescript
 // ❌ BAD: Credentials in test
-it('authenticates user', async () => {
-  const result = await login('admin@terp.com', 'password123');
+it("authenticates user", async () => {
+  const result = await login("admin@terp.com", "password123");
   expect(result.token).toBeDefined();
 });
 
 // ✅ GOOD: Use fixtures or environment
-it('authenticates user', async () => {
+it("authenticates user", async () => {
   const { email, password } = testFixtures.validUser;
   const result = await login(email, password);
   expect(result.token).toBeDefined();
@@ -293,12 +298,12 @@ it('prevents duplicate order creation within 1 minute', () => { ... });
 For Tier 1 and Tier 2 modules, integration tests with real database are REQUIRED:
 
 ```typescript
-describe('OrdersDb Integration', () => {
+describe("OrdersDb Integration", () => {
   beforeEach(async () => {
     await resetTestDatabase();
   });
 
-  it('creates order with line items in transaction', async () => {
+  it("creates order with line items in transaction", async () => {
     const order = await ordersDb.createOrder({
       clientId: testClient.id,
       items: [{ productId: 1, quantity: 5 }],
@@ -314,11 +319,13 @@ describe('OrdersDb Integration', () => {
     expect(saved?.lineItems[0].quantity).toBe(5);
   });
 
-  it('rolls back on partial failure', async () => {
-    await expect(ordersDb.createOrder({
-      clientId: testClient.id,
-      items: [{ productId: 999999, quantity: 5 }], // Invalid product
-    })).rejects.toThrow();
+  it("rolls back on partial failure", async () => {
+    await expect(
+      ordersDb.createOrder({
+        clientId: testClient.id,
+        items: [{ productId: 999999, quantity: 5 }], // Invalid product
+      })
+    ).rejects.toThrow();
 
     // Verify nothing was created
     const orders = await db.query.orders.findMany();
@@ -367,10 +374,10 @@ export function createTestOrder(overrides: Partial<Order> = {}): Order {
   return {
     id: nextId(),
     clientId: 1,
-    status: 'PENDING',
-    subtotal: '100.00',
-    tax: '8.00',
-    total: '108.00',
+    status: "PENDING",
+    subtotal: "100.00",
+    tax: "8.00",
+    total: "108.00",
     createdAt: new Date(),
     ...overrides,
   };
@@ -381,14 +388,14 @@ export function createTestClient(overrides: Partial<Client> = {}): Client {
     id: nextId(),
     name: `Test Client ${nextId()}`,
     email: `test${nextId()}@example.com`,
-    creditLimit: '10000.00',
+    creditLimit: "10000.00",
     ...overrides,
   };
 }
 
 // Usage in tests
-it('calculates total correctly', () => {
-  const order = createTestOrder({ subtotal: '200.00' });
+it("calculates total correctly", () => {
+  const order = createTestOrder({ subtotal: "200.00" });
   // ...
 });
 ```
@@ -428,7 +435,7 @@ All interactive elements MUST have data-testid:
 ```typescript
 // ❌ BAD: Brittle selectors
 await page.click('button:has-text("Create")');
-await page.locator('.btn-primary').click();
+await page.locator(".btn-primary").click();
 
 // ✅ GOOD: Stable selectors
 await page.click('[data-testid="create-order-button"]');
@@ -438,10 +445,7 @@ await page.click('[data-testid="submit-form"]');
 ### Component Pattern
 
 ```tsx
-<Button
-  data-testid="create-order-button"
-  onClick={handleCreate}
->
+<Button data-testid="create-order-button" onClick={handleCreate}>
   Create Order
 </Button>
 ```
@@ -504,7 +508,7 @@ Before committing:
 export default defineConfig({
   test: {
     coverage: {
-      provider: 'v8',
+      provider: "v8",
       thresholds: {
         lines: 70,
         functions: 70,

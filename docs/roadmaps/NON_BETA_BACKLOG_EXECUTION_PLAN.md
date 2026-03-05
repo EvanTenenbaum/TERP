@@ -58,7 +58,7 @@
 | ---------- | --------------------------- | -------- | ----------- |
 | QA-001-004 | 404 errors                  | P0       | ✅ Complete |
 | QA-005     | Systemic data access issues | P0       | Not Started |
-| QA-006     | Vendors button 404          | P1       | Not Started |
+| QA-006     | Suppliers button 404        | P1       | Not Started |
 | QA-007     | Purchase Orders button 404  | P1       | Not Started |
 | QA-008     | Returns button 404          | P1       | Not Started |
 | QA-009     | Locations button 404        | P1       | Not Started |
@@ -103,7 +103,7 @@ These items are button 404 errors that can likely be fixed by adding routes or d
 
 | #   | Task                               | Source   | Est. Time | Complexity |
 | --- | ---------------------------------- | -------- | --------- | ---------- |
-| 8   | QA-006: Vendors button 404         | QA_TASKS | 30 min    | Low        |
+| 8   | QA-006: Suppliers button 404       | QA_TASKS | 30 min    | Low        |
 | 9   | QA-007: Purchase Orders button 404 | QA_TASKS | 30 min    | Low        |
 | 10  | QA-008: Returns button 404         | QA_TASKS | 30 min    | Low        |
 | 11  | QA-009: Locations button 404       | QA_TASKS | 30 min    | Low        |
@@ -304,7 +304,7 @@ const paymentTermsDays = row.paymentTerms ?? 30;
    └── Task 7: Dashboard widgets (investigate)
 
 3. Wave 3 (P1 - Navigation)
-   ├── Task 8: Vendors button
+   ├── Task 8: Suppliers button
    ├── Task 9: PO button
    ├── Task 10: Returns button
    └── Task 11: Locations button

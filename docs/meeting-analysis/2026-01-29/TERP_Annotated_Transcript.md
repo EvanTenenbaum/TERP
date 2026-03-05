@@ -163,7 +163,7 @@
 
 [BUSINESS RULE] Client creation workflow - infrequent operation.
 
-**[08:43.8 - 09:04.0]** Developer: "Are you able to, or do you create client? I guess you don't really have this concept. I'm trying to figure out when you're going to create a client because you need to be able, like a client, either like a buyer or a vendor, there's a concept that like, you're going to need to add them as an entity before you transfer. act with them. Okay. Um, does that,"
+**[08:43.8 - 09:04.0]** Developer: "Are you able to, or do you create client? I guess you don't really have this concept. I'm trying to figure out when you're going to create a client because you need to be able, like a client, either like a buyer or a supplier, there's a concept that like, you're going to need to add them as an entity before you transfer. act with them. Okay. Um, does that,"
 
 **[09:10.1 - 09:21.6]** Customer: "I don't want it to be overburdened some, but it's just kind of a reality of like a, of a system like we rarely add plants. So it's going to happen like four times a year, you know? Yeah. Okay. Yeah."
 
@@ -245,7 +245,7 @@
 
 [SCREEN TRANSITION] Navigation to AR/AP (Accounts Receivable/Accounts Payable) page.
 
-[VISUAL CONTEXT] AR/AP Accounting Dashboard showing Cash Balance ($0.00), Accounts Receivable ($2,492,412.54), Accounts Payable ($1,753,971.17), Net Position ($738,441.37). AR/AP Aging charts visible. Quick Actions buttons: Receive Payment, Pay Vendor, Post Journal Entry, Create Invoice, Create Bill, Record Expense.
+[VISUAL CONTEXT] AR/AP Accounting Dashboard showing Cash Balance ($0.00), Accounts Receivable ($2,492,412.54), Accounts Payable ($1,753,971.17), Net Position ($738,441.37). AR/AP Aging charts visible. Quick Actions buttons: Receive Payment, Pay Supplier, Post Journal Entry, Create Invoice, Create Bill, Record Expense.
 
 **[14:27.5 - 14:39.8]** Developer: "invoices in ARAP. Um, this has gotten a lot more accurate since we last spoke. What is ARAP again? Um, accounts receivable and accounts payable."
 
@@ -257,13 +257,13 @@
 
 [BUSINESS RULE] Cash handling workflow explained.
 
-**[15:21.2 - 15:35.3]** Customer: "She never, Oh, I guess if I give her a bag of money, that's receiving the payment. Okay. Like for Z, I just, I just occasionally give her a big chunk and then she just writes down how much is coming out of that chunk."
+**[15:21.2 - 15:35.3]** Customer: "She never, Oh, I guess if I give her a bag of money, that's intake the payment. Okay. Like for Z, I just, I just occasionally give her a big chunk and then she just writes down how much is coming out of that chunk."
 
 **[15:36.2 - 15:46.3]** Developer: "Does she not ever, she doesn't receive payments from, okay. You do. And then she comes and picks them up. Cool."
 
 [BUSINESS RULE] Role-based access for payment functions.
 
-**[15:46.4 - 16:03.4]** Developer: "So this is going to be important for you actually, cause this is just, just a really quick way of you being able to, she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk. Yep. That makes sense. Okay. That's good to know."
+**[15:46.4 - 16:03.4]** Developer: "So this is going to be important for you actually, cause this is just, just a really quick way of you being able to, she only needs like low risk farmers. I feel like intake payments is a little bit higher risk. Yep. That makes sense. Okay. That's good to know."
 
 ---
 

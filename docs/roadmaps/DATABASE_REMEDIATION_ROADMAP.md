@@ -11,13 +11,13 @@
 
 This roadmap provides a prioritized plan to remediate **23 database schema issues** identified in the comprehensive audit (PR #331). The plan balances immediate needs with long-term system health.
 
-| Priority | Issues | Effort | Phase | Status |
-|----------|--------|--------|-------|--------|
-| Priority 1 (Immediate) | 2 | 6h | Phase 0 | ADDRESSED |
-| Priority 2 (Quick Wins) | 7 | 12h | Phase 6 | PLANNED |
-| Priority 3 (Medium-term) | 7 | 16h | Phase 6 | PLANNED |
-| Priority 4 (Deferred) | 7 | 56h | Post-Beta | DEFERRED |
-| **Total** | **23** | **90h** | | |
+| Priority                 | Issues | Effort  | Phase     | Status    |
+| ------------------------ | ------ | ------- | --------- | --------- |
+| Priority 1 (Immediate)   | 2      | 6h      | Phase 0   | ADDRESSED |
+| Priority 2 (Quick Wins)  | 7      | 12h     | Phase 6   | PLANNED   |
+| Priority 3 (Medium-term) | 7      | 16h     | Phase 6   | PLANNED   |
+| Priority 4 (Deferred)    | 7      | 56h     | Post-Beta | DEFERRED  |
+| **Total**                | **23** | **90h** |           |           |
 
 **Recommended Phase 6 Scope:** 12-28 hours (Priority 2 + selected Priority 3)
 
@@ -29,10 +29,10 @@ This roadmap provides a prioritized plan to remediate **23 database schema issue
 
 Issues that block Golden Flows and require immediate attention.
 
-| Issue | Description | Status | Resolution |
-|-------|-------------|--------|------------|
-| #1 | Missing products.strainId | COMPLETE | Fallback queries (PR #318) |
-| #3 | Missing product_images table | ADDRESSED | GF-PHASE0-006 |
+| Issue | Description                  | Status    | Resolution                 |
+| ----- | ---------------------------- | --------- | -------------------------- |
+| #1    | Missing products.strainId    | COMPLETE  | Fallback queries (PR #318) |
+| #3    | Missing product_images table | ADDRESSED | GF-PHASE0-006              |
 
 **Total Effort:** 6h (already completed)
 
@@ -42,16 +42,16 @@ Issues that block Golden Flows and require immediate attention.
 
 HIGH severity issues with low risk and high impact.
 
-| Issue | Description | Effort | Risk | Impact |
-|-------|-------------|--------|------|--------|
-| #4 | FK: brands.vendorId | 1h | LOW | HIGH (data integrity) |
-| #5 | FK: lots.vendorId | 1h | LOW | HIGH (data integrity) |
-| #6 | FK: paymentHistory.vendorId | 1h | LOW | HIGH (data integrity) |
-| #7 | FK: bills.vendorId | 1h | LOW | HIGH (data integrity) |
-| #8 | FK: expenses.vendorId | 1h | LOW | HIGH (data integrity) |
-| #9 | Rename: payments.vendorId | 2h | LOW | MEDIUM (clarity) |
-| #11 | Deprecate: purchaseOrders.vendorId | 2h | LOW | MEDIUM (clarity) |
-| | **INFRA-DB-001 + INFRA-DB-002** | **9h** | | |
+| Issue | Description                        | Effort | Risk | Impact                |
+| ----- | ---------------------------------- | ------ | ---- | --------------------- |
+| #4    | FK: brands.vendorId                | 1h     | LOW  | HIGH (data integrity) |
+| #5    | FK: lots.vendorId                  | 1h     | LOW  | HIGH (data integrity) |
+| #6    | FK: paymentHistory.vendorId        | 1h     | LOW  | HIGH (data integrity) |
+| #7    | FK: bills.vendorId                 | 1h     | LOW  | HIGH (data integrity) |
+| #8    | FK: expenses.vendorId              | 1h     | LOW  | HIGH (data integrity) |
+| #9    | Rename: payments.vendorId          | 2h     | LOW  | MEDIUM (clarity)      |
+| #11   | Deprecate: purchaseOrders.vendorId | 2h     | LOW  | MEDIUM (clarity)      |
+|       | **INFRA-DB-001 + INFRA-DB-002**    | **9h** |      |                       |
 
 **Bundled as:** INFRA-DB-001 (FK constraints: 5h) + INFRA-DB-002 (Renames: 4h)
 **Total Effort:** 12h (with buffer)
@@ -62,16 +62,16 @@ HIGH severity issues with low risk and high impact.
 
 MEDIUM severity issues for standardization.
 
-| Issue | Description | Effort | Risk | Impact |
-|-------|-------------|--------|------|--------|
-| #12 | Naming: camelCase/snake_case | 4h | MEDIUM | MEDIUM (consistency) |
-| #13 | FK: products.brandId | 1h | LOW | MEDIUM (integrity) |
-| #14 | FK: batches.productId/lotId | 2h | LOW | MEDIUM (integrity) |
-| #15 | FK: billLineItems (3 cols) | 2h | LOW | MEDIUM (integrity) |
-| #16 | FK: ledgerEntries (2 cols) | 2h | LOW | MEDIUM (integrity) |
-| #17 | FK: expenses (3 cols) | 2h | LOW | MEDIUM (integrity) |
-| #18 | FK: sales (2 cols) | 1h | LOW | MEDIUM (integrity) |
-| | **INFRA-DB-001 extension** | **14h** | | |
+| Issue | Description                  | Effort  | Risk   | Impact               |
+| ----- | ---------------------------- | ------- | ------ | -------------------- |
+| #12   | Naming: camelCase/snake_case | 4h      | MEDIUM | MEDIUM (consistency) |
+| #13   | FK: products.brandId         | 1h      | LOW    | MEDIUM (integrity)   |
+| #14   | FK: batches.productId/lotId  | 2h      | LOW    | MEDIUM (integrity)   |
+| #15   | FK: billLineItems (3 cols)   | 2h      | LOW    | MEDIUM (integrity)   |
+| #16   | FK: ledgerEntries (2 cols)   | 2h      | LOW    | MEDIUM (integrity)   |
+| #17   | FK: expenses (3 cols)        | 2h      | LOW    | MEDIUM (integrity)   |
+| #18   | FK: sales (2 cols)           | 1h      | LOW    | MEDIUM (integrity)   |
+|       | **INFRA-DB-001 extension**   | **14h** |        |                      |
 
 **Bundled as:** INFRA-DB-001 extension (if time permits)
 **Total Effort:** 16h (with buffer)
@@ -82,13 +82,13 @@ MEDIUM severity issues for standardization.
 
 Large refactors or low-priority cleanup.
 
-| Issue | Description | Effort | Risk | Rationale |
-|-------|-------------|--------|------|-----------|
-| #2 | Consolidate image tables | 16h | MEDIUM | Large refactor, workarounds exist |
-| #10 | Vendors → clients migration | 24h | HIGH | Major data migration |
-| #19 | Add missing indexes | 4h | LOW | Performance only |
-| #20 | Schema documentation | 4h | LOW | Non-functional |
-| #21-23 | Misc cleanup | 8h | LOW | Low impact |
+| Issue  | Description                   | Effort | Risk   | Rationale                         |
+| ------ | ----------------------------- | ------ | ------ | --------------------------------- |
+| #2     | Consolidate image tables      | 16h    | MEDIUM | Large refactor, workarounds exist |
+| #10    | Suppliers → clients migration | 24h    | HIGH   | Major data migration              |
+| #19    | Add missing indexes           | 4h     | LOW    | Performance only                  |
+| #20    | Schema documentation          | 4h     | LOW    | Non-functional                    |
+| #21-23 | Misc cleanup                  | 8h     | LOW    | Low impact                        |
 
 **Bundled as:** INFRA-DB-003, INFRA-DB-004
 **Total Effort:** 40h
@@ -109,6 +109,7 @@ Large refactors or low-priority cleanup.
 
 **Problem:**
 15+ tables have columns without FK constraints, risking data integrity:
+
 - `brands.vendorId` → No FK
 - `lots.vendorId` → No FK
 - `paymentHistory.vendorId` → No FK
@@ -122,11 +123,13 @@ Large refactors or low-priority cleanup.
 - `sales.batchId`, `productId` → No FK
 
 **Pre-Requisites:**
+
 - [ ] Verify no orphan records exist before adding constraints
 - [ ] Create backup of affected tables
 - [ ] Test migration in staging environment
 
 **Agent Checklist:**
+
 - [ ] Audit current FK constraints in production
 - [ ] Check for orphaned records in each table
 - [ ] Fix orphaned records (update to valid ID or set NULL)
@@ -138,6 +141,7 @@ Large refactors or low-priority cleanup.
 - [ ] Document FK relationships
 
 **Migration SQL (Phase 1 - vendorId columns):**
+
 ```sql
 -- Check for orphans first
 SELECT COUNT(*) as orphan_count FROM brands
@@ -160,6 +164,7 @@ ALTER TABLE paymentHistory
 ```
 
 **Migration SQL (Phase 2 - other FKs):**
+
 ```sql
 -- Products
 ALTER TABLE products
@@ -194,6 +199,7 @@ ALTER TABLE expenses
 ```
 
 **Verification:**
+
 ```bash
 # Check constraints exist
 mysql -e "SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
@@ -206,6 +212,7 @@ UNION SELECT 'bills', COUNT(*) FROM bills WHERE vendorId NOT IN (SELECT id FROM 
 ```
 
 **Rollback Plan:**
+
 ```sql
 -- Remove FK constraints if issues
 ALTER TABLE brands DROP FOREIGN KEY fk_brands_vendor;
@@ -214,6 +221,7 @@ ALTER TABLE bills DROP FOREIGN KEY fk_bills_vendor;
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All FK constraints added successfully
 - [ ] No orphaned records remain
 - [ ] Database integrity verified
@@ -234,10 +242,12 @@ ALTER TABLE bills DROP FOREIGN KEY fk_bills_vendor;
 
 **Problem:**
 Columns named `vendorId` that reference `clients.id` cause confusion:
+
 - `payments.vendorId` → references `clients.id` (suppliers)
 - `purchaseOrders.vendorId` → deprecated, use `supplierClientId`
 
 **Agent Checklist:**
+
 - [ ] Identify all code references to affected columns
 - [ ] Create migration to rename columns
 - [ ] Update Drizzle schema definitions
@@ -247,6 +257,7 @@ Columns named `vendorId` that reference `clients.id` cause confusion:
 - [ ] Run full test suite
 
 **Migration SQL:**
+
 ```sql
 -- Rename payments.vendorId to supplierClientId
 ALTER TABLE payments CHANGE vendorId supplierClientId INT;
@@ -256,6 +267,7 @@ ALTER TABLE payments CHANGE vendorId supplierClientId INT;
 ```
 
 **Code Changes Required:**
+
 ```typescript
 // server/db/schema.ts - Update column definition
 // Before:
@@ -268,6 +280,7 @@ supplierClientId: int("supplierClientId").references(() => clients.id),
 ```
 
 **Verification:**
+
 ```bash
 # Ensure no code references old column name
 grep -r "payments\.vendorId" server/ client/src/
@@ -278,6 +291,7 @@ pnpm check && pnpm test
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Columns renamed in database
 - [ ] Drizzle schema updated
 - [ ] All code references updated
@@ -299,6 +313,7 @@ pnpm check && pnpm test
 
 **Problem:**
 Two image tables exist with overlapping purposes:
+
 - `productMedia` - Basic image storage
 - `productImages` - Richer schema with status, uploadedBy, sortOrder
 
@@ -306,12 +321,14 @@ Two image tables exist with overlapping purposes:
 Consolidate into `product_images` (richer schema) during post-beta cleanup.
 
 **Why Deferred:**
+
 - Large refactor (16h+)
 - Current workarounds functional
 - Risk of regression during beta
 - Can be done during planned maintenance
 
 **Future Work:**
+
 1. Migrate all `productMedia` data to `productImages`
 2. Update all code references
 3. Drop `productMedia` table
@@ -319,7 +336,7 @@ Consolidate into `product_images` (richer schema) during post-beta cleanup.
 
 ---
 
-### INFRA-DB-004: Complete Vendors → Clients Migration (DEFERRED)
+### INFRA-DB-004: Complete Suppliers → Clients Migration (DEFERRED)
 
 **Task ID:** INFRA-DB-004
 **Source:** PR #331 Database Audit (Issue #10)
@@ -331,23 +348,26 @@ Consolidate into `product_images` (richer schema) during post-beta cleanup.
 **Deferred To:** Post-Beta
 
 **Problem:**
-The Party Model transition from `vendors` to `clients` is incomplete:
-- `vendors` table still exists and is referenced
+The Party Model transition from `suppliers` to `clients` is incomplete:
+
+- `suppliers` table still exists and is referenced
 - Multiple tables have dual columns (vendorId AND supplierClientId)
-- Data split between vendors and clients tables
+- Data split between suppliers and clients tables
 
 **Why Deferred:**
+
 - Major data migration (24h+)
 - High risk during beta
 - Current dual-table approach functional
 - Requires coordinated multi-phase migration
 
 **Future Migration Plan:**
-1. Ensure all vendors have corresponding clients records with `isSeller=true`
-2. Update all FK references from vendors to clients
-3. Migrate all vendor-specific data (vendorNotes, etc.)
+
+1. Ensure all suppliers have corresponding clients records with `isSeller=true`
+2. Update all FK references from suppliers to clients
+3. Migrate all supplier-specific data (vendorNotes, etc.)
 4. Drop deprecated vendorId columns
-5. Archive or drop vendors table
+5. Archive or drop suppliers table
 6. Update all application code
 
 ---
@@ -355,36 +375,39 @@ The Party Model transition from `vendors` to `clients` is incomplete:
 ## Timeline
 
 ### Phase 0 (Complete)
+
 - GF-PHASE0-001b: Schema drift fallbacks (4h)
 - GF-PHASE0-006: Create product_images table (2h)
 
 ### Phase 6: Database Standardization (Days 26-35)
+
 **Total Recommended Effort: 12-28 hours**
 
-| Week | Task | Effort | Priority |
-|------|------|--------|----------|
-| Day 26-27 | INFRA-DB-001 Phase 1 (vendorId FKs) | 5h | P2 |
-| Day 28 | INFRA-DB-002 (Column renames) | 4h | P2 |
-| Day 29-30 | INFRA-DB-001 Phase 2 (other FKs) | 8h | P3 |
-| Day 31-32 | Naming standardization (if time) | 4h | P3 |
-| Day 33-35 | Buffer + verification | 7h | - |
+| Week      | Task                                | Effort | Priority |
+| --------- | ----------------------------------- | ------ | -------- |
+| Day 26-27 | INFRA-DB-001 Phase 1 (vendorId FKs) | 5h     | P2       |
+| Day 28    | INFRA-DB-002 (Column renames)       | 4h     | P2       |
+| Day 29-30 | INFRA-DB-001 Phase 2 (other FKs)    | 8h     | P3       |
+| Day 31-32 | Naming standardization (if time)    | 4h     | P3       |
+| Day 33-35 | Buffer + verification               | 7h     | -        |
 
 ### Post-Beta (Deferred)
+
 - INFRA-DB-003: Image table consolidation (16h)
-- INFRA-DB-004: Vendors → clients migration (24h)
+- INFRA-DB-004: Suppliers → clients migration (24h)
 - Misc cleanup tasks (8h)
 
 ---
 
 ## Risk Assessment Summary
 
-| Without Phase 6 | With Phase 6 |
-|-----------------|--------------|
-| Risk: MEDIUM | Risk: LOW |
-| Data integrity concerns | Data integrity improved |
-| Technical debt accumulates | Technical debt reduced |
-| Future development harder | Future development easier |
-| Potential orphan records | Referential integrity enforced |
+| Without Phase 6            | With Phase 6                   |
+| -------------------------- | ------------------------------ |
+| Risk: MEDIUM               | Risk: LOW                      |
+| Data integrity concerns    | Data integrity improved        |
+| Technical debt accumulates | Technical debt reduced         |
+| Future development harder  | Future development easier      |
+| Potential orphan records   | Referential integrity enforced |
 
 ---
 
@@ -408,16 +431,16 @@ The Party Model transition from `vendors` to `clients` is incomplete:
 
 ## Golden Flow Impact
 
-| Golden Flow | Affected Issues | Phase 6 Impact |
-|-------------|-----------------|----------------|
-| GF-001 Direct Intake | #3, #14 | Batches integrity improved |
-| GF-002 Procure-to-Pay | #4, #5, #7, #11 | PO/vendor integrity improved |
-| GF-003 Order-to-Cash | #14, #18 | Order/sales integrity improved |
-| GF-004 Invoice & Payment | #9, #16 | Payment/ledger integrity improved |
-| GF-005 Pick & Pack | #14 | Batch allocation integrity |
-| GF-006 Client Ledger | #9, #16 | Accurate ledger data |
-| GF-007 Inventory Mgmt | #3, #14 | Batch tracking integrity |
-| GF-008 Sample Request | N/A | No direct impact |
+| Golden Flow              | Affected Issues | Phase 6 Impact                    |
+| ------------------------ | --------------- | --------------------------------- |
+| GF-001 Direct Intake     | #3, #14         | Batches integrity improved        |
+| GF-002 Procure-to-Pay    | #4, #5, #7, #11 | PO/supplier integrity improved    |
+| GF-003 Order-to-Cash     | #14, #18        | Order/sales integrity improved    |
+| GF-004 Invoice & Payment | #9, #16         | Payment/ledger integrity improved |
+| GF-005 Pick & Pack       | #14             | Batch allocation integrity        |
+| GF-006 Client Ledger     | #9, #16         | Accurate ledger data              |
+| GF-007 Inventory Mgmt    | #3, #14         | Batch tracking integrity          |
+| GF-008 Sample Request    | N/A             | No direct impact                  |
 
 ---
 

@@ -71,6 +71,9 @@ import {
 import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
 import { KeyboardHintBar } from "./KeyboardHintBar";
 
+// Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
+import { getBrandLabel } from "@/lib/nomenclature";
+
 // Icons
 import {
   Plus,
@@ -388,7 +391,7 @@ function RowInspectorContent({
               validation.getFieldState("vendorName").showError &&
                 "border-red-500"
             )}
-            placeholder="Type vendor or choose suggestion"
+            placeholder="Type supplier or choose suggestion"
           />
           <datalist id={`direct-intake-vendors-${row.id}`}>
             {vendors.map(vendor => (
@@ -402,7 +405,7 @@ function RowInspectorContent({
           )}
         </InspectorField>
 
-        <InspectorField label="Brand / Farmer" required>
+        <InspectorField label={getBrandLabel(row.category)} required>
           <Input
             value={row.brandName}
             onChange={e => {
@@ -1648,8 +1651,8 @@ export function DirectIntakeWorkSurface() {
     try {
       await exportCSV(rowsRef.current as IntakeExportRow[], {
         columns: [
-          { key: "vendorName", label: "Vendor" },
-          { key: "brandName", label: "Brand" },
+          { key: "vendorName", label: "Supplier" },
+          { key: "brandName", label: "Brand/Farmer" },
           { key: "item", label: "Product" },
           { key: "category", label: "Category" },
           { key: "subcategory", label: "Subcategory" },
@@ -1842,7 +1845,7 @@ export function DirectIntakeWorkSurface() {
           <div>
             <h2 className="linear-workspace-title flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Receiving
+              Intake
             </h2>
             <p className="linear-workspace-description">
               Keep key fields front and center, then use row details for
@@ -1932,7 +1935,7 @@ export function DirectIntakeWorkSurface() {
               }}
               disabled={!selectedRowEditable}
               className="h-9"
-              placeholder="Type or select vendor"
+              placeholder="Type or select supplier"
             />
             <datalist id="direct-intake-top-vendors">
               {vendors.map(vendor => (

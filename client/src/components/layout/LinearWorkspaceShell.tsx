@@ -20,6 +20,8 @@ interface LinearWorkspaceShellProps<T extends string> {
   commandStrip?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Navigation section label (e.g. "Sell", "Buy", "Finance") shown as a hierarchy cue */
+  section?: string;
 }
 
 export function LinearWorkspaceShell<T extends string>({
@@ -32,6 +34,7 @@ export function LinearWorkspaceShell<T extends string>({
   commandStrip,
   children,
   className,
+  section,
 }: LinearWorkspaceShellProps<T>) {
   const { isCompact, toggleDensity } = useUiDensity();
 
@@ -39,7 +42,20 @@ export function LinearWorkspaceShell<T extends string>({
     <section className={cn("linear-workspace-shell", className)}>
       <header className="linear-workspace-header">
         <div className="linear-workspace-title-wrap">
-          <p className="linear-workspace-eyebrow">Operations Workspace</p>
+          <p className="linear-workspace-eyebrow">
+            {section ? (
+              <>
+                <span className="linear-workspace-eyebrow-section">
+                  {section}
+                </span>
+                <span className="linear-workspace-eyebrow-sep" aria-hidden>
+                  {" "}
+                  /{" "}
+                </span>
+              </>
+            ) : null}
+            Operations Workspace
+          </p>
           <div>
             <h1 className="linear-workspace-title">{title}</h1>
             <p className="linear-workspace-description">{description}</p>

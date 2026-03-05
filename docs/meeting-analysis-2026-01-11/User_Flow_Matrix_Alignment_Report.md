@@ -11,22 +11,24 @@
 
 The User Flow Matrix shows **strong alignment** with the customer requirements, with **96.0%** of the 75 meeting items covered by existing or planned flows. Of the 23 critical "Now" priority items, **95.7%** are aligned.
 
-| Metric | Value | Notes |
-|---|---|---|
-| **Overall Alignment** | **96.0%** | 72 of 75 items |
-| **Gaps Identified** | **3** | Items requiring new flows in the matrix |
-| **"Now" Priority Coverage** | **95.7%** | 22 of 23 items |
-| **Implementation Status** | | Client-wired: 56, API-only: 16 |
+| Metric                      | Value     | Notes                                   |
+| --------------------------- | --------- | --------------------------------------- |
+| **Overall Alignment**       | **96.0%** | 72 of 75 items                          |
+| **Gaps Identified**         | **3**     | Items requiring new flows in the matrix |
+| **"Now" Priority Coverage** | **95.7%** | 22 of 23 items                          |
+| **Implementation Status**   |           | Client-wired: 56, API-only: 16          |
 
 ### Key Findings:
+
 - **High Coverage:** The matrix effectively covers the vast majority of customer needs, especially in core domains like Inventory, Customers, and Payments.
 - **Gap Closed (January 2026):** MEET-048 (Hour Tracking) is now fully implemented with 14 new procedures in the `hourTracking` router.
 - **Actionable Gaps:** The 3 remaining gaps are clear, actionable items that can be added to the matrix. Two are feature-related and one is a strategic constraint.
 - **Strong "Now" Priority Alignment:** The most critical customer needs are well-represented in the existing user flows, indicating good product-market fit for the immediate roadmap.
 
 ### Wave 5 Gap Closures (January 21, 2026):
-| Item ID | Status | Implementation |
-|---|---|---|
+
+| Item ID      | Status        | Implementation                                                      |
+| ------------ | ------------- | ------------------------------------------------------------------- |
 | **MEET-048** | ✅ **CLOSED** | `hourTracking` router with clock in/out, timesheets, overtime rules |
 
 ---
@@ -35,13 +37,14 @@ The User Flow Matrix shows **strong alignment** with the customer requirements, 
 
 These 3 items from the meeting are not currently represented in the User Flow Matrix and require new flows to be created.
 
-| Item ID | Priority | Title | Domain | Recommendation |
-|---|---|---|---|---|
-| MEET-047 | Next | Multiple Rooms for Scheduling | Admin | Needs new flow(s) in User Flow Matrix |
-| MEET-053 | Next | User-Friendly Financial Terminology | Accounting | Needs new flow(s) in User Flow Matrix |
-| MEET-059 | Now | No AI Integration (Constraint) | General | Needs new flow(s) in User Flow Matrix |
+| Item ID  | Priority | Title                               | Domain     | Recommendation                        |
+| -------- | -------- | ----------------------------------- | ---------- | ------------------------------------- |
+| MEET-047 | Next     | Multiple Rooms for Scheduling       | Admin      | Needs new flow(s) in User Flow Matrix |
+| MEET-053 | Next     | User-Friendly Financial Terminology | Accounting | Needs new flow(s) in User Flow Matrix |
+| MEET-059 | Now      | No AI Integration (Constraint)      | General    | Needs new flow(s) in User Flow Matrix |
 
 ### Detailed Gap Descriptions:
+
 - **MEET-047: Multiple Rooms for Scheduling**
   - **Meaning:** Scheduling needs to support multiple rooms
   - **Recommendation:** Create a new flow in the `Admin` domain to address this requirement. For example, a flow named `scheduling.manageResources` or a constraint documented in the system architecture.
@@ -65,17 +68,17 @@ These 3 items from the meeting are not currently represented in the User Flow Ma
 
 This table breaks down the alignment percentage for each functional domain based on the meeting requirements.
 
-| Domain | Total Items | Aligned | Gaps | Coverage % |
-|---|---|---|---|---|
-| **Reporting** | 5 | 5 | 0 | **100.0%** |
-| **Accounting** | 5 | 4 | 1 | **80.0%** |
-| **Payments** | 5 | 5 | 0 | **100.0%** |
-| **Inventory** | 27 | 27 | 0 | **100.0%** |
-| **Customers** | 13 | 13 | 0 | **100.0%** |
-| **Orders** | 3 | 3 | 0 | **100.0%** |
-| **Pricing** | 6 | 6 | 0 | **100.0%** |
-| **General** | 4 | 3 | 1 | **75.0%** |
-| **Admin** | 7 | 6 | 1 | **85.7%** |
+| Domain         | Total Items | Aligned | Gaps | Coverage % |
+| -------------- | ----------- | ------- | ---- | ---------- |
+| **Reporting**  | 5           | 5       | 0    | **100.0%** |
+| **Accounting** | 5           | 4       | 1    | **80.0%**  |
+| **Payments**   | 5           | 5       | 0    | **100.0%** |
+| **Inventory**  | 27          | 27      | 0    | **100.0%** |
+| **Customers**  | 13          | 13      | 0    | **100.0%** |
+| **Orders**     | 3           | 3       | 0    | **100.0%** |
+| **Pricing**    | 6           | 6       | 0    | **100.0%** |
+| **General**    | 4           | 3       | 1    | **75.0%**  |
+| **Admin**      | 7           | 6       | 1    | **85.7%**  |
 
 ---
 
@@ -84,6 +87,7 @@ This table breaks down the alignment percentage for each functional domain based
 This section provides a detailed view of the alignment for each of the 71 covered meeting items, showing the top 5 matching user flows from the matrix.
 
 ### MEET-001: Dashboard - Available Money Display (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Reporting
 - **Implementation Coverage:** 58.3% of matching flows are client-wired.
@@ -97,6 +101,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
 
 ### MEET-002: Dashboard - Multi-Location Cash Tracking (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Accounting
 - **Implementation Coverage:** 63.6% of matching flows are client-wired.
@@ -104,12 +109,13 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | Score | Flow Name | Domain:Entity | Purpose |
   |---|---|---|---|
   | 4 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
-  | 4 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
+  | 4 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
   | 4 | Get Total Cash Balance | Accounting:Bank Accounts | Get total cash balance across all accounts |
   | 3 | Get Summary | Accounting:Invoices | Get invoice summary statistics |
   | 3 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
 
 ### MEET-003: Z's Cash Audit Tracking (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Accounting
 - **Implementation Coverage:** 29.2% of matching flows are client-wired.
@@ -117,12 +123,13 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | Score | Flow Name | Domain:Entity | Purpose |
   |---|---|---|---|
   | 4 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
-  | 4 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
+  | 4 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
   | 4 | Get Total Cash Balance | Accounting:Bank Accounts | Get total cash balance across all accounts |
   | 3 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
   | 3 | Record Payment | Accounting:Payments | Record payment against invoice or bill |
 
 ### MEET-004: Dashboard - Shift Payment Tracking (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Reporting
 - **Implementation Coverage:** 58.0% of matching flows are client-wired.
@@ -136,6 +143,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Get Dashboard Data | Dashboard:Dashboard | Get main dashboard data |
 
 ### MEET-005: Payables Due When SKU Hits Zero (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Payments
 - **Implementation Coverage:** 78.4% of matching flows are client-wired.
@@ -145,10 +153,11 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Get Outstanding Payables | Accounting:AP Summary | Get list of outstanding payables |
   | 3 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
   | 3 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
-  | 3 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
+  | 3 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
   | 3 | Record Payment | Accounting:Payments | Record payment against invoice or bill |
 
 ### MEET-006: Office Owned Inventory Tracking (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -162,6 +171,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Validate Availability | Inventory:Movements | Validate inventory availability before action |
 
 ### MEET-007: Clients as Both Buyers and Suppliers (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 80.3% of matching flows are client-wired.
@@ -175,6 +185,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-008: Complex Tab for Jesse (Buyer/Supplier) (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 88.8% of matching flows are client-wired.
@@ -188,6 +199,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-009: Billing for Services (Shipping, Consulting) (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Orders
 - **Implementation Coverage:** 64.3% of matching flows are client-wired.
@@ -201,6 +213,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Mark Sent | Accounting:Invoices | Mark invoice as sent to customer |
 
 ### MEET-010: Simple Client Ledger (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Accounting
 - **Implementation Coverage:** 71.6% of matching flows are client-wired.
@@ -214,6 +227,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Mark Sent | Accounting:Invoices | Mark invoice as sent to customer |
 
 ### MEET-011: New Clients Added Infrequently (Later)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 80.0% of matching flows are client-wired.
@@ -227,6 +241,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-012: Client Tagging with Referrer (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 82.9% of matching flows are client-wired.
@@ -240,6 +255,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-013: Referrer Lookup Like Phone Contacts (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -250,6 +266,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Process Couch Tax | Gamification:Admin | Process referral couch tax |
 
 ### MEET-014: Variable Markups Based on Age/Quantity (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Pricing
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -263,6 +280,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Delete Rule | Pricing:Pricing Rules | Delete pricing rule |
 
 ### MEET-015: Sales Sheet Creator / List Generator (Later)
+
 - **Status:** ALIGNED
 - **Domain:** Orders
 - **Implementation Coverage:** 90.2% of matching flows are client-wired.
@@ -276,6 +294,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | List Products | Inventory:Products | List products in catalogue |
 
 ### MEET-016: Live Sales Primary Method Now (N/A)
+
 - **Status:** ALIGNED
 - **Domain:** General
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -289,6 +308,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Generate From Order | Accounting:Invoices | Generate invoice from completed order |
 
 ### MEET-017: Invoice History for Debt Disputes (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Accounting
 - **Implementation Coverage:** 71.9% of matching flows are client-wired.
@@ -302,6 +322,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Mark Sent | Accounting:Invoices | Mark invoice as sent to customer |
 
 ### MEET-018: Transaction Fee Per Client (Default + Override) (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Payments
 - **Implementation Coverage:** 75.6% of matching flows are client-wired.
@@ -315,6 +336,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Create Transaction | Accounting:Bank Transactions | Create bank transaction |
 
 ### MEET-019: Crypto Payment Tracking Tab (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Payments
 - **Implementation Coverage:** 73.6% of matching flows are client-wired.
@@ -328,6 +350,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Mark Sent | Accounting:Invoices | Mark invoice as sent to customer |
 
 ### MEET-020: Suggested Buyer Based on Purchase History (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 90.2% of matching flows are client-wired.
@@ -341,6 +364,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Adjust Inventory | Inventory:Movements | Adjust inventory quantity with reason |
 
 ### MEET-021: Client Wants/Needs Tracking (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 85.2% of matching flows are client-wired.
@@ -354,6 +378,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-022: Reverse Lookup - Who Has Product Connections (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 85.2% of matching flows are client-wired.
@@ -367,6 +392,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Update Product | Inventory:Products | Update product |
 
 ### MEET-023: Batch Tracking for Inventory (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 87.0% of matching flows are client-wired.
@@ -380,6 +406,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Validate Availability | Inventory:Movements | Validate inventory availability before action |
 
 ### MEET-024: Aging Inventory Visual Indicators (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -393,6 +420,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Validate Availability | Inventory:Movements | Validate inventory availability before action |
 
 ### MEET-025: Dashboard Quick View of Aging Inventory (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Reporting
 - **Implementation Coverage:** 81.2% of matching flows are client-wired.
@@ -406,6 +434,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Get Inventory Valuation | Dashboard:Dashboard | Get inventory valuation |
 
 ### MEET-026: Real-time Price Negotiation with Farmers (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Pricing
 - **Implementation Coverage:** 90.1% of matching flows are client-wired.
@@ -418,7 +447,8 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get With Line Items | Orders:Orders | Get order with line items |
   | 3 | Calculate Price | Orders:Pricing | Calculate price from margin |
 
-### MEET-027: Vendor vs Brand (Farmer Code) Distinction (Now)
+### MEET-027: Supplier vs Brand (Farmer Code) Distinction (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 80.3% of matching flows are client-wired.
@@ -426,12 +456,13 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | Score | Flow Name | Domain:Entity | Purpose |
   |---|---|---|---|
   | 4 | Get Brands | Inventory:Products | Get product brands |
-  | 3 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
-  | 3 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by vendor |
-  | 3 | Get All Vendors | Deprecated:Vendors | Get all vendors (DEPRECATED - use clients.list) |
-  | 3 | Get Vendor By ID | Deprecated:Vendors | Get vendor by ID (DEPRECATED - use clients.getById) |
+  | 3 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
+  | 3 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by supplier |
+  | 3 | Get All Suppliers | Deprecated:Suppliers | Get all suppliers (DEPRECATED - use clients.list) |
+  | 3 | Get Supplier By ID | Deprecated:Suppliers | Get supplier by ID (DEPRECATED - use clients.getById) |
 
 ### MEET-028: Brands Changed to Farmer Codes (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 46.7% of matching flows are client-wired.
@@ -439,25 +470,27 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | Score | Flow Name | Domain:Entity | Purpose |
   |---|---|---|---|
   | 4 | Get Brands | Inventory:Products | Get product brands |
-  | 2 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
-  | 2 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by vendor |
+  | 2 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
+  | 2 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by supplier |
   | 2 | Get Supplier Profile | CRM:Supplier Profiles | Get supplier profile for seller client |
   | 2 | Update Supplier Profile | CRM:Supplier Profiles | Update supplier profile |
 
-### MEET-029: Vendor Tied to Farmer Name (Next)
+### MEET-029: Supplier Tied to Farmer Name (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 80.3% of matching flows are client-wired.
 - **Top Matching Flows:**
   | Score | Flow Name | Domain:Entity | Purpose |
   |---|---|---|---|
-  | 3 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
-  | 3 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by vendor |
+  | 3 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
+  | 3 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by supplier |
   | 3 | Get Brands | Inventory:Products | Get product brands |
-  | 3 | Get All Vendors | Deprecated:Vendors | Get all vendors (DEPRECATED - use clients.list) |
-  | 3 | Get Vendor By ID | Deprecated:Vendors | Get vendor by ID (DEPRECATED - use clients.getById) |
+  | 3 | Get All Suppliers | Deprecated:Suppliers | Get all suppliers (DEPRECATED - use clients.list) |
+  | 3 | Get Supplier By ID | Deprecated:Suppliers | Get supplier by ID (DEPRECATED - use clients.getById) |
 
-### MEET-030: Vendor Search Shows Related Brands (Next)
+### MEET-030: Supplier Search Shows Related Brands (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 80.9% of matching flows are client-wired.
@@ -465,12 +498,13 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | Score | Flow Name | Domain:Entity | Purpose |
   |---|---|---|---|
   | 4 | Get Brands | Inventory:Products | Get product brands |
-  | 3 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
-  | 3 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by vendor |
-  | 3 | Get All Vendors | Deprecated:Vendors | Get all vendors (DEPRECATED - use clients.list) |
-  | 3 | Get Vendor By ID | Deprecated:Vendors | Get vendor by ID (DEPRECATED - use clients.getById) |
+  | 3 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
+  | 3 | Get AP Summary | Accounting:AP Summary | Get comprehensive AP summary by supplier |
+  | 3 | Get All Suppliers | Deprecated:Suppliers | Get all suppliers (DEPRECATED - use clients.list) |
+  | 3 | Get Supplier By ID | Deprecated:Suppliers | Get supplier by ID (DEPRECATED - use clients.getById) |
 
 ### MEET-031: SKU Field Not Needed (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -484,6 +518,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Validate Availability | Inventory:Movements | Validate inventory availability before action |
 
 ### MEET-032: Customizable Product Categories (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 97.4% of matching flows are client-wired.
@@ -497,6 +532,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Delete Product | Inventory:Products | Delete product (soft delete) |
 
 ### MEET-033: Searchable Supplier Name Field (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 80.3% of matching flows are client-wired.
@@ -510,6 +546,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
 
 ### MEET-034: Expected Delivery Date for Intake (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 93.3% of matching flows are client-wired.
@@ -523,6 +560,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Update Delivery Status | Scheduling:Deliveries | Update delivery status |
 
 ### MEET-035: Payment Terms (Consignment, Cash, COD) (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Payments
 - **Implementation Coverage:** 44.8% of matching flows are client-wired.
@@ -533,9 +571,10 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
   | 4 | Record Payment | Accounting:Payments | Record payment against invoice or bill |
   | 4 | Get Client Statement | Accounting:AR Summary | Get client statement with invoices and payments |
-  | 3 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
+  | 3 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
 
 ### MEET-036: Installment and Down Payments (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Payments
 - **Implementation Coverage:** 77.3% of matching flows are client-wired.
@@ -546,9 +585,10 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Generate From Order | Accounting:Invoices | Generate invoice from completed order |
   | 3 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
   | 3 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
-  | 3 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
+  | 3 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
 
 ### MEET-037: Editable Product Names (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -562,6 +602,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Delete Product | Inventory:Products | Delete product (soft delete) |
 
 ### MEET-038: Notes on Product Pricing (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Pricing
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -575,6 +616,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Delete Rule | Pricing:Pricing Rules | Delete pricing rule |
 
 ### MEET-039: Quick Action Pricing Visibility (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Pricing
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -588,6 +630,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Delete Rule | Pricing:Pricing Rules | Delete pricing rule |
 
 ### MEET-040: Product Details: Name, Category, Brand (Not SKU) (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 82.7% of matching flows are client-wired.
@@ -601,6 +644,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Delete Product | Inventory:Products | Delete product (soft delete) |
 
 ### MEET-041: VIP Debt Aging Notifications (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 87.5% of matching flows are client-wired.
@@ -614,6 +658,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get By TERI Code | CRM:Clients | Get client by TERI code |
 
 ### MEET-042: VIP Portal - Credit Usage Display (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 85.0% of matching flows are client-wired.
@@ -627,6 +672,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Enable VIP Portal | VIP Portal:VIP Admin | Enable VIP portal for client |
 
 ### MEET-043: VIP Status Based on Debt Cycling (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -640,6 +686,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Verify Session | VIP Portal:VIP Core | Verify VIP session token |
 
 ### MEET-044: Leaderboard with Anonymized Rankings (Later)
+
 - **Status:** ALIGNED
 - **Domain:** Reporting
 - **Implementation Coverage:** 93.5% of matching flows are client-wired.
@@ -653,6 +700,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Defaults | Gamification:Leaderboard | Get default leaderboard config |
 
 ### MEET-045: Leaderboard Rewards System (Medals, Markup %) (Later)
+
 - **Status:** ALIGNED
 - **Domain:** Reporting
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -666,6 +714,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Defaults | Gamification:Leaderboard | Get default leaderboard config |
 
 ### MEET-046: Live Appointments and Scheduling (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Admin
 - **Implementation Coverage:** 89.2% of matching flows are client-wired.
@@ -679,6 +728,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Get Views | Calendar:Views | Get user's saved calendar views |
 
 ### MEET-049: Calendar Navigation Bug (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Admin
 - **Implementation Coverage:** 60.0% of matching flows are client-wired.
@@ -692,6 +742,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Meeting Financial Context | Calendar:Financials | Get financial context for calendar events |
 
 ### MEET-050: Shift/Vacation Tracking on Calendar (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Admin
 - **Implementation Coverage:** 60.0% of matching flows are client-wired.
@@ -705,6 +756,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Meeting Financial Context | Calendar:Financials | Get financial context for calendar events |
 
 ### MEET-051: User Roles and Permissions (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Admin
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -718,6 +770,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Validate Availability | Inventory:Movements | Validate inventory availability before action |
 
 ### MEET-052: VIP Portal - Purchase History (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -731,6 +784,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Create PO | Purchase Orders:PO Core | Create purchase order |
 
 ### MEET-054: VIP Needs/Wants Entry (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 84.1% of matching flows are client-wired.
@@ -744,6 +798,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-055: Office Needs Auto-Population (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -757,6 +812,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Validate Availability | Inventory:Movements | Validate inventory availability before action |
 
 ### MEET-056: Centralized VIP Requests Portal (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -770,6 +826,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Verify Session | VIP Portal:VIP Core | Verify VIP session token |
 
 ### MEET-057: Matchmaking - Office Needs to VIP Supplies (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -783,6 +840,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Get Summary | VIP Portal:VIP Core | Get VIP dashboard summary |
 
 ### MEET-058: Copy-Paste Office Needs for Non-VIP (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 84.0% of matching flows are client-wired.
@@ -793,9 +851,10 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Mark Sent | Accounting:Invoices | Mark invoice as sent to customer |
   | 2 | Preview Balance | Accounting:Payments | WS-001: Preview client balance before payment |
   | 2 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
-  | 2 | Pay Vendor | Accounting:Payments | WS-002: Pay vendor (cash out) |
+  | 2 | Pay Supplier | Accounting:Payments | WS-002: Pay supplier (cash out) |
 
 ### MEET-060: AI Future: Suggested Purchase Quantities (Later)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -809,6 +868,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Delete PO | Purchase Orders:PO Core | Delete purchase order |
 
 ### MEET-061: Suggested Purchase Price from History (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Pricing
 - **Implementation Coverage:** 90.1% of matching flows are client-wired.
@@ -822,6 +882,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Rule By ID | Pricing:Pricing Rules | Get pricing rule by ID |
 
 ### MEET-062: Last Sale Price Lookup (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Pricing
 - **Implementation Coverage:** 91.2% of matching flows are client-wired.
@@ -835,6 +896,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Rule By ID | Pricing:Pricing Rules | Get pricing rule by ID |
 
 ### MEET-063: Farmer Receipt History Link (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 59.2% of matching flows are client-wired.
@@ -848,6 +910,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Get Brands | Inventory:Products | Get product brands |
 
 ### MEET-064: Intake Receipt Tool (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 61.4% of matching flows are client-wired.
@@ -861,6 +924,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Check Overdue | Accounting:Invoices | Check and update overdue invoice statuses |
 
 ### MEET-065: Intake Verification Process (Off by 12 Pounds Issue) (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 69.0% of matching flows are client-wired.
@@ -874,6 +938,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Receive Client Payment | Accounting:Payments | WS-001: Receive client payment (cash drop-off) |
 
 ### MEET-066: Intake Flow Terminology (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 98.1% of matching flows are client-wired.
@@ -887,6 +952,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Create Order | Orders:Orders | Create order (basic version) |
 
 ### MEET-067: Storage Strategy - Zones (A, B, C, D) (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -900,6 +966,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | List Zones | Storage:Zones | List storage zones |
 
 ### MEET-068: Three Storage Sites (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -913,6 +980,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | List Zones | Storage:Zones | List storage zones |
 
 ### MEET-069: Category and Subcategory Data Flow (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 94.7% of matching flows are client-wired.
@@ -926,6 +994,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Add Tag | CRM:Client Tags | Add tag to client |
 
 ### MEET-070: Product Grades (AAA, AAAA, AA, B, C) (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Inventory
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -939,6 +1008,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Delete Product | Inventory:Products | Delete product (soft delete) |
 
 ### MEET-071: VIP Client Management (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Customers
 - **Implementation Coverage:** 84.0% of matching flows are client-wired.
@@ -952,6 +1022,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 4 | Create Client | CRM:Clients | Create new client |
 
 ### MEET-072: Notification System for Tagging (Next)
+
 - **Status:** ALIGNED
 - **Domain:** Admin
 - **Implementation Coverage:** 94.7% of matching flows are client-wired.
@@ -965,6 +1036,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Get Categories | Inventory:Products | Get product categories |
 
 ### MEET-073: Large Distributor Pricing (Future) (Later)
+
 - **Status:** ALIGNED
 - **Domain:** General
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -978,6 +1050,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 3 | Delete Rule | Pricing:Pricing Rules | Delete pricing rule |
 
 ### MEET-074: Modular Sales Options (Future) (Later)
+
 - **Status:** ALIGNED
 - **Domain:** General
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -991,6 +1064,7 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Create Order | Orders:Orders | Create order (basic version) |
 
 ### MEET-075: Live Shopping Feature (Now)
+
 - **Status:** ALIGNED
 - **Domain:** Orders
 - **Implementation Coverage:** 100.0% of matching flows are client-wired.
@@ -1002,4 +1076,3 @@ This section provides a detailed view of the alignment for each of the 71 covere
   | 2 | Get Active Sessions | Live Shopping:Sessions | Get active live shopping sessions |
   | 2 | End Session | Live Shopping:Sessions | End live shopping session |
   | 2 | Cancel Session | Live Shopping:Sessions | Cancel live shopping session |
-

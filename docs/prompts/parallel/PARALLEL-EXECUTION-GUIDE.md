@@ -14,33 +14,33 @@ Wave 0 (Complete) ──┬──► Wave 1: Sales (Agent A)
 
 ## File Ownership Matrix
 
-| File | Wave 1 | Wave 3 | Wave 4 |
-|------|--------|--------|--------|
-| **Client Pages** |
-| UnifiedSalesPortalPage.tsx | ✅ OWN | ❌ | ❌ |
-| Quotes.tsx | ✅ OWN | ❌ | ❌ |
-| Orders.tsx | ✅ OWN | ❌ | ❌ |
-| PhotographyPage.tsx | ❌ | ✅ OWN | ❌ |
-| VendorsPage.tsx | ❌ | ✅ OWN | ❌ |
-| PurchaseOrdersPage.tsx | ❌ | ✅ OWN | ❌ |
-| NotificationsPage.tsx | ❌ | ❌ | ✅ OWN |
-| NotificationPreferences.tsx | ❌ | ❌ | ✅ OWN |
-| CalendarPage.tsx | ❌ | ❌ | ✅ OWN |
-| **Server Routers** |
-| orders.ts | ✅ OWN | ❌ | ❌ |
-| quotes.ts | ✅ OWN | ❌ | ❌ |
-| unifiedSalesPortal.ts | ✅ OWN | ❌ | ❌ |
-| photography.ts | ❌ | ✅ OWN | ❌ |
-| inventory.ts | ❌ | ✅ OWN | ❌ |
-| vendors.ts | ❌ | ✅ OWN | ❌ |
-| notifications.ts | ❌ | ❌ | ✅ OWN |
-| calendar.ts | ❌ | ❌ | ✅ OWN |
-| todoTasks.ts | ❌ | ❌ | ✅ OWN |
-| **Shared (READ ONLY)** |
-| clients.ts | 📖 READ | 📖 READ | 📖 READ |
-| batches.ts | 📖 READ | 📖 READ | 📖 READ |
-| users.ts | 📖 READ | 📖 READ | 📖 READ |
-| accounting.ts | 📖 READ | 📖 READ | 📖 READ |
+| File                        | Wave 1  | Wave 3  | Wave 4  |
+| --------------------------- | ------- | ------- | ------- |
+| **Client Pages**            |
+| UnifiedSalesPortalPage.tsx  | ✅ OWN  | ❌      | ❌      |
+| Quotes.tsx                  | ✅ OWN  | ❌      | ❌      |
+| Orders.tsx                  | ✅ OWN  | ❌      | ❌      |
+| PhotographyPage.tsx         | ❌      | ✅ OWN  | ❌      |
+| VendorsPage.tsx             | ❌      | ✅ OWN  | ❌      |
+| PurchaseOrdersPage.tsx      | ❌      | ✅ OWN  | ❌      |
+| NotificationsPage.tsx       | ❌      | ❌      | ✅ OWN  |
+| NotificationPreferences.tsx | ❌      | ❌      | ✅ OWN  |
+| CalendarPage.tsx            | ❌      | ❌      | ✅ OWN  |
+| **Server Routers**          |
+| orders.ts                   | ✅ OWN  | ❌      | ❌      |
+| quotes.ts                   | ✅ OWN  | ❌      | ❌      |
+| unifiedSalesPortal.ts       | ✅ OWN  | ❌      | ❌      |
+| photography.ts              | ❌      | ✅ OWN  | ❌      |
+| inventory.ts                | ❌      | ✅ OWN  | ❌      |
+| suppliers.ts                | ❌      | ✅ OWN  | ❌      |
+| notifications.ts            | ❌      | ❌      | ✅ OWN  |
+| calendar.ts                 | ❌      | ❌      | ✅ OWN  |
+| todoTasks.ts                | ❌      | ❌      | ✅ OWN  |
+| **Shared (READ ONLY)**      |
+| clients.ts                  | 📖 READ | 📖 READ | 📖 READ |
+| batches.ts                  | 📖 READ | 📖 READ | 📖 READ |
+| users.ts                    | 📖 READ | 📖 READ | 📖 READ |
+| accounting.ts               | 📖 READ | 📖 READ | 📖 READ |
 
 ---
 
@@ -65,16 +65,19 @@ grep -l "@ts-nocheck" client/src/pages/Inventory.tsx \
 ### Step 2: Launch 3 Agents
 
 **Agent A - Sales (Wave 1):**
+
 ```
 Copy contents of: docs/prompts/parallel/PARALLEL-WAVE-1-SALES.md
 ```
 
 **Agent B - Inventory (Wave 3):**
+
 ```
 Copy contents of: docs/prompts/parallel/PARALLEL-WAVE-3-INVENTORY.md
 ```
 
 **Agent C - Operations (Wave 4):**
+
 ```
 Copy contents of: docs/prompts/parallel/PARALLEL-WAVE-4-OPERATIONS.md
 ```
@@ -82,6 +85,7 @@ Copy contents of: docs/prompts/parallel/PARALLEL-WAVE-4-OPERATIONS.md
 ### Step 3: Monitor Progress
 
 Each agent will create a blockers file if stuck:
+
 - `WAVE_1_BLOCKERS.md`
 - `WAVE_3_BLOCKERS.md`
 - `WAVE_4_BLOCKERS.md`
@@ -116,6 +120,7 @@ git push origin main
 ### If TypeScript Check Fails After Pull
 
 Another agent may have introduced an error. Check:
+
 ```bash
 pnpm check 2>&1 | head -20
 ```
@@ -128,16 +133,19 @@ If error is in THEIR files → Document and continue
 ## Completion Checklist
 
 ### Wave 1 Complete When:
+
 - [ ] UnifiedSalesPortalPage.tsx - no @ts-nocheck
 - [ ] unifiedSalesPortal.ts - no @ts-nocheck
 - [ ] Sales flow tested end-to-end
 
 ### Wave 3 Complete When:
+
 - [ ] PhotographyPage.tsx - no @ts-nocheck
 - [ ] photography.ts - no @ts-nocheck
 - [ ] Inventory intake flow tested
 
 ### Wave 4 Complete When:
+
 - [ ] NotificationsPage.tsx - no @ts-nocheck
 - [ ] NotificationPreferences.tsx - no @ts-nocheck
 - [ ] Calendar/notification flow tested
@@ -161,12 +169,14 @@ Waves 1+3+4 Complete ──► Wave 2: VIP Portal
 ## Emergency Contacts
 
 If critical issues arise:
+
 1. Create detailed blocker document
 2. Stop work on that file
 3. Continue with other tasks
 4. Flag for human review
 
 **Do NOT:**
+
 - Add @ts-nocheck to "fix" issues
 - Edit files outside your scope
 - Push broken code to main

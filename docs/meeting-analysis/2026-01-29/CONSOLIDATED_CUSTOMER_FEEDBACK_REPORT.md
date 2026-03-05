@@ -13,12 +13,12 @@ This consolidated report combines UX/UI design insights with feature analysis fr
 
 ### At a Glance
 
-| Category | Count | Effort |
-|----------|-------|--------|
-| **Quick Wins** (config/styling only) | 6 | ~4 hours |
-| **Minor Enhancements** (small code changes) | 5 | ~12 hours |
-| **New Features** (significant work) | 4 | ~40+ hours |
-| **Deprioritized** (customer said "later") | 3 | N/A |
+| Category                                    | Count | Effort     |
+| ------------------------------------------- | ----- | ---------- |
+| **Quick Wins** (config/styling only)        | 6     | ~4 hours   |
+| **Minor Enhancements** (small code changes) | 5     | ~12 hours  |
+| **New Features** (significant work)         | 4     | ~40+ hours |
+| **Deprioritized** (customer said "later")   | 3     | N/A        |
 
 ### Customer's Top Priority
 
@@ -35,7 +35,7 @@ These items require **no new code** - just configuration changes or enabling exi
 **Effort:** 30 minutes  
 **Impact:** HIGH - directly addresses customer's #1 priority
 
-The customer wants a dashboard that answers: *"What do I need to focus on today?"*
+The customer wants a dashboard that answers: _"What do I need to focus on today?"_
 
 **Implementation:** Add new preset to `dashboardPresets.ts`:
 
@@ -56,6 +56,7 @@ mvp_owner: {
 ```
 
 **Customer Evidence:**
+
 > "Inventory, dashboard, cash... just understanding who we need to pay and what's aging"
 
 ---
@@ -70,6 +71,7 @@ mvp_owner: {
 **Change:** Set `isVisible: true` in the MVP preset.
 
 **Customer Evidence:**
+
 > "highlight of like a window of like the five, 10 oldest things, kind of like focus on me"
 
 ---
@@ -84,6 +86,7 @@ mvp_owner: {
 **Change:** Set `isVisible: true` in the MVP preset.
 
 **Customer Evidence:**
+
 > "I'm assuming we can see like the quality of their debt somehow"
 
 ---
@@ -98,6 +101,7 @@ mvp_owner: {
 **Change:** Set `isVisible: true` in the MVP preset.
 
 **Customer Evidence:**
+
 > "who we haven't seen in a while, who do I need to reach out to"
 
 ---
@@ -110,11 +114,13 @@ mvp_owner: {
 **Current State:** Feature flags exist for hiding fields.
 
 **Change:** Ensure these flags hide:
+
 - Email field (optional)
 - Address fields
 - Fax (if present)
 
 **Customer Evidence:**
+
 > "I don't know any of my clients emails"
 > "we don't need address information"
 
@@ -128,6 +134,7 @@ mvp_owner: {
 **Action:** Remove from near-term roadmap.
 
 **Customer Evidence:**
+
 > "I think that's a later version thing. It's just so easy to open my phone and confirm everyone"
 
 ---
@@ -148,10 +155,12 @@ These items require **modest code changes** to existing components.
 **Brackets:** $100-200, $200-300, $300-400, $400-500, $500+
 
 **Implementation:**
+
 1. Modify backend query to include price bracket aggregation
 2. Add expandable rows in frontend (pattern already exists)
 
 **Customer Evidence:**
+
 > "depths from one to 200, from two to 300, from three to four, just like some basic flower categories"
 
 ---
@@ -165,14 +174,15 @@ These items require **modest code changes** to existing components.
 
 **Enhancement:** Add info icons with detailed explanations:
 
-| Metric | Enhanced Tooltip |
-|--------|------------------|
-| Financial | "Combines total revenue, lifetime value, and your profit margin on this client" |
-| Engagement | "How often they order and how recently - high engagement = frequent, recent orders" |
-| Reliability | "How quickly they pay their debts - high reliability = fast payment" |
-| Growth | "Whether their spending with you is increasing or decreasing year-over-year" |
+| Metric      | Enhanced Tooltip                                                                    |
+| ----------- | ----------------------------------------------------------------------------------- |
+| Financial   | "Combines total revenue, lifetime value, and your profit margin on this client"     |
+| Engagement  | "How often they order and how recently - high engagement = frequent, recent orders" |
+| Reliability | "How quickly they pay their debts - high reliability = fast payment"                |
+| Growth      | "Whether their spending with you is increasing or decreasing year-over-year"        |
 
 **Customer Evidence:**
+
 > "We'll need a little explanation on these"
 > "what's reliability, like how often they show up or this is their payment behavior actually"
 
@@ -186,11 +196,13 @@ These items require **modest code changes** to existing components.
 **Current State:** `AgingInventoryWidget` shows oldest items in standard styling.
 
 **Enhancement:**
+
 - Add amber/red border for critical items (>60 days)
 - "Needs Attention" header styling
 - Larger card size option
 
 **Customer Evidence:**
+
 > "kind of like focus on me"
 
 ---
@@ -203,11 +215,13 @@ These items require **modest code changes** to existing components.
 **Current State:** `WS-001-SPEC` mentions RBAC but may not be fully implemented.
 
 **Enhancement:** Add role check to `ReceivePaymentModal`:
+
 - "Receive Payment" requires owner/admin role
-- "Pay Vendor" available to accounting role
+- "Pay Supplier" available to accounting role
 
 **Customer Evidence:**
-> "she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk"
+
+> "she only needs like low risk farmers. I feel like intake payments is a little bit higher risk"
 
 ---
 
@@ -219,11 +233,13 @@ These items require **modest code changes** to existing components.
 **Current State:** Many granular price categories in filtering.
 
 **Enhancement:**
+
 - Add simplified bracket presets ($500-700 ranges)
 - Quick filter buttons
 - Configurable bracket ranges
 
 **Customer Evidence:**
+
 > "it's a little complicated because there's so many price categories"
 
 ---
@@ -241,6 +257,7 @@ These items require **new development** - they don't exist in the codebase.
 **Current State:** No existing implementation found.
 
 **Requirements:**
+
 1. System monitors client debt aging
 2. Triggers alert when debt exceeds threshold (configurable)
 3. Alert displays on client profile and/or dashboard
@@ -248,15 +265,18 @@ These items require **new development** - they don't exist in the codebase.
 5. Recommendation to pause credit extension
 
 **Suggested Approach:**
+
 - Add debt aging calculation to Client360 or Leaderboard
 - Create `DebtWarningWidget` for dashboard
 - Add visual indicator on client list
 
 **Open Questions:**
+
 - What threshold triggers warning? (Days overdue? Percentage of credit limit?)
 - Should it block orders or just warn?
 
 **Customer Evidence:**
+
 > "you said you were gonna have some kind of tool that would like warn us when clients debts are going bad and to stop loaning the money kind of thing"
 
 ---
@@ -270,11 +290,13 @@ These items require **new development** - they don't exist in the codebase.
 **Current State:** `DashboardPreferencesContext` exists but doesn't include landing page.
 
 **Requirements:**
+
 1. User preference for default page on login
 2. Options: Dashboard, Inventory, Clients, etc.
 3. Setting persists across sessions
 
 **Customer Evidence:**
+
 > "It doesn't really matter what I probably inventory would be where I'd like it to pop up"
 
 ---
@@ -288,11 +310,13 @@ These items require **new development** - they don't exist in the codebase.
 **Current State:** No field in client schema for login names.
 
 **Requirements:**
+
 1. Add `metrcLoginName` field to client schema
 2. Display in client detail view
 3. Searchable/filterable
 
 **Customer Evidence:**
+
 > "maybe I need their login names, is this where their login names would be so they can log into the backend?"
 
 ---
@@ -306,11 +330,13 @@ These items require **new development** - they don't exist in the codebase.
 **Current State:** Multiple separate metrics may be overwhelming.
 
 **Requirements:**
+
 1. Review metric overlap
 2. Create "Simple View" showing only Master Score + Reliability
 3. Toggle to expand for power users
 
 **Customer Evidence:**
+
 > "maybe we can just combine them into, into less things"
 
 ---
@@ -334,13 +360,14 @@ These are operational insights that inform design decisions.
 **Implication:** No need for anonymous order capability.
 
 **Customer Evidence:**
+
 > "if I see Bob every week and Bob brings his buddy Tony one time, then yeah, Tony can just go on Bob's tab"
 
 ---
 
 ### BR-3: Accounting Staff Has Limited Permissions
 
-**Context:** Accounting staff (Z) handles vendor payments; owner handles receiving client payments.
+**Context:** Accounting staff (Z) handles supplier payments; owner handles intake client payments.
 
 **Implication:** Role-based access for payment functions is important.
 
@@ -349,6 +376,7 @@ These are operational insights that inform design decisions.
 ### BR-4: The "Tetris" Workflow
 
 **Mental Model:** The customer's daily work is balancing:
+
 - What are you out of?
 - What do you have too much of?
 - What's about to go bad?
@@ -362,17 +390,17 @@ These are operational insights that inform design decisions.
 
 These items were mentioned in the meeting but **already exist** in the codebase:
 
-| Item | Existing Implementation |
-|------|------------------------|
-| Aging inventory widget | `AgingInventoryWidget.tsx` |
-| Cash on hand display | `AvailableCashWidget.tsx` |
-| Scheduled payables | `AvailableCashWidget.tsx` (shows "Scheduled Payables") |
-| Total debt | `TotalDebtWidget.tsx` |
-| Leaderboard customizable weights | `WeightCustomizer.tsx` |
-| Master Score formula | Implemented in LeaderboardPage |
-| Quick client creation | `QuickCreateClient.tsx` (WS-011) |
-| Client ledger | `FEAT-009-CLIENT-LEDGER-SPEC.md` |
-| AR/AP command center | `WS-001/WS-002` specs exist |
+| Item                             | Existing Implementation                                |
+| -------------------------------- | ------------------------------------------------------ |
+| Aging inventory widget           | `AgingInventoryWidget.tsx`                             |
+| Cash on hand display             | `AvailableCashWidget.tsx`                              |
+| Scheduled payables               | `AvailableCashWidget.tsx` (shows "Scheduled Payables") |
+| Total debt                       | `TotalDebtWidget.tsx`                                  |
+| Leaderboard customizable weights | `WeightCustomizer.tsx`                                 |
+| Master Score formula             | Implemented in LeaderboardPage                         |
+| Quick client creation            | `QuickCreateClient.tsx` (WS-011)                       |
+| Client ledger                    | `FEAT-009-CLIENT-LEDGER-SPEC.md`                       |
+| AR/AP command center             | `WS-001/WS-002` specs exist                            |
 
 ---
 
@@ -380,11 +408,11 @@ These items were mentioned in the meeting but **already exist** in the codebase:
 
 These items were explicitly deprioritized by the customer:
 
-| Item | Customer Statement |
-|------|-------------------|
-| Calendar integration | "I think that's a later version thing" |
-| Complex metric views | "maybe we can just combine them into less things" |
-| Elaborate client creation | "we rarely add plants... like four times a year" |
+| Item                      | Customer Statement                                |
+| ------------------------- | ------------------------------------------------- |
+| Calendar integration      | "I think that's a later version thing"            |
+| Complex metric views      | "maybe we can just combine them into less things" |
+| Elaborate client creation | "we rarely add plants... like four times a year"  |
 
 ---
 
@@ -392,13 +420,13 @@ These items were explicitly deprioritized by the customer:
 
 ### Phase 1: Quick Wins (Day 1)
 
-| Task | Effort | Owner |
-|------|--------|-------|
-| Create "mvp_owner" dashboard preset | 30 min | Frontend |
-| Enable aging-inventory widget | 5 min | Config |
-| Enable client-debt-leaderboard | 5 min | Config |
-| Enable matchmaking-opportunities | 5 min | Config |
-| Verify feature flags hide unused fields | 15 min | Config |
+| Task                                    | Effort | Owner    |
+| --------------------------------------- | ------ | -------- |
+| Create "mvp_owner" dashboard preset     | 30 min | Frontend |
+| Enable aging-inventory widget           | 5 min  | Config   |
+| Enable client-debt-leaderboard          | 5 min  | Config   |
+| Enable matchmaking-opportunities        | 5 min  | Config   |
+| Verify feature flags hide unused fields | 15 min | Config   |
 
 **Total:** ~1 hour
 
@@ -406,13 +434,13 @@ These items were explicitly deprioritized by the customer:
 
 ### Phase 2: Minor Enhancements (Week 1)
 
-| Task | Effort | Owner |
-|------|--------|-------|
-| Inventory price bracket grouping | 4 hr | Full-stack |
-| Leaderboard metric tooltips | 3 hr | Frontend |
-| Aging inventory "focus" styling | 2 hr | Frontend |
-| Payment permission check | 2 hr | Full-stack |
-| Simplified price filtering | 3 hr | Frontend |
+| Task                             | Effort | Owner      |
+| -------------------------------- | ------ | ---------- |
+| Inventory price bracket grouping | 4 hr   | Full-stack |
+| Leaderboard metric tooltips      | 3 hr   | Frontend   |
+| Aging inventory "focus" styling  | 2 hr   | Frontend   |
+| Payment permission check         | 2 hr   | Full-stack |
+| Simplified price filtering       | 3 hr   | Frontend   |
 
 **Total:** ~14 hours
 
@@ -420,11 +448,11 @@ These items were explicitly deprioritized by the customer:
 
 ### Phase 3: New Features (Week 2-3)
 
-| Task | Effort | Owner |
-|------|--------|-------|
-| Debt warning system | 16 hr | Full-stack |
-| Default landing page preference | 4 hr | Full-stack |
-| Client login name field | 4 hr | Full-stack |
+| Task                            | Effort | Owner      |
+| ------------------------------- | ------ | ---------- |
+| Debt warning system             | 16 hr  | Full-stack |
+| Default landing page preference | 4 hr   | Full-stack |
+| Client login name field         | 4 hr   | Full-stack |
 
 **Total:** ~24 hours
 
@@ -432,37 +460,37 @@ These items were explicitly deprioritized by the customer:
 
 ### Phase 4: Polish (Later)
 
-| Task | Effort | Owner |
-|------|--------|-------|
-| Metric consolidation / simple view | 8 hr | Frontend |
+| Task                               | Effort | Owner    |
+| ---------------------------------- | ------ | -------- |
+| Metric consolidation / simple view | 8 hr   | Frontend |
 
 ---
 
 ## Open Questions for Customer
 
-| ID | Question | Priority |
-|----|----------|----------|
-| Q-001 | What threshold should trigger the debt warning system? (Days overdue? Percentage of credit limit?) | High |
-| Q-002 | What is the desired aging threshold for inventory alerts? (30 days? 60 days? Configurable?) | High |
-| Q-003 | Should "Receive Payment" be completely restricted or just require approval? | Medium |
+| ID    | Question                                                                                           | Priority |
+| ----- | -------------------------------------------------------------------------------------------------- | -------- |
+| Q-001 | What threshold should trigger the debt warning system? (Days overdue? Percentage of credit limit?) | High     |
+| Q-002 | What is the desired aging threshold for inventory alerts? (30 days? 60 days? Configurable?)        | High     |
+| Q-003 | Should "Receive Payment" be completely restricted or just require approval?                        | Medium   |
 
 ---
 
 ## Key Customer Quotes
 
-| Topic | Quote |
-|-------|-------|
-| Dashboard priority | "my question about the dashboards was probably the most important one" |
-| Workflow metaphor | "this job is like Tetris" |
-| Inventory focus | "inventory would be where I'd like it to pop up" |
-| Aging highlight | "highlight of like the five, 10 oldest things, kind of like focus on me" |
-| Category breakdown | "depths, indoor, out, smalls, candy ends in various price brackets" |
-| Simplicity | "there could be even far less options on that sheet" |
-| Metric explanations | "We'll need a little explanation on these" |
-| Calendar deprioritized | "I think that's a later version thing" |
-| Email not needed | "I don't know any of my clients emails" |
-| Payment permissions | "receiving payments is a little bit higher risk" |
-| Debt warning | "warn us when clients debts are going bad and to stop loaning the money" |
+| Topic                  | Quote                                                                    |
+| ---------------------- | ------------------------------------------------------------------------ |
+| Dashboard priority     | "my question about the dashboards was probably the most important one"   |
+| Workflow metaphor      | "this job is like Tetris"                                                |
+| Inventory focus        | "inventory would be where I'd like it to pop up"                         |
+| Aging highlight        | "highlight of like the five, 10 oldest things, kind of like focus on me" |
+| Category breakdown     | "depths, indoor, out, smalls, candy ends in various price brackets"      |
+| Simplicity             | "there could be even far less options on that sheet"                     |
+| Metric explanations    | "We'll need a little explanation on these"                               |
+| Calendar deprioritized | "I think that's a later version thing"                                   |
+| Email not needed       | "I don't know any of my clients emails"                                  |
+| Payment permissions    | "intake payments is a little bit higher risk"                            |
+| Debt warning           | "warn us when clients debts are going bad and to stop loaning the money" |
 
 ---
 
@@ -473,6 +501,7 @@ The customer meeting revealed that **TERP is closer to MVP than expected**. Most
 **Recommended Next Step:** Execute Phase 1 (Quick Wins) immediately. This takes ~1 hour and delivers the highest-impact changes with zero risk.
 
 **Total Effort to MVP Dashboard:**
+
 - Quick Wins: 1 hour
 - Minor Enhancements: 14 hours
 - New Features: 24 hours
@@ -482,4 +511,4 @@ The only truly new feature with significant scope is the **Debt Warning System**
 
 ---
 
-*Consolidated report generated: January 30, 2026*
+_Consolidated report generated: January 30, 2026_

@@ -8,6 +8,7 @@
 **Source:** Customer Meeting 2026-01-11
 
 ### Approval Notes
+
 - Locations must be dynamic (not hardcoded "Z" / "Doc")
 - Use "Location 1", "Location 2" as defaults
 - Admin can add, rename, or deactivate locations
@@ -20,6 +21,7 @@
 > "There's just many areas for error versus just in and out"
 
 Weekly cash audits are failing due to:
+
 1. Multiple error points in spreadsheet tracking
 2. Copy/paste errors during data entry
 3. No distinction between cash locations (multiple physical locations)
@@ -34,12 +36,14 @@ Weekly cash audits are failing due to:
 **User Story:** As a manager, I want to see available money on the dashboard so I know what cash is actually usable.
 
 **Acceptance Criteria:**
+
 - [ ] Dashboard displays "Total Cash on Hand"
 - [ ] Dashboard displays "Scheduled Payables"
 - [ ] Dashboard displays "Available Cash" (Total - Payables)
 - [ ] Values update in real-time when transactions occur
 
 **API Contract:**
+
 ```typescript
 // New endpoint: accounting.getCashDashboard
 type CashDashboardResponse = {
@@ -55,6 +59,7 @@ type CashDashboardResponse = {
 **User Story:** As a manager, I want to track cash at multiple locations separately.
 
 **Acceptance Criteria:**
+
 - [ ] Support multiple cash locations (dynamic, not hardcoded)
 - [ ] Each location has independent balance
 - [ ] Transfers between locations tracked with audit trail
@@ -64,13 +69,14 @@ type CashDashboardResponse = {
 - [ ] Default seed: "Location 1", "Location 2"
 
 **Data Model:**
+
 ```typescript
 // New table: cash_locations
 type CashLocation = {
   id: number;
-  name: string;          // "Location 1", "Location 2", or custom names
+  name: string; // "Location 1", "Location 2", or custom names
   currentBalance: number;
-  isActive: boolean;     // Soft delete support
+  isActive: boolean; // Soft delete support
   createdAt: Date;
   updatedAt: Date;
 };
@@ -79,7 +85,7 @@ type CashLocation = {
 type CashLocationTransaction = {
   id: number;
   locationId: number;
-  type: 'IN' | 'OUT' | 'TRANSFER';
+  type: "IN" | "OUT" | "TRANSFER";
   amount: number;
   description: string;
   createdBy: number;
@@ -92,6 +98,7 @@ type CashLocationTransaction = {
 **User Story:** As a manager, I want a simple in/out ledger for each location that automatically reconciles.
 
 **Acceptance Criteria:**
+
 - [ ] Single view showing all ins and outs per location
 - [ ] Running balance calculation
 - [ ] Filter by date range
@@ -99,13 +106,14 @@ type CashLocationTransaction = {
 - [ ] Auto-reconciliation check against expected balance
 
 **UI Wireframe:**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Location 1 Ledger                         Balance: $XXX │
 ├─────────────────────────────────────────────────────────┤
 │ Date       │ Description           │ In      │ Out    │ Bal │
 │ 01/10/2026 │ Client Payment        │ $500    │        │ $500│
-│ 01/10/2026 │ Vendor Payment        │         │ $200   │ $300│
+│ 01/10/2026 │ Supplier Payment      │         │ $200   │ $300│
 │ 01/11/2026 │ Transfer from Loc 2   │ $1000   │        │$1300│
 └─────────────────────────────────────────────────────────┘
 ```
@@ -115,6 +123,7 @@ type CashLocationTransaction = {
 **User Story:** As a manager, I want to track payments received during a shift and reset at end of day.
 
 **Acceptance Criteria:**
+
 - [ ] Track payments by shift
 - [ ] Show running total for current shift
 - [ ] "Reset Shift" button with confirmation
@@ -122,6 +131,7 @@ type CashLocationTransaction = {
 - [ ] Cannot reset until current balance matches expected
 
 **API Contract:**
+
 ```typescript
 // New endpoint: accounting.getShiftPayments
 type ShiftPaymentsResponse = {
@@ -133,14 +143,14 @@ type ShiftPaymentsResponse = {
 
 // New endpoint: accounting.resetShift
 type ResetShiftRequest = {
-  actualCashCount: number;  // What they physically counted
+  actualCashCount: number; // What they physically counted
   notes?: string;
 };
 
 type ResetShiftResponse = {
   previousBalance: number;
   actualCount: number;
-  variance: number;         // Should be 0 for clean audit
+  variance: number; // Should be 0 for clean audit
   auditEntryId: number;
   newShiftStart: Date;
 };
@@ -150,10 +160,10 @@ type ResetShiftResponse = {
 
 ## Dependencies
 
-| Dependency | Type | Status |
-|------------|------|--------|
-| API-010 (accounting.*) | Must be registered | Sprint 0 |
-| BUG-084 (pricing_defaults) | Must be fixed | Sprint 0 |
+| Dependency                 | Type               | Status   |
+| -------------------------- | ------------------ | -------- |
+| API-010 (accounting.\*)    | Must be registered | Sprint 0 |
+| BUG-084 (pricing_defaults) | Must be fixed      | Sprint 0 |
 
 ---
 
@@ -204,17 +214,18 @@ CREATE TABLE shift_audits (
 
 ## Feature Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `cash_audit_enabled` | true | Enable cash audit system |
-| `multi_location_cash` | true | Enable multiple cash locations |
-| `shift_tracking_enabled` | true | Enable shift payment tracking |
+| Flag                     | Default | Description                    |
+| ------------------------ | ------- | ------------------------------ |
+| `cash_audit_enabled`     | true    | Enable cash audit system       |
+| `multi_location_cash`    | true    | Enable multiple cash locations |
+| `shift_tracking_enabled` | true    | Enable shift payment tracking  |
 
 ---
 
 ## Test Plan
 
 ### Unit Tests
+
 - [ ] CashLocation CRUD operations
 - [ ] Transaction recording
 - [ ] Balance calculation
@@ -222,11 +233,13 @@ CREATE TABLE shift_audits (
 - [ ] Variance detection
 
 ### Integration Tests
+
 - [ ] Full audit flow (start shift → transactions → reset)
 - [ ] Transfer between locations
 - [ ] Multi-user concurrent access
 
 ### E2E Tests
+
 - [ ] Dashboard cash display updates
 - [ ] Ledger filtering and export
 - [ ] Shift reset with variance handling

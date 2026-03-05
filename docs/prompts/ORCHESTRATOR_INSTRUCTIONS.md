@@ -92,7 +92,7 @@ After all Wave 1 PRs are merged, launch Wave 2 with updated prompts.
 
 ## Tasks
 
-- TERP-SS-003: Fix Client Grid Vendor/Batch Code Mapping (24h)
+- TERP-SS-003: Fix Client Grid Supplier/Batch Code Mapping (24h)
 - TERP-SS-004: Fix Inventory Grid Original Intake Quantity (20h)
 - TERP-SS-005: Display Payment Amounts in Client Grid (16h)
 
@@ -177,9 +177,9 @@ Final polish for spreadsheet view.
 
 - TERP-SS-006: Implement Visual Cues (Color Coding) (24h)
 - TERP-SS-007: Complete Client Grid Summary Calculations (12h)
-- TERP-SS-008: Configure Inventory Grid Date/Vendor Grouping (16h)
+- TERP-SS-008: Configure Inventory Grid Date/Supplier Grouping (16h)
 - TERP-SS-009: Add Editing Capabilities to Inventory Grid (28h)
-- TERP-SS-010: Standardize Source/Brand/Vendor Terminology (4h)
+- TERP-SS-010: Standardize Source/Brand/Supplier Terminology (4h)
 
 ## Branch Name
 

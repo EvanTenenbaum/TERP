@@ -458,6 +458,7 @@ When you deliver your work, you **MUST** explicitly confirm that you have met th
 Test results are **automatically written to `.github/BUILD_STATUS.md` on the `build-status` branch** after every push to main. You **MUST** check this file to verify build status.
 
 **⚠️ Build Status Location:** Build status is on the `build-status` branch (not `main`) to prevent deployment conflicts. Use:
+
 ```bash
 git show origin/build-status:.github/BUILD_STATUS.md
 ```
@@ -466,12 +467,12 @@ git show origin/build-status:.github/BUILD_STATUS.md
 
 ### 📋 **When to Check Test Status**
 
-| Timing                    | Command                                                                  | What to Check                 |
-| ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
-| **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
-| **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
+| Timing                    | Command                                                | What to Check                 |
+| ------------------------- | ------------------------------------------------------ | ----------------------------- |
+| **Before starting work**  | `gh run list --limit 5`                                | Is the main branch healthy?   |
+| **After creating a PR**   | `gh pr view <PR#> --comments`                          | Did my PR pass all checks?    |
 | **After pushing to main** | `git show origin/build-status:.github/BUILD_STATUS.md` | Did my commit pass all tests? |
-| **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
+| **If build fails**        | `gh run view <RUN_ID>`                                 | What exactly failed?          |
 
 ---
 
@@ -1253,6 +1254,7 @@ Fixes #123
 Test results are **automatically written to `.github/BUILD_STATUS.md` on the `build-status` branch** after every push to main. You **MUST** check this file to verify build status.
 
 **⚠️ Build Status Location:** Build status is on the `build-status` branch (not `main`) to prevent deployment conflicts. Use:
+
 ```bash
 git show origin/build-status:.github/BUILD_STATUS.md
 ```
@@ -1261,12 +1263,12 @@ git show origin/build-status:.github/BUILD_STATUS.md
 
 ### 📋 **When to Check Test Status**
 
-| Timing                    | Command                                                                  | What to Check                 |
-| ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
-| **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
-| **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
+| Timing                    | Command                                                | What to Check                 |
+| ------------------------- | ------------------------------------------------------ | ----------------------------- |
+| **Before starting work**  | `gh run list --limit 5`                                | Is the main branch healthy?   |
+| **After creating a PR**   | `gh pr view <PR#> --comments`                          | Did my PR pass all checks?    |
 | **After pushing to main** | `git show origin/build-status:.github/BUILD_STATUS.md` | Did my commit pass all tests? |
-| **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
+| **If build fails**        | `gh run view <RUN_ID>`                                 | What exactly failed?          |
 
 ---
 
@@ -1386,11 +1388,11 @@ gh run list --limit 1
 
 ### 📊 **Where Test Failures Are Posted**
 
-| Location            | How to Access                                            | What You'll See                                       |
-| ------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
-| **PR Comments**     | `gh pr view <PR#> --comments`                            | Lint, Type Check, and Unit Test results               |
-| **Build Status**    | `git show origin/build-status:.github/BUILD_STATUS.md`                            | Integration, E2E, Schema, and Seed results            |
-| **Workflow Runs**   | `gh run view <RUN_ID>`                                   | Full logs (only if comments don't have enough detail) |
+| Location          | How to Access                                          | What You'll See                                       |
+| ----------------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| **PR Comments**   | `gh pr view <PR#> --comments`                          | Lint, Type Check, and Unit Test results               |
+| **Build Status**  | `git show origin/build-status:.github/BUILD_STATUS.md` | Integration, E2E, Schema, and Seed results            |
+| **Workflow Runs** | `gh run view <RUN_ID>`                                 | Full logs (only if comments don't have enough detail) |
 
 ---
 
@@ -1432,7 +1434,7 @@ Permissions follow the format: `{module}:{action}`
 
 **Common Modules:**
 
-- `orders`, `inventory`, `clients`, `vendors`, `purchase_orders`
+- `orders`, `inventory`, `clients`, `suppliers`, `purchase_orders`
 - `accounting`, `dashboard`, `calendar`, `todos`
 - `rbac`, `system`, `settings`
 

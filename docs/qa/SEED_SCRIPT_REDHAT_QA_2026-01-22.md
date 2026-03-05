@@ -249,7 +249,7 @@ sourceType: mysqlEnum("source_type", [
 | 1   | Run seed with empty DB           | All tables populated     | Products INSERT fails        | **FAIL** |
 | 2   | Run seed twice                   | Idempotent               | DUPLICATE KEY errors handled | PASS     |
 | 3   | Verify FK chain products→batches | Batches link to products | No products = orphan batches | **FAIL** |
-| 4   | Verify FK chain lots→vendors     | Lots link to vendors     | Works correctly              | PASS     |
+| 4   | Verify FK chain lots→suppliers   | Lots link to suppliers   | Works correctly              | PASS     |
 | 5   | Check order items JSON format    | Valid JSON               | Valid JSON                   | PASS     |
 | 6   | Check is_draft values            | Mix of draft/confirmed   | All 0 (confirmed only)       | PASS     |
 | 7   | Check batch status distribution  | Mixed statuses           | ~65% LIVE                    | PASS     |

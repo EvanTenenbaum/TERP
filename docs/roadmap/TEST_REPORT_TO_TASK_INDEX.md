@@ -62,7 +62,7 @@ This index maps test-report issues to existing or newly created roadmap tasks.
 
 ### Backend Placeholders
 
-- TEST-ISSUE-022: BE-001 Vendor supply matching returns empty
+- TEST-ISSUE-022: BE-001 Supplier supply matching returns empty
   - Coverage: COVERED_BY_EXISTING_ROADMAP_TASK (BE-QA-003)
 - TEST-ISSUE-023: BE-002 VIP tier config hardcoded
   - Coverage: COVERED_BY_EXISTING_ROADMAP_TASK (BE-QA-002)

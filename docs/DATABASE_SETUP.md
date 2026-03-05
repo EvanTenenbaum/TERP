@@ -78,7 +78,7 @@ pnpm seed:light
 Creates:
 
 - 10 clients (2 whales, 8 regular)
-- 5 vendors
+- 5 suppliers
 - 50 products
 - 100 inventory items
 - 50 orders
@@ -100,7 +100,7 @@ pnpm seed:new:complete
 Creates:
 
 - 25 clients (5 whales, 20 regular)
-- 10 vendors
+- 10 suppliers
 - 200 products
 - 500 inventory items
 - 200 orders
@@ -296,7 +296,7 @@ For production:
 - **Regular Clients**: Standard customers
 - Realistic names, addresses, contact info
 
-#### Vendors
+#### Suppliers
 
 - Supplier companies
 - Product catalogs
@@ -335,7 +335,7 @@ export const CONFIG = {
   totalClients: 25, // Number of clients
   whaleClients: 5, // High-value clients
   regularClients: 20, // Standard clients
-  totalVendors: 10, // Number of vendors
+  totalVendors: 10, // Number of suppliers
   ordersPerMonth: 15, // Orders per month
   totalRevenue: 2_000_000, // Target revenue
   // ... more options

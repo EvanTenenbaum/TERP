@@ -259,7 +259,7 @@ BLOCKED until Team A completes ARCH-001
 | ORD-003   | Fix Invalid Order State Transitions            | MEDIUM   | 2h       | `server/services/orderStateMachine.ts`   |
 | ORD-004   | Add Credit Override Authorization              | MEDIUM   | 2h       | `server/services/orderPricingService.ts` |
 | PARTY-001 | Add Nullable supplierClientId to POs           | MEDIUM   | 4h       | `drizzle/schema.ts`                      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft            | MEDIUM   | 2h       | `server/routers/vendors.ts`              |
+| PARTY-004 | Convert Supplier Hard Deletes to Soft          | MEDIUM   | 2h       | `server/routers/suppliers.ts`            |
 
 ### Execution Order
 

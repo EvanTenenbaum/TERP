@@ -173,13 +173,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ Features (COMPLETE)
 
-| Task        | Description                                   | Status      | Completion Date |
-| ----------- | --------------------------------------------- | ----------- | --------------- |
-| FEATURE-004 | Clarify Vendor vs Buyer vs Client Distinction | ✅ COMPLETE | Dec 2025        |
-| FEATURE-011 | Unified Product Catalogue (Foundation)        | ✅ COMPLETE | Jan 2026        |
-| FEATURE-012 | VIP Portal Admin Impersonation Tool           | ✅ COMPLETE | Dec 31, 2025    |
-| FEATURE-015 | VIP Portal Settings in Client Profile         | ✅ COMPLETE | Dec 2025        |
-| NOTIF-001   | Notification Triggers for Business Events     | ✅ COMPLETE | Jan 9, 2026     |
+| Task        | Description                                     | Status      | Completion Date |
+| ----------- | ----------------------------------------------- | ----------- | --------------- |
+| FEATURE-004 | Clarify Supplier vs Buyer vs Client Distinction | ✅ COMPLETE | Dec 2025        |
+| FEATURE-011 | Unified Product Catalogue (Foundation)          | ✅ COMPLETE | Jan 2026        |
+| FEATURE-012 | VIP Portal Admin Impersonation Tool             | ✅ COMPLETE | Dec 31, 2025    |
+| FEATURE-015 | VIP Portal Settings in Client Profile           | ✅ COMPLETE | Dec 2025        |
+| NOTIF-001   | Notification Triggers for Business Events       | ✅ COMPLETE | Jan 9, 2026     |
 
 ### ✅ Feature Flag System (COMPLETE - Dec 31, 2025)
 
@@ -196,7 +196,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | Task   | Description                                 | Status      |
 | ------ | ------------------------------------------- | ----------- |
 | WS-001 | Quick Action: Receive Client Payment        | ✅ COMPLETE |
-| WS-002 | Quick Action: Pay Vendor                    | ✅ COMPLETE |
+| WS-002 | Quick Action: Pay Supplier                  | ✅ COMPLETE |
 | WS-003 | Pick & Pack Module: Group Bagging/Packing   | ✅ COMPLETE |
 | WS-004 | Sales: Multi-Order & Referral Credit System | ✅ COMPLETE |
 | WS-005 | No Black Box Audit Trail                    | ✅ COMPLETE |
@@ -208,7 +208,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | WS-011 | Sales: Quick Customer Creation              | ✅ COMPLETE |
 | WS-012 | Customer Preferences & Purchase History     | ✅ COMPLETE |
 | WS-013 | Simple Task Management                      | ✅ COMPLETE |
-| WS-014 | Vendor "Harvesting Again" Reminder          | ✅ COMPLETE |
+| WS-014 | Supplier "Harvesting Again" Reminder        | ✅ COMPLETE |
 | WS-015 | Sales: Customer Wishlist Field              | ✅ COMPLETE |
 
 ### ✅ ST-045: User Flow Mapping (COMPLETE - Jan 8, 2026)
@@ -379,16 +379,16 @@ pnpm test --run 2>&1 | tee test-results.log
 > **Updated:** 2026-01-29 - LIVE BROWSER TESTING RESULTS (supersedes code verification)
 > **Status:** 4/12 PASS, 1/12 FAIL, 7/12 BLOCKED - Production schema drift detected
 
-| #      | Golden Flow       | Code Status | Live Status | Primary Blockers                                    |
-| ------ | ----------------- | ----------- | ----------- | --------------------------------------------------- |
-| GF-001 | Direct Intake     | ✅ Code OK  | 🔴 BLOCKED  | BUG-002: Add Batch button non-functional            |
-| GF-002 | Procure-to-Pay    | ✅ Code OK  | 🔴 BLOCKED  | BUG-003/005/006: PO creation completely broken      |
-| GF-003 | Order-to-Cash     | ✅ Code OK  | 🔴 BLOCKED  | BUG-001: Inventory query fails (strainId + vendors) |
-| GF-004 | Invoice & Payment | ✅ Code OK  | ✅ PASS     | Working correctly                                   |
-| GF-005 | Pick & Pack       | ✅ Code OK  | 🔴 BLOCKED  | BUG-008: No orders available (data issue)           |
-| GF-006 | Client Ledger     | ✅ Code OK  | ✅ PASS     | Working correctly                                   |
-| GF-007 | Inventory Mgmt    | ✅ Code OK  | ✅ PASS     | Verified in staging build #5149                     |
-| GF-008 | Sample Request    | ✅ Code OK  | ✅ PASS     | Working correctly (via Todo workflow)               |
+| #      | Golden Flow       | Code Status | Live Status | Primary Blockers                                      |
+| ------ | ----------------- | ----------- | ----------- | ----------------------------------------------------- |
+| GF-001 | Direct Intake     | ✅ Code OK  | 🔴 BLOCKED  | BUG-002: Add Batch button non-functional              |
+| GF-002 | Procure-to-Pay    | ✅ Code OK  | 🔴 BLOCKED  | BUG-003/005/006: PO creation completely broken        |
+| GF-003 | Order-to-Cash     | ✅ Code OK  | 🔴 BLOCKED  | BUG-001: Inventory query fails (strainId + suppliers) |
+| GF-004 | Invoice & Payment | ✅ Code OK  | ✅ PASS     | Working correctly                                     |
+| GF-005 | Pick & Pack       | ✅ Code OK  | 🔴 BLOCKED  | BUG-008: No orders available (data issue)             |
+| GF-006 | Client Ledger     | ✅ Code OK  | ✅ PASS     | Working correctly                                     |
+| GF-007 | Inventory Mgmt    | ✅ Code OK  | ✅ PASS     | Verified in staging build #5149                       |
+| GF-008 | Sample Request    | ✅ Code OK  | ✅ PASS     | Working correctly (via Todo workflow)                 |
 
 ---
 
@@ -428,15 +428,15 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 
 #### S1-Critical Bugs (Release Blockers)
 
-| Bug ID  | Title                                       | Domain          | Root Cause                                        | Est |
-| ------- | ------------------------------------------- | --------------- | ------------------------------------------------- | --- |
-| BUG-130 | Inventory Query Failure                     | Orders          | `salesSheetsDb.ts:117-129` joins strainId+vendors | 4h  |
-| BUG-131 | Add Batch Button Non-Functional             | Inventory       | Frontend click handler not bound                  | 1h  |
-| BUG-132 | Product Dropdown Empty in PO                | Purchase Orders | `productsDb.ts:117` joins strainId                | 2h  |
-| BUG-133 | RBAC Roles Non-Interactive                  | Admin           | Frontend click handlers missing                   | 2h  |
-| BUG-134 | PO Add Item Button Broken                   | Purchase Orders | Related to BUG-132                                | 1h  |
-| BUG-135 | Create PO Button Broken                     | Purchase Orders | Related to BUG-132                                | 1h  |
-| BUG-138 | Alerts Router Uses Deprecated vendors Table | Alerts          | `alerts.ts:15,308` joins deprecated vendors table | 2h  |
+| Bug ID  | Title                                         | Domain          | Root Cause                                          | Est |
+| ------- | --------------------------------------------- | --------------- | --------------------------------------------------- | --- |
+| BUG-130 | Inventory Query Failure                       | Orders          | `salesSheetsDb.ts:117-129` joins strainId+suppliers | 4h  |
+| BUG-131 | Add Batch Button Non-Functional               | Inventory       | Frontend click handler not bound                    | 1h  |
+| BUG-132 | Product Dropdown Empty in PO                  | Purchase Orders | `productsDb.ts:117` joins strainId                  | 2h  |
+| BUG-133 | RBAC Roles Non-Interactive                    | Admin           | Frontend click handlers missing                     | 2h  |
+| BUG-134 | PO Add Item Button Broken                     | Purchase Orders | Related to BUG-132                                  | 1h  |
+| BUG-135 | Create PO Button Broken                       | Purchase Orders | Related to BUG-132                                  | 1h  |
+| BUG-138 | Alerts Router Uses Deprecated suppliers Table | Alerts          | `alerts.ts:15,308` joins deprecated suppliers table | 2h  |
 
 #### S2-High Bugs
 
@@ -477,7 +477,7 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 **Why Previous Fixes Failed:**
 | Attempt | What Was Done | Why It Failed |
 | ------- | ------------- | ------------- |
-| SCHEMA-015 (alerts.ts) | Removed vendors join from 1 file | Only fixed 1 of 27+ affected files |
+| SCHEMA-015 (alerts.ts) | Removed suppliers join from 1 file | Only fixed 1 of 27+ affected files |
 | BUG-131 | Fixed Add Batch button binding | Frontend fix, backend queries still fail |
 | SEC-031 | Fixed auth context in inventoryDb | Unrelated to schema drift |
 | PR #352 | Centralized safeProductSelect | Partial fix, not applied to all files |
@@ -742,11 +742,11 @@ pnpm build    # ✅ PASS
 
 ##### Wave 3C: UX & Type Safety (3 agents parallel, 14h) - ✅ COMPLETE
 
-| Task      | Description                             | Priority | Status   | Est | Module                                                  | GF Impact      |
-| --------- | --------------------------------------- | -------- | -------- | --- | ------------------------------------------------------- | -------------- |
-| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | complete | 8h  | ordersDb, orders.ts, Orders.tsx                         | GF-001, GF-003 |
-| PARTY-004 | Convert vendor hard deletes to soft     | MEDIUM   | complete | 2h  | `vendorSupplyDb.ts:47,79,223-235`, `vendors.ts:360,552` | All GF         |
-| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | complete | 4h  | Dashboard widgets, inventoryDb.ts                       | GF-003         |
+| Task      | Description                             | Priority | Status   | Est | Module                                                    | GF Impact      |
+| --------- | --------------------------------------- | -------- | -------- | --- | --------------------------------------------------------- | -------------- |
+| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | complete | 8h  | ordersDb, orders.ts, Orders.tsx                           | GF-001, GF-003 |
+| PARTY-004 | Convert supplier hard deletes to soft   | MEDIUM   | complete | 2h  | `vendorSupplyDb.ts:47,79,223-235`, `suppliers.ts:360,552` | All GF         |
+| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | complete | 4h  | Dashboard widgets, inventoryDb.ts                         | GF-003         |
 
 **Completed:** 2026-01-29
 **Key Commits:** `c1ce37fd` (TERP-0019 SQL aliases)
@@ -770,16 +770,16 @@ pnpm mega:qa:invariants
 > **Test Suite:** 2514/2514 tests passing, 170/171 test files passing
 > **Result:** ALL 8 GOLDEN FLOWS VERIFIED ✅
 
-| Golden Flow              | Test Case                      | Status    | Verified By | Notes                                 |
-| ------------------------ | ------------------------------ | --------- | ----------- | ------------------------------------- |
-| GF-001 Direct Intake     | Create intake with new vendor  | ✅ PASS   | af6ff73     | Transaction atomicity verified        |
-| GF-002 Procure-to-Pay    | Create PO, receive, pay        | ✅ PASS   | af6ff73     | Full flow with soft deletes           |
-| GF-003 Order-to-Cash     | Create order, confirm, fulfill | ✅ PASS   | aa85380     | OrderOrchestrator, state machine      |
-| GF-004 Invoice & Payment | Create invoice, record payment | ✅ PASS   | aa85380     | GL entries (AR/Revenue) verified      |
-| GF-005 Pick & Pack       | Pick and pack order            | ✅ PASS   | a2644a0     | Inventory movement logging            |
-| GF-006 Client Ledger     | View client ledger             | ✅ PASS\* | a2644a0     | \*MEDIUM: adjustments lacks deletedAt |
-| GF-007 Inventory Mgmt    | Adjust inventory               | ✅ PASS   | acdefdd     | CHECK constraints, SQL aliases        |
-| GF-008 Sample Request    | Create sample request          | ✅ PASS   | acdefdd     | FOR UPDATE lock, allocation tracking  |
+| Golden Flow              | Test Case                       | Status    | Verified By | Notes                                 |
+| ------------------------ | ------------------------------- | --------- | ----------- | ------------------------------------- |
+| GF-001 Direct Intake     | Create intake with new supplier | ✅ PASS   | af6ff73     | Transaction atomicity verified        |
+| GF-002 Procure-to-Pay    | Create PO, receive, pay         | ✅ PASS   | af6ff73     | Full flow with soft deletes           |
+| GF-003 Order-to-Cash     | Create order, confirm, fulfill  | ✅ PASS   | aa85380     | OrderOrchestrator, state machine      |
+| GF-004 Invoice & Payment | Create invoice, record payment  | ✅ PASS   | aa85380     | GL entries (AR/Revenue) verified      |
+| GF-005 Pick & Pack       | Pick and pack order             | ✅ PASS   | a2644a0     | Inventory movement logging            |
+| GF-006 Client Ledger     | View client ledger              | ✅ PASS\* | a2644a0     | \*MEDIUM: adjustments lacks deletedAt |
+| GF-007 Inventory Mgmt    | Adjust inventory                | ✅ PASS   | acdefdd     | CHECK constraints, SQL aliases        |
+| GF-008 Sample Request    | Create sample request           | ✅ PASS   | acdefdd     | FOR UPDATE lock, allocation tracking  |
 
 **Finding (GF-006):** `clientLedgerAdjustments` table lacks `deletedAt` column. Other sources filter soft-deleted records but adjustments do not. Recommend adding SCHEMA-014 task.
 
@@ -843,12 +843,12 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 #### Critical Issues (Tests Failing - 4 agents parallel) - ✅ COMPLETE
 
-| Task     | Description                                    | Priority | Status   | Est | Module                                      | Root Cause                          |
-| -------- | ---------------------------------------------- | -------- | -------- | --- | ------------------------------------------- | ----------------------------------- |
-| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | complete | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
-| BUG-122  | Remove vendors table join in inventory queries | HIGH     | complete | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
-| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | complete | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
-| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | complete | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
+| Task     | Description                                      | Priority | Status   | Est | Module                                      | Root Cause                          |
+| -------- | ------------------------------------------------ | -------- | -------- | --- | ------------------------------------------- | ----------------------------------- |
+| BUG-121  | Export getTransitionError from ordersDb.ts       | HIGH     | complete | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
+| BUG-122  | Remove suppliers table join in inventory queries | HIGH     | complete | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
+| TEST-030 | Fix adminSetup test rate limiter interference    | MEDIUM   | complete | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
+| TEST-031 | Fix admin-security.test.ts failure               | MEDIUM   | complete | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
 
 **BUG-121 Details (getTransitionError not exported):**
 
@@ -863,19 +863,19 @@ export function getTransitionError(statusType, currentStatus, newStatus) {...}
 - **Impact:** 4 tests fail in ordersDb.stateMachine.test.ts (lines 213, 218, 223, 229)
 - **Tests:** "should return terminal state message for PAID/CANCELLED", "should list valid transitions"
 
-**BUG-122 Details (Inventory joins deprecated vendors table):**
+**BUG-122 Details (Inventory joins deprecated suppliers table):**
 
 ```typescript
 // CURRENT - server/inventoryDb.ts:887
-.leftJoin(vendors, eq(lots.vendorId, vendors.id))  // DEPRECATED
+.leftJoin(suppliers, eq(lots.vendorId, suppliers.id))  // DEPRECATED
 
 // FIX: Use clients table with isSeller=true
 .leftJoin(clients, eq(lots.supplierClientId, clients.id))
 ```
 
-- **Impact:** Inventory queries fail when vendors table is dropped
+- **Impact:** Inventory queries fail when suppliers table is dropped
 - **Affected Queries:** `getAllBatches()`, `searchBatches()` - lines 887, 950
-- **Party Model:** Per CLAUDE.md, vendors table is deprecated
+- **Party Model:** Per CLAUDE.md, suppliers table is deprecated
 
 **TEST-030 Details (Rate limiter interference):**
 
@@ -917,7 +917,7 @@ const confirmCancel = useCallback(...);  // Line 165 - never called
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 # All 8 failing tests now pass
-# Inventory queries work without vendors table
+# Inventory queries work without suppliers table
 # getTransitionError properly exported
 ```
 
@@ -1424,7 +1424,7 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 | --------- | ------------------------------------------------ | -------- | ----------------------------- | -------- | --------------------------- |
 | BE-QA-001 | Complete or Remove Email/SMS Integration Stubs   | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 16h      | `docs/prompts/BE-QA-001.md` |
 | BE-QA-002 | Implement VIP Tier Config Database Storage       | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-002.md` |
-| BE-QA-003 | Fix Vendor Supply Matching Empty Results         | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-003.md` |
+| BE-QA-003 | Fix Supplier Supply Matching Empty Results       | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-003.md` |
 | BE-QA-004 | Complete Dashboard Metrics Schema Implementation | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-004.md` |
 | BE-QA-005 | Fix Supplier Metrics Null Return Values          | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 4h       | `docs/prompts/BE-QA-005.md` |
 
@@ -1650,23 +1650,23 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 
 ### Infrastructure Tasks (P2)
 
-| Task         | Description                                      | Priority | Status                                                 | Prompt |
-| ------------ | ------------------------------------------------ | -------- | ------------------------------------------------------ | ------ |
-| INFRA-004    | Implement Deployment Monitoring Enforcement      | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-007    | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
-| INFRA-012    | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
-| CLEANUP-001  | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-017    | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
-| INFRA-018    | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
-| INFRA-020    | Pick & Pack Consolidation Phase 0 - Data Audit   | HIGH     | ready                                                  | -      |
-| INFRA-021    | Pick & Pack Consolidation Phase 1 - Backend      | HIGH     | ready                                                  | -      |
-| INFRA-022    | Pick & Pack Consolidation Phase 2 - Feature Flag | HIGH     | ready                                                  | -      |
-| INFRA-023    | Pick & Pack Consolidation Phase 3 - Migration    | HIGH     | ready                                                  | -      |
-| INFRA-024    | Pick & Pack Consolidation Phase 4 - Cleanup      | MEDIUM   | ready                                                  | -      |
-| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)             | HIGH     | ready                                                  | -      |
-| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)     | HIGH     | ready                                                  | -      |
-| INFRA-DB-003 | Consolidate Image Tables (Deferred)              | MEDIUM   | deferred                                               | -      |
-| INFRA-DB-004 | Complete Vendors → Clients Migration (Deferred)  | MEDIUM   | deferred                                               | -      |
+| Task         | Description                                       | Priority | Status                                                 | Prompt |
+| ------------ | ------------------------------------------------- | -------- | ------------------------------------------------------ | ------ |
+| INFRA-004    | Implement Deployment Monitoring Enforcement       | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-007    | Update Swarm Manager                              | LOW      | ✅ COMPLETE (audit verified)                           | -      |
+| INFRA-012    | Deploy TERP Commander Slack Bot                   | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
+| CLEANUP-001  | Remove LLM/AI from Codebase                       | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-017    | Fix Hardcoded Memory Value in memoryOptimizer.ts  | HIGH     | ✅ COMPLETE                                            | -      |
+| INFRA-018    | Sync .do/app.yaml with Production Config          | MEDIUM   | ✅ COMPLETE                                            | -      |
+| INFRA-020    | Pick & Pack Consolidation Phase 0 - Data Audit    | HIGH     | ready                                                  | -      |
+| INFRA-021    | Pick & Pack Consolidation Phase 1 - Backend       | HIGH     | ready                                                  | -      |
+| INFRA-022    | Pick & Pack Consolidation Phase 2 - Feature Flag  | HIGH     | ready                                                  | -      |
+| INFRA-023    | Pick & Pack Consolidation Phase 3 - Migration     | HIGH     | ready                                                  | -      |
+| INFRA-024    | Pick & Pack Consolidation Phase 4 - Cleanup       | MEDIUM   | ready                                                  | -      |
+| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)              | HIGH     | ready                                                  | -      |
+| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)      | HIGH     | ready                                                  | -      |
+| INFRA-DB-003 | Consolidate Image Tables (Deferred)               | MEDIUM   | deferred                                               | -      |
+| INFRA-DB-004 | Complete Suppliers → Clients Migration (Deferred) | MEDIUM   | deferred                                               | -      |
 
 > **INFRA-DB Tasks (Database Standardization - Phase 6):**
 >
@@ -1679,7 +1679,7 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 > - **INFRA-DB-001:** Add FK constraints to 15+ tables (brands, lots, bills, etc.)
 > - **INFRA-DB-002:** Rename payments.vendorId → supplierClientId
 > - **INFRA-DB-003:** Consolidate productMedia + productImages tables (DEFERRED)
-> - **INFRA-DB-004:** Complete Party Model vendors → clients migration (DEFERRED)
+> - **INFRA-DB-004:** Complete Party Model suppliers → clients migration (DEFERRED)
 
 > **INFRA-017 Details (Memory Health Check False Positive):**
 >
@@ -2113,7 +2113,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | NAV-008 | Add Matchmaking to Sales nav                   | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-009 | Add Quotes to Sales nav                        | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-010 | Add Returns to Sales nav                       | MEDIUM   | **complete** | 5 min    | navigation.ts      |
-| NAV-011 | Add Vendor Supply to Inventory nav             | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-011 | Add Supplier Supply to Inventory nav           | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-012 | Add Pricing Rules to Finance nav               | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-013 | Add Workflow Queue to Admin nav                | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-014 | Add all 8 routes to Command Palette            | MEDIUM   | **complete** | 15 min   | CommandPalette.tsx |
@@ -2151,15 +2151,15 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 Each task adds one navigation item to `navigation.ts`:
 
-| Task    | Route             | Group     | Icon         | Position              |
-| ------- | ----------------- | --------- | ------------ | --------------------- |
-| NAV-007 | `/needs`          | sales     | Target       | After Invoices        |
-| NAV-008 | `/matchmaking`    | sales     | Sparkles     | After Client Needs    |
-| NAV-009 | `/quotes`         | sales     | FileQuestion | After Matchmaking     |
-| NAV-010 | `/returns`        | sales     | PackageX     | After Quotes          |
-| NAV-011 | `/vendor-supply`  | inventory | PackagePlus  | After Vendors         |
-| NAV-012 | `/pricing/rules`  | finance   | DollarSign   | After Credit Settings |
-| NAV-013 | `/workflow-queue` | admin     | ListOrdered  | After Feature Flags   |
+| Task    | Route              | Group     | Icon         | Position              |
+| ------- | ------------------ | --------- | ------------ | --------------------- |
+| NAV-007 | `/needs`           | sales     | Target       | After Invoices        |
+| NAV-008 | `/matchmaking`     | sales     | Sparkles     | After Client Needs    |
+| NAV-009 | `/quotes`          | sales     | FileQuestion | After Matchmaking     |
+| NAV-010 | `/returns`         | sales     | PackageX     | After Quotes          |
+| NAV-011 | `/supplier-supply` | inventory | PackagePlus  | After Suppliers       |
+| NAV-012 | `/pricing/rules`   | finance   | DollarSign   | After Credit Settings |
+| NAV-013 | `/workflow-queue`  | admin     | ListOrdered  | After Feature Flags   |
 
 ---
 
@@ -2370,13 +2370,13 @@ Users cannot select specific batches when creating orders. System auto-allocates
 **Module:** `server/schema.ts`, `server/ordersDb.ts:1564-1570`
 
 **Problem:**
-Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to vendor).
+Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to supplier).
 
 **Objectives:**
 
 1. Add RETURNED status to order status enum
 2. Implement restock-to-inventory path
-3. Implement return-to-vendor path
+3. Implement return-to-supplier path
 4. Create inventory movements for returns
 
 **Deliverables:**
@@ -2384,7 +2384,7 @@ Order status machine is incomplete - missing RETURNED status with required proce
 - [ ] RETURNED status added to schema
 - [ ] Status transition validation updated
 - [ ] Restock flow creates inventory movements
-- [ ] Return-to-vendor flow updates vendor records
+- [ ] Return-to-supplier flow updates supplier records
 - [ ] UI for selecting return disposition
 
 ---
@@ -2538,7 +2538,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 | FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | COMPLETE    | 4h       | MatchmakingServicePage.tsx     |
 | API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
 | DATA-022   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
-| DEPR-001   | Migrate Deprecated Vendor Router Usages       | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
+| DEPR-001   | Migrate Deprecated Supplier Router Usages     | MEDIUM   | NOT STARTED | 8h       | suppliers.ts, multiple callers |
 | SCHEMA-001 | Fix products.name vs nameCanonical Mismatch   | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
 | SCHEMA-002 | Document batches.quantity vs onHandQty        | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
 | SCHEMA-003 | Add clients.tier and clients.isActive Columns | MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
@@ -2749,7 +2749,7 @@ Three empty catch blocks silently swallow Performance Observer errors. Productio
 | ----------- | ------------------------------------------------- | -------- | ----------- | -------- | --------------------------------------- |
 | TEST-QA-001 | Fix React Hook Test Infrastructure (JSDOM Setup)  | HIGH     | NOT STARTED | 2h       | hooks/work-surface/**tests**/\*.test.ts |
 | LIVE-001    | Implement or Remove Live Shopping Session Console | HIGH     | NOT STARTED | 4h       | LiveShoppingPage.tsx:410                |
-| DI-009      | Add Vendor ID Validation in Return Processing     | HIGH     | NOT STARTED | 30 min   | returnProcessing.ts:135-140             |
+| DI-009      | Add Supplier ID Validation in Return Processing   | HIGH     | NOT STARTED | 30 min   | returnProcessing.ts:135-140             |
 | SEC-024     | Validate Quote Email XSS Prevention               | HIGH     | NOT STARTED | 1h       | emailService.ts (viewUrl escaping)      |
 
 ##### TEST-QA-001: Fix React Hook Test Infrastructure
@@ -2800,7 +2800,7 @@ TODO comment indicates session console/detail view is unimplemented. Feature app
 
 ---
 
-##### DI-009: Add Vendor ID Validation in Return Processing
+##### DI-009: Add Supplier ID Validation in Return Processing
 
 **Status:** NOT STARTED
 **Priority:** HIGH (P1)
@@ -2808,17 +2808,17 @@ TODO comment indicates session console/detail view is unimplemented. Feature app
 **Module:** `server/services/returnProcessing.ts:135-140`
 
 **Problem:**
-`processVendorReturn` accepts vendorId without validating it exists in the database. Can create orphan vendor return records with invalid vendorId, causing referential integrity issues.
+`processVendorReturn` accepts vendorId without validating it exists in the database. Can create orphan supplier return records with invalid vendorId, causing referential integrity issues.
 
 **Objectives:**
 
-1. Validate vendorId exists before creating vendor return
-2. Throw appropriate error if vendor not found
+1. Validate vendorId exists before creating supplier return
+2. Throw appropriate error if supplier not found
 
 **Deliverables:**
 
-- [ ] Add vendor existence check at start of `processVendorReturn`
-- [ ] Throw TRPCError NOT_FOUND if vendor doesn't exist
+- [ ] Add supplier existence check at start of `processVendorReturn`
+- [ ] Throw TRPCError NOT_FOUND if supplier doesn't exist
 - [ ] Add unit test for invalid vendorId case
 
 ---
@@ -3458,7 +3458,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ---
 
-### REL-013: Complete Vendor Table Deprecation
+### REL-013: Complete Supplier Table Deprecation
 
 **Status:** ready
 **Priority:** LOW
@@ -3467,7 +3467,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Dependencies:** None
 **Mode:** STRICT
 
-**Problem:** 79 files still reference deprecated vendors table.
+**Problem:** 79 files still reference deprecated suppliers table.
 
 **Deliverables:**
 
@@ -3475,13 +3475,13 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Create migration plan per module
 - [ ] Replace with clients.isSeller queries
 - [ ] Update all foreign keys to supplierClientId
-- [ ] Add CI check blocking new vendor references
-- [ ] Remove vendors table from schema (final step)
+- [ ] Add CI check blocking new supplier references
+- [ ] Remove suppliers table from schema (final step)
 
 **Verification:**
 
 - [ ] `grep -r "vendorId" server/` returns 0 results
-- [ ] `grep -r "vendors" server/` returns 0 results (except deprecated comments)
+- [ ] `grep -r "suppliers" server/` returns 0 results (except deprecated comments)
 - [ ] All supplier queries use clients table
 
 ---
@@ -4162,7 +4162,7 @@ Users need to select specific batches/lots when fulfilling orders based on custo
 
 ---
 
-### WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
+### WSQA-003: Add RETURNED Order Status with Restock/Supplier-Return Paths
 
 **Status:** complete
 **Completed:** 2026-01-21
@@ -4180,19 +4180,19 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 **Product Decision:** Add RETURNED status with two terminal paths:
 
 - RESTOCKED: Items returned to inventory (increases batch quantities)
-- RETURNED_TO_VENDOR: Items sent to vendor (creates vendor return record)
+- RETURNED_TO_VENDOR: Items sent to supplier (creates supplier return record)
 
 **Objectives:**
 
 1. Add new enum values: RETURNED, RESTOCKED, RETURNED_TO_VENDOR
 2. Create vendor_returns and vendor_return_items tables
 3. Implement state machine with valid transitions
-4. Build restock and vendor-return processing logic
+4. Build restock and supplier-return processing logic
 
 **Deliverables:**
 
 - [ ] New enum values added to fulfillment_status
-- [ ] vendor_returns table tracks vendor return requests
+- [ ] vendor_returns table tracks supplier return requests
 - [ ] State machine validates all status transitions
 - [ ] processRestock increases batch quantities and logs movements
 - [ ] processVendorReturn creates return records
@@ -4779,7 +4779,7 @@ Automated QA is blocked because staging lacks deterministic QA-prefixed entities
 
 **Scope:**
 
-- Seed QA locations, customers, SKUs, and vendor records.
+- Seed QA locations, customers, SKUs, and supplier records.
 - Maintain registry of seeded IDs.
 
 **Implementation Notes:**
@@ -4790,7 +4790,7 @@ Automated QA is blocked because staging lacks deterministic QA-prefixed entities
 
 **Acceptance Criteria:**
 
-- [ ] Script seeds QA-prefixed locations, customers, SKUs, and vendor entries.
+- [ ] Script seeds QA-prefixed locations, customers, SKUs, and supplier entries.
 - [ ] Script is idempotent and logs created IDs.
 - [ ] Registry file updated with seeded IDs.
 - [ ] QA roles can access QA-prefixed data in UI.
@@ -4829,7 +4829,7 @@ Accounting users lack UI access to 43/52 accounting flows, forcing API-only usag
 **Scope:**
 
 - Prioritize and implement UI for the top 10 P0 accounting flows:
-  Receive Client Payment, Pay Vendor, Record Payment, Preview Balance,
+  Receive Client Payment, Pay Supplier, Record Payment, Preview Balance,
   AR Summary, AR Aging, Outstanding Receivables, Overdue Invoices,
   Client Statement, AP Summary.
 
@@ -5083,7 +5083,7 @@ Order processing and financial calculations lack key guardrails and precision co
 **Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 4-8h
-**Module:** `server/routers/vendors.ts`, `server/routers/vendorSupply.ts`, `server/routers/dashboardEnhanced.ts`, `server/routers/tags.ts`
+**Module:** `server/routers/suppliers.ts`, `server/routers/vendorSupply.ts`, `server/routers/dashboardEnhanced.ts`, `server/routers/tags.ts`
 **Dependencies:** None
 
 **Problem / Goal:**
@@ -5091,7 +5091,7 @@ Several routers are still exposed via `publicProcedure`, allowing unauthenticate
 
 **Context / Evidence:**
 
-- Vendors, vendor supply, dashboardEnhanced, and tags routers lack auth protection.
+- Suppliers, supplier supply, dashboardEnhanced, and tags routers lack auth protection.
 
 **Scope:**
 
@@ -5111,7 +5111,7 @@ Several routers are still exposed via `publicProcedure`, allowing unauthenticate
 **Validation Steps:**
 
 1. Run targeted router tests.
-2. Manual QA for vendor/tags routes with/without auth.
+2. Manual QA for supplier/tags routes with/without auth.
 
 **Risk / Edge Cases:**
 
@@ -5895,7 +5895,7 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 | PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | complete | 4h       | `drizzle/schema.ts`, `purchaseOrders.ts`           |
 | PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | complete | 2h       | `drizzle/schema.ts`                                |
 | PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | complete | 2h       | `server/routers/vendors.ts`                        |
+| PARTY-004 | Convert Supplier Hard Deletes to Soft Deletes    | MEDIUM   | complete | 2h       | `server/routers/suppliers.ts`                      |
 
 ---
 
@@ -6161,7 +6161,7 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 4. **State Machine Ignored** - Defined but not used
 5. **Missing Transactions** - Multi-step ops without atomicity
 6. **Security Chains** - Individual issues combine into exploits
-7. **Party Model Debt** - 42 files reference deprecated vendors table
+7. **Party Model Debt** - 42 files reference deprecated suppliers table
 
 **Blast Radius Summary:**
 | Issue | Max Impact |
@@ -6817,11 +6817,11 @@ global.ResizeObserver = class ResizeObserver {
 **Problem / Goal:**
 When creating a Sales Order, the system fails to load available inventory and displays a raw SQL query error to the user. This is a system-wide blocker for all transactional flows.
 
-**Root Cause:** Query joined deprecated `vendors` table which caused failures.
+**Root Cause:** Query joined deprecated `suppliers` table which caused failures.
 
 **Fix Applied:**
 
-- BUG-122 removed all `vendors` table joins from `inventoryDb.ts` (lines 887, 950)
+- BUG-122 removed all `suppliers` table joins from `inventoryDb.ts` (lines 887, 950)
 - Updated to use `clients` table with `isSeller=true` per Party Model
 - Also fixed in `spreadsheetViewService.ts`, `inventory.ts`, `Inventory.tsx`
 
@@ -6834,7 +6834,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 **Objectives:**
 
 - Confirm inventory queries load without SQL errors for order creation.
-- Ensure canonical supplier joins are used instead of deprecated vendors table.
+- Ensure canonical supplier joins are used instead of deprecated suppliers table.
 - Validate inventory availability in the order creation UI.
 
 **Deliverables:**
@@ -6859,7 +6859,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 **Prompt:** `docs/prompts/BUG-111.md`
 
 **Problem / Goal:**
-Users with the `QA Sales Rep` role cannot view the client list, receiving a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
+Users with the `QA Sales Rep` role cannot view the client list, intake a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
 
 **Context / Evidence:**
 
@@ -7094,27 +7094,27 @@ There is a severe data integrity issue. The main dashboard displays an inventory
 **Prompt:** `docs/prompts/BUG-116.md`
 
 **Problem / Goal:**
-The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Vendors Owed" shows "Unknown Vendor" for all entries.
+The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Suppliers Owed" shows "Unknown Supplier" for all entries.
 
 **Context / Evidence:**
 
-- The queries for these specific dashboard widgets are likely failing to join or resolve related entity names (clients, vendors).
+- The queries for these specific dashboard widgets are likely failing to join or resolve related entity names (clients, suppliers).
 
 **Acceptance Criteria:**
 
 - [ ] The "Top Debtors" widget correctly lists clients with the highest outstanding balances.
-- [ ] The "Top Vendors Owed" widget correctly lists vendor names.
+- [ ] The "Top Suppliers Owed" widget correctly lists supplier names.
 
 **Objectives:**
 
-- Fix AR/AP dashboard data joins for client and vendor names.
+- Fix AR/AP dashboard data joins for client and supplier names.
 - Validate widgets show accurate balances.
 - Ensure no regressions in accounting dashboard queries.
 
 **Deliverables:**
 
 - [ ] Query fixes for AR/AP dashboard widgets.
-- [ ] Tests or validation for top debtors/vendors output.
+- [ ] Tests or validation for top debtors/suppliers output.
 - [ ] UI verification for accounting dashboard widgets.
 - [ ] Roadmap completion details recorded.
 - [ ] Deployment verification documented.

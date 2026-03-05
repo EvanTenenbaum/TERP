@@ -33,17 +33,18 @@ Fix critical database schema issues discovered during QA-validated database stru
 ## Root Cause Analysis
 
 The schema errors persisted because `drizzle/` folder was excluded from TypeScript type-checking in tsconfig.json. This allowed:
+
 - Malformed soft delete columns (ST-013 merge error)
 - Copy-paste index definition errors
 - To go undetected during development and CI
 
 ## Files Modified
 
-| File | Change | Result |
-|------|--------|--------|
-| `tsconfig.json` | Added `drizzle/**/*` to includes | Schema now type-checked |
-| `drizzle/schema.ts` | Fixed 45+ deletedAt columns, 4 broken indexes | Schema compiles cleanly |
-| `.husky/pre-commit-qa-check.sh` | Added drizzle/ exception to large file check | Allows schema commits |
+| File                            | Change                                        | Result                  |
+| ------------------------------- | --------------------------------------------- | ----------------------- |
+| `tsconfig.json`                 | Added `drizzle/**/*` to includes              | Schema now type-checked |
+| `drizzle/schema.ts`             | Fixed 45+ deletedAt columns, 4 broken indexes | Schema compiles cleanly |
+| `.husky/pre-commit-qa-check.sh` | Added drizzle/ exception to large file check  | Allows schema commits   |
 
 ## Validation Performed
 
@@ -53,12 +54,15 @@ The schema errors persisted because `drizzle/` folder was excluded from TypeScri
 ## Summary of Changes
 
 ### ST-020: TypeScript Config Fix
+
 - Added `"drizzle/**/*"` to tsconfig.json includes array
 - Schema errors will now be caught during development and CI
 
 ### ST-021: Soft Delete Column Fixes
+
 Fixed 45+ tables where `deletedAt` was incorrectly inside other column definitions:
-- users, vendors, vendorNotes, products, productSynonyms, batches
+
+- users, suppliers, vendorNotes, products, productSynonyms, batches
 - paymentHistory, batchLocations, sales, cogsHistory, auditLogs
 - locations, categories, subcategories, grades, scratchPadNotes
 - dashboardWidgetLayouts, dashboardKpiConfigs, accounts
@@ -67,7 +71,9 @@ Fixed 45+ tables where `deletedAt` was incorrectly inside other column definitio
 - creditSystemSettings, pricingProfiles, tagGroups, and more
 
 ### ST-022: Broken Index Fixes
+
 Removed/fixed 4 broken index definitions:
+
 - `creditSystemSettings`: removed idx referencing non-existent batchId
 - `pricingProfiles`: removed idx referencing non-existent productId
 - `tagGroups`: removed idx referencing non-existent batchId

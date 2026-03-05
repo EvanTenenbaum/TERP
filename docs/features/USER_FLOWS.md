@@ -11,6 +11,7 @@
 This document maps user flows for all **83 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
 
 **Statistics:**
+
 - Original Documented Features: 15
 - Newly Discovered Features: 55
 - Wave 5 New Features: 13 (Work Surfaces, Golden Flows, Hour Tracking, Quote Email, etc.)
@@ -24,6 +25,7 @@ This document maps user flows for all **83 major feature modules** in the TERP c
 - Documentation Coverage: 100%
 
 **Wave 5 Major Additions (January 2026):**
+
 - Work Surface Framework (10 components with AG Grid, Inspector Panels, Keyboard navigation)
 - Golden Flows (3 multi-step wizards for core business processes)
 - Work Surface Hooks (12 reusable hooks for UX patterns)
@@ -39,6 +41,7 @@ Each section outlines the primary user journeys, the actors involved, and specif
 ## Table of Contents
 
 ### Core Features (DF-001 to DF-015)
+
 - [DF-001: Calendar & Event Management System](#df-001-calendar--event-management-system)
 - [DF-002: Task Management & Todo Lists](#df-002-task-management--todo-lists)
 - [DF-003: Advanced Accounting Module](#df-003-advanced-accounting-module)
@@ -56,28 +59,33 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-015: Sample Management System](#df-015-sample-management-system)
 
 ### Commerce & Sales Features (DF-016 to DF-022)
+
 - [DF-016: Live Shopping System](#df-016-live-shopping-system)
 - [DF-017: Leaderboard & Gamification](#df-017-leaderboard--gamification)
-- [DF-018: Purchase Orders & Receiving](#df-018-purchase-orders--receiving)
+- [DF-018: Purchase Orders & Intake](#df-018-purchase-orders--intake)
 - [DF-019: Returns & Refunds](#df-019-returns--refunds)
 - [DF-020: Quotes Management](#df-020-quotes-management)
 - [DF-021: Sales Sheets](#df-021-sales-sheets)
 - [DF-022: Unified Sales Portal](#df-022-unified-sales-portal)
 
 ### Warehouse Operations (DF-023 to DF-025)
+
 - [DF-023: Pick & Pack Module](#df-023-pick--pack-module)
 - [DF-024: Storage & Transfers](#df-024-storage--transfers)
 - [DF-025: Photography Module](#df-025-photography-module)
 
 ### CRM & Client Management (DF-026 to DF-027)
+
 - [DF-026: Client 360 View](#df-026-client-360-view)
 - [DF-027: Client Wants/Needs Tracking](#df-027-client-wantsneeds-tracking)
 
 ### Scheduling & HR (DF-028 to DF-029)
+
 - [DF-028: Advanced Scheduling](#df-028-advanced-scheduling)
 - [DF-029: Time Off & Hour Tracking](#df-029-time-off--hour-tracking)
 
 ### Financial Features (DF-030 to DF-035)
+
 - [DF-030: Crypto Payments](#df-030-crypto-payments)
 - [DF-031: Installment Payments](#df-031-installment-payments)
 - [DF-032: Payment Terms Management](#df-032-payment-terms-management)
@@ -86,27 +94,32 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-035: Invoice Disputes](#df-035-invoice-disputes)
 
 ### Product Management (DF-036 to DF-038)
+
 - [DF-036: Product Categories (Extended)](#df-036-product-categories-extended)
 - [DF-037: Product Grades](#df-037-product-grades)
 - [DF-038: Catalog Publishing](#df-038-catalog-publishing)
 
 ### Operations (DF-039 to DF-042)
+
 - [DF-039: Workflow Queue](#df-039-workflow-queue)
 - [DF-040: Referrals System](#df-040-referrals-system)
 - [DF-041: Office Supply Management](#df-041-office-supply-management)
 - [DF-042: Cash Audit](#df-042-cash-audit)
 
 ### Administration (DF-043 to DF-046)
+
 - [DF-043: RBAC System](#df-043-rbac-system)
 - [DF-044: Feature Flags](#df-044-feature-flags)
 - [DF-045: Audit Trail](#df-045-audit-trail)
 - [DF-046: System Monitoring](#df-046-system-monitoring)
 
-### Vendor & Supply Chain (DF-047 to DF-048)
-- [DF-047: Vendor Payables](#df-047-vendor-payables)
-- [DF-048: Vendor Reminders](#df-048-vendor-reminders)
+### Supplier & Supply Chain (DF-047 to DF-048)
+
+- [DF-047: Supplier Payables](#df-047-supplier-payables)
+- [DF-048: Supplier Reminders](#df-048-supplier-reminders)
 
 ### Data & Navigation (DF-049 to DF-058)
+
 - [DF-049: Global Search](#df-049-global-search)
 - [DF-050: Spreadsheet View](#df-050-spreadsheet-view)
 - [DF-051: VIP Tiers](#df-051-vip-tiers)
@@ -119,28 +132,34 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-058: Comments & Mentions](#df-058-comments--mentions)
 
 ### Financial & Analytics Extended (DF-059 to DF-061)
+
 - [DF-059: COGS Management](#df-059-cogs-management)
 - [DF-060: Client Ledger](#df-060-client-ledger)
 - [DF-061: Bad Debt Management](#df-061-bad-debt-management)
 
 ### Product & Catalog Extended (DF-062 to DF-063)
+
 - [DF-062: Strains Management](#df-062-strains-management)
 - [DF-063: Advanced Tags System](#df-063-advanced-tags-system)
 
 ### Analytics & Reporting Extended (DF-064 to DF-065)
+
 - [DF-064: Analytics Engine](#df-064-analytics-engine)
-- [DF-065: Vendor Supply Matching](#df-065-vendor-supply-matching)
+- [DF-065: Supplier Supply Matching](#df-065-supplier-supply-matching)
 
 ### System Configuration (DF-066 to DF-067)
+
 - [DF-066: System Configuration](#df-066-system-configuration)
 - [DF-067: Recurring Orders](#df-067-recurring-orders)
 
 ### System Infrastructure (DF-068 to DF-070)
+
 - [DF-068: Health & Diagnostics](#df-068-health--diagnostics)
 - [DF-069: Admin Tools Suite](#df-069-admin-tools-suite)
 - [DF-070: User Management](#df-070-user-management)
 
 ### Wave 5 Features (DF-071 to DF-083) - Added January 2026
+
 - [DF-071: Hour Tracking System](#df-071-hour-tracking-system)
 - [DF-072: Quote Email System](#df-072-quote-email-system)
 - [DF-073: Work Surface Session Management](#df-073-work-surface-session-management)
@@ -156,6 +175,7 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-083: E2E Testing Infrastructure](#df-083-e2e-testing-infrastructure)
 
 ---
+
 ## DF-001: Calendar & Event Management System
 
 **Category:** Collaboration & Scheduling  
@@ -179,13 +199,12 @@ Complete calendar system with events, recurrence rules, participants, reminders,
 
 | System sends an event reminder | System |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-002: Task Management & Todo Lists
 
 **Category:** Project Management  
@@ -207,13 +226,12 @@ Complete task management system with todo lists, tasks, and activity tracking.
 
 | User assigns a task to another user | Manager, Admin |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-003: Advanced Accounting Module
 
 **Category:** Financial Management  
@@ -237,13 +255,12 @@ Comprehensive accounting system with invoices, bills, payments, bank account rec
 
 | Admin generates a financial report (P&L, Balance Sheet) | Admin |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 - **EXCLUDE:** User wants PDF generation to **match the UI**. This applies to invoices, packing slips, and reports. The visual representation should be consistent with the web interface.
 
 ---
+
 ## DF-004: Freeform Notes & Commenting System
 
 **Category:** Collaboration  
@@ -255,13 +272,12 @@ Complete note-taking system with freeform notes, comments, and activity tracking
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-005: VIP Customer Portal
 
 **Category:** Customer Experience  
@@ -283,13 +299,12 @@ Customer-facing portal system for VIP clients with admin configuration.
 
 | VIP Client places a new order | VIP Client |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-006: Client Needs Management (CRM)
 
 **Category:** Customer Relationship Management  
@@ -309,13 +324,12 @@ CRM-like system for tracking and managing client needs and requirements.
 
 | Manager views a client's need history | Manager, Admin |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-007: Intelligent Product-Client Matchmaking
 
 **Category:** Sales Intelligence  
@@ -327,13 +341,12 @@ Intelligent matching system to connect products with client needs.
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-008: Advanced Pricing Profiles & Rules
 
 **Category:** Pricing Management  
@@ -345,13 +358,12 @@ Sophisticated pricing system with profiles and configurable rules.
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-009: Inbox & Notification Center
 
 **Category:** Communication  
@@ -363,13 +375,12 @@ Centralized inbox for system notifications and messages.
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-010: Product Intake Management
 
 **Category:** Inventory Operations  
@@ -391,13 +402,12 @@ System for managing product intake sessions and batch processing.
 
 | Manager finalizes the intake session, adding inventory to stock | Manager |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 - **EXCLUDE:** User has noted that the product intake and labeling process is a **bigger initiative** that needs to be formally designed. The current system should be seen as a foundation to be built upon.
 
 ---
+
 ## DF-011: Scratch Pad / Quick Notes
 
 **Category:** Productivity  
@@ -409,13 +419,12 @@ Quick note-taking scratch pad for temporary notes and ideas.
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-012: Advanced Dashboard System
 
 **Category:** Analytics & Reporting  
@@ -427,13 +436,12 @@ Advanced dashboard with customizable widgets, layouts, KPI configs, and enhanced
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-013: Multi-Location & Bin Tracking
 
 **Category:** Inventory Management
@@ -453,13 +461,12 @@ Complete multi-location warehouse management with zones, bin-level tracking, and
 
 | System updates the `batchLocations` table | System |
 
-
-
 ### Exclusions & User-Defined Constraints
 
 - **EXCLUDE:** User has noted that the product intake and labeling process is a **bigger initiative** that needs to be formally designed. The current system should be seen as a foundation to be built upon.
 
 ---
+
 ## DF-014: Customer Credit Management
 
 **Category:** Financial Management  
@@ -471,13 +478,12 @@ Complete credit management system with settings and configurations.
 
 _No specific user flows mapped yet. Requires further analysis._
 
-
-
 ### Exclusions & User-Defined Constraints
 
 _No specific exclusions noted for this module._
 
 ---
+
 ## DF-015: Sample Management System
 
 **Category:** Sales Operations
@@ -487,14 +493,14 @@ System for managing product samples, requests, and distribution.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep creates sample request | Sales Rep |
-| Warehouse fulfills sample request | Warehouse Staff |
-| Manager sets monthly sample allocation | Manager |
-| System tracks sample conversion to orders | System |
-| Sales rep requests sample return | Sales Rep |
-| Manager views sample ROI analysis | Manager |
+| User Flow                                 | Actors          |
+| ----------------------------------------- | --------------- |
+| Sales rep creates sample request          | Sales Rep       |
+| Warehouse fulfills sample request         | Warehouse Staff |
+| Manager sets monthly sample allocation    | Manager         |
+| System tracks sample conversion to orders | System          |
+| Sales rep requests sample return          | Sales Rep       |
+| Manager views sample ROI analysis         | Manager         |
 
 ### Exclusions & User-Defined Constraints
 
@@ -511,14 +517,14 @@ Real-time interactive shopping sessions between sales reps and VIP clients with 
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep creates live shopping session | Sales Rep |
-| VIP client joins session from portal | VIP Client |
-| Client adds items with status (Interested/Want/Need) | VIP Client |
-| Sales rep negotiates pricing in real-time | Sales Rep, VIP Client |
-| Warehouse views consolidated pick list | Warehouse Staff |
-| Session converts to order | Sales Rep |
+| User Flow                                            | Actors                |
+| ---------------------------------------------------- | --------------------- |
+| Sales rep creates live shopping session              | Sales Rep             |
+| VIP client joins session from portal                 | VIP Client            |
+| Client adds items with status (Interested/Want/Need) | VIP Client            |
+| Sales rep negotiates pricing in real-time            | Sales Rep, VIP Client |
+| Warehouse views consolidated pick list               | Warehouse Staff       |
+| Session converts to order                            | Sales Rep             |
 
 ### Exclusions & User-Defined Constraints
 
@@ -535,14 +541,14 @@ Complete gamification system with leaderboards, points, achievements, and referr
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User views their leaderboard position | All Users |
-| Admin configures leaderboard metrics | Admin |
+| User Flow                               | Actors    |
+| --------------------------------------- | --------- |
+| User views their leaderboard position   | All Users |
+| Admin configures leaderboard metrics    | Admin     |
 | User earns points from sales/activities | All Users |
-| User redeems points for rewards | All Users |
-| System processes referral "couch tax" | System |
-| Manager views team performance | Manager |
+| User redeems points for rewards         | All Users |
+| System processes referral "couch tax"   | System    |
+| Manager views team performance          | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -550,23 +556,23 @@ _No specific exclusions noted for this module._
 
 ---
 
-## DF-018: Purchase Orders & Receiving
+## DF-018: Purchase Orders & Intake
 
 **Category:** Procurement
 **Status:** Fully Implemented
 
-Complete purchase order lifecycle from draft to receiving with batch creation.
+Complete purchase order lifecycle from draft to intake with batch creation.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Purchasing creates draft PO | Purchasing |
-| Manager confirms/approves PO | Manager |
-| Purchasing submits PO to vendor | Purchasing |
-| Warehouse receives goods against PO | Warehouse Staff |
-| System creates inventory batches from receiving | System |
-| Manager views pending POs | Manager |
+| User Flow                                    | Actors          |
+| -------------------------------------------- | --------------- |
+| Purchasing creates draft PO                  | Purchasing      |
+| Manager confirms/approves PO                 | Manager         |
+| Purchasing submits PO to supplier            | Purchasing      |
+| Warehouse receives goods against PO          | Warehouse Staff |
+| System creates inventory batches from intake | System          |
+| Manager views pending POs                    | Manager         |
 
 ### Exclusions & User-Defined Constraints
 
@@ -579,18 +585,18 @@ _No specific exclusions noted for this module._
 **Category:** Order Management
 **Status:** Fully Implemented
 
-Complete returns workflow with approval, receiving, inventory restocking, and refund processing.
+Complete returns workflow with approval, intake, inventory restocking, and refund processing.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep creates return request | Sales Rep |
-| Manager approves/rejects return | Manager |
-| Warehouse receives returned items | Warehouse Staff |
-| System restocks inventory from return | System |
-| Manager processes refund | Manager |
-| Admin views return statistics | Admin |
+| User Flow                             | Actors          |
+| ------------------------------------- | --------------- |
+| Sales rep creates return request      | Sales Rep       |
+| Manager approves/rejects return       | Manager         |
+| Warehouse receives returned items     | Warehouse Staff |
+| System restocks inventory from return | System          |
+| Manager processes refund              | Manager         |
+| Admin views return statistics         | Admin           |
 
 ### Exclusions & User-Defined Constraints
 
@@ -607,13 +613,13 @@ Quote creation, sending, and conversion to orders.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                          | Actors    |
+| ---------------------------------- | --------- |
 | Sales rep creates quote for client | Sales Rep |
-| System sends quote to client | System |
-| Client accepts/rejects quote | Client |
-| Sales rep converts quote to order | Sales Rep |
-| Manager views expired quotes | Manager |
+| System sends quote to client       | System    |
+| Client accepts/rejects quote       | Client    |
+| Sales rep converts quote to order  | Sales Rep |
+| Manager views expired quotes       | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -630,14 +636,14 @@ Sales sheet creation, sharing, and conversion with templates and versioning.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep creates sales sheet | Sales Rep |
+| User Flow                          | Actors    |
+| ---------------------------------- | --------- |
+| Sales rep creates sales sheet      | Sales Rep |
 | Sales rep generates shareable link | Sales Rep |
-| Client views public sales sheet | Client |
-| Sales rep converts to order | Sales Rep |
-| Sales rep saves as template | Sales Rep |
-| System tracks version history | System |
+| Client views public sales sheet    | Client    |
+| Sales rep converts to order        | Sales Rep |
+| Sales rep saves as template        | Sales Rep |
+| System tracks version history      | System    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -654,11 +660,11 @@ Consolidated interface for managing sales pipeline across orders, quotes, and sa
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep views pipeline overview | Sales Rep |
-| Manager views sales stats | Manager |
-| Sales rep converts quote to sale | Sales Rep |
+| User Flow                               | Actors    |
+| --------------------------------------- | --------- |
+| Sales rep views pipeline overview       | Sales Rep |
+| Manager views sales stats               | Manager   |
+| Sales rep converts quote to sale        | Sales Rep |
 | Sales rep converts sales sheet to quote | Sales Rep |
 
 ### Exclusions & User-Defined Constraints
@@ -676,13 +682,13 @@ Warehouse pick list generation and packing workflow with multi-select and status
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Warehouse views pick list | Warehouse Staff |
-| Warehouse packs items for order | Warehouse Staff |
-| Warehouse marks order ready | Warehouse Staff |
-| Manager views pick/pack statistics | Manager |
-| System updates order fulfillment status | System |
+| User Flow                               | Actors          |
+| --------------------------------------- | --------------- |
+| Warehouse views pick list               | Warehouse Staff |
+| Warehouse packs items for order         | Warehouse Staff |
+| Warehouse marks order ready             | Warehouse Staff |
+| Manager views pick/pack statistics      | Manager         |
+| System updates order fulfillment status | System          |
 
 ### Exclusions & User-Defined Constraints
 
@@ -699,14 +705,14 @@ Multi-site storage management with zones and inter-location transfers.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates storage site | Admin |
-| Manager creates storage zones | Manager |
-| Warehouse initiates transfer | Warehouse Staff |
-| Source warehouse ships transfer | Warehouse Staff |
+| User Flow                               | Actors          |
+| --------------------------------------- | --------------- |
+| Admin creates storage site              | Admin           |
+| Manager creates storage zones           | Manager         |
+| Warehouse initiates transfer            | Warehouse Staff |
+| Source warehouse ships transfer         | Warehouse Staff |
 | Destination warehouse receives transfer | Warehouse Staff |
-| System updates batch locations | System |
+| System updates batch locations          | System          |
 
 ### Exclusions & User-Defined Constraints
 
@@ -723,13 +729,13 @@ Product photography workflow with queue management and batch association.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager views photography queue | Manager |
-| Photographer starts session | Photographer |
-| Photographer uploads photos | Photographer |
-| Photographer completes batch | Photographer |
-| System updates batch status | System |
+| User Flow                       | Actors       |
+| ------------------------------- | ------------ |
+| Manager views photography queue | Manager      |
+| Photographer starts session     | Photographer |
+| Photographer uploads photos     | Photographer |
+| Photographer completes batch    | Photographer |
+| System updates batch status     | System       |
 
 ### Exclusions & User-Defined Constraints
 
@@ -746,13 +752,13 @@ Comprehensive client dashboard with referrers, wants/needs, suggested buyers, an
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                           | Actors    |
+| ----------------------------------- | --------- |
 | Sales rep views full client context | Sales Rep |
-| Manager sets client referrer | Manager |
-| System suggests buyers for products | System |
+| Manager sets client referrer        | Manager   |
+| System suggests buyers for products | System    |
 | Sales rep views product connections | Sales Rep |
-| Sales rep quick-creates customer | Sales Rep |
+| Sales rep quick-creates customer    | Sales Rep |
 
 ### Exclusions & User-Defined Constraints
 
@@ -769,12 +775,12 @@ Separate tracking system for client product wants and needs with matching.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep records client want | Sales Rep |
-| System finds matching inventory | System |
-| Sales rep fulfills client need | Sales Rep |
-| Manager views active needs | Manager |
+| User Flow                       | Actors    |
+| ------------------------------- | --------- |
+| Sales rep records client want   | Sales Rep |
+| System finds matching inventory | System    |
+| Sales rep fulfills client need  | Sales Rep |
+| Manager views active needs      | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -791,13 +797,13 @@ Shift scheduling, room bookings, delivery schedules, and live queue management.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager creates employee shift | Manager |
-| Employee books meeting room | All Users |
-| System checks room availability | System |
-| Logistics schedules delivery | Logistics |
-| Customer checks in to queue | All Users |
+| User Flow                       | Actors    |
+| ------------------------------- | --------- |
+| Manager creates employee shift  | Manager   |
+| Employee books meeting room     | All Users |
+| System checks room availability | System    |
+| Logistics schedules delivery    | Logistics |
+| Customer checks in to queue     | All Users |
 
 ### Exclusions & User-Defined Constraints
 
@@ -814,13 +820,13 @@ Employee time off requests and hour tracking with timesheets.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Employee requests time off | All Users |
-| Manager approves/rejects request | Manager |
-| Employee clocks in/out | All Users |
-| Employee views timesheet | All Users |
-| Manager views hours report | Manager |
+| User Flow                        | Actors    |
+| -------------------------------- | --------- |
+| Employee requests time off       | All Users |
+| Manager approves/rejects request | Manager   |
+| Employee clocks in/out           | All Users |
+| Employee views timesheet         | All Users |
+| Manager views hours report       | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -837,12 +843,12 @@ Cryptocurrency payment tracking and wallet management.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Client adds crypto wallet | Client |
-| Admin records crypto payment | Admin |
-| System tracks confirmations | System |
-| Admin views crypto payment stats | Admin |
+| User Flow                        | Actors |
+| -------------------------------- | ------ |
+| Client adds crypto wallet        | Client |
+| Admin records crypto payment     | Admin  |
+| System tracks confirmations      | System |
+| Admin views crypto payment stats | Admin  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -859,13 +865,13 @@ Payment plan creation with installment scheduling and late fee tracking.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager creates payment plan | Manager |
-| System generates installment schedule | System |
+| User Flow                              | Actors     |
+| -------------------------------------- | ---------- |
+| Manager creates payment plan           | Manager    |
+| System generates installment schedule  | System     |
 | Accounting records installment payment | Accounting |
-| System applies late fees | System |
-| Manager views overdue installments | Manager |
+| System applies late fees               | System     |
+| Manager views overdue installments     | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -882,12 +888,12 @@ Configurable payment terms (Consignment, Cash, COD, Net 30, etc.).
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin sets client payment terms | Admin |
-| System calculates due dates | System |
-| Manager views consignment alerts | Manager |
-| Accounting generates terms text | Accounting |
+| User Flow                        | Actors     |
+| -------------------------------- | ---------- |
+| Admin sets client payment terms  | Admin      |
+| System calculates due dates      | System     |
+| Manager views consignment alerts | Manager    |
+| Accounting generates terms text  | Accounting |
 
 ### Exclusions & User-Defined Constraints
 
@@ -904,12 +910,12 @@ Billing for non-product services with order attachment.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates service type | Admin |
-| Sales rep adds service to order | Sales Rep |
-| System generates service invoice | System |
-| Manager views service revenue | Manager |
+| User Flow                        | Actors    |
+| -------------------------------- | --------- |
+| Admin creates service type       | Admin     |
+| Sales rep adds service to order  | Sales Rep |
+| System generates service invoice | System    |
+| Manager views service revenue    | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -926,12 +932,12 @@ Per-client transaction fee configuration and tracking.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin sets client fee rate | Admin |
-| System calculates order fee | System |
-| System applies fee to order | System |
-| Manager views fee report | Manager |
+| User Flow                   | Actors  |
+| --------------------------- | ------- |
+| Admin sets client fee rate  | Admin   |
+| System calculates order fee | System  |
+| System applies fee to order | System  |
+| Manager views fee report    | Manager |
 
 ### Exclusions & User-Defined Constraints
 
@@ -948,12 +954,12 @@ Invoice dispute tracking and resolution workflow.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Client raises invoice dispute | Client |
-| Accounting adds dispute note | Accounting |
-| Manager resolves dispute | Manager |
-| Manager views dispute stats | Manager |
+| User Flow                     | Actors     |
+| ----------------------------- | ---------- |
+| Client raises invoice dispute | Client     |
+| Accounting adds dispute note  | Accounting |
+| Manager resolves dispute      | Manager    |
+| Manager views dispute stats   | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -970,11 +976,11 @@ Customizable product categories with subcategories and hierarchy.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates category | Admin |
-| Admin creates subcategory | Admin |
-| Admin assigns products to category | Admin |
+| User Flow                          | Actors  |
+| ---------------------------------- | ------- |
+| Admin creates category             | Admin   |
+| Admin creates subcategory          | Admin   |
+| Admin assigns products to category | Admin   |
 | Manager views category performance | Manager |
 
 ### Exclusions & User-Defined Constraints
@@ -992,10 +998,10 @@ Product quality grading system (AAAA/AAA/AA/B/C).
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates grade definition | Admin |
-| System suggests price by grade | System |
+| User Flow                        | Actors  |
+| -------------------------------- | ------- |
+| Admin creates grade definition   | Admin   |
+| System suggests price by grade   | System  |
 | Manager views grade distribution | Manager |
 
 ### Exclusions & User-Defined Constraints
@@ -1013,11 +1019,11 @@ Product catalog publishing and syndication to external channels.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                            | Actors  |
+| ------------------------------------ | ------- |
 | Manager publishes product to catalog | Manager |
-| System syncs quantities | System |
-| Manager bulk publishes products | Manager |
+| System syncs quantities              | System  |
+| Manager bulk publishes products      | Manager |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1034,12 +1040,12 @@ Task queue and workflow status management for inventory batches.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                       | Actors  |
+| ------------------------------- | ------- |
 | Manager creates workflow status | Manager |
-| Staff adds batch to queue | Staff |
-| Staff updates batch status | Staff |
-| Manager views queue statistics | Manager |
+| Staff adds batch to queue       | Staff   |
+| Staff updates batch status      | Staff   |
+| Manager views queue statistics  | Manager |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1056,11 +1062,11 @@ Referral credits and "couch tax" processing for referrer rewards.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates referral credit | Admin |
-| System tracks pending credits | System |
-| Admin marks credit available | Admin |
+| User Flow                       | Actors |
+| ------------------------------- | ------ |
+| Admin creates referral credit   | Admin  |
+| System tracks pending credits   | System |
+| Admin marks credit available    | Admin  |
 | System applies credits to order | System |
 
 ### Exclusions & User-Defined Constraints
@@ -1078,12 +1084,12 @@ Office supply needs tracking and reorder suggestions.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Staff registers office item | Staff |
-| System suggests reorder | System |
+| User Flow                    | Actors  |
+| ---------------------------- | ------- |
+| Staff registers office item  | Staff   |
+| System suggests reorder      | System  |
 | Manager approves supply need | Manager |
-| Staff marks order received | Staff |
+| Staff marks order received   | Staff   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1100,13 +1106,13 @@ Cash location management with shift tracking and transfers.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates cash location | Admin |
-| Cashier records transaction | Cashier |
+| User Flow                           | Actors  |
+| ----------------------------------- | ------- |
+| Admin creates cash location         | Admin   |
+| Cashier records transaction         | Cashier |
 | Manager transfers between locations | Manager |
-| Manager views cash dashboard | Manager |
-| Manager resets shift | Manager |
+| Manager views cash dashboard        | Manager |
+| Manager resets shift                | Manager |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1123,13 +1129,13 @@ Role-based access control with permissions, roles, and user assignments.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates role | Admin |
-| Admin assigns permissions to role | Admin |
-| Admin assigns role to user | Admin |
-| Admin clones role | Admin |
-| System enforces permissions | System |
+| User Flow                         | Actors |
+| --------------------------------- | ------ |
+| Admin creates role                | Admin  |
+| Admin assigns permissions to role | Admin  |
+| Admin assigns role to user        | Admin  |
+| Admin clones role                 | Admin  |
+| System enforces permissions       | System |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1146,11 +1152,11 @@ Feature flag management with role and user overrides.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates feature flag | Admin |
-| Admin sets role override | Admin |
-| Admin sets user override | Admin |
+| User Flow                      | Actors |
+| ------------------------------ | ------ |
+| Admin creates feature flag     | Admin  |
+| Admin sets role override       | Admin  |
+| Admin sets user override       | Admin  |
 | System evaluates flag for user | System |
 
 ### Exclusions & User-Defined Constraints
@@ -1168,12 +1174,12 @@ Comprehensive audit logging with entity trail tracking.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| System logs all mutations | System |
+| User Flow                  | Actors  |
+| -------------------------- | ------- |
+| System logs all mutations  | System  |
 | Auditor queries audit logs | Auditor |
 | Auditor views entity trail | Auditor |
-| Auditor exports logs | Auditor |
+| Auditor exports logs       | Auditor |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1190,11 +1196,11 @@ Performance monitoring with slow query detection and procedure metrics.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin views performance summary | Admin |
-| Admin views slow query stats | Admin |
-| Admin views procedure metrics | Admin |
+| User Flow                       | Actors |
+| ------------------------------- | ------ |
+| Admin views performance summary | Admin  |
+| Admin views slow query stats    | Admin  |
+| Admin views procedure metrics   | Admin  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1202,21 +1208,21 @@ _No specific exclusions noted for this module._
 
 ---
 
-## DF-047: Vendor Payables
+## DF-047: Supplier Payables
 
 **Category:** Financial
 **Status:** Fully Implemented
 
-Vendor payables tracking with "Pay When SKU Hits Zero" feature.
+Supplier payables tracking with "Pay When SKU Hits Zero" feature.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| System creates payable from PO | System |
-| Accounting records payment | Accounting |
-| System sends overdue notifications | System |
-| Manager views payables summary | Manager |
+| User Flow                          | Actors     |
+| ---------------------------------- | ---------- |
+| System creates payable from PO     | System     |
+| Accounting records payment         | Accounting |
+| System sends overdue notifications | System     |
+| Manager views payables summary     | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1224,21 +1230,21 @@ _No specific exclusions noted for this module._
 
 ---
 
-## DF-048: Vendor Reminders
+## DF-048: Supplier Reminders
 
 **Category:** Operations
 **Status:** Fully Implemented
 
-Vendor harvest and delivery reminder system.
+Supplier harvest and delivery reminder system.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager sets harvest reminder | Manager |
-| System shows upcoming reminders | System |
-| Staff marks vendor contacted | Staff |
-| Staff marks reminder completed | Staff |
+| User Flow                       | Actors  |
+| ------------------------------- | ------- |
+| Manager sets harvest reminder   | Manager |
+| System shows upcoming reminders | System  |
+| Staff marks supplier contacted  | Staff   |
+| Staff marks reminder completed  | Staff   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1255,11 +1261,11 @@ Full-text search across all entities.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                          | Actors    |
+| ---------------------------------- | --------- |
 | User searches from command palette | All Users |
-| System returns matching entities | System |
-| User navigates to result | All Users |
+| System returns matching entities   | System    |
+| User navigates to result           | All Users |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1276,11 +1282,11 @@ Spreadsheet-style data viewing and editing for clients and inventory.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                   | Actors    |
+| --------------------------- | --------- |
 | User opens spreadsheet view | All Users |
-| User edits data in grid | All Users |
-| System saves changes | System |
+| User edits data in grid     | All Users |
+| System saves changes        | System    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1297,11 +1303,11 @@ VIP customer tier system with automatic calculations and overrides.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates tier definition | Admin |
-| System calculates client tier | System |
-| Admin overrides client tier | Admin |
+| User Flow                          | Actors     |
+| ---------------------------------- | ---------- |
+| Admin creates tier definition      | Admin      |
+| System calculates client tier      | System     |
+| Admin overrides client tier        | Admin      |
 | VIP client views their tier status | VIP Client |
 
 ### Exclusions & User-Defined Constraints
@@ -1319,11 +1325,11 @@ Advanced matching for needs, wants, inventory, and historical buyers.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| System finds matches for batch | System |
-| System finds buyers for inventory | System |
-| System identifies lapsed buyers | System |
+| User Flow                             | Actors |
+| ------------------------------------- | ------ |
+| System finds matches for batch        | System |
+| System finds buyers for inventory     | System |
+| System identifies lapsed buyers       | System |
 | System predicts reorder opportunities | System |
 
 ### Exclusions & User-Defined Constraints
@@ -1341,12 +1347,12 @@ Farmer verification and intake receipt system with public verification links.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager generates receipt | Manager |
-| Farmer verifies via public link | Farmer |
-| Stacker verifies receipt | Stacker |
-| Manager resolves discrepancies | Manager |
+| User Flow                       | Actors  |
+| ------------------------------- | ------- |
+| Manager generates receipt       | Manager |
+| Farmer verifies via public link | Farmer  |
+| Stacker verifies receipt        | Stacker |
+| Manager resolves discrepancies  | Manager |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1363,12 +1369,12 @@ Customer credit issuance, application, and tracking.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Accounting issues credit | Accounting |
+| User Flow                            | Actors     |
+| ------------------------------------ | ---------- |
+| Accounting issues credit             | Accounting |
 | Accounting applies credit to invoice | Accounting |
-| Client views credit balance | Client |
-| Manager views credit summary | Manager |
+| Client views credit balance          | Client     |
+| Manager views credit summary         | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1385,11 +1391,11 @@ Configurable KPI and metrics dashboard cards.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User views available metrics | All Users |
-| User adds metric to dashboard | All Users |
-| System calculates metric value | System |
+| User Flow                      | Actors    |
+| ------------------------------ | --------- |
+| User views available metrics   | All Users |
+| User adds metric to dashboard  | All Users |
+| System calculates metric value | System    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1406,12 +1412,12 @@ Inventory alerts for low stock and client needs matching.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin sets alert thresholds | Admin |
-| System generates low stock alerts | System |
-| Staff acknowledges alert | Staff |
-| Manager views alert stats | Manager |
+| User Flow                         | Actors  |
+| --------------------------------- | ------- |
+| Admin sets alert thresholds       | Admin   |
+| System generates low stock alerts | System  |
+| Staff acknowledges alert          | Staff   |
+| Manager views alert stats         | Manager |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1428,11 +1434,11 @@ Application deployment management and version tracking.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| System logs deployment | System |
-| Admin views deployment history | Admin |
-| Admin views current deployment | Admin |
+| User Flow                      | Actors |
+| ------------------------------ | ------ |
+| System logs deployment         | System |
+| Admin views deployment history | Admin  |
+| Admin views current deployment | Admin  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1449,12 +1455,12 @@ Comment system with @mentions and resolution tracking.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                      | Actors    |
+| ------------------------------ | --------- |
 | User creates comment on entity | All Users |
-| User @mentions another user | All Users |
-| User views their mentions | All Users |
-| User resolves comment | All Users |
+| User @mentions another user    | All Users |
+| User views their mentions      | All Users |
+| User resolves comment          | All Users |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1471,13 +1477,13 @@ Cost of Goods Sold (COGS) tracking, impact analysis, and margin reporting with f
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager views COGS summary for period | Manager |
-| Manager updates batch COGS with audit trail | Manager |
-| System calculates impact of COGS changes on pending orders | System |
-| Accounting views COGS history from audit logs | Accounting |
-| Manager views COGS breakdown by batch | Manager |
+| User Flow                                                  | Actors     |
+| ---------------------------------------------------------- | ---------- |
+| Manager views COGS summary for period                      | Manager    |
+| Manager updates batch COGS with audit trail                | Manager    |
+| System calculates impact of COGS changes on pending orders | System     |
+| Accounting views COGS history from audit logs              | Accounting |
+| Manager views COGS breakdown by batch                      | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1494,13 +1500,13 @@ Unified ledger view for all client transactions (orders, payments, purchase orde
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep views complete client ledger | Sales Rep |
+| User Flow                                         | Actors     |
+| ------------------------------------------------- | ---------- |
+| Sales rep views complete client ledger            | Sales Rep  |
 | Accounting calculates balance as of specific date | Accounting |
-| Accounting adds manual credit/debit adjustment | Accounting |
-| Manager exports ledger to CSV | Manager |
-| User filters ledger by transaction type | All Users |
+| Accounting adds manual credit/debit adjustment    | Accounting |
+| Manager exports ledger to CSV                     | Manager    |
+| User filters ledger by transaction type           | All Users  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1517,12 +1523,12 @@ Bad debt write-off management with GL entry creation and reversal capability.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Accounting writes off bad debt | Accounting |
+| User Flow                              | Actors     |
+| -------------------------------------- | ---------- |
+| Accounting writes off bad debt         | Accounting |
 | Accounting reverses bad debt write-off | Accounting |
-| Manager views bad debt by client | Manager |
-| Manager generates aging report | Manager |
+| Manager views bad debt by client       | Manager    |
+| Manager generates aging report         | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1539,13 +1545,13 @@ Strain management with fuzzy matching, family relationships, OpenTHC integration
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin imports strains from OpenTHC | Admin |
-| User searches strains with fuzzy matching | All Users |
+| User Flow                                    | Actors    |
+| -------------------------------------------- | --------- |
+| Admin imports strains from OpenTHC           | Admin     |
+| User searches strains with fuzzy matching    | All Users |
 | User views strain family (parent + variants) | All Users |
-| Manager creates custom strain | Manager |
-| System auto-matches strains during intake | System |
+| Manager creates custom strain                | Manager   |
+| System auto-matches strains during intake    | System    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1562,15 +1568,15 @@ Complete tag management with color-coding, categories, hierarchy, grouping, merg
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin creates tag with color and category | Admin |
-| User adds tags to products or clients | All Users |
-| User performs boolean tag search (AND/OR) | All Users |
-| Admin creates tag hierarchy (parent-child) | Admin |
-| Admin merges duplicate tags | Admin |
-| Admin views tag usage statistics | Admin |
-| User bulk-adds tags to multiple products | All Users |
+| User Flow                                  | Actors    |
+| ------------------------------------------ | --------- |
+| Admin creates tag with color and category  | Admin     |
+| User adds tags to products or clients      | All Users |
+| User performs boolean tag search (AND/OR)  | All Users |
+| Admin creates tag hierarchy (parent-child) | Admin     |
+| Admin merges duplicate tags                | Admin     |
+| Admin views tag usage statistics           | Admin     |
+| User bulk-adds tags to multiple products   | All Users |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1587,14 +1593,14 @@ Comprehensive analytics with revenue trends, top clients, strain preferences, an
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Manager views analytics summary | Manager |
-| Manager views extended summary with growth rates | Manager |
-| Manager views revenue trends by granularity | Manager |
-| Manager views top clients by metric | Manager |
-| Sales rep views client strain preferences | Sales Rep |
-| Manager exports analytics data (CSV/JSON) | Manager |
+| User Flow                                        | Actors    |
+| ------------------------------------------------ | --------- |
+| Manager views analytics summary                  | Manager   |
+| Manager views extended summary with growth rates | Manager   |
+| Manager views revenue trends by granularity      | Manager   |
+| Manager views top clients by metric              | Manager   |
+| Sales rep views client strain preferences        | Sales Rep |
+| Manager exports analytics data (CSV/JSON)        | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1602,23 +1608,23 @@ _No specific exclusions noted for this module._
 
 ---
 
-## DF-065: Vendor Supply Matching
+## DF-065: Supplier Supply Matching
 
 **Category:** Supply Chain
 **Status:** Fully Implemented
 
-Vendor supply management with status tracking, buyer matching, and expiration handling.
+Supplier supply management with status tracking, buyer matching, and expiration handling.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Vendor creates supply listing | Vendor |
-| System finds potential buyers for supply | System |
-| Buyer reserves supply item | Buyer |
-| Buyer completes purchase | Buyer |
-| System expires old supply listings | System |
-| Manager views all supplies with match counts | Manager |
+| User Flow                                    | Actors   |
+| -------------------------------------------- | -------- |
+| Supplier creates supply listing              | Supplier |
+| System finds potential buyers for supply     | System   |
+| Buyer reserves supply item                   | Buyer    |
+| Buyer completes purchase                     | Buyer    |
+| System expires old supply listings           | System   |
+| Manager views all supplies with match counts | Manager  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1635,14 +1641,14 @@ Centralized configuration management with presets, feature flags, organization s
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin views/sets configuration values | Admin |
-| Admin applies configuration preset (retail/wholesale) | Admin |
-| Admin views configuration history | Admin |
-| Admin manages organization settings | Admin |
-| Manager sets team settings | Manager |
-| User manages personal preferences | All Users |
+| User Flow                                             | Actors    |
+| ----------------------------------------------------- | --------- |
+| Admin views/sets configuration values                 | Admin     |
+| Admin applies configuration preset (retail/wholesale) | Admin     |
+| Admin views configuration history                     | Admin     |
+| Admin manages organization settings                   | Admin     |
+| Manager sets team settings                            | Manager   |
+| User manages personal preferences                     | All Users |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1659,14 +1665,14 @@ Recurring order templates with scheduling, pause/resume, and automatic generatio
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                                  | Actors    |
+| ------------------------------------------ | --------- |
 | Sales rep creates recurring order template | Sales Rep |
-| System generates orders on schedule | System |
-| Sales rep pauses recurring order | Sales Rep |
-| Sales rep resumes recurring order | Sales Rep |
-| Sales rep cancels recurring order | Sales Rep |
-| Manager views all recurring orders | Manager |
+| System generates orders on schedule        | System    |
+| Sales rep pauses recurring order           | Sales Rep |
+| Sales rep resumes recurring order          | Sales Rep |
+| Sales rep cancels recurring order          | Sales Rep |
+| Manager views all recurring orders         | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1683,14 +1689,14 @@ Health check endpoints for K8s/Docker probes, performance monitoring, and databa
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Load balancer checks service health | System |
-| K8s checks liveness/readiness probes | System |
-| Admin views detailed health diagnostics | Admin |
-| Admin views runtime metrics | Admin |
-| Admin runs database schema validation | Admin |
-| Admin views debug information | Admin |
+| User Flow                               | Actors |
+| --------------------------------------- | ------ |
+| Load balancer checks service health     | System |
+| K8s checks liveness/readiness probes    | System |
+| Admin views detailed health diagnostics | Admin  |
+| Admin views runtime metrics             | Admin  |
+| Admin runs database schema validation   | Admin  |
+| Admin views debug information           | Admin  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1707,16 +1713,16 @@ Comprehensive admin tools for migrations, data augmentation, schema management, 
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin runs database migrations | Admin |
-| Admin checks migration status | Admin |
-| Admin runs data augmentation scripts | Admin |
-| Admin imports strains in batches | Admin |
-| Admin validates schema against database | Admin |
-| Admin pushes schema changes | Admin |
-| Admin fixes user permissions | Admin |
-| Admin promotes user to admin | Admin |
+| User Flow                               | Actors |
+| --------------------------------------- | ------ |
+| Admin runs database migrations          | Admin  |
+| Admin checks migration status           | Admin  |
+| Admin runs data augmentation scripts    | Admin  |
+| Admin imports strains in batches        | Admin  |
+| Admin validates schema against database | Admin  |
+| Admin pushes schema changes             | Admin  |
+| Admin fixes user permissions            | Admin  |
+| Admin promotes user to admin            | Admin  |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1733,14 +1739,14 @@ User lifecycle management with creation, deletion, password reset, and role assi
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Admin lists all users | Admin |
-| Admin creates new user | Admin |
-| Admin deletes user (soft delete) | Admin |
-| Admin resets user password | Admin |
-| User views their profile | All Users |
-| User updates their profile | All Users |
+| User Flow                        | Actors    |
+| -------------------------------- | --------- |
+| Admin lists all users            | Admin     |
+| Admin creates new user           | Admin     |
+| Admin deletes user (soft delete) | Admin     |
+| Admin resets user password       | Admin     |
+| User views their profile         | All Users |
+| User updates their profile       | All Users |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1758,21 +1764,21 @@ Complete time clock and hour tracking system with clock in/out, break management
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Employee clocks in for shift | All Users |
-| Employee starts break | All Users |
-| Employee ends break | All Users |
-| Employee clocks out | All Users |
+| User Flow                           | Actors    |
+| ----------------------------------- | --------- |
+| Employee clocks in for shift        | All Users |
+| Employee starts break               | All Users |
+| Employee ends break                 | All Users |
+| Employee clocks out                 | All Users |
 | Employee views current clock status | All Users |
-| Employee views weekly timesheet | All Users |
-| Manager creates manual time entry | Manager |
-| Manager adjusts time entry | Manager |
-| Manager approves time entry | Manager |
-| Manager views hours report | Manager |
-| Manager views overtime report | Manager |
-| Admin creates overtime rule | Admin |
-| Admin updates overtime rule | Admin |
+| Employee views weekly timesheet     | All Users |
+| Manager creates manual time entry   | Manager   |
+| Manager adjusts time entry          | Manager   |
+| Manager approves time entry         | Manager   |
+| Manager views hours report          | Manager   |
+| Manager views overtime report       | Manager   |
+| Admin creates overtime rule         | Admin     |
+| Admin updates overtime rule         | Admin     |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1791,12 +1797,12 @@ Email sending functionality for quotes with configurable email service (Resend/S
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Sales rep sends quote via email | Sales Rep |
-| System generates quote email (HTML + plain text) | System |
-| Admin checks if email is enabled | Admin |
-| Client receives quote email | Client |
+| User Flow                                        | Actors    |
+| ------------------------------------------------ | --------- |
+| Sales rep sends quote via email                  | Sales Rep |
+| System generates quote email (HTML + plain text) | System    |
+| Admin checks if email is enabled                 | Admin     |
+| Client receives quote email                      | Client    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1815,14 +1821,14 @@ Session timeout detection and handling for Work Surfaces with graceful logout an
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| System detects approaching session expiry | System |
-| User receives session timeout warning | All Users |
-| User extends session via callback | All Users |
-| System handles graceful logout on timeout | System |
-| System preserves session state in localStorage | System |
-| System detects user idle activity | System |
+| User Flow                                      | Actors    |
+| ---------------------------------------------- | --------- |
+| System detects approaching session expiry      | System    |
+| User receives session timeout warning          | All Users |
+| User extends session via callback              | All Users |
+| System handles graceful logout on timeout      | System    |
+| System preserves session state in localStorage | System    |
+| System detects user idle activity              | System    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1842,31 +1848,31 @@ The Work Surface Framework provides a consistent, keyboard-first data entry expe
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User navigates grid with keyboard (Tab, arrows) | All Users |
-| User opens inspector panel (Enter) | All Users |
-| User closes inspector panel (Esc) | All Users |
-| User undoes action (Cmd+Z) | All Users |
-| System shows save state (Saved/Saving/Error/Queued) | System |
-| User filters and sorts data | All Users |
-| User exports data (CSV/Excel) | All Users |
-| User prints work surface | All Users |
+| User Flow                                           | Actors    |
+| --------------------------------------------------- | --------- |
+| User navigates grid with keyboard (Tab, arrows)     | All Users |
+| User opens inspector panel (Enter)                  | All Users |
+| User closes inspector panel (Esc)                   | All Users |
+| User undoes action (Cmd+Z)                          | All Users |
+| System shows save state (Saved/Saving/Error/Queued) | System    |
+| User filters and sorts data                         | All Users |
+| User exports data (CSV/Excel)                       | All Users |
+| User prints work surface                            | All Users |
 
 ### Work Surface Components
 
-| Component | Domain | Description |
-|-----------|--------|-------------|
-| DirectIntakeWorkSurface | Inventory | Product intake with batch management |
-| OrdersWorkSurface | Orders | Draft/Confirmed tabs, order management |
-| InventoryWorkSurface | Inventory | Batch status filtering, quantity tracking |
-| InvoicesWorkSurface | Accounting | AR aging view, payment recording |
-| ClientsWorkSurface | CRM | Client management with sorting/filtering |
-| PurchaseOrdersWorkSurface | Purchasing | PO creation and tracking |
-| QuotesWorkSurface | Sales | Quote management and conversion |
-| ClientLedgerWorkSurface | Accounting | Client transaction history |
-| PickPackWorkSurface | Warehouse | Order fulfillment workflow |
-| InspectorPanel | Shared | Detail editing side panel |
+| Component                 | Domain     | Description                               |
+| ------------------------- | ---------- | ----------------------------------------- |
+| DirectIntakeWorkSurface   | Inventory  | Product intake with batch management      |
+| OrdersWorkSurface         | Orders     | Draft/Confirmed tabs, order management    |
+| InventoryWorkSurface      | Inventory  | Batch status filtering, quantity tracking |
+| InvoicesWorkSurface       | Accounting | AR aging view, payment recording          |
+| ClientsWorkSurface        | CRM        | Client management with sorting/filtering  |
+| PurchaseOrdersWorkSurface | Purchasing | PO creation and tracking                  |
+| QuotesWorkSurface         | Sales      | Quote management and conversion           |
+| ClientLedgerWorkSurface   | Accounting | Client transaction history                |
+| PickPackWorkSurface       | Warehouse  | Order fulfillment workflow                |
+| InspectorPanel            | Shared     | Detail editing side panel                 |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1886,21 +1892,21 @@ Multi-step wizards for core business processes that guide users through complex 
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User creates order from intake (OrderCreationFlow) | Sales Rep |
-| User generates invoice from order (OrderToInvoiceFlow) | Accounting |
+| User Flow                                                   | Actors     |
+| ----------------------------------------------------------- | ---------- |
+| User creates order from intake (OrderCreationFlow)          | Sales Rep  |
+| User generates invoice from order (OrderToInvoiceFlow)      | Accounting |
 | User records payment against invoice (InvoiceToPaymentFlow) | Accounting |
-| User navigates wizard steps (Back/Next) | All Users |
-| System validates each step before progression | System |
-| User reviews summary before completion | All Users |
+| User navigates wizard steps (Back/Next)                     | All Users  |
+| System validates each step before progression               | System     |
+| User reviews summary before completion                      | All Users  |
 
 ### Golden Flow Components
 
-| Flow | Steps | Description |
-|------|-------|-------------|
-| OrderCreationFlow | Select Products → Set Pricing → Review → Create | Creates orders from inventory items |
-| OrderToInvoiceFlow | Select Order → Set Terms → Adjustments → Generate | Generates invoice from completed order |
+| Flow                 | Steps                                                   | Description                             |
+| -------------------- | ------------------------------------------------------- | --------------------------------------- |
+| OrderCreationFlow    | Select Products → Set Pricing → Review → Create         | Creates orders from inventory items     |
+| OrderToInvoiceFlow   | Select Order → Set Terms → Adjustments → Generate       | Generates invoice from completed order  |
 | InvoiceToPaymentFlow | Select Invoice → Enter Amount → Payment Method → Record | Records payment with receipt generation |
 
 ### Exclusions & User-Defined Constraints
@@ -1921,30 +1927,30 @@ Collection of React hooks providing standardized UX behaviors for Work Surfaces.
 
 ### Available Hooks
 
-| Hook | Purpose | Sprint |
-|------|---------|--------|
-| useWorkSurfaceKeyboard | Grid navigation, Tab/Enter/Esc handling | Sprint 0 |
-| useSaveState | Save indicator (Saved/Saving/Error/Queued) | Sprint 0 |
-| useValidationTiming | "Reward Early, Punish Late" validation | Sprint 0 |
-| useWorkSurfaceFeatureFlags | Feature flag system for safe rollout | Sprint 2 |
-| useConcurrentEditDetection | Optimistic lock conflict handling | Sprint 2 |
-| usePerformanceMonitor | Performance tracking and alerts | Sprint 7 |
-| useToastConfig | Standardized toast notifications | Sprint 8 |
-| usePrint | Print stylesheet and controls | Sprint 8 |
-| useExport | CSV/Excel export with progress | Sprint 8 |
-| useSessionTimeout | Session expiry detection | Sprint 8 |
-| useFocusTrap | Inspector panel focus management | Sprint 0 |
-| useKeyboardShortcuts | Global shortcut registration | Sprint 1 |
+| Hook                       | Purpose                                    | Sprint   |
+| -------------------------- | ------------------------------------------ | -------- |
+| useWorkSurfaceKeyboard     | Grid navigation, Tab/Enter/Esc handling    | Sprint 0 |
+| useSaveState               | Save indicator (Saved/Saving/Error/Queued) | Sprint 0 |
+| useValidationTiming        | "Reward Early, Punish Late" validation     | Sprint 0 |
+| useWorkSurfaceFeatureFlags | Feature flag system for safe rollout       | Sprint 2 |
+| useConcurrentEditDetection | Optimistic lock conflict handling          | Sprint 2 |
+| usePerformanceMonitor      | Performance tracking and alerts            | Sprint 7 |
+| useToastConfig             | Standardized toast notifications           | Sprint 8 |
+| usePrint                   | Print stylesheet and controls              | Sprint 8 |
+| useExport                  | CSV/Excel export with progress             | Sprint 8 |
+| useSessionTimeout          | Session expiry detection                   | Sprint 8 |
+| useFocusTrap               | Inspector panel focus management           | Sprint 0 |
+| useKeyboardShortcuts       | Global shortcut registration               | Sprint 1 |
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Hook manages keyboard navigation state | System |
-| Hook tracks save operation status | System |
+| User Flow                                | Actors |
+| ---------------------------------------- | ------ |
+| Hook manages keyboard navigation state   | System |
+| Hook tracks save operation status        | System |
 | Hook validates on field exit (not entry) | System |
-| Hook detects concurrent edit conflicts | System |
-| Hook monitors performance metrics | System |
+| Hook detects concurrent edit conflicts   | System |
+| Hook monitors performance metrics        | System |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1960,18 +1966,18 @@ Collection of React hooks providing standardized UX behaviors for Work Surfaces.
 **Status:** Fully Implemented (Wave 5 - Sprint 1)
 **Implements:** UXS-201
 
-AG Grid-based product intake interface with batch creation, COGS entry, and vendor association.
+AG Grid-based product intake interface with batch creation, COGS entry, and supplier association.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User selects vendor for intake | Intake Staff |
+| User Flow                                          | Actors       |
+| -------------------------------------------------- | ------------ |
+| User selects supplier for intake                   | Intake Staff |
 | User enters product details (strain, weight, COGS) | Intake Staff |
-| User creates batch from intake record | Intake Staff |
-| User generates farmer receipt | Intake Staff |
-| System validates required fields | System |
-| System creates inventory movement | System |
+| User creates batch from intake record              | Intake Staff |
+| User generates farmer receipt                      | Intake Staff |
+| System validates required fields                   | System       |
+| System creates inventory movement                  | System       |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1990,14 +1996,14 @@ Order management with draft and confirmed tabs, inspector panel for line item ed
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User views draft orders | Sales Rep |
-| User views confirmed orders | Sales Rep |
+| User Flow                     | Actors    |
+| ----------------------------- | --------- |
+| User views draft orders       | Sales Rep |
+| User views confirmed orders   | Sales Rep |
 | User opens order in inspector | Sales Rep |
-| User adds/removes line items | Sales Rep |
-| User confirms draft order | Sales Rep |
-| User cancels order | Manager |
+| User adds/removes line items  | Sales Rep |
+| User confirms draft order     | Sales Rep |
+| User cancels order            | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -2016,13 +2022,13 @@ Batch management interface with status filtering, sorting, and quantity tracking
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User filters batches by status | Inventory Staff |
+| User Flow                             | Actors          |
+| ------------------------------------- | --------------- |
+| User filters batches by status        | Inventory Staff |
 | User views batch details in inspector | Inventory Staff |
-| User updates batch status | Inventory Staff |
-| User adjusts batch quantity | Manager |
-| User views batch history | All Users |
+| User updates batch status             | Inventory Staff |
+| User adjusts batch quantity           | Manager         |
+| User views batch history              | All Users       |
 
 ### Exclusions & User-Defined Constraints
 
@@ -2041,14 +2047,14 @@ AR aging view with payment recording, status updates, and client statement gener
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                           | Actors     |
+| ----------------------------------- | ---------- |
 | User views invoices by aging bucket | Accounting |
-| User opens invoice in inspector | Accounting |
-| User records payment | Accounting |
-| User marks invoice as sent | Accounting |
-| User generates client statement | Accounting |
-| User voids invoice | Manager |
+| User opens invoice in inspector     | Accounting |
+| User records payment                | Accounting |
+| User marks invoice as sent          | Accounting |
+| User generates client statement     | Accounting |
+| User voids invoice                  | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -2067,14 +2073,14 @@ Client management with sorting, filtering, pagination, and detail editing.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| User searches clients | All Users |
+| User Flow                                       | Actors    |
+| ----------------------------------------------- | --------- |
+| User searches clients                           | All Users |
 | User filters by client type (Buyer/Seller/Both) | All Users |
-| User opens client in inspector | All Users |
-| User updates client details | Sales Rep |
-| User views client transaction history | All Users |
-| User enables/disables VIP portal | Manager |
+| User opens client in inspector                  | All Users |
+| User updates client details                     | Sales Rep |
+| User views client transaction history           | All Users |
+| User enables/disables VIP portal                | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -2093,19 +2099,19 @@ Purchase order creation and tracking with inspector panel for line items.
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
+| User Flow                       | Actors     |
+| ------------------------------- | ---------- |
 | User creates new purchase order | Purchasing |
-| User selects vendor | Purchasing |
-| User adds line items | Purchasing |
-| User submits PO for approval | Purchasing |
-| User receives PO items | Receiving |
-| User closes PO | Manager |
+| User selects supplier           | Purchasing |
+| User adds line items            | Purchasing |
+| User submits PO for approval    | Purchasing |
+| User receives PO items          | Intake     |
+| User closes PO                  | Manager    |
 
 ### Exclusions & User-Defined Constraints
 
 - Status workflow: DRAFT → SUBMITTED → APPROVED → RECEIVING → CLOSED
-- Partial receiving supported
+- Partial intake supported
 
 ---
 
@@ -2119,24 +2125,24 @@ Puppeteer-based E2E testing suite with journey testing, proxy support, and autom
 
 ### Primary User Flows
 
-| User Flow | Actors |
-|-----------|--------|
-| Developer runs E2E test suite | Developer |
-| CI/CD executes E2E tests on deploy | System |
-| Test runner generates report | System |
-| Developer views test results | Developer |
-| System captures screenshots on failure | System |
+| User Flow                              | Actors    |
+| -------------------------------------- | --------- |
+| Developer runs E2E test suite          | Developer |
+| CI/CD executes E2E tests on deploy     | System    |
+| Test runner generates report           | System    |
+| Developer views test results           | Developer |
+| System captures screenshots on failure | System    |
 
 ### Test Coverage
 
-| Domain | Test Count | Coverage |
-|--------|-----------|----------|
-| Authentication | 5 | 100% |
-| Orders | 12 | 100% |
-| Inventory | 10 | 100% |
-| Invoices | 8 | 100% |
-| Clients | 6 | 100% |
-| Golden Flows | 9 | 100% |
+| Domain         | Test Count | Coverage |
+| -------------- | ---------- | -------- |
+| Authentication | 5          | 100%     |
+| Orders         | 12         | 100%     |
+| Inventory      | 10         | 100%     |
+| Invoices       | 8          | 100%     |
+| Clients        | 6          | 100%     |
+| Golden Flows   | 9          | 100%     |
 
 ### Exclusions & User-Defined Constraints
 

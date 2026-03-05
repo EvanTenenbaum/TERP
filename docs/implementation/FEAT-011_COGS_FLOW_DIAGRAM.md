@@ -282,8 +282,8 @@ COGS connects to:
    └─ Bad debt reserve calculated on margin
 
 3. ACCOUNTS PAYABLE (AP)
-   ├─ Vendor payables tracked by batch
-   ├─ COGS includes vendor cost
+   ├─ Supplier payables tracked by batch
+   ├─ COGS includes supplier cost
    └─ Update payable on sale
 
 4. INVENTORY MANAGEMENT

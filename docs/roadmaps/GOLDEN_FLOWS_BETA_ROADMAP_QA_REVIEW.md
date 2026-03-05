@@ -10,6 +10,7 @@
 ## Review Methodology
 
 This review applies adversarial analysis to identify:
+
 1. Gaps and missing items
 2. Logical flaws and sequencing issues
 3. Unrealistic estimates
@@ -30,6 +31,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Could take much longer than estimated if root cause is complex (schema mismatch, migration issue, etc.)
 
 **Recommendation:**
+
 - Split into two tasks: GF-PHASE0-001a (Investigation, 4h) and GF-PHASE0-001b (Fix, 8-16h)
 - Add fallback plan if investigation reveals deeper issues
 - Consider adding database schema validation step first
@@ -43,6 +45,7 @@ This review applies adversarial analysis to identify:
 **Risk:** If backend has issues, frontend fix is blocked.
 
 **Recommendation:**
+
 - Add verification step to confirm backend mutation works before frontend task
 - Add to GF-PHASE2-001 checklist: "Verify backend mutation works via direct API call"
 
@@ -55,6 +58,7 @@ This review applies adversarial analysis to identify:
 **Risk:** False confidence in phase gate verifications.
 
 **Recommendation:**
+
 - Move test infrastructure fixes to Phase 1 or create a parallel track
 - At minimum, document known failing tests to exclude from gate verification
 
@@ -67,6 +71,7 @@ This review applies adversarial analysis to identify:
 **Risk:** If a fix breaks something else, no documented recovery path.
 
 **Recommendation:**
+
 - Add rollback section to each phase
 - For Phase 0 specifically, add: "If inventory fix causes regression, revert to commit [hash]"
 - Document database backup requirements before each phase
@@ -80,6 +85,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Tasks may fail because required test data doesn't exist.
 
 **Recommendation:**
+
 - Add Phase 0 pre-requisite: Verify and run seeders
 - Add checklist item: `pnpm seed:all-defaults` executed
 - Add verification for minimum data counts (clients, products, batches)
@@ -95,6 +101,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Phase 3 could expand significantly if permission issues exist.
 
 **Recommendation:**
+
 - Add 8h buffer in Phase 3 for RBAC fixes
 - Or move RBAC verification earlier and interleave with Phase 1/2
 
@@ -107,6 +114,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Security debt accumulates while focusing on functionality.
 
 **Recommendation:**
+
 - Add security tasks to Phase 1 or Phase 2
 - At minimum, add BUG-103 (2h) and BUG-107 (1h) to Phase 5
 
@@ -114,11 +122,12 @@ This review applies adversarial analysis to identify:
 
 ### HF-003: E2E Test Creation Estimates May Be Low
 
-**Issue:** Phase 4 allocates 8h for GF-001 E2E, 16h for GF-003, and 24h for remaining 6 flows (4h each average). Complex flows like GF-002 (PO receiving) may need more.
+**Issue:** Phase 4 allocates 8h for GF-001 E2E, 16h for GF-003, and 24h for remaining 6 flows (4h each average). Complex flows like GF-002 (PO intake) may need more.
 
 **Risk:** Phase 4 extends beyond planned duration.
 
 **Recommendation:**
+
 - Revise estimates: 8h per flow minimum
 - Total E2E estimate: 64h (8 flows × 8h) vs current 56h
 - Or prioritize top 4 flows for Phase 4, defer others to post-beta
@@ -132,6 +141,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Users encounter poor UX on errors.
 
 **Recommendation:**
+
 - Add error scenario testing to Phase 2 verification
 - Add checklist items like: "Verify meaningful error on network failure"
 
@@ -144,6 +154,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Flows may be slow but functionally correct.
 
 **Recommendation:**
+
 - Add performance criteria: Page loads < 3s, mutations < 2s
 - Add to Phase 5: Basic performance audit
 
@@ -158,6 +169,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Confusion about whether to add to MASTER_ROADMAP.
 
 **Recommendation:**
+
 - Clarify: These are execution plan tasks that reference but don't replace MASTER_ROADMAP tasks
 - Add note: "Source task BUG-110 in MASTER_ROADMAP should be updated on completion"
 
@@ -170,6 +182,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Agents may conflict on files if not coordinated.
 
 **Recommendation:**
+
 - Add "Module Ownership" section listing which agent should work on which phase/task
 - Add conflict resolution guidance
 
@@ -182,6 +195,7 @@ This review applies adversarial analysis to identify:
 **Risk:** Agents may attempt tasks before dependencies complete.
 
 **Recommendation:**
+
 - Add dependency graph (ASCII or link to diagram)
 - Clearly mark which tasks can be parallelized
 
@@ -192,6 +206,7 @@ This review applies adversarial analysis to identify:
 **Issue:** "Beta ready" is defined by checklist, but no quantitative success criteria.
 
 **Recommendation:**
+
 - Add: "95% of E2E tests pass"
 - Add: "0 P0 bugs, <3 P1 bugs open"
 - Add: "All 8 flows verified by 2 different QA runs"
@@ -205,6 +220,7 @@ This review applies adversarial analysis to identify:
 **Issue:** CLAUDE.md and MASTER_ROADMAP use `Prompt: docs/prompts/TASK-ID.md` but new tasks don't have prompt files.
 
 **Recommendation:**
+
 - Either create prompt files for complex tasks (Phase 0 at minimum)
 - Or note that detailed checklists serve as prompts
 
@@ -215,6 +231,7 @@ This review applies adversarial analysis to identify:
 **Issue:** Estimates use hours (4h, 8h, 16h) which is correct, but some could be converted to days for clarity (16h = 2d).
 
 **Recommendation:**
+
 - Keep hours for tasks, add day totals per phase
 
 ---
@@ -252,15 +269,15 @@ This review applies adversarial analysis to identify:
 
 ## Revised Estimate After QA
 
-| Phase | Original | Revised | Change |
-|-------|----------|---------|--------|
-| 0 | 2 days | 3 days | +1 day (investigation split, seeding) |
-| 1 | 4 days | 4 days | No change |
-| 2 | 4 days | 5 days | +1 day (backend verification, error cases) |
-| 3 | 4 days | 5 days | +1 day (RBAC fix buffer) |
-| 4 | 6 days | 7 days | +1 day (revised estimates) |
-| 5 | 5 days | 6 days | +1 day (security, test infra) |
-| **Total** | **25 days** | **30 days** | **+5 days (20% buffer)** |
+| Phase     | Original    | Revised     | Change                                     |
+| --------- | ----------- | ----------- | ------------------------------------------ |
+| 0         | 2 days      | 3 days      | +1 day (investigation split, seeding)      |
+| 1         | 4 days      | 4 days      | No change                                  |
+| 2         | 4 days      | 5 days      | +1 day (backend verification, error cases) |
+| 3         | 4 days      | 5 days      | +1 day (RBAC fix buffer)                   |
+| 4         | 6 days      | 7 days      | +1 day (revised estimates)                 |
+| 5         | 5 days      | 6 days      | +1 day (security, test infra)              |
+| **Total** | **25 days** | **30 days** | **+5 days (20% buffer)**                   |
 
 ---
 

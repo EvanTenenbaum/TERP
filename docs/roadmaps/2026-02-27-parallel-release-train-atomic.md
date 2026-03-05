@@ -19,7 +19,7 @@ Linked PR context: #446 (`codex/consolidated-ux-media-20260226` -> `main`)
 | RT-02   | Inventory enhanced API full-dataset filter contract (stock/cogs/date/location)           | GAP-01, GAP-02, GAP-03 | red       | specialist (backend)      | 10h    | RT-00        | G1             |
 | RT-03   | Inventory UI filter wiring to server contract + correct totals/pagination                | GAP-01, GAP-02, GAP-03 | strict    | specialist (frontend)     | 8h     | RT-02        | G2             |
 | RT-04   | Inventory sort contract correction (grade, unitCogs) end-to-end                          | GAP-10                 | strict    | specialist (fullstack)    | 4h     | RT-02        | G2             |
-| RT-05   | Workspace-shell route unification for sales/procurement/receiving flows                  | GAP-04, GAP-09         | strict    | specialist (frontend)     | 8h     | RT-00        | G1             |
+| RT-05   | Workspace-shell route unification for sales/procurement/intake flows                     | GAP-04, GAP-09         | strict    | specialist (frontend)     | 8h     | RT-00        | G1             |
 | RT-06   | Legacy route deprecation/redirect strategy and nav cleanup (`classic`, `spreadsheet`)    | GAP-05                 | strict    | specialist (frontend)     | 4h     | RT-05        | G2             |
 | RT-07   | Recoverable delete UX for inventory and purchase orders (undo/restore actions)           | GAP-06                 | strict    | specialist (fullstack)    | 8h     | RT-01, RT-03 | G3             |
 | RT-08   | Export UX hardening (truncation consent, progress model, large-job strategy)             | GAP-07                 | strict    | specialist (frontend)     | 6h     | RT-03        | G3             |
@@ -98,7 +98,7 @@ Linked PR context: #446 (`codex/consolidated-ux-media-20260226` -> `main`)
 ## RT-05 - Workspace-shell route unification
 
 - Scope:
-  - Consolidate core routes (`/pick-pack`, `/orders/create`, `/orders/new`, `/receiving`, `/direct-intake`, `/inventory/:id`) under workspace-shell-compatible navigation patterns.
+  - Consolidate core routes (`/pick-pack`, `/orders/create`, `/orders/new`, `/intake`, `/direct-intake`, `/inventory/:id`) under workspace-shell-compatible navigation patterns.
   - Ensure command strips link to canonical workspace tabs.
 - Verification plan:
   - Route-level tests/smoke checks.

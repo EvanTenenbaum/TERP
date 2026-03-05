@@ -42,7 +42,7 @@ Phase 2 has successfully mapped the TERP system architecture, documenting fronte
    - Orders: `/orders`, `/orders/create`, `/orders-debug`
    - Accounting: `/accounting/*` (10 sub-routes)
    - Clients: `/clients`, `/clients/:id`
-   - Vendors: `/vendors`, `/vendors/:id`
+   - Suppliers: `/suppliers`, `/suppliers/:id`
    - Calendar: `/calendar`
    - Todo Lists: `/todos`, `/todos/:listId`
    - Analytics: `/analytics`
@@ -165,8 +165,8 @@ App (ErrorBoundary + ThemeProvider)
    - orders, orderEnhancements, salesSheets, salesSheetEnhancements
    - returns, refunds, matching
 
-4. **Client/Vendor Management** (6 routers):
-   - clients, clientNeeds, vendors, vendorSupply
+4. **Client/Supplier Management** (6 routers):
+   - clients, clientNeeds, suppliers, vendorSupply
    - purchaseOrders, poReceiving
 
 5. **Accounting** (5 routers):
@@ -338,7 +338,7 @@ await db.transaction(async tx => {
    - users, userDashboardPreferences
 
 2. **Inventory** (20 tables):
-   - vendors, vendorNotes, brands, strains, products
+   - suppliers, vendorNotes, brands, strains, products
    - productSynonyms, productMedia, tags, productTags
    - lots, batches, batchLocations, paymentHistory
    - sales, cogsHistory, sequences
@@ -399,7 +399,7 @@ await db.transaction(async tx => {
 15. **Audit & Logs** (3 tables):
     - auditLogs, inventoryMovements, systemLogs
 
-16. **Vendor Supply** (2 tables):
+16. **Supplier Supply** (2 tables):
     - vendorSupply, vendorSupplyHistory
 
 17. **Warehouse** (2 tables):
@@ -415,7 +415,7 @@ await db.transaction(async tx => {
 1. **Inventory Flow**:
 
 ```
-vendors → lots → batches → products
+suppliers → lots → batches → products
                     ↓
               batchLocations
                     ↓

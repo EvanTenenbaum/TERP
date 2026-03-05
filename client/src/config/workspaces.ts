@@ -31,7 +31,7 @@ export const DEMAND_SUPPLY_WORKSPACE = {
     { value: "matchmaking", label: "Matchmaking" },
     { value: "needs", label: "Client Needs" },
     { value: "interest-list", label: "Interest List" },
-    { value: "vendor-supply", label: "Vendor Supply" },
+    { value: "vendor-supply", label: "Supplier Supply" },
   ],
 } as const satisfies WorkspaceConfig<
   "matchmaking" | "needs" | "interest-list" | "vendor-supply"

@@ -16,7 +16,8 @@ Complete the AR/AP management, credit management, and returns processing workflo
 
 ## File Domain
 
-**Your files**: 
+**Your files**:
+
 - `server/routers/accounting.ts`
 - `server/routers/credits.ts`
 - `server/routers/returns.ts`
@@ -25,7 +26,8 @@ Complete the AR/AP management, credit management, and returns processing workflo
 - `client/src/pages/Credits*.tsx`
 - `client/src/components/returns/*.tsx`
 
-**Do NOT modify**: 
+**Do NOT modify**:
+
 - Sales files (Wave 5A domain)
 - Inventory files (Wave 5B domain)
 
@@ -38,32 +40,36 @@ Complete the AR/AP management, credit management, and returns processing workflo
 ```typescript
 // server/routers/accounting.ts
 
-import { z } from 'zod';
-import { router, protectedProcedure } from '../_core/trpc';
-import { invoices, payments, clients, vendors, purchaseOrders } from '../db/schema';
-import { eq, and, gt, lt, gte, lte, sql, desc, sum } from 'drizzle-orm';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, protectedProcedure } from "../_core/trpc";
+import {
+  invoices,
+  payments,
+  clients,
+  suppliers,
+  purchaseOrders,
+} from "../db/schema";
+import { eq, and, gt, lt, gte, lte, sql, desc, sum } from "drizzle-orm";
+import { logger } from "../lib/logger";
 
 export const accountingRouter = router({
-  getARSummary: protectedProcedure
-    .query(async () => {
-      // Total AR
-      const totalAR = await db.select({
+  getARSummary: protectedProcedure.query(async () => {
+    // Total AR
+    const totalAR = await db
+      .select({
         total: sum(invoices.amountDue),
       })
-        .from(invoices)
-        .where(and(
-          gt(invoices.amountDue, 0),
-          eq(invoices.status, 'pending'),
-        ));
+      .from(invoices)
+      .where(and(gt(invoices.amountDue, 0), eq(invoices.status, "pending")));
 
-      // Aging buckets
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
-      const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+    // Aging buckets
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-      const aging = await db.select({
+    const aging = await db
+      .select({
         bucket: sql<string>`
           CASE 
             WHEN due_date >= ${today} THEN 'current'
@@ -76,9 +82,8 @@ export const accountingRouter = router({
         amount: sum(invoices.amountDue),
         count: sql<number>`count(*)`,
       })
-        .from(invoices)
-        .where(gt(invoices.amountDue, 0))
-        .groupBy(sql`
+      .from(invoices)
+      .where(gt(invoices.amountDue, 0)).groupBy(sql`
           CASE 
             WHEN due_date >= ${today} THEN 'current'
             WHEN due_date >= ${thirtyDaysAgo} THEN '1-30'
@@ -88,71 +93,76 @@ export const accountingRouter = router({
           END
         `);
 
-      // Top debtors
-      const topDebtors = await db.select({
+    // Top debtors
+    const topDebtors = await db
+      .select({
         clientId: clients.id,
         clientName: clients.name,
         totalOwed: sum(invoices.amountDue),
         invoiceCount: sql<number>`count(*)`,
       })
-        .from(invoices)
-        .innerJoin(clients, eq(invoices.clientId, clients.id))
-        .where(gt(invoices.amountDue, 0))
-        .groupBy(clients.id, clients.name)
-        .orderBy(desc(sum(invoices.amountDue)))
-        .limit(10);
+      .from(invoices)
+      .innerJoin(clients, eq(invoices.clientId, clients.id))
+      .where(gt(invoices.amountDue, 0))
+      .groupBy(clients.id, clients.name)
+      .orderBy(desc(sum(invoices.amountDue)))
+      .limit(10);
 
-      return {
-        totalAR: totalAR[0]?.total || 0,
-        aging,
-        topDebtors,
-      };
-    }),
+    return {
+      totalAR: totalAR[0]?.total || 0,
+      aging,
+      topDebtors,
+    };
+  }),
 
-  getAPSummary: protectedProcedure
-    .query(async () => {
-      // Total AP (unpaid purchase orders)
-      const totalAP = await db.select({
+  getAPSummary: protectedProcedure.query(async () => {
+    // Total AP (unpaid purchase orders)
+    const totalAP = await db
+      .select({
         total: sum(purchaseOrders.total),
       })
-        .from(purchaseOrders)
-        .where(and(
-          eq(purchaseOrders.status, 'received'),
-          eq(purchaseOrders.isPaid, false),
-        ));
+      .from(purchaseOrders)
+      .where(
+        and(
+          eq(purchaseOrders.status, "received"),
+          eq(purchaseOrders.isPaid, false)
+        )
+      );
 
-      // By vendor
-      const byVendor = await db.select({
-        vendorId: vendors.id,
-        vendorName: vendors.name,
+    // By supplier
+    const byVendor = await db
+      .select({
+        vendorId: suppliers.id,
+        vendorName: suppliers.name,
         totalOwed: sum(purchaseOrders.total),
         poCount: sql<number>`count(*)`,
       })
-        .from(purchaseOrders)
-        .innerJoin(vendors, eq(purchaseOrders.vendorId, vendors.id))
-        .where(and(
-          eq(purchaseOrders.status, 'received'),
-          eq(purchaseOrders.isPaid, false),
-        ))
-        .groupBy(vendors.id, vendors.name)
-        .orderBy(desc(sum(purchaseOrders.total)));
+      .from(purchaseOrders)
+      .innerJoin(suppliers, eq(purchaseOrders.vendorId, suppliers.id))
+      .where(
+        and(
+          eq(purchaseOrders.status, "received"),
+          eq(purchaseOrders.isPaid, false)
+        )
+      )
+      .groupBy(suppliers.id, suppliers.name)
+      .orderBy(desc(sum(purchaseOrders.total)));
 
-      return {
-        totalAP: totalAP[0]?.total || 0,
-        byVendor,
-      };
-    }),
+    return {
+      totalAP: totalAP[0]?.total || 0,
+      byVendor,
+    };
+  }),
 
   getOverdueInvoices: protectedProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(100).default(50),
-    }))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
     .query(async ({ input }) => {
       return db.query.invoices.findMany({
-        where: and(
-          gt(invoices.amountDue, 0),
-          lt(invoices.dueDate, new Date()),
-        ),
+        where: and(gt(invoices.amountDue, 0), lt(invoices.dueDate, new Date())),
         with: {
           client: true,
           order: true,
@@ -163,15 +173,19 @@ export const accountingRouter = router({
     }),
 
   getClientStatement: protectedProcedure
-    .input(z.object({
-      clientId: z.number(),
-      startDate: z.date().optional(),
-      endDate: z.date().optional(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+      })
+    )
     .query(async ({ input }) => {
       const conditions = [eq(invoices.clientId, input.clientId)];
-      if (input.startDate) conditions.push(gte(invoices.createdAt, input.startDate));
-      if (input.endDate) conditions.push(lte(invoices.createdAt, input.endDate));
+      if (input.startDate)
+        conditions.push(gte(invoices.createdAt, input.startDate));
+      if (input.endDate)
+        conditions.push(lte(invoices.createdAt, input.endDate));
 
       const clientInvoices = await db.query.invoices.findMany({
         where: and(...conditions),
@@ -207,12 +221,12 @@ export const accountingRouter = router({
 ```typescript
 // server/routers/credits.ts
 
-import { z } from 'zod';
-import { router, protectedProcedure } from '../_core/trpc';
-import { credits, creditApplications, clients, invoices } from '../db/schema';
-import { eq, and, desc, sum, sql } from 'drizzle-orm';
-import { TRPCError } from '@trpc/server';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, protectedProcedure } from "../_core/trpc";
+import { credits, creditApplications, clients, invoices } from "../db/schema";
+import { eq, and, desc, sum, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { logger } from "../lib/logger";
 
 export const creditsRouter = router({
   getClientCredits: protectedProcedure
@@ -221,12 +235,15 @@ export const creditsRouter = router({
       const clientCredits = await db.query.credits.findMany({
         where: and(
           eq(credits.clientId, input.clientId),
-          eq(credits.status, 'active'),
+          eq(credits.status, "active")
         ),
         orderBy: desc(credits.createdAt),
       });
 
-      const totalAvailable = clientCredits.reduce((sum, c) => sum + c.remainingAmount, 0);
+      const totalAvailable = clientCredits.reduce(
+        (sum, c) => sum + c.remainingAmount,
+        0
+      );
 
       return {
         credits: clientCredits,
@@ -235,99 +252,137 @@ export const creditsRouter = router({
     }),
 
   issueCredit: protectedProcedure
-    .input(z.object({
-      clientId: z.number(),
-      amount: z.number().positive(),
-      reason: z.enum(['return', 'price_adjustment', 'goodwill', 'promotional', 'other']),
-      description: z.string().optional(),
-      expiresAt: z.date().optional(),
-      relatedInvoiceId: z.number().optional(),
-      relatedReturnId: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        amount: z.number().positive(),
+        reason: z.enum([
+          "return",
+          "price_adjustment",
+          "goodwill",
+          "promotional",
+          "other",
+        ]),
+        description: z.string().optional(),
+        expiresAt: z.date().optional(),
+        relatedInvoiceId: z.number().optional(),
+        relatedReturnId: z.number().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      logger.info('[Credits] Issuing credit', { clientId: input.clientId, amount: input.amount });
+      logger.info("[Credits] Issuing credit", {
+        clientId: input.clientId,
+        amount: input.amount,
+      });
 
       // Validate client exists
       const client = await db.query.clients.findFirst({
         where: eq(clients.id, input.clientId),
       });
       if (!client) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Client not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Client not found" });
       }
 
       // Generate credit number
       const creditNumber = await generateCreditNumber();
 
-      const [credit] = await db.insert(credits).values({
-        creditNumber,
-        clientId: input.clientId,
-        originalAmount: input.amount,
-        remainingAmount: input.amount,
-        reason: input.reason,
-        description: input.description,
-        status: 'active',
-        expiresAt: input.expiresAt,
-        relatedInvoiceId: input.relatedInvoiceId,
-        relatedReturnId: input.relatedReturnId,
-        issuedById: ctx.user.id,
-        createdAt: new Date(),
-      }).returning();
+      const [credit] = await db
+        .insert(credits)
+        .values({
+          creditNumber,
+          clientId: input.clientId,
+          originalAmount: input.amount,
+          remainingAmount: input.amount,
+          reason: input.reason,
+          description: input.description,
+          status: "active",
+          expiresAt: input.expiresAt,
+          relatedInvoiceId: input.relatedInvoiceId,
+          relatedReturnId: input.relatedReturnId,
+          issuedById: ctx.user.id,
+          createdAt: new Date(),
+        })
+        .returning();
 
-      logger.info('[Credits] Credit issued', { creditId: credit.id, creditNumber });
+      logger.info("[Credits] Credit issued", {
+        creditId: credit.id,
+        creditNumber,
+      });
 
       return credit;
     }),
 
   applyCredit: protectedProcedure
-    .input(z.object({
-      creditId: z.number(),
-      invoiceId: z.number(),
-      amount: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        creditId: z.number(),
+        invoiceId: z.number(),
+        amount: z.number().positive(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      logger.info('[Credits] Applying credit', input);
+      logger.info("[Credits] Applying credit", input);
 
       const credit = await db.query.credits.findFirst({
         where: eq(credits.id, input.creditId),
       });
       if (!credit) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credit not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Credit not found" });
       }
-      if (credit.status !== 'active') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Credit is not active' });
+      if (credit.status !== "active") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Credit is not active",
+        });
       }
       if (input.amount > credit.remainingAmount) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Amount exceeds available credit' });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Amount exceeds available credit",
+        });
       }
 
       const invoice = await db.query.invoices.findFirst({
         where: eq(invoices.id, input.invoiceId),
       });
       if (!invoice) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
       }
       if (invoice.clientId !== credit.clientId) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Credit and invoice must belong to same client' });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Credit and invoice must belong to same client",
+        });
       }
       if (input.amount > invoice.amountDue) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Amount exceeds invoice balance' });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Amount exceeds invoice balance",
+        });
       }
 
       // Create application record
-      const [application] = await db.insert(creditApplications).values({
-        creditId: input.creditId,
-        invoiceId: input.invoiceId,
-        amount: input.amount,
-        appliedById: ctx.user.id,
-        createdAt: new Date(),
-      }).returning();
+      const [application] = await db
+        .insert(creditApplications)
+        .values({
+          creditId: input.creditId,
+          invoiceId: input.invoiceId,
+          amount: input.amount,
+          appliedById: ctx.user.id,
+          createdAt: new Date(),
+        })
+        .returning();
 
       // Update credit remaining amount
       const newRemaining = credit.remainingAmount - input.amount;
-      await db.update(credits)
+      await db
+        .update(credits)
         .set({
           remainingAmount: newRemaining,
-          status: newRemaining <= 0 ? 'exhausted' : 'active',
+          status: newRemaining <= 0 ? "exhausted" : "active",
           updatedAt: new Date(),
         })
         .where(eq(credits.id, input.creditId));
@@ -335,29 +390,32 @@ export const creditsRouter = router({
       // Update invoice
       const newAmountPaid = invoice.amountPaid + input.amount;
       const newAmountDue = invoice.total - newAmountPaid;
-      await db.update(invoices)
+      await db
+        .update(invoices)
         .set({
           amountPaid: newAmountPaid,
           amountDue: newAmountDue,
-          status: newAmountDue <= 0 ? 'paid' : 'partial',
+          status: newAmountDue <= 0 ? "paid" : "partial",
           updatedAt: new Date(),
         })
         .where(eq(invoices.id, input.invoiceId));
 
-      logger.info('[Credits] Credit applied', { 
-        creditId: input.creditId, 
-        invoiceId: input.invoiceId, 
-        amount: input.amount 
+      logger.info("[Credits] Credit applied", {
+        creditId: input.creditId,
+        invoiceId: input.invoiceId,
+        amount: input.amount,
       });
 
       return application;
     }),
 
   voidCredit: protectedProcedure
-    .input(z.object({
-      creditId: z.number(),
-      reason: z.string(),
-    }))
+    .input(
+      z.object({
+        creditId: z.number(),
+        reason: z.string(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const credit = await db.query.credits.findFirst({
         where: eq(credits.id, input.creditId),
@@ -365,16 +423,20 @@ export const creditsRouter = router({
       });
 
       if (!credit) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credit not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Credit not found" });
       }
 
       if (credit.applications.length > 0) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot void credit that has been applied' });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot void credit that has been applied",
+        });
       }
 
-      const [updated] = await db.update(credits)
+      const [updated] = await db
+        .update(credits)
         .set({
-          status: 'voided',
+          status: "voided",
           voidedAt: new Date(),
           voidedById: ctx.user.id,
           voidReason: input.reason,
@@ -383,7 +445,7 @@ export const creditsRouter = router({
         .where(eq(credits.id, input.creditId))
         .returning();
 
-      logger.info('[Credits] Credit voided', { creditId: input.creditId });
+      logger.info("[Credits] Credit voided", { creditId: input.creditId });
 
       return updated;
     }),
@@ -391,11 +453,12 @@ export const creditsRouter = router({
 
 async function generateCreditNumber(): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.select({ count: sql<number>`count(*)` })
+  const count = await db
+    .select({ count: sql<number>`count(*)` })
     .from(credits)
     .where(sql`EXTRACT(YEAR FROM created_at) = ${year}`);
   const num = (count[0]?.count || 0) + 1;
-  return `CR-${year}-${String(num).padStart(5, '0')}`;
+  return `CR-${year}-${String(num).padStart(5, "0")}`;
 }
 ```
 
@@ -408,28 +471,38 @@ async function generateCreditNumber(): Promise<string> {
 ```typescript
 // server/routers/returns.ts
 
-import { z } from 'zod';
-import { router, protectedProcedure } from '../_core/trpc';
-import { returns, returnItems, orderItems, batches, credits } from '../db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
-import { TRPCError } from '@trpc/server';
-import { logger } from '../lib/logger';
+import { z } from "zod";
+import { router, protectedProcedure } from "../_core/trpc";
+import {
+  returns,
+  returnItems,
+  orderItems,
+  batches,
+  credits,
+} from "../db/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { logger } from "../lib/logger";
 
 const returnItemSchema = z.object({
   orderItemId: z.number(),
   quantity: z.number().min(1),
-  reason: z.enum(['damaged', 'wrong_item', 'quality', 'overstock', 'other']),
-  condition: z.enum(['sellable', 'damaged', 'destroyed']),
+  reason: z.enum(["damaged", "wrong_item", "quality", "overstock", "other"]),
+  condition: z.enum(["sellable", "damaged", "destroyed"]),
   notes: z.string().optional(),
 });
 
 export const returnsRouter = router({
   list: protectedProcedure
-    .input(z.object({
-      status: z.enum(['pending', 'approved', 'received', 'processed', 'rejected']).optional(),
-      clientId: z.number().optional(),
-      limit: z.number().min(1).max(100).default(50),
-    }))
+    .input(
+      z.object({
+        status: z
+          .enum(["pending", "approved", "received", "processed", "rejected"])
+          .optional(),
+        clientId: z.number().optional(),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
     .query(async ({ input }) => {
       const conditions = [];
       if (input.status) conditions.push(eq(returns.status, input.status));
@@ -449,13 +522,18 @@ export const returnsRouter = router({
     }),
 
   create: protectedProcedure
-    .input(z.object({
-      orderId: z.number(),
-      items: z.array(returnItemSchema).min(1),
-      notes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        orderId: z.number(),
+        items: z.array(returnItemSchema).min(1),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      logger.info('[Returns] Creating return', { orderId: input.orderId, itemCount: input.items.length });
+      logger.info("[Returns] Creating return", {
+        orderId: input.orderId,
+        itemCount: input.items.length,
+      });
 
       const order = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
@@ -463,41 +541,50 @@ export const returnsRouter = router({
       });
 
       if (!order) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
       // Validate return quantities
       for (const item of input.items) {
         const orderItem = order.items.find(oi => oi.id === item.orderItemId);
         if (!orderItem) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: `Order item ${item.orderItemId} not found` });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Order item ${item.orderItemId} not found`,
+          });
         }
         if (item.quantity > orderItem.quantity) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Return quantity exceeds order quantity' });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Return quantity exceeds order quantity",
+          });
         }
       }
 
       // Calculate return total
       const returnTotal = input.items.reduce((sum, item) => {
         const orderItem = order.items.find(oi => oi.id === item.orderItemId)!;
-        return sum + (item.quantity * orderItem.unitPrice);
+        return sum + item.quantity * orderItem.unitPrice;
       }, 0);
 
       // Generate return number
       const returnNumber = await generateReturnNumber();
 
       // Create return
-      const [returnRecord] = await db.insert(returns).values({
-        returnNumber,
-        orderId: input.orderId,
-        clientId: order.clientId,
-        status: 'pending',
-        subtotal: returnTotal,
-        total: returnTotal,
-        notes: input.notes,
-        createdById: ctx.user.id,
-        createdAt: new Date(),
-      }).returning();
+      const [returnRecord] = await db
+        .insert(returns)
+        .values({
+          returnNumber,
+          orderId: input.orderId,
+          clientId: order.clientId,
+          status: "pending",
+          subtotal: returnTotal,
+          total: returnTotal,
+          notes: input.notes,
+          createdById: ctx.user.id,
+          createdAt: new Date(),
+        })
+        .returning();
 
       // Create return items
       await db.insert(returnItems).values(
@@ -511,7 +598,10 @@ export const returnsRouter = router({
         }))
       );
 
-      logger.info('[Returns] Return created', { returnId: returnRecord.id, returnNumber });
+      logger.info("[Returns] Return created", {
+        returnId: returnRecord.id,
+        returnNumber,
+      });
 
       return returnRecord;
     }),
@@ -519,9 +609,10 @@ export const returnsRouter = router({
   approve: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const [updated] = await db.update(returns)
+      const [updated] = await db
+        .update(returns)
         .set({
-          status: 'approved',
+          status: "approved",
           approvedAt: new Date(),
           approvedById: ctx.user.id,
           updatedAt: new Date(),
@@ -529,22 +620,26 @@ export const returnsRouter = router({
         .where(eq(returns.id, input.id))
         .returning();
 
-      logger.info('[Returns] Return approved', { returnId: input.id });
+      logger.info("[Returns] Return approved", { returnId: input.id });
 
       return updated;
     }),
 
   receive: protectedProcedure
-    .input(z.object({
-      id: z.number(),
-      items: z.array(z.object({
-        returnItemId: z.number(),
-        receivedQuantity: z.number(),
-        actualCondition: z.enum(['sellable', 'damaged', 'destroyed']),
-      })),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        items: z.array(
+          z.object({
+            returnItemId: z.number(),
+            receivedQuantity: z.number(),
+            actualCondition: z.enum(["sellable", "damaged", "destroyed"]),
+          })
+        ),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      logger.info('[Returns] Receiving return', { returnId: input.id });
+      logger.info("[Returns] Intake return", { returnId: input.id });
 
       const returnRecord = await db.query.returns.findFirst({
         where: eq(returns.id, input.id),
@@ -552,15 +647,18 @@ export const returnsRouter = router({
       });
 
       if (!returnRecord) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Return not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Return not found" });
       }
 
       // Update return items and restore inventory
       for (const item of input.items) {
-        const returnItem = returnRecord.items.find(ri => ri.id === item.returnItemId);
+        const returnItem = returnRecord.items.find(
+          ri => ri.id === item.returnItemId
+        );
         if (!returnItem) continue;
 
-        await db.update(returnItems)
+        await db
+          .update(returnItems)
           .set({
             receivedQuantity: item.receivedQuantity,
             actualCondition: item.actualCondition,
@@ -569,24 +667,26 @@ export const returnsRouter = router({
           .where(eq(returnItems.id, item.returnItemId));
 
         // Restore to inventory if sellable
-        if (item.actualCondition === 'sellable' && item.receivedQuantity > 0) {
-          await db.update(batches)
+        if (item.actualCondition === "sellable" && item.receivedQuantity > 0) {
+          await db
+            .update(batches)
             .set({
               quantity: sql`quantity + ${item.receivedQuantity}`,
               updatedAt: new Date(),
             })
             .where(eq(batches.id, returnItem.orderItem.batchId));
 
-          logger.info('[Returns] Inventory restored', { 
-            batchId: returnItem.orderItem.batchId, 
-            quantity: item.receivedQuantity 
+          logger.info("[Returns] Inventory restored", {
+            batchId: returnItem.orderItem.batchId,
+            quantity: item.receivedQuantity,
           });
         }
       }
 
-      const [updated] = await db.update(returns)
+      const [updated] = await db
+        .update(returns)
         .set({
-          status: 'received',
+          status: "received",
           receivedAt: new Date(),
           receivedById: ctx.user.id,
           updatedAt: new Date(),
@@ -598,24 +698,29 @@ export const returnsRouter = router({
     }),
 
   process: protectedProcedure
-    .input(z.object({
-      id: z.number(),
-      issueCredit: z.boolean().default(true),
-      creditAmount: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        issueCredit: z.boolean().default(true),
+        creditAmount: z.number().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      logger.info('[Returns] Processing return', { returnId: input.id });
+      logger.info("[Returns] Processing return", { returnId: input.id });
 
       const returnRecord = await db.query.returns.findFirst({
         where: eq(returns.id, input.id),
       });
 
       if (!returnRecord) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Return not found' });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Return not found" });
       }
 
-      if (returnRecord.status !== 'received') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Return must be received first' });
+      if (returnRecord.status !== "received") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Return must be received first",
+        });
       }
 
       let creditId: number | null = null;
@@ -625,27 +730,34 @@ export const returnsRouter = router({
         const creditAmount = input.creditAmount || returnRecord.total;
         const creditNumber = await generateCreditNumber();
 
-        const [credit] = await db.insert(credits).values({
-          creditNumber,
-          clientId: returnRecord.clientId,
-          originalAmount: creditAmount,
-          remainingAmount: creditAmount,
-          reason: 'return',
-          description: `Credit for return ${returnRecord.returnNumber}`,
-          status: 'active',
-          relatedReturnId: returnRecord.id,
-          issuedById: ctx.user.id,
-          createdAt: new Date(),
-        }).returning();
+        const [credit] = await db
+          .insert(credits)
+          .values({
+            creditNumber,
+            clientId: returnRecord.clientId,
+            originalAmount: creditAmount,
+            remainingAmount: creditAmount,
+            reason: "return",
+            description: `Credit for return ${returnRecord.returnNumber}`,
+            status: "active",
+            relatedReturnId: returnRecord.id,
+            issuedById: ctx.user.id,
+            createdAt: new Date(),
+          })
+          .returning();
 
         creditId = credit.id;
 
-        logger.info('[Returns] Credit issued for return', { returnId: input.id, creditId });
+        logger.info("[Returns] Credit issued for return", {
+          returnId: input.id,
+          creditId,
+        });
       }
 
-      const [updated] = await db.update(returns)
+      const [updated] = await db
+        .update(returns)
         .set({
-          status: 'processed',
+          status: "processed",
           processedAt: new Date(),
           processedById: ctx.user.id,
           creditId,
@@ -654,7 +766,7 @@ export const returnsRouter = router({
         .where(eq(returns.id, input.id))
         .returning();
 
-      logger.info('[Returns] Return processed', { returnId: input.id });
+      logger.info("[Returns] Return processed", { returnId: input.id });
 
       return updated;
     }),
@@ -662,11 +774,12 @@ export const returnsRouter = router({
 
 async function generateReturnNumber(): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.select({ count: sql<number>`count(*)` })
+  const count = await db
+    .select({ count: sql<number>`count(*)` })
     .from(returns)
     .where(sql`EXTRACT(YEAR FROM created_at) = ${year}`);
   const num = (count[0]?.count || 0) + 1;
-  return `RET-${year}-${String(num).padStart(5, '0')}`;
+  return `RET-${year}-${String(num).padStart(5, "0")}`;
 }
 ```
 
@@ -720,7 +833,7 @@ Only touches accounting-related files
 - [ ] Credit issuance works
 - [ ] Credit application to invoices works
 - [ ] Returns creation works
-- [ ] Returns receiving restores inventory
+- [ ] Returns intake restores inventory
 - [ ] Returns processing issues credits
 - [ ] All workflows tested end-to-end
 

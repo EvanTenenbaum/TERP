@@ -89,7 +89,7 @@ export function OrderPreview({
       toast.success(
         orderType === "QUOTE"
           ? `Quote ${data.orderNumber} created successfully!`
-          : `Sale ${data.orderNumber} created successfully!`
+          : `Sales Order ${data.orderNumber} created successfully!`
       );
       // Reset form
       onClearAll();
@@ -174,7 +174,7 @@ export function OrderPreview({
     <Card className="sticky top-4">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{orderType === "QUOTE" ? "Quote" : "Sale"} Preview</span>
+          <span>{orderType === "QUOTE" ? "Quote" : "Sales Order"} Preview</span>
           {items.length > 0 && (
             <Badge variant="secondary">{items.length} items</Badge>
           )}

@@ -207,7 +207,7 @@ Navigation inconsistency: `/invoices` returns 404 while correct path is `/accoun
 > - Workflow/Todos: Working at /todos (12 PASS)
 > - Analytics: Working at /analytics (7 PASS)
 > - Auth: Working at /account (4 PASS)
-> - Vendors: Working at /vendors (3 PASS)
+> - Suppliers: Working at /suppliers (3 PASS)
 
 **Objectives:**
 

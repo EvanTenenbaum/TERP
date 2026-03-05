@@ -5,12 +5,14 @@
 > **Last Updated**: 2026-01-19 (Deep Gap Analysis - Second Pass)
 >
 > **Status Summary**:
+>
 > - ✅ Confirmed: 99 features (includes 3 resolved from unknown + 8 new discoveries)
 > - ⚙️ API-Only: 8 features (intentionally backend-only, no UI required)
 > - ❓ Unknown: 3 features (pending final validation)
 > - ❌ Missing: 1 feature (DF-067 Recurring Orders - no implementation found)
 >
 > **Criticality Summary**:
+>
 > - P0 (Critical): 24 features - Must preserve with full test coverage
 > - P1 (High): 48 features - Must preserve with E2E coverage
 > - P2 (Medium): 38 features - Must preserve with UI smoke tests
@@ -36,7 +38,7 @@
 | DF-015     | Sample Management System                             | Sales             | /samples                            | USER_FLOWS                    | P1          | Work Surface + Panel             | DB: samples; API: samples router; UI: SampleManagement                                   | Samples blocked               | E2E samples flow                 | confirmed |
 | DF-016     | Live Shopping System                                 | Sales             | /live-shopping                      | USER_FLOWS                    | P1          | Work Surface + Panel             | DB: live_shopping; API: live shopping router; UI: LiveShoppingPage                       | Live shopping lost            | E2E live shopping                | confirmed |
 | DF-017     | Leaderboard & Gamification                           | Growth            | /leaderboard                        | USER_FLOWS                    | P2          | Dashboard/Review                 | DB: leaderboard; API: leaderboard router; UI: LeaderboardPage                            | Gamification lost             | UI smoke                         | confirmed |
-| DF-018     | Purchase Orders & Receiving                          | Procurement       | /purchase-orders                    | USER_FLOWS + repo             | P0          | Work Surface + Grid              | DB: purchase_orders; API: purchaseOrders router; UI: PurchaseOrdersPage                  | PO flow broken                | E2E PO create/receive            | confirmed |
+| DF-018     | Purchase Orders & Intake                             | Procurement       | /purchase-orders                    | USER_FLOWS + repo             | P0          | Work Surface + Grid              | DB: purchase_orders; API: purchaseOrders router; UI: PurchaseOrdersPage                  | PO flow broken                | E2E PO create/receive            | confirmed |
 | DF-019     | Returns & Refunds                                    | Sales/Inventory   | /returns                            | USER_FLOWS                    | P1          | Work Surface + Inspector         | DB: returns; API: returns router; UI: ReturnsPage                                        | Returns blocked               | E2E returns flow                 | confirmed |
 | DF-020     | Quotes Management                                    | Sales             | /quotes                             | USER_FLOWS                    | P1          | Work Surface + Panel             | DB: quotes; API: quotes router; UI: Quotes page                                          | Quotes lost                   | E2E quote create                 | confirmed |
 | DF-021     | Sales Sheets                                         | Sales             | /sales-sheets                       | USER_FLOWS                    | P2          | Review Surface + Panel           | DB: sales_sheets; API: sales sheet router; UI: SalesSheetCreator                         | Sales sheets lost             | UI smoke                         | confirmed |
@@ -65,8 +67,8 @@
 | DF-044     | Feature Flags                                        | Admin             | /settings/feature-flags             | USER_FLOWS                    | P1          | Admin Forms                      | DB: feature_flags; API: featureFlags router; UI: FeatureFlagsPage                        | Flags lost                    | Unit + UI smoke                  | confirmed |
 | DF-045     | Audit Trail                                          | Compliance        | /audit                              | USER_FLOWS                    | P0          | Review Surface                   | DB: audit logs; API: audit router; UI: AuditModal                                        | Compliance loss               | E2E audit                        | confirmed |
 | DF-046     | System Monitoring                                    | Ops               | API-only (monitoring router)        | USER_FLOWS                    | P1          | Admin Dashboard (planned)        | API: monitoring router (admin-only); **No UI - admin tool**                              | Monitoring loss               | Unit tests                       | api-only  |
-| DF-047     | Vendor Payables                                      | Accounting        | /accounting/ap                      | USER_FLOWS                    | P1          | Work Surface                     | DB: bills/payables; API: accounting router                                               | AP visibility loss            | E2E AP summary                   | confirmed |
-| DF-048     | Vendor Reminders                                     | Vendors           | API-only (vendorReminders router)   | USER_FLOWS                    | P2          | API-Only (notifications)         | DB: vendor_reminders; API: vendorReminders router; **No UI - backend automation**        | Reminder loss                 | Unit tests                       | api-only  |
+| DF-047     | Supplier Payables                                    | Accounting        | /accounting/ap                      | USER_FLOWS                    | P1          | Work Surface                     | DB: bills/payables; API: accounting router                                               | AP visibility loss            | E2E AP summary                   | confirmed |
+| DF-048     | Supplier Reminders                                   | Suppliers         | API-only (vendorReminders router)   | USER_FLOWS                    | P2          | API-Only (notifications)         | DB: vendor_reminders; API: vendorReminders router; **No UI - backend automation**        | Reminder loss                 | Unit tests                       | api-only  |
 | DF-049     | Global Search                                        | Navigation        | Global header                       | USER_FLOWS                    | P1          | Cmd+K + Global Search            | API: search router; UI: Search                                                           | Search loss                   | E2E search                       | confirmed |
 | DF-050     | Spreadsheet View                                     | Inventory/Sales   | /spreadsheet                        | USER_FLOWS + repo             | P1          | Work Surface + Grid              | UI: SpreadsheetViewPage + AG Grid                                                        | Spreadsheet workflows lost    | E2E spreadsheet                  | confirmed |
 | DF-051     | VIP Tiers                                            | VIP               | /vip-portal                         | USER_FLOWS                    | P2          | Dashboard                        | DB: vip tiers; API: vip router                                                           | Tier loss                     | UI smoke                         | confirmed |
@@ -83,7 +85,7 @@
 | DF-062     | Strains Management                                   | Products          | /products                           | USER_FLOWS                    | P2          | Form + Panel                     | DB: strains; API: products router                                                        | Strain data loss              | Unit + UI smoke                  | confirmed |
 | DF-063     | Advanced Tags System                                 | Products/Clients  | /products, /clients                 | USER_FLOWS                    | P2          | Panel + Form                     | DB: tags; API: tags router                                                               | Tagging loss                  | Unit + UI smoke                  | confirmed |
 | DF-064     | Analytics Engine                                     | Analytics         | /analytics                          | USER_FLOWS                    | P1          | Review Surface                   | DB: analytics; API: analytics router; UI: AnalyticsPage                                  | Analytics loss                | UI smoke                         | confirmed |
-| DF-065     | Vendor Supply Matching                               | Vendors           | /vendor-supply                      | USER_FLOWS                    | P2          | Review Surface + Panel           | DB: vendor_supply; API: vendorSupply router; UI: VendorSupplyPage.tsx                    | Matching loss                 | UI smoke                         | confirmed |
+| DF-065     | Supplier Supply Matching                             | Suppliers         | /supplier-supply                    | USER_FLOWS                    | P2          | Review Surface + Panel           | DB: vendor_supply; API: vendorSupply router; UI: VendorSupplyPage.tsx                    | Matching loss                 | UI smoke                         | confirmed |
 | DF-066     | System Configuration                                 | Admin             | /settings                           | USER_FLOWS                    | P1          | Admin Forms                      | DB: settings; API: settings router                                                       | Config loss                   | UI smoke                         | confirmed |
 | DF-067     | Recurring Orders                                     | Sales             | **NOT IMPLEMENTED**                 | USER_FLOWS                    | P2          | Work Surface (planned)           | **No DB table, No API, No UI - Feature not implemented**                                 | Recurring orders loss         | E2E recurring                    | missing   |
 | DF-068     | Health & Diagnostics                                 | Ops               | /health                             | USER_FLOWS                    | P1          | Review Surface                   | API: health endpoints; UI: system status                                                 | Diagnostics loss              | UI smoke                         | confirmed |
@@ -97,7 +99,7 @@
 | ACCT-006   | Void Invoice                                         | Accounting        | /accounting/invoices/:id            | USER_FLOW_MATRIX              | P1          | Action + Undo                    | DB: invoices; API: invoices.void                                                         | Financial integrity loss      | E2E void                         | confirmed |
 | ACCT-007   | Invoice Summary                                      | Accounting        | /accounting/dashboard               | USER_FLOW_MATRIX              | P1          | Dashboard                        | DB: invoices; API: invoices.getSummary                                                   | KPI loss                      | UI smoke                         | confirmed |
 | ACCT-008   | Receive Client Payment                               | Accounting        | /accounting/payments                | USER_FLOW_MATRIX              | P0          | Work Surface                     | DB: payments; API: accounting.receiveClientPayment                                       | Cash intake blocked           | E2E payment                      | confirmed |
-| ACCT-009   | Pay Vendor                                           | Accounting        | /accounting/payments                | USER_FLOW_MATRIX              | P0          | Work Surface                     | DB: payments; API: accounting.payVendor                                                  | AP blocked                    | E2E vendor payment               | confirmed |
+| ACCT-009   | Pay Supplier                                         | Accounting        | /accounting/payments                | USER_FLOW_MATRIX              | P0          | Work Surface                     | DB: payments; API: accounting.payVendor                                                  | AP blocked                    | E2E supplier payment             | confirmed |
 | ACCT-010   | Record Payment                                       | Accounting        | /accounting/payments                | USER_FLOW_MATRIX              | P0          | Work Surface                     | DB: payments; API: accounting.recordPayment                                              | Payment tracking loss         | E2E record payment               | confirmed |
 | ACCT-011   | AR Summary + Aging                                   | Accounting        | /accounting/dashboard               | USER_FLOW_MATRIX              | P1          | Dashboard                        | DB: invoices; API: accounting.getARSummary/getARAging                                    | AR visibility loss            | UI smoke                         | confirmed |
 | ACCT-012   | AP Summary + Aging                                   | Accounting        | /accounting/dashboard               | USER_FLOW_MATRIX              | P1          | Dashboard                        | DB: bills; API: accounting.getAPSummary/getAPAging                                       | AP visibility loss            | UI smoke                         | confirmed |
@@ -115,9 +117,9 @@
 | SALE-004   | Samples                                              | Sales             | /samples                            | USER_FLOW_MATRIX              | P1          | Work Surface                     | DB: samples; API: samples router                                                         | Samples lost                  | E2E samples                      | confirmed |
 | FUL-001    | Pick & Pack                                          | Fulfillment       | /pick-pack                          | USER_FLOW_MATRIX              | P0          | Work Surface + Bulk Actions      | DB: pick_pack; API: pickPack router                                                      | Fulfillment loss              | E2E pick/pack                    | confirmed |
 | DF-071     | User Authentication & Login                          | Auth              | /login                              | Gap Analysis                  | P0          | Full Page Form                   | DB: users; API: auth router; UI: Login.tsx                                               | Access blocked                | E2E login flow                   | confirmed |
-| DF-072     | VIP Appointment Booking                              | VIP               | /vip-portal/*                       | Gap Analysis                  | P1          | Calendar + Forms                 | DB: appointments; API: vipPortal router; UI: AppointmentBooking.tsx                      | VIP booking lost              | E2E booking flow                 | confirmed |
-| DF-073     | VIP Document Downloads                               | VIP               | /vip-portal/*                       | Gap Analysis                  | P2          | Panel + List                     | API: vipPortal router; UI: DocumentDownloads.tsx                                         | Document access lost          | UI smoke                         | confirmed |
-| DF-074     | VIP Session Management                               | VIP               | /vip-portal/*                       | Gap Analysis                  | P1          | Portal Shell                     | API: vipPortal router; UI: SessionEndedPage.tsx, ImpersonatePage.tsx                     | VIP session issues            | E2E session flow                 | confirmed |
+| DF-072     | VIP Appointment Booking                              | VIP               | /vip-portal/\*                      | Gap Analysis                  | P1          | Calendar + Forms                 | DB: appointments; API: vipPortal router; UI: AppointmentBooking.tsx                      | VIP booking lost              | E2E booking flow                 | confirmed |
+| DF-073     | VIP Document Downloads                               | VIP               | /vip-portal/\*                      | Gap Analysis                  | P2          | Panel + List                     | API: vipPortal router; UI: DocumentDownloads.tsx                                         | Document access lost          | UI smoke                         | confirmed |
+| DF-074     | VIP Session Management                               | VIP               | /vip-portal/\*                      | Gap Analysis                  | P1          | Portal Shell                     | API: vipPortal router; UI: SessionEndedPage.tsx, ImpersonatePage.tsx                     | VIP session issues            | E2E session flow                 | confirmed |
 | DF-075     | Help & Documentation System                          | Support           | /help                               | Gap Analysis                  | P2          | Review Surface                   | UI: Help.tsx                                                                             | User support lost             | UI smoke                         | confirmed |
 | DF-076     | Personal Account Settings                            | User              | /account                            | Gap Analysis                  | P1          | Panel + Forms                    | DB: users; API: users router; UI: AccountPage.tsx                                        | Profile management lost       | E2E account update               | confirmed |
 | DF-077     | Unified Sales Pipeline (Kanban)                      | Sales             | /sales-portal                       | Gap Analysis                  | P1          | Review Surface + Drag/Drop       | API: unifiedSalesPortal router; UI: UnifiedSalesPortalPage.tsx                           | Pipeline visibility lost      | E2E pipeline drag                | confirmed |
@@ -133,20 +135,20 @@ The original 14 unknown features have been resolved through comprehensive codeba
 
 ### Resolution Results
 
-| Feature ID | Feature Name | Resolution | Rationale |
-|------------|--------------|------------|-----------|
-| DF-030 | Crypto Payments | **api-only** | Router exists (cryptoPayments.ts), no UI - backend payment processor integration |
-| DF-031 | Installment Payments | **api-only** | Router exists (installmentPayments.ts), no UI - payment plan management via API |
-| DF-034 | Transaction Fees | **api-only** | Router exists (transactionFees.ts), no UI - automated fee calculation |
-| DF-035 | Invoice Disputes | **api-only** | Router exists (invoiceDisputes.ts), no UI - dispute workflow via API |
-| DF-038 | Catalog Publishing | **api-only** | Router exists (productCatalogue.ts), no UI - API for external integrations |
-| DF-039 | Workflow Queue | **confirmed** | UI exists at /workflow-queue (WorkflowQueuePage.tsx) |
-| DF-042 | Cash Audit | **confirmed** | UI exists at /accounting/cash-locations (CashLocations.tsx) |
-| DF-046 | System Monitoring | **api-only** | Router exists (monitoring.ts), admin-only diagnostics - no user-facing UI needed |
-| DF-048 | Vendor Reminders | **api-only** | Router exists (vendorReminders.ts), no UI - automated notification system |
-| DF-057 | Deployment Tracking | **api-only** | Router exists (deployments.ts), DevOps tool - no user-facing UI needed |
-| DF-065 | Vendor Supply Matching | **confirmed** | UI exists at /vendor-supply (VendorSupplyPage.tsx) |
-| DF-067 | Recurring Orders | **missing** | No router, no database table, no UI - feature not implemented |
+| Feature ID | Feature Name             | Resolution    | Rationale                                                                        |
+| ---------- | ------------------------ | ------------- | -------------------------------------------------------------------------------- |
+| DF-030     | Crypto Payments          | **api-only**  | Router exists (cryptoPayments.ts), no UI - backend payment processor integration |
+| DF-031     | Installment Payments     | **api-only**  | Router exists (installmentPayments.ts), no UI - payment plan management via API  |
+| DF-034     | Transaction Fees         | **api-only**  | Router exists (transactionFees.ts), no UI - automated fee calculation            |
+| DF-035     | Invoice Disputes         | **api-only**  | Router exists (invoiceDisputes.ts), no UI - dispute workflow via API             |
+| DF-038     | Catalog Publishing       | **api-only**  | Router exists (productCatalogue.ts), no UI - API for external integrations       |
+| DF-039     | Workflow Queue           | **confirmed** | UI exists at /workflow-queue (WorkflowQueuePage.tsx)                             |
+| DF-042     | Cash Audit               | **confirmed** | UI exists at /accounting/cash-locations (CashLocations.tsx)                      |
+| DF-046     | System Monitoring        | **api-only**  | Router exists (monitoring.ts), admin-only diagnostics - no user-facing UI needed |
+| DF-048     | Supplier Reminders       | **api-only**  | Router exists (vendorReminders.ts), no UI - automated notification system        |
+| DF-057     | Deployment Tracking      | **api-only**  | Router exists (deployments.ts), DevOps tool - no user-facing UI needed           |
+| DF-065     | Supplier Supply Matching | **confirmed** | UI exists at /supplier-supply (VendorSupplyPage.tsx)                             |
+| DF-067     | Recurring Orders         | **missing**   | No router, no database table, no UI - feature not implemented                    |
 
 ### Summary Statistics
 
@@ -156,9 +158,9 @@ The original 14 unknown features have been resolved through comprehensive codeba
 
 ### Action Items
 
-| Feature | Action | Priority |
-|---------|--------|----------|
-| DF-067 Recurring Orders | Add to product backlog for implementation decision | P2 |
+| Feature                 | Action                                             | Priority |
+| ----------------------- | -------------------------------------------------- | -------- |
+| DF-067 Recurring Orders | Add to product backlog for implementation decision | P2       |
 
 ### Resolution Outcomes Key
 
@@ -173,37 +175,37 @@ The original 14 unknown features have been resolved through comprehensive codeba
 
 These flows represent the critical paths through TERP that must be preserved and tested:
 
-| Flow ID | Flow Name | Entry Point | Key Steps | Exit Criteria | Covered Features |
-|---------|-----------|-------------|-----------|---------------|------------------|
-| GF-001 | Direct Intake Happy Path | /spreadsheet | Create session → Add items → Set vendor → Finalize | Batches created, inventory updated | DF-010, DF-053, INV-001 |
-| GF-002 | Standard PO to Receiving | /purchase-orders | Create PO → Submit → Receive goods | PO status = Received, inventory updated | DF-018, INV-001 |
-| GF-003 | Sales Order Happy Path | /orders | Select client → Add items → Finalize | Order created, inventory reserved | SALE-001, DF-022 |
-| GF-004 | Invoice & Payment | /accounting/invoices | Generate from order → Send → Receive payment | Invoice paid, AR cleared | ACCT-001..010 |
-| GF-005 | Pick & Pack | /pick-pack | View orders → Pick items → Pack → Ship | Order fulfilled, inventory decremented | FUL-001, DF-023 |
-| GF-006 | Client Ledger Review | /clients/:id/ledger | View balance → Filter transactions → Export | Accurate balance displayed | DF-060 |
-| GF-007 | Inventory Adjustment | /inventory | Select batch → Adjust qty → Confirm | Movement logged, qty updated | DF-013, INV-003 |
-| GF-008 | Sample Request | /samples | Create request → Approve → Fulfill | Sample dispatched, inventory decremented | SALE-004, DF-015 |
+| Flow ID | Flow Name                | Entry Point          | Key Steps                                            | Exit Criteria                            | Covered Features        |
+| ------- | ------------------------ | -------------------- | ---------------------------------------------------- | ---------------------------------------- | ----------------------- |
+| GF-001  | Direct Intake Happy Path | /spreadsheet         | Create session → Add items → Set supplier → Finalize | Batches created, inventory updated       | DF-010, DF-053, INV-001 |
+| GF-002  | Standard PO to Intake    | /purchase-orders     | Create PO → Submit → Receive goods                   | PO status = Received, inventory updated  | DF-018, INV-001         |
+| GF-003  | Sales Order Happy Path   | /orders              | Select client → Add items → Finalize                 | Order created, inventory reserved        | SALE-001, DF-022        |
+| GF-004  | Invoice & Payment        | /accounting/invoices | Generate from order → Send → Receive payment         | Invoice paid, AR cleared                 | ACCT-001..010           |
+| GF-005  | Pick & Pack              | /pick-pack           | View orders → Pick items → Pack → Ship               | Order fulfilled, inventory decremented   | FUL-001, DF-023         |
+| GF-006  | Client Ledger Review     | /clients/:id/ledger  | View balance → Filter transactions → Export          | Accurate balance displayed               | DF-060                  |
+| GF-007  | Inventory Adjustment     | /inventory           | Select batch → Adjust qty → Confirm                  | Movement logged, qty updated             | DF-013, INV-003         |
+| GF-008  | Sample Request           | /samples             | Create request → Approve → Fulfill                   | Sample dispatched, inventory decremented | SALE-004, DF-015        |
 
 ---
 
 ## Module Coverage Summary
 
-| Module | Total Features | Confirmed | API-Only | Unknown | Missing | P0 Count | Needs Work Surface |
-|--------|----------------|-----------|----------|---------|---------|----------|-------------------|
-| Accounting | 22 | 21 | 1 | 0 | 0 | 10 | Yes |
-| Inventory | 10 | 10 | 0 | 0 | 0 | 4 | Yes |
-| Sales | 13 | 12 | 0 | 0 | 1 | 3 | Yes |
-| CRM | 6 | 6 | 0 | 0 | 0 | 0 | Partial |
-| Fulfillment | 2 | 2 | 0 | 0 | 0 | 1 | Yes |
-| Admin | 8 | 8 | 0 | 0 | 0 | 2 | No (Forms) |
-| Ops | 6 | 2 | 4 | 0 | 0 | 0 | Partial |
-| Payments | 4 | 2 | 2 | 0 | 0 | 0 | Partial |
-| Products | 4 | 4 | 0 | 0 | 0 | 0 | No (Forms) |
-| VIP | 6 | 6 | 0 | 0 | 0 | 0 | Dashboard |
-| Auth | 1 | 1 | 0 | 0 | 0 | 1 | No (Full Page Form) |
-| Support | 1 | 1 | 0 | 0 | 0 | 0 | Review Surface |
-| User | 1 | 1 | 0 | 0 | 0 | 0 | Panel + Forms |
-| Growth | 2 | 2 | 0 | 0 | 0 | 0 | Dashboard |
+| Module      | Total Features | Confirmed | API-Only | Unknown | Missing | P0 Count | Needs Work Surface  |
+| ----------- | -------------- | --------- | -------- | ------- | ------- | -------- | ------------------- |
+| Accounting  | 22             | 21        | 1        | 0       | 0       | 10       | Yes                 |
+| Inventory   | 10             | 10        | 0        | 0       | 0       | 4        | Yes                 |
+| Sales       | 13             | 12        | 0        | 0       | 1       | 3        | Yes                 |
+| CRM         | 6              | 6         | 0        | 0       | 0       | 0        | Partial             |
+| Fulfillment | 2              | 2         | 0        | 0       | 0       | 1        | Yes                 |
+| Admin       | 8              | 8         | 0        | 0       | 0       | 2        | No (Forms)          |
+| Ops         | 6              | 2         | 4        | 0       | 0       | 0        | Partial             |
+| Payments    | 4              | 2         | 2        | 0       | 0       | 0        | Partial             |
+| Products    | 4              | 4         | 0        | 0       | 0       | 0        | No (Forms)          |
+| VIP         | 6              | 6         | 0        | 0       | 0       | 0        | Dashboard           |
+| Auth        | 1              | 1         | 0        | 0       | 0       | 1        | No (Full Page Form) |
+| Support     | 1              | 1         | 0        | 0       | 0       | 0        | Review Surface      |
+| User        | 1              | 1         | 0        | 0       | 0       | 0        | Panel + Forms       |
+| Growth      | 2              | 2         | 0        | 0       | 0       | 0        | Dashboard           |
 
 **Total**: 110 features (99 confirmed, 8 api-only, 0 unknown, 1 missing, 2 deprecated)
 
@@ -215,47 +217,47 @@ These flows represent the critical paths through TERP that must be preserved and
 
 ### Pages by Category
 
-| Category | Count | Coverage | Notes |
-|----------|-------|----------|-------|
-| Main Navigation | 56 | 89% | 4 undocumented (now added as DF-071..076) |
-| Accounting Sub-routes | 10 | 100% | All mapped to ACCT-* features |
-| Settings Sub-routes | 3 | 100% | All mapped |
-| VIP Portal | 8 | 100% | Now mapped to DF-072..074 |
-| Development/Framework | 3 | N/A | /dev/showcase, /404, etc. |
+| Category              | Count | Coverage | Notes                                     |
+| --------------------- | ----- | -------- | ----------------------------------------- |
+| Main Navigation       | 56    | 89%      | 4 undocumented (now added as DF-071..076) |
+| Accounting Sub-routes | 10    | 100%     | All mapped to ACCT-\* features            |
+| Settings Sub-routes   | 3     | 100%     | All mapped                                |
+| VIP Portal            | 8     | 100%     | Now mapped to DF-072..074                 |
+| Development/Framework | 3     | N/A      | /dev/showcase, /404, etc.                 |
 
 ### Hidden Routes (Not in Main Navigation)
 
 These routes are accessible but not shown in the sidebar navigation:
 
-| Route | Page | Feature | Reason Hidden |
-|-------|------|---------|---------------|
-| /help | Help.tsx | DF-075 | Accessible via header icon |
-| /intake-receipts | IntakeReceipts.tsx | DF-053 | Accessible via workflow |
-| /vendor-supply | VendorSupplyPage.tsx | DF-065 | Specialized workflow |
-| /workflow-queue | WorkflowQueuePage.tsx | DF-039 | Operations tool |
-| /matchmaking | MatchmakingServicePage.tsx | DF-007 | Specialized workflow |
-| /needs | NeedsManagementPage.tsx | DF-006 | Specialized workflow |
-| /locations | LocationsPage.tsx | DF-013 | Part of inventory |
-| /account | AccountPage.tsx | DF-076 | Personal settings |
-| /quotes | Quotes.tsx | DF-020 | Part of sales workflow |
-| /sales-portal | UnifiedSalesPortalPage.tsx | DF-077 | Pipeline view |
-| /leaderboard | LeaderboardPage.tsx | DF-017/078 | Gamification |
+| Route            | Page                       | Feature    | Reason Hidden              |
+| ---------------- | -------------------------- | ---------- | -------------------------- |
+| /help            | Help.tsx                   | DF-075     | Accessible via header icon |
+| /intake-receipts | IntakeReceipts.tsx         | DF-053     | Accessible via workflow    |
+| /supplier-supply | VendorSupplyPage.tsx       | DF-065     | Specialized workflow       |
+| /workflow-queue  | WorkflowQueuePage.tsx      | DF-039     | Operations tool            |
+| /matchmaking     | MatchmakingServicePage.tsx | DF-007     | Specialized workflow       |
+| /needs           | NeedsManagementPage.tsx    | DF-006     | Specialized workflow       |
+| /locations       | LocationsPage.tsx          | DF-013     | Part of inventory          |
+| /account         | AccountPage.tsx            | DF-076     | Personal settings          |
+| /quotes          | Quotes.tsx                 | DF-020     | Part of sales workflow     |
+| /sales-portal    | UnifiedSalesPortalPage.tsx | DF-077     | Pipeline view              |
+| /leaderboard     | LeaderboardPage.tsx        | DF-017/078 | Gamification               |
 
 ---
 
 ## Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-01-19 | Initial matrix creation with 102 features | UX Strategy Session |
-| 2026-01-19 | Red Hat QA: Added resolution plan for 14 unknown features | Red Hat QA Review |
-| 2026-01-19 | Added golden flows, module coverage summary | Red Hat QA Review |
-| 2026-01-19 | Deep Gap Analysis: Resolved 14 unknown features (3 confirmed, 8 api-only, 1 missing) | Gap Analysis |
-| 2026-01-19 | Added 8 newly discovered features (DF-071 to DF-078) | Gap Analysis |
-| 2026-01-19 | Added page inventory (86 pages mapped) | Gap Analysis |
-| 2026-01-20 | PR #244 QA: Added RBAC validation matrix per golden flow | Red Hat QA Expert |
-| 2026-01-20 | PR #244 QA: Cross-referenced QA Auth system for role testing | Red Hat QA Expert |
-| 2026-01-20 | UXS Phase 2 Complete: 9 Work Surfaces + 11 hooks + E2E tests | UXS Execution |
+| Date       | Change                                                                               | Author              |
+| ---------- | ------------------------------------------------------------------------------------ | ------------------- |
+| 2026-01-19 | Initial matrix creation with 102 features                                            | UX Strategy Session |
+| 2026-01-19 | Red Hat QA: Added resolution plan for 14 unknown features                            | Red Hat QA Review   |
+| 2026-01-19 | Added golden flows, module coverage summary                                          | Red Hat QA Review   |
+| 2026-01-19 | Deep Gap Analysis: Resolved 14 unknown features (3 confirmed, 8 api-only, 1 missing) | Gap Analysis        |
+| 2026-01-19 | Added 8 newly discovered features (DF-071 to DF-078)                                 | Gap Analysis        |
+| 2026-01-19 | Added page inventory (86 pages mapped)                                               | Gap Analysis        |
+| 2026-01-20 | PR #244 QA: Added RBAC validation matrix per golden flow                             | Red Hat QA Expert   |
+| 2026-01-20 | PR #244 QA: Cross-referenced QA Auth system for role testing                         | Red Hat QA Expert   |
+| 2026-01-20 | UXS Phase 2 Complete: 9 Work Surfaces + 11 hooks + E2E tests                         | UXS Execution       |
 
 ---
 
@@ -265,41 +267,41 @@ These routes are accessible but not shown in the sidebar navigation:
 
 ### Implemented Work Surfaces
 
-| Work Surface | File | Golden Flow | Status |
-|--------------|------|-------------|--------|
-| DirectIntakeWorkSurface | `work-surface/DirectIntakeWorkSurface.tsx` | GF-001 | ✅ |
-| PurchaseOrdersWorkSurface | `work-surface/PurchaseOrdersWorkSurface.tsx` | GF-002 | ✅ |
-| OrdersWorkSurface | `work-surface/OrdersWorkSurface.tsx` | GF-003 | ✅ |
-| InvoicesWorkSurface | `work-surface/InvoicesWorkSurface.tsx` | GF-004 | ✅ |
-| PickPackWorkSurface | `work-surface/PickPackWorkSurface.tsx` | GF-005 | ✅ |
-| ClientLedgerWorkSurface | `work-surface/ClientLedgerWorkSurface.tsx` | GF-006 | ✅ |
-| InventoryWorkSurface | `work-surface/InventoryWorkSurface.tsx` | GF-007 | ✅ |
-| QuotesWorkSurface | `work-surface/QuotesWorkSurface.tsx` | - | ✅ |
-| ClientsWorkSurface | `work-surface/ClientsWorkSurface.tsx` | - | ✅ |
+| Work Surface              | File                                         | Golden Flow | Status |
+| ------------------------- | -------------------------------------------- | ----------- | ------ |
+| DirectIntakeWorkSurface   | `work-surface/DirectIntakeWorkSurface.tsx`   | GF-001      | ✅     |
+| PurchaseOrdersWorkSurface | `work-surface/PurchaseOrdersWorkSurface.tsx` | GF-002      | ✅     |
+| OrdersWorkSurface         | `work-surface/OrdersWorkSurface.tsx`         | GF-003      | ✅     |
+| InvoicesWorkSurface       | `work-surface/InvoicesWorkSurface.tsx`       | GF-004      | ✅     |
+| PickPackWorkSurface       | `work-surface/PickPackWorkSurface.tsx`       | GF-005      | ✅     |
+| ClientLedgerWorkSurface   | `work-surface/ClientLedgerWorkSurface.tsx`   | GF-006      | ✅     |
+| InventoryWorkSurface      | `work-surface/InventoryWorkSurface.tsx`      | GF-007      | ✅     |
+| QuotesWorkSurface         | `work-surface/QuotesWorkSurface.tsx`         | -           | ✅     |
+| ClientsWorkSurface        | `work-surface/ClientsWorkSurface.tsx`        | -           | ✅     |
 
 ### Work Surface Hooks (All Complete)
 
-| Hook | Purpose | Unit Tests |
-|------|---------|------------|
-| `useWorkSurfaceKeyboard` | Keyboard contract | ✅ |
-| `useSaveState` | Save indicator | ✅ |
-| `useValidationTiming` | Validation timing | ✅ |
-| `useConcurrentEditDetection` | Optimistic locking | - |
-| `useBreakpoint` | Responsive breakpoints | - |
-| `useUndo` | 10s undo window | - |
-| `usePerformanceMonitor` | Performance budgets | - |
-| `useBulkOperationLimits` | Bulk limits | - |
-| `useToastConfig` | Toast standardization | ✅ |
-| `usePrint` | Print functionality | ✅ |
-| `useExport` | Export with limits | ✅ |
+| Hook                         | Purpose                | Unit Tests |
+| ---------------------------- | ---------------------- | ---------- |
+| `useWorkSurfaceKeyboard`     | Keyboard contract      | ✅         |
+| `useSaveState`               | Save indicator         | ✅         |
+| `useValidationTiming`        | Validation timing      | ✅         |
+| `useConcurrentEditDetection` | Optimistic locking     | -          |
+| `useBreakpoint`              | Responsive breakpoints | -          |
+| `useUndo`                    | 10s undo window        | -          |
+| `usePerformanceMonitor`      | Performance budgets    | -          |
+| `useBulkOperationLimits`     | Bulk limits            | -          |
+| `useToastConfig`             | Toast standardization  | ✅         |
+| `usePrint`                   | Print functionality    | ✅         |
+| `useExport`                  | Export with limits     | ✅         |
 
 ### Golden Flow E2E Tests
 
-| Test File | Coverage |
-|-----------|----------|
-| `order-creation.spec.ts` | GF-003 |
-| `order-to-invoice.spec.ts` | GF-003→004 |
-| `invoice-to-payment.spec.ts` | GF-004 |
-| `pick-pack-fulfillment.spec.ts` | GF-005 |
-| `work-surface-keyboard.spec.ts` | All |
-| `cmd-k-enforcement.spec.ts` | All |
+| Test File                       | Coverage   |
+| ------------------------------- | ---------- |
+| `order-creation.spec.ts`        | GF-003     |
+| `order-to-invoice.spec.ts`      | GF-003→004 |
+| `invoice-to-payment.spec.ts`    | GF-004     |
+| `pick-pack-fulfillment.spec.ts` | GF-005     |
+| `work-surface-keyboard.spec.ts` | All        |
+| `cmd-k-enforcement.spec.ts`     | All        |

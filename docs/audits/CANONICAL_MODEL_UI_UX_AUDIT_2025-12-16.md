@@ -10,9 +10,9 @@
 
 After QA review of my initial assumptions, I've identified a more significant issue than initially reported:
 
-**The backend migration is INCOMPLETE.** While `supplier_profiles` was created and vendors were copied to `clients`, the `vendors` router still queries the deprecated `vendors` table directly. This means:
+**The backend migration is INCOMPLETE.** While `supplier_profiles` was created and suppliers were copied to `clients`, the `suppliers` router still queries the deprecated `suppliers` table directly. This means:
 
-1. The frontend VendorsPage creates/updates records in the deprecated `vendors` table
+1. The frontend VendorsPage creates/updates records in the deprecated `suppliers` table
 2. The ClientsListPage shows clients (including those with `isSeller=true`)
 3. These are TWO SEPARATE data stores with no synchronization
 4. Users can create duplicate records without knowing
@@ -24,24 +24,30 @@ This is not just a UI terminology issue - it's a **data integrity problem**.
 ## QA of Initial Assumptions
 
 ### Assumption 1: "Backend migration is complete"
-**INCORRECT.** The `vendors` router (`server/routers/vendors.ts`) still:
-- Queries `vendors` table via `inventoryDb.getAllVendors()`
-- Creates records in `vendors` table via `inventoryDb.createVendor()`
-- Updates/deletes from `vendors` table directly
+
+**INCORRECT.** The `suppliers` router (`server/routers/suppliers.ts`) still:
+
+- Queries `suppliers` table via `inventoryDb.getAllVendors()`
+- Creates records in `suppliers` table via `inventoryDb.createVendor()`
+- Updates/deletes from `suppliers` table directly
 
 The migration only:
+
 - Created `supplier_profiles` table
-- Copied vendor data to `clients` table with `isSeller=true`
+- Copied supplier data to `clients` table with `isSeller=true`
 - Added `supplier_client_id` to `lots` table
 
-**The vendors router was never updated to use the new model.**
+**The suppliers router was never updated to use the new model.**
 
 ### Assumption 2: "Frontend just needs terminology updates"
+
 **INCORRECT.** The frontend is correctly calling the backend - the problem is the backend still uses the deprecated table. Changing frontend terminology without fixing the backend would be cosmetic only.
 
 ### Assumption 3: "Gradual migration is acceptable"
+
 **INCORRECT.** With two active data stores:
-- New vendors created via VendorsPage go to `vendors` table
+
+- New suppliers created via VendorsPage go to `suppliers` table
 - New clients with `isSeller=true` created via ClientsListPage go to `clients` table
 - No synchronization between them
 - Data divergence increases daily
@@ -55,7 +61,7 @@ The migration only:
 │                         CURRENT ARCHITECTURE                             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  VendorsPage.tsx ──► vendors router ──► vendors table (DEPRECATED)      │
+│  VendorsPage.tsx ──► suppliers router ──► suppliers table (DEPRECATED)      │
 │       │                                        │                         │
 │       │                                        │ NO SYNC                 │
 │       ▼                                        ▼                         │
@@ -66,7 +72,7 @@ The migration only:
 │                                                                          │
 │  Purchase Orders ──► purchaseOrders router ──► purchase_orders table    │
 │       │                                              │                   │
-│       └──► vendorId references vendors.id (DEPRECATED FK)               │
+│       └──► vendorId references suppliers.id (DEPRECATED FK)               │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -84,14 +90,14 @@ The migration only:
 
 ### Phase 1: Backend Unification (CRITICAL - Do First)
 
-**Goal**: Make `vendors` router a facade over `clients` table
+**Goal**: Make `suppliers` router a facade over `clients` table
 
-#### 1.1 Update `inventoryDb.ts` vendor functions
+#### 1.1 Update `inventoryDb.ts` supplier functions
 
 ```typescript
-// BEFORE: Queries deprecated vendors table
+// BEFORE: Queries deprecated suppliers table
 export async function getAllVendors() {
-  return await db.select().from(vendors).orderBy(vendors.name);
+  return await db.select().from(suppliers).orderBy(suppliers.name);
 }
 
 // AFTER: Queries clients table with isSeller=true
@@ -99,14 +105,15 @@ export async function getAllVendors() {
   return await db.query.clients.findMany({
     where: eq(clients.isSeller, true),
     with: { supplierProfile: true },
-    orderBy: [asc(clients.name)]
+    orderBy: [asc(clients.name)],
   });
 }
 ```
 
-#### 1.2 Update `vendors` router to use clients
+#### 1.2 Update `suppliers` router to use clients
 
 The router should:
+
 - `getAll`: Query `clients` where `isSeller=true`
 - `create`: Create in `clients` with `isSeller=true` + create `supplier_profile`
 - `update`: Update `clients` + `supplier_profiles`
@@ -117,9 +124,11 @@ The router should:
 
 ```typescript
 // For purchase_orders.vendorId → clients.id lookup
-export async function getClientIdForLegacyVendor(vendorId: number): Promise<number | null> {
+export async function getClientIdForLegacyVendor(
+  vendorId: number
+): Promise<number | null> {
   const profile = await db.query.supplierProfiles.findFirst({
-    where: eq(supplierProfiles.legacyVendorId, vendorId)
+    where: eq(supplierProfiles.legacyVendorId, vendorId),
   });
   return profile?.clientId ?? null;
 }
@@ -145,14 +154,14 @@ export async function getClientIdForLegacyVendor(vendorId: number): Promise<numb
 - Show purchase orders for this supplier
 - Show products/batches from this supplier
 
-#### 2.3 Redirect Vendor Routes
+#### 2.3 Redirect Supplier Routes
 
 ```typescript
 // In App.tsx
-<Route path="/vendors">
+<Route path="/suppliers">
   <Redirect to="/clients?filter=sellers" />
 </Route>
-<Route path="/vendors/:id">
+<Route path="/suppliers/:id">
   {({ id }) => <Redirect to={`/clients/${getClientIdForVendor(id)}`} />}
 </Route>
 ```
@@ -160,12 +169,12 @@ export async function getClientIdForLegacyVendor(vendorId: number): Promise<numb
 #### 2.4 Update Navigation
 
 ```typescript
-// Remove "Vendors" menu item
+// Remove "Suppliers" menu item
 // Keep "Clients" which now handles both buyers and sellers
 const menuItems = [
   // ...
   { icon: Users, label: "Clients", path: "/clients" },
-  // Remove: { icon: Truck, label: "Vendors", path: "/vendors" },
+  // Remove: { icon: Truck, label: "Suppliers", path: "/suppliers" },
   { icon: FileText, label: "Purchase Orders", path: "/purchase-orders" },
   // ...
 ];
@@ -173,17 +182,17 @@ const menuItems = [
 
 ### Phase 3: Purchase Orders Update
 
-**Goal**: POs reference clients, not vendors
+**Goal**: POs reference clients, not suppliers
 
 #### 3.1 Update PurchaseOrdersPage
 
 ```typescript
 // BEFORE
-const { data: vendorsResponse } = trpc.vendors.getAll.useQuery();
+const { data: vendorsResponse } = trpc.suppliers.getAll.useQuery();
 
 // AFTER
 const { data: suppliers } = trpc.clients.list.useQuery({
-  clientTypes: ['seller']
+  clientTypes: ["seller"],
 });
 ```
 
@@ -222,14 +231,14 @@ JOIN supplier_profiles sp ON sp.legacy_vendor_id = po.vendor_id
 SET po.supplier_client_id = sp.client_id;
 
 -- Add FK constraint
-ALTER TABLE purchase_orders 
-ADD CONSTRAINT fk_po_supplier_client 
+ALTER TABLE purchase_orders
+ADD CONSTRAINT fk_po_supplier_client
 FOREIGN KEY (supplier_client_id) REFERENCES clients(id);
 ```
 
 ### Phase 5: Deprecation & Removal
 
-#### 5.1 Mark vendors table as deprecated in schema
+#### 5.1 Mark suppliers table as deprecated in schema
 
 ```typescript
 // drizzle/schema.ts
@@ -237,26 +246,28 @@ FOREIGN KEY (supplier_client_id) REFERENCES clients(id);
  * @deprecated Use clients table with isSeller=true instead
  * This table will be removed in Q2 2026
  */
-export const vendors = mysqlTable("vendors", { ... });
+export const suppliers = mysqlTable("suppliers", { ... });
 ```
 
 #### 5.2 Add runtime warnings
 
 ```typescript
-// In vendors router (temporary, for monitoring)
-console.warn('[DEPRECATED] vendors.getAll called - should use clients.list with seller filter');
+// In suppliers router (temporary, for monitoring)
+console.warn(
+  "[DEPRECATED] suppliers.getAll called - should use clients.list with seller filter"
+);
 ```
 
 #### 5.3 Remove after verification period
 
-- Monitor for any remaining calls to vendors router
+- Monitor for any remaining calls to suppliers router
 - After 30 days with no issues, remove:
   - `VendorsPage.tsx`
   - `VendorProfilePage.tsx`
   - `VendorNotesDialog.tsx`
-  - `vendors` router
+  - `suppliers` router
   - `vendor_notes` table
-  - `vendors` table
+  - `suppliers` table
 
 ---
 
@@ -264,35 +275,35 @@ console.warn('[DEPRECATED] vendors.getAll called - should use clients.list with 
 
 ### Sprint 1: Backend Unification (2-3 days)
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Update `inventoryDb.ts` vendor functions to query clients | P0 | 4h |
-| Update `vendors` router to use clients table | P0 | 4h |
-| Create/update vendor mapping service | P0 | 2h |
-| Add supplier_client_id to purchase_orders | P0 | 2h |
-| Backfill purchase_orders.supplier_client_id | P0 | 1h |
-| Update purchaseOrders router to use supplier_client_id | P0 | 2h |
-| Migrate vendor_notes to client_notes | P1 | 2h |
+| Task                                                        | Priority | Effort |
+| ----------------------------------------------------------- | -------- | ------ |
+| Update `inventoryDb.ts` supplier functions to query clients | P0       | 4h     |
+| Update `suppliers` router to use clients table              | P0       | 4h     |
+| Create/update supplier mapping service                      | P0       | 2h     |
+| Add supplier_client_id to purchase_orders                   | P0       | 2h     |
+| Backfill purchase_orders.supplier_client_id                 | P0       | 1h     |
+| Update purchaseOrders router to use supplier_client_id      | P0       | 2h     |
+| Migrate vendor_notes to client_notes                        | P1       | 2h     |
 
 ### Sprint 2: Frontend Consolidation (2-3 days)
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Enhance ClientProfilePage with supplier section | P0 | 4h |
-| Add supplier quick filter to ClientsListPage | P0 | 2h |
-| Update PurchaseOrdersPage to use clients | P0 | 2h |
-| Add route redirects for /vendors/* | P0 | 1h |
-| Update navigation (remove Vendors menu item) | P0 | 0.5h |
-| Update terminology in remaining UI | P1 | 2h |
+| Task                                            | Priority | Effort |
+| ----------------------------------------------- | -------- | ------ |
+| Enhance ClientProfilePage with supplier section | P0       | 4h     |
+| Add supplier quick filter to ClientsListPage    | P0       | 2h     |
+| Update PurchaseOrdersPage to use clients        | P0       | 2h     |
+| Add route redirects for /suppliers/\*           | P0       | 1h     |
+| Update navigation (remove Suppliers menu item)  | P0       | 0.5h   |
+| Update terminology in remaining UI              | P1       | 2h     |
 
 ### Sprint 3: Cleanup & Verification (1-2 days)
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Add deprecation warnings to old code paths | P1 | 1h |
-| Update documentation | P1 | 2h |
-| E2E testing of supplier workflows | P0 | 4h |
-| Monitor for issues | P1 | Ongoing |
+| Task                                       | Priority | Effort  |
+| ------------------------------------------ | -------- | ------- |
+| Add deprecation warnings to old code paths | P1       | 1h      |
+| Update documentation                       | P1       | 2h      |
+| E2E testing of supplier workflows          | P0       | 4h      |
+| Monitor for issues                         | P1       | Ongoing |
 
 ---
 
@@ -300,7 +311,7 @@ console.warn('[DEPRECATED] vendors.getAll called - should use clients.list with 
 
 1. **Data Integrity**: All supplier operations use `clients` table
 2. **No Duplication**: Cannot create same supplier in two places
-3. **Backward Compatibility**: Old vendor IDs still resolvable via mapping
+3. **Backward Compatibility**: Old supplier IDs still resolvable via mapping
 4. **User Experience**: Seamless transition, no broken workflows
 5. **Clean Codebase**: No deprecated code paths actively used
 
@@ -308,12 +319,12 @@ console.warn('[DEPRECATED] vendors.getAll called - should use clients.list with 
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Data loss during migration | Soft deletes only, keep vendors table as backup |
-| Broken purchase orders | Dual-write period: write to both vendorId and supplierClientId |
-| User confusion | In-app notification explaining the change |
-| Performance regression | Ensure proper indexes on clients.isSeller |
+| Risk                       | Mitigation                                                     |
+| -------------------------- | -------------------------------------------------------------- |
+| Data loss during migration | Soft deletes only, keep suppliers table as backup              |
+| Broken purchase orders     | Dual-write period: write to both vendorId and supplierClientId |
+| User confusion             | In-app notification explaining the change                      |
+| Performance regression     | Ensure proper indexes on clients.isSeller                      |
 
 ---
 
@@ -321,7 +332,7 @@ console.warn('[DEPRECATED] vendors.getAll called - should use clients.list with 
 
 The initial audit underestimated the scope of the problem. This is not a UI terminology issue - it's an incomplete backend migration that has left two active data stores.
 
-**Recommended Action**: Implement this complete migration plan immediately. The longer we wait, the more data divergence occurs between `vendors` and `clients` tables.
+**Recommended Action**: Implement this complete migration plan immediately. The longer we wait, the more data divergence occurs between `suppliers` and `clients` tables.
 
 **Estimated Total Effort**: 5-8 days for complete migration
 

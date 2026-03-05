@@ -5,14 +5,17 @@
 **Welcome!** You are an AI agent tasked with fixing critical 404 errors for core business modules.
 
 ### Your Mission
+
 Fix the 404 errors for Accounting and Analytics modules. These are P0 critical bugs that block essential business workflows.
 
 ### Key Documents to Read First
+
 1. **Master Roadmap:** `docs/roadmaps/MASTER_ROADMAP.md`
 2. **Strategic Plan:** `docs/roadmaps/STRATEGIC_PATH_TO_COMPLETION_20260106.md`
 3. **QA Backlog:** `docs/roadmaps/QA_TASKS_BACKLOG.md`
 
 ### Repository Setup
+
 ```bash
 gh repo clone EvanTenenbaum/TERP
 cd TERP
@@ -21,7 +24,9 @@ git checkout -b wave-6/accounting-analytics
 ```
 
 ### File Ownership
+
 **You ONLY have permission to modify these files:**
+
 - `client/src/pages/AccountingPage.tsx` (new or existing)
 - `client/src/pages/AnalyticsPage.tsx` (new or existing)
 - `client/src/App.tsx` (routing additions only)
@@ -32,16 +37,17 @@ git checkout -b wave-6/accounting-analytics
 
 ## 2. Your Tasks (16-32h total)
 
-| Task ID | Title | Est. Hours |
-|---------|-------|------------|
-| QA-002 | Fix 404 Error - Accounting Module | 8-16h |
-| QA-004 | Fix 404 Error - Analytics Module | 8-16h |
+| Task ID | Title                             | Est. Hours |
+| ------- | --------------------------------- | ---------- |
+| QA-002  | Fix 404 Error - Accounting Module | 8-16h      |
+| QA-004  | Fix 404 Error - Analytics Module  | 8-16h      |
 
 ### Task 1: QA-002 - Fix Accounting Module 404
 
 **Problem:** The Accounting module returns a 404 error when accessed at `/accounting`.
 
 **Requirements:**
+
 1. **Create Route:**
    - Add `/accounting` route in `client/src/App.tsx`
    - Ensure proper authentication wrapper
@@ -50,7 +56,7 @@ git checkout -b wave-6/accounting-analytics
    - Create a comprehensive accounting dashboard
    - Include these views/tabs:
      - **Accounts Receivable (AR):** Outstanding invoices, aging report
-     - **Accounts Payable (AP):** Bills to pay, vendor balances
+     - **Accounts Payable (AP):** Bills to pay, supplier balances
      - **General Ledger:** Transaction history
      - **Reports:** P&L summary, balance sheet preview
 
@@ -60,6 +66,7 @@ git checkout -b wave-6/accounting-analytics
    - Ensure all monetary values display correctly
 
 **Implementation Guidance:**
+
 - Check `server/routers/` for existing accounting endpoints
 - Use existing table components for data display
 - Include proper number formatting for currency
@@ -70,6 +77,7 @@ git checkout -b wave-6/accounting-analytics
 **Problem:** The Analytics module returns a 404 error when accessed at `/analytics`.
 
 **Requirements:**
+
 1. **Create Route:**
    - Add `/analytics` route in `client/src/App.tsx`
    - Ensure proper authentication wrapper
@@ -95,6 +103,7 @@ git checkout -b wave-6/accounting-analytics
    - Support date range filtering
 
 **Implementation Guidance:**
+
 - Check `package.json` for existing charting libraries
 - Look at dashboard components for existing chart patterns
 - Ensure charts are responsive
@@ -105,6 +114,7 @@ git checkout -b wave-6/accounting-analytics
 ## 3. Data Requirements
 
 ### Accounting Data Points
+
 ```typescript
 // AR Data
 interface AccountsReceivable {
@@ -113,7 +123,7 @@ interface AccountsReceivable {
   invoiceNumber: string;
   amount: number;
   dueDate: Date;
-  status: 'current' | '30days' | '60days' | '90days+';
+  status: "current" | "30days" | "60days" | "90days+";
 }
 
 // AP Data
@@ -127,6 +137,7 @@ interface AccountsPayable {
 ```
 
 ### Analytics Data Points
+
 ```typescript
 // Sales Analytics
 interface SalesMetrics {
@@ -159,6 +170,7 @@ Before submitting your PR:
    - Test date range filters
 
 2. **Automated Testing:**
+
    ```bash
    pnpm check  # Zero TypeScript errors
    pnpm test   # All tests pass
@@ -177,6 +189,7 @@ Before submitting your PR:
 1. **Implement all tasks** on your `wave-6/accounting-analytics` branch.
 
 2. **Run verification:**
+
    ```bash
    pnpm check
    pnpm test
@@ -195,6 +208,7 @@ Before submitting your PR:
 **Branch:** `wave-6/accounting-analytics`
 
 **Tasks to Verify:**
+
 - [ ] **QA-002:** Navigate to `/accounting` - no 404, page loads
 - [ ] **QA-002:** Verify AR aging report displays data
 - [ ] **QA-002:** Verify AP balances display correctly
@@ -203,6 +217,7 @@ Before submitting your PR:
 - [ ] **QA-004:** Verify date range filters work
 
 **Instructions:**
+
 1. Checkout the branch
 2. Run `pnpm check` and `pnpm test`
 3. Manually test both routes
@@ -215,11 +230,13 @@ Before submitting your PR:
 ## 6. Coordination Notes
 
 **Parallel Agents:**
+
 - Agent 6A is working on Todo and COGS Settings
 - Agent 6C is fixing data access issues (may affect your data queries)
 - No file conflicts expected - you have exclusive ownership of your files
 
 **Dependency Note:**
+
 - If Agent 6C's data access fixes are needed for your data to display, coordinate via PR comments
 - You may need to rebase after 4C's work is merged
 

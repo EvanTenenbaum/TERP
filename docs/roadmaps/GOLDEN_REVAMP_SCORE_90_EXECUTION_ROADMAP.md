@@ -14,8 +14,8 @@ This roadmap is **Codex-only**, **staging-first**, and uses strict pass/fail gat
 ## Scope and Constraints (Locked)
 
 - Preserve existing functional access (no route/functionality loss).
-- Powersheet UX standard remains required for applicable contexts (`PO`, `Orders`, `Receiving`).
-- Keep `/direct-intake` and `/receiving` route compatibility.
+- Powersheet UX standard remains required for applicable contexts (`PO`, `Orders`, `Intake`).
+- Keep `/direct-intake` and `/intake` route compatibility.
 - No new explicit `any` in changed files.
 - No placeholder/stub behavior in MVP flows.
 - Schema strategy: additive only, map-to-existing canonical models.
@@ -48,7 +48,7 @@ pnpm gate:parity
 
 ## Atomic Work Packages
 
-### WP-01: Fix Receiving bulk-remove data integrity bug (P1)
+### WP-01: Fix Intake bulk-remove data integrity bug (P1)
 
 **Problem**
 Bulk remove clears media and selection even when deletion is blocked by guard.
@@ -73,7 +73,7 @@ Bulk remove clears media and selection even when deletion is blocked by guard.
 
 ---
 
-### WP-02: Make Receiving submit-selected resilient (P1)
+### WP-02: Make Intake submit-selected resilient (P1)
 
 **Problem**
 `isSubmitting` can remain stuck true if an exception escapes loop.
@@ -144,11 +144,11 @@ PO draft is inline but missing full powersheet interaction contract.
 2. Add bulk actions: duplicate, delete, apply qty/cost to selection.
 3. Add deterministic focus behavior after duplicate/delete/add.
 4. Add keyboard traversal contract (Enter/Tab/Arrows/Escape) to PO draft rows.
-5. Add running total and selected-count strip parity with Orders/Receiving.
+5. Add running total and selected-count strip parity with Orders/Intake.
 
 **Exit criteria**
 
-- PO draft supports same core powersheet affordances as Orders/Receiving.
+- PO draft supports same core powersheet affordances as Orders/Intake.
 - GF-002 passes with at least one bulk action scenario.
 
 **Expected score lift**: +8
@@ -158,7 +158,7 @@ PO draft is inline but missing full powersheet interaction contract.
 ### WP-05: Terminology and IA consistency cleanup (P2)
 
 **Problem**
-Nav says “Receiving” while core page title still says “Direct Intake”.
+Nav says “Intake” while core page title still says “Direct Intake”.
 
 **Files**
 
@@ -168,8 +168,8 @@ Nav says “Receiving” while core page title still says “Direct Intake”.
 
 **Atomic tasks**
 
-1. Update primary page heading/eyebrow copy to “Receiving” while retaining backend route compatibility.
-2. Verify breadcrumb labels are consistent for both `/receiving` and `/direct-intake`.
+1. Update primary page heading/eyebrow copy to “Intake” while retaining backend route compatibility.
+2. Verify breadcrumb labels are consistent for both `/intake` and `/direct-intake`.
 3. Verify quicklink/action labels remain consistent (“Record Receipt”).
 
 **Exit criteria**
@@ -252,7 +252,7 @@ Current tests don’t fully lock high-risk contract points.
 1. Add test: bulk COGS update sets override note and preserves non-selected rows.
 2. Add test: selection reconciliation after row deletion keeps valid rows only.
 3. Add test: nav scope isolation across two users for pinned quicklinks.
-4. Add test: `/direct-intake` normalization behaves identically to `/receiving` for active-state logic.
+4. Add test: `/direct-intake` normalization behaves identically to `/intake` for active-state logic.
 
 **Exit criteria**
 
@@ -331,7 +331,7 @@ This order removes high-severity risk first, then closes test-trust gaps, then c
 ## Definition of Done for Score >=90
 
 - All P1 issues closed.
-- PO/Orders/Receiving powersheet contracts behaviorally aligned.
+- PO/Orders/Intake powersheet contracts behaviorally aligned.
 - Golden-flow tests validate business outcomes and pass on staging.
 - All strict gates pass with no new explicit `any`.
 - Remaining non-blocking debt is tracked in Linear with clear ownership.

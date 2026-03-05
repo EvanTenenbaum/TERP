@@ -63,7 +63,9 @@ export function AuditModal({
       case "90d":
         return { dateFrom: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) };
       case "1y":
-        return { dateFrom: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000) };
+        return {
+          dateFrom: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000),
+        };
       default:
         return {};
     }
@@ -102,7 +104,7 @@ export function AuditModal({
       case "ORDER":
         return `Order Breakdown: ${entityName || "Order"}`;
       case "VENDOR":
-        return `Vendor Balance Breakdown: ${entityName || "Vendor"}`;
+        return `Supplier Balance Breakdown: ${entityName || "Supplier"}`;
       case "ACCOUNT":
         return `Account Balance Breakdown: ${entityName || "Account"}`;
       default:
@@ -119,7 +121,9 @@ export function AuditModal({
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div className="rounded-lg bg-gray-50 p-3">
             <p className="text-sm text-gray-500">Current Balance</p>
-            <p className="text-2xl font-bold">{formatCurrency(data.currentBalance)}</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(data.currentBalance)}
+            </p>
           </div>
           <div className="rounded-lg bg-blue-50 p-3">
             <p className="text-sm text-blue-600">Formula</p>
@@ -129,8 +133,8 @@ export function AuditModal({
 
         <div className="mb-2 flex items-center justify-between text-sm text-gray-500">
           <span>
-            Total Orders: {formatCurrency(data.summary.totalOrders)} | 
-            Total Payments: {formatCurrency(data.summary.totalPayments)}
+            Total Orders: {formatCurrency(data.summary.totalOrders)} | Total
+            Payments: {formatCurrency(data.summary.totalPayments)}
           </span>
           <span>{data.totalTransactions} transactions</span>
         </div>
@@ -147,7 +151,7 @@ export function AuditModal({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.transactions.map((t) => (
+            {data.transactions.map(t => (
               <TableRow key={`txn-${t.date}-${t.reference}`}>
                 <TableCell>{formatDate(t.date)}</TableCell>
                 <TableCell>
@@ -155,10 +159,15 @@ export function AuditModal({
                     {t.type}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-sm">{t.reference}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {t.reference}
+                </TableCell>
                 <TableCell>{t.createdBy}</TableCell>
-                <TableCell className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-green-600"}`}>
-                  {t.amount >= 0 ? "+" : ""}{formatCurrency(t.amount)}
+                <TableCell
+                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-green-600"}`}
+                >
+                  {t.amount >= 0 ? "+" : ""}
+                  {formatCurrency(t.amount)}
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(t.runningBalance)}
@@ -173,7 +182,7 @@ export function AuditModal({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               <ChevronLeft className="h-4 w-4" /> Previous
@@ -184,7 +193,7 @@ export function AuditModal({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setPage(p => p + 1)}
               disabled={page * 20 >= data.totalTransactions}
             >
               Next <ChevronRight className="h-4 w-4" />
@@ -233,7 +242,7 @@ export function AuditModal({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.movements.map((m) => (
+            {data.movements.map(m => (
               <TableRow key={`move-${m.date}-${m.type}`}>
                 <TableCell>{formatDate(m.date)}</TableCell>
                 <TableCell>
@@ -243,8 +252,11 @@ export function AuditModal({
                 </TableCell>
                 <TableCell>{m.description}</TableCell>
                 <TableCell>{m.createdBy}</TableCell>
-                <TableCell className={`text-right ${m.quantity >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {m.quantity >= 0 ? "+" : ""}{m.quantity}
+                <TableCell
+                  className={`text-right ${m.quantity >= 0 ? "text-green-600" : "text-red-600"}`}
+                >
+                  {m.quantity >= 0 ? "+" : ""}
+                  {m.quantity}
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {m.runningTotal}
@@ -266,15 +278,21 @@ export function AuditModal({
         <div className="mb-4 grid grid-cols-3 gap-4">
           <div className="rounded-lg bg-gray-50 p-3">
             <p className="text-sm text-gray-500">Order Total</p>
-            <p className="text-2xl font-bold">{formatCurrency(data.calculation.total)}</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(data.calculation.total)}
+            </p>
           </div>
           <div className="rounded-lg bg-green-50 p-3">
             <p className="text-sm text-green-600">Amount Paid</p>
-            <p className="text-2xl font-bold">{formatCurrency(data.calculation.amountPaid)}</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(data.calculation.amountPaid)}
+            </p>
           </div>
           <div className="rounded-lg bg-red-50 p-3">
             <p className="text-sm text-red-600">Balance Due</p>
-            <p className="text-2xl font-bold">{formatCurrency(data.calculation.balanceDue)}</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(data.calculation.balanceDue)}
+            </p>
           </div>
         </div>
 
@@ -295,11 +313,13 @@ export function AuditModal({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.lineItems.map((li) => (
+            {data.lineItems.map(li => (
               <TableRow key={`line-${li.productName}`}>
                 <TableCell>{li.productName}</TableCell>
                 <TableCell className="text-right">{li.quantity}</TableCell>
-                <TableCell className="text-right">{formatCurrency(li.unitPrice)}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(li.unitPrice)}
+                </TableCell>
                 <TableCell className="text-right text-red-600">
                   {li.discount > 0 ? `-${formatCurrency(li.discount)}` : "-"}
                 </TableCell>
@@ -318,7 +338,9 @@ export function AuditModal({
             {data.calculation.discount > 0 && (
               <TableRow className="bg-gray-50">
                 <TableCell colSpan={3}></TableCell>
-                <TableCell className="text-right font-medium text-red-600">Discount</TableCell>
+                <TableCell className="text-right font-medium text-red-600">
+                  Discount
+                </TableCell>
                 <TableCell className="text-right font-bold text-red-600">
                   -{formatCurrency(data.calculation.discount)}
                 </TableCell>
@@ -347,7 +369,7 @@ export function AuditModal({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.payments.map((p) => (
+                {data.payments.map(p => (
                   <TableRow key={`payment-${p.date}-${p.method}`}>
                     <TableCell>{formatDate(p.date)}</TableCell>
                     <TableCell>{p.method}</TableCell>
@@ -374,7 +396,9 @@ export function AuditModal({
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div className="rounded-lg bg-gray-50 p-3">
             <p className="text-sm text-gray-500">Current Balance Owed</p>
-            <p className="text-2xl font-bold">{formatCurrency(data.currentBalance)}</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(data.currentBalance)}
+            </p>
           </div>
           <div className="rounded-lg bg-blue-50 p-3">
             <p className="text-sm text-blue-600">Formula</p>
@@ -384,8 +408,8 @@ export function AuditModal({
 
         <div className="mb-2 flex items-center justify-between text-sm text-gray-500">
           <span>
-            Total Bills: {formatCurrency(data.summary.totalBills)} | 
-            Total Payments: {formatCurrency(data.summary.totalPayments)}
+            Total Bills: {formatCurrency(data.summary.totalBills)} | Total
+            Payments: {formatCurrency(data.summary.totalPayments)}
           </span>
           <span>{data.totalTransactions} transactions</span>
         </div>
@@ -402,7 +426,7 @@ export function AuditModal({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.transactions.map((t) => (
+            {data.transactions.map(t => (
               <TableRow key={`vtx-${t.date}-${t.reference}`}>
                 <TableCell>{formatDate(t.date)}</TableCell>
                 <TableCell>
@@ -410,10 +434,15 @@ export function AuditModal({
                     {t.type}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-sm">{t.reference}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {t.reference}
+                </TableCell>
                 <TableCell>{t.createdBy}</TableCell>
-                <TableCell className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-green-600"}`}>
-                  {t.amount >= 0 ? "+" : ""}{formatCurrency(t.amount)}
+                <TableCell
+                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-green-600"}`}
+                >
+                  {t.amount >= 0 ? "+" : ""}
+                  {formatCurrency(t.amount)}
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(t.runningBalance)}
@@ -433,7 +462,7 @@ export function AuditModal({
     vendorQuery.isLoading;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={o => !o && onClose()}>
       <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

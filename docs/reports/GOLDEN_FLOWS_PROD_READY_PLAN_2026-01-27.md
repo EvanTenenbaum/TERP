@@ -155,7 +155,7 @@ These criteria define when a golden flow is production-ready:
 
 **Agent checklist:**
 
-- Ensure Top Debtors and Top Vendors resolve correct names and values.
+- Ensure Top Debtors and Top Suppliers resolve correct names and values.
 
 ---
 
@@ -219,7 +219,7 @@ These criteria define when a golden flow is production-ready:
 - [ ] GF-001 Direct Intake: Form fields render and submission creates batches.
 - [ ] GF-008 Sample Request: Product selector usable and request creation works.
 - [ ] GF-004 Invoice & Payment: PDF generation completes quickly and payments recorded.
-- [ ] GF-006 Client Ledger: Top Debtors/Vendors show correct names and values.
+- [ ] GF-006 Client Ledger: Top Debtors/Suppliers show correct names and values.
 - [ ] GF-005 Pick & Pack: Flow tested end-to-end after order creation restored.
 - [ ] E2E tests pass for each golden flow with owning roles.
 - [ ] No P0/P1 bugs open.

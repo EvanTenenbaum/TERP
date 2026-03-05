@@ -34,7 +34,9 @@ cat .audit/deep-systemic-analysis-2026-01-31.md
 **Answer this question: Which agent number are you?**
 
 ### If Agent 1 (Backend/Financial - Stream A):
+
 Your tasks in order:
+
 1. **REL-001**: Standardize null money handling (4h)
 2. **REL-003**: Add transaction rollback to payments (4h)
 3. **REL-004**: Add Decimal.js for financial precision (8h)
@@ -44,6 +46,7 @@ Your tasks in order:
 7. **REL-011**: Add soft delete to critical tables (8h)
 
 **Start command:**
+
 ```bash
 # Create your session
 SESSION_ID="Session-$(date +%Y%m%d)-REL-001-$(openssl rand -hex 3)"
@@ -73,7 +76,9 @@ git push origin main
 ```
 
 ### If Agent 2 (Frontend Safety - Stream B):
+
 Your tasks in order:
+
 1. **REL-002**: Fix unsafe toFixed calls (4h)
 2. **REL-014**: Add localStorage error handling (4h)
 3. **REL-015**: Add query enabled checks (4h)
@@ -83,11 +88,13 @@ Your tasks in order:
 **Start command:** Same pattern, use `REL-002-016 - Stream B Frontend`
 
 ### If Agent 3 (Schema/Database - Stream C):
+
 Your tasks in order:
+
 1. **REL-005**: Add optimistic locking (8h) - WAIT for REL-001 complete
 2. **REL-007**: Add notNull to money fields (8h)
 3. **REL-012**: Standardize decimal precision (16h)
-4. **REL-013**: Complete vendor deprecation (40h)
+4. **REL-013**: Complete supplier deprecation (40h)
 
 **Start command:** Same pattern, use `REL-005-013 - Stream C Schema`
 
@@ -98,23 +105,27 @@ Your tasks in order:
 For EACH task, follow this exact pattern:
 
 ### 1. Load Task Details
+
 ```bash
 # Find the task in MASTER_ROADMAP
 grep -A 30 "REL-00X:" docs/roadmaps/MASTER_ROADMAP.md
 ```
 
 ### 2. Check Dependencies
+
 ```bash
 # Verify dependencies are complete
 grep "REL-00Y" docs/roadmaps/MASTER_ROADMAP.md | grep -i status
 ```
 
 ### 3. Implement Following Deliverables
+
 - Read each deliverable checkbox
 - Implement in order
 - Commit after each deliverable
 
 ### 4. Verify
+
 ```bash
 pnpm check
 pnpm lint
@@ -123,6 +134,7 @@ pnpm build
 ```
 
 ### 5. Update Roadmap
+
 ```bash
 # Mark task complete in MASTER_ROADMAP.md
 # Add: **Completed:** 2026-01-XX
@@ -131,6 +143,7 @@ pnpm build
 ```
 
 ### 6. Push and Verify Deployment
+
 ```bash
 git push origin main
 ./scripts/watch-deploy.sh
@@ -141,13 +154,13 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 ## Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Agent protocol - READ FIRST |
-| `docs/roadmaps/MASTER_ROADMAP.md` | Task definitions |
-| `docs/roadmaps/REL-sprint-execution-plan.md` | Parallel execution plan |
-| `.audit/deep-systemic-analysis-2026-01-31.md` | Root cause analysis |
-| `.audit/audit-history.json` | Tracked patterns |
+| File                                          | Purpose                     |
+| --------------------------------------------- | --------------------------- |
+| `CLAUDE.md`                                   | Agent protocol - READ FIRST |
+| `docs/roadmaps/MASTER_ROADMAP.md`             | Task definitions            |
+| `docs/roadmaps/REL-sprint-execution-plan.md`  | Parallel execution plan     |
+| `.audit/deep-systemic-analysis-2026-01-31.md` | Root cause analysis         |
+| `.audit/audit-history.json`                   | Tracked patterns            |
 
 ---
 
@@ -165,12 +178,12 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 These 4 tasks fix the most critical bugs:
 
-| Task | Problem | Fix |
-|------|---------|-----|
-| REL-001 | $0 display bug | Standardize parseFloat null handling |
-| REL-002 | UI crashes | Safe toFixed wrapper |
-| REL-003 | Data corruption | Transaction rollback |
-| REL-004 | Penny errors | Decimal.js precision |
+| Task    | Problem         | Fix                                  |
+| ------- | --------------- | ------------------------------------ |
+| REL-001 | $0 display bug  | Standardize parseFloat null handling |
+| REL-002 | UI crashes      | Safe toFixed wrapper                 |
+| REL-003 | Data corruption | Transaction rollback                 |
+| REL-004 | Penny errors    | Decimal.js precision                 |
 
 **All P0 tasks have no dependencies - Agents 1 and 2 can start immediately in parallel.**
 
@@ -179,6 +192,7 @@ These 4 tasks fix the most critical bugs:
 ## Communication Protocol
 
 If you encounter:
+
 - **Blocked by another task**: Update roadmap status to `blocked`, note the blocker
 - **Found new bug**: Add to `.audit/audit-history.json`, create new task if needed
 - **Need schema migration**: Alert other agents, coordinate timing
@@ -189,12 +203,13 @@ If you encounter:
 ## Success Criteria
 
 Sprint is complete when:
+
 - [ ] All 16 REL tasks status = `complete`
 - [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` all pass
 - [ ] `pnpm test:schema` passes
 - [ ] No "NaN" or unexpected "$0.00" in UI
 - [ ] Concurrent edit conflict is detected (REL-005 test)
-- [ ] Vendor references reduced by 80%+ (REL-013)
+- [ ] Supplier references reduced by 80%+ (REL-013)
 
 ---
 

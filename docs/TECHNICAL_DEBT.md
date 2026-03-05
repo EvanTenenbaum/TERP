@@ -201,63 +201,65 @@ _No resolved debt entries yet._
 **Total TODOs Found**: 50
 
 ### P0 - Critical (Security/Data Integrity)
+
 None found ✅
 
 ### P1 - Functional Bugs
+
 None found ✅
 
 ### P2 - Performance Issues
 
-| Location | TODO | Priority | Notes |
-|----------|------|----------|-------|
-| `server/dataCardMetricsDb.ts` | Add expirationDate to batches schema | 🟡 P2 | Schema enhancement needed |
-| `server/dataCardMetricsDb.ts` | Add expectedShipDate to orders schema | 🟡 P2 | Schema enhancement needed |
+| Location                      | TODO                                  | Priority | Notes                     |
+| ----------------------------- | ------------------------------------- | -------- | ------------------------- |
+| `server/dataCardMetricsDb.ts` | Add expirationDate to batches schema  | 🟡 P2    | Schema enhancement needed |
+| `server/dataCardMetricsDb.ts` | Add expectedShipDate to orders schema | 🟡 P2    | Schema enhancement needed |
 
 ### P3 - Code Quality/Refactoring
 
-| Location | TODO | Priority | Notes |
-|----------|------|----------|-------|
-| `server/routers/clients.ts` | Implement proper soft delete | 🟢 P3 | deletedAt column exists, needs migration |
-| `server/routers/receipts.ts` | Integrate with email service | 🟢 P3 | Feature enhancement |
-| `server/routers/receipts.ts` | Integrate with SMS service | 🟢 P3 | Feature enhancement |
-| `server/_core/calendarJobs.ts` | Send alert to admin | 🟢 P3 | Notification enhancement |
-| `server/ordersDb.ts` | Create invoice (accounting integration) | 🟢 P3 | Integration work |
-| `server/ordersDb.ts` | Record cash payment | 🟢 P3 | Integration work |
-| `server/ordersDb.ts` | Update credit exposure | 🟢 P3 | Integration work |
-| `server/inventoryDb.ts` | Add deletedAt column to clients | 🟢 P3 | Schema work |
-| `server/services/vipPortalAdminService.ts` | Implement tier configuration | 🟢 P3 | Feature work (2 occurrences) |
-| `server/services/notificationService.ts` | Implement actual notification delivery | 🟢 P3 | Feature work |
-| `server/services/liveCatalogService.ts` | Extract unique brands | 🟢 P3 | Feature enhancement |
-| `server/services/liveCatalogService.ts` | Calculate price range | 🟢 P3 | Feature enhancement |
-| `server/matchingEngineEnhanced.ts` | Get strainType from strain library | 🟢 P3 | Data enhancement |
-| `server/matchingEngineReverseSimplified.ts` | Implement vendor supply logic | 🟢 P3 | Feature work |
-| `client/src/components/inventory/BatchDetailDrawer.tsx` | Re-enable product relation (2x) | 🟢 P3 | API enhancement |
-| `client/src/components/inventory/BatchDetailDrawer.tsx` | Calculate from profitability data | 🟢 P3 | Calculation fix |
-| `client/src/components/inventory/ClientInterestWidget.tsx` | Navigate to client page | 🟢 P3 | UX enhancement |
+| Location                                                   | TODO                                    | Priority | Notes                                    |
+| ---------------------------------------------------------- | --------------------------------------- | -------- | ---------------------------------------- |
+| `server/routers/clients.ts`                                | Implement proper soft delete            | 🟢 P3    | deletedAt column exists, needs migration |
+| `server/routers/receipts.ts`                               | Integrate with email service            | 🟢 P3    | Feature enhancement                      |
+| `server/routers/receipts.ts`                               | Integrate with SMS service              | 🟢 P3    | Feature enhancement                      |
+| `server/_core/calendarJobs.ts`                             | Send alert to admin                     | 🟢 P3    | Notification enhancement                 |
+| `server/ordersDb.ts`                                       | Create invoice (accounting integration) | 🟢 P3    | Integration work                         |
+| `server/ordersDb.ts`                                       | Record cash payment                     | 🟢 P3    | Integration work                         |
+| `server/ordersDb.ts`                                       | Update credit exposure                  | 🟢 P3    | Integration work                         |
+| `server/inventoryDb.ts`                                    | Add deletedAt column to clients         | 🟢 P3    | Schema work                              |
+| `server/services/vipPortalAdminService.ts`                 | Implement tier configuration            | 🟢 P3    | Feature work (2 occurrences)             |
+| `server/services/notificationService.ts`                   | Implement actual notification delivery  | 🟢 P3    | Feature work                             |
+| `server/services/liveCatalogService.ts`                    | Extract unique brands                   | 🟢 P3    | Feature enhancement                      |
+| `server/services/liveCatalogService.ts`                    | Calculate price range                   | 🟢 P3    | Feature enhancement                      |
+| `server/matchingEngineEnhanced.ts`                         | Get strainType from strain library      | 🟢 P3    | Data enhancement                         |
+| `server/matchingEngineReverseSimplified.ts`                | Implement supplier supply logic         | 🟢 P3    | Feature work                             |
+| `client/src/components/inventory/BatchDetailDrawer.tsx`    | Re-enable product relation (2x)         | 🟢 P3    | API enhancement                          |
+| `client/src/components/inventory/BatchDetailDrawer.tsx`    | Calculate from profitability data       | 🟢 P3    | Calculation fix                          |
+| `client/src/components/inventory/ClientInterestWidget.tsx` | Navigate to client page                 | 🟢 P3    | UX enhancement                           |
 
 ### P4 - Nice-to-Have/Test Improvements
 
-| Location | TODO | Priority | Notes |
-|----------|------|----------|-------|
-| `server/routers/rbac-permissions.test.ts` | Fix mock chain (4 occurrences) | 🟢 P4 | Test improvement |
-| `server/routers/rbac-roles.test.ts` | Fix mock chain (4 occurrences) | 🟢 P4 | Test improvement |
-| `server/_core/index.ts` | Fix schema drift and re-enable seeding | 🟢 P4 | Seeding improvement |
-| `server/db.ts` | Add feature queries | 🟢 P4 | Documentation |
-| `server/scripts/seed-calendar-test-data.ts` | Create recurring events | 🟢 P4 | Test data |
-| `scripts/seed-complete.ts` | Fix schema definition | 🟢 P4 | Seeding |
-| `scripts/benchmark-api.ts` | Replace with actual tRPC client | 🟢 P4 | Benchmark improvement |
-| `scripts/legacy/seed-realistic-main.ts` | Refunds transaction mapping (2x) | 🟢 P4 | Legacy script |
-| `client/src/components/dashboard/widgets-v3/index.ts` | Widgets migration | 🟢 P4 | Migration note |
-| `client/src/components/dashboard/widgets-v2/TemplateSelector.tsx` | Template ID | 🟢 P4 | Placeholder |
+| Location                                                          | TODO                                   | Priority | Notes                 |
+| ----------------------------------------------------------------- | -------------------------------------- | -------- | --------------------- |
+| `server/routers/rbac-permissions.test.ts`                         | Fix mock chain (4 occurrences)         | 🟢 P4    | Test improvement      |
+| `server/routers/rbac-roles.test.ts`                               | Fix mock chain (4 occurrences)         | 🟢 P4    | Test improvement      |
+| `server/_core/index.ts`                                           | Fix schema drift and re-enable seeding | 🟢 P4    | Seeding improvement   |
+| `server/db.ts`                                                    | Add feature queries                    | 🟢 P4    | Documentation         |
+| `server/scripts/seed-calendar-test-data.ts`                       | Create recurring events                | 🟢 P4    | Test data             |
+| `scripts/seed-complete.ts`                                        | Fix schema definition                  | 🟢 P4    | Seeding               |
+| `scripts/benchmark-api.ts`                                        | Replace with actual tRPC client        | 🟢 P4    | Benchmark improvement |
+| `scripts/legacy/seed-realistic-main.ts`                           | Refunds transaction mapping (2x)       | 🟢 P4    | Legacy script         |
+| `client/src/components/dashboard/widgets-v3/index.ts`             | Widgets migration                      | 🟢 P4    | Migration note        |
+| `client/src/components/dashboard/widgets-v2/TemplateSelector.tsx` | Template ID                            | 🟢 P4    | Placeholder           |
 
 ### Non-Issue TODOs (Intentional/Naming)
 
-| Location | Notes |
-|----------|-------|
-| `server/todoTasksDb.ts` | File name contains "TODO" - not a TODO comment |
-| `server/todoListsDb.ts` | File name contains "TODO" - not a TODO comment |
-| `scripts/generators/lists-tasks.ts` | "TODO" is a valid task status enum value |
-| `scripts/seed-*.ts` | References to TODO LISTS/TASKS tables |
+| Location                            | Notes                                          |
+| ----------------------------------- | ---------------------------------------------- |
+| `server/todoTasksDb.ts`             | File name contains "TODO" - not a TODO comment |
+| `server/todoListsDb.ts`             | File name contains "TODO" - not a TODO comment |
+| `scripts/generators/lists-tasks.ts` | "TODO" is a valid task status enum value       |
+| `scripts/seed-*.ts`                 | References to TODO LISTS/TASKS tables          |
 
 ### Summary
 

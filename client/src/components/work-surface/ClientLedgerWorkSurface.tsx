@@ -124,7 +124,7 @@ function TransactionTypeBadge({ type }: { type: string }) {
   const variants: Record<string, { className: string; label: string }> = {
     SALE: {
       className: LEDGER_TYPE_TOKENS.INVOICE,
-      label: "Sale",
+      label: "Sales Order",
     },
     PURCHASE: {
       className: "bg-purple-100 text-purple-700 border-purple-200",

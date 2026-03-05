@@ -344,7 +344,7 @@ function QuoteInspectorContent({
               onClick={() => onConvert(quote.id)}
             >
               <ArrowRight className="h-4 w-4 mr-2" />
-              Convert to Sale
+              Convert to Sales Order
             </Button>
           )}
           <Button
@@ -752,7 +752,7 @@ export function QuotesWorkSurface() {
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Convert Quote to Sale</DialogTitle>
+            <DialogTitle>Convert Quote to Sales Order</DialogTitle>
           </DialogHeader>
           <p>
             Convert this quote to a sales order? This will create a new order
@@ -772,7 +772,9 @@ export function QuotesWorkSurface() {
               }
               disabled={convertMutation.isPending}
             >
-              {convertMutation.isPending ? "Converting..." : "Convert to Sale"}
+              {convertMutation.isPending
+                ? "Converting..."
+                : "Convert to Sales Order"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -798,7 +800,8 @@ export function QuotesWorkSurface() {
             <Button
               variant="destructive"
               onClick={() =>
-                selectedQuoteId && deleteQuoteMutation.mutate({ id: selectedQuoteId })
+                selectedQuoteId &&
+                deleteQuoteMutation.mutate({ id: selectedQuoteId })
               }
               disabled={deleteQuoteMutation.isPending || !selectedQuoteId}
             >

@@ -229,6 +229,15 @@ const PO_STATUSES = [
 ] as const;
 type POStatus = (typeof PO_STATUSES)[number];
 
+const PO_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  SENT: "Sent",
+  CONFIRMED: "Confirmed",
+  RECEIVING: "Intaking",
+  RECEIVED: "Received",
+  CANCELLED: "Cancelled",
+};
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -282,7 +291,7 @@ function StatusBadge({ status }: { status: string }) {
         PO_STATUS_COLORS[status] || PO_STATUS_COLORS.DRAFT
       )}
     >
-      {status}
+      {PO_STATUS_LABELS[status] ?? status}
     </Badge>
   );
 }
@@ -1407,7 +1416,7 @@ export function PurchaseOrdersWorkSurface() {
               <SelectItem value="all">All Statuses</SelectItem>
               {PO_STATUSES.map(status => (
                 <SelectItem key={status} value={status}>
-                  {status}
+                  {PO_STATUS_LABELS[status] ?? status}
                 </SelectItem>
               ))}
             </SelectContent>

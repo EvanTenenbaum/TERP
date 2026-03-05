@@ -27,6 +27,7 @@ export default function RelationshipsWorkspacePage() {
     <LinearWorkspaceShell
       title={RELATIONSHIPS_WORKSPACE.title}
       description={RELATIONSHIPS_WORKSPACE.description}
+      section="Sell"
       activeTab={activeTab}
       tabs={RELATIONSHIPS_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
@@ -36,10 +37,18 @@ export default function RelationshipsWorkspacePage() {
       ]}
       commandStrip={
         <>
-          <Button size="sm" variant="outline" onClick={() => setLocation("/clients")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setLocation("/clients")}
+          >
             Open Client List
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setActiveTab("suppliers")}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setActiveTab("suppliers")}
+          >
             Jump to Suppliers
           </Button>
         </>

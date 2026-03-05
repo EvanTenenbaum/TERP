@@ -29,7 +29,6 @@ This model dictates a shift from a report-oriented system to an **action-oriente
 
 ---
 
-
 ## Part 1: Exhaustive Interview Analysis (The Unabridged Version)
 
 This section provides the complete, unabridged analysis of the interview, capturing the critical subtext, emotional landscape, and implied business context.
@@ -38,10 +37,10 @@ This section provides the complete, unabridged analysis of the interview, captur
 
 To understand the feedback, one must first understand the emotional state of the participants.
 
-*   **The Customer is Patient and Encouraging.** The interview opens with the customer proactively offering the developer more time: "days or a week, like, I don't mind... waiting buddy" [00:00.0]. This is the voice of a supportive friend, not an impatient client. They end the call with "Love you, bud" [18:03.2].
-*   **The Customer is Also Disappointed.** Despite their patience, frustration is clear: "I'm pretty disappointed that this isn't working yet" [16:28.6]. This is immediately softened with encouragement, but the sting is real. The core inventory functionality is still broken.
-*   **The Developer is Seeking Validation.** The developer's opening remarks reveal a need for reassurance: "I've kind of validated that I'm not just being a total dummy about some of this stuff" [00:32.5]. They are a creator looking for validation that they are on the right track.
-*   **The Customer is Highly Engaged.** The customer's desire for involvement is a recurring theme: "I love giving feedback, so I'm ready" [00:24.3]. This is a gift; the customer is an active, enthusiastic partner.
+- **The Customer is Patient and Encouraging.** The interview opens with the customer proactively offering the developer more time: "days or a week, like, I don't mind... waiting buddy" [00:00.0]. This is the voice of a supportive friend, not an impatient client. They end the call with "Love you, bud" [18:03.2].
+- **The Customer is Also Disappointed.** Despite their patience, frustration is clear: "I'm pretty disappointed that this isn't working yet" [16:28.6]. This is immediately softened with encouragement, but the sting is real. The core inventory functionality is still broken.
+- **The Developer is Seeking Validation.** The developer's opening remarks reveal a need for reassurance: "I've kind of validated that I'm not just being a total dummy about some of this stuff" [00:32.5]. They are a creator looking for validation that they are on the right track.
+- **The Customer is Highly Engaged.** The customer's desire for involvement is a recurring theme: "I love giving feedback, so I'm ready" [00:24.3]. This is a gift; the customer is an active, enthusiastic partner.
 
 ### 1.2 The Unseen Stakeholder: The Ghost of "Tigger"
 
@@ -53,13 +52,12 @@ The customer's analogy arises from their current, inefficient workflow: **scroll
 
 ### 1.4 Exhaustive Thematic Analysis
 
-*   **Theme: Simplicity and Nomenclature (The User is Not an Accountant).** The customer consistently pushes for simplicity and rejects jargon. They don't know what "AR/AP" means [14:36.1] and explicitly ask for fewer options on the Leaderboard [11:35.6]. The entire application needs a "plain language" audit.
-*   **Theme: The Leaderboard (Excitement Tempered by Confusion).** The Leaderboard is a winning concept, but the execution is too complex. The customer is excited ("I love it") but confused by the metrics ("what's reliability"). The debt warning system was a prior promise [11:21.4] and is a top priority.
-*   **Theme: Business Operations and Context (A Multi-Million Dollar Operation).** The AR/AP dashboard shows **$2.49M in AR** and **$1.75M in AP**, with 96 overdue invoices. This is a tool to manage a serious business. Bugs are not minor inconveniences; they are crippling failures.
-*   **Theme: The Developer's Role (Guide and Interpreter).** The developer is not just taking notes; they are actively guiding the conversation, reframing needs, and managing expectations. This collaborative dynamic is a project strength.
+- **Theme: Simplicity and Nomenclature (The User is Not an Accountant).** The customer consistently pushes for simplicity and rejects jargon. They don't know what "AR/AP" means [14:36.1] and explicitly ask for fewer options on the Leaderboard [11:35.6]. The entire application needs a "plain language" audit.
+- **Theme: The Leaderboard (Excitement Tempered by Confusion).** The Leaderboard is a winning concept, but the execution is too complex. The customer is excited ("I love it") but confused by the metrics ("what's reliability"). The debt warning system was a prior promise [11:21.4] and is a top priority.
+- **Theme: Business Operations and Context (A Multi-Million Dollar Operation).** The AR/AP dashboard shows **$2.49M in AR** and **$1.75M in AP**, with 96 overdue invoices. This is a tool to manage a serious business. Bugs are not minor inconveniences; they are crippling failures.
+- **Theme: The Developer's Role (Guide and Interpreter).** The developer is not just taking notes; they are actively guiding the conversation, reframing needs, and managing expectations. This collaborative dynamic is a project strength.
 
 ---
-
 
 ## Part 2: Consolidated Feature Analysis & Implementation Roadmap
 
@@ -67,78 +65,77 @@ This section synthesizes all feature requests, bug reports, and UX feedback into
 
 ### 2.1 Summary by Effort Level
 
-| Category | Count | Effort |
-|----------|-------|--------|
-| **Quick Wins** (config/styling only) | 6 | ~4 hours |
-| **Minor Enhancements** (small code changes) | 5 | ~14 hours |
-| **New Features** (significant work) | 4 | ~40+ hours |
-| **Deprioritized** (customer said "later") | 3 | N/A |
+| Category                                    | Count | Effort     |
+| ------------------------------------------- | ----- | ---------- |
+| **Quick Wins** (config/styling only)        | 6     | ~4 hours   |
+| **Minor Enhancements** (small code changes) | 5     | ~14 hours  |
+| **New Features** (significant work)         | 4     | ~40+ hours |
+| **Deprioritized** (customer said "later")   | 3     | N/A        |
 
 ### 2.2 Implementation Roadmap
 
 #### Phase 1: The Foundation (Critical Path)
 
-| Task | Effort | Owner | Justification |
-|------|--------|-------|---------------|
-| **Fix Inventory Loading (BUG-040)** | TBD | Backend | **THE #1 BLOCKER.** The customer is "pretty disappointed" this isn't working. Nothing else matters until the data is reliable. |
+| Task                                | Effort | Owner   | Justification                                                                                                                  |
+| ----------------------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Fix Inventory Loading (BUG-040)** | TBD    | Backend | **THE #1 BLOCKER.** The customer is "pretty disappointed" this isn't working. Nothing else matters until the data is reliable. |
 
 #### Phase 2: Quick Wins (Day 1 Post-Fix)
 
-| Task | Effort | Owner | Justification |
-|------|--------|-------|---------------|
-| Create "Owner Dashboard" Preset | 30 min | Frontend | Directly addresses customer's #1 priority. |
-| Enable `AgingInventoryWidget` | 5 min | Config | Customer explicitly requested "focus on me" for old items. |
-| Enable `ClientDebtLeaderboard` | 5 min | Config | Supports visibility into debt quality. |
-| Enable `MatchmakingOpportunitiesWidget` | 5 min | Config | Addresses "who we haven't seen in a while." |
-| Hide Unused Client Fields | 15 min | Config | Customer doesn't use email/address. |
-| Deprioritize Calendar | 0 min | PM | Customer said "later version thing." |
+| Task                                    | Effort | Owner    | Justification                                              |
+| --------------------------------------- | ------ | -------- | ---------------------------------------------------------- |
+| Create "Owner Dashboard" Preset         | 30 min | Frontend | Directly addresses customer's #1 priority.                 |
+| Enable `AgingInventoryWidget`           | 5 min  | Config   | Customer explicitly requested "focus on me" for old items. |
+| Enable `ClientDebtLeaderboard`          | 5 min  | Config   | Supports visibility into debt quality.                     |
+| Enable `MatchmakingOpportunitiesWidget` | 5 min  | Config   | Addresses "who we haven't seen in a while."                |
+| Hide Unused Client Fields               | 15 min | Config   | Customer doesn't use email/address.                        |
+| Deprioritize Calendar                   | 0 min  | PM       | Customer said "later version thing."                       |
 
 **Total Phase 2 Effort: ~1 hour**
 
 #### Phase 3: Minor Enhancements (Week 1)
 
-| Task | Effort | Owner | Justification |
-|------|--------|-------|---------------|
-| Inventory Price Bracket Grouping | 4 hr | Full-stack | Directly requested feature for the dashboard. |
-| Leaderboard Metric Tooltips | 3 hr | Frontend | Addresses customer confusion ("We'll need an explanation"). |
-| Aging Inventory "Focus" Styling | 2 hr | Frontend | Adds visual emphasis to meet "focus on me" request. |
-| Payment Permission Check | 2 hr | Full-stack | Security/workflow for accounting staff. |
-| Simplified Price Filtering | 3 hr | Frontend | Addresses pain point with the "list generator." |
+| Task                             | Effort | Owner      | Justification                                               |
+| -------------------------------- | ------ | ---------- | ----------------------------------------------------------- |
+| Inventory Price Bracket Grouping | 4 hr   | Full-stack | Directly requested feature for the dashboard.               |
+| Leaderboard Metric Tooltips      | 3 hr   | Frontend   | Addresses customer confusion ("We'll need an explanation"). |
+| Aging Inventory "Focus" Styling  | 2 hr   | Frontend   | Adds visual emphasis to meet "focus on me" request.         |
+| Payment Permission Check         | 2 hr   | Full-stack | Security/workflow for accounting staff.                     |
+| Simplified Price Filtering       | 3 hr   | Frontend   | Addresses pain point with the "list generator."             |
 
 **Total Phase 3 Effort: ~14 hours**
 
 #### Phase 4: New Features (Week 2-3)
 
-| Task | Effort | Owner | Justification |
-|------|--------|-------|---------------|
-| **Debt Warning System** | 16 hr | Full-stack | **High-priority new feature.** Follow-up on a prior promise. |
-| Default Landing Page Preference | 4 hr | Full-stack | Convenience feature requested by customer. |
-| Client Login Name Field | 4 hr | Full-stack | Low-priority but requested for tracking. |
+| Task                            | Effort | Owner      | Justification                                                |
+| ------------------------------- | ------ | ---------- | ------------------------------------------------------------ |
+| **Debt Warning System**         | 16 hr  | Full-stack | **High-priority new feature.** Follow-up on a prior promise. |
+| Default Landing Page Preference | 4 hr   | Full-stack | Convenience feature requested by customer.                   |
+| Client Login Name Field         | 4 hr   | Full-stack | Low-priority but requested for tracking.                     |
 
 **Total Phase 4 Effort: ~24 hours**
 
 #### Phase 5: Polish (Later)
 
-| Task | Effort | Owner | Justification |
-|------|--------|-------|---------------|
-| Metric Consolidation / Simple View | 8 hr | Frontend | Addresses complexity but is a "later" concern. |
+| Task                               | Effort | Owner    | Justification                                  |
+| ---------------------------------- | ------ | -------- | ---------------------------------------------- |
+| Metric Consolidation / Simple View | 8 hr   | Frontend | Addresses complexity but is a "later" concern. |
 
 ### 2.3 Genuinely New Features vs. Enhancements
 
-*   **New Features (Require significant new code):**
-    1.  **Debt Warning System (NF-1):** The most important new feature.
-    2.  **Default Landing Page Preference (NF-2):** User setting.
-    3.  **Client Login Name Field (NF-3):** New schema field.
-    4.  **Metric Consolidation (NF-4):** UX simplification.
-*   **Enhancements (Modify existing components):**
-    1.  **Inventory Category Price Bracket Grouping (ME-1):** Modify `InventorySnapshotWidget`.
-    2.  **Leaderboard Metric Tooltips (ME-2):** Add tooltips to `LeaderboardPage`.
-    3.  **Aging Inventory "Focus" Styling (ME-3):** Add CSS to `AgingInventoryWidget`.
-    4.  **Payment Permission Check (ME-4):** Add role check to `ReceivePaymentModal`.
-    5.  **Simplify Price Category Filtering (ME-5):** Improve the existing filter UI.
+- **New Features (Require significant new code):**
+  1.  **Debt Warning System (NF-1):** The most important new feature.
+  2.  **Default Landing Page Preference (NF-2):** User setting.
+  3.  **Client Login Name Field (NF-3):** New schema field.
+  4.  **Metric Consolidation (NF-4):** UX simplification.
+- **Enhancements (Modify existing components):**
+  1.  **Inventory Category Price Bracket Grouping (ME-1):** Modify `InventorySnapshotWidget`.
+  2.  **Leaderboard Metric Tooltips (ME-2):** Add tooltips to `LeaderboardPage`.
+  3.  **Aging Inventory "Focus" Styling (ME-3):** Add CSS to `AgingInventoryWidget`.
+  4.  **Payment Permission Check (ME-4):** Add role check to `ReceivePaymentModal`.
+  5.  **Simplify Price Category Filtering (ME-5):** Improve the existing filter UI.
 
 ---
-
 
 ## Part 3: UX/UI Design Recommendations
 
@@ -190,7 +187,6 @@ This layout is a simplified version of the "Command Center" mockup, focusing on 
 This design directly addresses the "Data First" principle by removing all subjective indicators ("Focus Items," "Needs attention," color-coded alerts) and presenting clean, objective tables of information.
 
 ---
-
 
 ## Appendices
 
@@ -263,7 +259,7 @@ This design directly addresses the "Data First" principle by removing all subjec
 [08:09.9 - 08:16.6] Client: in terms of maybe I need their login names, is this where their login names would be so they can log into the backend? Dev: Yeah, exactly. Mm hmm.
 [08:17.2 - 08:36.6] Dev: Um, do you, in terms of adding clients, there's not, you know, you're not going to need to put any of this contact information, um, other than certain things like, yeah, payment terms.
 [08:36.6 - 08:43.0] Dev: This will also be the area that, um, initial like credit settings go or things like that.
-[08:43.8 - 09:04.0] Dev: Are you able to, or do you create client? I guess you don't really have this concept. I'm trying to figure out when you're going to create a client because you need to be able, like a client, either like a buyer or a vendor, there's a concept that like, you're going to need to add them as an entity before you transfer...act with them.
+[08:43.8 - 09:04.0] Dev: Are you able to, or do you create client? I guess you don't really have this concept. I'm trying to figure out when you're going to create a client because you need to be able, like a client, either like a buyer or a supplier, there's a concept that like, you're going to need to add them as an entity before you transfer...act with them.
 [09:04.0 - 09:21.6] Client: Okay. Um, does that, I don't want it to be overburdened some, but it's just kind of a reality of like a, of a system like... we rarely add plants. So it's going to happen like four times a year, you know? Yeah. Okay. Yeah.
 [09:26.3 - 09:40.6] Client: Yeah. And if someone's coming in once, we can just put it on somebody else's tab, you know, like if I see Bob every week and Bob brings his buddy Tony one time, then yeah, yeah. Right. Right. You can just go on Bob's tab. Okay.
 [09:42.0 - 09:55.0] Dev: Um, this is something that's gotten, uh, improved a fair amount. Um,
@@ -298,11 +294,11 @@ This design directly addresses the "Data First" principle by removing all subjec
 [14:27.5 - 14:35.4] Dev: invoices in ARAP. Um, this has gotten a lot more accurate since we last spoke.
 [14:36.1 - 14:48.1] Client: What is ARAP again? Dev: Um, accounts receivable and accounts payable. Client: Okay. Um, so this is like your payment office. Dev: Like this is going to be their command center basically.
 [14:49.5 - 15:15.8] Dev: So with that in mind, I guess thinking about what somebody who's working in your accounting divisions, um, dashboard or just like command center would look like, I imagine, you know, this sort of stuff is interesting for you, but really what they're going to want is just like this, which is basically just like, here are all the actions I can receive a payment. I can pay somebody journal entries, um, expenses.
-[15:21.2 - 15:26.8] Client: She never, Oh, I guess if I give her a bag of money, that's receiving the payment. Okay.
+[15:21.2 - 15:26.8] Client: She never, Oh, I guess if I give her a bag of money, that's intake the payment. Okay.
 [15:28.1 - 15:35.3] Client: Like for Z, I just, I just occasionally give her a big chunk and then she just writes down how much is coming out of that chunk.
 [15:36.2 - 15:46.3] Dev: Does she not ever, she doesn't receive payments from, okay. You do. And then she comes and picks them up. Cool.
 [15:46.4 - 15:54.6] Dev: So this is going to be important for you actually, cause this is just, just a really quick way of you being able to,
-[15:55.4 - 16:00.1] Client: she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk.
+[15:55.4 - 16:00.1] Client: she only needs like low risk farmers. I feel like intake payments is a little bit higher risk.
 [16:00.6 - 16:03.4] Dev: Yep. That makes sense. Okay. That's good to know.
 [16:07.4 - 16:09.7] Dev: Um, okay.
 [16:18.6 - 16:28.3] Client: yeah, there's a bunch of other stuff that's much smaller, but I think that honestly, like my question about the dashboards and what we just talked about was probably the most important one. Okay.
@@ -319,28 +315,36 @@ This design directly addresses the "Data First" principle by removing all subjec
 ### Appendix B: Visual Context Notes from Video Frames
 
 #### Frame 1 (0:00) — Inventory Page
-The TERP application is showing the Inventory page. The left sidebar navigation is visible with sections: SALES (Dashboard, Inbox, Clients, Orders, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, Returns), INVENTORY (Pick & Pack, Products, Inventory [selected], Photography, Samples, Purchase Orders, Vendors, Vendor Supply, Spreadsheet View, Direct Intake). The main content area shows "Inventory — Manage batches and stock levels" with a search bar and filters (All Statuses, All Categories). It displays Batches: 0, Live: 0, Value: $0.00 with a loading spinner visible — inventory is not loading. The user is signed in as "TERP Operator."
+
+The TERP application is showing the Inventory page. The left sidebar navigation is visible with sections: SALES (Dashboard, Inbox, Clients, Orders, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, Returns), INVENTORY (Pick & Pack, Products, Inventory [selected], Photography, Samples, Purchase Orders, Suppliers, Supplier Supply, Spreadsheet View, Direct Intake). The main content area shows "Inventory — Manage batches and stock levels" with a search bar and filters (All Statuses, All Categories). It displays Batches: 0, Live: 0, Value: $0.00 with a loading spinner visible — inventory is not loading. The user is signed in as "TERP Operator."
 
 #### Frame 4 (3:00) — Dashboard Page
+
 The Dashboard is selected in the sidebar. It shows "Overview of your business metrics and activity." The Cash Flow section displays Cash Collected: $5,828,886.76 and Cash Spent: $0.00. The Sales section shows client rankings with Total Sales: Bay Distribution ($322,283), Green Cannabis Co ($386,406), Santa Rosa Reserve ($267,967), Los Angeles Therapeutics ($249,913), Golden Health ($215,193), and more. "Customize" and "Comments" buttons are visible.
 
 #### Frame 7 (6:00) — Clients Page
+
 The Clients page shows a client list with the header "Manage clients, track transactions, and monitor debt." Stats show Total: 101, With Debt: 0, LTV: $0.00. Columns visible are Name, Type, Contact, LTV, Debt, and Orders. The list shows a mix of "Buyer" and "Supplier" types with contact emails visible for each client. An "Add Client" button is in the top right.
 
 #### Frame 10 (9:00) — Create Sales Order Page (ERROR STATE)
+
 The Orders > Create page is visible, showing "Create Sales Order — Build order with COGS visibility and margin management." Customer selected is Riverside Naturals. A large error is displayed: "Failed to load inventory" with a SQL error. A "No Credit Limit Set" warning is shown. Order Totals show $0.00 and "Order has validation errors" message appears. This is a known bug — inventory failing to load.
 
 #### Frame 11 (10:00) — Leaderboard Page
+
 The Leaderboard page shows client performance metrics with the header "Track and compare client performance across key metrics." Tabs are visible: Master Score, Financial, Engagement, Reliability, Growth. A "Customize Weights" button is visible. The Master Score Rankings table shows: 1st Green Cannabis Co (DUAL) — 69.5 — Top 99%, 2nd Glendale Cannabis Co (CUSTOMER) — 66.3 — Top 98%, 3rd Emerald Naturals (CUSTOMER) — 64.2 — Top 97%. The FINANCE section is visible in the sidebar (Invoices, AR/AP, Credit Settings, Credits, Reports, Pricing Rules) along with the ADMIN section (Users, System Settings, Calendar, Todo Lists, Scheduling, Time Clock, Feature Flags, Workflow Queue, Locations).
 
 #### Frame 14 (13:00) — Leaderboard Customize Weights Modal
+
 A modal shows "Customize Weights" for Master Score calculation with sliders: YTD Revenue 25% ("Year-to-date revenue contribution"), On-Time Payment 20% ("Payment reliability"), Order Frequency 15% ("Orders per period"), Profit Margin 15% ("Profitability percentage"), Credit Utilization 10% ("Credit line usage"), YoY Growth 10% ("Year-over-year growth rate"), Recency 5% ("Days since last order"). Total: 100%. "Reset to Defaults" and "Save Weights" buttons are visible. The background shows the Engagement Rankings tab.
 
 #### Frame 15 (14:00) — AR/AP Accounting Dashboard
-The AR/AP page is selected in the FINANCE section showing "Accounting Dashboard — Overview of your financial health and key metrics." Key metrics: Cash Balance $0.00, Accounts Receivable $2,492,412.54, Accounts Payable $1,753,971.17, Net Position $738,441.37 (AR minus AP). AR Aging breakdown: Current $1,005,720, 30 Days $559,758, 60 Days $476,819, 90 Days, 90+ Days. AP Aging breakdown: Current $957,646, 30 Days $933,612, 60 Days $758,620, 90 Days $291,125, 90+ Days. Top Debtors section shows "No outstanding balances." Top Vendors Owed shows "Unknown Vendor" entries with amounts ($258,649.91, $186,313.16, etc.). Bottom tabs: Overdue Invoices (96), Overdue Bills (44). "Configure Display" button visible.
+
+The AR/AP page is selected in the FINANCE section showing "Accounting Dashboard — Overview of your financial health and key metrics." Key metrics: Cash Balance $0.00, Accounts Receivable $2,492,412.54, Accounts Payable $1,753,971.17, Net Position $738,441.37 (AR minus AP). AR Aging breakdown: Current $1,005,720, 30 Days $559,758, 60 Days $476,819, 90 Days, 90+ Days. AP Aging breakdown: Current $957,646, 30 Days $933,612, 60 Days $758,620, 90 Days $291,125, 90+ Days. Top Debtors section shows "No outstanding balances." Top Suppliers Owed shows "Unknown Supplier" entries with amounts ($258,649.91, $186,313.16, etc.). Bottom tabs: Overdue Invoices (96), Overdue Bills (44). "Configure Display" button visible.
 
 #### Frame 16 (15:00) — AR/AP Quick Actions and Invoices
-The AR/AP page scrolled down shows Overdue Invoices (96) and Overdue Bills (44) tabs. The overdue invoices table displays: INV-20251123-00098 (West Coast Wellness Center, 12/07/2025, 52 days, $21,480.75), INV-20251124-00204 (Valley Cannabis Co, 12/08/2025, 51 days, $19,524.54), INV-20251125-00275 (Redwood Collective, 12/09/2025, 50 days, $14,700.10), INV-20251125-00374 (Los Angeles Therapeutics, 12/09/2025, 50 days, $180,052.48), INV-20251126-00190 (West Coast Apothecary, 12/10/2025, 49 days, $18,152.81). A "View All 96 Overdue Invoices" link is shown. The Quick Actions section has buttons: Receive Payment (green), Pay Vendor (green), Post Journal Entry, Create Invoice, Create Bill, Record Expense. Recent Invoices, Recent Bills, and Recent Payments sections are visible with various statuses (Paid, Viewed, Void, Pending, Received).
+
+The AR/AP page scrolled down shows Overdue Invoices (96) and Overdue Bills (44) tabs. The overdue invoices table displays: INV-20251123-00098 (West Coast Wellness Center, 12/07/2025, 52 days, $21,480.75), INV-20251124-00204 (Valley Cannabis Co, 12/08/2025, 51 days, $19,524.54), INV-20251125-00275 (Redwood Collective, 12/09/2025, 50 days, $14,700.10), INV-20251125-00374 (Los Angeles Therapeutics, 12/09/2025, 50 days, $180,052.48), INV-20251126-00190 (West Coast Apothecary, 12/10/2025, 49 days, $18,152.81). A "View All 96 Overdue Invoices" link is shown. The Quick Actions section has buttons: Receive Payment (green), Pay Supplier (green), Post Journal Entry, Create Invoice, Create Bill, Record Expense. Recent Invoices, Recent Bills, and Recent Payments sections are visible with various statuses (Paid, Viewed, Void, Pending, Received).
 
 ### Appendix C: Complete List of 64 Analyzed Details
 
@@ -350,7 +354,7 @@ This appendix contains the full, unabridged list of 64 details, nuances, and imp
 
 #### Relationship & Emotional Context (1-7)
 
-1.  **The relationship is deeply personal.** They end with "Love you, bud" [18:03.2]. This is not a vendor-client relationship — it's friends/family building a product together.
+1.  **The relationship is deeply personal.** They end with "Love you, bud" [18:03.2]. This is not a supplier-client relationship — it's friends/family building a product together.
 2.  **The customer is patient but disappointed.** "I'm pretty disappointed that this isn't working yet" [16:28.6] — but immediately follows with encouragement. This emotional dynamic is critical context.
 3.  **The customer offered to wait.** The very first words: "days or a week, like, I don't mind, um, uh, waiting buddy. Like, like there's no point in spinning your wheels if you need a couple more hours or whatever." [00:00.0] — The customer is proactively managing the developer's stress.
 4.  **The developer has imposter syndrome concerns.** "I've kind of validated that I'm not just being a total dummy about some of this stuff." [00:35.8] — The developer is seeking validation, not just feedback.
@@ -414,10 +418,10 @@ This appendix contains the full, unabridged list of 64 details, nuances, and imp
 38. **AR/AP has improved.** "this has gotten a lot more accurate since we last spoke." [14:31.2] — Another reference to iterative improvement.
 39. **The developer frames AR/AP as the accounting person's command center.** "this is going to be their command center basically." [14:45.7] — Distinguishing between owner and accountant views.
 40. **The developer distinguishes between what interests the owner vs the accountant.** "this sort of stuff is interesting for you, but really what they're going to want is just like this" [15:05.6] — Thinking about role-based views.
-41. **The customer has a moment of realization about "Receive Payment."** "She never, Oh, I guess if I give her a bag of money, that's receiving the payment." [15:21.2] — The customer is working through the accounting concept in real time.
+41. **The customer has a moment of realization about "Receive Payment."** "She never, Oh, I guess if I give her a bag of money, that's intake the payment." [15:21.2] — The customer is working through the accounting concept in real time.
 42. **The cash handling workflow is specific.** Owner gives accountant a lump sum of cash, accountant tracks disbursements [15:28.1].
-43. **The developer clarifies the payment flow.** Clients pay the OWNER, who collects cash; the accountant picks up the cash and pays vendors [15:36.2].
-44. **"Low risk farmers" is a specific term.** The customer uses "farmers" to mean vendors/suppliers [15:55.4].
+43. **The developer clarifies the payment flow.** Clients pay the OWNER, who collects cash; the accountant picks up the cash and pays suppliers [15:36.2].
+44. **"Low risk farmers" is a specific term.** The customer uses "farmers" to mean suppliers/suppliers [15:55.4].
 
 #### The Closing Section (45-48)
 
@@ -454,48 +458,48 @@ This appendix provides the detailed cross-reference of all 32 items mentioned in
 
 #### Summary
 
-| Status | Count | Description |
-|---|---|---|
-| **Already Implemented** | 11 | Items that exist in the codebase. |
-| **Already Spec'd** | 8 | Items with existing specifications. |
-| **Known Bug (In Progress)** | 3 | Inventory-related bugs already being worked on. |
-| **Genuinely New** | 10 | Items requiring new work. |
+| Status                      | Count | Description                                     |
+| --------------------------- | ----- | ----------------------------------------------- |
+| **Already Implemented**     | 11    | Items that exist in the codebase.               |
+| **Already Spec'd**          | 8     | Items with existing specifications.             |
+| **Known Bug (In Progress)** | 3     | Inventory-related bugs already being worked on. |
+| **Genuinely New**           | 10    | Items requiring new work.                       |
 
 #### Items Removed (Already Exist or Obvious)
 
-| Meeting ID | Title | Evidence | Action |
-|---|---|---|---|
-| MEET-001 | Inventory page fails to load | **KNOWN BUG** - Already tracked as BUG-040 in roadmap | REMOVE - Obvious |
-| MEET-003 | Spreadsheet View not functional | **IN PROGRESS** - SpreadsheetViewPage.tsx exists, behind feature flag | REMOVE - Obvious |
-| MEET-005 | Aging inventory highlight | **IMPLEMENTED** - AgingInventoryWidget.tsx exists | REMOVE |
-| MEET-017 | Master Score is customizable | **IMPLEMENTED** - WeightCustomizer.tsx component exists | REMOVE |
-| MEET-022 | Engagement = Frequency + Recency | **IMPLEMENTED** - LeaderboardPage.tsx shows ENGAGEMENT category | REMOVE |
-| MEET-023 | Master Score weight components | **IMPLEMENTED** - WeightCustomizer allows customizing all components | REMOVE |
-| MEET-028 | Inventory functionality unblocks all | **KNOWN** - Documented in UNIFIED_STRATEGIC_ROADMAP | REMOVE - Obvious |
-| MEET-032 | Create Sales Order fails | **KNOWN BUG** - Downstream of BUG-040 | REMOVE - Obvious |
-| MEET-009 | Client last seen / overdue tracking | **IMPLEMENTED** - PurchasePatternsWidget.tsx & MatchmakingOpportunitiesWidget cover this | PARTIAL |
-| MEET-014 | Minimal client creation fields | **IMPLEMENTED** - QuickCreateClient.tsx (WS-011) allows name-only creation | REMOVE |
-| MEET-011 | Hide unnecessary contact fields | **IMPLEMENTED** - QuickCreateClient shows only name, email/phone | REMOVE |
-| MEET-024 | AR/AP is accounting command center | **SPEC'D** - WS-001-SPEC.md & WS-002-SPEC.md cover this | REMOVE |
-| MEET-010 | View client's last order from list | **SPEC'D** - FEAT-009-CLIENT-LEDGER-SPEC.md covers this | REMOVE |
-| MEET-018 | Dual = Supplier + Buyer | **IMPLEMENTED** - CLIENT_TYPE_OPTIONS in LeaderboardPage.tsx shows "Dual (Both)" | REMOVE |
-| MEET-019 | Financial + Reliability most important | **IMPLEMENTED** - Metric categories in LeaderboardPage show these prominently | REMOVE |
+| Meeting ID | Title                                  | Evidence                                                                                 | Action           |
+| ---------- | -------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------- |
+| MEET-001   | Inventory page fails to load           | **KNOWN BUG** - Already tracked as BUG-040 in roadmap                                    | REMOVE - Obvious |
+| MEET-003   | Spreadsheet View not functional        | **IN PROGRESS** - SpreadsheetViewPage.tsx exists, behind feature flag                    | REMOVE - Obvious |
+| MEET-005   | Aging inventory highlight              | **IMPLEMENTED** - AgingInventoryWidget.tsx exists                                        | REMOVE           |
+| MEET-017   | Master Score is customizable           | **IMPLEMENTED** - WeightCustomizer.tsx component exists                                  | REMOVE           |
+| MEET-022   | Engagement = Frequency + Recency       | **IMPLEMENTED** - LeaderboardPage.tsx shows ENGAGEMENT category                          | REMOVE           |
+| MEET-023   | Master Score weight components         | **IMPLEMENTED** - WeightCustomizer allows customizing all components                     | REMOVE           |
+| MEET-028   | Inventory functionality unblocks all   | **KNOWN** - Documented in UNIFIED_STRATEGIC_ROADMAP                                      | REMOVE - Obvious |
+| MEET-032   | Create Sales Order fails               | **KNOWN BUG** - Downstream of BUG-040                                                    | REMOVE - Obvious |
+| MEET-009   | Client last seen / overdue tracking    | **IMPLEMENTED** - PurchasePatternsWidget.tsx & MatchmakingOpportunitiesWidget cover this | PARTIAL          |
+| MEET-014   | Minimal client creation fields         | **IMPLEMENTED** - QuickCreateClient.tsx (WS-011) allows name-only creation               | REMOVE           |
+| MEET-011   | Hide unnecessary contact fields        | **IMPLEMENTED** - QuickCreateClient shows only name, email/phone                         | REMOVE           |
+| MEET-024   | AR/AP is accounting command center     | **SPEC'D** - WS-001-SPEC.md & WS-002-SPEC.md cover this                                  | REMOVE           |
+| MEET-010   | View client's last order from list     | **SPEC'D** - FEAT-009-CLIENT-LEDGER-SPEC.md covers this                                  | REMOVE           |
+| MEET-018   | Dual = Supplier + Buyer                | **IMPLEMENTED** - CLIENT_TYPE_OPTIONS in LeaderboardPage.tsx shows "Dual (Both)"         | REMOVE           |
+| MEET-019   | Financial + Reliability most important | **IMPLEMENTED** - Metric categories in LeaderboardPage show these prominently            | REMOVE           |
 
 #### Items Kept (Genuinely New or Need Enhancement)
 
-| Meeting ID | Title | Priority | Notes |
-|---|---|---|---|
-| MEET-002 | Dashboard inventory snapshot by category | Now | InventorySnapshotWidget exists but needs category/price bracket breakdown. |
-| MEET-004 | Dashboard payables summary | Now | Need to verify if TotalDebtWidget covers this. |
-| MEET-006 | Cash on hand display | Next | AvailableCashWidget may exist - verify. |
-| MEET-008 | Debt warning system for at-risk clients | Now | **NEW** - No existing spec found. |
-| MEET-013 | Store client login names | Next | **NEW** - No existing field. |
-| MEET-020 | Add metric explanations to leaderboard | Next | **NEW** - Tooltips/help text needed. |
-| MEET-021 | Consider consolidating metrics | Later | **NEW** - UX simplification. |
-| MEET-029 | Set Inventory as default landing page | Next | **NEW** - User preference. |
-| MEET-031 | Simplify price category filtering | Next | **NEW** - UX improvement. |
-| MEET-007 | Calendar integration deprioritized | Later | Customer confirmed - document in roadmap. |
+| Meeting ID | Title                                    | Priority | Notes                                                                      |
+| ---------- | ---------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| MEET-002   | Dashboard inventory snapshot by category | Now      | InventorySnapshotWidget exists but needs category/price bracket breakdown. |
+| MEET-004   | Dashboard payables summary               | Now      | Need to verify if TotalDebtWidget covers this.                             |
+| MEET-006   | Cash on hand display                     | Next     | AvailableCashWidget may exist - verify.                                    |
+| MEET-008   | Debt warning system for at-risk clients  | Now      | **NEW** - No existing spec found.                                          |
+| MEET-013   | Store client login names                 | Next     | **NEW** - No existing field.                                               |
+| MEET-020   | Add metric explanations to leaderboard   | Next     | **NEW** - Tooltips/help text needed.                                       |
+| MEET-021   | Consider consolidating metrics           | Later    | **NEW** - UX simplification.                                               |
+| MEET-029   | Set Inventory as default landing page    | Next     | **NEW** - User preference.                                                 |
+| MEET-031   | Simplify price category filtering        | Next     | **NEW** - UX improvement.                                                  |
+| MEET-007   | Calendar integration deprioritized       | Later    | Customer confirmed - document in roadmap.                                  |
 
 ---
 
-*End of document.*
+_End of document._

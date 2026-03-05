@@ -1,4 +1,4 @@
-# 🟤 Sprint E: Calendar, Vendors & CRM
+# 🟤 Sprint E: Calendar, Suppliers & CRM
 
 ---
 
@@ -6,7 +6,7 @@
 
 You are an AI agent working on TERP, a cannabis ERP system. Your prime directive: **Leave the code better than you found it.**
 
-You are assigned to execute **Sprint E** of the TERP ERP parallel sprint plan. This sprint focuses on Calendar functionality, Vendor Management, and CRM features. You will work in parallel with three other agents (Sprint B, Sprint C, and Sprint D) who are working on different file domains.
+You are assigned to execute **Sprint E** of the TERP ERP parallel sprint plan. This sprint focuses on Calendar functionality, Supplier Management, and CRM features. You will work in parallel with three other agents (Sprint B, Sprint C, and Sprint D) who are working on different file domains.
 
 ---
 
@@ -78,9 +78,9 @@ SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-E-$(openssl rand -hex 3)"
 
 ```bash
 git pull origin main                           # Always pull first
-git checkout -b sprint-e/calendar-vendors-crm  # Your sprint branch
+git checkout -b sprint-e/calendar-suppliers-crm  # Your sprint branch
 git commit -m "feat(scope): description"       # Conventional commits
-git push origin sprint-e/calendar-vendors-crm  # Push after each phase
+git push origin sprint-e/calendar-suppliers-crm  # Push after each phase
 ```
 
 ---
@@ -159,7 +159,7 @@ bash scripts/watch-deploy.sh   # Monitor deployment
 1. **Sprint A must be complete** - Verify schema is stable before starting
 2. **Pull latest code** - `git pull origin main` to get Sprint A changes
 3. **Regenerate types** - `pnpm generate` to update TypeScript types
-4. **Create your branch** - `git checkout -b sprint-e/calendar-vendors-crm`
+4. **Create your branch** - `git checkout -b sprint-e/calendar-suppliers-crm`
 
 ### File Ownership Rules (STRICTLY ENFORCED)
 
@@ -175,8 +175,8 @@ server/routers/calendarRecurrence.ts
 server/routers/calendarReminders.ts
 server/routers/calendarViews.ts
 
-# Backend Routers - Vendors
-server/routers/vendors.ts
+# Backend Routers - Suppliers
+server/routers/suppliers.ts
 server/routers/vendorSupply.ts
 server/routers/vendorReminders.ts
 
@@ -194,7 +194,7 @@ client/src/pages/NeedsManagementPage.tsx
 
 # Frontend Components
 client/src/components/calendar/
-client/src/components/vendors/
+client/src/components/suppliers/
 client/src/components/inbox/
 ```
 
@@ -210,46 +210,46 @@ client/src/components/inbox/
 
 ## 📋 Sprint Tasks
 
-### Phase 1: Vendor Supply Management (22h)
+### Phase 1: Supplier Supply Management (22h)
 
-#### QA-054: Implement Vendor Supply Management Backend (18h)
+#### QA-054: Implement Supplier Supply Management Backend (18h)
 
 **Source:** MASTER_ROADMAP.md
 
-**Problem:** Vendor supply management has incomplete backend implementation
+**Problem:** Supplier supply management has incomplete backend implementation
 
 **Deliverables:**
 
-- [ ] Implement vendor supply CRUD operations
-- [ ] Add vendor supply tracking (quantities, prices, availability)
-- [ ] Create vendor supply history/audit log
-- [ ] Implement vendor supply alerts (low stock, price changes)
-- [ ] Add vendor supply import from CSV
+- [ ] Implement supplier supply CRUD operations
+- [ ] Add supplier supply tracking (quantities, prices, availability)
+- [ ] Create supplier supply history/audit log
+- [ ] Implement supplier supply alerts (low stock, price changes)
+- [ ] Add supplier supply import from CSV
 - [ ] Connect frontend VendorSupplyPage to backend
 
 **🔴 REDHAT QA GATE 1.1:**
 
 ```
 Before marking QA-054 complete:
-□ Create new vendor supply entry
-□ Read/list vendor supplies with filters
-□ Update vendor supply details
-□ Delete vendor supply (soft delete)
+□ Create new supplier supply entry
+□ Read/list supplier supplies with filters
+□ Update supplier supply details
+□ Delete supplier supply (soft delete)
 □ View supply history
 □ Test low stock alert triggers
 □ Import supplies from CSV
 □ Verify all data persists correctly
 ```
 
-#### VENDOR-001: Vendor Reminders System (4h)
+#### VENDOR-001: Supplier Reminders System (4h)
 
 **Source:** Sprint E Plan
 
-**Problem:** No automated reminder system for vendor follow-ups
+**Problem:** No automated reminder system for supplier follow-ups
 
 **Deliverables:**
 
-- [ ] Implement vendor reminder creation
+- [ ] Implement supplier reminder creation
 - [ ] Add reminder scheduling (one-time, recurring)
 - [ ] Create reminder notification system
 - [ ] Add reminder completion tracking
@@ -258,14 +258,14 @@ Before marking QA-054 complete:
 
 ```
 Before proceeding to Phase 2:
-□ Vendor supply CRUD fully functional
-□ Vendor reminders work
+□ Supplier supply CRUD fully functional
+□ Supplier reminders work
 □ Alerts trigger correctly
 □ CSV import works
 □ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
-□ Commit with message: "feat(sprint-e): Phase 1 - Vendor Supply Management [REDHAT QA PASSED]"
-□ Push to sprint-e/calendar-vendors-crm branch
+□ Commit with message: "feat(sprint-e): Phase 1 - Supplier Supply Management [REDHAT QA PASSED]"
+□ Push to sprint-e/calendar-suppliers-crm branch
 ```
 
 ---
@@ -325,7 +325,7 @@ Before proceeding to Phase 3:
 □ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Commit with message: "feat(sprint-e): Phase 2 - CRM Communication Features [REDHAT QA PASSED]"
-□ Push to sprint-e/calendar-vendors-crm branch
+□ Push to sprint-e/calendar-suppliers-crm branch
 ```
 
 ---
@@ -390,7 +390,7 @@ Before marking sprint complete:
 □ Run: pnpm build (no TypeScript errors)
 □ Full manual regression test
 □ Commit with message: "feat(sprint-e): Phase 3 - Calendar Enhancements [REDHAT QA PASSED]"
-□ Push to sprint-e/calendar-vendors-crm branch
+□ Push to sprint-e/calendar-suppliers-crm branch
 ```
 
 ---
@@ -413,8 +413,8 @@ Before submitting your branch for merge:
 
 ### Functional Verification
 
-- [ ] Vendor supply CRUD works end-to-end
-- [ ] Vendor reminders trigger correctly
+- [ ] Supplier supply CRUD works end-to-end
+- [ ] Supplier reminders trigger correctly
 - [ ] CRM needs tracking works
 - [ ] Communication logging works
 - [ ] Calendar events CRUD works
@@ -425,7 +425,7 @@ Before submitting your branch for merge:
 ### Integration Verification
 
 - [ ] Calendar events link to CRM activities
-- [ ] Vendor reminders appear in calendar
+- [ ] Supplier reminders appear in calendar
 - [ ] Communication logs show in activity timeline
 - [ ] No conflicts with other sprint domains
 
@@ -446,16 +446,16 @@ Before submitting your branch for merge:
 
 ```bash
 git add .
-git commit -m "feat(sprint-e): Complete - Calendar, Vendors & CRM [REDHAT QA PASSED]
+git commit -m "feat(sprint-e): Complete - Calendar, Suppliers & CRM [REDHAT QA PASSED]
 
-Phase 1: Vendor Supply Management (QA-054, VENDOR-001)
+Phase 1: Supplier Supply Management (QA-054, VENDOR-001)
 Phase 2: CRM Communication Features (QA-057, QA-067)
 Phase 3: Calendar Enhancements (CALENDAR-001, CALENDAR-002)
 
 All Redhat QA gates passed.
 Ready for integration."
 
-git push origin sprint-e/calendar-vendors-crm
+git push origin sprint-e/calendar-suppliers-crm
 ```
 
 ---
@@ -493,8 +493,8 @@ git revert <commit_hash>..HEAD
 
 ```bash
 git checkout main
-git branch -D sprint-e/calendar-vendors-crm
-git checkout -b sprint-e/calendar-vendors-crm  # Start fresh
+git branch -D sprint-e/calendar-suppliers-crm
+git checkout -b sprint-e/calendar-suppliers-crm  # Start fresh
 ```
 
 ---
@@ -531,7 +531,7 @@ Sprint E is successful when:
 2. All Redhat QA gates passed
 3. Zero regressions in existing functionality
 4. Calendar fully functional
-5. Vendor management complete
+5. Supplier management complete
 6. CRM features working
 7. Branch ready for merge (no conflicts)
 8. Documentation updated
@@ -543,9 +543,9 @@ Sprint E is successful when:
 
 ## 📊 TESTING CHECKLIST
 
-### Vendor Supply Flow
+### Supplier Supply Flow
 
-- [ ] Create vendor
+- [ ] Create supplier
 - [ ] Add supply entry
 - [ ] Update supply quantity
 - [ ] Update supply price
@@ -555,7 +555,7 @@ Sprint E is successful when:
 - [ ] Import from CSV
 - [ ] Delete supply entry
 
-### Vendor Reminder Flow
+### Supplier Reminder Flow
 
 - [ ] Create one-time reminder
 - [ ] Create recurring reminder
@@ -610,19 +610,19 @@ When a meeting is scheduled via CRM:
 3. Log in communication history
 4. Show in activity timeline
 
-### Calendar ↔ Vendor Integration
+### Calendar ↔ Supplier Integration
 
-When a vendor reminder is created:
+When a supplier reminder is created:
 
 1. Create calendar event (optional)
 2. Set reminder notification
-3. Link to vendor record
+3. Link to supplier record
 
 ### Verify Integration Works
 
 - [ ] CRM meeting creates calendar event
 - [ ] Calendar event shows in CRM timeline
-- [ ] Vendor reminder appears in calendar
+- [ ] Supplier reminder appears in calendar
 - [ ] All links navigate correctly
 
 ---
@@ -645,11 +645,11 @@ The calendar system uses:
 - `calendar_participants` table for invitations
 - `calendar_reminders` table for notifications
 
-### Vendor System
+### Supplier System
 
-The vendor system uses:
+The supplier system uses:
 
-- `vendors` table for vendor records
+- `suppliers` table for supplier records
 - `vendor_supply` table for supply tracking
 - `vendor_reminders` table for follow-ups
 

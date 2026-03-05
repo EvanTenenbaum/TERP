@@ -28,6 +28,7 @@ This document outlines a comprehensive strategy for conducting full E2E testing 
 The Chromium browser in the sandbox supports mobile device emulation with the following capabilities:
 
 **Available Features:**
+
 - ✅ Mobile viewport emulation (various device sizes)
 - ✅ Touch event simulation
 - ✅ Device orientation (portrait/landscape)
@@ -37,6 +38,7 @@ The Chromium browser in the sandbox supports mobile device emulation with the fo
 - ✅ Device pixel ratio adjustment
 
 **Limitations:**
+
 - ⚠️ Not true mobile hardware (emulation only)
 - ⚠️ Cannot test native mobile features (camera, NFC, etc.)
 - ⚠️ May not catch all mobile browser quirks
@@ -57,18 +59,21 @@ The Chromium browser in the sandbox supports mobile device emulation with the fo
 Test across 3 representative device profiles covering the market:
 
 **Profile 1: Small Phone (iPhone SE)**
+
 - Viewport: 375x667px
 - Device Pixel Ratio: 2
 - User Agent: iPhone
 - Use Case: Minimum viable mobile experience
 
 **Profile 2: Standard Phone (iPhone 12/13)**
+
 - Viewport: 390x844px
 - Device Pixel Ratio: 3
 - User Agent: iPhone
 - Use Case: Most common mobile device
 
 **Profile 3: Large Phone/Tablet (iPad Mini)**
+
 - Viewport: 768x1024px
 - Device Pixel Ratio: 2
 - User Agent: iPad
@@ -77,12 +82,14 @@ Test across 3 representative device profiles covering the market:
 #### 1.2 Orientation Testing
 
 For each device profile, test both:
+
 - **Portrait Mode** (primary) - All 42 protocols
 - **Landscape Mode** (secondary) - Critical workflows only (10-15 protocols)
 
 #### 1.3 Network Conditions
 
 Test under realistic mobile network conditions:
+
 - **Fast 4G** (primary testing) - 4Mbps down, 3Mbps up, 20ms latency
 - **Slow 3G** (performance testing) - 400Kbps down, 400Kbps up, 400ms latency
 - **Offline** (resilience testing) - Test offline behavior and error handling
@@ -98,6 +105,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 **Test:** Verify all touch interactions work correctly on mobile
 
 **Specific Tests:**
+
 - Tap targets are at least 44x44px (iOS) or 48x48dp (Android)
 - No hover-dependent functionality (hover doesn't exist on mobile)
 - Swipe gestures work where implemented
@@ -106,6 +114,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 - Touch feedback is immediate and clear
 
 **Expected Behavior:**
+
 - All buttons and links are easily tappable
 - No accidental taps due to small touch targets
 - Touch interactions feel responsive (<100ms feedback)
@@ -115,6 +124,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 **Test:** Verify navigation is optimized for mobile
 
 **Specific Tests:**
+
 - Sidebar collapses to hamburger menu on mobile
 - Navigation menu is accessible and usable
 - Back button behavior is correct
@@ -123,6 +133,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 - Bottom navigation (if implemented) works correctly
 
 **Expected Behavior:**
+
 - Navigation doesn't block content
 - Menu opens/closes smoothly
 - Navigation is thumb-friendly (reachable with one hand)
@@ -132,6 +143,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 **Test:** Verify forms are mobile-optimized
 
 **Specific Tests:**
+
 - Correct keyboard types appear (numeric, email, tel, etc.)
 - Input fields are large enough to tap
 - Labels are visible when input is focused
@@ -141,6 +153,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 - Form validation messages are visible
 
 **Expected Behavior:**
+
 - Forms are easy to fill on mobile
 - No keyboard covering input fields
 - Smooth scrolling to next field
@@ -150,6 +163,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 **Test:** Verify performance is acceptable on mobile
 
 **Specific Tests:**
+
 - Initial page load <3 seconds on 4G
 - Time to Interactive (TTI) <5 seconds
 - No layout shifts during load (CLS <0.1)
@@ -159,6 +173,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 - API responses are cached appropriately
 
 **Expected Behavior:**
+
 - App feels fast and responsive
 - No long loading spinners
 - Smooth transitions between pages
@@ -168,6 +183,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 **Test:** Verify responsive design works across viewport sizes
 
 **Specific Tests:**
+
 - Layout adapts correctly to different screen sizes
 - No horizontal scrolling (unless intentional)
 - Text is readable without zooming (min 16px)
@@ -177,6 +193,7 @@ Extend the existing 42 protocols with mobile-specific considerations:
 - Images scale correctly
 
 **Expected Behavior:**
+
 - Content is readable and accessible on all devices
 - No broken layouts or overflow
 - Consistent visual hierarchy
@@ -190,30 +207,35 @@ Extend the existing 42 protocols with mobile-specific considerations:
 Execute tests in this order for efficiency:
 
 **Round 1: Standard Phone Portrait (Primary)**
+
 - Device: iPhone 12 (390x844px)
 - Network: Fast 4G
 - Execute: All 42 protocols + 5 mobile-specific protocols
 - Duration: ~6-8 hours
 
 **Round 2: Small Phone Portrait (Minimum Viable)**
+
 - Device: iPhone SE (375x667px)
 - Network: Fast 4G
 - Execute: Critical workflows only (20 protocols)
 - Duration: ~3-4 hours
 
 **Round 3: Tablet Portrait (Large Screen)**
+
 - Device: iPad Mini (768x1024px)
 - Network: Fast 4G
 - Execute: All 42 protocols (verify tablet experience)
 - Duration: ~6-8 hours
 
 **Round 4: Landscape Testing (Secondary)**
+
 - Device: iPhone 12 (844x390px)
 - Network: Fast 4G
 - Execute: Critical workflows only (15 protocols)
 - Duration: ~2-3 hours
 
 **Round 5: Performance Testing (Slow Network)**
+
 - Device: iPhone 12 (390x844px)
 - Network: Slow 3G
 - Execute: Critical workflows only (10 protocols)
@@ -224,44 +246,48 @@ Execute tests in this order for efficiency:
 #### 3.2 Test Automation Approach
 
 **Browser Configuration:**
+
 ```javascript
 // Mobile device emulation settings for Chromium
 const mobileDevices = {
   iphoneSE: {
     viewport: { width: 375, height: 667 },
     deviceScaleFactor: 2,
-    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
     hasTouch: true,
-    isMobile: true
+    isMobile: true,
   },
   iphone12: {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
-    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
     hasTouch: true,
-    isMobile: true
+    isMobile: true,
   },
   ipadMini: {
     viewport: { width: 768, height: 1024 },
     deviceScaleFactor: 2,
-    userAgent: 'Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+    userAgent:
+      "Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
     hasTouch: true,
-    isMobile: true
-  }
+    isMobile: true,
+  },
 };
 
 // Network throttling profiles
 const networkProfiles = {
   fast4G: {
-    downloadThroughput: 4 * 1024 * 1024 / 8, // 4Mbps
-    uploadThroughput: 3 * 1024 * 1024 / 8,   // 3Mbps
-    latency: 20 // 20ms
+    downloadThroughput: (4 * 1024 * 1024) / 8, // 4Mbps
+    uploadThroughput: (3 * 1024 * 1024) / 8, // 3Mbps
+    latency: 20, // 20ms
   },
   slow3G: {
-    downloadThroughput: 400 * 1024 / 8,      // 400Kbps
-    uploadThroughput: 400 * 1024 / 8,        // 400Kbps
-    latency: 400 // 400ms
-  }
+    downloadThroughput: (400 * 1024) / 8, // 400Kbps
+    uploadThroughput: (400 * 1024) / 8, // 400Kbps
+    latency: 400, // 400ms
+  },
 };
 ```
 
@@ -304,30 +330,35 @@ await browser_console_exec(`
 Classify mobile bugs separately from desktop bugs:
 
 **Category M1: Mobile Layout Issues**
+
 - Broken responsive design
 - Horizontal scrolling
 - Content overflow
 - Incorrect spacing/padding
 
 **Category M2: Mobile Interaction Issues**
+
 - Touch targets too small
 - Hover-dependent functionality
 - Broken gestures
 - Unresponsive buttons
 
 **Category M3: Mobile Performance Issues**
+
 - Slow page loads
 - Janky animations
 - Layout shifts
 - Memory leaks
 
 **Category M4: Mobile Navigation Issues**
+
 - Broken hamburger menu
 - Navigation not accessible
 - Back button issues
 - Deep link problems
 
 **Category M5: Mobile Form Issues**
+
 - Wrong keyboard types
 - Input fields too small
 - Validation not visible
@@ -352,11 +383,13 @@ If a desktop bug also affects mobile, note it in the bug description but don't c
 For each testing round, create:
 
 **Mobile Test Results Document:**
+
 ```
 docs/testing/MOBILE_TEST_RESULTS_[DEVICE]_[DATE].md
 ```
 
 **Contents:**
+
 - Device profile and configuration
 - Network conditions
 - Test execution log
@@ -369,6 +402,7 @@ docs/testing/MOBILE_TEST_RESULTS_[DEVICE]_[DATE].md
 For each mobile bug, document:
 
 **Bug Report Template:**
+
 ```markdown
 ### BUG-M[XXX]: [Bug Title]
 
@@ -376,12 +410,13 @@ For each mobile bug, document:
 **Category:** M1/M2/M3/M4/M5  
 **Device:** iPhone 12 (390x844px)  
 **Orientation:** Portrait  
-**Network:** Fast 4G  
+**Network:** Fast 4G
 
 **Description:**
 [Detailed description of the bug]
 
 **Steps to Reproduce:**
+
 1. Open TERP on mobile device
 2. Navigate to [page]
 3. Perform [action]
@@ -415,6 +450,7 @@ docs/testing/MOBILE_E2E_TESTING_FINAL_REPORT.md
 ```
 
 **Contents:**
+
 - Executive summary
 - Test coverage metrics (by device)
 - Pass/fail rates (by device)
@@ -466,53 +502,54 @@ docs/testing/MOBILE_E2E_TESTING_FINAL_REPORT.md
 
 ### Protocol Coverage by Device
 
-| Protocol | iPhone SE | iPhone 12 | iPad Mini | Landscape | Slow 3G |
-|----------|-----------|-----------|-----------|-----------|---------|
-| TS-001 Global Shortcuts | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-002 Theme Toggle | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-1.1 Authentication | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-1.2 VIP Portal | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-2.1 Dashboard KPIs | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-2.2 Analytics | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-3.1 Inventory Search | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-3.2 Batch Lifecycle | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-3.3 Location Mgmt | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-4.1 Chart of Accounts | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-4.2 Accounts Receivable | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-4.3 Accounts Payable | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-5.1 Pricing Engine | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-5.2 Sales Sheets | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-5.3 Order Flow | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-6.1 Client Profiles | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-6.2 Matchmaking | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-7.1 Vendor Mgmt | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-7.2 Purchase Orders | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-8.1 Calendar | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| TS-8.2 Task Mgmt | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-9.1 COGS Settings | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-9.2 RBAC | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-10.1 VIP Catalog | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-10.2 VIP Order | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-11.1 404 Handling | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-11.2 Data Persistence | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| TS-11.3 Network Failure | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| TS-12.1 Workflow DND | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-12.2 Status Migration | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-13.1 Mentions | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-13.2 Keyboard Nav | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-14.1 Returns Forms | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-14.2 Restock Logic | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-15.1 VIP Saved Views | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-15.2 VIP Interest List | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| TS-15.3 VIP Price Alerts | ✅ | ✅ | ✅ | ⚠️ | ⚠️ |
-| **Mobile-Specific** |
-| TS-M01 Touch Interactions | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| TS-M02 Mobile Navigation | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| TS-M03 Form Input | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| TS-M04 Performance | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TS-M05 Responsive Design | ✅ | ✅ | ✅ | ✅ | ⚠️ |
+| Protocol                   | iPhone SE | iPhone 12 | iPad Mini | Landscape | Slow 3G |
+| -------------------------- | --------- | --------- | --------- | --------- | ------- |
+| TS-001 Global Shortcuts    | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-002 Theme Toggle        | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-1.1 Authentication      | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-1.2 VIP Portal          | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-2.1 Dashboard KPIs      | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-2.2 Analytics           | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-3.1 Inventory Search    | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-3.2 Batch Lifecycle     | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-3.3 Location Mgmt       | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-4.1 Chart of Accounts   | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-4.2 Accounts Receivable | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-4.3 Accounts Payable    | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-5.1 Pricing Engine      | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-5.2 Sales Sheets        | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-5.3 Order Flow          | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-6.1 Client Profiles     | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-6.2 Matchmaking         | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-7.1 Supplier Mgmt       | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-7.2 Purchase Orders     | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-8.1 Calendar            | ✅        | ✅        | ✅        | ✅        | ⚠️      |
+| TS-8.2 Task Mgmt           | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-9.1 COGS Settings       | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-9.2 RBAC                | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-10.1 VIP Catalog        | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-10.2 VIP Order          | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-11.1 404 Handling       | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-11.2 Data Persistence   | ✅        | ✅        | ✅        | ⚠️        | ✅      |
+| TS-11.3 Network Failure    | ✅        | ✅        | ✅        | ⚠️        | ✅      |
+| TS-12.1 Workflow DND       | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-12.2 Status Migration   | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-13.1 Mentions           | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-13.2 Keyboard Nav       | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-14.1 Returns Forms      | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-14.2 Restock Logic      | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-15.1 VIP Saved Views    | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-15.2 VIP Interest List  | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| TS-15.3 VIP Price Alerts   | ✅        | ✅        | ✅        | ⚠️        | ⚠️      |
+| **Mobile-Specific**        |
+| TS-M01 Touch Interactions  | ✅        | ✅        | ✅        | ✅        | ⚠️      |
+| TS-M02 Mobile Navigation   | ✅        | ✅        | ✅        | ✅        | ⚠️      |
+| TS-M03 Form Input          | ✅        | ✅        | ✅        | ✅        | ⚠️      |
+| TS-M04 Performance         | ✅        | ✅        | ✅        | ✅        | ✅      |
+| TS-M05 Responsive Design   | ✅        | ✅        | ✅        | ✅        | ⚠️      |
 
 **Legend:**
+
 - ✅ = Full testing required
 - ⚠️ = Partial testing (critical workflows only)
 - ❌ = Skip (not applicable)
@@ -680,5 +717,5 @@ This mobile E2E testing strategy provides a comprehensive approach to achieving 
 
 **End of Strategy Document**
 
-*Ready for autonomous execution*  
-*TERP Cannabis ERP System v1.0.0*
+_Ready for autonomous execution_  
+_TERP Cannabis ERP System v1.0.0_

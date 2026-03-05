@@ -26,7 +26,7 @@
 Implements SAMPLE-006 through SAMPLE-009:
 
 - Sample return workflow
-- Vendor return workflow
+- Supplier return workflow
 - Location tracking
 - Expiration tracking
 

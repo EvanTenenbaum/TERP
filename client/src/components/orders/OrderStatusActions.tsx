@@ -67,7 +67,7 @@ const STATUS_LABELS: Record<FulfillmentStatus, string> = {
   DELIVERED: "Delivered",
   RETURNED: "Returned",
   RESTOCKED: "Restocked",
-  RETURNED_TO_VENDOR: "Returned to Vendor",
+  RETURNED_TO_VENDOR: "Returned to Supplier",
   CANCELLED: "Cancelled",
 };
 
@@ -195,12 +195,12 @@ export function OrderStatusActions({
         };
       case "RETURNED_TO_VENDOR":
         return {
-          title: "Return to vendor?",
+          title: "Return to supplier?",
           description: (
             <>
               <p>
                 You are about to mark items from order{" "}
-                <strong>{orderNumber}</strong> as returned to vendor.
+                <strong>{orderNumber}</strong> as returned to supplier.
               </p>
               <p className="text-amber-600 mt-2 flex items-center gap-2">
                 <Truck className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function OrderStatusActions({
               </p>
             </>
           ),
-          buttonText: "Return to Vendor",
+          buttonText: "Return to Supplier",
           buttonClass: "bg-amber-600 hover:bg-amber-700",
         };
       default:
@@ -228,7 +228,7 @@ export function OrderStatusActions({
         : currentStatus === "RESTOCKED"
           ? "Restocked (Complete)"
           : currentStatus === "RETURNED_TO_VENDOR"
-            ? "Returned to Vendor (Complete)"
+            ? "Returned to Supplier (Complete)"
             : `${STATUS_LABELS[currentStatus]} (Complete)`;
 
     return (
