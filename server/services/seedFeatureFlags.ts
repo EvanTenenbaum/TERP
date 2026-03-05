@@ -172,7 +172,7 @@ const DEFAULT_FLAGS = [
       "Replace the standard dashboard with the owner command center card layout",
     module: null,
     systemEnabled: true,
-    defaultEnabled: false,
+    defaultEnabled: true,
   },
   {
     key: "spreadsheet-view",
