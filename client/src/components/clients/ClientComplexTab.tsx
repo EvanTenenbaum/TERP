@@ -513,7 +513,9 @@ function PurchasesTab({
               </TableHeader>
               <TableBody>
                 {filteredPurchases.map((item, idx) => (
-                  <TableRow key={`purchase-${item.productName}-${item.productId || idx}`}>
+                  <TableRow
+                    key={`purchase-${item.productName}-${item.productId || idx}`}
+                  >
                     <TableCell className="font-medium">
                       {item.productName}
                     </TableCell>
@@ -585,7 +587,9 @@ function ProductsTab({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Supplied Products</CardTitle>
-            <CardDescription>Products supplied by this vendor</CardDescription>
+            <CardDescription>
+              Products supplied by this supplier
+            </CardDescription>
           </div>
           {purchaseOrders && purchaseOrders.length > 0 && (
             <Button

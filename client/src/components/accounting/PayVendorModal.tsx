@@ -124,7 +124,7 @@ export function PayVendorModal({
   const handleSubmit = () => {
     if (!vendorId || !amount || parseFloat(amount) <= 0) {
       toast.error(
-        "Validation Error: Please select a vendor and enter a valid amount"
+        "Validation Error: Please select a supplier and enter a valid amount"
       );
       return;
     }
@@ -154,24 +154,24 @@ export function PayVendorModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5 text-red-600" />
-            Pay Vendor
+            Pay Supplier
           </DialogTitle>
           <DialogDescription>
-            Quick action for recording vendor payments
+            Quick action for recording supplier payments
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Select Vendor */}
+          {/* Select Supplier */}
           <div className="space-y-2">
             <Label htmlFor="vendor" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              Vendor
+              Supplier
             </Label>
             {loadingVendors ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading vendors...
+                Loading suppliers...
               </div>
             ) : (
               <Select
@@ -182,7 +182,7 @@ export function PayVendorModal({
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a vendor" />
+                  <SelectValue placeholder="Select a supplier" />
                 </SelectTrigger>
                 <SelectContent>
                   {recentVendors?.map(vendor => (

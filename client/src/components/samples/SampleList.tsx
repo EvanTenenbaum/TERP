@@ -93,23 +93,25 @@ const statusLabels: Record<SampleStatus, string> = {
   RETURNED: "Returned",
   RETURN_REQUESTED: "Return Requested",
   RETURN_APPROVED: "Return Approved",
-  VENDOR_RETURN_REQUESTED: "Vendor Return Requested",
-  SHIPPED_TO_VENDOR: "Shipped to Vendor",
-  VENDOR_CONFIRMED: "Vendor Confirmed",
+  VENDOR_RETURN_REQUESTED: "Supplier Return Requested",
+  SHIPPED_TO_VENDOR: "Shipped to Supplier",
+  VENDOR_CONFIRMED: "Supplier Confirmed",
 };
 
-const statusVariant: Record<SampleStatus, "default" | "secondary" | "outline" | "destructive"> =
-  {
-    PENDING: "secondary",
-    FULFILLED: "default",
-    CANCELLED: "outline",
-    RETURNED: "outline",
-    RETURN_REQUESTED: "secondary",
-    RETURN_APPROVED: "secondary",
-    VENDOR_RETURN_REQUESTED: "secondary",
-    SHIPPED_TO_VENDOR: "default",
-    VENDOR_CONFIRMED: "default",
-  };
+const statusVariant: Record<
+  SampleStatus,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
+  PENDING: "secondary",
+  FULFILLED: "default",
+  CANCELLED: "outline",
+  RETURNED: "outline",
+  RETURN_REQUESTED: "secondary",
+  RETURN_APPROVED: "secondary",
+  VENDOR_RETURN_REQUESTED: "secondary",
+  SHIPPED_TO_VENDOR: "default",
+  VENDOR_CONFIRMED: "default",
+};
 
 const locationLabels: Record<SampleLocation, string> = {
   WAREHOUSE: "Warehouse",
@@ -354,7 +356,9 @@ export const SampleList = React.memo(function SampleList({
           </TableHeader>
           <TableBody>
             {paginatedSamples.map(sample => {
-              const expirationIndicator = getExpirationIndicator(sample.expirationDate);
+              const expirationIndicator = getExpirationIndicator(
+                sample.expirationDate
+              );
               return (
                 <TableRow key={sample.id}>
                   <TableCell>{sample.id}</TableCell>
@@ -362,7 +366,9 @@ export const SampleList = React.memo(function SampleList({
                     <div className="font-medium text-foreground flex items-center gap-2">
                       {sample.productSummary}
                       {expirationIndicator && (
-                        <span className={`flex items-center gap-1 text-xs ${expirationIndicator.color}`}>
+                        <span
+                          className={`flex items-center gap-1 text-xs ${expirationIndicator.color}`}
+                        >
                           <AlertTriangle className="h-3 w-3" />
                           {expirationIndicator.label}
                         </span>
@@ -400,59 +406,84 @@ export const SampleList = React.memo(function SampleList({
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions for sample {sample.id}</span>
+                          <span className="sr-only">
+                            Actions for sample {sample.id}
+                          </span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {/* Request Return - only for FULFILLED samples */}
                         {sample.status === "FULFILLED" && onRequestReturn && (
-                          <DropdownMenuItem onClick={() => onRequestReturn(sample.id)}>
+                          <DropdownMenuItem
+                            onClick={() => onRequestReturn(sample.id)}
+                          >
                             <RotateCcw className="h-4 w-4 mr-2" />
                             Request Return
                           </DropdownMenuItem>
                         )}
                         {/* Approve Return - only for RETURN_REQUESTED samples */}
-                        {sample.status === "RETURN_REQUESTED" && onApproveReturn && (
-                          <DropdownMenuItem onClick={() => onApproveReturn(sample.id)}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve Return
-                          </DropdownMenuItem>
-                        )}
+                        {sample.status === "RETURN_REQUESTED" &&
+                          onApproveReturn && (
+                            <DropdownMenuItem
+                              onClick={() => onApproveReturn(sample.id)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve Return
+                            </DropdownMenuItem>
+                          )}
                         {/* Complete Return - only for RETURN_APPROVED samples */}
-                        {sample.status === "RETURN_APPROVED" && onCompleteReturn && (
-                          <DropdownMenuItem onClick={() => onCompleteReturn(sample.id)}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Complete Return
-                          </DropdownMenuItem>
-                        )}
+                        {sample.status === "RETURN_APPROVED" &&
+                          onCompleteReturn && (
+                            <DropdownMenuItem
+                              onClick={() => onCompleteReturn(sample.id)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Complete Return
+                            </DropdownMenuItem>
+                          )}
                         {/* Request Vendor Return - for RETURNED or FULFILLED samples */}
-                        {(sample.status === "RETURNED" || sample.status === "FULFILLED") && onRequestVendorReturn && (
-                          <DropdownMenuItem onClick={() => onRequestVendorReturn(sample.id)}>
-                            <Truck className="h-4 w-4 mr-2" />
-                            Request Vendor Return
-                          </DropdownMenuItem>
-                        )}
+                        {(sample.status === "RETURNED" ||
+                          sample.status === "FULFILLED") &&
+                          onRequestVendorReturn && (
+                            <DropdownMenuItem
+                              onClick={() => onRequestVendorReturn(sample.id)}
+                            >
+                              <Truck className="h-4 w-4 mr-2" />
+                              Request Vendor Return
+                            </DropdownMenuItem>
+                          )}
                         {/* Ship to Vendor - only for VENDOR_RETURN_REQUESTED samples */}
-                        {sample.status === "VENDOR_RETURN_REQUESTED" && onShipToVendor && (
-                          <DropdownMenuItem onClick={() => onShipToVendor(sample.id)}>
-                            <Truck className="h-4 w-4 mr-2" />
-                            Ship to Vendor
-                          </DropdownMenuItem>
-                        )}
+                        {sample.status === "VENDOR_RETURN_REQUESTED" &&
+                          onShipToVendor && (
+                            <DropdownMenuItem
+                              onClick={() => onShipToVendor(sample.id)}
+                            >
+                              <Truck className="h-4 w-4 mr-2" />
+                              Ship to Vendor
+                            </DropdownMenuItem>
+                          )}
                         {/* Confirm Vendor Return - only for SHIPPED_TO_VENDOR samples */}
-                        {sample.status === "SHIPPED_TO_VENDOR" && onConfirmVendorReturn && (
-                          <DropdownMenuItem onClick={() => onConfirmVendorReturn(sample.id)}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Confirm Vendor Received
-                          </DropdownMenuItem>
-                        )}
+                        {sample.status === "SHIPPED_TO_VENDOR" &&
+                          onConfirmVendorReturn && (
+                            <DropdownMenuItem
+                              onClick={() => onConfirmVendorReturn(sample.id)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Confirm Vendor Received
+                            </DropdownMenuItem>
+                          )}
                         {/* Update Location - available for most active samples */}
-                        {!["CANCELLED", "VENDOR_CONFIRMED"].includes(sample.status) && onUpdateLocation && (
-                          <DropdownMenuItem onClick={() => onUpdateLocation(sample.id)}>
-                            <MapPin className="h-4 w-4 mr-2" />
-                            Update Location
-                          </DropdownMenuItem>
-                        )}
+                        {!["CANCELLED", "VENDOR_CONFIRMED"].includes(
+                          sample.status
+                        ) &&
+                          onUpdateLocation && (
+                            <DropdownMenuItem
+                              onClick={() => onUpdateLocation(sample.id)}
+                            >
+                              <MapPin className="h-4 w-4 mr-2" />
+                              Update Location
+                            </DropdownMenuItem>
+                          )}
                         {/* Delete - always available */}
                         {onDelete && (
                           <DropdownMenuItem

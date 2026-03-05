@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -22,9 +28,11 @@ export function CogsGlobalSettings() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              <strong>FIXED mode:</strong> Uses the exact COGS value from the batch.
+              <strong>FIXED mode:</strong> Uses the exact COGS value from the
+              batch.
               <br />
-              <strong>RANGE mode:</strong> Uses the midpoint between min and max COGS by default.
+              <strong>RANGE mode:</strong> Uses the midpoint between min and max
+              COGS by default.
             </AlertDescription>
           </Alert>
 
@@ -82,10 +90,13 @@ export function CogsGlobalSettings() {
                 defaultValue="60"
                 className="max-w-[120px]"
               />
-              <span className="text-sm text-muted-foreground">% of sale price</span>
+              <span className="text-sm text-muted-foreground">
+                % of sale price
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Used to estimate COGS for consignment items until vendor invoice is received
+              Used to estimate COGS for consignment items until supplier invoice
+              is received
             </p>
           </div>
         </CardContent>
@@ -190,4 +201,3 @@ export function CogsGlobalSettings() {
     </div>
   );
 }
-

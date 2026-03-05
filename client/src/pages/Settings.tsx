@@ -413,7 +413,7 @@ function DatabaseManager() {
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     <li>All users (except system users)</li>
-                    <li>All clients and vendors</li>
+                    <li>All clients and suppliers</li>
                     <li>All products, strains, and inventory</li>
                     <li>All orders, invoices, and returns</li>
                     <li>All other business data</li>

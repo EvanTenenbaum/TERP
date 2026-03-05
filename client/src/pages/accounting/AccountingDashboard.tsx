@@ -294,10 +294,10 @@ export default function AccountingDashboard({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Top Vendors Owed
+              Top Suppliers Owed
             </CardTitle>
             <CardDescription>
-              Vendors with highest outstanding payables
+              Suppliers with highest outstanding payables
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -446,7 +446,7 @@ export default function AccountingDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Bill #</TableHead>
-                      <TableHead>Vendor</TableHead>
+                      <TableHead>Supplier</TableHead>
                       <TableHead>Due Date</TableHead>
                       <TableHead>Days Overdue</TableHead>
                       <TableHead className="text-right">Amount Due</TableHead>
@@ -459,7 +459,7 @@ export default function AccountingDashboard({
                           {bill.billNumber}
                         </TableCell>
                         <TableCell>
-                          {bill.vendorName || `Vendor #${bill.vendorId}`}
+                          {bill.vendorName || `Supplier #${bill.vendorId}`}
                         </TableCell>
                         <TableCell>{formatDate(bill.dueDate)}</TableCell>
                         <TableCell>
@@ -569,7 +569,7 @@ export default function AccountingDashboard({
               onClick={() => setPayVendorOpen(true)}
             >
               <DollarSign className="h-5 w-5" />
-              <span>Pay Vendor</span>
+              <span>Pay Supplier</span>
             </Button>
             <Button
               variant="outline"

@@ -41,7 +41,7 @@ const ActiveFiltersIndicator: React.FC<ActiveFiltersIndicatorProps> = ({
   addFilter("Category", filters.category);
   addFilter("Subcategory", filters.subcategory);
   addFilter(
-    "Vendor",
+    "Supplier",
     filters.vendor && filters.vendor.length > 0
       ? filters.vendor.join(", ")
       : null

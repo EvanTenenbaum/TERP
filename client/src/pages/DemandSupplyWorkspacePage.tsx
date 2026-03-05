@@ -54,7 +54,7 @@ export default function DemandSupplyWorkspacePage() {
             variant="ghost"
             onClick={() => setActiveTab("vendor-supply")}
           >
-            Jump to Vendor Supply
+            Jump to Supplier Supply
           </Button>
         </>
       }

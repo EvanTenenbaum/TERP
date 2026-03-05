@@ -242,7 +242,7 @@ export function PurchaseOrdersSlicePage() {
       );
       if (vendorByClient?.name?.trim()) return vendorByClient.name.trim();
 
-      if (po.vendorId) return `Vendor #${po.vendorId}`;
+      if (po.vendorId) return `Supplier #${po.vendorId}`;
       return "Unknown Supplier";
     },
     [suppliers, vendors]

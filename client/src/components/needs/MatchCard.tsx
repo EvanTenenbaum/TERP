@@ -62,7 +62,7 @@ export const MatchCard = memo(function MatchCard({
 
   const getSourceLabel = () => {
     if (match.source === "INVENTORY") return "In Stock";
-    if (match.source === "VENDOR") return "Vendor Supply";
+    if (match.source === "VENDOR") return "Supplier Supply";
     return "Historical Pattern";
   };
 

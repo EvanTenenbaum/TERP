@@ -91,7 +91,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         sortIndex: 0,
       },
       {
-        headerName: "Vendor",
+        headerName: "Supplier",
         field: "vendorCode",
         width: 140,
         sort: "asc",
@@ -305,7 +305,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         <div>
           <CardTitle>Inventory Grid</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Sorted by Date and Vendor. Click column headers to re-sort.
+            Sorted by Date and Supplier. Click column headers to re-sort.
           </p>
         </div>
         <div className="flex items-center gap-3">

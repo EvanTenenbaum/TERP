@@ -236,7 +236,8 @@ export function InventoryBrowser({
             {/* TER-213: Redesigned as availability catalog */}
             <CardTitle>Availability Catalog</CardTitle>
             <CardDescription>
-              Browse available inventory — filter by vendor, category, and stock
+              Browse available inventory — filter by supplier, category, and
+              stock
             </CardDescription>
           </div>
           {selectedIds.size > 0 && (
@@ -276,7 +277,7 @@ export function InventoryBrowser({
                 <TableHead className="w-[210px]">Units to Add</TableHead>
                 <TableHead>Item</TableHead>
                 {/* TER-213: Vendor column for availability catalog */}
-                <TableHead>Vendor</TableHead>
+                <TableHead>Supplier</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Qty Available</TableHead>
                 <TableHead>Price/Unit</TableHead>

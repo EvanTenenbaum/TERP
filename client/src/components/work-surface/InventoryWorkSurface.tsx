@@ -1593,7 +1593,7 @@ export function InventoryWorkSurface() {
           { key: "productName", label: "Product Name" },
           { key: "category", label: "Category" },
           { key: "subcategory", label: "Subcategory" },
-          { key: "vendor", label: "Vendor" },
+          { key: "vendor", label: "Supplier" },
           { key: "brand", label: "Brand" },
           { key: "grade", label: "Grade" },
           { key: "status", label: "Status" },
@@ -2048,7 +2048,7 @@ export function InventoryWorkSurface() {
                         onClick={() => handleSort("vendor")}
                       >
                         <span className="flex items-center">
-                          Vendor <SortIcon column="vendor" />
+                          Supplier <SortIcon column="vendor" />
                         </span>
                       </TableHead>
                       <TableHead

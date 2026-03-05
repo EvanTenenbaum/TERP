@@ -83,7 +83,7 @@ export const InventoryCard = memo(function InventoryCard({
           </div>
           <div>
             {/* MEET-027: Vendor is the business entity */}
-            <p className="text-muted-foreground">Vendor</p>
+            <p className="text-muted-foreground">Supplier</p>
             <p className="font-medium">{batch.vendorName}</p>
           </div>
           <div>

@@ -95,7 +95,7 @@ interface Vendor {
 // ============================================================================
 
 const VENDOR_STATUS_FILTERS = [
-  { value: "all", label: "All Vendors" },
+  { value: "all", label: "All Suppliers" },
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
 ];
@@ -172,7 +172,7 @@ function VendorInspectorContent({
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
         <Store className="h-12 w-12 mb-4 opacity-50" />
-        <p>Select a vendor to view details</p>
+        <p>Select a supplier to view details</p>
       </div>
     );
   }
@@ -223,7 +223,7 @@ function VendorInspectorContent({
         )}
       </InspectorSection>
 
-      <InspectorSection title="Vendor Types">
+      <InspectorSection title="Supplier Types">
         <VendorTypeBadges vendor={vendor} />
       </InspectorSection>
 
@@ -268,7 +268,7 @@ function VendorInspectorContent({
         )}
 
         {vendor.createdAt && (
-          <InspectorField label="Vendor Since">
+          <InspectorField label="Supplier Since">
             <p className="text-sm text-muted-foreground">
               {formatDate(vendor.createdAt)}
             </p>
@@ -518,10 +518,10 @@ export function VendorsWorkSurface() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <Store className="h-6 w-6" />
-            Vendors
+            Suppliers
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage suppliers and vendor relationships
+            Manage supplier relationships
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -556,7 +556,7 @@ export function VendorsWorkSurface() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               ref={searchInputRef}
-              placeholder="Search vendors... (Cmd+K)"
+              placeholder="Search suppliers... (Cmd+K)"
               value={search}
               onChange={e => {
                 setSearch(e.target.value);
@@ -589,7 +589,7 @@ export function VendorsWorkSurface() {
         </div>
         <Button onClick={handleAddVendor}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Vendor
+          Add Supplier
         </Button>
       </div>
 
@@ -610,7 +610,7 @@ export function VendorsWorkSurface() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <Store className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <p className="font-medium">Failed to load vendors</p>
+                <p className="font-medium">Failed to load suppliers</p>
                 <Button
                   variant="outline"
                   onClick={() => refetch()}
@@ -625,11 +625,11 @@ export function VendorsWorkSurface() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No vendors found</p>
+                <p className="font-medium">No suppliers found</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {search || statusFilter !== "all"
                     ? "Try adjusting your filters"
-                    : "Add your first vendor"}
+                    : "Add your first supplier"}
                 </p>
               </div>
             </div>
@@ -751,7 +751,7 @@ export function VendorsWorkSurface() {
         <InspectorPanel
           isOpen={inspector.isOpen}
           onClose={inspector.close}
-          title={selectedVendor?.name || "Vendor Details"}
+          title={selectedVendor?.name || "Supplier Details"}
           subtitle={selectedVendor?.teriCode ?? undefined}
         >
           <VendorInspectorContent

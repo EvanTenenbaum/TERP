@@ -388,7 +388,7 @@ function RowInspectorContent({
               validation.getFieldState("vendorName").showError &&
                 "border-red-500"
             )}
-            placeholder="Type vendor or choose suggestion"
+            placeholder="Type supplier or choose suggestion"
           />
           <datalist id={`direct-intake-vendors-${row.id}`}>
             {vendors.map(vendor => (
@@ -1648,7 +1648,7 @@ export function DirectIntakeWorkSurface() {
     try {
       await exportCSV(rowsRef.current as IntakeExportRow[], {
         columns: [
-          { key: "vendorName", label: "Vendor" },
+          { key: "vendorName", label: "Supplier" },
           { key: "brandName", label: "Brand" },
           { key: "item", label: "Product" },
           { key: "category", label: "Category" },
@@ -1932,7 +1932,7 @@ export function DirectIntakeWorkSurface() {
               }}
               disabled={!selectedRowEditable}
               className="h-9"
-              placeholder="Type or select vendor"
+              placeholder="Type or select supplier"
             />
             <datalist id="direct-intake-top-vendors">
               {vendors.map(vendor => (

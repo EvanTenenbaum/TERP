@@ -54,7 +54,7 @@ export const ClientGrid = React.memo(function ClientGrid() {
     () => [
       { headerName: "Date", field: "date", width: 130 },
       // TERP-SS-003: Renamed from "Order #" to "Vendor Code" - now displays batch.code
-      { headerName: "Vendor Code", field: "vendorCode", width: 140 },
+      { headerName: "Supplier Code", field: "vendorCode", width: 140 },
       { headerName: "Item", field: "item", flex: 1, minWidth: 200 },
       {
         headerName: "Qty",
