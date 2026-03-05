@@ -37,6 +37,7 @@ export default function SalesWorkspacePage() {
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
       description={SALES_WORKSPACE.description}
+      section="Sell"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}

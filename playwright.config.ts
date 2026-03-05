@@ -20,7 +20,8 @@ const isCloud =
   process.env.SKIP_E2E_SETUP === "true";
 const isRemoteExecution = isRemoteBaseURL || isCloud;
 const isOracleRun = Boolean(process.env.ORACLE_RUN_MODE);
-const envTaggedPattern = /@prod-smoke|@prod-regression|@dev-only/;
+const envTaggedPattern =
+  /@prod-smoke|@prod-regression|@dev-only|@staging-critical/;
 const shouldUploadToArgos = Boolean(process.env.CI && process.env.ARGOS_TOKEN);
 
 export default defineConfig({
@@ -35,8 +36,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   // CI/remote/oracle runs should avoid high parallelism against shared environments.
-  workers:
-    process.env.CI || isRemoteExecution || isOracleRun ? 1 : undefined,
+  workers: process.env.CI || isRemoteExecution || isOracleRun ? 1 : undefined,
   reporter: [
     process.env.CI ? ["dot"] : ["list"],
     ["html"],
@@ -64,6 +64,23 @@ export default defineConfig({
       name: "prod-regression",
       grep: /@prod-regression/,
       use: { ...devices["Desktop Chrome"] },
+    },
+    // Staging-critical project: tests that must pass before any stress run
+    // and before any production promotion. Run with:
+    //   pnpm playwright test --project=staging-critical
+    // Or tag individual tests with @staging-critical.
+    // Note: e2e-live-site.yml was archived because it targeted an old prod URL
+    // (terp-app-b9s35.ondigitalocean.app) rather than staging. The staging-critical
+    // project replaces that workflow's intent using the correct staging URL.
+    {
+      name: "staging-critical",
+      grep: /@staging-critical/,
+      use: {
+        ...devices["Desktop Chrome"],
+        // Longer timeouts for staging — cold starts and DB queries are slower
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+      },
     },
     {
       name: "smoke",
@@ -121,7 +138,7 @@ export default defineConfig({
       ? undefined
       : {
           command:
-            "pnpm test:env:up && JWT_SECRET=\"${JWT_SECRET:-terp-local-e2e-jwt-secret-2026-000000000000}\" DATABASE_URL=\"${DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}\" TEST_DATABASE_URL=\"${TEST_DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}\" PORT=5173 pnpm dev",
+            'pnpm test:env:up && JWT_SECRET="${JWT_SECRET:-terp-local-e2e-jwt-secret-2026-000000000000}" DATABASE_URL="${DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}" TEST_DATABASE_URL="${TEST_DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}" PORT=5173 pnpm dev',
           url: "http://localhost:5173",
           reuseExistingServer: true,
         },

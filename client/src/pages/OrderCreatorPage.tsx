@@ -831,7 +831,14 @@ export default function OrderCreatorPageV2() {
         <section className="linear-workspace-shell">
           <header className="linear-workspace-header">
             <div className="linear-workspace-title-wrap">
-              <p className="linear-workspace-eyebrow">Order Workspace</p>
+              <p className="linear-workspace-eyebrow">
+                <span className="linear-workspace-eyebrow-section">Sell</span>
+                <span className="linear-workspace-eyebrow-sep" aria-hidden>
+                  {" "}
+                  /{" "}
+                </span>
+                Order Workspace
+              </p>
               <div>
                 <h2 className="linear-workspace-title flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />

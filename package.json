@@ -181,7 +181,18 @@
     "gate:invariants:strict": "tsx scripts/qa/invariant-checks.ts --strict",
     "gate:e2e-quality": "tsx scripts/qa/golden-flow-assertion-quality.ts",
     "gate:all": "npm run gate:placeholder && npm run gate:rbac && npm run gate:parity && npm run gate:invariants && npm run gate:e2e-quality",
-    "validate:accelerated": "bash scripts/validation/run-accelerated-validation.sh"
+    "validate:accelerated": "bash scripts/validation/run-accelerated-validation.sh",
+    "stress:preflight": "STRESS_TARGET_URL=${STRESS_TARGET_URL:-https://terp-staging-yicld.ondigitalocean.app} bash scripts/stress-preflight.sh",
+    "stress:smoke": "STRESS_TARGET_URL=${STRESS_TARGET_URL:-https://terp-staging-yicld.ondigitalocean.app} k6 run tests/stress/smoke.k6.js",
+    "stress:peak": "STRESS_TARGET_URL=${STRESS_TARGET_URL:-https://terp-staging-yicld.ondigitalocean.app} k6 run tests/stress/peak.k6.js",
+    "stress:soak": "STRESS_TARGET_URL=${STRESS_TARGET_URL:-https://terp-staging-yicld.ondigitalocean.app} k6 run tests/stress/soak.k6.js",
+    "stress:mixed": "STRESS_TARGET_URL=${STRESS_TARGET_URL:-https://terp-staging-yicld.ondigitalocean.app} k6 run tests/stress/mixed-traffic.k6.js",
+    "stress:gate": "bash scripts/stress-invariant-gate.sh",
+    "stress:run": "bash scripts/stress-orchestrate.sh",
+    "stress:run:smoke": "bash scripts/stress-orchestrate.sh --profile smoke",
+    "stress:run:peak": "bash scripts/stress-orchestrate.sh --profile peak",
+    "stress:run:soak": "bash scripts/stress-orchestrate.sh --profile soak",
+    "test:staging-critical": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-https://terp-staging-yicld.ondigitalocean.app} SKIP_E2E_SETUP=1 playwright test --project=staging-critical"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

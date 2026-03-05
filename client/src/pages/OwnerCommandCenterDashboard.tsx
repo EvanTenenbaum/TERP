@@ -7,6 +7,7 @@ import { OwnerDebtPositionWidget } from "@/components/dashboard/owner/OwnerDebtP
 import { OwnerVendorsNeedPaymentWidget } from "@/components/dashboard/owner/OwnerVendorsNeedPaymentWidget";
 import { OwnerQuickCardsWidget } from "@/components/dashboard/owner/OwnerQuickCardsWidget";
 import { OwnerAppointmentsWidget } from "@/components/dashboard/owner/OwnerAppointmentsWidget";
+import { OwnerSkuStatusBrowserWidget } from "@/components/dashboard/owner/OwnerSkuStatusBrowserWidget";
 import { Badge } from "@/components/ui/badge";
 
 export default function OwnerCommandCenterDashboard() {
@@ -75,6 +76,11 @@ export default function OwnerCommandCenterDashboard() {
         <div className="lg:col-span-6">
           <AgingInventoryWidget />
         </div>
+      </div>
+
+      {/* Row 4: SKU Status Browser (hidden by default, collapsed) */}
+      <div>
+        <OwnerSkuStatusBrowserWidget />
       </div>
     </div>
   );

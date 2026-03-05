@@ -34,6 +34,7 @@ export default function AccountingWorkspacePage() {
     <LinearWorkspaceShell
       title={ACCOUNTING_WORKSPACE.title}
       description={ACCOUNTING_WORKSPACE.description}
+      section="Finance"
       activeTab={activeTab}
       tabs={ACCOUNTING_WORKSPACE.tabs}
       onTabChange={setActiveTab}

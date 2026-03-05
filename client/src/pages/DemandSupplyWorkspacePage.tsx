@@ -27,19 +27,33 @@ export default function DemandSupplyWorkspacePage() {
     <LinearWorkspaceShell
       title={DEMAND_SUPPLY_WORKSPACE.title}
       description={DEMAND_SUPPLY_WORKSPACE.description}
+      section="Sell"
       activeTab={activeTab}
       tabs={DEMAND_SUPPLY_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
       meta={[
         { label: "Primary", value: "Matching supply with demand" },
-        { label: "Current view", value: DEMAND_SUPPLY_WORKSPACE.tabs.find(tab => tab.value === activeTab)?.label ?? activeTab },
+        {
+          label: "Current view",
+          value:
+            DEMAND_SUPPLY_WORKSPACE.tabs.find(tab => tab.value === activeTab)
+              ?.label ?? activeTab,
+        },
       ]}
       commandStrip={
         <>
-          <Button size="sm" variant="outline" onClick={() => setActiveTab("matchmaking")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setActiveTab("matchmaking")}
+          >
             Open Matchmaking
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setActiveTab("vendor-supply")}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setActiveTab("vendor-supply")}
+          >
             Jump to Vendor Supply
           </Button>
         </>

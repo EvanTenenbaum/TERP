@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 import { Link, useLocation } from "wouter";
 import {
@@ -113,6 +119,18 @@ export const Sidebar = React.memo(function Sidebar({
     onClose?.();
     setLocation("/login");
   }, [onClose, setLocation]);
+
+  const navRef = useRef<HTMLElement>(null);
+
+  // Scroll the active nav item into view whenever the location changes
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const activeLink = nav.querySelector<HTMLElement>('[aria-current="page"]');
+    if (activeLink) {
+      activeLink.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [location]);
 
   return (
     <>
@@ -257,7 +275,7 @@ export const Sidebar = React.memo(function Sidebar({
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3 space-y-2.5">
+        <nav ref={navRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
           {groupedNavigation.map(group => {
             const hasActiveItem = group.items.some(item =>
               isActivePath(item.path)
@@ -274,12 +292,25 @@ export const Sidebar = React.memo(function Sidebar({
                 {!collapsed && (
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors max-md:min-h-11"
+                    className={cn(
+                      "flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors max-md:min-h-11",
+                      hasActiveItem
+                        ? "text-[oklch(0.53_0.13_44)] hover:text-[oklch(0.45_0.13_44)]"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={isOpen}
                     data-testid="nav-group-label"
                   >
-                    <span>{group.label}</span>
+                    <span className="flex items-center gap-1.5">
+                      {hasActiveItem && (
+                        <span
+                          className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(0.53_0.13_44)] flex-shrink-0"
+                          aria-hidden
+                        />
+                      )}
+                      {group.label}
+                    </span>
                     {isOpen ? (
                       <ChevronDown className="h-4 w-4" />
                     ) : (
