@@ -1,0 +1,94 @@
+[
+  {
+    "id": "INV-UX-001",
+    "category": "interaction",
+    "problem": "Delete action remains clickable even when selected batches have on-hand inventory, causing reactive blocked errors after user intent is committed.",
+    "recommendation": "Gate delete action pre-click using selection eligibility checks (onHandQty <= 0), disable destructive action when blocked rows exist, and expose blocked count with one-click 'Select eligible only'.",
+    "severity": 4,
+    "reach": 4,
+    "confidence": 0.95,
+    "effort": 1,
+    "standards": ["Error prevention", "Task efficiency"]
+  },
+  {
+    "id": "INV-UX-002",
+    "category": "feedback-architecture",
+    "problem": "Blocked delete emits both toast.error and persistent save-state error indicator, splitting attention and increasing cognitive load.",
+    "recommendation": "Use contextual in-surface error banner for blocked delete; reserve toasts for success and undo confirmations only.",
+    "severity": 3,
+    "reach": 4,
+    "confidence": 0.95,
+    "effort": 1,
+    "standards": ["Consistency", "Recognition over recall"]
+  },
+  {
+    "id": "INV-UX-003",
+    "category": "error-recovery",
+    "problem": "Blocked-delete message explains prerequisite actions but does not provide direct recovery controls in-context.",
+    "recommendation": "Add actionable banner CTAs: 'Select eligible only', 'Adjust quantity', and 'Open Receiving'.",
+    "severity": 3,
+    "reach": 3,
+    "confidence": 0.9,
+    "effort": 1,
+    "standards": ["Help users recover", "Workflow continuity"]
+  },
+  {
+    "id": "INV-UX-004",
+    "category": "microcopy",
+    "problem": "Request ID metadata is surfaced in user-facing error text, adding noise during operations.",
+    "recommendation": "Strip request-id from primary message in inventory flow and expose support id behind optional 'Details' / 'Copy error ID'.",
+    "severity": 2,
+    "reach": 3,
+    "confidence": 0.95,
+    "effort": 1,
+    "standards": ["Plain language", "Progressive disclosure"]
+  },
+  {
+    "id": "INV-UX-005",
+    "category": "accessibility",
+    "problem": "Undo is toast-transient and can expire before keyboard and assistive-technology users can trigger it.",
+    "recommendation": "Add persistent in-surface fallback control: 'Undo last delete' in status bar while undo window is active.",
+    "severity": 3,
+    "reach": 3,
+    "confidence": 0.85,
+    "effort": 1,
+    "standards": ["Operable controls", "Inclusive timing"]
+  },
+  {
+    "id": "INV-UX-006",
+    "category": "navigation",
+    "problem": "Global sidebar module hierarchy and workspace-tab hierarchy are visually close, increasing orientation risk.",
+    "recommendation": "Introduce explicit hierarchy labeling: 'Global module' in workspace header and 'Workspace tabs' label in tab row.",
+    "severity": 2,
+    "reach": 3,
+    "confidence": 0.8,
+    "effort": 2,
+    "standards": ["Information architecture", "Orientation"]
+  },
+  {
+    "id": "INV-UX-007",
+    "category": "accessibility",
+    "problem": "Some header icon-only controls rely on title tooltips and may not provide robust screen-reader labels.",
+    "recommendation": "Add explicit aria-labels to all icon-only header controls and preserve visible focus states.",
+    "severity": 2,
+    "reach": 3,
+    "confidence": 0.9,
+    "effort": 1,
+    "standards": ["Name/Role/Value", "Keyboard and AT support"]
+  },
+  {
+    "id": "INV-UX-008",
+    "category": "cognitive-load",
+    "problem": "The inventory work surface becomes visually busy during batch operations because filters, stats, selection actions, and error states compete in the same viewport at the same time.",
+    "recommendation": "Introduce a focused selection mode: simplify visible chrome while rows are selected, keep all functions available via progressive disclosure, and prioritize the active batch task strip over secondary dashboard content.",
+    "severity": 3,
+    "reach": 4,
+    "confidence": 0.9,
+    "effort": 1,
+    "standards": [
+      "Cognitive load reduction",
+      "Progressive disclosure",
+      "Task focus"
+    ]
+  }
+]

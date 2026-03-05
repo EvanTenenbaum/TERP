@@ -410,6 +410,13 @@ Two scripts enforce terminology compliance:
 
 2. **`pnpm terminology:audit`** — Checks for deprecated terms in new/modified code. Exits with code 1 if drift is detected. Run before every commit.
 
+3. **`pnpm audit:terminology`** — Generates report artifacts in `docs/audits/`:
+   - `docs/audits/terminology-census.json`
+   - `docs/audits/terminology-audit.json`
+   - `docs/audits/terminology-audit.md`
+
+4. **`pnpm audit:terminology:strict`** — Runs the same report pipeline in strict mode.
+
 ### CI Gate
 
 `pnpm terminology:audit` runs in CI as part of the pre-merge gate. A PR with deprecated terminology in new code will be blocked.

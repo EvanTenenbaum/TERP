@@ -1,0 +1,144 @@
+{
+  "script": "terminology-census",
+  "version": "1.0.0",
+  "run_date": "2026-03-05T17:27:12.947Z",
+  "total_files_scanned": 1141,
+  "results": [
+    {
+      "deprecated_term": "Vendor",
+      "canonical_term": "Supplier",
+      "family": "party",
+      "total_occurrences": 175,
+      "exempt_occurrences": 37,
+      "non_exempt_occurrences": 138
+    },
+    {
+      "deprecated_term": "vendor",
+      "canonical_term": "Supplier",
+      "family": "party",
+      "total_occurrences": 859,
+      "exempt_occurrences": 261,
+      "non_exempt_occurrences": 598
+    },
+    {
+      "deprecated_term": "vendorId",
+      "canonical_term": "supplierClientId",
+      "family": "party",
+      "total_occurrences": 367,
+      "exempt_occurrences": 78,
+      "non_exempt_occurrences": 289
+    },
+    {
+      "deprecated_term": "db.query.vendors",
+      "canonical_term": "clients with isSeller",
+      "family": "party",
+      "total_occurrences": 2,
+      "exempt_occurrences": 2,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "Receiving",
+      "canonical_term": "Intake",
+      "family": "intake",
+      "total_occurrences": 10,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 10
+    },
+    {
+      "deprecated_term": "receiving_session",
+      "canonical_term": "intake_session",
+      "family": "intake",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "DirectEntry",
+      "canonical_term": "Direct Intake",
+      "family": "intake",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "direct_entry",
+      "canonical_term": "direct_intake",
+      "family": "intake",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "ManualIntake",
+      "canonical_term": "Direct Intake",
+      "family": "intake",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "manual_intake",
+      "canonical_term": "direct_intake",
+      "family": "intake",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "Estimate",
+      "canonical_term": "Quote",
+      "family": "sales",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "Sale (noun)",
+      "canonical_term": "Sales Order",
+      "family": "sales",
+      "total_occurrences": 45,
+      "exempt_occurrences": 1,
+      "non_exempt_occurrences": 44
+    },
+    {
+      "deprecated_term": "Shipping (lifecycle)",
+      "canonical_term": "Fulfillment",
+      "family": "sales",
+      "total_occurrences": 14,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 14
+    },
+    {
+      "deprecated_term": "InventoryItem",
+      "canonical_term": "Batch",
+      "family": "product",
+      "total_occurrences": 32,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 32
+    },
+    {
+      "deprecated_term": "inventory_item",
+      "canonical_term": "batch",
+      "family": "product",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "Grower",
+      "canonical_term": "Farmer/Brand",
+      "family": "brand",
+      "total_occurrences": 0,
+      "exempt_occurrences": 0,
+      "non_exempt_occurrences": 0
+    },
+    {
+      "deprecated_term": "grower",
+      "canonical_term": "farmer/brand",
+      "family": "brand",
+      "total_occurrences": 6,
+      "exempt_occurrences": 6,
+      "non_exempt_occurrences": 0
+    }
+  ]
+}

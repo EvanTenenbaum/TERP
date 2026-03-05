@@ -1,5 +1,7 @@
 # TERP Staging Stress Testing Runbook
 
+> Superseded command contract: use `docs/testing/STRESS_TESTING_RUNBOOK.md` as the canonical runbook for `pnpm qa:stress --env=staging --profile=<...>`.
+
 **Version**: 1.0 | **Updated**: 2026-03-05 | **Status**: CANONICAL
 
 ## Overview

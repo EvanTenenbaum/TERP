@@ -6,10 +6,11 @@
 # Exits with code 1 if drift is detected in non-exempt files.
 #
 # Usage:
-#   bash scripts/terminology-drift-audit.sh              # audit all .ts/.tsx
-#   bash scripts/terminology-drift-audit.sh --staged     # audit git-staged files only
-#   bash scripts/terminology-drift-audit.sh --changed    # audit git-changed files vs main
-#   bash scripts/terminology-drift-audit.sh --strict     # fail on ANY occurrence, no exemptions
+#   bash scripts/terminology-drift-audit.sh                    # audit all .ts/.tsx
+#   bash scripts/terminology-drift-audit.sh --staged           # audit git-staged files only
+#   bash scripts/terminology-drift-audit.sh --changed          # audit git-changed files vs main
+#   bash scripts/terminology-drift-audit.sh --strict           # fail on ANY occurrence, no exemptions
+#   bash scripts/terminology-drift-audit.sh --files a.ts,b.ts  # audit specific files only
 #
 # Exit codes:
 #   0 = no drift detected (or all occurrences are in exempt files)
@@ -22,14 +23,34 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="1.0.0"
 
 # ─── Argument parsing ─────────────────────────────────────────────────────────
-AUDIT_MODE="all"   # all | staged | changed
+AUDIT_MODE="all"   # all | staged | changed | files
 STRICT_MODE=false
+FILES_CSV=""
 
-for arg in "$@"; do
-  case "$arg" in
-    --staged)  AUDIT_MODE="staged" ;;
-    --changed) AUDIT_MODE="changed" ;;
-    --strict)  STRICT_MODE=true ;;
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --staged)
+      AUDIT_MODE="staged"
+      shift
+      ;;
+    --changed)
+      AUDIT_MODE="changed"
+      shift
+      ;;
+    --strict)
+      STRICT_MODE=true
+      shift
+      ;;
+    --files)
+      FILES_CSV="${2:-}"
+      AUDIT_MODE="files"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      echo "Usage: bash scripts/terminology-drift-audit.sh [--staged|--changed|--strict|--files a.ts,b.ts]" >&2
+      exit 1
+      ;;
   esac
 done
 
@@ -82,6 +103,7 @@ EXEMPT_PATTERNS=(
   "scripts/terminology-drift-audit.sh"
   # Test files for terminology
   "tests/terminology/"
+  "tests/unit/terminology/"
   # Drizzle migration files
   "drizzle/"
 )
@@ -126,10 +148,33 @@ get_files_to_audit() {
         -not -path "*/dist/*" \
         | sort
       ;;
+    files)
+      if [[ -z "$FILES_CSV" ]]; then
+        return
+      fi
+      IFS=',' read -r -a raw_files <<< "$FILES_CSV"
+      for raw_file in "${raw_files[@]}"; do
+        file="$(echo "$raw_file" | xargs)"
+        [[ -z "$file" ]] && continue
+        if [[ "$file" != /* ]]; then
+          file="$REPO_ROOT/$file"
+        fi
+        if [[ -f "$file" ]] && [[ "$file" =~ \.(ts|tsx)$ ]]; then
+          echo "$file"
+        fi
+      done | sort -u
+      ;;
   esac
 }
 
-mapfile -t FILES_TO_AUDIT < <(get_files_to_audit)
+declare -a FILES_TO_AUDIT=()
+FILES_TO_AUDIT_COUNT=0
+while IFS= read -r file_line; do
+  if [[ -n "$file_line" ]]; then
+    FILES_TO_AUDIT+=("$file_line")
+    FILES_TO_AUDIT_COUNT=$((FILES_TO_AUDIT_COUNT + 1))
+  fi
+done < <(get_files_to_audit)
 
 # ─── Main audit ───────────────────────────────────────────────────────────────
 DRIFT_COUNT=0
@@ -138,7 +183,7 @@ WARNING_COUNT=0
 
 declare -a DRIFT_REPORT
 
-for file in "${FILES_TO_AUDIT[@]}"; do
+for file in "${FILES_TO_AUDIT[@]:-}"; do
   [[ ! -f "$file" ]] && continue
   is_exempt_file=false
   is_exempt "$file" && is_exempt_file=true
@@ -173,9 +218,13 @@ echo "╔═══════════════════════�
 echo "║          TERP Terminology Drift Audit                        ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "  Mode    : $AUDIT_MODE${STRICT_MODE:+ (STRICT)}"
+MODE_LABEL="$AUDIT_MODE"
+if [[ "$STRICT_MODE" == "true" ]]; then
+  MODE_LABEL="$MODE_LABEL (STRICT)"
+fi
+echo "  Mode    : $MODE_LABEL"
 echo "  Version : $VERSION"
-echo "  Files   : ${#FILES_TO_AUDIT[@]} files checked"
+echo "  Files   : $FILES_TO_AUDIT_COUNT files checked"
 echo ""
 
 if [[ "$DRIFT_COUNT" -eq 0 ]]; then
