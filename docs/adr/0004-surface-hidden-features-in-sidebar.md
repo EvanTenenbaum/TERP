@@ -10,6 +10,7 @@
 During a comprehensive audit of the TERP application, 7 hidden features were discovered that exist in the codebase but are not accessible via the main sidebar navigation. Users must know direct URLs or Command Palette shortcuts to access these features, creating significant discoverability issues.
 
 The hidden features identified were:
+
 1. **Vendors** (`/vendors`) - Only accessible via direct URL
 2. **Pick & Pack** (`/pick-pack`) - Only accessible via direct URL
 3. **Todo Lists** (`/todos`) - Only accessible via Command Palette (T)
@@ -19,6 +20,7 @@ The hidden features identified were:
 7. **Analytics** (`/analytics`) - Accessible via Dashboard widget
 
 This creates several problems:
+
 - New users cannot discover these features
 - Support burden increases with "where is X?" questions
 - Feature adoption is artificially limited
@@ -28,15 +30,16 @@ This creates several problems:
 
 We will add 5 of the 7 hidden features to the sidebar navigation:
 
-| Feature | Sidebar Section | Rationale |
-|---------|-----------------|-----------|
-| Interest List | SALES (after Orders) | Core sales workflow for tracking client interests |
-| Pick & Pack | SALES (after Interest List) | Core fulfillment workflow for warehouse staff |
-| Photography | INVENTORY (after Batches) | Operational workflow for inventory team |
-| Vendors | INVENTORY (after Purchase Orders) | Essential for purchasing decisions |
-| Todo Lists | ADMIN (before Feature Flags) | Productivity feature for all users |
+| Feature       | Sidebar Section                   | Rationale                                         |
+| ------------- | --------------------------------- | ------------------------------------------------- |
+| Interest List | SALES (after Orders)              | Core sales workflow for tracking client interests |
+| Pick & Pack   | SALES (after Interest List)       | Core fulfillment workflow for warehouse staff     |
+| Photography   | INVENTORY (after Batches)         | Operational workflow for inventory team           |
+| Vendors       | INVENTORY (after Purchase Orders) | Essential for purchasing decisions                |
+| Todo Lists    | ADMIN (before Feature Flags)      | Productivity feature for all users                |
 
 The remaining 2 features (Matchmaking, Analytics) will NOT be added because:
+
 - They have adequate access via Dashboard widgets
 - Adding them would create redundant navigation paths
 - They are contextual features best accessed from their primary context
@@ -112,13 +115,13 @@ Changes are made to `/client/src/config/navigation.ts`:
   group: "inventory",
   ariaLabel: "Product photography queue and workflow management",
 },
-// NAV-004: Added Vendors for vendor management and inventory visibility
+// NAV-004: Added Suppliers (legacy /vendors route) for supplier management and inventory visibility
 {
   name: "Vendors",
   path: "/vendors",
   icon: Building2,
   group: "inventory",
-  ariaLabel: "Vendor management with products and inventory",
+  ariaLabel: "Supplier management with products and inventory",
 },
 // NAV-005: Added Todo Lists for task management
 {
@@ -131,6 +134,7 @@ Changes are made to `/client/src/config/navigation.ts`:
 ```
 
 New Lucide icons imported:
+
 - `Heart` - Interest List
 - `PackageOpen` - Pick & Pack
 - `Camera` - Photography

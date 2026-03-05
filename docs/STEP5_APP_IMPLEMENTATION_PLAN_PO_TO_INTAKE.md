@@ -4,6 +4,7 @@ Date: 2026-02-19
 Branch: codex/step5-uiux-intake-slice-20260219
 
 ## Scope Locked For This Slice
+
 - Purchase Order -> Product Intake (QA-gated) -> Received -> Corrections
 - No schema migration required for this slice
 - Business logic remains in backend service/router layer
@@ -12,6 +13,7 @@ Branch: codex/step5-uiux-intake-slice-20260219
 ## 1) Architecture Mapping (Backend Endpoint Map)
 
 ### Existing endpoints used directly
+
 - Create PO: `purchaseOrders.create`
 - Place Order: `purchaseOrders.submit`
 - Get PO details + lines: `purchaseOrders.getByIdWithDetails`
@@ -23,6 +25,7 @@ Branch: codex/step5-uiux-intake-slice-20260219
 - Save intake photos (draft/provisional): `inventory.uploadMedia`
 
 ### New slice glue (no schema change)
+
 - Product Intake Draft persistence: local persisted draft model (per-user key)
   - Reason: no intake draft table exists that can hold pre-receive PO subset/qty edits without creating batches/SKUs early
   - Drafts include: header metadata, PO linkage, selected lines, quantities, version, idempotency key
@@ -30,6 +33,7 @@ Branch: codex/step5-uiux-intake-slice-20260219
 - Idempotency handling for Receive: client idempotency key + single-flight receive guard
 
 ### Domain invariants preserved
+
 - SKU generated only during receive via `poReceiving.receiveGoodsWithBatch`
 - Lot + batch creation remains backend-owned and atomic
 - Corrections recorded as new movements (adjustment/transfer/reversal), not silent mutation of source intent
@@ -37,11 +41,14 @@ Branch: codex/step5-uiux-intake-slice-20260219
 ## 2) Pages and Components (Calm Power Surface Plan)
 
 ### A. Purchase Orders (List + Workspace)
+
 Primary responsibilities:
+
 - Create/edit/place PO
 - Launch Create Product Intake from PO flow
 
 Components:
+
 - Grid/list of POs
 - PO metadata summary strip
 - Command strip actions: Place Order, Create Product Intake
@@ -51,15 +58,18 @@ Components:
   - create draft
 
 ### B. Product Intake (List + Workspace)
+
 Primary responsibilities:
+
 - Draft editing and QA gating
 - Review -> Receive
 - Post-receive corrections
 
 Components:
+
 - Product Intake list (drafts + received state from local persisted model)
 - Workspace top bar:
-  - Product Intake ID, Vendor, Warehouse, summary (units + lines)
+  - Product Intake ID, Supplier, Warehouse, summary (units + lines)
   - Review, Receive
 - Line grid:
   - draft-only editable core fields
@@ -74,11 +84,14 @@ Components:
   - Void Intake
 
 ### C. Inventory Browse
+
 Primary responsibilities:
+
 - Browse received batches/SKUs
 - maintain column + mode preferences
 
 Components:
+
 - Grid/table with column popover
 - View toggle (Dense/Comfortable/Visual)
 - Right drawer for SKU gallery/images
@@ -86,21 +99,25 @@ Components:
 ## 3) State Management and Error Model
 
 ### Draft persistence
+
 - Local persisted model keyed by user + draft ID
 - Fields:
-  - header: PO link, vendor, warehouse, status, version, idempotency key
+  - header: PO link, supplier, warehouse, status, version, idempotency key
   - lines: poItemId/product data/intake qty/cost/grade/location/photos/errors
   - received payload: batch IDs/SKUs and timestamps
 
 ### Version locking
+
 - Drafts use local `version` increment on every edit to avoid stale overwrite within client session
 - Backend optimistic locking remains on batch corrections via existing `version` fields
 
 ### Idempotency
+
 - `receive` action guarded by local single-flight and saved idempotency key
 - duplicate receive attempts for same draft are blocked client-side once received
 
 ### Error handling
+
 - Inline row errors for missing/invalid fields
 - review summary shows blocking error count
 - Receive disabled when blocking errors exist

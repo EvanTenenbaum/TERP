@@ -25,27 +25,27 @@ An accessibility audit identified 14 hidden routes in TERP. After analysis with 
 
 ### Routes to Surface
 
-| Route | Current Status | Proposed Location |
-|-------|----------------|-------------------|
-| `/leaderboard` | Hidden | Sales group (after Dashboard) |
-| `/needs` | Hidden | Sales group |
-| `/matchmaking` | Hidden | Sales group |
-| `/quotes` | Hidden | Sales group |
-| `/returns` | Hidden | Sales group |
-| `/vendor-supply` | Hidden | Inventory group |
-| `/pricing/rules` | Hidden | Finance group |
-| `/workflow-queue` | Hidden | Admin group |
+| Route             | Current Status | Proposed Location             |
+| ----------------- | -------------- | ----------------------------- |
+| `/leaderboard`    | Hidden         | Sales group (after Dashboard) |
+| `/needs`          | Hidden         | Sales group                   |
+| `/matchmaking`    | Hidden         | Sales group                   |
+| `/quotes`         | Hidden         | Sales group                   |
+| `/returns`        | Hidden         | Sales group                   |
+| `/vendor-supply`  | Hidden         | Inventory group               |
+| `/pricing/rules`  | Hidden         | Finance group                 |
+| `/workflow-queue` | Hidden         | Admin group                   |
 
 ### Routes Remaining Hidden (By Design)
 
-| Route | Reason |
-|-------|--------|
-| `/help` | Already in Cmd+K via `?` shortcut |
-| `/account` | User menu dropdown (personal settings) |
-| `/locations` | Sub-feature accessed via Inventory Inspector |
-| `/intake-receipts` | Workflow-triggered only |
-| `/sales-portal` | Alternative view (future consideration) |
-| `/pricing/profiles` | Sub-feature of Pricing Rules |
+| Route               | Reason                                       |
+| ------------------- | -------------------------------------------- |
+| `/help`             | Already in Cmd+K via `?` shortcut            |
+| `/account`          | User menu dropdown (personal settings)       |
+| `/locations`        | Sub-feature accessed via Inventory Inspector |
+| `/intake-receipts`  | Workflow-triggered only                      |
+| `/sales-portal`     | Alternative view (future consideration)      |
+| `/pricing/profiles` | Sub-feature of Pricing Rules                 |
 
 ---
 
@@ -56,17 +56,18 @@ An accessibility audit identified 14 hidden routes in TERP. After analysis with 
 #### 1. `client/src/config/navigation.ts`
 
 **Icon Imports to Add:**
+
 ```typescript
 import {
   // ... existing imports ...
-  Trophy,           // Leaderboard
-  Target,           // Client Needs
-  Sparkles,         // Matchmaking
-  FileQuestion,     // Quotes
-  PackageX,         // Returns
-  PackagePlus,      // Vendor Supply
-  DollarSign,       // Pricing Rules (verify not already imported)
-  ListOrdered,      // Workflow Queue
+  Trophy, // Leaderboard
+  Target, // Client Needs
+  Sparkles, // Matchmaking
+  FileQuestion, // Quotes
+  PackageX, // Returns
+  PackagePlus, // Vendor Supply
+  DollarSign, // Pricing Rules (verify not already imported)
+  ListOrdered, // Workflow Queue
 } from "lucide-react";
 ```
 
@@ -117,14 +118,14 @@ import {
   ariaLabel: "Process customer returns and refunds",
 },
 
-// === INVENTORY GROUP (after Vendors) ===
-// NAV-011: Vendor Supply items
+// === INVENTORY GROUP (after Suppliers) ===
+// NAV-011: Supplier Supply items
 {
   name: "Vendor Supply",
   path: "/vendor-supply",
   icon: PackagePlus,
   group: "inventory",
-  ariaLabel: "Manage vendor supply items and availability",
+  ariaLabel: "Manage supplier supply items and availability",
 },
 
 // === FINANCE GROUP (after Credit Settings) ===
@@ -151,6 +152,7 @@ import {
 #### 2. `client/src/components/CommandPalette.tsx`
 
 **Icon Imports to Add:**
+
 ```typescript
 import {
   // ... existing imports ...
@@ -166,6 +168,7 @@ import {
 ```
 
 **Navigation Commands to Add:**
+
 ```typescript
 // In Navigation group items array:
 {
@@ -248,45 +251,45 @@ import {
 
 ### Navigation Sidebar
 
-| Group | Before | After |
-|-------|--------|-------|
-| Sales | 8 items | 13 items (+5) |
-| Inventory | 7 items | 8 items (+1) |
-| Finance | 3 items | 4 items (+1) |
-| Admin | 6 items | 7 items (+1) |
-| **Total** | **24 items** | **32 items** |
+| Group     | Before       | After         |
+| --------- | ------------ | ------------- |
+| Sales     | 8 items      | 13 items (+5) |
+| Inventory | 7 items      | 8 items (+1)  |
+| Finance   | 3 items      | 4 items (+1)  |
+| Admin     | 6 items      | 7 items (+1)  |
+| **Total** | **24 items** | **32 items**  |
 
 ### Command Palette
 
-| Section | Before | After |
-|---------|--------|-------|
-| Navigation | 9 items | 17 items (+8) |
-| Actions | 2 items | 2 items |
-| **Total** | **11 items** | **19 items** |
+| Section    | Before       | After         |
+| ---------- | ------------ | ------------- |
+| Navigation | 9 items      | 17 items (+8) |
+| Actions    | 2 items      | 2 items       |
+| **Total**  | **11 items** | **19 items**  |
 
 ### Hidden Routes
 
-| Before | After |
-|--------|-------|
+| Before    | After    |
+| --------- | -------- |
 | 14 routes | 6 routes |
 
 ---
 
 ## Atomic Tasks
 
-| Task ID | Description | File | Effort | Dependencies |
-|---------|-------------|------|--------|--------------|
-| NAV-006 | Add Leaderboard to Sales nav (after Dashboard) | navigation.ts | 5 min | None |
-| NAV-007 | Add Client Needs to Sales nav | navigation.ts | 5 min | NAV-006 |
-| NAV-008 | Add Matchmaking to Sales nav | navigation.ts | 5 min | NAV-007 |
-| NAV-009 | Add Quotes to Sales nav | navigation.ts | 5 min | NAV-008 |
-| NAV-010 | Add Returns to Sales nav | navigation.ts | 5 min | NAV-009 |
-| NAV-011 | Add Vendor Supply to Inventory nav | navigation.ts | 5 min | NAV-010 |
-| NAV-012 | Add Pricing Rules to Finance nav | navigation.ts | 5 min | NAV-011 |
-| NAV-013 | Add Workflow Queue to Admin nav | navigation.ts | 5 min | NAV-012 |
-| NAV-014 | Add all 8 routes to Command Palette | CommandPalette.tsx | 15 min | NAV-013 |
-| NAV-015 | Verify TypeScript compilation | - | 5 min | NAV-014 |
-| NAV-016 | Manual QA verification | - | 15 min | NAV-015 |
+| Task ID | Description                                    | File               | Effort | Dependencies |
+| ------- | ---------------------------------------------- | ------------------ | ------ | ------------ |
+| NAV-006 | Add Leaderboard to Sales nav (after Dashboard) | navigation.ts      | 5 min  | None         |
+| NAV-007 | Add Client Needs to Sales nav                  | navigation.ts      | 5 min  | NAV-006      |
+| NAV-008 | Add Matchmaking to Sales nav                   | navigation.ts      | 5 min  | NAV-007      |
+| NAV-009 | Add Quotes to Sales nav                        | navigation.ts      | 5 min  | NAV-008      |
+| NAV-010 | Add Returns to Sales nav                       | navigation.ts      | 5 min  | NAV-009      |
+| NAV-011 | Add Vendor Supply to Inventory nav             | navigation.ts      | 5 min  | NAV-010      |
+| NAV-012 | Add Pricing Rules to Finance nav               | navigation.ts      | 5 min  | NAV-011      |
+| NAV-013 | Add Workflow Queue to Admin nav                | navigation.ts      | 5 min  | NAV-012      |
+| NAV-014 | Add all 8 routes to Command Palette            | CommandPalette.tsx | 15 min | NAV-013      |
+| NAV-015 | Verify TypeScript compilation                  | -                  | 5 min  | NAV-014      |
+| NAV-016 | Manual QA verification                         | -                  | 15 min | NAV-015      |
 
 **Total Estimated Effort:** ~1.5 hours
 
@@ -308,6 +311,7 @@ import {
 ## Rollback Plan
 
 If issues are discovered post-deployment:
+
 1. Revert changes to `navigation.ts`
 2. Revert changes to `CommandPalette.tsx`
 3. No database or API changes required
@@ -319,16 +323,16 @@ If issues are discovered post-deployment:
 
 All 8 routes implement appropriate patterns per `FEATURE_PRESERVATION_MATRIX.md`:
 
-| Route | Work Surface Pattern | Status |
-|-------|---------------------|--------|
-| `/leaderboard` | Review Surface | Aligned |
-| `/needs` | Review Surface | Aligned |
-| `/matchmaking` | Panel + Filters | Aligned |
-| `/quotes` | Work Surface | Aligned |
-| `/returns` | Work Surface + Inspector | Aligned |
-| `/vendor-supply` | Work Surface | Aligned |
-| `/pricing/rules` | Work Surface + Inspector | Aligned |
-| `/workflow-queue` | Review Surface | Aligned |
+| Route             | Work Surface Pattern     | Status  |
+| ----------------- | ------------------------ | ------- |
+| `/leaderboard`    | Review Surface           | Aligned |
+| `/needs`          | Review Surface           | Aligned |
+| `/matchmaking`    | Panel + Filters          | Aligned |
+| `/quotes`         | Work Surface             | Aligned |
+| `/returns`        | Work Surface + Inspector | Aligned |
+| `/vendor-supply`  | Work Surface             | Aligned |
+| `/pricing/rules`  | Work Surface + Inspector | Aligned |
+| `/workflow-queue` | Review Surface           | Aligned |
 
 ---
 

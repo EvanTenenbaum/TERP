@@ -15,26 +15,27 @@
 When creating a Purchase Order and a product doesn't exist in the system, users must leave the PO workflow to create the product elsewhere. The frontend needs a modal/drawer interface that allows product creation directly within the PO form, calling the in-line product creation API.
 
 **User Quote:**
+
 > "skew product creation process should be happening here. You shouldn't have to go somewhere else to create a product and then add it to an intake process."
 
 ## 2. User Stories
 
 1. **As a purchasing manager**, I want to create a new product without leaving the PO form, so that my workflow isn't interrupted.
 
-2. **As a warehouse staff member**, I want a quick product creation form, so that I can process vendor deliveries faster.
+2. **As a warehouse staff member**, I want a quick product creation form, so that I can process supplier deliveries faster.
 
 ## 3. Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | "Create New Product" button in PO line item area | Must Have |
-| FR-02 | Modal form with product fields | Must Have |
-| FR-03 | Brand dropdown with "Add New Brand" option | Must Have |
-| FR-04 | Category/subcategory selection | Must Have |
-| FR-05 | COGS input with mode selection (FIXED/RANGE) | Must Have |
-| FR-06 | Created product auto-added to PO line | Must Have |
-| FR-07 | Strain lookup with auto-complete for flower | Should Have |
-| FR-08 | Form validation with clear error messages | Must Have |
+| ID    | Requirement                                      | Priority    |
+| ----- | ------------------------------------------------ | ----------- |
+| FR-01 | "Create New Product" button in PO line item area | Must Have   |
+| FR-02 | Modal form with product fields                   | Must Have   |
+| FR-03 | Brand dropdown with "Add New Brand" option       | Must Have   |
+| FR-04 | Category/subcategory selection                   | Must Have   |
+| FR-05 | COGS input with mode selection (FIXED/RANGE)     | Must Have   |
+| FR-06 | Created product auto-added to PO line            | Must Have   |
+| FR-07 | Strain lookup with auto-complete for flower      | Should Have |
+| FR-08 | Form validation with clear error messages        | Must Have   |
 
 ## 4. Technical Specification
 
@@ -518,40 +519,45 @@ const [showCreateProductModal, setShowCreateProductModal] = useState(false);
 
 ## 6. Edge Cases & Error Handling
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Duplicate product name | Allow (SKU will be unique) |
+| Scenario                  | Expected Behavior                  |
+| ------------------------- | ---------------------------------- |
+| Duplicate product name    | Allow (SKU will be unique)         |
 | API error during creation | Show error message, keep form open |
-| Network timeout | Show retry button |
-| Invalid COGS (min > max) | Validation error |
+| Network timeout           | Show retry button                  |
+| Invalid COGS (min > max)  | Validation error                   |
 
 ## 7. Testing Requirements
 
 ### 7.1 Unit Tests
+
 - [ ] Form validation
 - [ ] Dynamic field visibility
 
 ### 7.2 Integration Tests
+
 - [ ] Full creation flow
 
 ### 7.3 E2E Tests
+
 - [ ] Create product via modal in PO
 
 ## 8. Migration & Rollout
 
 ### 8.1 Feature Flag
+
 `FEATURE_INLINE_PRODUCT_CREATION` - Enable for testing.
 
 ## 9. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Modal completion rate | > 90% | Analytics |
-| Time to create | < 30s | User timing |
+| Metric                | Target | Measurement Method |
+| --------------------- | ------ | ------------------ |
+| Modal completion rate | > 90%  | Analytics          |
+| Time to create        | < 30s  | User timing        |
 
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

@@ -277,7 +277,7 @@ originalUserId: int("original_user_id").references(() => users.id), // For escal
 | `SHIPPING`         | Shipping           | Order shipping and logistics                | orders     | Truck          |
 | `RETURNS`          | Returns Processing | Handling returns and refunds                | orders     | RotateCcw      |
 | `CLIENT_SUPPORT`   | Client Support     | Client inquiries and support                | clients    | HeadphonesIcon |
-| `VENDOR_RELATIONS` | Vendor Relations   | Vendor communication and management         | vendors    | Building       |
+| `VENDOR_RELATIONS` | Supplier Relations | Supplier communication and management       | vendors    | Building       |
 | `ACCOUNTING`       | Accounting         | Financial tasks and reconciliation          | accounting | Calculator     |
 | `COMPLIANCE`       | Compliance         | Regulatory compliance tasks                 | admin      | Shield         |
 
@@ -371,16 +371,16 @@ const RESPONSIBILITY_AREAS = [
 
 ### 5.5 Additional Triggers
 
-| Area             | Trigger Key              | Event                                 | Priority |
-| ---------------- | ------------------------ | ------------------------------------- | -------- |
-| Intake           | `po.received`            | Purchase order received, needs intake | High     |
-| QC               | `batch.needs_inspection` | Batch requires quality inspection     | Normal   |
-| Shipping         | `order.ready_for_ship`   | Order packed, ready for shipping      | Normal   |
-| Returns          | `return.received`        | Return received, needs processing     | Normal   |
-| Client Support   | `client.inquiry`         | Client submitted inquiry              | Normal   |
-| Vendor Relations | `vendor.payment_due`     | Vendor payment coming due             | Normal   |
-| Accounting       | `invoice.overdue`        | Invoice past due date                 | High     |
-| Compliance       | `license.expiring`       | License expiring soon                 | Urgent   |
+| Area               | Trigger Key              | Event                                 | Priority |
+| ------------------ | ------------------------ | ------------------------------------- | -------- |
+| Intake             | `po.received`            | Purchase order received, needs intake | High     |
+| QC                 | `batch.needs_inspection` | Batch requires quality inspection     | Normal   |
+| Shipping           | `order.ready_for_ship`   | Order packed, ready for shipping      | Normal   |
+| Returns            | `return.received`        | Return received, needs processing     | Normal   |
+| Client Support     | `client.inquiry`         | Client submitted inquiry              | Normal   |
+| Supplier Relations | `vendor.payment_due`     | Supplier payment coming due           | Normal   |
+| Accounting         | `invoice.overdue`        | Invoice past due date                 | High     |
+| Compliance         | `license.expiring`       | License expiring soon                 | Urgent   |
 
 ---
 

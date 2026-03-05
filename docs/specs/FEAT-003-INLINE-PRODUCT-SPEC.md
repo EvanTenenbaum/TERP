@@ -15,13 +15,14 @@
 Currently, when a user is creating a Purchase Order and encounters a new product that doesn't exist in the system, they must navigate away from the PO workflow to create the product separately, then return to add it to the PO. This breaks the user flow and causes friction. Users need the ability to create a new product and SKU directly within the Purchase Order workflow.
 
 **User Quote:**
+
 > "skew product creation process should be happening here. You shouldn't have to go somewhere else to create a product and then add it to an intake process."
 
 ## 2. User Stories
 
 1. **As a purchasing manager**, I want to create a new product while building a Purchase Order, so that I don't have to leave the PO workflow.
 
-2. **As a warehouse staff member**, I want to quickly add new products during intake, so that I can process vendor deliveries efficiently.
+2. **As a warehouse staff member**, I want to quickly add new products during intake, so that I can process supplier deliveries efficiently.
 
 3. **As an administrator**, I want all in-line created products to follow the same validation rules as regular product creation, so that data quality is maintained.
 
@@ -29,26 +30,26 @@ Currently, when a user is creating a Purchase Order and encounters a new product
 
 ### 3.1 Core Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | API must accept product creation data within PO line item context | Must Have |
-| FR-02 | API must auto-generate SKU following naming convention | Must Have |
-| FR-03 | API must validate all required product fields | Must Have |
-| FR-04 | API must create brand if not exists (with vendor link) | Should Have |
-| FR-05 | API must return created product ID for immediate use in PO | Must Have |
-| FR-06 | API must support strain lookup/creation for flower products | Should Have |
-| FR-07 | API must support batch creation with initial COGS | Must Have |
-| FR-08 | Transaction must be atomic (product + batch created together) | Must Have |
+| ID    | Requirement                                                       | Priority    |
+| ----- | ----------------------------------------------------------------- | ----------- |
+| FR-01 | API must accept product creation data within PO line item context | Must Have   |
+| FR-02 | API must auto-generate SKU following naming convention            | Must Have   |
+| FR-03 | API must validate all required product fields                     | Must Have   |
+| FR-04 | API must create brand if not exists (with supplier link)          | Should Have |
+| FR-05 | API must return created product ID for immediate use in PO        | Must Have   |
+| FR-06 | API must support strain lookup/creation for flower products       | Should Have |
+| FR-07 | API must support batch creation with initial COGS                 | Must Have   |
+| FR-08 | Transaction must be atomic (product + batch created together)     | Must Have   |
 
 ### 3.2 Business Rules
 
-| ID | Rule | Example |
-|----|------|---------|
-| BR-01 | SKU format: {BRAND_CODE}-{STRAIN/PRODUCT}-{CATEGORY}-{SEQ} | ABC-BLUEDREAM-FLW-001 |
-| BR-02 | Brand code derived from first 3 chars of brand name | "Blue River" → "BLU" |
-| BR-03 | If brand doesn't exist, create and link to vendor | New brand "Blue River" → brandId linked to vendorId |
-| BR-04 | Strain must be validated against strain library if provided | Unknown strain creates new entry |
-| BR-05 | Initial batch created in AWAITING_INTAKE status | Can be moved to LIVE after QC |
+| ID    | Rule                                                        | Example                                             |
+| ----- | ----------------------------------------------------------- | --------------------------------------------------- |
+| BR-01 | SKU format: {BRAND_CODE}-{STRAIN/PRODUCT}-{CATEGORY}-{SEQ}  | ABC-BLUEDREAM-FLW-001                               |
+| BR-02 | Brand code derived from first 3 chars of brand name         | "Blue River" → "BLU"                                |
+| BR-03 | If brand doesn't exist, create and link to vendor           | New brand "Blue River" → brandId linked to vendorId |
+| BR-04 | Strain must be validated against strain library if provided | Unknown strain creates new entry                    |
+| BR-05 | Initial batch created in AWAITING_INTAKE status             | Can be moved to LIVE after QC                       |
 
 ## 4. Technical Specification
 
@@ -73,61 +74,76 @@ Currently, when a user is creating a Purchase Order and encounters a new product
 // In-line product creation with batch
 products.createInline = protectedProcedure
   .use(requirePermission("products:create"))
-  .input(z.object({
-    // Product definition
-    product: z.object({
-      nameCanonical: z.string().min(1).max(500),
-      category: z.string().min(1),
-      subcategory: z.string().optional(),
-      description: z.string().optional(),
-      uomSellable: z.string().default("EA"),
-    }),
-
-    // Brand (existing or new)
-    brand: z.union([
-      z.object({ type: z.literal("existing"), brandId: z.number() }),
-      z.object({
-        type: z.literal("new"),
-        name: z.string().min(1),
-        vendorClientId: z.number().optional(), // Link to vendor if known
+  .input(
+    z.object({
+      // Product definition
+      product: z.object({
+        nameCanonical: z.string().min(1).max(500),
+        category: z.string().min(1),
+        subcategory: z.string().optional(),
+        description: z.string().optional(),
+        uomSellable: z.string().default("EA"),
       }),
-    ]),
 
-    // Strain (for flower products)
-    strain: z.union([
-      z.object({ type: z.literal("existing"), strainId: z.number() }),
-      z.object({
-        type: z.literal("new"),
-        name: z.string().min(1),
-        category: z.enum(["Indica", "Sativa", "Hybrid"]).optional(),
-      }),
-      z.object({ type: z.literal("none") }),
-    ]).optional(),
+      // Brand (existing or new)
+      brand: z.union([
+        z.object({ type: z.literal("existing"), brandId: z.number() }),
+        z.object({
+          type: z.literal("new"),
+          name: z.string().min(1),
+          vendorClientId: z.number().optional(), // Link to supplier if known
+        }),
+      ]),
 
-    // Initial batch (optional, for immediate intake)
-    initialBatch: z.object({
-      lotId: z.number().optional(), // Existing lot or create new
-      quantity: z.number().positive(),
-      cogsMode: z.enum(["FIXED", "RANGE"]),
-      unitCogs: z.number().optional(), // Required for FIXED
-      unitCogsMin: z.number().optional(), // Required for RANGE
-      unitCogsMax: z.number().optional(), // Required for RANGE
-      paymentTerms: z.enum(["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT", "PARTIAL"]),
-      grade: z.string().optional(),
-    }).optional(),
+      // Strain (for flower products)
+      strain: z
+        .union([
+          z.object({ type: z.literal("existing"), strainId: z.number() }),
+          z.object({
+            type: z.literal("new"),
+            name: z.string().min(1),
+            category: z.enum(["Indica", "Sativa", "Hybrid"]).optional(),
+          }),
+          z.object({ type: z.literal("none") }),
+        ])
+        .optional(),
 
-    // Purchase Order context (for linking)
-    purchaseOrderId: z.number().optional(),
-  }))
-  .output(z.object({
-    productId: z.number(),
-    sku: z.string(),
-    brandId: z.number(),
-    brandName: z.string(),
-    strainId: z.number().nullable(),
-    batchId: z.number().nullable(),
-    batchCode: z.string().nullable(),
-  }))
+      // Initial batch (optional, for immediate intake)
+      initialBatch: z
+        .object({
+          lotId: z.number().optional(), // Existing lot or create new
+          quantity: z.number().positive(),
+          cogsMode: z.enum(["FIXED", "RANGE"]),
+          unitCogs: z.number().optional(), // Required for FIXED
+          unitCogsMin: z.number().optional(), // Required for RANGE
+          unitCogsMax: z.number().optional(), // Required for RANGE
+          paymentTerms: z.enum([
+            "COD",
+            "NET_7",
+            "NET_15",
+            "NET_30",
+            "CONSIGNMENT",
+            "PARTIAL",
+          ]),
+          grade: z.string().optional(),
+        })
+        .optional(),
+
+      // Purchase Order context (for linking)
+      purchaseOrderId: z.number().optional(),
+    })
+  )
+  .output(
+    z.object({
+      productId: z.number(),
+      sku: z.string(),
+      brandId: z.number(),
+      brandName: z.string(),
+      strainId: z.number().nullable(),
+      batchId: z.number().nullable(),
+      batchCode: z.string().nullable(),
+    })
+  )
   .mutation(async ({ input, ctx }) => {
     // Implementation in productsDb.createProductInline()
     // Uses transaction for atomicity
@@ -148,8 +164,13 @@ export interface InlineProductInput {
     description?: string;
     uomSellable: string;
   };
-  brand: { type: "existing"; brandId: number } | { type: "new"; name: string; vendorClientId?: number };
-  strain?: { type: "existing"; strainId: number } | { type: "new"; name: string; category?: string } | { type: "none" };
+  brand:
+    | { type: "existing"; brandId: number }
+    | { type: "new"; name: string; vendorClientId?: number };
+  strain?:
+    | { type: "existing"; strainId: number }
+    | { type: "new"; name: string; category?: string }
+    | { type: "none" };
   initialBatch?: {
     lotId?: number;
     quantity: number;
@@ -174,14 +195,20 @@ export interface InlineProductResult {
   batchCode: string | null;
 }
 
-export async function createProductInline(input: InlineProductInput): Promise<InlineProductResult> {
-  return await withTransaction(async (tx) => {
+export async function createProductInline(
+  input: InlineProductInput
+): Promise<InlineProductResult> {
+  return await withTransaction(async tx => {
     // 1. Resolve or create brand
     let brandId: number;
     let brandName: string;
 
     if (input.brand.type === "existing") {
-      const brand = await tx.select().from(brands).where(eq(brands.id, input.brand.brandId)).limit(1);
+      const brand = await tx
+        .select()
+        .from(brands)
+        .where(eq(brands.id, input.brand.brandId))
+        .limit(1);
       if (!brand[0]) throw new Error("Brand not found");
       brandId = brand[0].id;
       brandName = brand[0].name;
@@ -204,7 +231,9 @@ export async function createProductInline(input: InlineProductInput): Promise<In
       } else if (input.strain.type === "new") {
         const result = await tx.insert(strains).values({
           name: input.strain.name,
-          standardizedName: input.strain.name.toLowerCase().replace(/\s+/g, "-"),
+          standardizedName: input.strain.name
+            .toLowerCase()
+            .replace(/\s+/g, "-"),
           category: input.strain.category,
         });
         strainId = Number(result[0].insertId);
@@ -212,7 +241,11 @@ export async function createProductInline(input: InlineProductInput): Promise<In
     }
 
     // 3. Generate SKU
-    const sku = await generateSku(brandName, input.product.nameCanonical, input.product.category);
+    const sku = await generateSku(
+      brandName,
+      input.product.nameCanonical,
+      input.product.category
+    );
 
     // 4. Create product
     const productResult = await tx.insert(products).values({
@@ -237,7 +270,9 @@ export async function createProductInline(input: InlineProductInput): Promise<In
         code: batchCode,
         sku,
         productId,
-        lotId: input.initialBatch.lotId || await createDefaultLot(tx, input.createdBy),
+        lotId:
+          input.initialBatch.lotId ||
+          (await createDefaultLot(tx, input.createdBy)),
         batchStatus: "AWAITING_INTAKE",
         cogsMode: input.initialBatch.cogsMode,
         unitCogs: input.initialBatch.unitCogs?.toString(),
@@ -265,15 +300,15 @@ export async function createProductInline(input: InlineProductInput): Promise<In
 
 ### 4.3 Integration Points
 
-| System | Integration Type | Description |
-|--------|-----------------|-------------|
-| Products | Write | Create new product record |
-| Brands | Read/Write | Lookup or create brand |
-| Strains | Read/Write | Lookup or create strain |
-| Batches | Write | Create initial batch |
-| Lots | Read/Write | Link to existing or create lot |
-| Sequences | Read/Write | Generate SKU, batch code |
-| Purchase Orders | Write | Link to PO if context provided |
+| System          | Integration Type | Description                    |
+| --------------- | ---------------- | ------------------------------ |
+| Products        | Write            | Create new product record      |
+| Brands          | Read/Write       | Lookup or create brand         |
+| Strains         | Read/Write       | Lookup or create strain        |
+| Batches         | Write            | Create initial batch           |
+| Lots            | Read/Write       | Link to existing or create lot |
+| Sequences       | Read/Write       | Generate SKU, batch code       |
+| Purchase Orders | Write            | Link to PO if context provided |
 
 ## 5. UI/UX Specification
 
@@ -306,20 +341,20 @@ Not applicable - this is a backend API spec. See ENH-003 for frontend implementa
 
 ## 6. Edge Cases & Error Handling
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Duplicate product name | Allow (differentiated by brand/SKU) |
-| Invalid category | Return 400 error: "Invalid category" |
+| Scenario                                    | Expected Behavior                                    |
+| ------------------------------------------- | ---------------------------------------------------- |
+| Duplicate product name                      | Allow (differentiated by brand/SKU)                  |
+| Invalid category                            | Return 400 error: "Invalid category"                 |
 | COGS mode mismatch (FIXED without unitCogs) | Return 400 error: "unitCogs required for FIXED mode" |
-| Brand creation fails | Roll back entire transaction |
-| Network timeout during creation | Transaction rolled back, retry safe |
+| Brand creation fails                        | Roll back entire transaction                         |
+| Network timeout during creation             | Transaction rolled back, retry safe                  |
 
 ## 7. Testing Requirements
 
 ### 7.1 Unit Tests
 
 - [ ] SKU generation follows naming convention
-- [ ] Brand creation correctly links to vendor
+- [ ] Brand creation correctly links to supplier
 - [ ] Strain creation normalizes name correctly
 - [ ] COGS mode validation works correctly
 
@@ -353,11 +388,11 @@ No migration required.
 
 ## 9. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Inline creation success rate | > 99% | Transaction logging |
-| Time to create product | < 2s | APM monitoring |
-| User adoption | 50% of new products created inline | Analytics |
+| Metric                       | Target                             | Measurement Method  |
+| ---------------------------- | ---------------------------------- | ------------------- |
+| Inline creation success rate | > 99%                              | Transaction logging |
+| Time to create product       | < 2s                               | APM monitoring      |
+| User adoption                | 50% of new products created inline | Analytics           |
 
 ## 10. Open Questions
 
@@ -367,6 +402,7 @@ No migration required.
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

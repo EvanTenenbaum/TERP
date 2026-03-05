@@ -211,7 +211,7 @@
 - `batches` - Core inventory batches
 - `products` - Product catalog
 - `brands` - Brand information
-- `vendors` - Vendor management
+- `vendors` - Supplier management (deprecated table; use `clients` with `isSeller=true`)
 - `strains` - Cannabis strain data (if applicable)
 
 **API Endpoints (tRPC):**
@@ -286,7 +286,7 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 
 **Pages:** 6. **Bills** (`/accounting/bills`)
 
-- Vendor bills list
+- Supplier bills list
 - Bill status: Draft, Pending, Partial, Paid, Overdue, Void
 - AP aging report (current, 30, 60, 90, 90+ days)
 - Create/Edit bills with line items
@@ -320,7 +320,7 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
     - Reimbursement tracking (Reimbursable, Reimbursed, N/A)
     - Expense breakdown by category
     - Pending reimbursements view
-    - Filter by category, vendor, date range
+    - Filter by category, supplier, date range
 
 #### Database Schema (Accounting)
 
@@ -345,7 +345,7 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 5. **invoiceLineItems** - Invoice line items
    - Fields: id, invoiceId, description, quantity, unitPrice, totalPrice
 
-6. **bills** - Vendor bills (AP)
+6. **bills** - Supplier bills (AP)
    - Fields: id, billNumber, vendorId, billDate, dueDate, totalAmount, amountPaid, amountDue, status, terms, notes, createdBy
    - Status: DRAFT, PENDING, PARTIAL, PAID, OVERDUE, VOID
 
@@ -1193,7 +1193,7 @@ myNewEndpoint: protectedProcedure
 - **Manufacturing:** Production orders, BOMs, work orders
 - **HR & Payroll:** Employee management, time tracking, payroll
 - **CRM:** Lead management, opportunity tracking, sales pipeline
-- **Purchasing:** Purchase orders, vendor management, receiving
+- **Purchasing:** Purchase orders, supplier management, intake
 - **Reporting:** Custom report builder, scheduled reports
 
 ---

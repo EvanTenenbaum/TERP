@@ -341,7 +341,7 @@ Add tests for:
 **Additional Flags:**
 
 - `feature-sample-returns` - Sample return workflow (default: disabled)
-- `feature-vendor-sample-returns` - Vendor return workflow (default: disabled)
+- `feature-vendor-sample-returns` - Supplier return workflow (default: disabled)
 
 **Integration Points:**
 

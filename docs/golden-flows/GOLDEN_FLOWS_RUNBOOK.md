@@ -9,23 +9,23 @@
 
 ## Environment
 
-| Setting | Value |
-|---------|-------|
-| **Staging URL** | `https://terp-app-b9s35.ondigitalocean.app` |
-| **Auth Mode** | DEMO_MODE (auto-login as Super Admin) or manual login |
-| **Browser** | Chrome 120+ recommended |
+| Setting         | Value                                                 |
+| --------------- | ----------------------------------------------------- |
+| **Staging URL** | `https://terp-app-b9s35.ondigitalocean.app`           |
+| **Auth Mode**   | DEMO_MODE (auto-login as Super Admin) or manual login |
+| **Browser**     | Chrome 120+ recommended                               |
 
 ## Test Accounts
 
-| Role | Email | Password | Access |
-|------|-------|----------|--------|
-| Super Admin | `qa.superadmin@terp.test` | `TerpQA2026!` | Full system access |
-| Sales Manager | `qa.salesmanager@terp.test` | `TerpQA2026!` | Clients, orders, quotes |
-| Sales Rep / CS | `qa.salesrep@terp.test` | `TerpQA2026!` | Clients, orders, returns |
-| Inventory Manager | `qa.inventory@terp.test` | `TerpQA2026!` | Inventory, locations, transfers |
-| Warehouse Staff | `qa.fulfillment@terp.test` | `TerpQA2026!` | Receive POs, adjustments |
-| Accountant | `qa.accounting@terp.test` | `TerpQA2026!` | Accounting, credits, COGS |
-| Read-Only Auditor | `qa.auditor@terp.test` | `TerpQA2026!` | Read-only, audit logs |
+| Role              | Email                       | Password      | Access                          |
+| ----------------- | --------------------------- | ------------- | ------------------------------- |
+| Super Admin       | `qa.superadmin@terp.test`   | `TerpQA2026!` | Full system access              |
+| Sales Manager     | `qa.salesmanager@terp.test` | `TerpQA2026!` | Clients, orders, quotes         |
+| Sales Rep / CS    | `qa.salesrep@terp.test`     | `TerpQA2026!` | Clients, orders, returns        |
+| Inventory Manager | `qa.inventory@terp.test`    | `TerpQA2026!` | Inventory, locations, transfers |
+| Warehouse Staff   | `qa.fulfillment@terp.test`  | `TerpQA2026!` | Receive POs, adjustments        |
+| Accountant        | `qa.accounting@terp.test`   | `TerpQA2026!` | Accounting, credits, COGS       |
+| Read-Only Auditor | `qa.auditor@terp.test`      | `TerpQA2026!` | Read-only, audit logs           |
 
 ## Pre-Test Setup
 
@@ -50,7 +50,7 @@
 3. **Verify** the intake work surface loads with an AG Grid table and inspector panel.
 4. **Click "Add Row"** to add an intake line.
 5. **Fill in row data:**
-   - Vendor/Supplier name (searchable dropdown)
+   - Supplier name (searchable dropdown)
    - Brand name
    - Category (Flower, Deps, Concentrate, Edible, PreRoll, Vape, Other)
    - Item name
@@ -73,12 +73,12 @@
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| No form fields visible | BUG-112 rendering issue | See TER-33 fix; clear localStorage and reload |
-| Vendor dropdown empty | Auth scope or data issue | Check network tab for supplier query response |
-| Submit fails | Validation errors | Check inspector panel for error messages |
-| Stale data after submit | Cache not invalidated | Refresh page; check React Query invalidation |
+| Issue                   | Cause                    | Fix                                           |
+| ----------------------- | ------------------------ | --------------------------------------------- |
+| No form fields visible  | BUG-112 rendering issue  | See TER-33 fix; clear localStorage and reload |
+| Supplier dropdown empty | Auth scope or data issue | Check network tab for supplier query response |
+| Submit fails            | Validation errors        | Check inspector panel for error messages      |
+| Stale data after submit | Cache not invalidated    | Refresh page; check React Query invalidation  |
 
 ---
 
@@ -105,22 +105,22 @@
    - Click "Receive" to record receipt of goods.
    - Enter received quantities.
 9. **Verify AP entry** is created for the supplier with correct amount.
-10. **Check vendor balance** in client profile or AR/AP dashboard.
+10. **Check supplier balance** in client profile or AR/AP dashboard.
 
 ### Expected Outcomes
 
 - PO transitions: Draft -> Approved -> Received.
 - Product dropdown shows all active products (150+ items).
-- AP balance increases for the supplier after receiving.
+- AP balance increases for the supplier after intake.
 - Inventory batches created from PO line items.
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Product dropdown empty | Data binding issue (TER-34) | Check products query in network tab |
+| Issue                   | Cause                         | Fix                                   |
+| ----------------------- | ----------------------------- | ------------------------------------- |
+| Product dropdown empty  | Data binding issue (TER-34)   | Check products query in network tab   |
 | Supplier dropdown empty | Missing isSeller=true clients | Verify client data includes suppliers |
-| PO submit fails | Missing required fields | Check form validation messages |
+| PO submit fails         | Missing required fields       | Check form validation messages        |
 
 ---
 
@@ -171,12 +171,12 @@
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| No products in order form | Product list empty | Verify products exist and are active |
-| Invoice generation fails | Order not in billable state | Ensure order is Confirmed first |
-| Payment dialog errors | Amount validation | Ensure amount <= remaining balance |
-| GL entries missing | Accounting hooks silent failure | Check server logs for GLPostingError |
+| Issue                     | Cause                           | Fix                                  |
+| ------------------------- | ------------------------------- | ------------------------------------ |
+| No products in order form | Product list empty              | Verify products exist and are active |
+| Invoice generation fails  | Order not in billable state     | Ensure order is Confirmed first      |
+| Payment dialog errors     | Amount validation               | Ensure amount <= remaining balance   |
+| GL entries missing        | Accounting hooks silent failure | Check server logs for GLPostingError |
 
 ---
 
@@ -218,11 +218,11 @@
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| PDF download timeout (197s) | Performance issue (TER-36) | Check server logs for PDF generation timing |
-| Payment fails to post | GL posting error | Check accountingHooks.ts error logging |
-| Balance incorrect after payment | Rounding or double-posting | Verify ledger entries sum correctly |
+| Issue                           | Cause                      | Fix                                         |
+| ------------------------------- | -------------------------- | ------------------------------------------- |
+| PDF download timeout (197s)     | Performance issue (TER-36) | Check server logs for PDF generation timing |
+| Payment fails to post           | GL posting error           | Check accountingHooks.ts error logging      |
+| Balance incorrect after payment | Rounding or double-posting | Verify ledger entries sum correctly         |
 
 ---
 
@@ -262,11 +262,11 @@
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Pick queue empty | No confirmed orders | Create and confirm orders via GF-003 first |
-| Insufficient inventory | Lot unavailable | Check batch status (must be LIVE) |
-| Ship button disabled | Pick not completed | Complete all line item picks first |
+| Issue                  | Cause               | Fix                                        |
+| ---------------------- | ------------------- | ------------------------------------------ |
+| Pick queue empty       | No confirmed orders | Create and confirm orders via GF-003 first |
+| Insufficient inventory | Lot unavailable     | Check batch status (must be LIVE)          |
+| Ship button disabled   | Pick not completed  | Complete all line item picks first         |
 
 ---
 
@@ -301,17 +301,17 @@
 ### Expected Outcomes
 
 - Top Debtors shows ranked clients with non-zero balances.
-- Top Vendors Owed shows suppliers with proper names (not "Unknown Vendor").
+- Top Suppliers Owed shows suppliers with proper names (not "Unknown Supplier").
 - Client ledger shows complete transaction history with correct running balance.
 - Aging buckets (Current, 30, 60, 90+ days) calculate correctly.
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
+| Issue                     | Cause                       | Fix                                               |
+| ------------------------- | --------------------------- | ------------------------------------------------- |
 | "No outstanding balances" | Query filter issue (TER-37) | Check getTopDebtors query JOINs and WHERE clauses |
-| "Unknown Vendor" | Missing name JOIN (TER-37) | Check getTopVendorsOwed query client name join |
-| Incorrect running balance | Ordering or calculation bug | Verify ledger entries sorted by date |
+| "Unknown Supplier"        | Missing name JOIN (TER-37)  | Check getTopSuppliersOwed query client name join  |
+| Incorrect running balance | Ordering or calculation bug | Verify ledger entries sorted by date              |
 
 ---
 
@@ -332,7 +332,7 @@
    - Verify counts update per filter.
 5. **Search by product name** or lot number.
 6. **Check valuation totals:**
-   - Total inventory value should reflect sum of (qty * COGS) for displayed batches.
+   - Total inventory value should reflect sum of (qty \* COGS) for displayed batches.
    - Verify values are not $0.00 (known bug pattern).
 7. **Click on a batch** to view detail drawer.
 8. **Review batch details:**
@@ -351,11 +351,11 @@
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
+| Issue                 | Cause                       | Fix                                         |
+| --------------------- | --------------------------- | ------------------------------------------- |
 | All values show $0.00 | Status filter enum mismatch | Check batch status enum alignment in schema |
-| "No Inventory Found" | localStorage stale filters | Clear localStorage and reload |
-| Missing batches | Soft-delete filter | Verify deletedAt IS NULL in query |
+| "No Inventory Found"  | localStorage stale filters  | Clear localStorage and reload               |
+| Missing batches       | Soft-delete filter          | Verify deletedAt IS NULL in query           |
 
 ---
 
@@ -397,11 +397,11 @@
 
 ### Troubleshooting
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Text input instead of selector | Component not using ProductCombobox (TER-35) | Replace text input with ProductCombobox |
-| Product selector empty | products.list query issue | Check network tab for product search response |
-| Allocation exceeded | Monthly limit reached | Check current month allocation in sample list |
+| Issue                          | Cause                                        | Fix                                           |
+| ------------------------------ | -------------------------------------------- | --------------------------------------------- |
+| Text input instead of selector | Component not using ProductCombobox (TER-35) | Replace text input with ProductCombobox       |
+| Product selector empty         | products.list query issue                    | Check network tab for product search response |
+| Allocation exceeded            | Monthly limit reached                        | Check current month allocation in sample list |
 
 ---
 

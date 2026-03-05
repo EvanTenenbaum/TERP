@@ -99,7 +99,7 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 
 3. **Intake Modal** opens (`PurchaseModal.tsx`)
 4. User enters supplier information:
-   - **Vendor Name** (required, autocomplete from existing vendors)
+   - **Supplier Name** (required, autocomplete from existing suppliers)
    - **Brand Name** (required, autocomplete from existing brands)
 5. User enters product information:
    - **Category** (required, dropdown from settings)
@@ -182,22 +182,22 @@ PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
 
 ## UI States
 
-| State                        | Trigger                          | Display                                               |
-| ---------------------------- | -------------------------------- | ----------------------------------------------------- |
-| **Modal Closed**             | Default state / Cancel / Success | Modal hidden, Inventory list visible                  |
-| **Modal Open - Empty**       | Click "New Intake"               | Empty form with required field indicators             |
-| **Modal Open - Filling**     | User typing                      | Input fields populated, autocomplete dropdowns appear |
-| **Vendor Autocomplete Open** | Focus on vendor field + typing   | Dropdown with matching vendors below input            |
-| **Brand Autocomplete Open**  | Focus on brand field + typing    | Dropdown with matching brands below input             |
-| **Flower Mode**              | Category = "Flower"              | Strain field required, product name auto-filled       |
-| **Non-Flower Mode**          | Category != "Flower"             | Product name required, strain optional                |
-| **COGS Fixed Mode**          | Select "Fixed Price" radio       | Single "Unit COGS" input visible                      |
-| **COGS Range Mode**          | Select "Price Range" radio       | "Min COGS" and "Max COGS" inputs visible              |
-| **Amount Paid Visible**      | Payment Terms = COD or PARTIAL   | "Amount Paid" input field appears                     |
-| **Media Files Added**        | Upload files                     | File list with names and remove buttons               |
-| **Submitting**               | Click "Create Intake"            | Button shows loading spinner, disabled                |
-| **Validation Error**         | Submit with invalid data         | Toast error, form remains open                        |
-| **Success**                  | Successful creation              | Success toast, modal closes                           |
+| State                          | Trigger                          | Display                                               |
+| ------------------------------ | -------------------------------- | ----------------------------------------------------- |
+| **Modal Closed**               | Default state / Cancel / Success | Modal hidden, Inventory list visible                  |
+| **Modal Open - Empty**         | Click "New Intake"               | Empty form with required field indicators             |
+| **Modal Open - Filling**       | User typing                      | Input fields populated, autocomplete dropdowns appear |
+| **Supplier Autocomplete Open** | Focus on supplier field + typing | Dropdown with matching suppliers below input          |
+| **Brand Autocomplete Open**    | Focus on brand field + typing    | Dropdown with matching brands below input             |
+| **Flower Mode**                | Category = "Flower"              | Strain field required, product name auto-filled       |
+| **Non-Flower Mode**            | Category != "Flower"             | Product name required, strain optional                |
+| **COGS Fixed Mode**            | Select "Fixed Price" radio       | Single "Unit COGS" input visible                      |
+| **COGS Range Mode**            | Select "Price Range" radio       | "Min COGS" and "Max COGS" inputs visible              |
+| **Amount Paid Visible**        | Payment Terms = COD or PARTIAL   | "Amount Paid" input field appears                     |
+| **Media Files Added**          | Upload files                     | File list with names and remove buttons               |
+| **Submitting**                 | Click "Create Intake"            | Button shows loading spinner, disabled                |
+| **Validation Error**           | Submit with invalid data         | Toast error, form remains open                        |
+| **Success**                    | Successful creation              | Success toast, modal closes                           |
 
 ---
 
@@ -269,16 +269,16 @@ PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
 
 ### Supporting Endpoints
 
-| Endpoint                                  | Method | Purpose              | Request                                      | Response                                              |
-| ----------------------------------------- | ------ | -------------------- | -------------------------------------------- | ----------------------------------------------------- |
-| `inventory.vendors`                       | GET    | Autocomplete vendors | `{ query?: string }`                         | `{ items: Vendor[] }`                                 |
-| `inventory.brands`                        | GET    | Autocomplete brands  | `{ query?: string }`                         | `{ items: Brand[] }`                                  |
-| `inventory.uploadMedia`                   | POST   | Upload media file    | `{ fileData, fileName, fileType, batchId? }` | `{ success, url, fileName, fileType, fileSize }`      |
-| `inventory.deleteMedia`                   | POST   | Delete media file    | `{ url }`                                    | `{ success, url }`                                    |
-| `settings.categories.list`                | GET    | Get categories       | none                                         | `Category[]`                                          |
-| `settings.grades.list`                    | GET    | Get grades           | none                                         | `Grade[]`                                             |
-| `settings.locations.list`                 | GET    | Get locations        | none                                         | `Location[]`                                          |
-| `organizationSettings.getDisplaySettings` | GET    | Get display settings | none                                         | `{ display: { showGradeField, gradeFieldRequired } }` |
+| Endpoint                                  | Method | Purpose                | Request                                      | Response                                              |
+| ----------------------------------------- | ------ | ---------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| `inventory.vendors`                       | GET    | Autocomplete suppliers | `{ query?: string }`                         | `{ items: Supplier[] }`                               |
+| `inventory.brands`                        | GET    | Autocomplete brands    | `{ query?: string }`                         | `{ items: Brand[] }`                                  |
+| `inventory.uploadMedia`                   | POST   | Upload media file      | `{ fileData, fileName, fileType, batchId? }` | `{ success, url, fileName, fileType, fileSize }`      |
+| `inventory.deleteMedia`                   | POST   | Delete media file      | `{ url }`                                    | `{ success, url }`                                    |
+| `settings.categories.list`                | GET    | Get categories         | none                                         | `Category[]`                                          |
+| `settings.grades.list`                    | GET    | Get grades             | none                                         | `Grade[]`                                             |
+| `settings.locations.list`                 | GET    | Get locations          | none                                         | `Location[]`                                          |
+| `organizationSettings.getDisplaySettings` | GET    | Get display settings   | none                                         | `{ display: { showGradeField, gradeFieldRequired } }` |
 
 ---
 
@@ -289,7 +289,7 @@ PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
 | Table            | Operation            | Description                                           |
 | ---------------- | -------------------- | ----------------------------------------------------- |
 | `vendors`        | Find or Create       | Supplier record (uses `clients` with `isSeller=true`) |
-| `brands`         | Find or Create       | Brand record linked to vendor                         |
+| `brands`         | Find or Create       | Brand record linked to supplier                       |
 | `products`       | Find or Create       | Product record linked to brand                        |
 | `lots`           | Create               | Lot record for batch grouping                         |
 | `batches`        | Create               | Main inventory batch record                           |
@@ -308,9 +308,9 @@ PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
 ### Entity Relationships
 
 ```
-vendors (1) ──────┬── brands (many)
-                  │
-                  └── lots (many)
+suppliers (1) ─────┬── brands (many)
+                   │
+                   └── lots (many)
 
 brands (1) ────────── products (many)
 
@@ -360,7 +360,7 @@ batches (1) ───────┬── batchLocations (many)
 
 | Rule ID | Rule                                                    | Implementation                   |
 | ------- | ------------------------------------------------------- | -------------------------------- |
-| BR-001  | Vendor name required, 1-255 chars                       | Zod schema validation            |
+| BR-001  | Supplier name required, 1-255 chars                     | Zod schema validation            |
 | BR-002  | Brand name required, 1-255 chars                        | Zod schema validation            |
 | BR-003  | Product name required, 1-255 chars                      | Zod schema validation            |
 | BR-004  | Category required, 1-100 chars                          | Zod schema validation            |
@@ -379,8 +379,8 @@ batches (1) ───────┬── batchLocations (many)
 
 | Rule ID | Rule                                                    | Implementation                       |
 | ------- | ------------------------------------------------------- | ------------------------------------ |
-| BL-001  | Vendor created if not exists                            | `findOrCreate` utility               |
-| BL-002  | Brand created if not exists (linked to vendor)          | `findOrCreate` utility               |
+| BL-001  | Supplier created if not exists                          | `findOrCreate` utility               |
+| BL-002  | Brand created if not exists (linked to supplier)        | `findOrCreate` utility               |
 | BL-003  | Product created if not exists (linked to brand)         | `findOrCreate` utility               |
 | BL-004  | Lot code auto-generated with unique sequence            | `inventoryUtils.generateLotCode()`   |
 | BL-005  | Batch code auto-generated with unique sequence          | `inventoryUtils.generateBatchCode()` |
@@ -406,7 +406,7 @@ batches (1) ───────┬── batchLocations (many)
 
 | Error                                        | Cause                                    | Recovery                           |
 | -------------------------------------------- | ---------------------------------------- | ---------------------------------- |
-| "Please fill in all required fields"         | Vendor or Brand empty                    | Enter required fields              |
+| "Please fill in all required fields"         | Supplier or Brand empty                  | Enter required fields              |
 | "Please select a strain for flower products" | Flower category without strain           | Select a strain                    |
 | "Please enter a product name"                | Non-flower without product name          | Enter product name                 |
 | "Please select a grade"                      | Grade required by org settings but empty | Select a grade                     |
@@ -455,7 +455,7 @@ batches (1) ───────┬── batchLocations (many)
 | **GF-007: Inventory Management**  | Inventory listing       | New batches appear in inventory list immediately          | Pending spec                                                      |
 | **GF-008: Sales/Orders**          | Order fulfillment       | Batches must reach `LIVE` status before sale              | Pending spec                                                      |
 | **GF-009: Consignment Payables**  | Financial tracking      | CONSIGNED batches create payables automatically           | Pending spec                                                      |
-| **GF-010: Vendor Management**     | Vendor records          | Intake can create new vendor records                      | Pending spec                                                      |
+| **GF-010: Supplier Management**   | Supplier records        | Intake can create new supplier records                    | Pending spec                                                      |
 
 ### Batch Status Lifecycle
 
@@ -568,7 +568,7 @@ batches (1) ───────┬── batchLocations (many)
 | AC-006 | Media files uploaded and linked to batch       | File storage + metadata check     |
 | AC-007 | CONSIGNED batches create payable record        | Database query                    |
 | AC-008 | Error messages display for validation failures | Form submission with invalid data |
-| AC-009 | Autocomplete returns matching vendors/brands   | Type in search fields             |
+| AC-009 | Autocomplete returns matching suppliers/brands | Type in search fields             |
 | AC-010 | Modal closes on successful submission          | UI verification                   |
 
 ---
@@ -579,32 +579,32 @@ batches (1) ───────┬── batchLocations (many)
 
 ### Input Fuzzing Tests
 
-| ID     | Target Field    | Attack Vector                            | Expected Behavior                         | Business Rule |
-| ------ | --------------- | ---------------------------------------- | ----------------------------------------- | ------------- |
-| AT-001 | `vendorName`    | Empty string `""`                        | Validation error: "Vendor name required"  | BR-001        |
-| AT-002 | `vendorName`    | Null value                               | Validation error: "Vendor name required"  | BR-001        |
-| AT-003 | `vendorName`    | 256+ characters                          | Validation error: "Max 255 characters"    | BR-001        |
-| AT-004 | `vendorName`    | SQL injection `'; DROP TABLE batches;--` | Sanitized, no SQL execution               | N/A           |
-| AT-005 | `vendorName`    | XSS `<script>alert('xss')</script>`      | HTML escaped in output                    | N/A           |
-| AT-006 | `vendorName`    | Unicode RTL override `\u202E`            | Sanitized or rejected                     | N/A           |
-| AT-007 | `quantity`      | Zero `0`                                 | Validation error: "Must be positive"      | BR-005        |
-| AT-008 | `quantity`      | Negative `-100`                          | Validation error: "Must be positive"      | BR-005        |
-| AT-009 | `quantity`      | Non-numeric `"abc"`                      | Type error, rejected                      | BR-005        |
-| AT-010 | `quantity`      | Extremely large `999999999999`           | Validation error or overflow handling     | BR-005        |
-| AT-011 | `quantity`      | More than 2 decimals `100.999`           | Truncated or rejected per BR-006          | BR-006        |
-| AT-012 | `unitCogs`      | Negative `-50.00`                        | Validation error: "Must be >= 0"          | BR-010        |
-| AT-013 | `unitCogs`      | Over max `1000001`                       | Validation error: "Max 1,000,000"         | BR-010        |
-| AT-014 | `unitCogsMin`   | Greater than `unitCogsMax`               | Validation error: "Min must be < Max"     | BR-009        |
-| AT-015 | `unitCogsMin`   | Equal to `unitCogsMax`                   | Validation error: "Min must be < Max"     | BR-009        |
-| AT-016 | `category`      | Non-existent category `"InvalidCat"`     | Validation error or graceful handling     | BR-004        |
-| AT-017 | `strainId`      | Non-existent ID `999999`                 | Validation error: "Strain not found"      | BR-014        |
-| AT-018 | `strainId`      | Negative ID `-1`                         | Validation error: "Invalid strain ID"     | BR-014        |
-| AT-019 | `location.site` | Lowercase `"warehouse1"`                 | Validation error or auto-uppercase        | BR-012        |
-| AT-020 | `location.site` | Special chars `"WARE@HOUSE!"`            | Validation error: "Alphanumeric only"     | BR-012        |
-| AT-021 | `paymentTerms`  | Invalid enum `"NET_999"`                 | Validation error: "Invalid payment terms" | N/A           |
-| AT-022 | `mediaUrls`     | Malicious URL `javascript:alert(1)`      | Rejected or sanitized                     | N/A           |
-| AT-023 | `metadata`      | Deeply nested object (100+ levels)       | Rejected or depth-limited                 | N/A           |
-| AT-024 | `metadata`      | Oversized JSON (10MB+)                   | Rejected: payload too large               | N/A           |
+| ID     | Target Field    | Attack Vector                            | Expected Behavior                          | Business Rule |
+| ------ | --------------- | ---------------------------------------- | ------------------------------------------ | ------------- |
+| AT-001 | `vendorName`    | Empty string `""`                        | Validation error: "Supplier name required" | BR-001        |
+| AT-002 | `vendorName`    | Null value                               | Validation error: "Supplier name required" | BR-001        |
+| AT-003 | `vendorName`    | 256+ characters                          | Validation error: "Max 255 characters"     | BR-001        |
+| AT-004 | `vendorName`    | SQL injection `'; DROP TABLE batches;--` | Sanitized, no SQL execution                | N/A           |
+| AT-005 | `vendorName`    | XSS `<script>alert('xss')</script>`      | HTML escaped in output                     | N/A           |
+| AT-006 | `vendorName`    | Unicode RTL override `\u202E`            | Sanitized or rejected                      | N/A           |
+| AT-007 | `quantity`      | Zero `0`                                 | Validation error: "Must be positive"       | BR-005        |
+| AT-008 | `quantity`      | Negative `-100`                          | Validation error: "Must be positive"       | BR-005        |
+| AT-009 | `quantity`      | Non-numeric `"abc"`                      | Type error, rejected                       | BR-005        |
+| AT-010 | `quantity`      | Extremely large `999999999999`           | Validation error or overflow handling      | BR-005        |
+| AT-011 | `quantity`      | More than 2 decimals `100.999`           | Truncated or rejected per BR-006           | BR-006        |
+| AT-012 | `unitCogs`      | Negative `-50.00`                        | Validation error: "Must be >= 0"           | BR-010        |
+| AT-013 | `unitCogs`      | Over max `1000001`                       | Validation error: "Max 1,000,000"          | BR-010        |
+| AT-014 | `unitCogsMin`   | Greater than `unitCogsMax`               | Validation error: "Min must be < Max"      | BR-009        |
+| AT-015 | `unitCogsMin`   | Equal to `unitCogsMax`                   | Validation error: "Min must be < Max"      | BR-009        |
+| AT-016 | `category`      | Non-existent category `"InvalidCat"`     | Validation error or graceful handling      | BR-004        |
+| AT-017 | `strainId`      | Non-existent ID `999999`                 | Validation error: "Strain not found"       | BR-014        |
+| AT-018 | `strainId`      | Negative ID `-1`                         | Validation error: "Invalid strain ID"      | BR-014        |
+| AT-019 | `location.site` | Lowercase `"warehouse1"`                 | Validation error or auto-uppercase         | BR-012        |
+| AT-020 | `location.site` | Special chars `"WARE@HOUSE!"`            | Validation error: "Alphanumeric only"      | BR-012        |
+| AT-021 | `paymentTerms`  | Invalid enum `"NET_999"`                 | Validation error: "Invalid payment terms"  | N/A           |
+| AT-022 | `mediaUrls`     | Malicious URL `javascript:alert(1)`      | Rejected or sanitized                      | N/A           |
+| AT-023 | `metadata`      | Deeply nested object (100+ levels)       | Rejected or depth-limited                  | N/A           |
+| AT-024 | `metadata`      | Oversized JSON (10MB+)                   | Rejected: payload too large                | N/A           |
 
 ### State-Based Attack Tests
 
@@ -613,7 +613,7 @@ batches (1) ───────┬── batchLocations (many)
 | AT-025 | Submit same form twice rapidly (double-click)  | Idempotent: only one batch created OR second rejected | INV-007   |
 | AT-026 | Submit while network disconnected              | Graceful error, no partial state                      | INV-011   |
 | AT-027 | Close modal during media upload                | Upload cancelled, no orphan files                     | INV-012   |
-| AT-028 | Submit with stale vendor autocomplete data     | Re-validates vendor exists at submit time             | BL-001    |
+| AT-028 | Submit with stale supplier autocomplete data   | Re-validates supplier exists at submit time           | BL-001    |
 | AT-029 | Concurrent intakes with same lot code          | Unique constraint prevents duplicate                  | INV-009   |
 | AT-030 | Transaction timeout mid-creation               | Full rollback, no partial entities                    | INV-011   |
 | AT-031 | Database connection lost during commit         | Full rollback, error shown to user                    | INV-011   |
@@ -622,14 +622,14 @@ batches (1) ───────┬── batchLocations (many)
 
 ### Authorization Attack Tests
 
-| ID     | Attack Vector                                  | Expected Behavior                          | Business Rule  |
-| ------ | ---------------------------------------------- | ------------------------------------------ | -------------- |
-| AT-034 | Submit without `inventory:create` permission   | 403 Forbidden                              | API Permission |
-| AT-035 | Include `createdBy` in input payload           | Ignored - actor from `ctx.user.id` only    | INV-013        |
-| AT-036 | Include `organizationId` different from user's | Ignored or rejected - scoped to user's org | N/A            |
-| AT-037 | Unauthenticated request                        | 401 Unauthorized                           | N/A            |
-| AT-038 | Expired session token                          | 401 Unauthorized, redirect to login        | N/A            |
-| AT-039 | Access vendor from different organization      | Rejected - vendor not found in user's org  | BL-001         |
+| ID     | Attack Vector                                  | Expected Behavior                           | Business Rule  |
+| ------ | ---------------------------------------------- | ------------------------------------------- | -------------- |
+| AT-034 | Submit without `inventory:create` permission   | 403 Forbidden                               | API Permission |
+| AT-035 | Include `createdBy` in input payload           | Ignored - actor from `ctx.user.id` only     | INV-013        |
+| AT-036 | Include `organizationId` different from user's | Ignored or rejected - scoped to user's org  | N/A            |
+| AT-037 | Unauthenticated request                        | 401 Unauthorized                            | N/A            |
+| AT-038 | Expired session token                          | 401 Unauthorized, redirect to login         | N/A            |
+| AT-039 | Access supplier from different organization    | Rejected - supplier not found in user's org | BL-001         |
 
 ### Business Logic Attack Tests
 
@@ -649,19 +649,19 @@ batches (1) ───────┬── batchLocations (many)
 
 ### Concurrency Tests
 
-| ID     | Attack Vector                             | Expected Behavior                                | Invariant        |
-| ------ | ----------------------------------------- | ------------------------------------------------ | ---------------- |
-| AT-051 | 10 users submit intake simultaneously     | All succeed with unique batch/lot codes          | INV-007, INV-009 |
-| AT-052 | Same user submits 5 intakes in 1 second   | All succeed or rate-limited                      | INV-007          |
-| AT-053 | Autocomplete search during batch creation | Autocomplete returns consistent results          | N/A              |
-| AT-054 | Vendor updated while user types in form   | Form submission uses vendor state at submit time | BL-001           |
-| AT-055 | Category deleted while form is open       | Validation error at submit: "Category not found" | BR-004           |
+| ID     | Attack Vector                             | Expected Behavior                                  | Invariant        |
+| ------ | ----------------------------------------- | -------------------------------------------------- | ---------------- |
+| AT-051 | 10 users submit intake simultaneously     | All succeed with unique batch/lot codes            | INV-007, INV-009 |
+| AT-052 | Same user submits 5 intakes in 1 second   | All succeed or rate-limited                        | INV-007          |
+| AT-053 | Autocomplete search during batch creation | Autocomplete returns consistent results            | N/A              |
+| AT-054 | Supplier updated while user types in form | Form submission uses supplier state at submit time | BL-001           |
+| AT-055 | Category deleted while form is open       | Validation error at submit: "Category not found"   | BR-004           |
 
 ### Edge Case Tests
 
 | ID     | Attack Vector                              | Expected Behavior                      | Notes  |
 | ------ | ------------------------------------------ | -------------------------------------- | ------ |
-| AT-056 | Exactly 255 character vendor name          | Accepted (boundary value)              | BR-001 |
+| AT-056 | Exactly 255 character supplier name        | Accepted (boundary value)              | BR-001 |
 | AT-057 | Quantity = 0.01 (minimum positive)         | Accepted                               | BR-005 |
 | AT-058 | Quantity = 0.001 (exceeds decimal limit)   | Truncated to 0.00 or rejected          | BR-006 |
 | AT-059 | COGS min=0, max=0.01                       | Accepted (minimum valid range)         | BR-009 |

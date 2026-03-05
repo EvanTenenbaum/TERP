@@ -196,7 +196,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | Task   | Description                                 | Status      |
 | ------ | ------------------------------------------- | ----------- |
 | WS-001 | Quick Action: Receive Client Payment        | ✅ COMPLETE |
-| WS-002 | Quick Action: Pay Vendor                    | ✅ COMPLETE |
+| WS-002 | Quick Action: Pay Supplier                  | ✅ COMPLETE |
 | WS-003 | Pick & Pack Module: Group Bagging/Packing   | ✅ COMPLETE |
 | WS-004 | Sales: Multi-Order & Referral Credit System | ✅ COMPLETE |
 | WS-005 | No Black Box Audit Trail                    | ✅ COMPLETE |
@@ -208,7 +208,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | WS-011 | Sales: Quick Customer Creation              | ✅ COMPLETE |
 | WS-012 | Customer Preferences & Purchase History     | ✅ COMPLETE |
 | WS-013 | Simple Task Management                      | ✅ COMPLETE |
-| WS-014 | Vendor "Harvesting Again" Reminder          | ✅ COMPLETE |
+| WS-014 | Supplier "Harvesting Again" Reminder        | ✅ COMPLETE |
 | WS-015 | Sales: Customer Wishlist Field              | ✅ COMPLETE |
 
 ### ✅ ST-045: User Flow Mapping (COMPLETE - Jan 8, 2026)
@@ -770,16 +770,16 @@ pnpm mega:qa:invariants
 > **Test Suite:** 2514/2514 tests passing, 170/171 test files passing
 > **Result:** ALL 8 GOLDEN FLOWS VERIFIED ✅
 
-| Golden Flow              | Test Case                      | Status    | Verified By | Notes                                 |
-| ------------------------ | ------------------------------ | --------- | ----------- | ------------------------------------- |
-| GF-001 Direct Intake     | Create intake with new vendor  | ✅ PASS   | af6ff73     | Transaction atomicity verified        |
-| GF-002 Procure-to-Pay    | Create PO, receive, pay        | ✅ PASS   | af6ff73     | Full flow with soft deletes           |
-| GF-003 Order-to-Cash     | Create order, confirm, fulfill | ✅ PASS   | aa85380     | OrderOrchestrator, state machine      |
-| GF-004 Invoice & Payment | Create invoice, record payment | ✅ PASS   | aa85380     | GL entries (AR/Revenue) verified      |
-| GF-005 Pick & Pack       | Pick and pack order            | ✅ PASS   | a2644a0     | Inventory movement logging            |
-| GF-006 Client Ledger     | View client ledger             | ✅ PASS\* | a2644a0     | \*MEDIUM: adjustments lacks deletedAt |
-| GF-007 Inventory Mgmt    | Adjust inventory               | ✅ PASS   | acdefdd     | CHECK constraints, SQL aliases        |
-| GF-008 Sample Request    | Create sample request          | ✅ PASS   | acdefdd     | FOR UPDATE lock, allocation tracking  |
+| Golden Flow              | Test Case                       | Status    | Verified By | Notes                                 |
+| ------------------------ | ------------------------------- | --------- | ----------- | ------------------------------------- |
+| GF-001 Direct Intake     | Create intake with new supplier | ✅ PASS   | af6ff73     | Transaction atomicity verified        |
+| GF-002 Procure-to-Pay    | Create PO, receive, pay         | ✅ PASS   | af6ff73     | Full flow with soft deletes           |
+| GF-003 Order-to-Cash     | Create order, confirm, fulfill  | ✅ PASS   | aa85380     | OrderOrchestrator, state machine      |
+| GF-004 Invoice & Payment | Create invoice, record payment  | ✅ PASS   | aa85380     | GL entries (AR/Revenue) verified      |
+| GF-005 Pick & Pack       | Pick and pack order             | ✅ PASS   | a2644a0     | Inventory movement logging            |
+| GF-006 Client Ledger     | View client ledger              | ✅ PASS\* | a2644a0     | \*MEDIUM: adjustments lacks deletedAt |
+| GF-007 Inventory Mgmt    | Adjust inventory                | ✅ PASS   | acdefdd     | CHECK constraints, SQL aliases        |
+| GF-008 Sample Request    | Create sample request           | ✅ PASS   | acdefdd     | FOR UPDATE lock, allocation tracking  |
 
 **Finding (GF-006):** `clientLedgerAdjustments` table lacks `deletedAt` column. Other sources filter soft-deleted records but adjustments do not. Recommend adding SCHEMA-014 task.
 
@@ -2370,13 +2370,13 @@ Users cannot select specific batches when creating orders. System auto-allocates
 **Module:** `server/schema.ts`, `server/ordersDb.ts:1564-1570`
 
 **Problem:**
-Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to vendor).
+Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to supplier).
 
 **Objectives:**
 
 1. Add RETURNED status to order status enum
 2. Implement restock-to-inventory path
-3. Implement return-to-vendor path
+3. Implement return-to-supplier path
 4. Create inventory movements for returns
 
 **Deliverables:**
@@ -2384,7 +2384,7 @@ Order status machine is incomplete - missing RETURNED status with required proce
 - [ ] RETURNED status added to schema
 - [ ] Status transition validation updated
 - [ ] Restock flow creates inventory movements
-- [ ] Return-to-vendor flow updates vendor records
+- [ ] Return-to-supplier flow updates supplier records
 - [ ] UI for selecting return disposition
 
 ---
@@ -2749,7 +2749,7 @@ Three empty catch blocks silently swallow Performance Observer errors. Productio
 | ----------- | ------------------------------------------------- | -------- | ----------- | -------- | --------------------------------------- |
 | TEST-QA-001 | Fix React Hook Test Infrastructure (JSDOM Setup)  | HIGH     | NOT STARTED | 2h       | hooks/work-surface/**tests**/\*.test.ts |
 | LIVE-001    | Implement or Remove Live Shopping Session Console | HIGH     | NOT STARTED | 4h       | LiveShoppingPage.tsx:410                |
-| DI-009      | Add Vendor ID Validation in Return Processing     | HIGH     | NOT STARTED | 30 min   | returnProcessing.ts:135-140             |
+| DI-009      | Add Supplier ID Validation in Return Processing   | HIGH     | NOT STARTED | 30 min   | returnProcessing.ts:135-140             |
 | SEC-024     | Validate Quote Email XSS Prevention               | HIGH     | NOT STARTED | 1h       | emailService.ts (viewUrl escaping)      |
 
 ##### TEST-QA-001: Fix React Hook Test Infrastructure
@@ -2800,7 +2800,7 @@ TODO comment indicates session console/detail view is unimplemented. Feature app
 
 ---
 
-##### DI-009: Add Vendor ID Validation in Return Processing
+##### DI-009: Add Supplier ID Validation in Return Processing
 
 **Status:** NOT STARTED
 **Priority:** HIGH (P1)
@@ -2808,17 +2808,17 @@ TODO comment indicates session console/detail view is unimplemented. Feature app
 **Module:** `server/services/returnProcessing.ts:135-140`
 
 **Problem:**
-`processVendorReturn` accepts vendorId without validating it exists in the database. Can create orphan vendor return records with invalid vendorId, causing referential integrity issues.
+`processVendorReturn` accepts vendorId without validating it exists in the database. Can create orphan supplier return records with invalid vendorId, causing referential integrity issues.
 
 **Objectives:**
 
-1. Validate vendorId exists before creating vendor return
-2. Throw appropriate error if vendor not found
+1. Validate vendorId exists before creating supplier return
+2. Throw appropriate error if supplier not found
 
 **Deliverables:**
 
-- [ ] Add vendor existence check at start of `processVendorReturn`
-- [ ] Throw TRPCError NOT_FOUND if vendor doesn't exist
+- [ ] Add supplier existence check at start of `processVendorReturn`
+- [ ] Throw TRPCError NOT_FOUND if supplier doesn't exist
 - [ ] Add unit test for invalid vendorId case
 
 ---
@@ -4162,7 +4162,7 @@ Users need to select specific batches/lots when fulfilling orders based on custo
 
 ---
 
-### WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
+### WSQA-003: Add RETURNED Order Status with Restock/Supplier-Return Paths
 
 **Status:** complete
 **Completed:** 2026-01-21
@@ -4180,19 +4180,19 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 **Product Decision:** Add RETURNED status with two terminal paths:
 
 - RESTOCKED: Items returned to inventory (increases batch quantities)
-- RETURNED_TO_VENDOR: Items sent to vendor (creates vendor return record)
+- RETURNED_TO_VENDOR: Items sent to supplier (creates supplier return record)
 
 **Objectives:**
 
 1. Add new enum values: RETURNED, RESTOCKED, RETURNED_TO_VENDOR
 2. Create vendor_returns and vendor_return_items tables
 3. Implement state machine with valid transitions
-4. Build restock and vendor-return processing logic
+4. Build restock and supplier-return processing logic
 
 **Deliverables:**
 
 - [ ] New enum values added to fulfillment_status
-- [ ] vendor_returns table tracks vendor return requests
+- [ ] vendor_returns table tracks supplier return requests
 - [ ] State machine validates all status transitions
 - [ ] processRestock increases batch quantities and logs movements
 - [ ] processVendorReturn creates return records
@@ -4779,7 +4779,7 @@ Automated QA is blocked because staging lacks deterministic QA-prefixed entities
 
 **Scope:**
 
-- Seed QA locations, customers, SKUs, and vendor records.
+- Seed QA locations, customers, SKUs, and supplier records.
 - Maintain registry of seeded IDs.
 
 **Implementation Notes:**
@@ -4790,7 +4790,7 @@ Automated QA is blocked because staging lacks deterministic QA-prefixed entities
 
 **Acceptance Criteria:**
 
-- [ ] Script seeds QA-prefixed locations, customers, SKUs, and vendor entries.
+- [ ] Script seeds QA-prefixed locations, customers, SKUs, and supplier entries.
 - [ ] Script is idempotent and logs created IDs.
 - [ ] Registry file updated with seeded IDs.
 - [ ] QA roles can access QA-prefixed data in UI.
@@ -4829,7 +4829,7 @@ Accounting users lack UI access to 43/52 accounting flows, forcing API-only usag
 **Scope:**
 
 - Prioritize and implement UI for the top 10 P0 accounting flows:
-  Receive Client Payment, Pay Vendor, Record Payment, Preview Balance,
+  Receive Client Payment, Pay Supplier, Record Payment, Preview Balance,
   AR Summary, AR Aging, Outstanding Receivables, Overdue Invoices,
   Client Statement, AP Summary.
 
@@ -5091,7 +5091,7 @@ Several routers are still exposed via `publicProcedure`, allowing unauthenticate
 
 **Context / Evidence:**
 
-- Vendors, vendor supply, dashboardEnhanced, and tags routers lack auth protection.
+- Suppliers, supplier supply, dashboardEnhanced, and tags routers lack auth protection.
 
 **Scope:**
 
@@ -5111,7 +5111,7 @@ Several routers are still exposed via `publicProcedure`, allowing unauthenticate
 **Validation Steps:**
 
 1. Run targeted router tests.
-2. Manual QA for vendor/tags routes with/without auth.
+2. Manual QA for supplier/tags routes with/without auth.
 
 **Risk / Edge Cases:**
 
@@ -7094,27 +7094,27 @@ There is a severe data integrity issue. The main dashboard displays an inventory
 **Prompt:** `docs/prompts/BUG-116.md`
 
 **Problem / Goal:**
-The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Vendors Owed" shows "Unknown Vendor" for all entries.
+The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Suppliers Owed" shows "Unknown Supplier" for all entries.
 
 **Context / Evidence:**
 
-- The queries for these specific dashboard widgets are likely failing to join or resolve related entity names (clients, vendors).
+- The queries for these specific dashboard widgets are likely failing to join or resolve related entity names (clients, suppliers).
 
 **Acceptance Criteria:**
 
 - [ ] The "Top Debtors" widget correctly lists clients with the highest outstanding balances.
-- [ ] The "Top Vendors Owed" widget correctly lists vendor names.
+- [ ] The "Top Suppliers Owed" widget correctly lists supplier names.
 
 **Objectives:**
 
-- Fix AR/AP dashboard data joins for client and vendor names.
+- Fix AR/AP dashboard data joins for client and supplier names.
 - Validate widgets show accurate balances.
 - Ensure no regressions in accounting dashboard queries.
 
 **Deliverables:**
 
 - [ ] Query fixes for AR/AP dashboard widgets.
-- [ ] Tests or validation for top debtors/vendors output.
+- [ ] Tests or validation for top debtors/suppliers output.
 - [ ] UI verification for accounting dashboard widgets.
 - [ ] Roadmap completion details recorded.
 - [ ] Deployment verification documented.
