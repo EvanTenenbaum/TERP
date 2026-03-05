@@ -62,7 +62,7 @@ Live browser testing on 2026-01-29 revealed 6 S1-Critical bugs blocking release.
 **Time:** 4h
 **Mode:** RED (Critical path)
 
-### SCHEMA-015: Remove strainId + vendors joins from production queries
+### SCHEMA-015: Remove strainId + suppliers joins from production queries
 
 **Status:** ready
 **Priority:** P0 - RELEASE BLOCKER
@@ -71,21 +71,22 @@ Live browser testing on 2026-01-29 revealed 6 S1-Critical bugs blocking release.
 **Blocks:** BUG-130, BUG-132
 
 **Problem:**
+
 - `products.strainId` column defined in Drizzle schema but MISSING from production DB
 - 27+ files reference this non-existent column
 - Queries fail at runtime with "Unknown column" errors
 
 **Files to Fix (Priority Order):**
 
-| # | File | Line | Change Required | Est |
-|---|------|------|-----------------|-----|
-| 1 | `server/salesSheetsDb.ts` | 117-129 | Remove strains + vendors join, use fallback pattern | 1h |
-| 2 | `server/productsDb.ts` | 117 | Verify fallback works, remove primary strains join | 30m |
-| 3 | `server/inventoryDb.ts` | 887, 950 | Remove vendors join (use clients.isSeller) | 1h |
-| 4 | `server/matchingEngine.ts` | TBD | Check strainId refs, add fallback | 30m |
-| 5 | `server/routers/photography.ts` | TBD | Already has isSchemaError() fallback - verify | 15m |
-| 6 | `server/routers/search.ts` | TBD | Check strainId references | 15m |
-| 7 | Remaining 21 files | Various | Audit and fix as needed | 30m |
+| #   | File                            | Line     | Change Required                                       | Est |
+| --- | ------------------------------- | -------- | ----------------------------------------------------- | --- |
+| 1   | `server/salesSheetsDb.ts`       | 117-129  | Remove strains + suppliers join, use fallback pattern | 1h  |
+| 2   | `server/productsDb.ts`          | 117      | Verify fallback works, remove primary strains join    | 30m |
+| 3   | `server/inventoryDb.ts`         | 887, 950 | Remove suppliers join (use clients.isSeller)          | 1h  |
+| 4   | `server/matchingEngine.ts`      | TBD      | Check strainId refs, add fallback                     | 30m |
+| 5   | `server/routers/photography.ts` | TBD      | Already has isSchemaError() fallback - verify         | 15m |
+| 6   | `server/routers/search.ts`      | TBD      | Check strainId references                             | 15m |
+| 7   | Remaining 21 files              | Various  | Audit and fix as needed                               | 30m |
 
 **Implementation Pattern:**
 
@@ -97,9 +98,7 @@ const results = await db
   .leftJoin(strains, eq(products.strainId, strains.id));
 
 // AFTER (SAFE - no strainId dependency)
-const results = await db
-  .select({ product: products })
-  .from(products);
+const results = await db.select({ product: products }).from(products);
 // Note: strain info not available until strainId column added to production
 ```
 
@@ -131,8 +130,9 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 **GF Impact:** GF-001, GF-003, GF-007
 
 **Problem:** `getInventoryForSalesSheet()` fails because it joins both:
+
 - `strains` table via `products.strainId` (doesn't exist)
-- `vendors` table (deprecated, should use `clients.isSeller`)
+- `suppliers` table (deprecated, should use `clients.isSeller`)
 
 **Fix:**
 
@@ -153,16 +153,17 @@ const inventoryWithDetails = await db
   .from(batches)
   .leftJoin(products, eq(batches.productId, products.id))
   .leftJoin(lots, eq(batches.lotId, lots.id))
-  .leftJoin(clients, and(
-    eq(lots.supplierClientId, clients.id),
-    eq(clients.isSeller, true)
-  ))
+  .leftJoin(
+    clients,
+    and(eq(lots.supplierClientId, clients.id), eq(clients.isSeller, true))
+  )
   .where(/* existing conditions */);
 ```
 
 **Deliverables:**
+
 - [ ] Remove strains join from salesSheetsDb.ts
-- [ ] Replace vendors join with clients (isSeller=true)
+- [ ] Replace suppliers join with clients (isSeller=true)
 - [ ] Update return type to remove strain field
 - [ ] Update any callers expecting strain data
 - [ ] Add integration test
@@ -201,6 +202,7 @@ const results = await db
 ```
 
 **Deliverables:**
+
 - [ ] Remove strains join from primary query
 - [ ] Remove strainId from filter conditions
 - [ ] Update return type
@@ -224,12 +226,14 @@ const results = await db
 **Problem:** "Add Batch" button click handler not properly bound or event not propagating.
 
 **Investigation Steps:**
+
 1. Find Add Batch button in Inventory.tsx
 2. Check onClick handler binding
 3. Verify modal state management
 4. Test button visibility/disabled state
 
 **Deliverables:**
+
 - [ ] Identify missing click handler
 - [ ] Bind onClick to proper function
 - [ ] Verify modal opens on click
@@ -250,12 +254,14 @@ const results = await db
 **Problem:** Role management buttons (create, edit, delete) don't respond to clicks.
 
 **Investigation Steps:**
+
 1. Find RBAC roles management page
 2. Check button onClick handlers
 3. Verify tRPC mutations connected
 4. Test permission checks (may be blocking UI)
 
 **Deliverables:**
+
 - [ ] Identify RBAC roles page location
 - [ ] Fix click handlers for role buttons
 - [ ] Verify mutations fire correctly
@@ -300,6 +306,7 @@ async function createInventoryMovement(input: Input & { actorId: number }) {
 ```
 
 **Deliverables:**
+
 - [ ] Remove createdBy from input type
 - [ ] Add actorId parameter from context
 - [ ] Update all callers to pass ctx.user.id
@@ -320,6 +327,7 @@ async function createInventoryMovement(input: Input & { actorId: number }) {
 **Fix:** Same pattern as SEC-031.
 
 **Deliverables:**
+
 - [ ] Remove createdBy from input type
 - [ ] Add actorId parameter from context
 - [ ] Update all callers
@@ -345,6 +353,7 @@ async function createInventoryMovement(input: Input & { actorId: number }) {
 **Problem:** "Add Item" button in PO creation doesn't work. Related to empty product dropdown.
 
 **Deliverables:**
+
 - [ ] Fix Add Item button click handler
 - [ ] Ensure product selection works
 - [ ] Test adding items to PO
@@ -364,6 +373,7 @@ async function createInventoryMovement(input: Input & { actorId: number }) {
 **Problem:** "Create PO" button doesn't work or is disabled.
 
 **Deliverables:**
+
 - [ ] Fix Create PO button handler
 - [ ] Verify form validation
 - [ ] Test PO creation flow
@@ -383,6 +393,7 @@ async function createInventoryMovement(input: Input & { actorId: number }) {
 **Problem:** Clicking "Edit" on a product/batch opens the Archive modal instead of Edit modal.
 
 **Deliverables:**
+
 - [ ] Trace Edit button click handler
 - [ ] Fix modal state binding
 - [ ] Verify correct modal opens
@@ -402,6 +413,7 @@ async function createInventoryMovement(input: Input & { actorId: number }) {
 **Problem:** Pick & Pack page shows no orders because staging DB not seeded with appropriate test data.
 
 **Deliverables:**
+
 - [ ] Create pick-pack-seed.ts script
 - [ ] Seed orders with "confirmed" status
 - [ ] Seed order items with allocated inventory
@@ -433,16 +445,16 @@ pnpm build    # Build - must pass
 
 Test each Golden Flow in staging:
 
-| # | Golden Flow | Test Steps | Expected |
-|---|-------------|------------|----------|
-| GF-001 | Direct Intake | Create intake with new vendor | Batch created |
-| GF-002 | Procure-to-Pay | Create PO, receive items, pay vendor | Full flow works |
-| GF-003 | Order-to-Cash | Create order, confirm, fulfill | Order completed |
-| GF-004 | Invoice & Payment | Create invoice, record payment | GL entries correct |
-| GF-005 | Pick & Pack | Pick and pack order items | Status updated |
-| GF-006 | Client Ledger | View client ledger | Balance correct |
-| GF-007 | Inventory Mgmt | Adjust inventory | Qty updated |
-| GF-008 | Sample Request | Create sample request | Samples allocated |
+| #      | Golden Flow       | Test Steps                             | Expected           |
+| ------ | ----------------- | -------------------------------------- | ------------------ |
+| GF-001 | Direct Intake     | Create intake with new supplier        | Batch created      |
+| GF-002 | Procure-to-Pay    | Create PO, receive items, pay supplier | Full flow works    |
+| GF-003 | Order-to-Cash     | Create order, confirm, fulfill         | Order completed    |
+| GF-004 | Invoice & Payment | Create invoice, record payment         | GL entries correct |
+| GF-005 | Pick & Pack       | Pick and pack order items              | Status updated     |
+| GF-006 | Client Ledger     | View client ledger                     | Balance correct    |
+| GF-007 | Inventory Mgmt    | Adjust inventory                       | Qty updated        |
+| GF-008 | Sample Request    | Create sample request                  | Samples allocated  |
 
 ---
 
@@ -481,21 +493,21 @@ TOTAL: 11 hours (with parallelization)
 
 ## Agent Assignment Matrix
 
-| Agent ID | Pocket | Task | Files | Est |
-|----------|--------|------|-------|-----|
-| P0-1 | 0 | SCHEMA-015 | salesSheetsDb, productsDb, inventoryDb | 4h |
-| P1A-1 | 1A | BUG-130 | salesSheetsDb.ts | 2h |
-| P1A-2 | 1A | BUG-132 | productsDb.ts | 2h |
-| P1B-1 | 1B | BUG-131 | Inventory.tsx | 1h |
-| P1B-2 | 1B | BUG-133 | Settings.tsx / RBAC pages | 2h |
-| P1C-1 | 1C | SEC-031 | inventoryDb.ts | 1h |
-| P1C-2 | 1C | SEC-032 | payablesService.ts | 1h |
-| P2-1 | 2 | BUG-134 | PurchaseOrdersPage.tsx | 1h |
-| P2-2 | 2 | BUG-135 | PurchaseOrdersPage.tsx | 1h |
-| P2-3 | 2 | BUG-136 | Inventory.tsx, EditBatchModal | 1h |
-| P2-4 | 2 | BUG-137 | seed scripts | 2h |
-| P3-1 | 3 | VERIFY-BUILD | - | 30m |
-| P3-2 | 3 | VERIFY-GF | staging env | 1.5h |
+| Agent ID | Pocket | Task         | Files                                  | Est  |
+| -------- | ------ | ------------ | -------------------------------------- | ---- |
+| P0-1     | 0      | SCHEMA-015   | salesSheetsDb, productsDb, inventoryDb | 4h   |
+| P1A-1    | 1A     | BUG-130      | salesSheetsDb.ts                       | 2h   |
+| P1A-2    | 1A     | BUG-132      | productsDb.ts                          | 2h   |
+| P1B-1    | 1B     | BUG-131      | Inventory.tsx                          | 1h   |
+| P1B-2    | 1B     | BUG-133      | Settings.tsx / RBAC pages              | 2h   |
+| P1C-1    | 1C     | SEC-031      | inventoryDb.ts                         | 1h   |
+| P1C-2    | 1C     | SEC-032      | payablesService.ts                     | 1h   |
+| P2-1     | 2      | BUG-134      | PurchaseOrdersPage.tsx                 | 1h   |
+| P2-2     | 2      | BUG-135      | PurchaseOrdersPage.tsx                 | 1h   |
+| P2-3     | 2      | BUG-136      | Inventory.tsx, EditBatchModal          | 1h   |
+| P2-4     | 2      | BUG-137      | seed scripts                           | 2h   |
+| P3-1     | 3      | VERIFY-BUILD | -                                      | 30m  |
+| P3-2     | 3      | VERIFY-GF    | staging env                            | 1.5h |
 
 ---
 

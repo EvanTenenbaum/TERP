@@ -12,7 +12,7 @@
 
 ## 1. Problem Statement
 
-VIP customers (vendors/growers) need a way to:
+VIP customers (suppliers/growers) need a way to:
 
 - View available inventory
 - See what products are needed (low stock alerts)

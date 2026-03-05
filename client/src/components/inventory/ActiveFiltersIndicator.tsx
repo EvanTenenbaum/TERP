@@ -4,6 +4,7 @@
  * Helps users understand why they may not see expected items
  */
 import React from "react";
+import { getBrandLabel } from "@/lib/nomenclature";
 
 type ActiveFilters = {
   status?: string[];
@@ -47,7 +48,7 @@ const ActiveFiltersIndicator: React.FC<ActiveFiltersIndicatorProps> = ({
       : null
   );
   addFilter(
-    "Brand",
+    getBrandLabel(filters.category),
     filters.brand && filters.brand.length > 0 ? filters.brand.join(", ") : null
   );
   addFilter(

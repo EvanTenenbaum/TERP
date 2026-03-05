@@ -173,13 +173,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ Features (COMPLETE)
 
-| Task        | Description                                   | Status      | Completion Date |
-| ----------- | --------------------------------------------- | ----------- | --------------- |
-| FEATURE-004 | Clarify Vendor vs Buyer vs Client Distinction | ✅ COMPLETE | Dec 2025        |
-| FEATURE-011 | Unified Product Catalogue (Foundation)        | ✅ COMPLETE | Jan 2026        |
-| FEATURE-012 | VIP Portal Admin Impersonation Tool           | ✅ COMPLETE | Dec 31, 2025    |
-| FEATURE-015 | VIP Portal Settings in Client Profile         | ✅ COMPLETE | Dec 2025        |
-| NOTIF-001   | Notification Triggers for Business Events     | ✅ COMPLETE | Jan 9, 2026     |
+| Task        | Description                                     | Status      | Completion Date |
+| ----------- | ----------------------------------------------- | ----------- | --------------- |
+| FEATURE-004 | Clarify Supplier vs Buyer vs Client Distinction | ✅ COMPLETE | Dec 2025        |
+| FEATURE-011 | Unified Product Catalogue (Foundation)          | ✅ COMPLETE | Jan 2026        |
+| FEATURE-012 | VIP Portal Admin Impersonation Tool             | ✅ COMPLETE | Dec 31, 2025    |
+| FEATURE-015 | VIP Portal Settings in Client Profile           | ✅ COMPLETE | Dec 2025        |
+| NOTIF-001   | Notification Triggers for Business Events       | ✅ COMPLETE | Jan 9, 2026     |
 
 ### ✅ Feature Flag System (COMPLETE - Dec 31, 2025)
 
@@ -379,16 +379,16 @@ pnpm test --run 2>&1 | tee test-results.log
 > **Updated:** 2026-01-29 - LIVE BROWSER TESTING RESULTS (supersedes code verification)
 > **Status:** 4/12 PASS, 1/12 FAIL, 7/12 BLOCKED - Production schema drift detected
 
-| #      | Golden Flow       | Code Status | Live Status | Primary Blockers                                    |
-| ------ | ----------------- | ----------- | ----------- | --------------------------------------------------- |
-| GF-001 | Direct Intake     | ✅ Code OK  | 🔴 BLOCKED  | BUG-002: Add Batch button non-functional            |
-| GF-002 | Procure-to-Pay    | ✅ Code OK  | 🔴 BLOCKED  | BUG-003/005/006: PO creation completely broken      |
-| GF-003 | Order-to-Cash     | ✅ Code OK  | 🔴 BLOCKED  | BUG-001: Inventory query fails (strainId + vendors) |
-| GF-004 | Invoice & Payment | ✅ Code OK  | ✅ PASS     | Working correctly                                   |
-| GF-005 | Pick & Pack       | ✅ Code OK  | 🔴 BLOCKED  | BUG-008: No orders available (data issue)           |
-| GF-006 | Client Ledger     | ✅ Code OK  | ✅ PASS     | Working correctly                                   |
-| GF-007 | Inventory Mgmt    | ✅ Code OK  | ✅ PASS     | Verified in staging build #5149                     |
-| GF-008 | Sample Request    | ✅ Code OK  | ✅ PASS     | Working correctly (via Todo workflow)               |
+| #      | Golden Flow       | Code Status | Live Status | Primary Blockers                                      |
+| ------ | ----------------- | ----------- | ----------- | ----------------------------------------------------- |
+| GF-001 | Direct Intake     | ✅ Code OK  | 🔴 BLOCKED  | BUG-002: Add Batch button non-functional              |
+| GF-002 | Procure-to-Pay    | ✅ Code OK  | 🔴 BLOCKED  | BUG-003/005/006: PO creation completely broken        |
+| GF-003 | Order-to-Cash     | ✅ Code OK  | 🔴 BLOCKED  | BUG-001: Inventory query fails (strainId + suppliers) |
+| GF-004 | Invoice & Payment | ✅ Code OK  | ✅ PASS     | Working correctly                                     |
+| GF-005 | Pick & Pack       | ✅ Code OK  | 🔴 BLOCKED  | BUG-008: No orders available (data issue)             |
+| GF-006 | Client Ledger     | ✅ Code OK  | ✅ PASS     | Working correctly                                     |
+| GF-007 | Inventory Mgmt    | ✅ Code OK  | ✅ PASS     | Verified in staging build #5149                       |
+| GF-008 | Sample Request    | ✅ Code OK  | ✅ PASS     | Working correctly (via Todo workflow)                 |
 
 ---
 
@@ -428,15 +428,15 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 
 #### S1-Critical Bugs (Release Blockers)
 
-| Bug ID  | Title                                       | Domain          | Root Cause                                        | Est |
-| ------- | ------------------------------------------- | --------------- | ------------------------------------------------- | --- |
-| BUG-130 | Inventory Query Failure                     | Orders          | `salesSheetsDb.ts:117-129` joins strainId+vendors | 4h  |
-| BUG-131 | Add Batch Button Non-Functional             | Inventory       | Frontend click handler not bound                  | 1h  |
-| BUG-132 | Product Dropdown Empty in PO                | Purchase Orders | `productsDb.ts:117` joins strainId                | 2h  |
-| BUG-133 | RBAC Roles Non-Interactive                  | Admin           | Frontend click handlers missing                   | 2h  |
-| BUG-134 | PO Add Item Button Broken                   | Purchase Orders | Related to BUG-132                                | 1h  |
-| BUG-135 | Create PO Button Broken                     | Purchase Orders | Related to BUG-132                                | 1h  |
-| BUG-138 | Alerts Router Uses Deprecated vendors Table | Alerts          | `alerts.ts:15,308` joins deprecated vendors table | 2h  |
+| Bug ID  | Title                                         | Domain          | Root Cause                                          | Est |
+| ------- | --------------------------------------------- | --------------- | --------------------------------------------------- | --- |
+| BUG-130 | Inventory Query Failure                       | Orders          | `salesSheetsDb.ts:117-129` joins strainId+suppliers | 4h  |
+| BUG-131 | Add Batch Button Non-Functional               | Inventory       | Frontend click handler not bound                    | 1h  |
+| BUG-132 | Product Dropdown Empty in PO                  | Purchase Orders | `productsDb.ts:117` joins strainId                  | 2h  |
+| BUG-133 | RBAC Roles Non-Interactive                    | Admin           | Frontend click handlers missing                     | 2h  |
+| BUG-134 | PO Add Item Button Broken                     | Purchase Orders | Related to BUG-132                                  | 1h  |
+| BUG-135 | Create PO Button Broken                       | Purchase Orders | Related to BUG-132                                  | 1h  |
+| BUG-138 | Alerts Router Uses Deprecated suppliers Table | Alerts          | `alerts.ts:15,308` joins deprecated suppliers table | 2h  |
 
 #### S2-High Bugs
 
@@ -477,7 +477,7 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 **Why Previous Fixes Failed:**
 | Attempt | What Was Done | Why It Failed |
 | ------- | ------------- | ------------- |
-| SCHEMA-015 (alerts.ts) | Removed vendors join from 1 file | Only fixed 1 of 27+ affected files |
+| SCHEMA-015 (alerts.ts) | Removed suppliers join from 1 file | Only fixed 1 of 27+ affected files |
 | BUG-131 | Fixed Add Batch button binding | Frontend fix, backend queries still fail |
 | SEC-031 | Fixed auth context in inventoryDb | Unrelated to schema drift |
 | PR #352 | Centralized safeProductSelect | Partial fix, not applied to all files |
@@ -843,12 +843,12 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 #### Critical Issues (Tests Failing - 4 agents parallel) - ✅ COMPLETE
 
-| Task     | Description                                    | Priority | Status   | Est | Module                                      | Root Cause                          |
-| -------- | ---------------------------------------------- | -------- | -------- | --- | ------------------------------------------- | ----------------------------------- |
-| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | complete | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
-| BUG-122  | Remove vendors table join in inventory queries | HIGH     | complete | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
-| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | complete | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
-| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | complete | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
+| Task     | Description                                      | Priority | Status   | Est | Module                                      | Root Cause                          |
+| -------- | ------------------------------------------------ | -------- | -------- | --- | ------------------------------------------- | ----------------------------------- |
+| BUG-121  | Export getTransitionError from ordersDb.ts       | HIGH     | complete | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
+| BUG-122  | Remove suppliers table join in inventory queries | HIGH     | complete | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
+| TEST-030 | Fix adminSetup test rate limiter interference    | MEDIUM   | complete | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
+| TEST-031 | Fix admin-security.test.ts failure               | MEDIUM   | complete | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
 
 **BUG-121 Details (getTransitionError not exported):**
 
@@ -863,7 +863,7 @@ export function getTransitionError(statusType, currentStatus, newStatus) {...}
 - **Impact:** 4 tests fail in ordersDb.stateMachine.test.ts (lines 213, 218, 223, 229)
 - **Tests:** "should return terminal state message for PAID/CANCELLED", "should list valid transitions"
 
-**BUG-122 Details (Inventory joins deprecated vendors table):**
+**BUG-122 Details (Inventory joins deprecated suppliers table):**
 
 ```typescript
 // CURRENT - server/inventoryDb.ts:887
@@ -873,9 +873,9 @@ export function getTransitionError(statusType, currentStatus, newStatus) {...}
 .leftJoin(clients, eq(lots.supplierClientId, clients.id))
 ```
 
-- **Impact:** Inventory queries fail when vendors table is dropped
+- **Impact:** Inventory queries fail when suppliers table is dropped
 - **Affected Queries:** `getAllBatches()`, `searchBatches()` - lines 887, 950
-- **Party Model:** Per CLAUDE.md, vendors table is deprecated
+- **Party Model:** Per CLAUDE.md, suppliers table is deprecated
 
 **TEST-030 Details (Rate limiter interference):**
 
@@ -1424,7 +1424,7 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 | --------- | ------------------------------------------------ | -------- | ----------------------------- | -------- | --------------------------- |
 | BE-QA-001 | Complete or Remove Email/SMS Integration Stubs   | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 16h      | `docs/prompts/BE-QA-001.md` |
 | BE-QA-002 | Implement VIP Tier Config Database Storage       | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-002.md` |
-| BE-QA-003 | Fix Vendor Supply Matching Empty Results         | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-003.md` |
+| BE-QA-003 | Fix Supplier Supply Matching Empty Results       | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-003.md` |
 | BE-QA-004 | Complete Dashboard Metrics Schema Implementation | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/BE-QA-004.md` |
 | BE-QA-005 | Fix Supplier Metrics Null Return Values          | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 4h       | `docs/prompts/BE-QA-005.md` |
 
@@ -1650,23 +1650,23 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 
 ### Infrastructure Tasks (P2)
 
-| Task         | Description                                      | Priority | Status                                                 | Prompt |
-| ------------ | ------------------------------------------------ | -------- | ------------------------------------------------------ | ------ |
-| INFRA-004    | Implement Deployment Monitoring Enforcement      | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-007    | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
-| INFRA-012    | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
-| CLEANUP-001  | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-017    | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
-| INFRA-018    | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
-| INFRA-020    | Pick & Pack Consolidation Phase 0 - Data Audit   | HIGH     | ready                                                  | -      |
-| INFRA-021    | Pick & Pack Consolidation Phase 1 - Backend      | HIGH     | ready                                                  | -      |
-| INFRA-022    | Pick & Pack Consolidation Phase 2 - Feature Flag | HIGH     | ready                                                  | -      |
-| INFRA-023    | Pick & Pack Consolidation Phase 3 - Migration    | HIGH     | ready                                                  | -      |
-| INFRA-024    | Pick & Pack Consolidation Phase 4 - Cleanup      | MEDIUM   | ready                                                  | -      |
-| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)             | HIGH     | ready                                                  | -      |
-| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)     | HIGH     | ready                                                  | -      |
-| INFRA-DB-003 | Consolidate Image Tables (Deferred)              | MEDIUM   | deferred                                               | -      |
-| INFRA-DB-004 | Complete Vendors → Clients Migration (Deferred)  | MEDIUM   | deferred                                               | -      |
+| Task         | Description                                       | Priority | Status                                                 | Prompt |
+| ------------ | ------------------------------------------------- | -------- | ------------------------------------------------------ | ------ |
+| INFRA-004    | Implement Deployment Monitoring Enforcement       | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-007    | Update Swarm Manager                              | LOW      | ✅ COMPLETE (audit verified)                           | -      |
+| INFRA-012    | Deploy TERP Commander Slack Bot                   | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
+| CLEANUP-001  | Remove LLM/AI from Codebase                       | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-017    | Fix Hardcoded Memory Value in memoryOptimizer.ts  | HIGH     | ✅ COMPLETE                                            | -      |
+| INFRA-018    | Sync .do/app.yaml with Production Config          | MEDIUM   | ✅ COMPLETE                                            | -      |
+| INFRA-020    | Pick & Pack Consolidation Phase 0 - Data Audit    | HIGH     | ready                                                  | -      |
+| INFRA-021    | Pick & Pack Consolidation Phase 1 - Backend       | HIGH     | ready                                                  | -      |
+| INFRA-022    | Pick & Pack Consolidation Phase 2 - Feature Flag  | HIGH     | ready                                                  | -      |
+| INFRA-023    | Pick & Pack Consolidation Phase 3 - Migration     | HIGH     | ready                                                  | -      |
+| INFRA-024    | Pick & Pack Consolidation Phase 4 - Cleanup       | MEDIUM   | ready                                                  | -      |
+| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)              | HIGH     | ready                                                  | -      |
+| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)      | HIGH     | ready                                                  | -      |
+| INFRA-DB-003 | Consolidate Image Tables (Deferred)               | MEDIUM   | deferred                                               | -      |
+| INFRA-DB-004 | Complete Suppliers → Clients Migration (Deferred) | MEDIUM   | deferred                                               | -      |
 
 > **INFRA-DB Tasks (Database Standardization - Phase 6):**
 >
@@ -1679,7 +1679,7 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 > - **INFRA-DB-001:** Add FK constraints to 15+ tables (brands, lots, bills, etc.)
 > - **INFRA-DB-002:** Rename payments.vendorId → supplierClientId
 > - **INFRA-DB-003:** Consolidate productMedia + productImages tables (DEFERRED)
-> - **INFRA-DB-004:** Complete Party Model vendors → clients migration (DEFERRED)
+> - **INFRA-DB-004:** Complete Party Model suppliers → clients migration (DEFERRED)
 
 > **INFRA-017 Details (Memory Health Check False Positive):**
 >
@@ -2113,7 +2113,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | NAV-008 | Add Matchmaking to Sales nav                   | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-009 | Add Quotes to Sales nav                        | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-010 | Add Returns to Sales nav                       | MEDIUM   | **complete** | 5 min    | navigation.ts      |
-| NAV-011 | Add Vendor Supply to Inventory nav             | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-011 | Add Supplier Supply to Inventory nav           | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-012 | Add Pricing Rules to Finance nav               | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-013 | Add Workflow Queue to Admin nav                | MEDIUM   | **complete** | 5 min    | navigation.ts      |
 | NAV-014 | Add all 8 routes to Command Palette            | MEDIUM   | **complete** | 15 min   | CommandPalette.tsx |
@@ -2151,15 +2151,15 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 Each task adds one navigation item to `navigation.ts`:
 
-| Task    | Route             | Group     | Icon         | Position              |
-| ------- | ----------------- | --------- | ------------ | --------------------- |
-| NAV-007 | `/needs`          | sales     | Target       | After Invoices        |
-| NAV-008 | `/matchmaking`    | sales     | Sparkles     | After Client Needs    |
-| NAV-009 | `/quotes`         | sales     | FileQuestion | After Matchmaking     |
-| NAV-010 | `/returns`        | sales     | PackageX     | After Quotes          |
-| NAV-011 | `/vendor-supply`  | inventory | PackagePlus  | After Vendors         |
-| NAV-012 | `/pricing/rules`  | finance   | DollarSign   | After Credit Settings |
-| NAV-013 | `/workflow-queue` | admin     | ListOrdered  | After Feature Flags   |
+| Task    | Route              | Group     | Icon         | Position              |
+| ------- | ------------------ | --------- | ------------ | --------------------- |
+| NAV-007 | `/needs`           | sales     | Target       | After Invoices        |
+| NAV-008 | `/matchmaking`     | sales     | Sparkles     | After Client Needs    |
+| NAV-009 | `/quotes`          | sales     | FileQuestion | After Matchmaking     |
+| NAV-010 | `/returns`         | sales     | PackageX     | After Quotes          |
+| NAV-011 | `/supplier-supply` | inventory | PackagePlus  | After Suppliers       |
+| NAV-012 | `/pricing/rules`   | finance   | DollarSign   | After Credit Settings |
+| NAV-013 | `/workflow-queue`  | admin     | ListOrdered  | After Feature Flags   |
 
 ---
 
@@ -3458,7 +3458,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ---
 
-### REL-013: Complete Vendor Table Deprecation
+### REL-013: Complete Supplier Table Deprecation
 
 **Status:** ready
 **Priority:** LOW
@@ -3467,7 +3467,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Dependencies:** None
 **Mode:** STRICT
 
-**Problem:** 79 files still reference deprecated vendors table.
+**Problem:** 79 files still reference deprecated suppliers table.
 
 **Deliverables:**
 
@@ -3475,8 +3475,8 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Create migration plan per module
 - [ ] Replace with clients.isSeller queries
 - [ ] Update all foreign keys to supplierClientId
-- [ ] Add CI check blocking new vendor references
-- [ ] Remove vendors table from schema (final step)
+- [ ] Add CI check blocking new supplier references
+- [ ] Remove suppliers table from schema (final step)
 
 **Verification:**
 
@@ -6161,7 +6161,7 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 4. **State Machine Ignored** - Defined but not used
 5. **Missing Transactions** - Multi-step ops without atomicity
 6. **Security Chains** - Individual issues combine into exploits
-7. **Party Model Debt** - 42 files reference deprecated vendors table
+7. **Party Model Debt** - 42 files reference deprecated suppliers table
 
 **Blast Radius Summary:**
 | Issue | Max Impact |
@@ -6817,7 +6817,7 @@ global.ResizeObserver = class ResizeObserver {
 **Problem / Goal:**
 When creating a Sales Order, the system fails to load available inventory and displays a raw SQL query error to the user. This is a system-wide blocker for all transactional flows.
 
-**Root Cause:** Query joined deprecated `vendors` table which caused failures.
+**Root Cause:** Query joined deprecated `suppliers` table which caused failures.
 
 **Fix Applied:**
 
@@ -6834,7 +6834,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 **Objectives:**
 
 - Confirm inventory queries load without SQL errors for order creation.
-- Ensure canonical supplier joins are used instead of deprecated vendors table.
+- Ensure canonical supplier joins are used instead of deprecated suppliers table.
 - Validate inventory availability in the order creation UI.
 
 **Deliverables:**

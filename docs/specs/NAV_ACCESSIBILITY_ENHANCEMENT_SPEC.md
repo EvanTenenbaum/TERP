@@ -25,16 +25,16 @@ An accessibility audit identified 14 hidden routes in TERP. After analysis with 
 
 ### Routes to Surface
 
-| Route             | Current Status | Proposed Location             |
-| ----------------- | -------------- | ----------------------------- |
-| `/leaderboard`    | Hidden         | Sales group (after Dashboard) |
-| `/needs`          | Hidden         | Sales group                   |
-| `/matchmaking`    | Hidden         | Sales group                   |
-| `/quotes`         | Hidden         | Sales group                   |
-| `/returns`        | Hidden         | Sales group                   |
-| `/vendor-supply`  | Hidden         | Inventory group               |
-| `/pricing/rules`  | Hidden         | Finance group                 |
-| `/workflow-queue` | Hidden         | Admin group                   |
+| Route              | Current Status | Proposed Location             |
+| ------------------ | -------------- | ----------------------------- |
+| `/leaderboard`     | Hidden         | Sales group (after Dashboard) |
+| `/needs`           | Hidden         | Sales group                   |
+| `/matchmaking`     | Hidden         | Sales group                   |
+| `/quotes`          | Hidden         | Sales group                   |
+| `/returns`         | Hidden         | Sales group                   |
+| `/supplier-supply` | Hidden         | Inventory group               |
+| `/pricing/rules`   | Hidden         | Finance group                 |
+| `/workflow-queue`  | Hidden         | Admin group                   |
 
 ### Routes Remaining Hidden (By Design)
 
@@ -284,7 +284,7 @@ import {
 | NAV-008 | Add Matchmaking to Sales nav                   | navigation.ts      | 5 min  | NAV-007      |
 | NAV-009 | Add Quotes to Sales nav                        | navigation.ts      | 5 min  | NAV-008      |
 | NAV-010 | Add Returns to Sales nav                       | navigation.ts      | 5 min  | NAV-009      |
-| NAV-011 | Add Vendor Supply to Inventory nav             | navigation.ts      | 5 min  | NAV-010      |
+| NAV-011 | Add Supplier Supply to Inventory nav           | navigation.ts      | 5 min  | NAV-010      |
 | NAV-012 | Add Pricing Rules to Finance nav               | navigation.ts      | 5 min  | NAV-011      |
 | NAV-013 | Add Workflow Queue to Admin nav                | navigation.ts      | 5 min  | NAV-012      |
 | NAV-014 | Add all 8 routes to Command Palette            | CommandPalette.tsx | 15 min | NAV-013      |
@@ -323,16 +323,16 @@ If issues are discovered post-deployment:
 
 All 8 routes implement appropriate patterns per `FEATURE_PRESERVATION_MATRIX.md`:
 
-| Route             | Work Surface Pattern     | Status  |
-| ----------------- | ------------------------ | ------- |
-| `/leaderboard`    | Review Surface           | Aligned |
-| `/needs`          | Review Surface           | Aligned |
-| `/matchmaking`    | Panel + Filters          | Aligned |
-| `/quotes`         | Work Surface             | Aligned |
-| `/returns`        | Work Surface + Inspector | Aligned |
-| `/vendor-supply`  | Work Surface             | Aligned |
-| `/pricing/rules`  | Work Surface + Inspector | Aligned |
-| `/workflow-queue` | Review Surface           | Aligned |
+| Route              | Work Surface Pattern     | Status  |
+| ------------------ | ------------------------ | ------- |
+| `/leaderboard`     | Review Surface           | Aligned |
+| `/needs`           | Review Surface           | Aligned |
+| `/matchmaking`     | Panel + Filters          | Aligned |
+| `/quotes`          | Work Surface             | Aligned |
+| `/returns`         | Work Surface + Inspector | Aligned |
+| `/supplier-supply` | Work Surface             | Aligned |
+| `/pricing/rules`   | Work Surface + Inspector | Aligned |
+| `/workflow-queue`  | Review Surface           | Aligned |
 
 ---
 

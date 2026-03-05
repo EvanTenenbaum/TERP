@@ -525,7 +525,7 @@ export default function MatchmakingServicePage({
                         ` • ${item.quantityAvailable} lbs`}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Vendor: {item.vendorName}
+                      Supplier: {item.vendorName}
                     </p>
                     {item.unitPrice && (
                       <p className="text-xs font-medium text-green-600">

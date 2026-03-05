@@ -60,7 +60,7 @@ export const TotalDebtWidget = memo(function TotalDebtWidget() {
                 onClick={() => setLocation("/accounting/bills")}
               >
                 <TableCell className="font-medium">
-                  Total Debt I Owe Vendors
+                  Total Debt I Owe Suppliers
                 </TableCell>
                 <TableCell className="text-right font-mono text-red-600">
                   {formatCurrency(data.totalDebtIOwedToVendors)}

@@ -52,10 +52,16 @@ DEPRECATED_TERMS=(
 
   # Sales family
   "Estimate (label)|Quote|sales|\\bEstimate\\b|warning"
+  "Sale (noun)|Sales Order|sales|\\bSale\\b|warning"
+  "Shipping (lifecycle)|Fulfillment|sales|\\bShipping\\b|warning"
 
   # Product family — InventoryItem as type name (severity: error)
   "InventoryItem (type)|Batch|product|\\bInventoryItem\\b|error"
   "inventory_item (type)|batch|product|\\binventory[_-]item\\b|error"
+
+  # Brand family — Grower deprecated (severity: warning)
+  "Grower|Farmer/Brand|brand|\\bGrower\\b|warning"
+  "grower|farmer/brand|brand|\\bgrower\\b|warning"
 )
 
 # ─── Legacy exempt files ───────────────────────────────────────────────────────

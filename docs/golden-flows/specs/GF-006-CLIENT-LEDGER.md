@@ -82,9 +82,9 @@ The Client Ledger flow provides comprehensive AR (Accounts Receivable) and AP (A
 | State       | Trigger                  | Display                                                                             |
 | ----------- | ------------------------ | ----------------------------------------------------------------------------------- |
 | Loading     | Initial page load        | Two `<Skeleton>` rows                                                               |
-| Data Loaded | API returns successfully | Table with "Total Debt Owed to Me" (green) and "Total Debt I Owe Vendors" (red)     |
+| Data Loaded | API returns successfully | Table with "Total Debt Owed to Me" (green) and "Total Debt I Owe Suppliers" (red)   |
 | Empty       | No outstanding balances  | EmptyState: "No debt data" / "Debt data will appear once transactions are recorded" |
-| Clickable   | Row click                | "Owed to Me" → `/clients?hasDebt=true`, "I Owe Vendors" → `/accounting/bills`       |
+| Clickable   | Row click                | "Owed to Me" → `/clients?hasDebt=true`, "I Owe Suppliers" → `/accounting/bills`     |
 
 #### ClientDebtLeaderboard (`ClientDebtLeaderboard.tsx`)
 

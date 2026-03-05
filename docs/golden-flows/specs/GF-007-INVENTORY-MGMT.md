@@ -522,7 +522,7 @@ When status changes involve QUARANTINED:
 
 Specification reviewed for:
 
-- [x] Deprecated patterns (`vendors` table) - Not referenced
+- [x] Deprecated patterns (`suppliers` table) - Not referenced
 - [x] Correct party model usage (`clients` with `isSeller`) - Correctly documented
 - [x] Proper actor attribution patterns - Documented in invariants
 

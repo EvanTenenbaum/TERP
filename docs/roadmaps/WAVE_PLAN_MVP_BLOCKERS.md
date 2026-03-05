@@ -17,7 +17,7 @@ Additionally, **14 new QA bugs** (TER-251 through TER-264) were discovered by au
 | Flow   | Name              | Blocking Tickets                            | Status                                   |
 | ------ | ----------------- | ------------------------------------------- | ---------------------------------------- |
 | GF-001 | Direct Intake     | TER-96 (location schema mismatch)           | **500 on submit**                        |
-| GF-002 | Procure-to-Pay    | TER-97 (vendor mapping failure)             | **500 on PO create**                     |
+| GF-002 | Procure-to-Pay    | TER-97 (supplier mapping failure)           | **500 on PO create**                     |
 | GF-003 | Order-to-Cash     | TER-257, TER-258, TER-259                   | **Ship/Cancel broken, no inv deduction** |
 | GF-004 | Invoice & Payment | TER-256 (payment tx rollback)               | **Payment recording fails**              |
 | GF-005 | Pick & Pack       | TER-257 (SHIPPED fails)                     | **Cannot complete fulfillment**          |
@@ -61,12 +61,12 @@ Additionally, **14 new QA bugs** (TER-251 through TER-264) were discovered by au
 **Estimate:** 8h
 **Unblocks:** GF-001, GF-002, GF-008
 
-| Task | Linear | Title                                                | Complexity | Golden Flow |
-| ---- | ------ | ---------------------------------------------------- | ---------- | ----------- |
-| 7A   | TER-96 | GF-001: Fix intake location site schema mismatch     | Medium     | GF-001      |
-| 7B   | TER-97 | GF-002: Fix purchaseOrders.create vendor mapping 500 | Medium     | GF-002      |
-| 7C   | TER-98 | GF-008: Fix samples.createRequest 500 on insert      | Medium     | GF-008      |
-| 7D   | TER-99 | GF-006: Restore Client Ledger navigation             | Simple     | GF-006      |
+| Task | Linear | Title                                                  | Complexity | Golden Flow |
+| ---- | ------ | ------------------------------------------------------ | ---------- | ----------- |
+| 7A   | TER-96 | GF-001: Fix intake location site schema mismatch       | Medium     | GF-001      |
+| 7B   | TER-97 | GF-002: Fix purchaseOrders.create supplier mapping 500 | Medium     | GF-002      |
+| 7C   | TER-98 | GF-008: Fix samples.createRequest 500 on insert        | Medium     | GF-008      |
+| 7D   | TER-99 | GF-006: Restore Client Ledger navigation               | Simple     | GF-006      |
 
 ### Root Causes
 

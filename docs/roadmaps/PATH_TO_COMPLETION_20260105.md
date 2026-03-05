@@ -68,7 +68,7 @@ This document provides an updated strategic path to Tier 1 customer readiness ba
 
 | Task        | Description                                 | Est. |
 | ----------- | ------------------------------------------- | ---- |
-| TERP-SS-003 | Fix Client Grid Vendor/Batch Code Mapping   | 24h  |
+| TERP-SS-003 | Fix Client Grid Supplier/Batch Code Mapping | 24h  |
 | TERP-SS-004 | Fix Inventory Grid Original Intake Quantity | 20h  |
 | TERP-SS-005 | Display Payment Amounts in Client Grid      | 16h  |
 
@@ -101,7 +101,7 @@ This document provides an updated strategic path to Tier 1 customer readiness ba
 
 - Visual cues and color coding
 - Client grid summary calculations
-- Inventory grid date/vendor grouping
+- Inventory grid date/supplier grouping
 - Editing capabilities for inventory grid
 
 ---

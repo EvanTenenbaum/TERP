@@ -409,11 +409,11 @@ mysql terp_prod < backup_YYYYMMDD.sql
 ## Decision Points Requiring Sign-off
 
 1. **QA-R04:** Accept hard DELETE exception for orphaned soft-deleted records?
-   - [ ] Approved by: ******\_\_\_******
+   - [ ] Approved by: **\*\***\_\_\_**\*\***
 
 2. **QA-R05:** Which fallback option?
    - [ ] Option A: Use existing system account if found
-   - [ ] Option B: Create dedicated "Unknown Vendor" account
+   - [ ] Option B: Create dedicated "Unknown Supplier" account
 
 3. **QA-R01:** Keep migration 0054 as-is?
    - [ ] Yes, keep as documentation

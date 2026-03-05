@@ -11,16 +11,16 @@
 
 ## Executive Summary
 
-| Metric | Count |
-|--------|-------|
-| **Total Open MVP Tasks** | 133 |
-| **Total Open Beta Tasks** | 30 |
-| **Total Extracted Work (TERP-*)** | 25 |
-| **Total Work Surface Gaps** | 6 (NEW) |
-| **P0 Critical Blockers** | 11 |
-| **P1 High Priority** | 42 |
-| **P2 Medium Priority** | 65 |
-| **P3 Low Priority** | 15 |
+| Metric                             | Count   |
+| ---------------------------------- | ------- |
+| **Total Open MVP Tasks**           | 133     |
+| **Total Open Beta Tasks**          | 30      |
+| **Total Extracted Work (TERP-\*)** | 25      |
+| **Total Work Surface Gaps**        | 6 (NEW) |
+| **P0 Critical Blockers**           | 11      |
+| **P1 High Priority**               | 42      |
+| **P2 Medium Priority**             | 65      |
+| **P3 Low Priority**                | 15      |
 
 ### Critical Path Analysis
 
@@ -35,7 +35,8 @@ SEC-023 (credentials) → TS-001 (TypeScript) → TEST-INFRA-* (test infrastruct
 ### QA Review Findings (2026-01-23)
 
 **Gap Analysis from Work Surfaces Report:**
-- 2 critical pages (Products, Vendors) not using Work Surface pattern
+
+- 2 critical pages (Products, Suppliers) not using Work Surface pattern
 - Golden Flows implemented but not wired to AR/AP UI
 - Minor keyboard hint inconsistencies in 2 Work Surfaces
 - Client Ledger Work Surface not verified
@@ -44,7 +45,7 @@ SEC-023 (credentials) → TS-001 (TypeScript) → TEST-INFRA-* (test infrastruct
 | Task ID | Description | Priority | Est. |
 |---------|-------------|----------|------|
 | WS-PROD-001 | Refactor Products page to Work Surface | HIGH | 8-16h |
-| WS-VEND-001 | Refactor Vendors page to Work Surface | HIGH | 8-16h |
+| WS-VEND-001 | Refactor Suppliers page to Work Surface | HIGH | 8-16h |
 | WS-GF-001 | Wire Golden Flows to AR/AP Quick Actions | MEDIUM | 16-24h |
 | WS-KB-001 | Add keyboard hint to Purchase Orders | LOW | 15 min |
 | WS-KB-002 | Add keyboard hint to Direct Intake | LOW | 15 min |
@@ -72,13 +73,14 @@ SEC-023 (credentials) → TS-001 (TypeScript) → TEST-INFRA-* (test infrastruct
 
 ### Tasks
 
-| Task | Description | Est. | Risk | Dependencies |
-|------|-------------|------|------|--------------|
-| **SEC-023** | Rotate exposed database credentials | 2-4h | CRITICAL | None |
-| **PERF-001** | Fix empty catch blocks in usePerformanceMonitor.ts | 15 min | HIGH | None |
-| **ACC-001** | Fix Silent GL Posting Failures (accountingHooks.ts) | 8h | CRITICAL | None |
+| Task         | Description                                         | Est.   | Risk     | Dependencies |
+| ------------ | --------------------------------------------------- | ------ | -------- | ------------ |
+| **SEC-023**  | Rotate exposed database credentials                 | 2-4h   | CRITICAL | None         |
+| **PERF-001** | Fix empty catch blocks in usePerformanceMonitor.ts  | 15 min | HIGH     | None         |
+| **ACC-001**  | Fix Silent GL Posting Failures (accountingHooks.ts) | 8h     | CRITICAL | None         |
 
 ### Verification Commands
+
 ```bash
 # After each task
 pnpm check && pnpm lint && pnpm test && pnpm build
@@ -107,27 +109,27 @@ Before proceeding to Phase 1, ALL must pass:
 
 ### Track A: TypeScript Errors (Blocking)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
+| Task       | Description               | Est.   | Dependencies     |
+| ---------- | ------------------------- | ------ | ---------------- |
 | **TS-001** | Fix 117 TypeScript errors | 16-24h | Phase 0 complete |
 
 ### Track B: Test Infrastructure (Parallel with Track A)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **TEST-INFRA-01** | Fix DOM/jsdom test container setup | 4h | None |
-| **TEST-INFRA-02** | Configure DATABASE_URL for test environment | 4h | None |
-| **TEST-INFRA-03** | Fix tRPC router initialization in tests | 4h | None |
-| **TEST-INFRA-04** | Create comprehensive test fixtures/factories | 8h | TEST-INFRA-02 |
-| **TEST-INFRA-05** | Fix async element detection (findBy vs getBy) | 4h | TEST-INFRA-01 |
-| **TEST-QA-001** | Fix React Hook Test Infrastructure | 2h | TEST-INFRA-01 |
+| Task              | Description                                   | Est. | Dependencies  |
+| ----------------- | --------------------------------------------- | ---- | ------------- |
+| **TEST-INFRA-01** | Fix DOM/jsdom test container setup            | 4h   | None          |
+| **TEST-INFRA-02** | Configure DATABASE_URL for test environment   | 4h   | None          |
+| **TEST-INFRA-03** | Fix tRPC router initialization in tests       | 4h   | None          |
+| **TEST-INFRA-04** | Create comprehensive test fixtures/factories  | 8h   | TEST-INFRA-02 |
+| **TEST-INFRA-05** | Fix async element detection (findBy vs getBy) | 4h   | TEST-INFRA-01 |
+| **TEST-QA-001**   | Fix React Hook Test Infrastructure            | 2h   | TEST-INFRA-01 |
 
 ### Track C: Test Fixing (After Track B)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **BUG-100** | Fix 122 failing tests (44 test files) | 24-40h | TEST-INFRA-* complete |
-| **TEST-INFRA-06** | Fix admin endpoint security test | 2h | BUG-100 |
+| Task              | Description                           | Est.   | Dependencies           |
+| ----------------- | ------------------------------------- | ------ | ---------------------- |
+| **BUG-100**       | Fix 122 failing tests (44 test files) | 24-40h | TEST-INFRA-\* complete |
+| **TEST-INFRA-06** | Fix admin endpoint security test      | 2h     | BUG-100                |
 
 ### Execution Order
 
@@ -145,6 +147,7 @@ Before proceeding to Phase 1, ALL must pass:
 ```
 
 ### Verification Commands
+
 ```bash
 # TypeScript check (must be 0 errors)
 pnpm check 2>&1 | grep -c "error" # Should output: 0
@@ -168,6 +171,7 @@ Before proceeding to Phase 2, ALL must pass:
 - [ ] No test files skipped due to infrastructure issues
 
 **Validation Script:**
+
 ```bash
 #!/bin/bash
 echo "=== QA Gate 1 Validation ==="
@@ -192,17 +196,18 @@ echo "Build: SUCCESS"
 
 ### Priority Order
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **TERP-0013** | Security hardening for public endpoint exposure | 6-10h | Phase 1 complete |
-| **TERP-0014** | Token invalidation and auth rate limiting | 6-12h | None |
-| **TERP-0017** | Convert remaining public routers to protected | 4-8h | TERP-0013 |
-| **SEC-024** | Validate Quote Email XSS Prevention | 1h | None |
-| **DI-009** | Add Vendor ID Validation in Return Processing | 30 min | None |
-| **SEC-025** | Implement Session Extension Limit | 1h | None |
-| **SEC-026** | Validate Cron Leader Election Race Condition | 2h | None |
+| Task          | Description                                     | Est.   | Dependencies     |
+| ------------- | ----------------------------------------------- | ------ | ---------------- |
+| **TERP-0013** | Security hardening for public endpoint exposure | 6-10h  | Phase 1 complete |
+| **TERP-0014** | Token invalidation and auth rate limiting       | 6-12h  | None             |
+| **TERP-0017** | Convert remaining public routers to protected   | 4-8h   | TERP-0013        |
+| **SEC-024**   | Validate Quote Email XSS Prevention             | 1h     | None             |
+| **DI-009**    | Add Supplier ID Validation in Return Processing | 30 min | None             |
+| **SEC-025**   | Implement Session Extension Limit               | 1h     | None             |
+| **SEC-026**   | Validate Cron Leader Election Race Condition    | 2h     | None             |
 
 ### Verification Commands
+
 ```bash
 # Security audit
 pnpm test server/routers/auth.test.ts
@@ -227,6 +232,7 @@ Before proceeding to Phase 3, ALL must pass:
 - [ ] Security penetration test: unauthenticated requests rejected
 
 **Validation Script:**
+
 ```bash
 #!/bin/bash
 echo "=== QA Gate 2 Security Validation ==="
@@ -251,14 +257,15 @@ echo "Auth tests: PASSED"
 
 ### Priority Order
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **TERP-0015** | Financial integrity validation fixes | 6-10h | Phase 2 |
-| **TERP-0016** | Business logic guardrails (orders, precision) | 12-20h | TERP-0015 |
-| **TERP-0001** | Dashboard backend data accuracy | 8-16h | None |
-| **TERP-0018** | Consistency and cleanup tasks | 8-16h | None |
+| Task          | Description                                   | Est.   | Dependencies |
+| ------------- | --------------------------------------------- | ------ | ------------ |
+| **TERP-0015** | Financial integrity validation fixes          | 6-10h  | Phase 2      |
+| **TERP-0016** | Business logic guardrails (orders, precision) | 12-20h | TERP-0015    |
+| **TERP-0001** | Dashboard backend data accuracy               | 8-16h  | None         |
+| **TERP-0018** | Consistency and cleanup tasks                 | 8-16h  | None         |
 
 ### Verification Commands
+
 ```bash
 # Financial tests
 pnpm test server/services/cogsChangeIntegrationService.test.ts
@@ -285,6 +292,7 @@ Before proceeding to Phase 4, ALL must pass:
 - [ ] `pnpm test server/services/**/*.test.ts` passes
 
 **Validation Script:**
+
 ```bash
 #!/bin/bash
 echo "=== QA Gate 3 Financial Integrity ==="
@@ -305,32 +313,33 @@ echo "All financial tests: PASSED"
 
 ### Critical Work Surface Tasks (P0)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **WSQA-001** | Wire InvoicesWorkSurface Payment Recording | 4h | Phase 3 |
-| **WSQA-002** | Implement Flexible Lot Selection | 2d | WSQA-001 |
-| **WSQA-003** | Add RETURNED Order Status | 2d | WSQA-002 |
-| **TERP-0003** | Add Client Wizard to ClientsWorkSurface | 1-2h | None |
+| Task          | Description                                | Est. | Dependencies |
+| ------------- | ------------------------------------------ | ---- | ------------ |
+| **WSQA-001**  | Wire InvoicesWorkSurface Payment Recording | 4h   | Phase 3      |
+| **WSQA-002**  | Implement Flexible Lot Selection           | 2d   | WSQA-001     |
+| **WSQA-003**  | Add RETURNED Order Status                  | 2d   | WSQA-002     |
+| **TERP-0003** | Add Client Wizard to ClientsWorkSurface    | 1-2h | None         |
 
 ### Supporting Tasks (P1)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **SSE-001** | Fix Live Shopping SSE Event Naming | 2h | None |
-| **LIVE-001** | Implement or Remove Live Shopping Console | 4h | SSE-001 |
-| **WS-010A** | Integrate Photography Module | 4h | None |
-| **NAV-017** | Route CreditsPage in App.tsx | 1h | None |
-| **API-016** | Implement Quote Email Sending | 4h | None |
+| Task         | Description                               | Est. | Dependencies |
+| ------------ | ----------------------------------------- | ---- | ------------ |
+| **SSE-001**  | Fix Live Shopping SSE Event Naming        | 2h   | None         |
+| **LIVE-001** | Implement or Remove Live Shopping Console | 4h   | SSE-001      |
+| **WS-010A**  | Integrate Photography Module              | 4h   | None         |
+| **NAV-017**  | Route CreditsPage in App.tsx              | 1h   | None         |
+| **API-016**  | Implement Quote Email Sending             | 4h   | None         |
 
 ### Quick Wins (15-30 min each)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **WS-KB-001** | Add keyboard hint `(Cmd+K)` to Purchase Orders search | 15 min | None |
-| **WS-KB-002** | Add keyboard hint `(Cmd+K)` to Direct Intake search | 15 min | None |
-| **WS-TEST-001** | Test Client Ledger Work Surface functionality | 30 min | None |
+| Task            | Description                                           | Est.   | Dependencies |
+| --------------- | ----------------------------------------------------- | ------ | ------------ |
+| **WS-KB-001**   | Add keyboard hint `(Cmd+K)` to Purchase Orders search | 15 min | None         |
+| **WS-KB-002**   | Add keyboard hint `(Cmd+K)` to Direct Intake search   | 15 min | None         |
+| **WS-TEST-001** | Test Client Ledger Work Surface functionality         | 30 min | None         |
 
 ### Verification Commands
+
 ```bash
 # Work Surface tests
 pnpm test client/src/components/work-surface/**/*.test.tsx
@@ -359,6 +368,7 @@ Before proceeding to Phase 4.5, ALL must pass:
 - [ ] Client Ledger Work Surface verified working
 
 **Validation Script:**
+
 ```bash
 #!/bin/bash
 echo "=== QA Gate 4 Work Surface Validation ==="
@@ -395,21 +405,23 @@ MANUAL QA REQUIRED:
 
 These pages use legacy data table patterns and should be refactored to Work Surface:
 
-| Task | Description | Est. | Impact | Dependencies |
-|------|-------------|------|--------|--------------|
-| **WS-PROD-001** | Refactor Products page to Work Surface pattern | 8-16h | HIGH | Phase 4 complete |
-| **WS-VEND-001** | Refactor Vendors page to Work Surface pattern | 8-16h | HIGH | Phase 4 complete |
-| **WS-GF-001** | Wire Golden Flows to AR/AP Quick Actions | 16-24h | MEDIUM | WSQA-001 |
+| Task            | Description                                     | Est.   | Impact | Dependencies     |
+| --------------- | ----------------------------------------------- | ------ | ------ | ---------------- |
+| **WS-PROD-001** | Refactor Products page to Work Surface pattern  | 8-16h  | HIGH   | Phase 4 complete |
+| **WS-VEND-001** | Refactor Suppliers page to Work Surface pattern | 8-16h  | HIGH   | Phase 4 complete |
+| **WS-GF-001**   | Wire Golden Flows to AR/AP Quick Actions        | 16-24h | MEDIUM | WSQA-001         |
 
 #### WS-PROD-001: Refactor Products Page to Work Surface
 
 **Current State:**
+
 - 150+ products using legacy data table
 - Complex filter UI (Category, Brand, Columns dropdown)
 - Traditional admin panel aesthetic
 - Missing: save state, keyboard hints, metrics, inspector panel
 
 **Implementation Steps:**
+
 1. Create `ProductsWorkSurface.tsx` component
 2. Implement Work Surface hooks (`useWorkSurfaceKeyboard`, `useSaveState`)
 3. Add summary metrics bar (Total Products, Active, Value)
@@ -420,32 +432,36 @@ These pages use legacy data table patterns and should be refactored to Work Surf
 8. Write E2E tests
 
 **Benefits:**
+
 - Consistent UX across inventory domain (matches Inventory Work Surface)
 - Keyboard-first navigation
 - Real-time save state indicator
 
 ---
 
-#### WS-VEND-001: Refactor Vendors Page to Work Surface
+#### WS-VEND-001: Refactor Suppliers Page to Work Surface
 
 **Current State:**
+
 - Empty legacy data table
 - "Columns" dropdown (legacy pattern)
 - Missing: save state, keyboard hints, metrics, action buttons
 
 **Implementation Steps:**
+
 1. Create `VendorsWorkSurface.tsx` component
 2. Implement Work Surface hooks
-3. Add summary metrics bar (Total Vendors, Active, Inventory Value)
+3. Add summary metrics bar (Total Suppliers, Active, Inventory Value)
 4. Implement Inspector Panel (similar to Clients)
 5. Add keyboard shortcuts with `(Cmd+K)` hint
-6. Add "Add Vendor" action button
+6. Add "Add Supplier" action button
 7. Wire to feature flag system
 8. Write E2E tests
 
 **Benefits:**
+
 - Consistent UX matches Clients page pattern
-- Inspector Panel for vendor details
+- Inspector Panel for supplier details
 - Keyboard-first navigation
 
 ---
@@ -453,11 +469,13 @@ These pages use legacy data table patterns and should be refactored to Work Surf
 #### WS-GF-001: Wire Golden Flows to AR/AP Quick Actions
 
 **Current State:**
+
 - "Receive Payment" button uses simple modal
 - Golden Flows exist and are tested but NOT used
 - Gap between implementation and usage
 
 **Expected Flow (InvoiceToPaymentFlow):**
+
 1. Select invoices
 2. Enter payment amount
 3. Choose payment method
@@ -465,13 +483,15 @@ These pages use legacy data table patterns and should be refactored to Work Surf
 5. Confirm and generate receipt
 
 **Implementation Steps:**
+
 1. Replace "Receive Payment" modal with `InvoiceToPaymentFlow`
-2. Create or wire vendor payment Golden Flow to "Pay Vendor" button
+2. Create or wire supplier payment Golden Flow to "Pay Supplier" button
 3. Ensure proper integration with AR/AP page
 4. Test full payment workflows
 5. Update E2E tests if needed
 
 ### Verification Commands
+
 ```bash
 # Products Work Surface tests
 pnpm test client/src/components/work-surface/ProductsWorkSurface.test.tsx
@@ -493,28 +513,28 @@ Before proceeding to Phase 5, ALL must pass:
 - [ ] Products page uses Work Surface pattern
 - [ ] Products shows save state indicator, keyboard hints, summary metrics
 - [ ] Products Inspector Panel opens on row click
-- [ ] Vendors page uses Work Surface pattern
-- [ ] Vendors shows save state indicator, keyboard hints, summary metrics
-- [ ] Vendors "Add Vendor" button works
+- [ ] Suppliers page uses Work Surface pattern
+- [ ] Suppliers shows save state indicator, keyboard hints, summary metrics
+- [ ] Suppliers "Add Supplier" button works
 - [ ] "Receive Payment" uses InvoiceToPaymentFlow (multi-step wizard)
-- [ ] "Pay Vendor" uses appropriate Golden Flow
+- [ ] "Pay Supplier" uses appropriate Golden Flow
 - [ ] All 9 Work Surfaces show consistent UX
 
 **Compliance Matrix Post-Phase 4.5:**
 
-| Page | Work Surface | Save State | Keyboard | Metrics | Inspector |
-|------|--------------|------------|----------|---------|-----------|
-| Clients | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Inventory | ✅ | ✅ | ✅ | ✅ | ❓ |
-| Invoices | ✅ | ✅ | ✅ | ✅ | ❓ |
-| Quotes | ✅ | ✅ | ✅ | ✅ | ❓ |
-| Orders | ✅ | ✅ | ✅ | ✅ | ❓ |
-| Pick & Pack | ✅ | ✅ | ✅ | ✅ | N/A |
-| Direct Intake | ✅ | ✅ | ✅ | ✅ | N/A |
-| Purchase Orders | ✅ | ✅ | ✅ | ✅ | ❓ |
-| Client Ledger | ✅ | ❓ | ❓ | ❓ | ❓ |
-| **Products** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Vendors** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Page            | Work Surface | Save State | Keyboard | Metrics | Inspector |
+| --------------- | ------------ | ---------- | -------- | ------- | --------- |
+| Clients         | ✅           | ✅         | ✅       | ✅      | ✅        |
+| Inventory       | ✅           | ✅         | ✅       | ✅      | ❓        |
+| Invoices        | ✅           | ✅         | ✅       | ✅      | ❓        |
+| Quotes          | ✅           | ✅         | ✅       | ✅      | ❓        |
+| Orders          | ✅           | ✅         | ✅       | ✅      | ❓        |
+| Pick & Pack     | ✅           | ✅         | ✅       | ✅      | N/A       |
+| Direct Intake   | ✅           | ✅         | ✅       | ✅      | N/A       |
+| Purchase Orders | ✅           | ✅         | ✅       | ✅      | ❓        |
+| Client Ledger   | ✅           | ❓         | ❓       | ❓      | ❓        |
+| **Products**    | ✅           | ✅         | ✅       | ✅      | ✅        |
+| **Suppliers**   | ✅           | ✅         | ✅       | ✅      | ✅        |
 
 **Target: 100% Work Surface Coverage in Core Domains**
 
@@ -528,31 +548,32 @@ Before proceeding to Phase 5, ALL must pass:
 
 ### Navigation Tasks (Can run in parallel)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **NAV-006** | Add Leaderboard to Sales nav | 5 min | None |
-| **NAV-007** | Add Client Needs to Sales nav | 5 min | None |
-| **NAV-008** | Add Matchmaking to Sales nav | 5 min | None |
-| **NAV-009** | Add Quotes to Sales nav | 5 min | None |
-| **NAV-010** | Add Returns to Sales nav | 5 min | None |
-| **NAV-011** | Add Vendor Supply to Inventory nav | 5 min | None |
-| **NAV-012** | Add Pricing Rules to Finance nav | 5 min | None |
-| **NAV-013** | Add Workflow Queue to Admin nav | 5 min | None |
-| **NAV-014** | Add all 8 routes to Command Palette | 15 min | NAV-006..013 |
-| **NAV-015** | Verify TypeScript compilation | 5 min | NAV-014 |
-| **NAV-016** | Manual QA verification | 15 min | NAV-015 |
-| **TERP-0005** | Reorganize navigation groups | 2-4h | NAV-006..016 |
+| Task          | Description                          | Est.   | Dependencies |
+| ------------- | ------------------------------------ | ------ | ------------ |
+| **NAV-006**   | Add Leaderboard to Sales nav         | 5 min  | None         |
+| **NAV-007**   | Add Client Needs to Sales nav        | 5 min  | None         |
+| **NAV-008**   | Add Matchmaking to Sales nav         | 5 min  | None         |
+| **NAV-009**   | Add Quotes to Sales nav              | 5 min  | None         |
+| **NAV-010**   | Add Returns to Sales nav             | 5 min  | None         |
+| **NAV-011**   | Add Supplier Supply to Inventory nav | 5 min  | None         |
+| **NAV-012**   | Add Pricing Rules to Finance nav     | 5 min  | None         |
+| **NAV-013**   | Add Workflow Queue to Admin nav      | 5 min  | None         |
+| **NAV-014**   | Add all 8 routes to Command Palette  | 15 min | NAV-006..013 |
+| **NAV-015**   | Verify TypeScript compilation        | 5 min  | NAV-014      |
+| **NAV-016**   | Manual QA verification               | 15 min | NAV-015      |
+| **TERP-0005** | Reorganize navigation groups         | 2-4h   | NAV-006..016 |
 
 ### UX Polish Tasks
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **TERP-0002** | Dashboard widget UX improvements | 4-8h | TERP-0001 |
-| **TERP-0022** | Add confirmation dialogs, remove window.alert | 8-16h | None |
-| **TERP-0021** | Restore BatchDetailDrawer features | 6-12h | None |
-| **TERP-0020** | Replace TemplateSelector TODOs | 4-8h | None |
+| Task          | Description                                   | Est.  | Dependencies |
+| ------------- | --------------------------------------------- | ----- | ------------ |
+| **TERP-0002** | Dashboard widget UX improvements              | 4-8h  | TERP-0001    |
+| **TERP-0022** | Add confirmation dialogs, remove window.alert | 8-16h | None         |
+| **TERP-0021** | Restore BatchDetailDrawer features            | 6-12h | None         |
+| **TERP-0020** | Replace TemplateSelector TODOs                | 4-8h  | None         |
 
 ### Verification Commands
+
 ```bash
 # Navigation compilation check
 pnpm check client/src/config/navigation.ts
@@ -578,6 +599,7 @@ Before proceeding to Phase 6, ALL must pass:
 - [ ] No `window.alert()` calls remain
 
 **Validation Script:**
+
 ```bash
 #!/bin/bash
 echo "=== QA Gate 5 Navigation & UX Validation ==="
@@ -601,37 +623,38 @@ echo "Navigation and UX: VERIFIED"
 
 ### Backend Completeness Tasks (P1 - HIGH)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **BE-QA-006** | Implement AR/AP summary endpoints | 8h | Phase 5 |
-| **BE-QA-007** | Implement cash expenses endpoints | 8h | None |
-| **BE-QA-008** | Implement financial reports | 16h | BE-QA-006 |
-| **QUAL-008** | Add feature flag checks to routes | 4h | None |
+| Task          | Description                       | Est. | Dependencies |
+| ------------- | --------------------------------- | ---- | ------------ |
+| **BE-QA-006** | Implement AR/AP summary endpoints | 8h   | Phase 5      |
+| **BE-QA-007** | Implement cash expenses endpoints | 8h   | None         |
+| **BE-QA-008** | Implement financial reports       | 16h  | BE-QA-006    |
+| **QUAL-008**  | Add feature flag checks to routes | 4h   | None         |
 
 ### Schema Tasks
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **TERP-0004** | Add notifications table to autoMigrate | 2-4h | None |
-| **TERP-0006** | Dashboard preferences index cleanup | 4-8h | None |
-| **SCHEMA-001** | Fix products.name vs nameCanonical | 4h | None |
-| **SCHEMA-002** | Document batches.quantity vs onHandQty | 2h | None |
-| **SCHEMA-003** | Add clients.tier and clients.isActive columns | 4h | None |
-| **DATA-022** | Add Calendar Recurring Events Schema | 4h | None |
+| Task           | Description                                   | Est. | Dependencies |
+| -------------- | --------------------------------------------- | ---- | ------------ |
+| **TERP-0004**  | Add notifications table to autoMigrate        | 2-4h | None         |
+| **TERP-0006**  | Dashboard preferences index cleanup           | 4-8h | None         |
+| **SCHEMA-001** | Fix products.name vs nameCanonical            | 4h   | None         |
+| **SCHEMA-002** | Document batches.quantity vs onHandQty        | 2h   | None         |
+| **SCHEMA-003** | Add clients.tier and clients.isActive columns | 4h   | None         |
+| **DATA-022**   | Add Calendar Recurring Events Schema          | 4h   | None         |
 
 ### Data Seeding Tasks
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| **DATA-012** | Seed work surface feature flags (17+) | 4h | None |
-| **DATA-013** | Seed gamification module defaults | 4-8h | None |
-| **DATA-014** | Seed scheduling module defaults | 4h | None |
-| **DATA-015** | Seed storage sites and zones | 2-4h | None |
-| **DATA-021** | Seed mock product images | 6h | None |
-| **TERP-0011** | Create QA test data seeding script | 4-8h | None |
-| **TERP-0024** | Verify DATA-021 completion | 2-4h | DATA-021 |
+| Task          | Description                           | Est. | Dependencies |
+| ------------- | ------------------------------------- | ---- | ------------ |
+| **DATA-012**  | Seed work surface feature flags (17+) | 4h   | None         |
+| **DATA-013**  | Seed gamification module defaults     | 4-8h | None         |
+| **DATA-014**  | Seed scheduling module defaults       | 4h   | None         |
+| **DATA-015**  | Seed storage sites and zones          | 2-4h | None         |
+| **DATA-021**  | Seed mock product images              | 6h   | None         |
+| **TERP-0011** | Create QA test data seeding script    | 4-8h | None         |
+| **TERP-0024** | Verify DATA-021 completion            | 2-4h | DATA-021     |
 
 ### Verification Commands
+
 ```bash
 # Schema validation
 pnpm validate:schema
@@ -657,7 +680,7 @@ Before proceeding to MVP Release, ALL must pass:
 - [ ] `pnpm db:migrate` runs without errors
 - [ ] Notifications table created on server startup
 - [ ] All feature flags seeded
-- [ ] QA test data seeded (QA_* prefixed entities)
+- [ ] QA test data seeded (QA\_\* prefixed entities)
 - [ ] Product images visible in Live Catalog
 - [ ] No schema drift warnings
 - [ ] AR/AP summary endpoints working
@@ -709,18 +732,18 @@ echo "=== MVP VERIFICATION COMPLETE ==="
 
 **ALL CONDITIONS MUST BE MET:**
 
-| Category | Requirement | Status |
-|----------|-------------|--------|
-| **TypeScript** | 0 errors | ☐ |
-| **Lint** | 0 errors | ☐ |
-| **Unit Tests** | ≥95% pass rate | ☐ |
-| **E2E Tests** | ≥90% pass rate | ☐ |
-| **Build** | Success | ☐ |
-| **Roadmap** | Valid (pnpm roadmap:validate) | ☐ |
-| **Golden Flows** | All 8 pass | ☐ |
-| **Security** | No P0 vulnerabilities | ☐ |
-| **Health Check** | 200 OK | ☐ |
-| **Error Logs** | No new errors | ☐ |
+| Category         | Requirement                   | Status |
+| ---------------- | ----------------------------- | ------ |
+| **TypeScript**   | 0 errors                      | ☐      |
+| **Lint**         | 0 errors                      | ☐      |
+| **Unit Tests**   | ≥95% pass rate                | ☐      |
+| **E2E Tests**    | ≥90% pass rate                | ☐      |
+| **Build**        | Success                       | ☐      |
+| **Roadmap**      | Valid (pnpm roadmap:validate) | ☐      |
+| **Golden Flows** | All 8 pass                    | ☐      |
+| **Security**     | No P0 vulnerabilities         | ☐      |
+| **Health Check** | 200 OK                        | ☐      |
+| **Error Logs**   | No new errors                 | ☐      |
 
 ---
 
@@ -730,36 +753,36 @@ After MVP release, proceed to Beta milestone.
 
 ### Reliability Program (REL-001 through REL-017)
 
-| Task | Description | Est. | Dependencies |
-|------|-------------|------|--------------|
-| REL-001 | Define Truth Model + Invariants | 8h | MVP Complete |
-| REL-002 | Migrate Inventory Quantities to DECIMAL | 2d | REL-001 |
-| REL-003 | Migrate Money Amounts to DECIMAL | 2d | REL-001 |
-| REL-004 | Critical Mutation Wrapper | 16h | REL-002, REL-003 |
-| REL-005 | Idempotency Keys | 2d | REL-004 |
-| REL-006 | Inventory Concurrency Hardening | 2d | REL-004 |
-| REL-007 | Inventory Movements Immutability | 16h | REL-006 |
-| REL-008 | Ledger Immutability + Fiscal Lock | 2d | REL-006 |
-| REL-009 | Reconciliation Framework | 2d | REL-007, REL-008 |
-| REL-010 | Inventory Reconciliation Pack | 16h | REL-009 |
-| REL-011 | AR/AP Reconciliation Pack | 2d | REL-009 |
-| REL-012 | Ledger Reconciliation Pack | 16h | REL-009 |
-| REL-013 | RBAC Drift Detector | 16h | MVP Complete |
-| REL-014 | Critical Correctness Test Harness | 2d | REL-010..012 |
-| REL-015 | Observability for Critical Mutations | 16h | REL-004 |
-| REL-016 | Backup/Restore Reliability Runbook | 2d | REL-009 |
-| REL-017 | CI/PR Gates for Critical Domains | 16h | REL-014 |
+| Task    | Description                             | Est. | Dependencies     |
+| ------- | --------------------------------------- | ---- | ---------------- |
+| REL-001 | Define Truth Model + Invariants         | 8h   | MVP Complete     |
+| REL-002 | Migrate Inventory Quantities to DECIMAL | 2d   | REL-001          |
+| REL-003 | Migrate Money Amounts to DECIMAL        | 2d   | REL-001          |
+| REL-004 | Critical Mutation Wrapper               | 16h  | REL-002, REL-003 |
+| REL-005 | Idempotency Keys                        | 2d   | REL-004          |
+| REL-006 | Inventory Concurrency Hardening         | 2d   | REL-004          |
+| REL-007 | Inventory Movements Immutability        | 16h  | REL-006          |
+| REL-008 | Ledger Immutability + Fiscal Lock       | 2d   | REL-006          |
+| REL-009 | Reconciliation Framework                | 2d   | REL-007, REL-008 |
+| REL-010 | Inventory Reconciliation Pack           | 16h  | REL-009          |
+| REL-011 | AR/AP Reconciliation Pack               | 2d   | REL-009          |
+| REL-012 | Ledger Reconciliation Pack              | 16h  | REL-009          |
+| REL-013 | RBAC Drift Detector                     | 16h  | MVP Complete     |
+| REL-014 | Critical Correctness Test Harness       | 2d   | REL-010..012     |
+| REL-015 | Observability for Critical Mutations    | 16h  | REL-004          |
+| REL-016 | Backup/Restore Reliability Runbook      | 2d   | REL-009          |
+| REL-017 | CI/PR Gates for Critical Domains        | 16h  | REL-014          |
 
 ### Beta QA Gate ✅
 
-| Category | Requirement |
-|----------|-------------|
-| **Decimal Migration** | All inventory/money as DECIMAL |
-| **Transaction Safety** | All critical mutations transactional |
-| **Idempotency** | All critical mutations have idempotency keys |
-| **Reconciliation** | Daily reconciliation reports enabled |
-| **Observability** | Critical mutation metrics in dashboard |
-| **CI Gates** | PR blocking on invariant violations |
+| Category               | Requirement                                  |
+| ---------------------- | -------------------------------------------- |
+| **Decimal Migration**  | All inventory/money as DECIMAL               |
+| **Transaction Safety** | All critical mutations transactional         |
+| **Idempotency**        | All critical mutations have idempotency keys |
+| **Reconciliation**     | Daily reconciliation reports enabled         |
+| **Observability**      | Critical mutation metrics in dashboard       |
+| **CI Gates**           | PR blocking on invariant violations          |
 
 ---
 
@@ -833,13 +856,13 @@ BETA: REL-001 → REL-002/003 → REL-004 → REL-005/006
 
 ### High-Risk Tasks
 
-| Task | Risk | Mitigation |
-|------|------|------------|
-| SEC-023 | Credential rotation could break production | Coordinate with Evan, have rollback ready |
-| TS-001 | 117 errors could indicate deeper issues | Fix in batches, test after each 20 fixes |
-| BUG-100 | 122 failing tests is a large scope | Prioritize by root cause, fix infrastructure first |
-| WSQA-002 | Lot selection touches inventory core | Use feature flag, extensive E2E testing |
-| REL-002/003 | DECIMAL migration is data-changing | Backup before, run in maintenance window |
+| Task        | Risk                                       | Mitigation                                         |
+| ----------- | ------------------------------------------ | -------------------------------------------------- |
+| SEC-023     | Credential rotation could break production | Coordinate with Evan, have rollback ready          |
+| TS-001      | 117 errors could indicate deeper issues    | Fix in batches, test after each 20 fixes           |
+| BUG-100     | 122 failing tests is a large scope         | Prioritize by root cause, fix infrastructure first |
+| WSQA-002    | Lot selection touches inventory core       | Use feature flag, extensive E2E testing            |
+| REL-002/003 | DECIMAL migration is data-changing         | Backup before, run in maintenance window           |
 
 ### Rollback Procedures
 
@@ -858,27 +881,27 @@ For each phase, maintain:
 
 ## Estimated Timeline (Updated after QA Review)
 
-| Phase | Duration | Cumulative | Key Deliverables |
-|-------|----------|------------|------------------|
-| Phase 0: Emergency | 1 day | Day 1 | Credentials rotated, GL posting fixed |
-| Phase 1: Foundation | 3 days | Days 2-4 | 0 TS errors, ≥95% tests pass |
-| Phase 2: Security | 2 days | Days 5-6 | All endpoints protected |
-| Phase 3: Financial | 3 days | Days 7-9 | Financial integrity verified |
-| Phase 4: Work Surfaces Core | 5 days | Days 10-14 | WSQA-001/002/003 complete |
-| Phase 4.5: WS Coverage | 3 days | Days 15-17 | Products + Vendors refactored |
-| Phase 5: Navigation/UX | 2 days | Days 18-19 | All 8 nav items added |
-| Phase 6: Backend/Data | 4 days | Days 20-23 | BE endpoints + seeding complete |
-| Phase 7: MVP Release | 1 day | Day 24 | All QA gates pass |
-| **MVP TOTAL** | **24 days** | | **~5 weeks** |
-| Beta: Reliability | 3-4 weeks | Post-MVP | REL-001 through REL-017 |
+| Phase                       | Duration    | Cumulative | Key Deliverables                      |
+| --------------------------- | ----------- | ---------- | ------------------------------------- |
+| Phase 0: Emergency          | 1 day       | Day 1      | Credentials rotated, GL posting fixed |
+| Phase 1: Foundation         | 3 days      | Days 2-4   | 0 TS errors, ≥95% tests pass          |
+| Phase 2: Security           | 2 days      | Days 5-6   | All endpoints protected               |
+| Phase 3: Financial          | 3 days      | Days 7-9   | Financial integrity verified          |
+| Phase 4: Work Surfaces Core | 5 days      | Days 10-14 | WSQA-001/002/003 complete             |
+| Phase 4.5: WS Coverage      | 3 days      | Days 15-17 | Products + Suppliers refactored       |
+| Phase 5: Navigation/UX      | 2 days      | Days 18-19 | All 8 nav items added                 |
+| Phase 6: Backend/Data       | 4 days      | Days 20-23 | BE endpoints + seeding complete       |
+| Phase 7: MVP Release        | 1 day       | Day 24     | All QA gates pass                     |
+| **MVP TOTAL**               | **24 days** |            | **~5 weeks**                          |
+| Beta: Reliability           | 3-4 weeks   | Post-MVP   | REL-001 through REL-017               |
 
 ### Timeline Change Log
 
-| Change | Reason | Impact |
-|--------|--------|--------|
-| Added Phase 4.5 | Work Surfaces report identified Products/Vendors gaps | +3 days |
-| Expanded Phase 6 | Added BE-QA-006/007/008 backend completeness tasks | +1 day |
-| Total increase | 20 → 24 days | +4 days (more thorough coverage) |
+| Change           | Reason                                                  | Impact                           |
+| ---------------- | ------------------------------------------------------- | -------------------------------- |
+| Added Phase 4.5  | Work Surfaces report identified Products/Suppliers gaps | +3 days                          |
+| Expanded Phase 6 | Added BE-QA-006/007/008 backend completeness tasks      | +1 day                           |
+| Total increase   | 20 → 24 days                                            | +4 days (more thorough coverage) |
 
 ---
 
@@ -963,17 +986,17 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 ### QA Gate Summary
 
-| Gate | Phase | Key Requirement |
-|------|-------|-----------------|
-| Gate 0 | Emergency | No P0 security issues |
-| Gate 1 | Foundation | 0 TypeScript errors, ≥95% tests pass |
-| Gate 2 | Security | All procedures protected |
-| Gate 3 | Financial | Financial calculations accurate |
-| Gate 4 | Work Surfaces Core | All 8 Golden Flows pass, keyboard hints |
-| Gate 4.5 | WS Coverage | Products + Vendors refactored to Work Surface |
-| Gate 5 | Navigation/UX | All routes accessible |
-| Gate 6 | Backend/Data | Schema + BE endpoints + seeding complete |
-| Gate 7 | MVP Release | All criteria met |
+| Gate     | Phase              | Key Requirement                                 |
+| -------- | ------------------ | ----------------------------------------------- |
+| Gate 0   | Emergency          | No P0 security issues                           |
+| Gate 1   | Foundation         | 0 TypeScript errors, ≥95% tests pass            |
+| Gate 2   | Security           | All procedures protected                        |
+| Gate 3   | Financial          | Financial calculations accurate                 |
+| Gate 4   | Work Surfaces Core | All 8 Golden Flows pass, keyboard hints         |
+| Gate 4.5 | WS Coverage        | Products + Suppliers refactored to Work Surface |
+| Gate 5   | Navigation/UX      | All routes accessible                           |
+| Gate 6   | Backend/Data       | Schema + BE endpoints + seeding complete        |
+| Gate 7   | MVP Release        | All criteria met                                |
 
 ---
 
@@ -983,55 +1006,55 @@ These tasks are important but not blocking MVP. They can be worked on in paralle
 
 ### Frontend Quality (P2)
 
-| Task | Description | Est. | Module |
-|------|-------------|------|--------|
-| FE-QA-009 | Enable VendorSupplyPage Creation | 8h | VendorSupplyPage.tsx |
-| FE-QA-010 | Wire MatchmakingServicePage Action Buttons | 4h | MatchmakingServicePage.tsx |
-| FE-QA-011 | Integrate Unused Dashboard Widgets (5) | 8h | widgets-v2/ |
-| TYPE-001 | Fix `as any` Casts in Golden Flows | 4h | golden-flows/ |
+| Task      | Description                                | Est. | Module                     |
+| --------- | ------------------------------------------ | ---- | -------------------------- |
+| FE-QA-009 | Enable VendorSupplyPage Creation           | 8h   | VendorSupplyPage.tsx       |
+| FE-QA-010 | Wire MatchmakingServicePage Action Buttons | 4h   | MatchmakingServicePage.tsx |
+| FE-QA-011 | Integrate Unused Dashboard Widgets (5)     | 8h   | widgets-v2/                |
+| TYPE-001  | Fix `as any` Casts in Golden Flows         | 4h   | golden-flows/              |
 
 ### Backend Quality (P2)
 
-| Task | Description | Est. | Module |
-|------|-------------|------|--------|
-| API-017 | Implement Stock Threshold Configuration | 4h | alerts.ts |
-| STUB-001 | Implement Live Catalog Brand Extraction | 2h | liveCatalogService.ts |
-| STUB-002 | Implement Live Catalog Price Range | 2h | liveCatalogService.ts |
-| RBAC-002 | Verify Time Clock Route Permission Gate | 30 min | TimeClockPage.tsx |
+| Task     | Description                             | Est.   | Module                |
+| -------- | --------------------------------------- | ------ | --------------------- |
+| API-017  | Implement Stock Threshold Configuration | 4h     | alerts.ts             |
+| STUB-001 | Implement Live Catalog Brand Extraction | 2h     | liveCatalogService.ts |
+| STUB-002 | Implement Live Catalog Price Range      | 2h     | liveCatalogService.ts |
+| RBAC-002 | Verify Time Clock Route Permission Gate | 30 min | TimeClockPage.tsx     |
 
 ### Deprecation & Cleanup (P2)
 
-| Task | Description | Est. | Module |
-|------|-------------|------|--------|
-| DEPR-001 | Migrate Deprecated Vendor Router Usages | 8h | vendors.ts |
-| DEPR-002 | Remove Deprecated PO Procedures (3) | 2h | purchaseOrders.ts |
-| BUG-102 | Fix Property Test Bugs | 4h | property tests |
+| Task     | Description                             | Est. | Module            |
+| -------- | --------------------------------------- | ---- | ----------------- |
+| DEPR-001 | Migrate Deprecated Vendor Router Usages | 8h   | vendors.ts        |
+| DEPR-002 | Remove Deprecated PO Procedures (3)     | 2h   | purchaseOrders.ts |
+| BUG-102  | Fix Property Test Bugs                  | 4h   | property tests    |
 
 ### Mobile & UX (P2)
 
-| Task | Description | Est. | Module |
-|------|-------------|------|--------|
-| MOB-001 | Address Mobile Responsiveness Issues (38) | 24h | Multiple components |
+| Task    | Description                               | Est. | Module              |
+| ------- | ----------------------------------------- | ---- | ------------------- |
+| MOB-001 | Address Mobile Responsiveness Issues (38) | 24h  | Multiple components |
 
 ### TERP Extracted Work (P2)
 
-| Task | Description | Est. | Type |
-|------|-------------|------|------|
-| TERP-0007 | Surface non-sellable batch status in sales UI | 4-8h | Bug |
-| TERP-0008 | Standardize batch status constants | 8-16h | Refactor |
-| TERP-0009 | Add dashboard vs sales inventory consistency tests | 4-8h | QA |
-| TERP-0010 | Refactor getDashboardStats test mocks | 2-4h | QA |
-| TERP-0012 | Implement UI for top accounting API-only flows | 24-40h | Feature |
-| TERP-0019 | Fix inventory snapshot widget SQL aliases | 2-4h | Bug |
-| TERP-0023 | Resolve backend placeholder items | 16-24h | Hardening |
-| TERP-0025 | Verify migration constraint naming fixes | 2-4h | QA |
+| Task      | Description                                        | Est.   | Type      |
+| --------- | -------------------------------------------------- | ------ | --------- |
+| TERP-0007 | Surface non-sellable batch status in sales UI      | 4-8h   | Bug       |
+| TERP-0008 | Standardize batch status constants                 | 8-16h  | Refactor  |
+| TERP-0009 | Add dashboard vs sales inventory consistency tests | 4-8h   | QA        |
+| TERP-0010 | Refactor getDashboardStats test mocks              | 2-4h   | QA        |
+| TERP-0012 | Implement UI for top accounting API-only flows     | 24-40h | Feature   |
+| TERP-0019 | Fix inventory snapshot widget SQL aliases          | 2-4h   | Bug       |
+| TERP-0023 | Resolve backend placeholder items                  | 16-24h | Hardening |
+| TERP-0025 | Verify migration constraint naming fixes           | 2-4h   | QA        |
 
 ### P3 Low Priority (Technical Debt)
 
-| Task | Description | Est. | Module |
-|------|-------------|------|--------|
-| ABANDONED-001 | Remove Unused RTL/i18n Utilities | 1h | rtlUtils.ts |
-| QUAL-009 | Replace console.error with Logger (23+ files) | 8h | Multiple files |
+| Task          | Description                                   | Est. | Module         |
+| ------------- | --------------------------------------------- | ---- | -------------- |
+| ABANDONED-001 | Remove Unused RTL/i18n Utilities              | 1h   | rtlUtils.ts    |
+| QUAL-009      | Replace console.error with Logger (23+ files) | 8h   | Multiple files |
 
 **Total P2/P3 Tasks:** 22 tasks, ~150 hours estimated
 
@@ -1041,37 +1064,37 @@ These tasks are important but not blocking MVP. They can be worked on in paralle
 
 ### Cross-Reference Verification
 
-| Source | Tasks Identified | Tasks in Roadmap | Coverage |
-|--------|------------------|------------------|----------|
-| MASTER_ROADMAP P0 | 11 | 11 | 100% |
-| MASTER_ROADMAP P1 | 42 | 38 | 90% |
-| MASTER_ROADMAP P2 | 65 | 43 (22 in Appendix) | 100% |
-| Work Surfaces Report | 6 | 6 | 100% |
-| TERP Extracted | 25 | 25 | 100% |
+| Source               | Tasks Identified | Tasks in Roadmap    | Coverage |
+| -------------------- | ---------------- | ------------------- | -------- |
+| MASTER_ROADMAP P0    | 11               | 11                  | 100%     |
+| MASTER_ROADMAP P1    | 42               | 38                  | 90%      |
+| MASTER_ROADMAP P2    | 65               | 43 (22 in Appendix) | 100%     |
+| Work Surfaces Report | 6                | 6                   | 100%     |
+| TERP Extracted       | 25               | 25                  | 100%     |
 
 ### Dependency Validation
 
-| Dependency Chain | Valid | Notes |
-|------------------|-------|-------|
-| SEC-023 → TS-001 | ✅ | Security before code fixes |
-| TS-001 → BUG-100 | ✅ | TypeScript before tests |
-| TEST-INFRA-* → BUG-100 | ✅ | Infrastructure before fixes |
-| WSQA-001 → WSQA-002 → WSQA-003 | ✅ | Payment → Lots → Returns |
-| Phase 4 → Phase 4.5 | ✅ | Core WS before coverage gaps |
-| BE-QA-006 → BE-QA-008 | ✅ | AR/AP before reports |
+| Dependency Chain               | Valid | Notes                        |
+| ------------------------------ | ----- | ---------------------------- |
+| SEC-023 → TS-001               | ✅    | Security before code fixes   |
+| TS-001 → BUG-100               | ✅    | TypeScript before tests      |
+| TEST-INFRA-\* → BUG-100        | ✅    | Infrastructure before fixes  |
+| WSQA-001 → WSQA-002 → WSQA-003 | ✅    | Payment → Lots → Returns     |
+| Phase 4 → Phase 4.5            | ✅    | Core WS before coverage gaps |
+| BE-QA-006 → BE-QA-008          | ✅    | AR/AP before reports         |
 
 ### Estimate Validation
 
-| Phase | Total Estimate | Reasonable? | Notes |
-|-------|----------------|-------------|-------|
-| Phase 0 | 10-14h | ✅ | Accounts for complexity |
-| Phase 1 | 48-72h | ✅ | TypeScript + tests intensive |
-| Phase 2 | 20-36h | ✅ | Security requires thoroughness |
-| Phase 3 | 34-62h | ✅ | Financial accuracy critical |
-| Phase 4 | 40-56h | ✅ | Work Surface core |
-| Phase 4.5 | 32-56h | ✅ | Refactors take time |
-| Phase 5 | 24-48h | ✅ | Nav + UX polish |
-| Phase 6 | 56-88h | ✅ | Backend + schema + seeding |
+| Phase     | Total Estimate | Reasonable? | Notes                          |
+| --------- | -------------- | ----------- | ------------------------------ |
+| Phase 0   | 10-14h         | ✅          | Accounts for complexity        |
+| Phase 1   | 48-72h         | ✅          | TypeScript + tests intensive   |
+| Phase 2   | 20-36h         | ✅          | Security requires thoroughness |
+| Phase 3   | 34-62h         | ✅          | Financial accuracy critical    |
+| Phase 4   | 40-56h         | ✅          | Work Surface core              |
+| Phase 4.5 | 32-56h         | ✅          | Refactors take time            |
+| Phase 5   | 24-48h         | ✅          | Nav + UX polish                |
+| Phase 6   | 56-88h         | ✅          | Backend + schema + seeding     |
 
 ---
 

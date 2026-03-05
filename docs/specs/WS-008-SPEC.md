@@ -6,7 +6,7 @@
 **Module:** Inventory/VIP Portal  
 **Dependencies:** VIP Portal (existing)  
 **Spec Author:** Manus AI  
-**Spec Date:** 2025-12-30  
+**Spec Date:** 2025-12-30
 
 ---
 
@@ -15,9 +15,9 @@
 The business needs to proactively source inventory before running out. Currently, there's no automated way to track low stock levels or communicate needs to VIP vendors. The solution must serve two purposes:
 
 1. **Internal:** Alert staff when inventory drops below target levels
-2. **External:** Automatically populate "Needs" on the VIP Portal for vendors to see
+2. **External:** Automatically populate "Needs" on the VIP Portal for suppliers to see
 
-This dual-purpose feature drives both operational efficiency and vendor engagement.
+This dual-purpose feature drives both operational efficiency and supplier engagement.
 
 ## 2. User Stories
 
@@ -25,35 +25,35 @@ This dual-purpose feature drives both operational efficiency and vendor engageme
 
 2. **As a staff member**, I want to see a dashboard of low-stock items, so that I can prioritize sourcing.
 
-3. **As a VIP vendor**, I want to see what products the business needs, so that I can offer relevant inventory.
+3. **As a VIP supplier**, I want to see what products the business needs, so that I can offer relevant inventory.
 
-4. **As a manager**, I want low-stock items to automatically appear on the VIP Portal, so that vendors can proactively reach out.
+4. **As a manager**, I want low-stock items to automatically appear on the VIP Portal, so that suppliers can proactively reach out.
 
 ## 3. Functional Requirements
 
 ### 3.1 Core Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01 | Configure target stock levels per product/category | Must Have |
-| FR-02 | Automatic low-stock detection when quantity < target | Must Have |
-| FR-03 | Low-stock dashboard/widget for internal users | Must Have |
-| FR-04 | Automatic "Needs" creation on VIP Portal | Must Have |
-| FR-05 | Manual "Need" creation for items not in inventory | Must Have |
-| FR-06 | Email/notification alerts for critical low stock | Should Have |
-| FR-07 | Configurable alert thresholds (warning vs. critical) | Should Have |
-| FR-08 | Bulk target level configuration | Should Have |
-| FR-09 | Historical low-stock reporting | Nice to Have |
+| ID    | Requirement                                          | Priority     |
+| ----- | ---------------------------------------------------- | ------------ |
+| FR-01 | Configure target stock levels per product/category   | Must Have    |
+| FR-02 | Automatic low-stock detection when quantity < target | Must Have    |
+| FR-03 | Low-stock dashboard/widget for internal users        | Must Have    |
+| FR-04 | Automatic "Needs" creation on VIP Portal             | Must Have    |
+| FR-05 | Manual "Need" creation for items not in inventory    | Must Have    |
+| FR-06 | Email/notification alerts for critical low stock     | Should Have  |
+| FR-07 | Configurable alert thresholds (warning vs. critical) | Should Have  |
+| FR-08 | Bulk target level configuration                      | Should Have  |
+| FR-09 | Historical low-stock reporting                       | Nice to Have |
 
 ### 3.2 Business Rules
 
-| ID | Rule | Example |
-|----|------|---------|
-| BR-01 | Low stock = quantity < target level | 5 units < 10 target = low stock |
-| BR-02 | Critical low stock = quantity < 25% of target | 2 units < 2.5 (25% of 10) = critical |
-| BR-03 | VIP Portal "Need" created when low stock detected | Automatic sync |
-| BR-04 | "Need" removed when stock replenished above target | Auto-cleanup |
-| BR-05 | Manual "Needs" not auto-removed | User controls lifecycle |
+| ID    | Rule                                                            | Example                                |
+| ----- | --------------------------------------------------------------- | -------------------------------------- |
+| BR-01 | Low stock = quantity < target level                             | 5 units < 10 target = low stock        |
+| BR-02 | Critical low stock = quantity < 25% of target                   | 2 units < 2.5 (25% of 10) = critical   |
+| BR-03 | VIP Portal "Need" created when low stock detected               | Automatic sync                         |
+| BR-04 | "Need" removed when stock replenished above target              | Auto-cleanup                           |
+| BR-05 | Manual "Needs" not auto-removed                                 | User controls lifecycle                |
 | BR-06 | Target levels can be set globally, per category, or per product | Hierarchy: product > category > global |
 
 ## 4. Technical Specification
@@ -124,109 +124,137 @@ CREATE TABLE low_stock_alerts (
 ```typescript
 // Configure stock level targets
 stockLevels.setTarget = adminProcedure
-  .input(z.object({
-    productId: z.number().optional(),
-    categoryId: z.number().optional(),
-    targetQuantity: z.number().positive(),
-    warningThresholdPercent: z.number().min(1).max(99).default(50),
-    criticalThresholdPercent: z.number().min(1).max(99).default(25),
-    autoCreateVipNeed: z.boolean().default(true)
-  }))
-  .output(z.object({
-    targetId: z.number(),
-    success: z.boolean()
-  }))
+  .input(
+    z.object({
+      productId: z.number().optional(),
+      categoryId: z.number().optional(),
+      targetQuantity: z.number().positive(),
+      warningThresholdPercent: z.number().min(1).max(99).default(50),
+      criticalThresholdPercent: z.number().min(1).max(99).default(25),
+      autoCreateVipNeed: z.boolean().default(true),
+    })
+  )
+  .output(
+    z.object({
+      targetId: z.number(),
+      success: z.boolean(),
+    })
+  )
   .mutation(async ({ input }) => {
     // Create or update stock level target
   });
 
 // Get all stock level targets
 stockLevels.getTargets = adminProcedure
-  .input(z.object({
-    productId: z.number().optional(),
-    categoryId: z.number().optional()
-  }))
-  .output(z.array(z.object({
-    id: z.number(),
-    productId: z.number().nullable(),
-    productName: z.string().nullable(),
-    categoryId: z.number().nullable(),
-    categoryName: z.string().nullable(),
-    targetQuantity: z.number(),
-    currentQuantity: z.number(),
-    status: z.enum(['OK', 'WARNING', 'CRITICAL']),
-    warningThreshold: z.number(),
-    criticalThreshold: z.number()
-  })))
+  .input(
+    z.object({
+      productId: z.number().optional(),
+      categoryId: z.number().optional(),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        productId: z.number().nullable(),
+        productName: z.string().nullable(),
+        categoryId: z.number().nullable(),
+        categoryName: z.string().nullable(),
+        targetQuantity: z.number(),
+        currentQuantity: z.number(),
+        status: z.enum(["OK", "WARNING", "CRITICAL"]),
+        warningThreshold: z.number(),
+        criticalThreshold: z.number(),
+      })
+    )
+  )
   .query(async ({ input }) => {
     // Return targets with current stock status
   });
 
 // Get low stock items (dashboard)
 stockLevels.getLowStockItems = adminProcedure
-  .input(z.object({
-    alertLevel: z.enum(['WARNING', 'CRITICAL', 'ALL']).default('ALL'),
-    limit: z.number().default(50)
-  }))
-  .output(z.array(z.object({
-    productId: z.number(),
-    productName: z.string(),
-    categoryName: z.string(),
-    currentQuantity: z.number(),
-    targetQuantity: z.number(),
-    percentOfTarget: z.number(),
-    alertLevel: z.enum(['WARNING', 'CRITICAL']),
-    vipNeedCreated: z.boolean(),
-    daysSinceLowStock: z.number()
-  })))
+  .input(
+    z.object({
+      alertLevel: z.enum(["WARNING", "CRITICAL", "ALL"]).default("ALL"),
+      limit: z.number().default(50),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        productId: z.number(),
+        productName: z.string(),
+        categoryName: z.string(),
+        currentQuantity: z.number(),
+        targetQuantity: z.number(),
+        percentOfTarget: z.number(),
+        alertLevel: z.enum(["WARNING", "CRITICAL"]),
+        vipNeedCreated: z.boolean(),
+        daysSinceLowStock: z.number(),
+      })
+    )
+  )
   .query(async ({ input }) => {
     // Return items below target level
   });
 
 // Manually create VIP Portal need
 vipPortal.createNeed = adminProcedure
-  .input(z.object({
-    productId: z.number().optional(),
-    productName: z.string().optional(), // For custom needs
-    categoryId: z.number().optional(),
-    quantityNeeded: z.number().optional(),
-    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('MEDIUM'),
-    notes: z.string().optional(),
-    expiresAt: z.date().optional()
-  }))
-  .output(z.object({
-    needId: z.number(),
-    success: z.boolean()
-  }))
+  .input(
+    z.object({
+      productId: z.number().optional(),
+      productName: z.string().optional(), // For custom needs
+      categoryId: z.number().optional(),
+      quantityNeeded: z.number().optional(),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
+      notes: z.string().optional(),
+      expiresAt: z.date().optional(),
+    })
+  )
+  .output(
+    z.object({
+      needId: z.number(),
+      success: z.boolean(),
+    })
+  )
   .mutation(async ({ input, ctx }) => {
     // Create manual need
   });
 
 // Get VIP Portal needs (for vendors)
 vipPortal.getNeeds = publicProcedure // Or vendor-authenticated
-  .input(z.object({
-    categoryId: z.number().optional(),
-    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional()
-  }))
-  .output(z.array(z.object({
-    id: z.number(),
-    productName: z.string(),
-    categoryName: z.string(),
-    quantityNeeded: z.number().nullable(),
-    priority: z.string(),
-    notes: z.string().nullable(),
-    createdAt: z.date()
-  })))
+  .input(
+    z.object({
+      categoryId: z.number().optional(),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
+    })
+  )
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        productName: z.string(),
+        categoryName: z.string(),
+        quantityNeeded: z.number().nullable(),
+        priority: z.string(),
+        notes: z.string().nullable(),
+        createdAt: z.date(),
+      })
+    )
+  )
   .query(async ({ input }) => {
     // Return active needs for VIP Portal display
   });
 
 // Mark need as fulfilled
 vipPortal.fulfillNeed = adminProcedure
-  .input(z.object({
-    needId: z.number(),
-    notes: z.string().optional()
-  }))
+  .input(
+    z.object({
+      needId: z.number(),
+      notes: z.string().optional(),
+    })
+  )
   .output(z.object({ success: z.boolean() }))
   .mutation(async ({ input, ctx }) => {
     // Mark need as fulfilled
@@ -258,13 +286,13 @@ async function checkStockLevels() {
 
 ### 4.4 Integration Points
 
-| System | Integration Type | Description |
-|--------|-----------------|-------------|
-| Inventory | Read/Subscribe | Monitor quantity changes |
-| VIP Portal | Write | Create/remove needs |
-| Notifications | Write | Send low-stock alerts |
-| Dashboard | Read | Display low-stock widget |
-| Products | Read | Get product/category info |
+| System        | Integration Type | Description               |
+| ------------- | ---------------- | ------------------------- |
+| Inventory     | Read/Subscribe   | Monitor quantity changes  |
+| VIP Portal    | Write            | Create/remove needs       |
+| Notifications | Write            | Send low-stock alerts     |
+| Dashboard     | Read             | Display low-stock widget  |
+| Products      | Read             | Get product/category info |
 
 ## 5. UI/UX Specification
 
@@ -314,7 +342,7 @@ async function checkStockLevels() {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.4 Wireframe: VIP Portal Needs View (Vendor Side)
+### 5.4 Wireframe: VIP Portal Needs View (Supplier Side)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -351,14 +379,14 @@ async function checkStockLevels() {
 
 ## 6. Edge Cases & Error Handling
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Product with no target set | Use category target, then global, else no alert |
-| Multiple targets (product + category) | Product-level takes precedence |
-| Stock goes to 0 | Critical alert, high-priority VIP need |
-| Stock replenished above target | Auto-resolve alert, remove auto-created need |
-| Manual need for same product as auto-need | Both can exist, manual not auto-removed |
-| VIP Portal sync disabled | No need created, only internal alert |
+| Scenario                                  | Expected Behavior                               |
+| ----------------------------------------- | ----------------------------------------------- |
+| Product with no target set                | Use category target, then global, else no alert |
+| Multiple targets (product + category)     | Product-level takes precedence                  |
+| Stock goes to 0                           | Critical alert, high-priority VIP need          |
+| Stock replenished above target            | Auto-resolve alert, remove auto-created need    |
+| Manual need for same product as auto-need | Both can exist, manual not auto-removed         |
+| VIP Portal sync disabled                  | No need created, only internal alert            |
 
 ## 7. Testing Requirements
 
@@ -401,11 +429,11 @@ No migration required. New tables created empty. Users configure targets post-de
 
 ## 9. Success Metrics
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Stockouts prevented | 50% reduction | Zero-stock incidents |
-| VIP vendor engagement | 20% increase | Need responses |
-| Time to restock | 30% reduction | Alert → restock time |
+| Metric                  | Target        | Measurement Method   |
+| ----------------------- | ------------- | -------------------- |
+| Stockouts prevented     | 50% reduction | Zero-stock incidents |
+| VIP supplier engagement | 20% increase  | Need responses       |
+| Time to restock         | 30% reduction | Alert → restock time |
 
 ## 10. Open Questions
 
@@ -416,6 +444,7 @@ No migration required. New tables created empty. Users configure targets post-de
 ---
 
 **Approval:**
+
 - [ ] Product Owner
 - [ ] Tech Lead
 - [ ] QA Lead

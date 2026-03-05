@@ -8,6 +8,7 @@
 **Source:** Customer Meeting 2026-01-11
 
 ### Approval Notes
+
 - Discrepancy notifications must go to the person RESPONSIBLE for that transaction (not generic admin)
 - System must track who created the intake receipt to determine notification target
 
@@ -19,6 +20,7 @@
 > "The person stacking the weed is not talking... we're not ticking it up"
 
 Inventory intake discrepancies occur because:
+
 1. Person entering receipt doesn't communicate with stacker
 2. No verification step before finalizing intake
 3. Quantities not confirmed against physical count
@@ -33,6 +35,7 @@ Inventory intake discrepancies occur because:
 **User Story:** As a receiver, I want to generate an intake receipt that can be sent to the farmer for verification.
 
 **Acceptance Criteria:**
+
 - [ ] Create intake receipt with itemized quantities
 - [ ] Include supplier/farmer information
 - [ ] Generate shareable link or PDF
@@ -40,6 +43,7 @@ Inventory intake discrepancies occur because:
 - [ ] Farmer can acknowledge receipt via link
 
 **Flow:**
+
 ```
 1. Receiver logs intake → Creates "Pending Receipt"
 2. System generates receipt document
@@ -49,15 +53,16 @@ Inventory intake discrepancies occur because:
 ```
 
 **API Contract:**
+
 ```typescript
 // New endpoint: intake.createReceipt
 type CreateIntakeReceiptRequest = {
   supplierId: number;
   items: {
-    productId?: number;      // Existing product or null for new
+    productId?: number; // Existing product or null for new
     productName: string;
     quantity: number;
-    unit: string;            // 'lb', 'oz', 'unit'
+    unit: string; // 'lb', 'oz', 'unit'
     expectedPrice?: number;
   }[];
   notes?: string;
@@ -65,8 +70,13 @@ type CreateIntakeReceiptRequest = {
 
 type IntakeReceiptResponse = {
   id: number;
-  receiptNumber: string;     // "IR-2026-001234"
-  status: 'PENDING' | 'FARMER_VERIFIED' | 'STACKER_VERIFIED' | 'FINALIZED' | 'DISPUTED';
+  receiptNumber: string; // "IR-2026-001234"
+  status:
+    | "PENDING"
+    | "FARMER_VERIFIED"
+    | "STACKER_VERIFIED"
+    | "FINALIZED"
+    | "DISPUTED";
   shareableUrl: string;
   pdfUrl?: string;
   createdAt: Date;
@@ -78,6 +88,7 @@ type IntakeReceiptResponse = {
 **User Story:** As a stacker, I want to verify received quantities against the intake receipt so discrepancies are caught before finalization.
 
 **Acceptance Criteria:**
+
 - [ ] Stacker sees list of pending receipts
 - [ ] Can mark each item as "Verified" or "Discrepancy"
 - [ ] Discrepancies require explanation
@@ -85,6 +96,7 @@ type IntakeReceiptResponse = {
 - [ ] Both parties must verify before inventory update
 
 **Flow:**
+
 ```
 Intake Receipt Status Flow:
 ┌─────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌───────────┐
@@ -99,6 +111,7 @@ Intake Receipt Status Flow:
 ```
 
 **UI Wireframe (Stacker View):**
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ Verify Intake Receipt #IR-2026-001234                                        │
@@ -114,6 +127,7 @@ Intake Receipt Status Flow:
 ```
 
 **API Contract:**
+
 ```typescript
 // New endpoint: intake.verifyReceipt
 type VerifyReceiptRequest = {
@@ -121,7 +135,7 @@ type VerifyReceiptRequest = {
   verifications: {
     itemId: number;
     actualQuantity: number;
-    status: 'VERIFIED' | 'DISCREPANCY';
+    status: "VERIFIED" | "DISCREPANCY";
     notes?: string;
   }[];
 };
@@ -144,7 +158,8 @@ type VerifyReceiptResponse = {
 **User Story:** As a user, I want consistent terminology so I'm not confused between "Intake", "Purchase", and "Receipt".
 
 **Acceptance Criteria:**
-- [ ] "Intake" = The process of receiving product
+
+- [ ] "Intake" = The process of intake product
 - [ ] "Intake Receipt" = The document created during intake
 - [ ] Remove/hide "Purchase" from intake context
 - [ ] Update all UI labels consistently
@@ -153,19 +168,19 @@ type VerifyReceiptResponse = {
 **Terminology Map:**
 | Current Term | New Term | Context |
 |--------------|----------|---------|
-| Purchase | Intake | Receiving product |
-| Purchase Order | Intake Order | Before receiving |
-| Purchase Receipt | Intake Receipt | After receiving |
+| Purchase | Intake | Intake product |
+| Purchase Order | Intake Order | Before intake |
+| Purchase Receipt | Intake Receipt | After intake |
 | New Purchase button | New Intake button | Action button |
 
 ---
 
 ## Dependencies
 
-| Dependency | Type | Status |
-|------------|------|--------|
-| WS-007 (Complex Flower Intake) | Related | Completed |
-| Notification system | Integration | Exists |
+| Dependency                     | Type        | Status    |
+| ------------------------------ | ----------- | --------- |
+| WS-007 (Complex Flower Intake) | Related     | Completed |
+| Notification system            | Integration | Exists    |
 
 ---
 
@@ -240,22 +255,22 @@ CREATE INDEX idx_intake_receipt_items_receipt ON intake_receipt_items(receipt_id
 
 ## Feature Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `intake_verification_enabled` | true | Enable two-step verification |
-| `intake_farmer_verification` | true | Require farmer verification |
-| `intake_new_terminology` | true | Use new terminology |
+| Flag                          | Default | Description                  |
+| ----------------------------- | ------- | ---------------------------- |
+| `intake_verification_enabled` | true    | Enable two-step verification |
+| `intake_farmer_verification`  | true    | Require farmer verification  |
+| `intake_new_terminology`      | true    | Use new terminology          |
 
 ---
 
 ## Notification Triggers
 
-| Event | Recipients | Channel |
-|-------|------------|---------|
-| Receipt created | Supplier (farmer) | Email + In-app |
-| Farmer verified | Stacker (warehouse) | In-app |
+| Event             | Recipients                                               | Channel        |
+| ----------------- | -------------------------------------------------------- | -------------- |
+| Receipt created   | Supplier (farmer)                                        | Email + In-app |
+| Farmer verified   | Stacker (warehouse)                                      | In-app         |
 | Discrepancy found | **Person responsible for transaction** (receipt creator) | In-app + Email |
-| Receipt finalized | Creator | In-app |
+| Receipt finalized | Creator                                                  | In-app         |
 
 **Note:** Discrepancy notifications go to whoever created the intake receipt (the responsible party), NOT a generic admin role.
 
@@ -264,6 +279,7 @@ CREATE INDEX idx_intake_receipt_items_receipt ON intake_receipt_items(receipt_id
 ## Test Plan
 
 ### Unit Tests
+
 - [ ] Receipt creation
 - [ ] Receipt number generation
 - [ ] Status transitions
@@ -271,11 +287,13 @@ CREATE INDEX idx_intake_receipt_items_receipt ON intake_receipt_items(receipt_id
 - [ ] Verification logic
 
 ### Integration Tests
+
 - [ ] Full intake flow (create → farmer verify → stacker verify → finalize)
 - [ ] Discrepancy handling and admin notification
 - [ ] Inventory update only after finalization
 
 ### E2E Tests
+
 - [ ] Shareable link works for farmer
 - [ ] Stacker verification UI
 - [ ] Admin discrepancy resolution

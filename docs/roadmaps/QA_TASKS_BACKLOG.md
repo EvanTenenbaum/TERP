@@ -215,7 +215,7 @@ Widespread "No data found" messages across all modules despite UI expecting data
 
 ## 🔴 P1 - HIGH PRIORITY
 
-### QA-006: Fix Dashboard - Vendors Button 404
+### QA-006: Fix Dashboard - Suppliers Button 404
 
 **Type:** Bug - High  
 **Priority:** P1  
@@ -223,11 +223,11 @@ Widespread "No data found" messages across all modules despite UI expecting data
 **Module:** Dashboard
 
 **Description:**  
-Clicking the Vendors button on the dashboard results in a 404 error.
+Clicking the Suppliers button on the dashboard results in a 404 error.
 
 **Acceptance Criteria:**
 
-- Vendors button navigates to working vendors module
+- Suppliers button navigates to working suppliers module
 - OR button is removed/disabled if module not implemented
 
 **Estimated Effort:** 2-4 hours

@@ -233,6 +233,6 @@ export function handleSummary(data) {
   }
 
   return {
-    stdout: `Soak test ${passed ? "PASSED" : "FAILED"} — p95: ${(p95 && p95.toFixed)(1)}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%, trend: ${trendAnalysis}, pool events: ${saturationEvents}\n`,
+    stdout: `Soak test ${passed ? "PASSED" : "FAILED"} — p95: ${p95 ? p95.toFixed(1) : "N/A"}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%, trend: ${trendAnalysis}, pool events: ${saturationEvents}\n`,
   };
 }

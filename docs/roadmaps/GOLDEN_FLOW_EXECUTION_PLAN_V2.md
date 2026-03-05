@@ -47,14 +47,15 @@
 **Duration:** ~8h (parallel execution)
 **Agents:** 4 concurrent
 
-| Agent | Task | Est | Mode | Branch | Files |
-|-------|------|-----|------|--------|-------|
-| **Agent 1** | ST-051: Transaction Boundaries | 8h | RED | `claude/st-051-txn-boundaries-{id}` | ordersDb.ts, orders.ts |
-| **Agent 2** | TERP-0014: Token Revocation | 6h | RED | `claude/terp-0014-token-revoke-{id}` | simpleAuth.ts, auth.ts |
-| **Agent 3** | TERP-0017: Protected Routers | 8h | STRICT | `claude/terp-0017-protected-{id}` | vendors.ts, tags.ts, etc. |
-| **Agent 4** | SCHEMA-011: deletedAt Column | 2h | STRICT | `claude/schema-011-deletedat-{id}` | pricingRules schema |
+| Agent       | Task                           | Est | Mode   | Branch                               | Files                     |
+| ----------- | ------------------------------ | --- | ------ | ------------------------------------ | ------------------------- |
+| **Agent 1** | ST-051: Transaction Boundaries | 8h  | RED    | `claude/st-051-txn-boundaries-{id}`  | ordersDb.ts, orders.ts    |
+| **Agent 2** | TERP-0014: Token Revocation    | 6h  | RED    | `claude/terp-0014-token-revoke-{id}` | simpleAuth.ts, auth.ts    |
+| **Agent 3** | TERP-0017: Protected Routers   | 8h  | STRICT | `claude/terp-0017-protected-{id}`    | vendors.ts, tags.ts, etc. |
+| **Agent 4** | SCHEMA-011: deletedAt Column   | 2h  | STRICT | `claude/schema-011-deletedat-{id}`   | pricingRules schema       |
 
 **Why this grouping:**
+
 - ST-051 is critical path - must start immediately
 - TERP-0014 and TERP-0017 are security tasks blocking ALL Golden Flows
 - SCHEMA-011 is quick (2h) and blocks GF-002
@@ -65,13 +66,14 @@
 **Agents:** 3 concurrent
 **Starts when:** ST-051 completes (Agent 1 frees up)
 
-| Agent | Task | Est | Mode | Branch | Files |
-|-------|------|-----|------|--------|-------|
-| **Agent 1** | ARCH-001: OrderOrchestrator | 8h | RED | `claude/arch-001-orchestrator-{id}` | server/services/orderOrchestrator.ts |
-| **Agent 5** | ST-053: Eliminate `any` Types | 8h | STRICT | `claude/st-053-any-types-{id}` | Orders.tsx, ordersDb.ts, orders.ts |
-| **Agent 6** | TERP-0019: Inventory SQL | 4h | SAFE | `claude/terp-0019-sql-aliases-{id}` | Dashboard widgets |
+| Agent       | Task                          | Est | Mode   | Branch                              | Files                                |
+| ----------- | ----------------------------- | --- | ------ | ----------------------------------- | ------------------------------------ |
+| **Agent 1** | ARCH-001: OrderOrchestrator   | 8h  | RED    | `claude/arch-001-orchestrator-{id}` | server/services/orderOrchestrator.ts |
+| **Agent 5** | ST-053: Eliminate `any` Types | 8h  | STRICT | `claude/st-053-any-types-{id}`      | Orders.tsx, ordersDb.ts, orders.ts   |
+| **Agent 6** | TERP-0019: Inventory SQL      | 4h  | SAFE   | `claude/terp-0019-sql-aliases-{id}` | Dashboard widgets                    |
 
 **Why this grouping:**
+
 - ARCH-001 depends on ST-051 - Agent 1 transitions seamlessly
 - ST-053 and TERP-0019 are independent and can run in parallel
 - ST-053 is high value (unblocks GF-001, GF-003)
@@ -82,14 +84,14 @@
 **Agents:** 1 coordinator + QA
 **Starts when:** All Wave A/B tasks complete
 
-| Agent | Task | Est | Mode |
-|-------|------|-----|------|
-| **QA Agent** | E2E Golden Flow Verification | 4h | RED |
+| Agent        | Task                         | Est | Mode |
+| ------------ | ---------------------------- | --- | ---- |
+| **QA Agent** | E2E Golden Flow Verification | 4h  | RED  |
 
 **Verification Matrix:**
 | GF | Flow | Test Case | Expected Result |
 |----|------|-----------|-----------------|
-| GF-001 | Direct Intake | Create intake with new vendor | Batch created, quantities correct |
+| GF-001 | Direct Intake | Create intake with new supplier | Batch created, quantities correct |
 | GF-002 | Procure-to-Pay | Create PO, receive, pay | Full flow, soft delete works |
 | GF-003 | Order-to-Cash | Create order, confirm, fulfill | Transaction atomicity verified |
 | GF-004 | Invoice & Payment | Create invoice, record payment | Invoice PAID, GL balanced |
@@ -104,7 +106,7 @@
 
 ### Agent 1: ST-051 - Transaction Boundaries
 
-```markdown
+````markdown
 # Agent Task: ST-051 - Add Transaction Boundaries
 
 **Branch:** claude/st-051-txn-boundaries-{session-id}
@@ -112,13 +114,16 @@
 **Priority:** P0 CRITICAL PATH
 
 ## Objective
+
 Wrap all multi-step order operations in single database transactions to ensure atomicity.
 
 ## Files to Modify
+
 - `server/ordersDb.ts` (lines 724-787, 1137-1161)
 - `server/routers/orders.ts` (lines 1355-1428, 1434-1494)
 
 ## Pattern to Apply
+
 ```typescript
 // Use existing transaction helper
 import { withTransaction } from "../_core/dbTransaction";
@@ -137,8 +142,10 @@ await withTransaction(async (tx) => {
   // All or nothing - any failure rolls back
 });
 ```
+````
 
 ## Acceptance Criteria
+
 - [ ] deleteOrder uses single transaction
 - [ ] confirmDraftOrder uses single transaction
 - [ ] shipOrder uses single transaction
@@ -147,15 +154,18 @@ await withTransaction(async (tx) => {
 - [ ] No partial state possible on failure
 
 ## Verification (MANDATORY)
+
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 ```
 
 ## Forbidden Patterns
+
 - `ctx.user?.id || 1` - Use `getAuthenticatedUserId(ctx)`
 - Multiple separate `await db.` calls for related operations
 - Catching and swallowing transaction errors
-```
+
+````
 
 ### Agent 2: TERP-0014 - Token Revocation
 
@@ -196,8 +206,9 @@ Implement server-side token revocation on logout and add rate limiting to auth e
 ## Verification (MANDATORY)
 ```bash
 pnpm check && pnpm lint && pnpm test server/routers/auth.test.ts && pnpm build
-```
-```
+````
+
+````
 
 ### Agent 3: TERP-0017 - Protected Routers
 
@@ -233,19 +244,22 @@ export const vendorsRouter = router({
     ...
   }),
 });
-```
+````
 
 ## Acceptance Criteria
+
 - [ ] All procedures in listed routers use `protectedProcedure`
 - [ ] Unauthorized access returns 401/403
 - [ ] RBAC permissions enforced where appropriate
 - [ ] VIP portal flows still work (if tags needed)
 
 ## Verification (MANDATORY)
+
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 ```
-```
+
+````
 
 ### Agent 4: SCHEMA-011 - deletedAt Column
 
@@ -271,25 +285,29 @@ ALTER TABLE `pricingRules`
   ADD COLUMN `deletedAt` DATETIME NULL DEFAULT NULL;
 
 CREATE INDEX `idx_pricing_rules_deleted_at` ON `pricingRules` (`deletedAt`);
-```
+````
 
 ## Schema Update
+
 ```typescript
 // Add to pricingRules table
 deletedAt: datetime('deletedAt'),
 ```
 
 ## Acceptance Criteria
+
 - [ ] pricingRules has deletedAt column
 - [ ] autoMigrate adds column if missing
 - [ ] Migration is idempotent
 - [ ] Existing queries filter by isNull(deletedAt)
 
 ## Verification (MANDATORY)
+
 ```bash
 pnpm check && pnpm build
 ```
-```
+
+````
 
 ### Agent 5: ST-053 - Eliminate `any` Types
 
@@ -328,9 +346,10 @@ interface OrderData {
   items: OrderItem[];
 }
 function processOrder(data: OrderData) {...}
-```
+````
 
 ## Acceptance Criteria
+
 - [ ] No `any` in Orders.tsx
 - [ ] No `any` in ordersDb.ts
 - [ ] No `any` in orders.ts router
@@ -338,10 +357,12 @@ function processOrder(data: OrderData) {...}
 - [ ] All tests pass
 
 ## Verification (MANDATORY)
+
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 ```
-```
+
+````
 
 ### Agent 6: TERP-0019 - Inventory SQL Aliases
 
@@ -370,17 +391,20 @@ Verify and fix SQL aliases in inventory snapshot dashboard widget.
 // Missing alias causes undefined
 .select({ total: sql`SUM(qty)` })  // BAD - no alias
 .select({ total: sql`SUM(qty)`.as('total') })  // GOOD
-```
+````
 
 ## Acceptance Criteria
+
 - [ ] All SQL aliases match TypeScript types
 - [ ] Dashboard inventory widget displays correct data
 - [ ] No undefined values in widget response
 
 ## Verification (MANDATORY)
+
 ```bash
 pnpm check && pnpm test && pnpm build
 ```
+
 ```
 
 ---
@@ -388,6 +412,7 @@ pnpm check && pnpm test && pnpm build
 ## Parallel Execution Timeline
 
 ```
+
 Hour 0-8 (Wave A):
 ├── Agent 1: ST-051 ████████████████████████████████████████ (8h)
 ├── Agent 2: TERP-0014 ██████████████████████████████ (6h) → idle
@@ -403,7 +428,8 @@ Hour 16-20 (Wave C):
 └── QA Agent: E2E Verification ████████████████ (4h)
 
 TOTAL ELAPSED: ~20h (vs 44h sequential = 55% time savings)
-```
+
+````
 
 ---
 
@@ -454,9 +480,10 @@ Each agent MUST pass before merge:
 ### Start Wave A (4 agents parallel)
 ```bash
 # Run from TERP root - use claude code's Task tool with terp-implementer subagent
-```
+````
 
 ### QA Review (after each task)
+
 ```bash
 # Use terp-qa-reviewer subagent for adversarial review
 ```

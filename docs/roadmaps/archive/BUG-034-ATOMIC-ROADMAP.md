@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This roadmap addresses the critical issues discovered during Red Hat QA of BUG-034. 
+This roadmap addresses the critical issues discovered during Red Hat QA of BUG-034.
 
 **Pre-work (Phase 0-4) is COMPLETE.** The full BUG-034 execution should be done by a dedicated agent with the corrected prompt.
 
@@ -20,7 +20,7 @@ This roadmap addresses the critical issues discovered during Red Hat QA of BUG-0
    - 8 with unmarked inline wrappers (strains.ts: 3, inventory.ts: 5)
 
 2. **strains.ts does NOT use Contract B** - has 3 unmarked inline wrappers
-3. **inventory.ts has 5 unmarked wrappers** (vendors, brands, views.list, profitability.top)
+3. **inventory.ts has 5 unmarked wrappers** (suppliers, brands, views.list, profitability.top)
 4. **inventory.ts `list` IS correct** - uses cursor-based pagination from DB layer
 5. **Time estimate revised to 22h** (from 16h) due to additional scope
 
@@ -28,25 +28,27 @@ This roadmap addresses the critical issues discovered during Red Hat QA of BUG-0
 
 ## Critical Issues Addressed in Pre-Work
 
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 1 | todoTasks router double-wrapping structured data | 🔴 BUG | ✅ FIXED |
-| 2 | BUG-034 prompt claims 30 procedures (actual: 27) | 🟡 DOC | ✅ CORRECTED |
-| 3 | Four different pagination contracts undocumented | 🟡 DOC | ✅ DOCUMENTED |
-| 4 | No unified pagination type exists | 🟡 TECH | ✅ CREATED |
-| 5 | Per-endpoint analysis missing from prompt | 🟡 DOC | ✅ ADDED |
-| 6 | strains.ts incorrectly marked as "Contract B" | 🔴 DOC | ✅ CORRECTED |
-| 7 | inventory.ts unmarked wrappers not documented | 🔴 DOC | ✅ CORRECTED |
+| #   | Issue                                            | Severity | Status        |
+| --- | ------------------------------------------------ | -------- | ------------- |
+| 1   | todoTasks router double-wrapping structured data | 🔴 BUG   | ✅ FIXED      |
+| 2   | BUG-034 prompt claims 30 procedures (actual: 27) | 🟡 DOC   | ✅ CORRECTED  |
+| 3   | Four different pagination contracts undocumented | 🟡 DOC   | ✅ DOCUMENTED |
+| 4   | No unified pagination type exists                | 🟡 TECH  | ✅ CREATED    |
+| 5   | Per-endpoint analysis missing from prompt        | 🟡 DOC   | ✅ ADDED      |
+| 6   | strains.ts incorrectly marked as "Contract B"    | 🔴 DOC   | ✅ CORRECTED  |
+| 7   | inventory.ts unmarked wrappers not documented    | 🔴 DOC   | ✅ CORRECTED  |
 
 ---
 
 ## Phase 0: Baseline Verification (5 min)
 
 ### Atomic Operations
+
 1. Run TypeScript check to establish baseline
 2. Verify current test status
 
 ### QA Gate 0
+
 - [ ] TypeScript compiles
 - [ ] Note any pre-existing errors
 
@@ -55,15 +57,18 @@ This roadmap addresses the critical issues discovered during Red Hat QA of BUG-0
 ## Phase 1: Fix todoTasks Double-Wrapping Bug (15 min)
 
 ### Problem
+
 The `todoTasks` router wraps already-structured responses from `todoTasksDb`:
 
 ```typescript
 // todoTasksDb.getListTasks ALREADY returns:
-{ items: tasks, total, limit, offset, hasMore }
+{
+  items: (tasks, total, limit, offset, hasMore);
+}
 
 // But router WRAPS it again:
 return {
-  items: tasks,  // ← tasks is already { items, total, ... }!
+  items: tasks, // ← tasks is already { items, total, ... }!
   nextCursor: null,
   hasMore: tasks.length === limit,
 };
@@ -72,16 +77,19 @@ return {
 ### Atomic Operations
 
 #### 1.1 Fix getByListId procedure
+
 - File: `server/routers/todoTasks.ts`
 - Line: ~37
 - Change: Remove hotfix wrapper, pass through DB response
 
 #### 1.2 Fix getMyTasks procedure
+
 - File: `server/routers/todoTasks.ts`
 - Line: ~62
 - Change: Remove hotfix wrapper, pass through DB response
 
 ### QA Gate 1
+
 - [ ] TypeScript compiles
 - [ ] todoTasks endpoints return correct structure
 - [ ] No regressions in other endpoints
@@ -93,28 +101,34 @@ return {
 ### Atomic Operations
 
 #### 2.1 Update hotfix count
+
 - File: `docs/prompts/BUG-034.md`
 - Change: Correct "30 procedures" to "21 procedures"
 - Add: Note about 9 procedures already fixed with Contract B
 
 #### 2.2 Add per-endpoint analysis table
+
 - File: `docs/prompts/BUG-034.md`
 - Add: Complete table of all 21 hotfixed endpoints with DB return types
 
 #### 2.3 Document four pagination contracts
+
 - File: `docs/prompts/BUG-034.md`
 - Add: Section explaining Contract A, B, C, D
 
 #### 2.4 Add Phase 0 pre-work section
+
 - File: `docs/prompts/BUG-034.md`
 - Add: Pre-execution checklist and verification steps
 
 #### 2.5 Update affected files inventory
+
 - File: `docs/prompts/BUG-034.md`
 - Change: Remove strains.ts and inventory.ts from hotfix list
 - Add: Note that these use Contract B already
 
 ### QA Gate 2
+
 - [ ] Prompt accurately reflects codebase state
 - [ ] All 21 hotfixed endpoints documented
 - [ ] Four contracts clearly explained
@@ -126,18 +140,22 @@ return {
 ### Atomic Operations
 
 #### 3.1 Add UnifiedPaginatedResponse type
+
 - File: `server/_core/pagination.ts`
 - Add: New type that supports both offset and cursor pagination
 
 #### 3.2 Add createUnifiedPaginatedResponse helper
+
 - File: `server/_core/pagination.ts`
 - Add: Helper function that creates unified response
 
 #### 3.3 Add null-safe wrapper
+
 - File: `server/_core/pagination.ts`
 - Add: Null-safe version of createPaginatedResponse
 
 ### QA Gate 3
+
 - [ ] TypeScript compiles
 - [ ] New types are properly exported
 - [ ] Existing code unaffected
@@ -149,11 +167,15 @@ return {
 ### Atomic Operations
 
 #### 4.1 Run full TypeScript check
+
 #### 4.2 Run tests
+
 #### 4.3 Commit all changes
+
 #### 4.4 Update MASTER_ROADMAP with findings
 
 ### QA Gate 4 (Final)
+
 - [ ] All TypeScript errors resolved
 - [ ] All tests pass
 - [ ] Changes committed
@@ -164,11 +186,13 @@ return {
 ## Execution Log
 
 ### Phase 0: Baseline
-- Started: 2025-12-22 
+
+- Started: 2025-12-22
 - Status: ✅ COMPLETE
 - TypeScript: Compiles cleanly
 
 ### Phase 1: Fix todoTasks Bug
+
 - Started: 2025-12-22
 - Status: ✅ COMPLETE
 - Fixed: getListTasks double-wrapping
@@ -176,6 +200,7 @@ return {
 - QA Gate 1: PASSED (TypeScript compiles, no diagnostics)
 
 ### Phase 2: Update Prompt
+
 - Started: 2025-12-22
 - Status: ✅ COMPLETE
 - Updated: Hotfix count corrected to 19 (not 30)
@@ -185,6 +210,7 @@ return {
 - QA Gate 2: PASSED (prompt accurately reflects codebase)
 
 ### Phase 3: Unified Types
+
 - Started: 2025-12-22
 - Status: ✅ COMPLETE
 - Added: `UnifiedPaginatedResponse<T>` interface
@@ -196,6 +222,7 @@ return {
 - QA Gate 3: PASSED (TypeScript compiles, no diagnostics)
 
 ### Phase 4: Final Verification
+
 - Started: 2025-12-22
 - Status: ✅ COMPLETE
 - TypeScript: Compiles cleanly
@@ -222,6 +249,7 @@ return {
 The pre-work is complete. A dedicated agent should now execute the full BUG-034 using `docs/prompts/BUG-034.md`.
 
 **Key points for executing agent:**
+
 - Total procedures to refactor: **27** (19 marked + 8 unmarked)
 - Estimated time: **22 hours**
 - Follow the phase-by-phase approach in the prompt

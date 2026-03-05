@@ -467,8 +467,8 @@ function OrderInspectorContent({
               <div className="pb-1">
                 <Badge variant="outline" className="text-xs">
                   {shippingEnabled
-                    ? "Shipping-enabled mode"
-                    : "Non-shipping mode"}
+                    ? "Fulfillment-enabled mode"
+                    : "Non-fulfillment mode"}
                 </Badge>
               </div>
 
@@ -1732,7 +1732,7 @@ export function OrdersWorkSurface() {
             >
               {processVendorReturnMutation.isPending
                 ? "Processing..."
-                : "Return to Vendor"}
+                : "Return to Supplier"}
             </Button>
           </DialogFooter>
         </DialogContent>

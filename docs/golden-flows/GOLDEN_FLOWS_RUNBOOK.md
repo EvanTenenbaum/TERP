@@ -283,7 +283,7 @@
 2. **Navigate** to the Dashboard.
 3. **Verify AR/AP widgets:**
    - "Top Debtors" widget shows clients with outstanding balances.
-   - "Top Vendors Owed" widget shows suppliers with AP balances.
+   - "Top Suppliers Owed" widget shows suppliers with AP balances.
    - Amounts should be non-zero if transactions exist.
 4. **Click "View All"** on Top Debtors widget.
 5. **View client list** with totalOwed column and aging indicators.
@@ -437,6 +437,6 @@ Use this checklist for rapid smoke testing:
 - [ ] GF-003: Order -> Invoice -> Payment -> Fulfillment completes
 - [ ] GF-004: PDF generates in <10s, payment records and posts GL
 - [ ] GF-005: Pick queue loads, pick/pack/ship workflow completes
-- [ ] GF-006: Top debtors/vendors show data, ledger drill-down works
+- [ ] GF-006: Top debtors/suppliers show data, ledger drill-down works
 - [ ] GF-007: Inventory list loads with values, filters work correctly
 - [ ] GF-008: Product selector is searchable combobox, request stores productId

@@ -30,7 +30,7 @@ The execution is divided into three waves, with specific tasks, agents, and depe
 
 - **Goal:** Restore basic inventory filtering to unblock business operations.
 - **Estimated Time:** ~30 minutes
-- **Launch:** Begins immediately upon receiving the 'go' command.
+- **Launch:** Begins immediately upon intake the 'go' command.
 
 | Task ID            | Description                             | Agent        | Dependencies | Verification                                                               |
 | :----------------- | :-------------------------------------- | :----------- | :----------- | :------------------------------------------------------------------------- |

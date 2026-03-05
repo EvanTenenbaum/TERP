@@ -62,7 +62,7 @@
 
 ## 🔜 Next Sprint (Next 1-2 Weeks)
 
-- [ ] **TEST-005: Vendor Intake Flow - E2E Test**
+- [ ] **TEST-005: Supplier Intake Flow - E2E Test**
 - [ ] **TEST-006: Accounting Module - Unit Tests**
 - [ ] **TEST-007: API Layer - Security Tests**
 
@@ -77,7 +77,7 @@
 
 ## ✅ Completed (Last 30 Days)
 
-*No testing tasks completed yet.*
+_No testing tasks completed yet._
 
 - [ ] **TEST-005: Admin Endpoints - Security Test** 🔴 CRITICAL
   - **Type:** Security
@@ -171,7 +171,6 @@
   - **Test Scope:** Covers TS-15.1 (Saved Views), TS-15.2 (Interest List Blocking), and TS-15.3 (Price Alerts).
   - **Test File Location:** `e2e/vip-portal-advanced.spec.ts`
   - **Estimated Effort:** 10-16 hours
-
 
 ---
 
@@ -309,7 +308,7 @@
   - **Result:** PARTIAL - Cmd+K shortcut not responding
   - **Bug Created:** BUG-005 (P2 MEDIUM)
 
-- [x] **E2E-018: Vendor Management (TS-7.1)** ⚠️ PARTIAL
+- [x] **E2E-018: Supplier Management (TS-7.1)** ⚠️ PARTIAL
   - **Type:** E2E
   - **Priority:** P2
   - **Status:** Partial (Nov 22, 2025)
@@ -376,11 +375,9 @@
 2. **HIGH:** Fix BUG-009 (Create Order 404) - P1
 3. **HIGH:** Fix BUG-007 (Analytics data) - P2
 4. **MEDIUM:** Complete remaining 18 E2E tests
-5. **MEDIUM:** Add seed data for Vendors and Locations
+5. **MEDIUM:** Add seed data for Suppliers and Locations
 6. **LOW:** Remove debug dashboard (BUG-006)
 7. **LOW:** Implement command palette (BUG-005)
-
-
 
 ---
 
@@ -461,7 +458,7 @@
     1. Navigate to `/inventory`
     2. Click "New Purchase" button
     3. Verify purchase creation page/modal opens
-    4. Fill in purchase details (vendor, products, quantities, costs)
+    4. Fill in purchase details (supplier, products, quantities, costs)
     5. Submit purchase
     6. Verify purchase appears in system
     7. Verify inventory levels updated
@@ -705,16 +702,17 @@
 **Total E2E Tests Identified:** 15  
 **Critical Priority:** 4 tests  
 **High Priority:** 6 tests  
-**Medium Priority:** 5 tests  
+**Medium Priority:** 5 tests
 
 **Estimated Total Effort:** 45-68 hours
 
 **Dependencies:**
+
 - E2E-002 blocked by E2E-001 (Add Item button must work before order submission can be tested)
 
 **Key Findings from Testing Session:**
+
 - 3 critical bugs identified (BUG-010, BUG-011, BUG-012)
 - Most UI elements present but untested
 - Strong foundation with professional UI/UX
 - Need systematic testing of each feature
-

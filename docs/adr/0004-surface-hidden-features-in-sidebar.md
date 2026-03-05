@@ -11,7 +11,7 @@ During a comprehensive audit of the TERP application, 7 hidden features were dis
 
 The hidden features identified were:
 
-1. **Vendors** (`/vendors`) - Only accessible via direct URL
+1. **Suppliers** (`/suppliers`) - Only accessible via direct URL
 2. **Pick & Pack** (`/pick-pack`) - Only accessible via direct URL
 3. **Todo Lists** (`/todos`) - Only accessible via Command Palette (T)
 4. **Interest List** (`/interest-list`) - Only accessible via Command Palette
@@ -35,7 +35,7 @@ We will add 5 of the 7 hidden features to the sidebar navigation:
 | Interest List | SALES (after Orders)              | Core sales workflow for tracking client interests |
 | Pick & Pack   | SALES (after Interest List)       | Core fulfillment workflow for warehouse staff     |
 | Photography   | INVENTORY (after Batches)         | Operational workflow for inventory team           |
-| Vendors       | INVENTORY (after Purchase Orders) | Essential for purchasing decisions                |
+| Suppliers     | INVENTORY (after Purchase Orders) | Essential for purchasing decisions                |
 | Todo Lists    | ADMIN (before Feature Flags)      | Productivity feature for all users                |
 
 The remaining 2 features (Matchmaking, Analytics) will NOT be added because:
@@ -138,7 +138,7 @@ New Lucide icons imported:
 - `Heart` - Interest List
 - `PackageOpen` - Pick & Pack
 - `Camera` - Photography
-- `Building2` - Vendors
+- `Building2` - Suppliers
 - `CheckSquare` - Todo Lists
 
 ## Related Decisions

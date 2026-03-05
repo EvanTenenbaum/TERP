@@ -51,12 +51,18 @@ DEPRECATED_TERMS=(
   "ManualIntake|Direct Intake|intake|\\bManualIntake\\b"
   "manual_intake|direct_intake|intake|\\bmanual[_-]intake\\b"
 
-  # Sales family — Sale/Estimate deprecated as document nouns
+  # Sales family — Sale/Estimate/Shipping deprecated as document nouns
   "Estimate|Quote|sales|\\bEstimate\\b"
+  "Sale (noun)|Sales Order|sales|\\bSale\\b"
+  "Shipping (lifecycle)|Fulfillment|sales|\\bShipping\\b"
 
   # Product family — InventoryItem deprecated as type name
   "InventoryItem|Batch|product|\\bInventoryItem\\b"
   "inventory_item|batch|product|\\binventory[_-]item\\b"
+
+  # Brand family — Grower deprecated
+  "Grower|Farmer/Brand|brand|\\bGrower\\b"
+  "grower|farmer/brand|brand|\\bgrower\\b"
 )
 
 # ─── Files to scan ────────────────────────────────────────────────────────────
@@ -114,7 +120,23 @@ done
 # Per-file results for full report
 declare -A FILE_HITS  # file -> "term:count term:count ..."
 
-for file in "${SCAN_FILES[@]}"; do
+# Build combined pattern for fast pre-filter
+ALL_PATTERNS=""
+for entry in "${DEPRECATED_TERMS[@]}"; do
+  IFS='|' read -r term canonical family pattern <<< "$entry"
+  if [[ -n "$ALL_PATTERNS" ]]; then
+    ALL_PATTERNS="${ALL_PATTERNS}|${pattern}"
+  else
+    ALL_PATTERNS="${pattern}"
+  fi
+done
+
+# Fast pre-filter: only process files that contain at least one deprecated term
+mapfile -t CANDIDATE_FILES < <(
+  grep -rlE "$ALL_PATTERNS" "${SCAN_FILES[@]}" 2>/dev/null || true
+)
+
+for file in "${CANDIDATE_FILES[@]}"; do
   file_hits=""
   for entry in "${DEPRECATED_TERMS[@]}"; do
     IFS='|' read -r term canonical family pattern <<< "$entry"
@@ -185,8 +207,8 @@ echo "  Files   : $TOTAL_FILES TypeScript/TSX files scanned"
 echo ""
 
 # Group by family
-FAMILIES=("party" "intake" "sales" "product")
-FAMILY_NAMES=("Party (Supplier vs Vendor)" "Intake (Intake vs Receiving)" "Sales (Order/Quote terminology)" "Product (Batch vs InventoryItem)")
+FAMILIES=("party" "intake" "sales" "product" "brand")
+FAMILY_NAMES=("Party (Supplier vs Vendor)" "Intake (Intake vs Receiving)" "Sales (Order/Quote terminology)" "Product (Batch vs InventoryItem)" "Brand (Farmer vs Grower)")
 
 GRAND_TOTAL_NON_EXEMPT=0
 

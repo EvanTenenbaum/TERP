@@ -131,15 +131,15 @@ This roadmap consolidates ALL findings from:
 **Estimated Effort**: 8-12 hours
 **Priority**: P0/P1 - Data integrity issues
 
-### DATA-001: Unknown Vendors in Accounting
+### DATA-001: Unknown Suppliers in Accounting
 
-| Field        | Value                                                      |
-| ------------ | ---------------------------------------------------------- |
-| **Status**   | OPEN                                                       |
-| **Location** | `/accounting` - AR/AP Dashboard                            |
-| **Issue**    | Top 5 vendors show as "Unknown Vendor" - $947K in payables |
-| **Impact**   | Cannot identify vendors to pay                             |
-| **Fix**      | Fix vendor name join in bills query                        |
+| Field        | Value                                                          |
+| ------------ | -------------------------------------------------------------- |
+| **Status**   | OPEN                                                           |
+| **Location** | `/accounting` - AR/AP Dashboard                                |
+| **Issue**    | Top 5 suppliers show as "Unknown Supplier" - $947K in payables |
+| **Impact**   | Cannot identify suppliers to pay                               |
+| **Fix**      | Fix supplier name join in bills query                          |
 
 **Effort**: 2-4 hours
 
@@ -501,7 +501,7 @@ This roadmap consolidates ALL findings from:
 ### Day 1-2 (8-12 hours) - CRITICAL DATA
 
 6. ✅ DB-001: Fix calendar database error
-7. ✅ DATA-001: Fix unknown vendors
+7. ✅ DATA-001: Fix unknown suppliers
 8. ✅ DATA-003: Fix placeholder client names
 9. ✅ DATA-004: Seed feature flags
 

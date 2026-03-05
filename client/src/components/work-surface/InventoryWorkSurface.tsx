@@ -48,6 +48,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
@@ -1873,26 +1879,36 @@ export function InventoryWorkSurface() {
           >
             Apply Status
           </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleBulkDelete}
-            disabled={
-              bulkDeleteMutation.isPending || blockedFromDelete.size > 0
-            }
-            aria-label={
-              blockedFromDelete.size > 0
-                ? `Cannot delete: ${blockedFromDelete.size} batch${blockedFromDelete.size === 1 ? " has" : "es have"} remaining inventory`
-                : `Delete ${selectedBatchIds.size} selected batch${selectedBatchIds.size === 1 ? "" : "es"}`
-            }
-            title={
-              blockedFromDelete.size > 0
-                ? `${blockedFromDelete.size} batch${blockedFromDelete.size === 1 ? " has" : "es have"} remaining inventory — reduce on-hand to 0 first`
-                : undefined
-            }
-          >
-            Delete Selected
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={
+                    bulkDeleteMutation.isPending || blockedFromDelete.size > 0
+                  }
+                  aria-label={
+                    blockedFromDelete.size > 0
+                      ? `Cannot delete: ${blockedFromDelete.size} batch${blockedFromDelete.size === 1 ? " has" : "es have"} remaining inventory`
+                      : `Delete ${selectedBatchIds.size} selected batch${selectedBatchIds.size === 1 ? "" : "es"}`
+                  }
+                >
+                  Delete Selected
+                </Button>
+              </TooltipTrigger>
+              {blockedFromDelete.size > 0 && (
+                <TooltipContent>
+                  <p>
+                    {blockedFromDelete.size} batch
+                    {blockedFromDelete.size === 1 ? " has" : "es have"}{" "}
+                    remaining inventory — reduce on-hand to 0 first
+                  </p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           {blockedFromDelete.size > 0 && (
             <span className="text-xs text-destructive" role="alert">
               {blockedFromDelete.size} batch
@@ -1916,6 +1932,7 @@ export function InventoryWorkSurface() {
       {bulkDeleteError && (
         <div
           role="alert"
+          aria-live="assertive"
           className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           <span>{bulkDeleteError}</span>
@@ -2006,7 +2023,11 @@ export function InventoryWorkSurface() {
           ) : (
             <>
               <div className="hidden md:block">
-                <Table data-testid="inventory-table" className="inventory-list">
+                <Table
+                  data-testid="inventory-table"
+                  className="inventory-list"
+                  aria-label="Inventory batches"
+                >
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40px]">
@@ -2025,6 +2046,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("sku")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "sku"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("sku");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           SKU <SortIcon column="sku" />
@@ -2033,6 +2069,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("product")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "product"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("product");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Product <SortIcon column="product" />
@@ -2041,6 +2092,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("brand")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "brand"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("brand");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           {getMixedBrandLabel(categoryOptions)}{" "}
@@ -2050,6 +2116,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("vendor")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "vendor"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("vendor");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Supplier <SortIcon column="vendor" />
@@ -2058,6 +2139,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("grade")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "grade"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("grade");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Grade <SortIcon column="grade" />
@@ -2066,6 +2162,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort("status")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "status"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("status");
+                          }
+                        }}
                       >
                         <span className="flex items-center">
                           Status <SortIcon column="status" />
@@ -2074,6 +2185,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("onHandQty")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "onHandQty"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("onHandQty");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           On Hand <SortIcon column="onHandQty" />
@@ -2082,6 +2208,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("reservedQty")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "reservedQty"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("reservedQty");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           Reserved <SortIcon column="reservedQty" />
@@ -2090,6 +2231,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("availableQty")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "availableQty"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("availableQty");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           Available <SortIcon column="availableQty" />
@@ -2100,6 +2256,21 @@ export function InventoryWorkSurface() {
                       <TableHead
                         className="cursor-pointer text-right"
                         onClick={() => handleSort("unitCogs")}
+                        role="columnheader"
+                        aria-sort={
+                          sortColumn === "unitCogs"
+                            ? sortDirection === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: ReactKeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSort("unitCogs");
+                          }
+                        }}
                       >
                         <span className="flex items-center justify-end">
                           Cost <SortIcon column="unitCogs" />

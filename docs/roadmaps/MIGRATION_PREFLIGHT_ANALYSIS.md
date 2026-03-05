@@ -140,17 +140,17 @@ After deploying the migration:
 
 ---
 
-## TER-247: Rewrite Vendor Queries → Client Queries (STRICT Mode)
+## TER-247: Rewrite Supplier Queries → Client Queries (STRICT Mode)
 
 ### Summary
 
-Replace all remaining `vendors` table queries with `clients` table queries using `isSeller=true` filter.
+Replace all remaining `suppliers` table queries with `clients` table queries using `isSeller=true` filter.
 
 ### Prerequisite
 
-TER-247 MUST be completed before TER-235 (vendor table deprecation). TER-247 rewrites queries; TER-235 removes the table.
+TER-247 MUST be completed before TER-235 (supplier table deprecation). TER-247 rewrites queries; TER-235 removes the table.
 
-### Vendor Query Inventory (9 total)
+### Supplier Query Inventory (9 total)
 
 #### Already Migrated (4 queries — no action needed)
 
@@ -207,7 +207,7 @@ const suppliers = await db.query.clients.findMany({
 
 - **Estimate:** ~6h
 - **Risk:** MEDIUM — Query results must be equivalent (same columns exposed to UI)
-- **Key concern:** `vendors` table has different column names than `clients` — need mapping layer
+- **Key concern:** `suppliers` table has different column names than `clients` — need mapping layer
 - **Column mapping needed:**
   - `vendors.name` → `clients.name` (same)
   - `vendors.company` → `clients.company` (same)
@@ -217,11 +217,11 @@ const suppliers = await db.query.clients.findMany({
 
 ---
 
-## TER-235: Deprecate Vendor Table (RED Mode)
+## TER-235: Deprecate Supplier Table (RED Mode)
 
 ### Summary
 
-Final removal of the `vendors` table after all queries are migrated (TER-247).
+Final removal of the `suppliers` table after all queries are migrated (TER-247).
 
 ### Prerequisites
 
@@ -231,7 +231,7 @@ Final removal of the `vendors` table after all queries are migrated (TER-247).
 ### This is a multi-phase task:
 
 1. **Phase 1:** Add `supplierClientId` column to tables with `vendorId` FK
-2. **Phase 2:** Backfill `supplierClientId` from vendor→client mapping
+2. **Phase 2:** Backfill `supplierClientId` from supplier→client mapping
 3. **Phase 3:** Update all code to use `supplierClientId`
 4. **Phase 4:** Drop `vendorId` columns and `vendors` table
 

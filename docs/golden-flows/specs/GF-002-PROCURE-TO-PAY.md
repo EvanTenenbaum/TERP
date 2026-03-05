@@ -19,8 +19,8 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 | ---------------- | ------------------- | --------------------------------------------------------- |
 | PO Creation UI   | **Implemented**     | `PurchaseOrdersPage.tsx`, `PurchaseOrdersWorkSurface.tsx` |
 | PO Router        | **Implemented**     | Full CRUD + submit/confirm workflows                      |
-| PO Receiving API | **Implemented**     | `poReceiving.ts` with batch creation                      |
-| PO Receiving UI  | **Not Implemented** | API-only; no dedicated frontend                           |
+| PO Intake API    | **Implemented**     | `poReceiving.ts` with batch creation                      |
+| PO Intake UI     | **Not Implemented** | API-only; no dedicated frontend                           |
 | Bills API        | **Implemented**     | Full CRUD via `accounting.bills.*`                        |
 | Bills UI         | **Partial**         | Basic list via AR/AP dashboard                            |
 | Direct Intake UI | **Implemented**     | Alternative flow via `DirectIntakeWorkSurface.tsx`        |
@@ -172,7 +172,7 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 | `purchaseOrders.getByVendor`        | Query    | `{ vendorId: number }`                                       | **DEPRECATED** - use `getBySupplier` |
 | `purchaseOrders.getByProduct`       | Query    | `{ productId: number }`                                      | POs containing product               |
 
-### PO Receiving Router (`server/routers/poReceiving.ts`)
+### PO Intake Router (`server/routers/poReceiving.ts`)
 
 | Endpoint                             | Method   | Input                                           | Description                        |
 | ------------------------------------ | -------- | ----------------------------------------------- | ---------------------------------- |
@@ -246,7 +246,7 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 | `paymentTerms`         | VARCHAR(100)  | Payment terms                                          |
 | `paymentDueDate`       | DATE          | Payment due date                                       |
 | `notes`                | TEXT          | Internal notes                                         |
-| `vendorNotes`          | TEXT          | Notes visible to vendor                                |
+| `vendorNotes`          | TEXT          | Notes visible to supplier                              |
 | `createdBy`            | INT           | FK to users.id                                         |
 | `createdAt`            | TIMESTAMP     | Creation timestamp                                     |
 | `updatedAt`            | TIMESTAMP     | Last update timestamp                                  |
@@ -666,13 +666,13 @@ idx_bills_status (status)
 - **Cause**: Selected client doesn't have `isSeller=true`
 - **Recovery**: Select a valid supplier from the dropdown
 
-### Over-receiving
+### Over-intake
 
-- **Warning**: "Receiving more than ordered"
+- **Warning**: "Intake more than ordered"
 - **Cause**: Received quantity > (ordered - already received)
 - **Recovery**: Acknowledge warning, adjust if needed
 
-### Invalid PO Status for Receiving
+### Invalid PO Status for Intake
 
 - **Error**: "Purchase order cannot be received from {status} status"
 - **Cause**: Attempting to receive a DRAFT or CANCELLED PO
@@ -755,7 +755,7 @@ idx_bills_status (status)
 
 | Component               | Description                            | Priority |
 | ----------------------- | -------------------------------------- | -------- |
-| **PO Receiving UI**     | Frontend for `poReceiving.*` endpoints | HIGH     |
+| **PO Intake UI**        | Frontend for `poReceiving.*` endpoints | HIGH     |
 | **Bills Management UI** | Dedicated bills list and detail view   | MEDIUM   |
 | **PO Detail Page**      | Full-page PO view with intake history  | MEDIUM   |
 
@@ -827,7 +827,7 @@ PurchaseOrdersWorkSurface
 4. Receive remaining items
 5. Verify PO status = RECEIVED
 
-### Over-receiving
+### Over-intake
 
 1. Create PO for 100 units
 2. Attempt to intake 120 units
@@ -858,9 +858,9 @@ PurchaseOrdersWorkSurface
 | Negative unit cost              | Validation error: "Unit cost cannot be negative" |
 | Delete PO with received items   | Should fail or warn (currently allows)           |
 | Receive same item twice         | Cumulative: adds to existing received qty        |
-| Supplier with no legacyVendorId | Error: "Unable to resolve vendor ID"             |
+| Supplier with no legacyVendorId | Error: "Unable to resolve supplier ID"           |
 | PO without line items submitted | Allowed (no validation currently)                |
-| Concurrent receiving sessions   | Last write wins (no optimistic locking on PO)    |
+| Concurrent intake sessions      | Last write wins (no optimistic locking on PO)    |
 | Bill amount exceeds PO total    | Allowed (bills are independent)                  |
 
 ---
@@ -884,7 +884,7 @@ PurchaseOrdersWorkSurface
 ### Backend
 
 - `server/routers/purchaseOrders.ts` - PO router
-- `server/routers/poReceiving.ts` - Receiving router
+- `server/routers/poReceiving.ts` - Intake router
 - `server/routers/accounting.ts` - Bills/payments router
 - `server/arApDb.ts` - AR/AP database functions
 

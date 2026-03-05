@@ -186,7 +186,7 @@ export const OwnerSkuStatusBrowserWidget = memo(
                 variant="inventory"
                 size="sm"
                 title="No SKUs found"
-                description="Inventory items will appear here once batches are created"
+                description="Batches will appear here once intake is recorded"
               />
             )}
           </CardContent>

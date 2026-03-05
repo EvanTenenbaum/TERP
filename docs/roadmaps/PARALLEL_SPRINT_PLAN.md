@@ -52,14 +52,14 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 
 ## Sprint Summary
 
-| Sprint    | Focus                           | Hours    | Branch                          | Owner               |
-| --------- | ------------------------------- | -------- | ------------------------------- | ------------------- |
-| 🔵 A      | Backend Infrastructure & Schema | 60h      | `sprint-a/infrastructure`       | DevOps Lead         |
-| 🟢 B      | Frontend UX & UI Components     | 66h      | `sprint-b/frontend-ux`          | Frontend Agent      |
-| 🟠 C      | Accounting & VIP Portal         | 54h      | `sprint-c/accounting-vip`       | Full-Stack Agent    |
-| 🟣 D      | Sales, Inventory & QA           | 58h      | `sprint-d/sales-inventory-qa`   | Full-Stack/QA Agent |
-| 🟤 E      | Calendar, Vendors & CRM         | 58h      | `sprint-e/calendar-vendors-crm` | Full-Stack Agent    |
-| **Total** |                                 | **296h** |                                 |                     |
+| Sprint    | Focus                           | Hours    | Branch                            | Owner               |
+| --------- | ------------------------------- | -------- | --------------------------------- | ------------------- |
+| 🔵 A      | Backend Infrastructure & Schema | 60h      | `sprint-a/infrastructure`         | DevOps Lead         |
+| 🟢 B      | Frontend UX & UI Components     | 66h      | `sprint-b/frontend-ux`            | Frontend Agent      |
+| 🟠 C      | Accounting & VIP Portal         | 54h      | `sprint-c/accounting-vip`         | Full-Stack Agent    |
+| 🟣 D      | Sales, Inventory & QA           | 58h      | `sprint-d/sales-inventory-qa`     | Full-Stack/QA Agent |
+| 🟤 E      | Calendar, Suppliers & CRM       | 58h      | `sprint-e/calendar-suppliers-crm` | Full-Stack Agent    |
+| **Total** |                                 | **296h** |                                   |                     |
 
 ---
 
@@ -232,11 +232,11 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 
 ---
 
-## 🟤 Sprint E: Calendar, Vendors & CRM
+## 🟤 Sprint E: Calendar, Suppliers & CRM
 
 **Owner:** Full-Stack Agent
 **Estimate:** 58 hours
-**Branch:** `sprint-e/calendar-vendors-crm`
+**Branch:** `sprint-e/calendar-suppliers-crm`
 **Prerequisite:** Sprint A complete
 **Prompt:** `docs/prompts/parallel-sprints/SPRINT-E-CALENDAR-VENDORS-CRM.md`
 
@@ -268,14 +268,14 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 
 | Phase | Focus                      | Tasks                      | Hours |
 | ----- | -------------------------- | -------------------------- | ----- |
-| 1     | Vendor Supply Management   | QA-054, VENDOR-001         | 22h   |
+| 1     | Supplier Supply Management | QA-054, VENDOR-001         | 22h   |
 | 2     | CRM Communication Features | QA-057, QA-067             | 20h   |
 | 3     | Calendar Enhancements      | CALENDAR-001, CALENDAR-002 | 16h   |
 
 ### Key Deliverables
 
-- [ ] Vendor supply CRUD with history tracking
-- [ ] Vendor reminder system
+- [ ] Supplier supply CRUD with history tracking
+- [ ] Supplier reminder system
 - [ ] CRM needs tracking and segmentation
 - [ ] Communication logging with templates
 - [ ] Calendar event CRUD with recurring events
@@ -336,7 +336,7 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 2. **Sprint B** → main (UI components)
 3. **Sprint C** → main (accounting/VIP)
 4. **Sprint D** → main (sales/inventory/tests)
-5. **Sprint E** → main (calendar/vendors/CRM)
+5. **Sprint E** → main (calendar/suppliers/CRM)
 
 ### Post-Merge Verification
 
@@ -378,7 +378,7 @@ This document defines the parallel sprint execution strategy for achieving Tier 
 
 ### Sprint E
 
-- [ ] Vendor supply CRUD functional
+- [ ] Supplier supply CRUD functional
 - [ ] Calendar events working
 - [ ] CRM communication logging working
 - [ ] Invitations and reminders functional
@@ -437,12 +437,12 @@ _Last Updated: January 2, 2026_
 
 ### Sprint D Additional Tasks: Sample Returns & Tracking (44h)
 
-| Task ID    | Description                      | Priority | Estimate |
-| ---------- | -------------------------------- | -------- | -------- |
-| SAMPLE-006 | Implement sample return workflow | P0       | 16h      |
-| SAMPLE-007 | Implement vendor return workflow | P1       | 12h      |
-| SAMPLE-008 | Add location tracking            | P2       | 8h       |
-| SAMPLE-009 | Add expiration tracking          | P2       | 8h       |
+| Task ID    | Description                        | Priority | Estimate |
+| ---------- | ---------------------------------- | -------- | -------- |
+| SAMPLE-006 | Implement sample return workflow   | P0       | 16h      |
+| SAMPLE-007 | Implement supplier return workflow | P1       | 12h      |
+| SAMPLE-008 | Add location tracking              | P2       | 8h       |
+| SAMPLE-009 | Add expiration tracking            | P2       | 8h       |
 
 **File Ownership (No Conflicts):**
 

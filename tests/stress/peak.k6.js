@@ -205,6 +205,6 @@ export function handleSummary(data) {
   }
 
   return {
-    stdout: `Peak test ${passed ? "PASSED" : "FAILED"} — p95: ${(p95 && p95.toFixed)(1)}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%, pool events: ${saturationEvents}\n`,
+    stdout: `Peak test ${passed ? "PASSED" : "FAILED"} — p95: ${p95 ? p95.toFixed(1) : "N/A"}ms, errors: ${((errorRateVal || 0) * 100).toFixed(2)}%, pool events: ${saturationEvents}\n`,
   };
 }

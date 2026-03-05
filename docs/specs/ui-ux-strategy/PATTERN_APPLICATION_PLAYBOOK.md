@@ -68,10 +68,10 @@ Is this a high-frequency workflow?
 - Cmd+K is for **actions and navigation**, not field selection.
 - Use Cmd+K to:
   - create new PO/intake
-  - jump to ledger/client/vendor
+  - jump to ledger/client/supplier
   - run bulk actions
 - Do **not** use Cmd+K for:
-  - selecting products/vendors inside a grid
+  - selecting products/suppliers inside a grid
   - replacing local filtering
 
 ---
@@ -100,13 +100,13 @@ If any module cannot support this, it must log an exception in ASSUMPTION_LOG.md
 
 ## 6. Smart Defaults by Module
 
-| Module       | Smart Defaults                      | Visibility Rules         |
-| ------------ | ----------------------------------- | ------------------------ |
-| Intake       | vendor terms, location, last source | Always visible in header |
-| Sales Orders | customer, payment terms             | Visible in header        |
-| Inventory    | location, count type                | Visible in header        |
-| Pricing      | vendor/category                     | Visible in header        |
-| Ledger       | period, account                     | Visible near entry grid  |
+| Module       | Smart Defaults                        | Visibility Rules         |
+| ------------ | ------------------------------------- | ------------------------ |
+| Intake       | supplier terms, location, last source | Always visible in header |
+| Sales Orders | customer, payment terms               | Visible in header        |
+| Inventory    | location, count type                  | Visible in header        |
+| Pricing      | supplier/category                     | Visible in header        |
+| Ledger       | period, account                       | Visible near entry grid  |
 
 ---
 
@@ -156,34 +156,35 @@ Before merging any UX change, confirm:
 
 All spacing follows an 8px base unit:
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `space-xs` | 4px | Icon gaps, tight inline |
-| `space-sm` | 8px | Cell padding, field gaps |
-| `space-md` | 16px | Section padding, card gaps |
-| `space-lg` | 24px | Header padding |
-| `space-xl` | 32px | Major section gaps |
+| Token      | Value | Usage                      |
+| ---------- | ----- | -------------------------- |
+| `space-xs` | 4px   | Icon gaps, tight inline    |
+| `space-sm` | 8px   | Cell padding, field gaps   |
+| `space-md` | 16px  | Section padding, card gaps |
+| `space-lg` | 24px  | Header padding             |
+| `space-xl` | 32px  | Major section gaps         |
 
 ### 8.3 Grid Cell Specifications
 
-| Property | Value | Notes |
-|----------|-------|-------|
-| Row height | 40px | Touch-friendly minimum |
-| Cell padding | 8px horizontal | Consistent with space-sm |
-| Min column width | 80px | Prevents truncation issues |
-| Max column width | 400px | User-resizable |
-| Header row height | 44px | Slightly taller than data rows |
+| Property          | Value          | Notes                          |
+| ----------------- | -------------- | ------------------------------ |
+| Row height        | 40px           | Touch-friendly minimum         |
+| Cell padding      | 8px horizontal | Consistent with space-sm       |
+| Min column width  | 80px           | Prevents truncation issues     |
+| Max column width  | 400px          | User-resizable                 |
+| Header row height | 44px           | Slightly taller than data rows |
 
 ### 8.4 Inspector Panel Specifications
 
-| Breakpoint | Inspector Behavior | Width |
-|------------|-------------------|-------|
-| ≥1440px | Fixed right panel | 400px |
-| 1280-1439px | Fixed right panel | 360px |
-| 1024-1279px | Slide-over sheet | 400px |
-| <1024px | Full-screen sheet | 100% |
+| Breakpoint  | Inspector Behavior | Width |
+| ----------- | ------------------ | ----- |
+| ≥1440px     | Fixed right panel  | 400px |
+| 1280-1439px | Fixed right panel  | 360px |
+| 1024-1279px | Slide-over sheet   | 400px |
+| <1024px     | Full-screen sheet  | 100%  |
 
 **Inspector Anatomy**:
+
 ```
 ┌─────────────────────────────────────┐
 │ [←] Record Title              [×]  │  Header: 56px
@@ -225,10 +226,7 @@ All spacing follows an 8px base unit:
     />
 
     {selectedRow && (
-      <InspectorPanel
-        record={selectedRow}
-        onClose={() => setSelectedRow(null)}
-      >
+      <InspectorPanel record={selectedRow} onClose={() => setSelectedRow(null)}>
         <InspectorSection title="Details">
           {/* Complex fields */}
         </InspectorSection>
@@ -257,8 +255,8 @@ All spacing follows an 8px base unit:
   value={row.quantity}
   type="number"
   min={0}
-  onChange={(newValue) => updateRow(row.id, { quantity: newValue })}
-  onBlur={handleValidation}  // Errors show on blur
+  onChange={newValue => updateRow(row.id, { quantity: newValue })}
+  onBlur={handleValidation} // Errors show on blur
   onCommit={handleRowCommit} // Save on Enter
 />
 ```
@@ -293,12 +291,14 @@ const useValidation = (value: string, rules: ValidationRule[]) => {
 **Surface Type**: Work Surface (Execution)
 
 **Context Header Fields**:
-- Vendor (required, typeahead)
+
+- Supplier (required, typeahead)
 - Location (required, select)
-- Payment Terms (auto-filled from vendor)
+- Payment Terms (auto-filled from supplier)
 - Receipt Date (default: today)
 
 **Grid Columns** (Priority Order):
+
 1. Product/Strain (typeahead with quick-create)
 2. Quantity (inline number)
 3. Unit (select)
@@ -307,27 +307,31 @@ const useValidation = (value: string, rules: ValidationRule[]) => {
 6. Notes (inline text, optional)
 
 **Inspector Panel**:
+
 - Batch attributes (THC%, terpenes, test results)
 - Cost breakdown
 - Audit history
 - Verification link (DF-053)
 
 **Special Rules**:
+
 - Public verification link generated automatically
 - Discrepancy resolution workflow in inspector
-- Receipt cannot be finalized without vendor acknowledgment
+- Receipt cannot be finalized without supplier acknowledgment
 
 ### 10.2 Orders Module (DF-022)
 
 **Surface Type**: Work Surface (Execution)
 
 **Context Header Fields**:
+
 - Customer (required, typeahead)
 - Payment Terms (auto-filled from customer)
 - Order Date (default: today)
 - Salesperson (default: current user)
 
 **Grid Columns** (Priority Order):
+
 1. Product (typeahead)
 2. Batch (select, filtered by product)
 3. Quantity (inline number)
@@ -336,12 +340,14 @@ const useValidation = (value: string, rules: ValidationRule[]) => {
 6. Total (calculated)
 
 **Inspector Panel**:
+
 - Line item notes
 - COGS override with audit trail
 - Margin calculation display
 - Batch details (age, location)
 
 **Special Rules**:
+
 - COGS margin warning if selling below cost
 - Draft auto-save every 30 seconds
 - Finalize creates invoice (DF-003)
@@ -351,11 +357,13 @@ const useValidation = (value: string, rules: ValidationRule[]) => {
 **Surface Type**: Work Surface (Execution, Bulk-heavy)
 
 **Context Header Fields**:
+
 - Location filter
 - Status filter (Pending, In Progress, Ready)
 - Date range
 
 **Grid Columns**:
+
 1. Order # (link to order)
 2. Customer
 3. Items (count)
@@ -364,12 +372,14 @@ const useValidation = (value: string, rules: ValidationRule[]) => {
 6. Due Date
 
 **Bulk Action Bar**:
+
 - Assign to me
 - Mark as picked
 - Mark as packed
 - Print pick list (batch)
 
 **Inspector Panel**:
+
 - Order line items (read-only)
 - Pick locations for each item
 - Packing notes
@@ -417,19 +427,20 @@ const useValidation = (value: string, rules: ValidationRule[]) => {
 
 ### 12.1 Animation Tokens
 
-| Animation | Duration | Easing | Trigger |
-|-----------|----------|--------|---------|
-| Inspector open | 200ms | ease-out | Row selection |
-| Inspector close | 150ms | ease-in | Esc or ×  |
-| Row creation | 150ms | ease-out | Enter commit |
-| Row deletion | 150ms + 100ms | ease-in, collapse | Delete action |
-| Save state change | 300ms | ease-in-out | State update |
-| Toast appear | 200ms | ease-out | Notification |
-| Toast dismiss | 150ms | ease-in | Auto or manual |
+| Animation         | Duration      | Easing            | Trigger        |
+| ----------------- | ------------- | ----------------- | -------------- |
+| Inspector open    | 200ms         | ease-out          | Row selection  |
+| Inspector close   | 150ms         | ease-in           | Esc or ×       |
+| Row creation      | 150ms         | ease-out          | Enter commit   |
+| Row deletion      | 150ms + 100ms | ease-in, collapse | Delete action  |
+| Save state change | 300ms         | ease-in-out       | State update   |
+| Toast appear      | 200ms         | ease-out          | Notification   |
+| Toast dismiss     | 150ms         | ease-in           | Auto or manual |
 
 ### 12.2 Reduced Motion
 
 When `prefers-reduced-motion: reduce`:
+
 - All transitions become instant (0ms)
 - No transforms or opacity animations
 - Focus indicators remain visible
@@ -442,36 +453,42 @@ When `prefers-reduced-motion: reduce`:
 Before merging any UX change, confirm all items:
 
 ### Layout & Structure
+
 - [ ] Work Surface shell used for high-frequency workflows
 - [ ] Context header contains only batch-level fields
 - [ ] Inspector opens on row selection (not modal)
 - [ ] Status bar is sticky at bottom
 
 ### Interactions
+
 - [ ] Keyboard contract: Tab, Shift+Tab, Enter, Esc work as specified
 - [ ] Inline edits restricted to primitives (qty, cost, status)
 - [ ] Complex fields open in inspector
 - [ ] Bulk actions require selection >1
 
 ### Visual Feedback
+
 - [ ] Save-state indicator visible at all times
 - [ ] Loading states use skeletons matching layout
 - [ ] Errors appear on blur/commit, not during typing
 - [ ] Empty states have clear message + CTA
 
 ### Data Integrity
+
 - [ ] Validation occurs both client and server side
 - [ ] Concurrent edit protection via version field
 - [ ] Unsaved changes warning on navigation
 - [ ] Undo available for destructive actions (10s window)
 
 ### Accessibility
+
 - [ ] Focus indicators visible (2px, ≥3:1 contrast)
 - [ ] All interactive elements have accessible names
 - [ ] Changes announced via aria-live
 - [ ] Animations respect prefers-reduced-motion
 
 ### Documentation
+
 - [ ] Feature Preservation Matrix updated or referenced
 - [ ] New patterns documented in this playbook
 - [ ] Exceptions logged in ASSUMPTION_LOG.md

@@ -49,7 +49,7 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 
 | Term               | Definition                                                | Usage                 |
 | ------------------ | --------------------------------------------------------- | --------------------- |
-| **Intake**         | The process of receiving inventory into the system        | This flow             |
+| **Intake**         | The process of intake inventory into the system           | This flow             |
 | **Intake Receipt** | The document created during intake, shared with suppliers | Generated post-intake |
 | **Purchase**       | ~~Deprecated term~~ - Do not use in intake context        | Removed from UI       |
 | **Purchase Order** | A formal order placed with a supplier (different flow)    | GF-002: PO Intake     |
@@ -271,7 +271,7 @@ PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
 
 | Endpoint                                  | Method | Purpose                | Request                                      | Response                                              |
 | ----------------------------------------- | ------ | ---------------------- | -------------------------------------------- | ----------------------------------------------------- |
-| `inventory.vendors`                       | GET    | Autocomplete suppliers | `{ query?: string }`                         | `{ items: Supplier[] }`                               |
+| `inventory.suppliers`                     | GET    | Autocomplete suppliers | `{ query?: string }`                         | `{ items: Supplier[] }`                               |
 | `inventory.brands`                        | GET    | Autocomplete brands    | `{ query?: string }`                         | `{ items: Brand[] }`                                  |
 | `inventory.uploadMedia`                   | POST   | Upload media file      | `{ fileData, fileName, fileType, batchId? }` | `{ success, url, fileName, fileType, fileSize }`      |
 | `inventory.deleteMedia`                   | POST   | Delete media file      | `{ url }`                                    | `{ success, url }`                                    |
@@ -288,7 +288,7 @@ PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
 
 | Table            | Operation            | Description                                           |
 | ---------------- | -------------------- | ----------------------------------------------------- |
-| `vendors`        | Find or Create       | Supplier record (uses `clients` with `isSeller=true`) |
+| `suppliers`      | Find or Create       | Supplier record (uses `clients` with `isSeller=true`) |
 | `brands`         | Find or Create       | Brand record linked to supplier                       |
 | `products`       | Find or Create       | Product record linked to brand                        |
 | `lots`           | Create               | Lot record for batch grouping                         |

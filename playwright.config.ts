@@ -30,6 +30,7 @@ export default defineConfig({
     "tests-e2e/**/*.spec.ts",
     "tests/e2e/**/*.spec.ts",
     "tests/smoke/**/*.spec.ts",
+    "tests/stress/**/*.spec.ts",
   ],
   // Oracle flow execution is intentionally serialized for determinism.
   fullyParallel: !isOracleRun,
