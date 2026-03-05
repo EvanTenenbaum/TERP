@@ -21,7 +21,7 @@ export function CogsGlobalSettings() {
         <CardHeader>
           <CardTitle className="text-lg">Default COGS Behavior</CardTitle>
           <CardDescription>
-            Configure how COGS is calculated for inventory items
+            Configure how COGS is calculated for batches
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

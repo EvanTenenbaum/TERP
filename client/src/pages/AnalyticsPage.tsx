@@ -155,7 +155,9 @@ export default function AnalyticsPage() {
               <DropdownMenuItem onClick={() => handleExport("revenue", "csv")}>
                 Export Revenue Data (CSV)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("inventory", "csv")}>
+              <DropdownMenuItem
+                onClick={() => handleExport("inventory", "csv")}
+              >
                 Export Inventory Data (CSV)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport("clients", "csv")}>
@@ -241,7 +243,7 @@ export default function AnalyticsPage() {
               isLoading={isLoading}
             />
             <MetricCard
-              title="Inventory Items"
+              title="Batches"
               value={(data?.totalInventoryItems ?? 0).toLocaleString()}
               subtitle="Active batches in inventory"
               icon={Package}
@@ -322,7 +324,7 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 <MetricCard
-                  title="Total Inventory Items"
+                  title="Total Batches"
                   value={(data?.totalInventoryItems ?? 0).toLocaleString()}
                   subtitle="Active batches in stock"
                   icon={Package}

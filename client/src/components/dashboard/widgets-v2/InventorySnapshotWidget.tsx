@@ -287,7 +287,7 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
               variant="generic"
               size="sm"
               title="No COGS data available"
-              description="Price bracket grouping requires inventory items with COGS values"
+              description="Price bracket grouping requires batches with COGS values"
             />
           )
         ) : (

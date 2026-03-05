@@ -292,7 +292,7 @@ export function InventoryBrowser({
                     colSpan={9}
                     className="text-center text-muted-foreground"
                   >
-                    No inventory items found
+                    No batches found
                   </TableCell>
                 </TableRow>
               ) : (
