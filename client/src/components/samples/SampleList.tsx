@@ -449,7 +449,7 @@ export const SampleList = React.memo(function SampleList({
                               onClick={() => onRequestVendorReturn(sample.id)}
                             >
                               <Truck className="h-4 w-4 mr-2" />
-                              Request Vendor Return
+                              Request Supplier Return
                             </DropdownMenuItem>
                           )}
                         {/* Ship to Vendor - only for VENDOR_RETURN_REQUESTED samples */}
@@ -459,7 +459,7 @@ export const SampleList = React.memo(function SampleList({
                               onClick={() => onShipToVendor(sample.id)}
                             >
                               <Truck className="h-4 w-4 mr-2" />
-                              Ship to Vendor
+                              Ship to Supplier
                             </DropdownMenuItem>
                           )}
                         {/* Confirm Vendor Return - only for SHIPPED_TO_VENDOR samples */}
@@ -469,7 +469,7 @@ export const SampleList = React.memo(function SampleList({
                               onClick={() => onConfirmVendorReturn(sample.id)}
                             >
                               <CheckCircle className="h-4 w-4 mr-2" />
-                              Confirm Vendor Received
+                              Confirm Supplier Received
                             </DropdownMenuItem>
                           )}
                         {/* Update Location - available for most active samples */}
