@@ -190,6 +190,9 @@ importers:
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       drizzle-kit:
         specifier: ^0.31.7
         version: 0.31.8
@@ -380,9 +383,6 @@ importers:
       commander:
         specifier: ^14.0.2
         version: 14.0.2
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
       esbuild:
         specifier: ^0.25.0
         version: 0.25.12
