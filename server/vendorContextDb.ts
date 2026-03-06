@@ -433,7 +433,7 @@ async function getProductPerformance(
       lastSupplyDate: sql<string>`MAX(${lots.date})`,
       // Available inventory
       currentAvailable: sql<number>`COALESCE(SUM(
-        CASE WHEN ${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
+        CASE WHEN ${batches.batchStatus} = 'LIVE'
         THEN CAST(${batches.onHandQty} AS DECIMAL(15,4)) - CAST(${batches.reservedQty} AS DECIMAL(15,4)) - CAST(${batches.quarantineQty} AS DECIMAL(15,4))
         ELSE 0 END
       ), 0)`,
@@ -605,7 +605,7 @@ async function getActiveInventory(
     .where(
       and(
         eq(lots.supplierClientId, clientId),
-        sql`${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD')`,
+        sql`${batches.batchStatus} IN ('LIVE', 'ON_HOLD')`,
         sql`${batches.deletedAt} IS NULL`
       )
     )

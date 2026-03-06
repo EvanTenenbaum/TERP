@@ -2,7 +2,7 @@
  * Catalog Publishing Service
  *
  * Handles publishing batches to the live catalog for sale.
- * Manages the transition from "ready_for_sale" (PHOTOGRAPHY_COMPLETE) to "published" (LIVE with catalog entry).
+ * TER-574: Publishing now checks isPhotographyComplete boolean flag instead of PHOTOGRAPHY_COMPLETE status.
  */
 
 import { getDb } from "../db";
@@ -47,7 +47,7 @@ export interface PublishResult {
 
 /**
  * Publish a batch to the live catalog
- * Changes batch from PHOTOGRAPHY_COMPLETE to LIVE with publishB2b/publishEcom flags
+ * Publishes a LIVE batch with isPhotographyComplete=1 by setting publishB2b/publishEcom flags
  */
 export async function publishBatchToCatalog(
   batchId: number,
@@ -80,13 +80,13 @@ export async function publishBatchToCatalog(
     };
   }
 
-  // Validate batch is ready to publish (PHOTOGRAPHY_COMPLETE status)
-  if (batch.batchStatus !== "PHOTOGRAPHY_COMPLETE") {
+  // TER-574: Validate batch is ready to publish (LIVE with isPhotographyComplete)
+  if (batch.batchStatus !== "LIVE" || !batch.isPhotographyComplete) {
     return {
       success: false,
       batchId,
       batchCode: batch.code,
-      message: `Batch cannot be published from ${batch.batchStatus} status. Photography must be completed first.`,
+      message: `Batch cannot be published. Must be LIVE with photography completed.`,
     };
   }
 
@@ -215,7 +215,7 @@ export async function unpublishBatchFromCatalog(
 }
 
 /**
- * Get batches ready for publishing (PHOTOGRAPHY_COMPLETE status)
+ * Get batches ready for publishing (LIVE with isPhotographyComplete flag)
  */
 export async function getBatchesReadyForPublishing(limit: number = 50): Promise<
   Array<{
@@ -247,7 +247,8 @@ export async function getBatchesReadyForPublishing(limit: number = 50): Promise<
     .leftJoin(products, eq(batches.productId, products.id))
     .where(
       and(
-        eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE"),
+        eq(batches.batchStatus, "LIVE"),
+        eq(batches.isPhotographyComplete, 1),
         isNull(batches.deletedAt)
       )
     )
@@ -589,7 +590,8 @@ export async function getCatalogStats(): Promise<{
     .from(batches)
     .where(
       and(
-        eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE"),
+        eq(batches.batchStatus, "LIVE"),
+        eq(batches.isPhotographyComplete, 1),
         isNull(batches.deletedAt)
       )
     );

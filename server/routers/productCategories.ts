@@ -64,7 +64,7 @@ export const productCategoriesRouter = router({
             SELECT COUNT(*) FROM batches b
             INNER JOIN products p ON b.productId = p.id
             WHERE p.category = ${categories.name}
-            AND b.batchStatus IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
+            AND b.batchStatus = 'LIVE'
             AND b.deleted_at IS NULL
           )`,
         })
@@ -158,7 +158,12 @@ export const productCategoriesRouter = router({
           message: "Database not available",
         });
 
-      const { id, cascadeToProducts: _cascadeToProducts, isActive, ...otherUpdates } = input;
+      const {
+        id,
+        cascadeToProducts: _cascadeToProducts,
+        isActive,
+        ...otherUpdates
+      } = input;
 
       // Prepare update object - convert isActive boolean to number for DB
       const updates = {
@@ -410,7 +415,6 @@ export const productCategoriesRouter = router({
           .enum([
             "AWAITING_INTAKE",
             "LIVE",
-            "PHOTOGRAPHY_COMPLETE",
             "ON_HOLD",
             "QUARANTINED",
             "SOLD_OUT",
@@ -473,7 +477,11 @@ export const productCategoriesRouter = router({
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
         .where(and(...conditions))
-        .orderBy(products.category, products.subcategory, products.nameCanonical)
+        .orderBy(
+          products.category,
+          products.subcategory,
+          products.nameCanonical
+        )
         .limit(500);
 
       return result;
@@ -506,12 +514,7 @@ export const productCategoriesRouter = router({
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .where(
-          and(
-            isNull(batches.deletedAt),
-            inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"])
-          )
-        )
+        .where(and(isNull(batches.deletedAt), eq(batches.batchStatus, "LIVE")))
         .groupBy(products.category)
         .orderBy(desc(sql`SUM(CAST(${batches.onHandQty} AS DECIMAL(15,4)))`));
 
@@ -546,7 +549,7 @@ export const productCategoriesRouter = router({
         .select({
           categoryName: products.category,
           totalBatches: sql<number>`COUNT(*)`,
-          liveBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE') THEN 1 ELSE 0 END)`,
+          liveBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} = 'LIVE' THEN 1 ELSE 0 END)`,
           pendingBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} = 'AWAITING_INTAKE' THEN 1 ELSE 0 END)`,
           soldOutBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} = 'SOLD_OUT' THEN 1 ELSE 0 END)`,
           closedBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} = 'CLOSED' THEN 1 ELSE 0 END)`,
@@ -608,7 +611,7 @@ export const productCategoriesRouter = router({
           subcategoryName: products.subcategory,
           productCount: sql<number>`COUNT(DISTINCT ${products.id})`,
           batchCount: sql<number>`COUNT(DISTINCT ${batches.id})`,
-          liveBatchCount: sql<number>`SUM(CASE WHEN ${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE') THEN 1 ELSE 0 END)`,
+          liveBatchCount: sql<number>`SUM(CASE WHEN ${batches.batchStatus} = 'LIVE' THEN 1 ELSE 0 END)`,
           totalQuantity: sql<string>`SUM(CAST(${batches.onHandQty} AS DECIMAL(15,4)))`,
           estimatedValue: sql<string>`SUM(
             CAST(${batches.onHandQty} AS DECIMAL(15,4)) *
@@ -618,10 +621,7 @@ export const productCategoriesRouter = router({
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
         .where(
-          and(
-            eq(products.category, category.name),
-            isNull(batches.deletedAt)
-          )
+          and(eq(products.category, category.name), isNull(batches.deletedAt))
         )
         .groupBy(products.subcategory)
         .orderBy(products.subcategory);

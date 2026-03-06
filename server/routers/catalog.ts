@@ -70,7 +70,7 @@ export const catalogRouter = router({
     }),
 
   /**
-   * Get batches ready for publishing (PHOTOGRAPHY_COMPLETE status)
+   * Get batches ready for publishing (isPhotographyComplete flag)
    */
   getReadyForPublishing: protectedProcedure
     .use(requirePermission("inventory:read"))

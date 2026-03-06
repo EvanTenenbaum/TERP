@@ -163,7 +163,6 @@ export const priceAdjustmentArb = fc
 export const batchStatusArb = fc.constantFrom(
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
   "SOLD_OUT",
@@ -195,7 +194,10 @@ export const batchArb = fc
   })
   .map(batch => {
     // Ensure allocated quantities never exceed on-hand after rounding.
-    const onHandCents = Math.max(0, Math.round(parseFloat(batch.onHandQty) * 100));
+    const onHandCents = Math.max(
+      0,
+      Math.round(parseFloat(batch.onHandQty) * 100)
+    );
     const maxAllocatableCents = Math.floor(onHandCents * 0.9); // Leave some available
 
     const rawReservedCents = Math.max(
@@ -206,7 +208,10 @@ export const batchArb = fc
       0,
       Math.round(parseFloat(batch.quarantineQty) * 100)
     );
-    const rawHoldCents = Math.max(0, Math.round(parseFloat(batch.holdQty) * 100));
+    const rawHoldCents = Math.max(
+      0,
+      Math.round(parseFloat(batch.holdQty) * 100)
+    );
 
     const reservedCapCents = Math.floor(maxAllocatableCents * 0.4);
     const quarantineCapCents = Math.floor(maxAllocatableCents * 0.3);

@@ -1,6 +1,7 @@
 /**
  * ST-017: Comprehensive Batch Status Transition Tests
  * Tests all valid and invalid status transitions for inventory batches
+ * TER-574: Removed PHOTOGRAPHY_COMPLETE (now isPhotographyComplete boolean flag)
  */
 
 import { describe, it, expect } from "vitest";
@@ -21,12 +22,6 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       ).toBe(true);
     });
 
-    it("LIVE → PHOTOGRAPHY_COMPLETE", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("LIVE", "PHOTOGRAPHY_COMPLETE")
-      ).toBe(true);
-    });
-
     it("LIVE → ON_HOLD", () => {
       expect(inventoryUtils.isValidStatusTransition("LIVE", "ON_HOLD")).toBe(
         true
@@ -43,33 +38,6 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       expect(inventoryUtils.isValidStatusTransition("LIVE", "SOLD_OUT")).toBe(
         true
       );
-    });
-
-    it("PHOTOGRAPHY_COMPLETE → LIVE", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("PHOTOGRAPHY_COMPLETE", "LIVE")
-      ).toBe(true);
-    });
-
-    it("PHOTOGRAPHY_COMPLETE → ON_HOLD", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("PHOTOGRAPHY_COMPLETE", "ON_HOLD")
-      ).toBe(true);
-    });
-
-    it("PHOTOGRAPHY_COMPLETE → QUARANTINED", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition(
-          "PHOTOGRAPHY_COMPLETE",
-          "QUARANTINED"
-        )
-      ).toBe(true);
-    });
-
-    it("PHOTOGRAPHY_COMPLETE → SOLD_OUT", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("PHOTOGRAPHY_COMPLETE", "SOLD_OUT")
-      ).toBe(true);
     });
 
     it("ON_HOLD → LIVE", () => {
@@ -103,23 +71,22 @@ describe("Batch Status Transition Logic (ST-017)", () => {
     });
 
     it("SOLD_OUT → CLOSED", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("SOLD_OUT", "CLOSED")
-      ).toBe(true);
+      expect(inventoryUtils.isValidStatusTransition("SOLD_OUT", "CLOSED")).toBe(
+        true
+      );
     });
 
     it("Same status transition (idempotent)", () => {
       const statuses: BatchStatus[] = [
         "AWAITING_INTAKE",
         "LIVE",
-        "PHOTOGRAPHY_COMPLETE",
         "ON_HOLD",
         "QUARANTINED",
         "SOLD_OUT",
         "CLOSED",
       ];
 
-      statuses.forEach((status) => {
+      statuses.forEach(status => {
         expect(inventoryUtils.isValidStatusTransition(status, status)).toBe(
           true
         );
@@ -132,13 +99,12 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       const targetStatuses: BatchStatus[] = [
         "AWAITING_INTAKE",
         "LIVE",
-        "PHOTOGRAPHY_COMPLETE",
         "ON_HOLD",
         "QUARANTINED",
         "SOLD_OUT",
       ];
 
-      targetStatuses.forEach((target) => {
+      targetStatuses.forEach(target => {
         expect(inventoryUtils.isValidStatusTransition("CLOSED", target)).toBe(
           false
         );
@@ -160,15 +126,6 @@ describe("Batch Status Transition Logic (ST-017)", () => {
     it("SOLD_OUT → QUARANTINED (cannot quarantine sold out)", () => {
       expect(
         inventoryUtils.isValidStatusTransition("SOLD_OUT", "QUARANTINED")
-      ).toBe(false);
-    });
-
-    it("AWAITING_INTAKE → PHOTOGRAPHY_COMPLETE (must go LIVE first)", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition(
-          "AWAITING_INTAKE",
-          "PHOTOGRAPHY_COMPLETE"
-        )
       ).toBe(false);
     });
 
@@ -196,12 +153,6 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       );
     });
 
-    it("PHOTOGRAPHY_COMPLETE → CLOSED (must go through proper path)", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("PHOTOGRAPHY_COMPLETE", "CLOSED")
-      ).toBe(false);
-    });
-
     it("ON_HOLD → SOLD_OUT (must return to LIVE first)", () => {
       expect(
         inventoryUtils.isValidStatusTransition("ON_HOLD", "SOLD_OUT")
@@ -214,24 +165,9 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       );
     });
 
-    it("ON_HOLD → PHOTOGRAPHY_COMPLETE (invalid path)", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("ON_HOLD", "PHOTOGRAPHY_COMPLETE")
-      ).toBe(false);
-    });
-
     it("QUARANTINED → SOLD_OUT (cannot sell quarantined)", () => {
       expect(
         inventoryUtils.isValidStatusTransition("QUARANTINED", "SOLD_OUT")
-      ).toBe(false);
-    });
-
-    it("QUARANTINED → PHOTOGRAPHY_COMPLETE (invalid path)", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition(
-          "QUARANTINED",
-          "PHOTOGRAPHY_COMPLETE"
-        )
       ).toBe(false);
     });
   });
@@ -244,10 +180,9 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       expect(allowed).toContain("QUARANTINED");
     });
 
-    it("LIVE has 4 allowed next statuses", () => {
+    it("LIVE has 3 allowed next statuses", () => {
       const allowed = inventoryUtils.getAllowedNextStatuses("LIVE");
-      expect(allowed).toHaveLength(4);
-      expect(allowed).toContain("PHOTOGRAPHY_COMPLETE");
+      expect(allowed).toHaveLength(3);
       expect(allowed).toContain("ON_HOLD");
       expect(allowed).toContain("QUARANTINED");
       expect(allowed).toContain("SOLD_OUT");
@@ -273,9 +208,9 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       expect(inventoryUtils.isValidStatusTransition("LIVE", "SOLD_OUT")).toBe(
         true
       );
-      expect(
-        inventoryUtils.isValidStatusTransition("SOLD_OUT", "CLOSED")
-      ).toBe(true);
+      expect(inventoryUtils.isValidStatusTransition("SOLD_OUT", "CLOSED")).toBe(
+        true
+      );
     });
 
     it("Lifecycle: AWAITING_INTAKE → QUARANTINED → CLOSED", () => {
@@ -284,18 +219,6 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       ).toBe(true);
       expect(
         inventoryUtils.isValidStatusTransition("QUARANTINED", "CLOSED")
-      ).toBe(true);
-    });
-
-    it("Lifecycle: LIVE → PHOTOGRAPHY_COMPLETE → SOLD_OUT → CLOSED", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("LIVE", "PHOTOGRAPHY_COMPLETE")
-      ).toBe(true);
-      expect(
-        inventoryUtils.isValidStatusTransition("PHOTOGRAPHY_COMPLETE", "SOLD_OUT")
-      ).toBe(true);
-      expect(
-        inventoryUtils.isValidStatusTransition("SOLD_OUT", "CLOSED")
       ).toBe(true);
     });
 
@@ -309,15 +232,6 @@ describe("Batch Status Transition Logic (ST-017)", () => {
       expect(inventoryUtils.isValidStatusTransition("ON_HOLD", "LIVE")).toBe(
         true
       );
-    });
-
-    it("Reversibility: LIVE ↔ PHOTOGRAPHY_COMPLETE", () => {
-      expect(
-        inventoryUtils.isValidStatusTransition("LIVE", "PHOTOGRAPHY_COMPLETE")
-      ).toBe(true);
-      expect(
-        inventoryUtils.isValidStatusTransition("PHOTOGRAPHY_COMPLETE", "LIVE")
-      ).toBe(true);
     });
   });
 });

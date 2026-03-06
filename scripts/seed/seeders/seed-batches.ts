@@ -18,14 +18,33 @@ import { faker } from "@faker-js/faker";
 // ============================================================================
 
 type PaymentTerm = "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT";
-const _PAYMENT_TERMS = ["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT"] as const;
+const _PAYMENT_TERMS = [
+  "COD",
+  "NET_7",
+  "NET_15",
+  "NET_30",
+  "CONSIGNMENT",
+] as const;
 
 /**
  * Batch Status Enum - matches schema definition
  * Requirements: 4.1, 4.2, 4.3
  */
-type BatchStatus = "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED";
-const _BATCH_STATUSES = ["AWAITING_INTAKE", "LIVE", "PHOTOGRAPHY_COMPLETE", "ON_HOLD", "QUARANTINED", "SOLD_OUT", "CLOSED"] as const;
+type BatchStatus =
+  | "AWAITING_INTAKE"
+  | "LIVE"
+  | "ON_HOLD"
+  | "QUARANTINED"
+  | "SOLD_OUT"
+  | "CLOSED";
+const _BATCH_STATUSES = [
+  "AWAITING_INTAKE",
+  "LIVE",
+  "ON_HOLD",
+  "QUARANTINED",
+  "SOLD_OUT",
+  "CLOSED",
+] as const;
 const GRADES = ["AAA", "AA", "A", null];
 
 interface BatchData {
@@ -68,7 +87,9 @@ function generateBatch(
 ): BatchData {
   // 90% consignment, 10% COD
   const isConsignment = Math.random() < 0.9;
-  const paymentTerms = isConsignment ? "CONSIGNMENT" : faker.helpers.arrayElement(["COD", "NET_7", "NET_15", "NET_30"]);
+  const paymentTerms = isConsignment
+    ? "CONSIGNMENT"
+    : faker.helpers.arrayElement(["COD", "NET_7", "NET_15", "NET_30"]);
 
   // Pricing based on product type
   let unitCogs: number;
@@ -173,11 +194,11 @@ export async function seedBatches(
         return result;
       }
 
-      const vendorIds = existingVendors.map((v) => v.id);
+      const vendorIds = existingVendors.map(v => v.id);
 
       // Create lots if needed
       const existingLots = await db.select({ id: lots.id }).from(lots);
-      let lotIds: number[] = existingLots.map((l) => l.id);
+      const lotIds: number[] = existingLots.map(l => l.id);
 
       if (lotIds.length === 0) {
         // Create lots (roughly 1 lot per 5 batches)
@@ -200,11 +221,20 @@ export async function seedBatches(
           });
           lotIds.push(inserted.insertId);
         }
-        seedLogger.foreignKeyResolved("batches", "lotId", "lots", lotIds.length);
+        seedLogger.foreignKeyResolved(
+          "batches",
+          "lotId",
+          "lots",
+          lotIds.length
+        );
       }
 
-      const flowerProducts = existingProducts.filter((p) => p.category === "Flower");
-      const nonFlowerProducts = existingProducts.filter((p) => p.category !== "Flower");
+      const flowerProducts = existingProducts.filter(
+        p => p.category === "Flower"
+      );
+      const nonFlowerProducts = existingProducts.filter(
+        p => p.category !== "Flower"
+      );
 
       const records: BatchData[] = [];
       const batchSize = 50;
@@ -213,16 +243,26 @@ export async function seedBatches(
       for (let i = 0; i < count; i++) {
         // 90% flower batches, 10% non-flower
         const isFlower = Math.random() < 0.9;
-        const productPool = isFlower && flowerProducts.length > 0 ? flowerProducts : nonFlowerProducts.length > 0 ? nonFlowerProducts : existingProducts;
+        const productPool =
+          isFlower && flowerProducts.length > 0
+            ? flowerProducts
+            : nonFlowerProducts.length > 0
+              ? nonFlowerProducts
+              : existingProducts;
         const product = productPool[i % productPool.length];
         const lotId = lotIds[i % lotIds.length];
 
-        const batch = generateBatch(i, product.id, lotId, isFlower || product.category === "Flower");
+        const batch = generateBatch(
+          i,
+          product.id,
+          lotId,
+          isFlower || product.category === "Flower"
+        );
 
         const validation = await validator.validateColumns("batches", batch);
         if (!validation.valid) {
           result.errors.push(
-            `Batch ${i}: ${validation.errors.map((e) => e.message).join(", ")}`
+            `Batch ${i}: ${validation.errors.map(e => e.message).join(", ")}`
           );
           result.skipped++;
           continue;
@@ -252,7 +292,9 @@ export async function seedBatches(
       return result;
     } catch (error) {
       result.duration = Date.now() - startTime;
-      result.errors.push(error instanceof Error ? error.message : String(error));
+      result.errors.push(
+        error instanceof Error ? error.message : String(error)
+      );
       seedLogger.operationFailure(
         "seed:batches",
         error instanceof Error ? error : new Error(String(error)),
@@ -262,8 +304,6 @@ export async function seedBatches(
     }
   });
 }
-
-
 
 // ============================================================================
 // Exports for Testing

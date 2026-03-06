@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { X, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -60,7 +66,6 @@ export function BulkActionsBar({
                 <SelectItem value="LIVE">Live</SelectItem>
                 <SelectItem value="ON_HOLD">On Hold</SelectItem>
                 <SelectItem value="QUARANTINED">Quarantined</SelectItem>
-                <SelectItem value="PHOTOGRAPHY_COMPLETE">Photography Complete</SelectItem>
                 <SelectItem value="CLOSED">Closed</SelectItem>
               </SelectContent>
             </Select>
@@ -84,4 +89,3 @@ export function BulkActionsBar({
     </div>
   );
 }
-

@@ -106,12 +106,11 @@ export const userDashboardPreferencesRelations = relations(
  * Batch Status Enum
  * Represents the lifecycle state of an inventory batch
  * REMOVED: QC_PENDING (per user feedback)
- * ADDED: PHOTOGRAPHY_COMPLETE (sub-status under LIVE)
+ * REMOVED: PHOTOGRAPHY_COMPLETE (TER-574: migrated to isPhotographyComplete boolean)
  */
 export const batchStatusEnum = mysqlEnum("batchStatus", [
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
   "SOLD_OUT",
@@ -643,6 +642,7 @@ export const batches = mysqlTable(
     productId: int("productId").notNull(),
     lotId: int("lotId").notNull(),
     batchStatus: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
+    isPhotographyComplete: int("isPhotographyComplete").notNull().default(0), // TER-574: boolean flag (0=false, 1=true)
     statusId: int("statusId").references(() => workflowStatuses.id, {
       onDelete: "set null",
     }), // New workflow queue status (nullable for backward compatibility)

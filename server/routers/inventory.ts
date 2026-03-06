@@ -703,8 +703,9 @@ export const inventoryRouter = router({
    * 4.A.4: MEET-025 - Dashboard Aging Quick View
    *
    * INV-CONSISTENCY-001: Updated to only show aging for sellable inventory
-   * (LIVE and PHOTOGRAPHY_COMPLETE statuses). Previously showed all batches
+   * (LIVE status). Previously showed all batches
    * which caused confusion with dashboard totals.
+   * TER-574: PHOTOGRAPHY_COMPLETE removed (now isPhotographyComplete boolean flag)
    */
   getAgingSummary: protectedProcedure
     .use(requirePermission("inventory:read"))
@@ -721,7 +722,7 @@ export const inventoryRouter = router({
           }
         );
 
-        // INV-CONSISTENCY-001: Filter to only sellable statuses (LIVE, PHOTOGRAPHY_COMPLETE)
+        // INV-CONSISTENCY-001: Filter to only sellable statuses (LIVE)
         const sellableStatuses = inventoryDb.SELLABLE_BATCH_STATUSES;
 
         const items = result.items
@@ -1694,7 +1695,6 @@ export const inventoryRouter = router({
           newStatus: z.enum([
             "AWAITING_INTAKE",
             "LIVE",
-            "PHOTOGRAPHY_COMPLETE",
             "ON_HOLD",
             "QUARANTINED",
             "SOLD_OUT",
@@ -1742,7 +1742,6 @@ export const inventoryRouter = router({
             previousStatus: z.enum([
               "AWAITING_INTAKE",
               "LIVE",
-              "PHOTOGRAPHY_COMPLETE",
               "ON_HOLD",
               "QUARANTINED",
               "SOLD_OUT",

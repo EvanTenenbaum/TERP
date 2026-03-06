@@ -1,6 +1,7 @@
 /**
  * Batch Status Constants
  * TERP-0008: Centralized batch status definitions to prevent drift and inconsistency
+ * TER-574: Removed PHOTOGRAPHY_COMPLETE (migrated to isPhotographyComplete boolean flag)
  *
  * This module provides:
  * - Type-safe batch status values
@@ -14,7 +15,6 @@
 export const BATCH_STATUSES = [
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
   "SOLD_OUT",
@@ -29,10 +29,10 @@ export type BatchStatus = (typeof BATCH_STATUSES)[number];
 /**
  * Statuses where batches can be sold/ordered
  * These are "sellable" states where inventory is available for sales
+ * TER-574: PHOTOGRAPHY_COMPLETE removed; sellable is now just LIVE
  */
 export const SELLABLE_BATCH_STATUSES: readonly BatchStatus[] = [
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
 ] as const;
 
 /**
@@ -42,7 +42,6 @@ export const SELLABLE_BATCH_STATUSES: readonly BatchStatus[] = [
 export const ACTIVE_BATCH_STATUSES: readonly BatchStatus[] = [
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
 ] as const;
@@ -70,11 +69,11 @@ export const TERMINAL_BATCH_STATUSES: readonly BatchStatus[] = [
 /**
  * Valid status transitions map
  * Defines which status transitions are allowed
+ * TER-574: LIVE no longer transitions to PHOTOGRAPHY_COMPLETE
  */
 export const BATCH_STATUS_TRANSITIONS: Record<BatchStatus, BatchStatus[]> = {
   AWAITING_INTAKE: ["LIVE", "QUARANTINED"],
-  LIVE: ["PHOTOGRAPHY_COMPLETE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
-  PHOTOGRAPHY_COMPLETE: ["LIVE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
+  LIVE: ["ON_HOLD", "QUARANTINED", "SOLD_OUT"],
   ON_HOLD: ["LIVE", "QUARANTINED"],
   QUARANTINED: ["LIVE", "ON_HOLD", "CLOSED"],
   SOLD_OUT: ["CLOSED"],
@@ -137,7 +136,6 @@ export function isValidBatchStatus(value: string): value is BatchStatus {
 export const BATCH_STATUS_LABELS: Record<BatchStatus, string> = {
   AWAITING_INTAKE: "Awaiting Intake",
   LIVE: "Live",
-  PHOTOGRAPHY_COMPLETE: "Photography Complete",
   ON_HOLD: "On Hold",
   QUARANTINED: "Quarantined",
   SOLD_OUT: "Sold Out",
@@ -153,7 +151,6 @@ export const BATCH_STATUS_COLORS: Record<
 > = {
   AWAITING_INTAKE: { bg: "bg-yellow-100", text: "text-yellow-800" },
   LIVE: { bg: "bg-green-100", text: "text-green-800" },
-  PHOTOGRAPHY_COMPLETE: { bg: "bg-blue-100", text: "text-blue-800" },
   ON_HOLD: { bg: "bg-orange-100", text: "text-orange-800" },
   QUARANTINED: { bg: "bg-red-100", text: "text-red-800" },
   SOLD_OUT: { bg: "bg-gray-100", text: "text-gray-800" },

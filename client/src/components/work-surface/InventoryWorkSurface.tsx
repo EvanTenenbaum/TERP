@@ -195,7 +195,6 @@ const BATCH_STATUSES = [
   { value: "ALL", label: "All Statuses" },
   { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
   { value: "LIVE", label: "Live" },
-  { value: "PHOTOGRAPHY_COMPLETE", label: "Photo Complete" },
   { value: "ON_HOLD", label: "On Hold" },
   { value: "QUARANTINED", label: "Quarantined" },
   { value: "SOLD_OUT", label: "Sold Out" },
@@ -211,7 +210,6 @@ const STATUS_COLORS: Record<string, string> = {
 type InventoryBatchStatus =
   | "AWAITING_INTAKE"
   | "LIVE"
-  | "PHOTOGRAPHY_COMPLETE"
   | "ON_HOLD"
   | "QUARANTINED"
   | "SOLD_OUT"

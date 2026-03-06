@@ -730,7 +730,8 @@ export const photographyRouter = router({
 
       // Filter by status - map UI status to batch status
       if (input.status === "COMPLETED") {
-        conditions.push(eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE"));
+        // TER-574: Photography complete is now a boolean flag, not a status
+        conditions.push(eq(batches.isPhotographyComplete, 1));
       } else if (input.status === "PENDING" || input.status === "IN_PROGRESS") {
         // Pending/In-Progress are LIVE batches without photos
         conditions.push(eq(batches.batchStatus, "LIVE"));
@@ -887,15 +888,7 @@ export const photographyRouter = router({
             isNull(productImages.deletedAt)
           )
         )
-        .where(
-          and(
-            isNull(batches.deletedAt),
-            or(
-              eq(batches.batchStatus, "LIVE"),
-              eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE")
-            )
-          )
-        )
+        .where(and(isNull(batches.deletedAt), eq(batches.batchStatus, "LIVE")))
         .groupBy(batches.id, batches.batchStatus, batches.createdAt);
 
       const today = new Date();
@@ -906,18 +899,17 @@ export const photographyRouter = router({
           b => b.batchStatus === "LIVE" && Number(b.hasImages) === 0
         ).length,
         inProgress: 0, // Could track partial uploads if needed
+        // TER-574: Use hasImages count instead of removed PHOTOGRAPHY_COMPLETE status
         completedToday: allBatches.filter(
-          b =>
-            b.batchStatus === "PHOTOGRAPHY_COMPLETE" &&
-            b.createdAt &&
-            b.createdAt >= today
+          b => Number(b.hasImages) > 0 && b.createdAt && b.createdAt >= today
         ).length,
       };
 
       // Map to UI format
       const items = filteredResults.map(r => {
         let status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-        if (r.batchStatus === "PHOTOGRAPHY_COMPLETE") {
+        // TER-574: Use hasImages count instead of removed PHOTOGRAPHY_COMPLETE status
+        if (Number(r.hasImages) > 0 && r.batchStatus === "LIVE") {
           status = "COMPLETED";
         } else if (Number(r.hasImages) > 0) {
           status = "IN_PROGRESS";
@@ -1089,11 +1081,11 @@ export const photographyRouter = router({
           .where(eq(productImages.id, desiredPrimaryId));
       }
 
-      // Update batch status to PHOTOGRAPHY_COMPLETE
+      // TER-574: Set isPhotographyComplete flag instead of changing status
       await db
         .update(batches)
         .set({
-          batchStatus: "PHOTOGRAPHY_COMPLETE",
+          isPhotographyComplete: 1,
           updatedAt: new Date(),
         })
         .where(eq(batches.id, input.batchId));
@@ -1321,11 +1313,11 @@ export const photographyRouter = router({
       metadata.photographyCompletedBy = ctx.user?.id;
       metadata.photoCount = visiblePhotos.length;
 
-      // Update batch status to PHOTOGRAPHY_COMPLETE (sub-status of LIVE)
+      // TER-574: Set isPhotographyComplete flag instead of changing status
       await database
         .update(batches)
         .set({
-          batchStatus: "PHOTOGRAPHY_COMPLETE",
+          isPhotographyComplete: 1,
           metadata: JSON.stringify(metadata),
           updatedAt: new Date(),
         })

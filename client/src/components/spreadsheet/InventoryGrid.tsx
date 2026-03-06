@@ -23,7 +23,6 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 const statusOptions = [
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
   "SOLD_OUT",
