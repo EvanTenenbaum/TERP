@@ -73,6 +73,7 @@ import {
   StockStatusBadge,
   type StockStatus,
 } from "@/components/inventory/StockStatusBadge";
+import { BatchGalleryCard } from "@/components/inventory/BatchGalleryCard";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
@@ -221,6 +222,7 @@ const ACTIONABLE_BATCH_STATUSES = BATCH_STATUSES.filter(
 ) as Array<{ value: InventoryBatchStatus; label: string }>;
 
 type BatchStatus = InventoryBatchStatus;
+type InventoryViewMode = "table" | "gallery";
 
 // ============================================================================
 // HELPERS
@@ -555,6 +557,8 @@ export function InventoryWorkSurface() {
     if (saved === "asc" || saved === "desc") return saved;
     return "desc";
   });
+  const [inventoryViewMode, setInventoryViewMode] =
+    useState<InventoryViewMode>("table");
   const [page, setPage] = useState(0);
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -567,8 +571,12 @@ export function InventoryWorkSurface() {
   const [editStatus, setEditStatus] = useState<InventoryBatchStatus>("LIVE");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+  const [primaryThumbByBatchId, setPrimaryThumbByBatchId] = useState<
+    Record<number, string>
+  >({});
   const pageSize = 50;
   const useEnhancedApi = true;
+  const utils = trpc.useUtils();
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
     useInventoryFilters();
   const { exportCSV, state: exportState } = useExport<InventoryExportRow>();
@@ -996,6 +1004,10 @@ export function InventoryWorkSurface() {
         .filter((id): id is number => typeof id === "number"),
     [displayItems]
   );
+  const visualBatchIds = useMemo(
+    () => (inventoryViewMode === "gallery" ? allBatchIds.slice(0, 80) : []),
+    [allBatchIds, inventoryViewMode]
+  );
   const selection = usePowersheetSelection<number>({ visibleIds: allBatchIds });
 
   // Backward-compatible aliases
@@ -1178,6 +1190,63 @@ export function InventoryWorkSurface() {
       });
     }
   }, [selectedItem, trackVersion]);
+
+  useEffect(() => {
+    if (inventoryViewMode !== "gallery" || visualBatchIds.length === 0) {
+      return;
+    }
+
+    const missingBatchIds = visualBatchIds.filter(
+      batchId => !primaryThumbByBatchId[batchId]
+    );
+    if (missingBatchIds.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadThumbnails = async () => {
+      const pairs = await Promise.all(
+        missingBatchIds.map(async batchId => {
+          try {
+            const images = await utils.photography.getBatchImages.fetch({
+              batchId,
+            });
+            const image = images[0];
+            return [
+              batchId,
+              image?.thumbnailUrl ?? image?.imageUrl ?? "",
+            ] as const;
+          } catch {
+            return [batchId, ""] as const;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setPrimaryThumbByBatchId(prev => {
+        const next = { ...prev };
+        pairs.forEach(([batchId, imageUrl]) => {
+          if (imageUrl) {
+            next[batchId] = imageUrl;
+          }
+        });
+        return next;
+      });
+    };
+
+    void loadThumbnails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    inventoryViewMode,
+    primaryThumbByBatchId,
+    utils.photography.getBatchImages,
+    visualBatchIds,
+  ]);
 
   useEffect(() => {
     selection.clear();
@@ -1686,6 +1755,35 @@ export function InventoryWorkSurface() {
         </div>
         <div className="flex items-center gap-4">
           {SaveStateIndicator}
+          <div
+            className="inline-flex items-center rounded-md border bg-muted/30 p-1"
+            role="group"
+            aria-label="Inventory view mode"
+          >
+            <Button
+              size="sm"
+              variant={inventoryViewMode === "table" ? "secondary" : "ghost"}
+              aria-pressed={inventoryViewMode === "table"}
+              data-testid="inventory-view-table"
+              onClick={() => setInventoryViewMode("table")}
+            >
+              Table
+            </Button>
+            <Button
+              size="sm"
+              variant={inventoryViewMode === "gallery" ? "secondary" : "ghost"}
+              aria-pressed={inventoryViewMode === "gallery"}
+              data-testid="inventory-view-gallery"
+              onClick={() => {
+                if (selectedBatchIds.size > 0) {
+                  selection.clear();
+                }
+                setInventoryViewMode("gallery");
+              }}
+            >
+              Gallery
+            </Button>
+          </div>
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
               Page Rows:{" "}
@@ -1977,419 +2075,478 @@ export function InventoryWorkSurface() {
             </div>
           ) : (
             <>
-              <div className="hidden md:block">
-                <Table
-                  data-testid="inventory-table"
-                  className="inventory-list"
-                  aria-label="Inventory batches"
-                >
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40px]">
-                        <Checkbox
-                          checked={
-                            allVisibleSelected
-                              ? true
-                              : someVisibleSelected
-                                ? "indeterminate"
-                                : false
-                          }
-                          onCheckedChange={toggleAllVisibleSelection}
-                          aria-label="Select all visible rows"
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer"
-                        onClick={() => handleSort("sku")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "sku"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("sku");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center">
-                          SKU <SortIcon column="sku" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer"
-                        onClick={() => handleSort("product")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "product"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("product");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center">
-                          Product <SortIcon column="product" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer"
-                        onClick={() => handleSort("brand")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "brand"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("brand");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center">
-                          {getMixedBrandLabel(categoryOptions)}{" "}
-                          <SortIcon column="brand" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer"
-                        onClick={() => handleSort("vendor")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "vendor"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("vendor");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center">
-                          Supplier <SortIcon column="vendor" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer"
-                        onClick={() => handleSort("grade")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "grade"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("grade");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center">
-                          Grade <SortIcon column="grade" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer"
-                        onClick={() => handleSort("status")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "status"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("status");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center">
-                          Status <SortIcon column="status" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer text-right"
-                        onClick={() => handleSort("onHandQty")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "onHandQty"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("onHandQty");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center justify-end">
-                          On Hand <SortIcon column="onHandQty" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer text-right"
-                        onClick={() => handleSort("reservedQty")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "reservedQty"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("reservedQty");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center justify-end">
-                          Reserved <SortIcon column="reservedQty" />
-                        </span>
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer text-right"
-                        onClick={() => handleSort("availableQty")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "availableQty"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("availableQty");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center justify-end">
-                          Available <SortIcon column="availableQty" />
-                        </span>
-                      </TableHead>
-                      <TableHead>Stock Status</TableHead>
-                      <TableHead>Age</TableHead>
-                      <TableHead
-                        className="cursor-pointer text-right"
-                        onClick={() => handleSort("unitCogs")}
-                        role="columnheader"
-                        aria-sort={
-                          sortColumn === "unitCogs"
-                            ? sortDirection === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        tabIndex={0}
-                        onKeyDown={(e: ReactKeyboardEvent) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSort("unitCogs");
-                          }
-                        }}
-                      >
-                        <span className="flex items-center justify-end">
-                          Cost <SortIcon column="unitCogs" />
-                        </span>
-                      </TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {displayItems.map((item: InventoryItem, index: number) => {
-                      const available = calculateAvailable(item.batch);
-                      const ageDays = item.batch?.ageDays ?? 0;
-                      const rowHighlightClass = getAgingRowClass(ageDays);
-
-                      return (
-                        <TableRow
-                          key={item.batch?.id}
-                          data-testid={
-                            item.product?.nameCanonical
-                              ? "batch-row"
-                              : undefined
-                          }
-                          className={cn(
-                            "cursor-pointer hover:bg-muted/50",
-                            rowHighlightClass,
-                            selectedBatchId === item.batch?.id && "bg-muted",
-                            selectedIndex === index &&
-                              "ring-1 ring-inset ring-primary"
-                          )}
-                          onClick={() => {
-                            if (item.batch) {
-                              setSelectedBatchId(item.batch.id);
-                              setSelectedIndex(index);
-                              inspector.open();
-                            }
-                          }}
-                        >
-                          <TableCell onClick={e => e.stopPropagation()}>
+              {inventoryViewMode === "table" ? (
+                <>
+                  <div className="hidden md:block">
+                    <Table
+                      data-testid="inventory-table"
+                      className="inventory-list"
+                      aria-label="Inventory batches"
+                    >
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40px]">
                             <Checkbox
                               checked={
-                                item.batch
-                                  ? selectedBatchIds.has(item.batch.id)
-                                  : false
+                                allVisibleSelected
+                                  ? true
+                                  : someVisibleSelected
+                                    ? "indeterminate"
+                                    : false
                               }
-                              onCheckedChange={checked => {
-                                if (!item.batch) return;
-                                toggleBatchSelection(item.batch.id, checked);
-                              }}
-                              aria-label={`Select batch ${item.batch?.sku ?? ""}`}
+                              onCheckedChange={toggleAllVisibleSelection}
+                              aria-label="Select all visible rows"
                             />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {item.batch?.sku}
-                          </TableCell>
-                          <TableCell>
-                            {item.product?.nameCanonical || "-"}
-                          </TableCell>
-                          <TableCell>{item.brand?.name || "-"}</TableCell>
-                          <TableCell>{item.vendor?.name || "-"}</TableCell>
-                          <TableCell>
-                            {item.batch?.grade ? (
-                              <Badge variant="outline">
-                                {item.batch.grade}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <BatchStatusBadge
-                              status={item.batch?.batchStatus || "LIVE"}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatQuantity(item.batch?.onHandQty)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatQuantity(item.batch?.reservedQty)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span
-                              className={cn(
-                                available <= 100 &&
-                                  "text-orange-600 font-semibold"
-                              )}
-                            >
-                              {formatQuantity(available)}
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer"
+                            onClick={() => handleSort("sku")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "sku"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("sku");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center">
+                              SKU <SortIcon column="sku" />
                             </span>
-                          </TableCell>
-                          <TableCell>
-                            {item.batch?.stockStatus ? (
-                              <StockStatusBadge
-                                status={item.batch.stockStatus}
-                                showIcon={false}
-                              />
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {ageDays > 0 ? (
-                              <AgingBadge
-                                ageDays={ageDays}
-                                ageBracket={item.batch?.ageBracket}
-                                variant="compact"
-                              />
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(item.batch?.unitCogs)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer"
+                            onClick={() => handleSort("product")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "product"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("product");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center">
+                              Product <SortIcon column="product" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer"
+                            onClick={() => handleSort("brand")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "brand"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("brand");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center">
+                              {getMixedBrandLabel(categoryOptions)}{" "}
+                              <SortIcon column="brand" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer"
+                            onClick={() => handleSort("vendor")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "vendor"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("vendor");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center">
+                              Supplier <SortIcon column="vendor" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer"
+                            onClick={() => handleSort("grade")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "grade"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("grade");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center">
+                              Grade <SortIcon column="grade" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer"
+                            onClick={() => handleSort("status")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "status"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("status");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center">
+                              Status <SortIcon column="status" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer text-right"
+                            onClick={() => handleSort("onHandQty")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "onHandQty"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("onHandQty");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center justify-end">
+                              On Hand <SortIcon column="onHandQty" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer text-right"
+                            onClick={() => handleSort("reservedQty")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "reservedQty"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("reservedQty");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center justify-end">
+                              Reserved <SortIcon column="reservedQty" />
+                            </span>
+                          </TableHead>
+                          <TableHead
+                            className="cursor-pointer text-right"
+                            onClick={() => handleSort("availableQty")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "availableQty"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("availableQty");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center justify-end">
+                              Available <SortIcon column="availableQty" />
+                            </span>
+                          </TableHead>
+                          <TableHead>Stock Status</TableHead>
+                          <TableHead>Age</TableHead>
+                          <TableHead
+                            className="cursor-pointer text-right"
+                            onClick={() => handleSort("unitCogs")}
+                            role="columnheader"
+                            aria-sort={
+                              sortColumn === "unitCogs"
+                                ? sortDirection === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                            }
+                            tabIndex={0}
+                            onKeyDown={(e: ReactKeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort("unitCogs");
+                              }
+                            }}
+                          >
+                            <span className="flex items-center justify-end">
+                              Cost <SortIcon column="unitCogs" />
+                            </span>
+                          </TableHead>
+                          <TableHead></TableHead>
                         </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {displayItems.map(
+                          (item: InventoryItem, index: number) => {
+                            const available = calculateAvailable(item.batch);
+                            const ageDays = item.batch?.ageDays ?? 0;
+                            const rowHighlightClass = getAgingRowClass(ageDays);
+
+                            return (
+                              <TableRow
+                                key={item.batch?.id}
+                                data-testid={
+                                  item.product?.nameCanonical
+                                    ? "batch-row"
+                                    : undefined
+                                }
+                                className={cn(
+                                  "cursor-pointer hover:bg-muted/50",
+                                  rowHighlightClass,
+                                  selectedBatchId === item.batch?.id &&
+                                    "bg-muted",
+                                  selectedIndex === index &&
+                                    "ring-1 ring-inset ring-primary"
+                                )}
+                                onClick={() => {
+                                  if (item.batch) {
+                                    setSelectedBatchId(item.batch.id);
+                                    setSelectedIndex(index);
+                                    inspector.open();
+                                  }
+                                }}
+                              >
+                                <TableCell onClick={e => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={
+                                      item.batch
+                                        ? selectedBatchIds.has(item.batch.id)
+                                        : false
+                                    }
+                                    onCheckedChange={checked => {
+                                      if (!item.batch) return;
+                                      toggleBatchSelection(
+                                        item.batch.id,
+                                        checked
+                                      );
+                                    }}
+                                    aria-label={`Select batch ${item.batch?.sku ?? ""}`}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {item.batch?.sku}
+                                </TableCell>
+                                <TableCell>
+                                  {item.product?.nameCanonical || "-"}
+                                </TableCell>
+                                <TableCell>{item.brand?.name || "-"}</TableCell>
+                                <TableCell>
+                                  {item.vendor?.name || "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {item.batch?.grade ? (
+                                    <Badge variant="outline">
+                                      {item.batch.grade}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      -
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <BatchStatusBadge
+                                    status={item.batch?.batchStatus || "LIVE"}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatQuantity(item.batch?.onHandQty)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatQuantity(item.batch?.reservedQty)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span
+                                    className={cn(
+                                      available <= 100 &&
+                                        "text-orange-600 font-semibold"
+                                    )}
+                                  >
+                                    {formatQuantity(available)}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  {item.batch?.stockStatus ? (
+                                    <StockStatusBadge
+                                      status={item.batch.stockStatus}
+                                      showIcon={false}
+                                    />
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      -
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {ageDays > 0 ? (
+                                    <AgingBadge
+                                      ageDays={ageDays}
+                                      ageBracket={item.batch?.ageBracket}
+                                      variant="compact"
+                                    />
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      -
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatCurrency(item.batch?.unitCogs)}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <ChevronRight className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="space-y-3 p-3 md:hidden">
+                    {displayItems.map((item, index) => {
+                      if (!item.batch) return null;
+                      const available = calculateAvailable(item.batch);
+
+                      return (
+                        <InventoryCard
+                          key={item.batch.id}
+                          batch={{
+                            id: item.batch.id,
+                            sku: item.batch.sku,
+                            productName:
+                              item.product?.nameCanonical || "Unknown",
+                            brandName: item.brand?.name || "Unknown",
+                            vendorName: item.vendor?.name || "Unknown",
+                            category: item.product?.category,
+                            grade: item.batch.grade || "-",
+                            status: item.batch.batchStatus,
+                            onHandQty: item.batch.onHandQty,
+                            reservedQty: item.batch.reservedQty,
+                            availableQty: available.toString(),
+                          }}
+                          onView={batchId => {
+                            setSelectedBatchId(batchId);
+                            setSelectedIndex(index);
+                            inspector.open();
+                          }}
+                          onEdit={
+                            item.batch.batchStatus === "AWAITING_INTAKE"
+                              ? batchId => handleEdit(batchId)
+                              : undefined
+                          }
+                        />
                       );
                     })}
-                  </TableBody>
-                </Table>
-              </div>
+                  </div>
+                </>
+              ) : (
+                <div
+                  className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3"
+                  data-testid="inventory-gallery"
+                >
+                  {displayItems.map((item, index) => {
+                    if (!item.batch) return null;
 
-              <div className="space-y-3 p-3 md:hidden">
-                {displayItems.map((item, index) => {
-                  if (!item.batch) return null;
-                  const available = calculateAvailable(item.batch);
+                    const batchId = item.batch.id;
+                    const available = calculateAvailable(item.batch);
 
-                  return (
-                    <InventoryCard
-                      key={item.batch.id}
-                      batch={{
-                        id: item.batch.id,
-                        sku: item.batch.sku,
-                        productName: item.product?.nameCanonical || "Unknown",
-                        brandName: item.brand?.name || "Unknown",
-                        vendorName: item.vendor?.name || "Unknown",
-                        category: item.product?.category,
-                        grade: item.batch.grade || "-",
-                        status: item.batch.batchStatus,
-                        onHandQty: item.batch.onHandQty,
-                        reservedQty: item.batch.reservedQty,
-                        availableQty: available.toString(),
-                      }}
-                      onView={batchId => {
-                        setSelectedBatchId(batchId);
-                        setSelectedIndex(index);
-                        inspector.open();
-                      }}
-                      onEdit={
-                        item.batch.batchStatus === "AWAITING_INTAKE"
-                          ? batchId => handleEdit(batchId)
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
+                    return (
+                      <BatchGalleryCard
+                        key={batchId}
+                        sku={item.batch.sku}
+                        productName={
+                          item.product?.nameCanonical || "Unknown Product"
+                        }
+                        brandName={item.brand?.name || "-"}
+                        vendorName={item.vendor?.name || "-"}
+                        category={item.product?.category}
+                        status={item.batch.batchStatus}
+                        onHandQty={item.batch.onHandQty}
+                        reservedQty={item.batch.reservedQty}
+                        availableQty={available.toString()}
+                        unitCogs={item.batch.unitCogs}
+                        stockStatus={item.batch.stockStatus}
+                        ageDays={item.batch.ageDays}
+                        ageBracket={item.batch.ageBracket}
+                        thumbnailUrl={primaryThumbByBatchId[batchId]}
+                        onOpen={() => {
+                          setSelectedBatchId(batchId);
+                          setSelectedIndex(index);
+                          inspector.open();
+                        }}
+                        onAdjustQuantity={() => handleAdjustQuantity(batchId)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Pagination */}
               {totalPages > 1 && (

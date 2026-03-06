@@ -104,6 +104,10 @@ describe("Consolidated workspace pages", () => {
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /browse sku grid/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Browse")).not.toBeInTheDocument();
   });
 
   it("renders Sales workspace with quotes tab content", () => {

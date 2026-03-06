@@ -54,10 +54,9 @@ export const INVENTORY_WORKSPACE = {
     "Inventory keeps operations and browse surfaces together so users can act without losing context.",
   tabs: [
     { value: "inventory", label: "Operations" },
-    { value: "browse", label: "Browse" },
     { value: "products", label: "Products" },
   ],
-} as const satisfies WorkspaceConfig<"inventory" | "browse" | "products">;
+} as const satisfies WorkspaceConfig<"inventory" | "products">;
 
 export const CREDITS_WORKSPACE = {
   title: "Credits",

@@ -2,7 +2,6 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
 import ProductsWorkSurface from "@/components/work-surface/ProductsWorkSurface";
-import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
@@ -47,13 +46,6 @@ export default function InventoryWorkspacePage() {
           </Button>
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => setActiveTab("browse")}
-          >
-            Browse SKU Grid
-          </Button>
-          <Button
-            size="sm"
             variant="ghost"
             onClick={() => setActiveTab("products")}
           >
@@ -67,9 +59,6 @@ export default function InventoryWorkspacePage() {
         <div data-testid="inventory-header" className="contents">
           <InventoryWorkSurface />
         </div>
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="browse">
-        <InventoryBrowseSlicePage />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="products">
         <ProductsWorkSurface />
