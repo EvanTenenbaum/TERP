@@ -77,10 +77,10 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setLocation("/inbox")}
+          onClick={() => setLocation("/notifications")}
           className="text-xs"
         >
-          Open Inbox <ArrowRight className="h-3 w-3 ml-1" />
+          Open Notifications <ArrowRight className="h-3 w-3 ml-1" />
         </Button>
       </CardHeader>
       <CardContent>
@@ -147,7 +147,7 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
                     ? "bg-amber-50 border-amber-200"
                     : "bg-muted/40"
                 }`}
-                onClick={() => setLocation("/inbox")}
+                onClick={() => setLocation("/notifications")}
               >
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Inbox
@@ -185,9 +185,9 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
                   variant="ghost"
                   size="sm"
                   className="mt-2 w-full text-xs h-7"
-                  onClick={() => setLocation("/inbox")}
+                  onClick={() => setLocation("/notifications")}
                 >
-                  Go to Inbox <ArrowRight className="h-3 w-3 ml-1" />
+                  Go to Notifications <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </div>
             )}

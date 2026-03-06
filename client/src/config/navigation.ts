@@ -26,7 +26,7 @@ import {
   Tag, // NAV-012: Pricing Rules
   Workflow, // NAV-013: Workflow Queue
   Clock, // MEET-048: Time Clock
-  Inbox, // TERP-0005: Inbox navigation
+  Bell, // TER-569: Notifications Hub navigation
   Download, // TERP-0005: Intake
   MapPin, // TERP-0005: Locations
   BookOpen, // TER-99: Client Ledger navigation
@@ -76,13 +76,13 @@ export const navigationGroups: Array<{
 ];
 
 export const navigationItems: NavigationItem[] = [
-  // TERP-0005: Add Inbox to top-level Sales group
+  // TER-569: Notifications Hub replaces legacy Inbox page
   {
-    name: "Inbox",
-    path: "/inbox",
-    icon: Inbox,
+    name: "Notifications",
+    path: "/notifications",
+    icon: Bell,
     group: "sales",
-    ariaLabel: "Notifications and messages inbox",
+    ariaLabel: "Review notifications, inbox items, and alerts",
   },
 
   {

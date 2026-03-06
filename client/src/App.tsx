@@ -52,14 +52,12 @@ import Help from "@/pages/Help";
 import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
 import VIPLogin from "@/pages/vip-portal/VIPLogin";
 import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
-import AlertsPage from "@/pages/AlertsPage"; // NAV-017: Alerts page
 import ShrinkageReportPage from "@/pages/ShrinkageReportPage"; // NAV-018: Shrinkage report page
 import ImpersonatePage from "@/pages/vip-portal/auth/ImpersonatePage";
 import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
 import AccountPage from "@/pages/AccountPage";
 import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
-import { InboxPage } from "@/pages/InboxPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 // MEET-049 FIX: Use lazy loading to isolate CalendarPage import
 // This prevents calendar code errors from breaking the entire navigation
@@ -692,7 +690,10 @@ function Router() {
                   path="/notifications"
                   component={withErrorBoundary(NotificationsPage)}
                 />
-                <Route path="/inbox" component={withErrorBoundary(InboxPage)} />
+                <Route
+                  path="/inbox"
+                  component={RedirectWithSearch("/inbox", "/notifications")}
+                />
                 {/* MEET-049 FIX: Use lazy loading wrapper for isolated calendar loading */}
                 <Route
                   path="/calendar"
@@ -716,10 +717,13 @@ function Router() {
                   path="/analytics"
                   component={withErrorBoundary(AnalyticsPage)}
                 />
-                {/* NAV-017: Alerts page */}
                 <Route
                   path="/alerts"
-                  component={withErrorBoundary(AlertsPage)}
+                  component={RedirectWithTab(
+                    "/alerts",
+                    "/notifications",
+                    "alerts"
+                  )}
                 />
                 {/* NAV-018: Shrinkage report page */}
                 <Route
