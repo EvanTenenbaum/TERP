@@ -20,6 +20,8 @@ export interface PricedInventoryItem {
   vendor?: string;
   vendorId?: number;
   priceMarkup: number;
+  // TER-233: User-specified order quantity (set by InventoryBrowser, preserved through sessionStorage bridge)
+  orderQuantity?: number;
   appliedRules: Array<{
     ruleId: number;
     ruleName: string;

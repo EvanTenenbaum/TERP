@@ -83,10 +83,8 @@ function isNonSellableStatus(status?: string): status is NonSellableStatus {
   return (NON_SELLABLE_STATUSES as readonly string[]).includes(status);
 }
 
-// Extended inventory item type for internal use (includes orderQuantity when added)
-interface InventoryItemWithQuantity extends PricedInventoryItem {
-  orderQuantity?: number;
-}
+// TER-233: orderQuantity now lives on PricedInventoryItem directly
+type InventoryItemWithQuantity = PricedInventoryItem;
 
 // Minimal type for checking if an item is already selected (only id is needed)
 interface SelectedItemRef {

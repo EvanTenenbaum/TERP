@@ -499,6 +499,8 @@ export default function SalesSheetCreatorPage() {
                             quantity: item.quantity,
                             category: item.category,
                             vendor: item.vendor,
+                            // TER-233: Preserve user-specified order quantity through the bridge
+                            orderQuantity: item.orderQuantity,
                           })),
                         })
                       );
