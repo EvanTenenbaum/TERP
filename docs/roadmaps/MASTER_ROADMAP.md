@@ -7493,3 +7493,351 @@ ProcurementWorkspacePage renders both a tab bar AND a commandStrip with `<Button
 - [ ] Tab bar remains the sole navigation mechanism
 - [ ] No functionality lost (all tabs still accessible via tab bar)
 - [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` pass
+
+---
+
+## 🚀 PM Initiative: UI/UX Streamlining & Data Model Fixes
+
+**Added:** 2026-03-06
+**Status:** NOT STARTED
+**Priority:** P1
+**Source:** PM feedback (PM-5 through PM-13)
+
+> **Scope:** 8 tasks across 4 waves + 2 RED-gated migration tasks. Covers order fulfillment naming, shared components, notifications consolidation, inventory gallery, settings reorg, and two schema migrations requiring Evan's approval.
+
+### Crossover Analysis with Existing Tasks
+
+| New Task | Potential Overlap | Resolution |
+|----------|-------------------|------------|
+| TASK-014 (Inventory Gallery) | Touches Inventory workspace — same codebase area as DEPR-003 (TER-566) which touches Procurement workspace | **No conflict** — different workspaces (Inventory vs Procurement). But TASK-014 removes Browse tab from Inventory, while the Procurement workspace also has an "Inventory Browse" tab (value: `inventory-browse`). These are separate components. |
+| TASK-014 (Remove Browse tab) | Inventory Browse tab in Procurement (`InventoryBrowseSlicePage`) vs Inventory workspace Browse tab | **Clarification needed** — Procurement's "Inventory Browse" tab uses `InventoryBrowseSlicePage`, same as Inventory workspace's "browse" panel. TASK-014 should only remove it from Inventory workspace, not from Procurement. |
+| TASK-R02 (Photography flag) | Both deal with photos — BUG-140 (TER-563) fixes photo upload, R02 adds photography complete boolean | **No conflict** — different concerns. BUG-140 is upload mechanics in intake. R02 is a status tracking field on batches. |
+| TASK-011 (Fulfillment rename) | `PENDING` → `READY_FOR_PACKING` is a MySQL enum rename | **Migration required** — confirmed `fulfillmentStatusEnum` in `drizzle/schema.ts:2712` has `PENDING`. Agent must STOP for confirmation before applying migration. |
+| TASK-015 → TASK-016 | TASK-016 depends on Settings > Master Data super-tab from TASK-015 | **Sequential dependency** — correctly captured in wave structure. |
+| TASK-012 → TASK-014 | TASK-014 uses shared AdjustQuantityDialog from TASK-012 | **Sequential dependency** — correctly captured in wave structure. |
+
+### Wave Structure
+
+```
+WAVE 2: TASK-011, TASK-012, TASK-013 (parallel)
+WAVE 3: TASK-014 (depends on TASK-012), TASK-015 (independent)
+WAVE 4: TASK-016 (depends on TASK-015)
+WAVE R: TASK-R01, TASK-R02 (RED — Evan approval required)
+```
+
+### Overview
+
+| Wave | ID | Linear | Description | Priority | Status | Estimate | Autonomy | Blocks |
+|------|----|--------|-------------|----------|--------|----------|----------|--------|
+| 2 | TASK-011 | TER-567 | Order Fulfillment Status: Rename Pending + Payment Column | P1 | NOT STARTED | 6h | STRICT | None |
+| 2 | TASK-012 | TER-568 | Shared AdjustQuantityDialog + Structured Reason Enum | P1 | NOT STARTED | 6h | STRICT | TASK-014 |
+| 2 | TASK-013 | TER-569 | Notifications Hub (consolidate Inbox/Notifications/Alerts) | P1 | NOT STARTED | 6h | STRICT | None |
+| 3 | TASK-014 | TER-570 | Inventory Gallery View (Editable) + Remove Browse Tab | P1 | NOT STARTED | 8h | STRICT | None |
+| 3 | TASK-015 | TER-571 | Settings Reorganization (4 super-tabs) | P1 | NOT STARTED | 8h | STRICT | TASK-016 |
+| 4 | TASK-016 | TER-572 | Product Metadata to Settings + Batch Drawer Product Editing | P1 | NOT STARTED | 8h | STRICT | None |
+| R | TASK-R01 | TER-573 | Quote Status Enum Migration (DRAFT→UNSENT, etc.) | P0 | NOT STARTED | 6h | RED | None |
+| R | TASK-R02 | TER-574 | Photography Complete Flag Migration | P0 | NOT STARTED | 6h | RED | None |
+
+---
+
+### TASK-011: Order Fulfillment Status — Rename Pending + Payment Column
+
+**Type:** Feature (enum rename + UI column)
+**Source:** PM-5
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 6h
+**Autonomy:** STRICT
+**Module:** `drizzle/schema.ts` (line 2712), `server/ordersDb.ts`, order table components
+**Dependencies:** None
+
+**Problem / Goal:**
+The fulfillment status "Pending" is misleading — it should be "Ready for Packing" to reflect the actual business meaning. Additionally, payment status is not visible in the orders table.
+
+**Part A — Rename Enum:**
+1. `fulfillmentStatusEnum` at `drizzle/schema.ts:2712` — rename `PENDING` → `READY_FOR_PACKING`
+2. ⚠️ **MySQL enum value rename requires a Drizzle migration** — generate with `pnpm drizzle-kit generate`, review SQL, **STOP for confirmation** before applying
+3. Update all UI labels, filter options, display logic referencing "Pending" as fulfillment status
+4. Update all server code: `server/ordersDb.ts` (lines 316, 1294, 1762, 1920, 1930), `server/services/orderOrchestrator.ts` (lines 271, 305, 450, 483)
+
+**Part B — Payment Column:**
+1. Find the orders table component
+2. Add payment status as a plain column (not a badge) — surface the existing `paymentStatus` field
+
+**Acceptance Criteria:**
+- [ ] "Pending" does not appear as a fulfillment status label anywhere in the UI
+- [ ] "Ready for Packing" appears correctly in table, filter options, and status displays
+- [ ] Payment status column is visible in the orders table
+- [ ] If migration generated: SQL reviewed and applied, `pnpm check` passes
+- [ ] `pnpm check && pnpm lint && pnpm test` passes
+
+**🔒 GATE:** If migration required, paste generated SQL and apply confirmation. Paste all three command outputs.
+
+---
+
+### TASK-012: Shared AdjustQuantityDialog + Structured Reason Enum
+
+**Type:** Feature (shared component + data model)
+**Source:** PM-9
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 6h
+**Autonomy:** STRICT
+**Module:** `client/src/components/AdjustQuantityDialog.tsx` (new), existing adjustment dialogs, Shrinkage Report
+**Dependencies:** None
+**Blocks:** TASK-014
+
+**Problem / Goal:**
+Two separate AdjustQuantityDialog implementations exist. The reason field is free text, making Shrinkage Report filtering unreliable.
+
+**Steps:**
+1. Read both existing dialog implementations (find with `grep -r "AdjustQuantity\|adjustQuantity" client/src -l`)
+2. Read the inventory adjustment mutation — find where reason is stored (DB column, type)
+3. ⚠️ If reason column is currently free-text: adding an enum constraint requires a migration — **STOP and flag**
+4. Create `client/src/components/AdjustQuantityDialog.tsx`:
+   - Quantity input
+   - Reason dropdown: `DAMAGED | EXPIRED | LOST | THEFT | COUNT_DISCREPANCY | QUALITY_ISSUE | REWEIGH | OTHER`
+   - Optional notes text field
+5. Replace both existing implementations with the shared component
+6. Update Shrinkage Report to filter by reason enum value
+
+**Acceptance Criteria:**
+- [ ] Exactly one AdjustQuantityDialog exists
+- [ ] Reason is a dropdown with all 8 enum values
+- [ ] Notes field is optional and present
+- [ ] Shrinkage Report has a reason filter
+- [ ] If DB migration needed: SQL reviewed and applied
+- [ ] `pnpm check && pnpm lint && pnpm test` passes
+
+**🔒 GATE:** Paste grep confirming single implementation + all command outputs.
+
+---
+
+### TASK-013: Notifications Hub
+
+**Type:** Feature (page consolidation)
+**Source:** PM-12
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 6h
+**Autonomy:** STRICT
+**Module:** `client/src/pages/InboxPage.tsx`, `client/src/pages/NotificationsPage.tsx`, `client/src/pages/AlertsPage.tsx`, `client/src/config/navigation.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Three separate pages (Inbox, Notifications, Alerts) serve overlapping purposes. Consolidate into a single hub at `/notifications` with two tabs.
+
+**Steps:**
+1. Read all three page components and the inbox router
+2. Create `client/src/pages/NotificationsHub.tsx` with two tabs: System Notifications / Alerts
+3. System Notifications tab: renders what Inbox currently renders
+4. Alerts tab: renders what /alerts currently renders
+5. Register `/notifications` route pointing to the new hub
+6. Add redirects: `/inbox` → `/notifications`, `/alerts` → `/notifications`
+7. Replace "Inbox" nav entry with "Notifications" pointing to `/notifications` (in `client/src/config/navigation.ts:81`)
+8. Delete or convert old page components to redirect-only
+
+**Acceptance Criteria:**
+- [ ] `/notifications` renders with two tabs
+- [ ] `/inbox` redirects to `/notifications`
+- [ ] `/alerts` redirects to `/notifications`
+- [ ] Nav shows "Notifications" (not "Inbox")
+- [ ] Both tabs render their respective content correctly
+- [ ] `pnpm check && pnpm lint` passes
+
+**🔒 GATE:** Paste `pnpm check` output.
+
+---
+
+### TASK-014: Inventory Gallery View (Editable)
+
+**Type:** Feature (UI view mode + tab removal)
+**Source:** PM-7
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 8h
+**Autonomy:** STRICT
+**Module:** `client/src/pages/InventoryWorkspacePage.tsx`, `client/src/components/uiux-slice/InventoryBrowseSlicePage.tsx`, `client/src/components/work-surface/InventoryWorkSurface.tsx`
+**Dependencies:** TASK-012 (shared AdjustQuantityDialog)
+
+**⚠️ Crossover Note:** The Procurement workspace also has an "Inventory Browse" tab using `InventoryBrowseSlicePage`. This task only removes Browse from the **Inventory** workspace — do NOT touch Procurement.
+
+**Steps:**
+1. Read Inventory workspace (`InventoryWorkspacePage.tsx`), Browse tab, Operations tab
+2. Add view toggle (Table | Gallery) to Operations tab header
+3. Extract gallery card rendering from Browse tab into a reusable `BatchGalleryCard` component
+4. Gallery view: same query and filter state as table view (do NOT duplicate queries)
+5. Gallery cards support: click to open batch drawer, adjust quantity (uses shared AdjustQuantityDialog from TASK-012)
+6. Remove Browse tab from workspace (line 71-73 in `InventoryWorkspacePage.tsx`)
+7. Remove "Browse SKU Grid" button from commandStrip (line 50-54)
+8. Delete `InventoryBrowseSlicePage` only if no other consumers exist (Procurement workspace uses it — **do NOT delete**)
+
+**Acceptance Criteria:**
+- [ ] Inventory workspace has no Browse tab
+- [ ] Operations tab has a view toggle
+- [ ] Gallery and Table views share one query (confirm with grep)
+- [ ] Gallery cards open batch drawer on click
+- [ ] Gallery cards support quantity adjustment via shared dialog
+- [ ] `pnpm check && pnpm lint && pnpm test` passes
+
+**🔒 GATE:** Paste grep showing single query + all command outputs.
+
+---
+
+### TASK-015: Settings Reorganization
+
+**Type:** Feature (page restructure)
+**Source:** PM-13
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 8h
+**Autonomy:** STRICT
+**Module:** `client/src/pages/Settings.tsx`, `client/src/config/navigation.ts`, `client/src/pages/AccountPage.tsx`
+**Dependencies:** None
+**Blocks:** TASK-016
+
+**Steps:**
+1. Read Settings page and catalog all tabs by name and content type
+2. Map each tab to one of: Access Control / Master Data / Organization / Developer
+3. Restructure to render 4 super-tabs, each containing child tabs
+4. Move COGS Settings: add to Finance nav section, remove from /settings
+5. Move notification preferences: add to /account page, remove from /settings
+6. Remove /account from main nav; confirm it's accessible via avatar/user menu
+7. Ensure moved routes redirect or are removed cleanly
+
+**Acceptance Criteria:**
+- [ ] /settings renders with exactly 4 super-tabs
+- [ ] All original tabs present under correct super-tab
+- [ ] COGS Settings accessible from Finance nav
+- [ ] Notification preferences in /account
+- [ ] /account not in main nav but accessible from avatar menu
+- [ ] No orphaned routes
+- [ ] `pnpm check && pnpm lint && pnpm build` passes
+
+**🔒 GATE:** Paste `pnpm build` output.
+
+---
+
+### TASK-016: Product Metadata to Settings + Batch Drawer Product Editing
+
+**Type:** Feature (component relocation + drawer enhancement)
+**Source:** PM-8
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 8h
+**Autonomy:** STRICT
+**Module:** `client/src/pages/InventoryWorkspacePage.tsx` (Products tab), batch detail drawer, Settings > Master Data
+**Dependencies:** TASK-015 (Settings Master Data super-tab must exist)
+
+**Steps:**
+1. Read Products tab component (`ProductsWorkSurface`)
+2. Read batch detail drawer component
+3. Read batch update and product update mutations
+4. Move Products tab to Settings > Master Data, renamed "Product Metadata"
+5. Remove Products tab from Inventory workspace (line 74-76 in `InventoryWorkspacePage.tsx`)
+6. Remove "Jump to Products" button from commandStrip (line 55-61)
+7. In batch detail drawer: add editable product fields (productName, category, strain, grade)
+8. Product fields call product update mutation (not batch update)
+9. ⚠️ If batch has `productId = null` — **STOP and report** how to handle
+
+**Acceptance Criteria:**
+- [ ] Inventory workspace has no Products tab
+- [ ] Settings > Master Data has "Product Metadata" tab
+- [ ] Batch detail drawer has editable product fields
+- [ ] Saving product fields persists correctly
+- [ ] Null productId edge case handled
+- [ ] `pnpm check && pnpm lint && pnpm test` passes
+
+**🔒 GATE:** Paste all command outputs.
+
+---
+
+### ⛔ WAVE R — RED AUTONOMY GATES
+
+> **DO NOT BEGIN WAVE R TASKS WITHOUT EVAN'S EXPLICIT WRITTEN APPROVAL.**
+>
+> Requirements:
+> 1. Evan reviews the pre-work audit output
+> 2. Evan says "approved" in writing
+> 3. Agent writes a one-paragraph rollback plan before touching any files
+
+---
+
+### TASK-R01: Quote Status Enum Migration [RED]
+
+**Type:** Schema Migration
+**Source:** PM-6
+**Status:** NOT STARTED — AWAITING EVAN APPROVAL
+**Priority:** P0
+**Estimate:** 6h
+**Autonomy:** RED
+**Module:** `drizzle/schema.ts` (quoteStatus enum), all files referencing DRAFT/SUBMITTED/ACCEPTED
+
+**Pre-work audit (do first, then STOP):**
+1. `grep -r "quoteStatus\|DRAFT\|SUBMITTED\|ACCEPTED" server/ client/src --include="*.ts" --include="*.tsx" -n` — count all occurrences
+2. List every file referencing these enum values
+3. Check seed files and fixtures
+4. Generate (do NOT apply): `pnpm drizzle-kit generate`
+5. Paste the generated SQL
+
+**After Evan approves:**
+1. Apply migration
+2. Update schema: `DRAFT` → `UNSENT`, `SUBMITTED` → `SENT`, `ACCEPTED` → `CONVERTED`
+3. Update every reference found in audit
+4. Run full test suite
+
+**Acceptance Criteria:**
+- [ ] Evan's written approval on record
+- [ ] Rollback plan written
+- [ ] Zero references to DRAFT/SUBMITTED/ACCEPTED as quoteStatus values remain
+- [ ] Migration applied successfully
+- [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` all pass
+
+**🔒 GATE:** Paste migration SQL (pre-approval), then full command output suite (post-approval).
+
+---
+
+### TASK-R02: Photography Complete Flag Migration [RED]
+
+**Type:** Schema Migration
+**Source:** PM-10
+**Status:** NOT STARTED — AWAITING EVAN APPROVAL
+**Priority:** P0
+**Estimate:** 6h
+**Autonomy:** RED
+**Module:** `drizzle/schema.ts` (batch status enum + new column), batch UI components
+
+**Pre-work audit (do first, then STOP):**
+1. `grep -r "PHOTOGRAPHY_COMPLETE\|photographyComplete\|isPhotographyComplete" server/ client/src -n` — list all occurrences
+2. Identify batch status enum definition and all values
+3. Generate (do NOT apply): add `isPhotographyComplete` boolean `NOT NULL DEFAULT false` to batches, remove `PHOTOGRAPHY_COMPLETE` from status enum
+4. Paste generated SQL
+
+**After Evan approves:**
+1. Apply migration
+2. Add `isPhotographyComplete` boolean column to batches table in schema
+3. Remove `PHOTOGRAPHY_COMPLETE` from batch status enum
+4. Update all UI referencing `PHOTOGRAPHY_COMPLETE` status to use boolean
+5. Add toggle/badge to batch rows and batch detail drawer
+
+**Acceptance Criteria:**
+- [ ] Evan's written approval on record
+- [ ] Rollback plan written
+- [ ] `isPhotographyComplete` column exists on batches
+- [ ] `PHOTOGRAPHY_COMPLETE` does not appear anywhere in codebase
+- [ ] Toggle/badge displays correctly
+- [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` all pass
+
+**🔒 GATE:** Paste migration SQL (pre-approval), then full command output suite (post-approval).
+
+---
+
+### Final Completion Checklist (PM Initiative)
+
+- [ ] TASK-011 through TASK-016 all passed their gates
+- [ ] TASK-R01 and TASK-R02 have Evan approval and passed their gates (or deferred with documented reason)
+- [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` passes on final integrated branch
+- [ ] No `TODO/FIXME/HACK/console.log` introduced
+- [ ] No forbidden patterns introduced (`ctx.user?.id || 1`, `: any`, `db.delete(`, `db.query.vendors`, `input.createdBy`)
+- [ ] All deleted routes have redirects or confirmed zero inbound links
+- [ ] Nav config has no dead entries
