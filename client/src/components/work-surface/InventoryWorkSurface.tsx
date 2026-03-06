@@ -2489,9 +2489,20 @@ export function InventoryWorkSurface() {
       <WorkSurfaceStatusBar
         left={`Page ${page + 1} of ${Math.max(totalPages, 1)} · ${totalCount} total`}
         center={
-          selectedItem?.batch
-            ? `Selected: ${selectedItem.batch.sku}`
-            : `${selectedBatchIds.size} selected${undo.state.canUndo ? " · Undo available" : ""}`
+          selectedItem?.batch ? (
+            `Selected: ${selectedItem.batch.sku}`
+          ) : undo.state.canUndo ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void undo.undoLast()}
+              aria-label="Undo last delete"
+            >
+              Undo last delete
+            </Button>
+          ) : selectedBatchIds.size > 0 ? (
+            `${selectedBatchIds.size} selected`
+          ) : undefined
         }
         right={
           <KeyboardHintBar
