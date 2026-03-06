@@ -1,0 +1,9 @@
+{
+  "status": "BLOCKED",
+  "profile": "peak",
+  "target": "https://terp-staging-yicld.ondigitalocean.app",
+  "noRepair": true,
+  "artifactsDir": "/home/user/TERP/qa-results/stress/20260306-023800-peak",
+  "blockers": ["preflight failed (see preflight.log)"],
+  "reason": "preflight failed"
+}
