@@ -15,6 +15,7 @@ describe("consolidated navigation IA", () => {
     expect(paths).toContain("/inventory");
     expect(paths).toContain("/credits");
     expect(paths).toContain("/notifications");
+    expect(paths).toContain("/settings/cogs");
   });
 
   it("removes legacy split navigation entry points from the sidebar", () => {

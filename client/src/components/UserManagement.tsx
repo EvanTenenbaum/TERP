@@ -200,7 +200,7 @@ export function UserManagement() {
   };
 
   const handleNavigateToRoles = (userId: string) => {
-    setLocation(`/settings?tab=rbac&userId=${userId}`);
+    setLocation(`/settings?tab=user-roles&userId=${userId}`);
   };
 
   // Reset page when filters change

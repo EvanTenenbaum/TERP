@@ -220,6 +220,13 @@ export const navigationItems: NavigationItem[] = [
     group: "finance",
     ariaLabel: "Configure pricing rules and strategies",
   },
+  {
+    name: "COGS Settings",
+    path: "/settings/cogs",
+    icon: Coins,
+    group: "finance",
+    ariaLabel: "Configure cost of goods sold settings",
+  },
 
   // QA-W2-008: Use UserCog icon to avoid duplicate with Clients
   { name: "Users", path: "/users", icon: UserCog, group: "admin" },

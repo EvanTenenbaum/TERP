@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -19,7 +19,6 @@ import {
   Database,
   AlertTriangle,
   Flag,
-  Bell,
   Code2,
   Building,
 } from "lucide-react";
@@ -54,11 +53,174 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TagManagementSettings } from "@/components/settings/TagManagementSettings";
+import { useLocation, useSearch } from "wouter";
+
+type SettingsGroupId =
+  | "access-control"
+  | "master-data"
+  | "organization"
+  | "developer";
+
+type SettingsSectionId =
+  | "users"
+  | "user-roles"
+  | "roles"
+  | "permissions"
+  | "locations"
+  | "categories"
+  | "grades"
+  | "tags"
+  | "organization"
+  | "calendars"
+  | "feature-flags"
+  | "vip-impersonation"
+  | "database";
+
+interface SettingsSectionConfig {
+  id: SettingsSectionId;
+  label: string;
+  group: SettingsGroupId;
+  requiresDevTools?: boolean;
+}
+
+const SETTINGS_GROUPS: Array<{
+  id: SettingsGroupId;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "access-control",
+    label: "Access Control",
+    description: "Manage users, role assignments, and system permissions.",
+  },
+  {
+    id: "master-data",
+    label: "Master Data",
+    description: "Maintain shared warehouse and catalog reference data.",
+  },
+  {
+    id: "organization",
+    label: "Organization",
+    description: "Configure company-wide calendars and operating preferences.",
+  },
+  {
+    id: "developer",
+    label: "Developer",
+    description: "Access rollout controls and internal support tooling.",
+  },
+];
+
+const SETTINGS_SECTIONS: SettingsSectionConfig[] = [
+  { id: "users", label: "Users", group: "access-control" },
+  { id: "user-roles", label: "User Roles", group: "access-control" },
+  { id: "roles", label: "Roles", group: "access-control" },
+  { id: "permissions", label: "Permissions", group: "access-control" },
+  { id: "locations", label: "Locations", group: "master-data" },
+  { id: "categories", label: "Categories", group: "master-data" },
+  { id: "grades", label: "Grades", group: "master-data" },
+  { id: "tags", label: "Tags", group: "master-data" },
+  { id: "organization", label: "Organization", group: "organization" },
+  { id: "calendars", label: "Calendars", group: "organization" },
+  { id: "feature-flags", label: "Feature Flags", group: "developer" },
+  {
+    id: "vip-impersonation",
+    label: "VIP Access",
+    group: "developer",
+  },
+  {
+    id: "database",
+    label: "Database",
+    group: "developer",
+    requiresDevTools: true,
+  },
+];
+
+const LEGACY_SETTINGS_TAB_ALIASES: Partial<
+  Record<string, SettingsSectionId | "account-notifications">
+> = {
+  rbac: "user-roles",
+  notifications: "account-notifications",
+};
 
 export default function Settings() {
+  const [, setLocation] = useLocation();
+  const search = useSearch();
   // FEAT-018: Check if user has admin/dev access for development-only features
   const { isSuperAdmin, hasPermission } = usePermissions();
   const showDevTools = isSuperAdmin || hasPermission("admin:dev-tools");
+
+  const visibleSections = useMemo(
+    () =>
+      SETTINGS_SECTIONS.filter(
+        section => !section.requiresDevTools || showDevTools
+      ),
+    [showDevTools]
+  );
+
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const requestedTab = searchParams.get("tab");
+  const normalizedRequestedTab =
+    (requestedTab &&
+      (LEGACY_SETTINGS_TAB_ALIASES[requestedTab] ?? requestedTab)) ||
+    null;
+
+  useEffect(() => {
+    if (normalizedRequestedTab === "account-notifications") {
+      setLocation("/account");
+    }
+  }, [normalizedRequestedTab, setLocation]);
+
+  const activeSection = useMemo<SettingsSectionId>(() => {
+    if (
+      normalizedRequestedTab &&
+      normalizedRequestedTab !== "account-notifications" &&
+      visibleSections.some(section => section.id === normalizedRequestedTab)
+    ) {
+      return (
+        visibleSections.find(section => section.id === normalizedRequestedTab)
+          ?.id ?? "users"
+      );
+    }
+
+    return visibleSections[0]?.id ?? "users";
+  }, [normalizedRequestedTab, visibleSections]);
+
+  const sectionsByGroup = useMemo(
+    () =>
+      SETTINGS_GROUPS.reduce<Record<SettingsGroupId, SettingsSectionConfig[]>>(
+        (acc, group) => ({
+          ...acc,
+          [group.id]: visibleSections.filter(
+            section => section.group === group.id
+          ),
+        }),
+        {
+          "access-control": [],
+          "master-data": [],
+          organization: [],
+          developer: [],
+        }
+      ),
+    [visibleSections]
+  );
+
+  const activeGroup =
+    visibleSections.find(section => section.id === activeSection)?.group ??
+    "access-control";
+
+  const updateSettingsRoute = (nextSectionId: SettingsSectionId) => {
+    const nextParams = new URLSearchParams(search);
+    nextParams.set("tab", nextSectionId);
+    const nextQuery = nextParams.toString();
+    setLocation(`/settings${nextQuery ? `?${nextQuery}` : ""}`);
+  };
+
+  const handleGroupChange = (nextGroupId: string) => {
+    const nextSection = sectionsByGroup[nextGroupId as SettingsGroupId]?.[0];
+    if (nextSection) {
+      updateSettingsRoute(nextSection.id);
+    }
+  };
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
@@ -73,246 +235,183 @@ export default function Settings() {
         </p>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-3 sm:space-y-4">
-        <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
-          <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-9 gap-1 h-auto">
+      <Tabs
+        value={activeGroup}
+        onValueChange={handleGroupChange}
+        className="space-y-3 sm:space-y-4"
+      >
+        <TabsList className="grid w-full h-auto grid-cols-2 gap-1 md:grid-cols-4">
+          {SETTINGS_GROUPS.map(group => (
             <TabsTrigger
-              value="users"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+              key={group.id}
+              value={group.id}
+              className="px-3 py-2 text-xs sm:text-sm whitespace-normal"
             >
-              Users
+              {group.label}
             </TabsTrigger>
-            <TabsTrigger
-              value="rbac"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              User Roles
-            </TabsTrigger>
-            <TabsTrigger
-              value="roles"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Roles
-            </TabsTrigger>
-            <TabsTrigger
-              value="permissions"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Permissions
-            </TabsTrigger>
-            <TabsTrigger
-              value="locations"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Locations
-            </TabsTrigger>
-            <TabsTrigger
-              value="categories"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Categories
-            </TabsTrigger>
-            <TabsTrigger
-              value="grades"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Grades
-            </TabsTrigger>
-            <TabsTrigger
-              value="tags"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Tags
-            </TabsTrigger>
-            {/* FEAT-018: Hide Database tab from non-admin/dev users */}
-            {showDevTools && (
-              <TabsTrigger
-                value="database"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                <Code2 className="h-3 w-3 mr-1" />
-                Database
-              </TabsTrigger>
-            )}
-            <TabsTrigger
-              value="feature-flags"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Feature Flags
-            </TabsTrigger>
-            <TabsTrigger
-              value="vip-impersonation"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              VIP Access
-            </TabsTrigger>
-            <TabsTrigger
-              value="notifications"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger
-              value="calendars"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Calendars
-            </TabsTrigger>
-            <TabsTrigger
-              value="organization"
-              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              <Building className="h-3 w-3 mr-1" />
-              Organization
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent
-          value="users"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <UserManagement />
-        </TabsContent>
-
-        <TabsContent
-          value="rbac"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <UserRoleManagement />
-        </TabsContent>
-
-        <TabsContent
-          value="roles"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <RoleManagement />
-        </TabsContent>
-
-        <TabsContent
-          value="permissions"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <PermissionAssignment />
-        </TabsContent>
-
-        <TabsContent
-          value="locations"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <LocationsManager />
-        </TabsContent>
-
-        <TabsContent
-          value="categories"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <CategoriesManager />
-        </TabsContent>
-
-        <TabsContent
-          value="grades"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <GradesManager />
-        </TabsContent>
-
-        <TabsContent
-          value="tags"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <TagManagementSettings />
-        </TabsContent>
-
-        {/* FEAT-018: Only show Database tab content for admin/dev users */}
-        {showDevTools && (
-          <TabsContent
-            value="database"
-            className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-          >
-            <DatabaseManager />
-          </TabsContent>
-        )}
-
-        <TabsContent
-          value="feature-flags"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flag className="h-5 w-5" />
-                Feature Flags
-              </CardTitle>
-              <CardDescription>
-                Manage feature availability across the application
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Feature flags allow you to enable or disable features for
-                specific users, roles, or the entire system.
-              </p>
-              <Button asChild>
-                <a href="/settings/feature-flags">Open Feature Flags Manager</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent
-          value="vip-impersonation"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <VIPImpersonationManager />
-        </TabsContent>
-
-        <TabsContent
-          value="notifications"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Preferences
-              </CardTitle>
-              <CardDescription>
-                Control how you receive alerts and reminders.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Configure in-app and email notifications along with reminders
-                for appointments, orders, and system alerts.
-              </p>
-              <Button asChild>
-                <a href="/settings/notifications">
-                  Open Notification Preferences
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent
-          value="calendars"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <CalendarSettings />
-        </TabsContent>
-
-        {/* FEAT-009 to FEAT-015: Organization Settings */}
-        <TabsContent
-          value="organization"
-          className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
-        >
-          <GeneralOrgSettings />
-          <UserPreferencesSettings />
-          <UnitTypesManager />
-          <FinanceStatusManager />
-        </TabsContent>
+          ))}
+        </TabsList>
       </Tabs>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            {activeGroup === "organization" ? (
+              <Building className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : activeGroup === "developer" ? (
+              <Code2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : null}
+            {SETTINGS_GROUPS.find(group => group.id === activeGroup)?.label}
+          </CardTitle>
+          <CardDescription>
+            {
+              SETTINGS_GROUPS.find(group => group.id === activeGroup)
+                ?.description
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Tabs
+            value={activeSection}
+            onValueChange={value =>
+              updateSettingsRoute(value as SettingsSectionId)
+            }
+            className="space-y-4"
+          >
+            <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
+              <TabsList className="inline-flex w-full min-w-max md:w-auto gap-1 h-auto">
+                {sectionsByGroup[activeGroup].map(section => (
+                  <TabsTrigger
+                    key={section.id}
+                    value={section.id}
+                    className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                  >
+                    {section.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+
+            <TabsContent
+              value="users"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <UserManagement />
+            </TabsContent>
+
+            <TabsContent
+              value="user-roles"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <UserRoleManagement />
+            </TabsContent>
+
+            <TabsContent
+              value="roles"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <RoleManagement />
+            </TabsContent>
+
+            <TabsContent
+              value="permissions"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <PermissionAssignment />
+            </TabsContent>
+
+            <TabsContent
+              value="locations"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <LocationsManager />
+            </TabsContent>
+
+            <TabsContent
+              value="categories"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <CategoriesManager />
+            </TabsContent>
+
+            <TabsContent
+              value="grades"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <GradesManager />
+            </TabsContent>
+
+            <TabsContent
+              value="tags"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <TagManagementSettings />
+            </TabsContent>
+
+            <TabsContent
+              value="organization"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <GeneralOrgSettings />
+              <UserPreferencesSettings />
+              <UnitTypesManager />
+              <FinanceStatusManager />
+            </TabsContent>
+
+            <TabsContent
+              value="calendars"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <CalendarSettings />
+            </TabsContent>
+
+            {/* FEAT-018: Only show Database tab content for admin/dev users */}
+            {showDevTools && (
+              <TabsContent
+                value="database"
+                className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+              >
+                <DatabaseManager />
+              </TabsContent>
+            )}
+
+            <TabsContent
+              value="feature-flags"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Flag className="h-5 w-5" />
+                    Feature Flags
+                  </CardTitle>
+                  <CardDescription>
+                    Manage feature availability across the application
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Feature flags allow you to enable or disable features for
+                    specific users, roles, or the entire system.
+                  </p>
+                  <Button asChild>
+                    <a href="/settings/feature-flags">
+                      Open Feature Flags Manager
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent
+              value="vip-impersonation"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <VIPImpersonationManager />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

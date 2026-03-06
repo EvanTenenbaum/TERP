@@ -31,7 +31,6 @@ import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
-import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 // Work Surface components - legacy pages removed, using WorkSurface directly
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
@@ -500,7 +499,10 @@ function Router() {
                 />
                 <Route
                   path="/settings/notifications"
-                  component={withErrorBoundary(NotificationPreferencesPage)}
+                  component={RedirectWithSearch(
+                    "/settings/notifications",
+                    "/account"
+                  )}
                 />
                 <Route
                   path="/settings/feature-flags"
