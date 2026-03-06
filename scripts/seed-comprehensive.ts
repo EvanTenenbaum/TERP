@@ -744,7 +744,7 @@ async function seedBatches(connection: mysql.Connection, productIds: number[], l
 
   // Production schema: code, sku, productId, lotId, batchStatus, statusId, grade, cogsMode, unitCogs,
   // paymentTerms, onHandQty, sampleQty, reservedQty, quarantineQty, holdQty, defectiveQty, publishEcom, publishB2b
-  const statuses = ['AWAITING_INTAKE', 'LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD', 'SOLD_OUT'];
+  const statuses = ['AWAITING_INTAKE', 'LIVE', 'ON_HOLD', 'SOLD_OUT'];
   const paymentTermsOptions = ['COD', 'NET_7', 'NET_15', 'NET_30', 'CONSIGNMENT'];
   const grades = ['A', 'A', 'A', 'B', 'B', 'C', null];
 
