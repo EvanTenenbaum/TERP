@@ -106,7 +106,7 @@ interface Order {
   isDraft: boolean;
   orderType?: string;
   fulfillmentStatus?:
-    | "PENDING"
+    | "READY_FOR_PACKING"
     | "PACKED"
     | "SHIPPED"
     | "DELIVERED"
@@ -149,8 +149,7 @@ type FulfillmentStatusValue = Exclude<
 // WSQA-003: Added RETURNED, RESTOCKED, RETURNED_TO_VENDOR statuses
 const FULFILLMENT_STATUSES = [
   { value: "ALL", label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "PROCESSING", label: "Processing" },
+  { value: "READY_FOR_PACKING", label: "Ready for Packing" },
   { value: "PACKED", label: "Packed" },
   { value: "SHIPPED", label: "Shipped" },
   { value: "DELIVERED", label: "Delivered" },
@@ -181,8 +180,7 @@ const ORDER_SORT_OPTIONS: Array<{ value: OrdersSortKey; label: string }> = [
 
 // WSQA-003: Added return status icons
 const STATUS_ICONS: Record<string, ReactNode> = {
-  PENDING: <Clock className="h-4 w-4" />,
-  PROCESSING: <Package className="h-4 w-4" />,
+  READY_FOR_PACKING: <Clock className="h-4 w-4" />,
   PACKED: <CheckCircle2 className="h-4 w-4" />,
   SHIPPED: <Truck className="h-4 w-4" />,
   DELIVERED: <CheckCircle2 className="h-4 w-4" />,
@@ -194,8 +192,7 @@ const STATUS_ICONS: Record<string, ReactNode> = {
 
 // WSQA-003: Added return status colors
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  PROCESSING: "bg-blue-100 text-blue-800",
+  READY_FOR_PACKING: "bg-yellow-100 text-yellow-800",
   PACKED: "bg-purple-100 text-purple-800",
   SHIPPED: "bg-indigo-100 text-indigo-800",
   DELIVERED: "bg-green-100 text-green-800",
@@ -249,6 +246,24 @@ const buildConfirmedQueryInput = (
 const normalizeStatus = (status?: string | null): string =>
   String(status ?? "").toUpperCase();
 
+const normalizeFulfillmentStatus = (status?: string | null): string => {
+  const normalized = normalizeStatus(status);
+  return normalized === "PENDING" ? "READY_FOR_PACKING" : normalized;
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pending",
+  PARTIAL: "Partial",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  CANCELLED: "Cancelled",
+};
+
+const formatPaymentStatus = (status?: string | null): string => {
+  const normalized = normalizeStatus(status);
+  return normalized ? (PAYMENT_STATUS_LABELS[normalized] ?? normalized) : "-";
+};
+
 export function getStatusFilterExitMessage(params: {
   orderNumber: string;
   fromFilter: string;
@@ -274,7 +289,9 @@ function OrderStatusBadge({
   status?: string | null;
   isDraft?: boolean;
 }) {
-  const displayStatus = isDraft ? "DRAFT" : status || "PENDING";
+  const displayStatus = isDraft
+    ? "DRAFT"
+    : normalizeFulfillmentStatus(status) || "READY_FOR_PACKING";
   return (
     <Badge
       variant="outline"
@@ -344,6 +361,7 @@ function OrderInspectorContent({
     (sum, item) => sum + parseFloat(item.totalPrice || "0"),
     0
   );
+  const fulfillmentStatus = normalizeFulfillmentStatus(order.fulfillmentStatus);
 
   return (
     <div className="space-y-6">
@@ -378,6 +396,12 @@ function OrderInspectorContent({
         {order.orderType && (
           <InspectorField label="Order Type">
             <Badge variant="outline">{order.orderType}</Badge>
+          </InspectorField>
+        )}
+
+        {!order.isDraft && (
+          <InspectorField label="Payment Status">
+            <p>{formatPaymentStatus(order.saleStatus)}</p>
           </InspectorField>
         )}
       </InspectorSection>
@@ -488,7 +512,7 @@ function OrderInspectorContent({
                 )}
 
               {/* WSQA-003: Status-based actions */}
-              {order.fulfillmentStatus === "PENDING" &&
+              {fulfillmentStatus === "READY_FOR_PACKING" &&
                 onConfirmFulfillment &&
                 !order.confirmedAt &&
                 canManageShipping && (
@@ -502,8 +526,8 @@ function OrderInspectorContent({
                     Confirm for Fulfillment
                   </Button>
                 )}
-              {(order.fulfillmentStatus === "PENDING" ||
-                order.fulfillmentStatus === "PACKED") &&
+              {(fulfillmentStatus === "READY_FOR_PACKING" ||
+                fulfillmentStatus === "PACKED") &&
                 shippingEnabled &&
                 canManageShipping && (
                   <Button
@@ -518,9 +542,9 @@ function OrderInspectorContent({
                 )}
               {order.orderType === "SALE" &&
                 !order.invoiceId &&
-                order.fulfillmentStatus &&
-                ["PENDING", "PACKED", "SHIPPED"].includes(
-                  order.fulfillmentStatus
+                fulfillmentStatus &&
+                ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(
+                  fulfillmentStatus
                 ) &&
                 onGenerateInvoice && (
                   <Button
@@ -739,7 +763,9 @@ export function OrdersWorkSurface() {
               )
               .filter(order => {
                 if (!filter) return true;
-                return normalizeStatus(order.fulfillmentStatus) === filter;
+                return (
+                  normalizeFulfillmentStatus(order.fulfillmentStatus) === filter
+                );
               });
 
             const nextPagination = data.pagination
@@ -878,7 +904,9 @@ export function OrdersWorkSurface() {
     () => ({
       drafts: draftOrders.length,
       pending: confirmedOrders.filter(
-        (o: Order) => o.fulfillmentStatus === "PENDING"
+        (o: Order) =>
+          normalizeFulfillmentStatus(o.fulfillmentStatus) ===
+          "READY_FOR_PACKING"
       ).length,
       shipped: confirmedOrders.filter(
         (o: Order) => o.fulfillmentStatus === "SHIPPED"
@@ -931,9 +959,9 @@ export function OrdersWorkSurface() {
     onMutate: () => setSaving("Confirming for fulfillment..."),
     onSuccess: () => {
       if (selectedOrderId) {
-        patchConfirmedOrderStatus(selectedOrderId, "PENDING");
+        patchConfirmedOrderStatus(selectedOrderId, "READY_FOR_PACKING");
       }
-      notifyStatusFilterExit(selectedOrder, "PENDING");
+      notifyStatusFilterExit(selectedOrder, "READY_FOR_PACKING");
       toast.success("Order confirmed for fulfillment");
       setSaved();
       void refetchConfirmed();
@@ -1200,7 +1228,7 @@ export function OrdersWorkSurface() {
               </span>
             </span>
             <span>
-              Pending:{" "}
+              Ready for Packing:{" "}
               <span className="font-semibold text-foreground">
                 {stats.pending}
               </span>
@@ -1304,6 +1332,7 @@ export function OrdersWorkSurface() {
                 <TableHead>Order #</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead></TableHead>
@@ -1312,7 +1341,7 @@ export function OrdersWorkSurface() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
+                  <TableCell colSpan={7} className="h-64 text-center">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Loading orders…</span>
@@ -1321,7 +1350,7 @@ export function OrdersWorkSurface() {
                 </TableRow>
               ) : displayOrders.length === 0 ? (
                 <TableRow data-testid="orders-empty-state">
-                  <TableCell colSpan={6} className="h-64 text-center">
+                  <TableCell colSpan={7} className="h-64 text-center">
                     <div className="mx-auto max-w-xl">
                       <div className="flex items-center justify-center gap-2 text-foreground">
                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -1362,6 +1391,9 @@ export function OrdersWorkSurface() {
                     </TableCell>
                     <TableCell>{getClientName(order.clientId)}</TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
+                    <TableCell>
+                      {formatPaymentStatus(order.saleStatus)}
+                    </TableCell>
                     <TableCell>
                       <OrderStatusBadge
                         status={order.fulfillmentStatus}

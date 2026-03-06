@@ -189,15 +189,15 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
 
   orders_pending: {
     id: "orders_pending",
-    label: "Pending",
-    description: "Orders awaiting fulfillment",
+    label: "Ready for Packing",
+    description: "Orders ready for packing",
     icon: Clock,
     color: "text-yellow-600",
     format: "count",
     category: "operational",
     destination: {
       path: "/orders",
-      getParams: () => ({ status: "PENDING" }),
+      getParams: () => ({ status: "READY_FOR_PACKING" }),
     },
   },
 

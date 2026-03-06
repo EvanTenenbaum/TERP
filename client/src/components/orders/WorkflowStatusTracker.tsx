@@ -35,7 +35,11 @@ type QuoteStatus =
   | "EXPIRED"
   | "CONVERTED";
 type SaleStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED";
-type FulfillmentStatus = "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED";
+type FulfillmentStatus =
+  | "READY_FOR_PACKING"
+  | "PACKED"
+  | "SHIPPED"
+  | "CANCELLED";
 
 /** TER-212: Canonical state transition map — mirrors server/ordersDb.ts */
 export const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
@@ -60,7 +64,7 @@ export const FULFILLMENT_TRANSITIONS: Record<
   FulfillmentStatus,
   FulfillmentStatus[]
 > = {
-  PENDING: ["PACKED", "SHIPPED", "CANCELLED"],
+  READY_FOR_PACKING: ["PACKED", "SHIPPED", "CANCELLED"],
   PACKED: ["SHIPPED", "CANCELLED"],
   SHIPPED: [],
   CANCELLED: [],
@@ -110,7 +114,11 @@ const QUOTE_TERMINAL_STEPS: Record<string, StepConfig> = {
 };
 
 const FULFILLMENT_STEPS: StepConfig[] = [
-  { key: "PENDING", label: "Pending", icon: <Clock className="h-4 w-4" /> },
+  {
+    key: "READY_FOR_PACKING",
+    label: "Ready for Packing",
+    icon: <Clock className="h-4 w-4" />,
+  },
   { key: "PACKED", label: "Packed", icon: <Package className="h-4 w-4" /> },
   { key: "SHIPPED", label: "Shipped", icon: <Truck className="h-4 w-4" /> },
 ];
@@ -260,8 +268,10 @@ export function SaleWorkflowTracker({
   fulfillmentStatus,
   className,
 }: SaleTrackerProps) {
+  const normalizedFulfillmentStatus =
+    fulfillmentStatus === "PENDING" ? "READY_FOR_PACKING" : fulfillmentStatus;
   const isCancelled =
-    saleStatus === "CANCELLED" || fulfillmentStatus === "CANCELLED";
+    saleStatus === "CANCELLED" || normalizedFulfillmentStatus === "CANCELLED";
 
   if (isCancelled) {
     return (
@@ -280,7 +290,7 @@ export function SaleWorkflowTracker({
   }
 
   const fulfillmentIndex = FULFILLMENT_STEPS.findIndex(
-    s => s.key === fulfillmentStatus
+    s => s.key === normalizedFulfillmentStatus
   );
   const paymentIndex = SALE_PAYMENT_STEPS.findIndex(
     s =>
@@ -293,8 +303,8 @@ export function SaleWorkflowTracker({
       <div className={cn("space-y-2", className)}>
         <WorkflowStep
           step={{
-            key: fulfillmentStatus,
-            label: `${fulfillmentStatus} / ${saleStatus}`,
+            key: normalizedFulfillmentStatus,
+            label: `${normalizedFulfillmentStatus} / ${saleStatus}`,
             icon: <AlertTriangle className="h-4 w-4" />,
           }}
           state="current"

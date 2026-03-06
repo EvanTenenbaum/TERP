@@ -372,7 +372,7 @@ export const invoicesRouter = router({
       }
 
       // Verify order status allows invoicing
-      const allowedStatuses = ["PENDING", "PACKED", "SHIPPED"];
+      const allowedStatuses = ["READY_FOR_PACKING", "PACKED", "SHIPPED"];
       if (
         !order.fulfillmentStatus ||
         !allowedStatuses.includes(order.fulfillmentStatus)

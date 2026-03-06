@@ -40,15 +40,17 @@ import {
 import { cn } from "@/lib/utils";
 import type { FulfillmentStatus } from "./OrderStatusBadge";
 
+type LegacyFulfillmentStatus = FulfillmentStatus | "PENDING";
+
 /**
  * ARCH-003: Valid order status transitions
  * Must match server/services/orderStateMachine.ts
  */
 const ORDER_STATUS_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStatus[]> =
   {
-    DRAFT: ["CONFIRMED", "PENDING", "CANCELLED"],
-    CONFIRMED: ["PENDING", "PACKED", "SHIPPED", "CANCELLED"],
-    PENDING: ["PACKED", "SHIPPED", "CANCELLED"],
+    DRAFT: ["CONFIRMED", "READY_FOR_PACKING", "CANCELLED"],
+    CONFIRMED: ["READY_FOR_PACKING", "PACKED", "SHIPPED", "CANCELLED"],
+    READY_FOR_PACKING: ["PACKED", "SHIPPED", "CANCELLED"],
     PACKED: ["SHIPPED", "CANCELLED"],
     SHIPPED: ["DELIVERED", "RETURNED"],
     DELIVERED: ["RETURNED"],
@@ -61,7 +63,7 @@ const ORDER_STATUS_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStatus[]> =
 const STATUS_LABELS: Record<FulfillmentStatus, string> = {
   DRAFT: "Draft",
   CONFIRMED: "Confirmed",
-  PENDING: "Pending",
+  READY_FOR_PACKING: "Ready for Packing",
   PACKED: "Packed",
   SHIPPED: "Shipped",
   DELIVERED: "Delivered",
@@ -74,7 +76,7 @@ const STATUS_LABELS: Record<FulfillmentStatus, string> = {
 const STATUS_ICONS: Record<FulfillmentStatus, React.ReactNode> = {
   DRAFT: <FileText className="h-4 w-4" />,
   CONFIRMED: <CheckCircle className="h-4 w-4" />,
-  PENDING: <Package className="h-4 w-4" />,
+  READY_FOR_PACKING: <Package className="h-4 w-4" />,
   PACKED: <Package className="h-4 w-4" />,
   SHIPPED: <Truck className="h-4 w-4" />,
   DELIVERED: <PackageCheck className="h-4 w-4" />,
@@ -85,7 +87,7 @@ const STATUS_ICONS: Record<FulfillmentStatus, React.ReactNode> = {
 };
 
 interface OrderStatusActionsProps {
-  currentStatus: FulfillmentStatus;
+  currentStatus: LegacyFulfillmentStatus;
   orderNumber: string;
   onStatusChange: (newStatus: FulfillmentStatus) => void;
   isUpdating?: boolean;
@@ -102,11 +104,14 @@ export function OrderStatusActions({
   disabled = false,
   customHandlers = {},
 }: OrderStatusActionsProps) {
+  const normalizedCurrentStatus =
+    currentStatus === "PENDING" ? "READY_FOR_PACKING" : currentStatus;
   const [confirmStatus, setConfirmStatus] = useState<FulfillmentStatus | null>(
     null
   );
 
-  const validNextStatuses = ORDER_STATUS_TRANSITIONS[currentStatus] || [];
+  const validNextStatuses =
+    ORDER_STATUS_TRANSITIONS[normalizedCurrentStatus] || [];
   const isTerminal = validNextStatuses.length === 0;
 
   const handleStatusSelect = (status: FulfillmentStatus) => {
@@ -229,7 +234,7 @@ export function OrderStatusActions({
           ? "Restocked (Complete)"
           : currentStatus === "RETURNED_TO_VENDOR"
             ? "Returned to Supplier (Complete)"
-            : `${STATUS_LABELS[currentStatus]} (Complete)`;
+            : `${STATUS_LABELS[normalizedCurrentStatus]} (Complete)`;
 
     return (
       <Badge variant="outline" className="text-xs text-muted-foreground">

@@ -67,7 +67,7 @@ interface Order {
   clientId: number;
   items: OrderItem[] | string;
   total: string;
-  fulfillmentStatus?: "PENDING" | "PACKED" | "SHIPPED";
+  fulfillmentStatus?: "PENDING" | "READY_FOR_PACKING" | "PACKED" | "SHIPPED";
   saleStatus?: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED";
   notes?: string;
   confirmedAt?: Date | null;
@@ -86,6 +86,10 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
   const [activeDialog, setActiveDialog] = useState<FulfillmentStep | null>(
     null
   );
+  const currentFulfillmentStatus =
+    order.fulfillmentStatus === "PENDING"
+      ? "READY_FOR_PACKING"
+      : order.fulfillmentStatus;
 
   // Parse items
   const items: OrderItem[] =
@@ -93,8 +97,8 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
 
   // Determine current step
   const getCurrentStep = (): FulfillmentStep => {
-    if (order.fulfillmentStatus === "SHIPPED") return "deliver";
-    if (order.fulfillmentStatus === "PACKED") return "ship";
+    if (currentFulfillmentStatus === "SHIPPED") return "deliver";
+    if (currentFulfillmentStatus === "PACKED") return "ship";
     if (order.confirmedAt) return "fulfill";
     return "confirm";
   };
@@ -104,12 +108,16 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
   // Status badge helper
   const getStatusBadge = () => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      PENDING: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+      READY_FOR_PACKING: {
+        label: "Ready for Packing",
+        className: "bg-yellow-100 text-yellow-800",
+      },
       PACKED: { label: "Packed", className: "bg-blue-100 text-blue-800" },
       SHIPPED: { label: "Shipped", className: "bg-green-100 text-green-800" },
     };
 
-    const config = statusConfig[order.fulfillmentStatus || "PENDING"];
+    const config =
+      statusConfig[currentFulfillmentStatus || "READY_FOR_PACKING"];
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
@@ -142,23 +150,23 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
             label="Pack"
             active={currentStep === "fulfill"}
             completed={
-              order.fulfillmentStatus === "PACKED" ||
-              order.fulfillmentStatus === "SHIPPED"
+              currentFulfillmentStatus === "PACKED" ||
+              currentFulfillmentStatus === "SHIPPED"
             }
           />
           <StepConnector
             completed={
-              order.fulfillmentStatus === "PACKED" ||
-              order.fulfillmentStatus === "SHIPPED"
+              currentFulfillmentStatus === "PACKED" ||
+              currentFulfillmentStatus === "SHIPPED"
             }
           />
           <StepIndicator
             icon={<Truck className="h-5 w-5" />}
             label="Ship"
             active={currentStep === "ship"}
-            completed={order.fulfillmentStatus === "SHIPPED"}
+            completed={currentFulfillmentStatus === "SHIPPED"}
           />
-          <StepConnector completed={order.fulfillmentStatus === "SHIPPED"} />
+          <StepConnector completed={currentFulfillmentStatus === "SHIPPED"} />
           <StepIndicator
             icon={<MapPin className="h-5 w-5" />}
             label="Deliver"

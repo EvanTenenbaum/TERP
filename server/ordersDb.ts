@@ -313,7 +313,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       dueDate: dueDate,
       saleStatus:
         !isDraft && input.orderType === "SALE" ? "PENDING" : undefined,
-      fulfillmentStatus: !isDraft ? "PENDING" : undefined,
+      fulfillmentStatus: !isDraft ? "READY_FOR_PACKING" : undefined,
       notes: input.notes,
       createdBy: actorId,
     });
@@ -613,7 +613,7 @@ export async function getAllOrders(filters?: {
     const validFulfillmentStatuses = [
       "DRAFT",
       "CONFIRMED",
-      "PENDING",
+      "READY_FOR_PACKING",
       "PACKED",
       "SHIPPED",
       "DELIVERED",
@@ -1291,7 +1291,7 @@ export async function confirmDraftOrder(input: {
         cashPayment: cashPayment.toString(),
         dueDate: dueDate,
         saleStatus: saleStatus,
-        fulfillmentStatus: "PENDING",
+        fulfillmentStatus: "READY_FOR_PACKING",
         notes: input.notes || draft.notes,
         confirmedAt: new Date(),
       })
@@ -1620,8 +1620,8 @@ export async function deleteDraftOrder(input: {
  */
 // ORD-003: Consistent fulfillment status transitions
 const FULFILLMENT_STATUS_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ["PACKED", "SHIPPED", "CANCELLED"], // Can pack, ship directly, or cancel
-  PACKED: ["SHIPPED", "CANCELLED"], // Can ship or cancel (ORD-003: removed PENDING - no reverting)
+  READY_FOR_PACKING: ["PACKED", "SHIPPED", "CANCELLED"],
+  PACKED: ["SHIPPED", "CANCELLED"],
   SHIPPED: [], // Terminal state - no further transitions allowed
   CANCELLED: [], // Terminal state
 };
@@ -1721,7 +1721,7 @@ export function getValidSaleStatusTransitions(currentStatus: string): string[] {
 export async function updateOrderStatus(input: {
   orderId: number;
   // ORD-003: Added CANCELLED as valid status for order cancellation before shipping
-  newStatus: "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED";
+  newStatus: "READY_FOR_PACKING" | "PACKED" | "SHIPPED" | "CANCELLED";
   notes?: string;
   userId: number;
   expectedVersion?: number; // DATA-005: Optimistic locking support
@@ -1759,7 +1759,7 @@ export async function updateOrderStatus(input: {
       );
     }
 
-    const oldStatus = order.fulfillmentStatus || "PENDING";
+    const oldStatus = order.fulfillmentStatus || "READY_FOR_PACKING";
 
     // TERP-0016: Validate status transition using state machine
     if (!isValidStatusTransition("fulfillment", oldStatus, newStatus)) {
@@ -1877,10 +1877,10 @@ export async function updateOrderStatus(input: {
 
     // TER-258: Handle CANCELLED — restore reserved inventory
     if (newStatus === "CANCELLED") {
-      if (oldStatus === "PACKED" || oldStatus === "PENDING") {
-        // When cancelling a PACKED or PENDING order, release the reserved quantities
+      if (oldStatus === "PACKED" || oldStatus === "READY_FOR_PACKING") {
+        // When cancelling a PACKED or READY_FOR_PACKING order, release the reserved quantities
         // for each item. TER-259 reserves inventory at creation/confirmation time,
-        // so both PENDING and PACKED orders may have active reservations.
+        // so both READY_FOR_PACKING and PACKED orders may have active reservations.
         const cancelledItems = (
           typeof order.items === "string"
             ? (JSON.parse(order.items) as unknown[])
@@ -1916,15 +1916,17 @@ export async function updateOrderStatus(input: {
 
     // Log status change in history
     const { orderStatusHistory } = await import("../drizzle/schema");
-    // TER-258: CANCELLED is a valid fulfillmentStatus enum value — include it explicitly.
-    // The fulfillmentStatusEnum includes: PENDING, PACKED, SHIPPED, CANCELLED (and others).
-    const validStatus: "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED" =
-      newStatus === "PENDING" ||
+    const validStatus:
+      | "READY_FOR_PACKING"
+      | "PACKED"
+      | "SHIPPED"
+      | "CANCELLED" =
+      newStatus === "READY_FOR_PACKING" ||
       newStatus === "PACKED" ||
       newStatus === "SHIPPED" ||
       newStatus === "CANCELLED"
         ? newStatus
-        : "PENDING";
+        : "READY_FOR_PACKING";
     await tx.insert(orderStatusHistory).values({
       orderId,
       fulfillmentStatus: validStatus,

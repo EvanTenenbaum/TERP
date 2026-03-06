@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export type FulfillmentStatus =
   | "DRAFT"
   | "CONFIRMED"
-  | "PENDING"
+  | "READY_FOR_PACKING"
   | "PACKED"
   | "SHIPPED"
   | "DELIVERED"
@@ -33,8 +33,8 @@ const STATUS_CONFIG: Record<
     label: "Confirmed",
     className: "bg-blue-100 text-blue-800 border-blue-300",
   },
-  PENDING: {
-    label: "Pending",
+  READY_FOR_PACKING: {
+    label: "Ready for Packing",
     className: "bg-yellow-100 text-yellow-800 border-yellow-300",
   },
   PACKED: {
@@ -68,8 +68,9 @@ const STATUS_CONFIG: Record<
 };
 
 export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
-  const config = STATUS_CONFIG[status as FulfillmentStatus] || {
-    label: status,
+  const normalizedStatus = status === "PENDING" ? "READY_FOR_PACKING" : status;
+  const config = STATUS_CONFIG[normalizedStatus as FulfillmentStatus] || {
+    label: normalizedStatus,
     className: "bg-gray-100 text-gray-800 border-gray-300",
   };
 

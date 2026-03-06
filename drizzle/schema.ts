@@ -2712,7 +2712,7 @@ export const saleStatusEnum = mysqlEnum("saleStatus", [
 export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
   "DRAFT",
   "CONFIRMED",
-  "PENDING",
+  "READY_FOR_PACKING",
   "PACKED",
   "SHIPPED",
   "DELIVERED",
@@ -2781,7 +2781,7 @@ export const orders = mysqlTable(
     invoiceId: int("invoice_id"),
 
     // Fulfillment tracking (for SALE orders)
-    fulfillmentStatus: fulfillmentStatusEnum.default("PENDING"),
+    fulfillmentStatus: fulfillmentStatusEnum.default("READY_FOR_PACKING"),
     packedAt: timestamp("packed_at"),
     packedBy: int("packed_by").references(() => users.id),
     shippedAt: timestamp("shipped_at"),
@@ -2859,7 +2859,9 @@ export const orderStatusHistory = mysqlTable(
     orderId: int("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "restrict" }), // QUAL-004: Protect audit trail
-    fulfillmentStatus: fulfillmentStatusEnum.notNull().default("PENDING"),
+    fulfillmentStatus: fulfillmentStatusEnum
+      .notNull()
+      .default("READY_FOR_PACKING"),
     changedBy: int("changed_by")
       .notNull()
       .references(() => users.id),

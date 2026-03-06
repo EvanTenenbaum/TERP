@@ -659,7 +659,8 @@ async function seedOrders(
       invoiceId: null,
       fulfillmentStatus:
         order.fulfillmentStatus as InsertOrder["fulfillmentStatus"],
-      packedAt: order.fulfillmentStatus !== "PENDING" ? orderDate : null,
+      packedAt:
+        order.fulfillmentStatus !== "READY_FOR_PACKING" ? orderDate : null,
       packedBy: null,
       shippedAt:
         order.fulfillmentStatus === "SHIPPED"
