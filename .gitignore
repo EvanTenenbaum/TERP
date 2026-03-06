@@ -155,3 +155,6 @@ playwright/.cache/
 .vercel/
 scripts/seed-qa-test-users.ts
 scripts/test-adjust-api.ts
+
+# Dolt database files (added by bd init)
+.dolt/
