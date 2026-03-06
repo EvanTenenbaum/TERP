@@ -40,7 +40,7 @@ import { PriceSimulationModal } from "./PriceSimulationModal";
 import { BatchMediaUpload } from "./BatchMediaUpload";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { AdjustQuantityDialog } from "@/components/AdjustQuantityDialog";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -214,6 +214,20 @@ const BATCH_STATUSES = [
   { value: "CLOSED", label: "Closed" },
 ] as const;
 
+interface ProductMetadataDraft {
+  nameCanonical: string;
+  category: string;
+  strainId: string;
+  grade: string;
+}
+
+const EMPTY_PRODUCT_METADATA_DRAFT: ProductMetadataDraft = {
+  nameCanonical: "",
+  category: "",
+  strainId: "none",
+  grade: "",
+};
+
 export function BatchDetailDrawer({
   batchId,
   open,
@@ -224,8 +238,12 @@ export function BatchDetailDrawer({
   // FIX-BATCH-001: Add modals for action buttons
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
   const [showStatusChange, setShowStatusChange] = useState(false);
+  const [showProductEdit, setShowProductEdit] = useState(false);
   const [newStatus, setNewStatus] = useState<string>("");
   const [statusReason, setStatusReason] = useState("");
+  const [productDraft, setProductDraft] = useState<ProductMetadataDraft>(
+    EMPTY_PRODUCT_METADATA_DRAFT
+  );
   // BUG-041 FIX: Track closing state to prevent race conditions
   const isClosingRef = useRef(false);
 
@@ -253,6 +271,8 @@ export function BatchDetailDrawer({
       toast.error(`Failed to update status: ${error.message}`);
     },
   });
+  const updateBatchMutation = trpc.inventory.updateBatch.useMutation();
+  const updateProductMutation = trpc.productCatalogue.update.useMutation();
 
   const { data, isLoading, error, refetch } = trpc.inventory.getById.useQuery(
     batchId as number,
@@ -260,6 +280,51 @@ export function BatchDetailDrawer({
       enabled: !!batchId && open,
     }
   );
+  const batch = data?.batch;
+  const hasLinkedProduct =
+    batch?.productId !== null && batch?.productId !== undefined;
+  const {
+    data: linkedProduct,
+    error: linkedProductError,
+    refetch: refetchLinkedProduct,
+  } = trpc.productCatalogue.getById.useQuery(
+    { id: batch?.productId ?? 0 },
+    {
+      enabled: open && hasLinkedProduct,
+    }
+  );
+  const { data: strains = [] } = trpc.productCatalogue.getStrains.useQuery(
+    undefined,
+    {
+      enabled: open && hasLinkedProduct,
+    }
+  );
+  const { data: grades = [] } = trpc.settings.grades.list.useQuery(undefined, {
+    enabled: open,
+  });
+
+  useEffect(() => {
+    if (!showProductEdit) {
+      return;
+    }
+
+    setProductDraft({
+      nameCanonical: linkedProduct?.nameCanonical ?? "",
+      category: linkedProduct?.category ?? "",
+      strainId:
+        linkedProduct?.strainId !== null &&
+        linkedProduct?.strainId !== undefined
+          ? String(linkedProduct.strainId)
+          : "none",
+      grade: batch?.grade ?? "",
+    });
+  }, [
+    batch?.grade,
+    linkedProduct?.category,
+    linkedProduct?.nameCanonical,
+    linkedProduct?.strainId,
+    showProductEdit,
+  ]);
 
   /**
    * BUG-041 FIX: Safe close handler that prevents crashes during drawer close.
@@ -281,8 +346,10 @@ export function BatchDetailDrawer({
         // REDHAT-FIX-001: Reset action modal states added in BUG-041 fix
         setShowQtyAdjust(false);
         setShowStatusChange(false);
+        setShowProductEdit(false);
         setNewStatus("");
         setStatusReason("");
+        setProductDraft(EMPTY_PRODUCT_METADATA_DRAFT);
         // Defer close to next animation frame to prevent render crashes
         window.requestAnimationFrame(() => {
           try {
@@ -323,12 +390,107 @@ export function BatchDetailDrawer({
     );
   }
 
-  const batch = data?.batch;
-
   // BUG-041 FIX: Defensive array access with logging for unexpected states
   const locations = Array.isArray(data?.locations) ? data.locations : [];
   const auditLogs = Array.isArray(data?.auditLogs) ? data.auditLogs : [];
   const availableQty = data?.availableQty || 0;
+  const selectedStrain = strains.find(
+    strain => strain.id === linkedProduct?.strainId
+  );
+  const isSavingProductMetadata =
+    updateProductMutation.isPending || updateBatchMutation.isPending;
+  const canEditProductMetadata = Boolean(hasLinkedProduct && linkedProduct);
+
+  const handleSaveProductMetadata = async () => {
+    if (!batch) {
+      toast.error("Batch not found");
+      return;
+    }
+
+    if (!hasLinkedProduct) {
+      toast.error(
+        "This batch is not linked to a product. Product metadata cannot be edited from the drawer."
+      );
+      return;
+    }
+
+    if (!linkedProduct) {
+      toast.error("Linked product details are still loading");
+      return;
+    }
+
+    const productId = batch.productId;
+    if (productId === null || productId === undefined) {
+      toast.error(
+        "This batch is not linked to a product. Product metadata cannot be edited from the drawer."
+      );
+      return;
+    }
+
+    const trimmedName = productDraft.nameCanonical.trim();
+    const trimmedCategory = productDraft.category.trim();
+    const normalizedGrade = productDraft.grade.trim();
+
+    if (!trimmedName || !trimmedCategory) {
+      toast.error("Product name and category are required");
+      return;
+    }
+
+    const nextStrainId =
+      productDraft.strainId === "none" ? null : Number(productDraft.strainId);
+    const previousGrade = batch.grade?.trim() ?? "";
+    const productUpdates: Partial<{
+      nameCanonical: string;
+      category: string;
+      strainId: number | null;
+    }> = {};
+
+    if (trimmedName !== linkedProduct.nameCanonical) {
+      productUpdates.nameCanonical = trimmedName;
+    }
+    if (trimmedCategory !== linkedProduct.category) {
+      productUpdates.category = trimmedCategory;
+    }
+    if ((linkedProduct.strainId ?? null) !== nextStrainId) {
+      productUpdates.strainId = nextStrainId;
+    }
+
+    const shouldUpdateProduct = Object.keys(productUpdates).length > 0;
+    const shouldUpdateGrade = normalizedGrade !== previousGrade;
+
+    if (!shouldUpdateProduct && !shouldUpdateGrade) {
+      setShowProductEdit(false);
+      return;
+    }
+
+    try {
+      if (shouldUpdateProduct) {
+        await updateProductMutation.mutateAsync({
+          id: productId,
+          data: productUpdates,
+        });
+      }
+
+      if (shouldUpdateGrade) {
+        await updateBatchMutation.mutateAsync({
+          id: batch.id,
+          version: batch.version,
+          grade: normalizedGrade || null,
+          reason: "Updated product metadata from batch drawer",
+        });
+      }
+
+      await Promise.all([refetch(), refetchLinkedProduct()]);
+      toast.success("Product metadata updated");
+      setShowProductEdit(false);
+    } catch (saveError) {
+      const message =
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to update product metadata";
+      toast.error(message);
+    }
+  };
 
   // BUG-041: Log warnings for undefined arrays (helps track data issues)
   if (data && !Array.isArray(data.locations)) {
@@ -446,8 +608,39 @@ export function BatchDetailDrawer({
 
             {/* Product Details */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Product Details</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-lg">Product Details</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProductEdit(true)}
+                  disabled={!canEditProductMetadata}
+                >
+                  Edit Product Metadata
+                </Button>
+              </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Product Name</p>
+                  <p className="font-medium">
+                    {linkedProduct?.nameCanonical ||
+                      "Linked product unavailable"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Category</p>
+                  <p className="font-medium">
+                    {linkedProduct?.category || "Linked product unavailable"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Strain</p>
+                  <p className="font-medium">
+                    {selectedStrain?.name ||
+                      linkedProduct?.strainName ||
+                      "Unassigned"}
+                  </p>
+                </div>
                 <div>
                   <p className="text-muted-foreground">Grade</p>
                   <p className="font-medium">{batch.grade || "N/A"}</p>
@@ -457,6 +650,17 @@ export function BatchDetailDrawer({
                   <p className="font-medium">{batch.isSample ? "Yes" : "No"}</p>
                 </div>
               </div>
+              {!hasLinkedProduct && (
+                <Card className="border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  This batch is missing a linked product. Product metadata
+                  editing is unavailable until the batch is re-linked.
+                </Card>
+              )}
+              {linkedProductError && (
+                <Card className="border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                  Unable to load the linked product record for editing.
+                </Card>
+              )}
               {/* TODO: Re-enable when API includes product relation
               {batch.product?.strainId && (
                 <div className="pt-2">
@@ -755,6 +959,110 @@ export function BatchDetailDrawer({
           });
         }}
       />
+
+      <Dialog open={showProductEdit} onOpenChange={setShowProductEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product Metadata</DialogTitle>
+            <DialogDescription>
+              Update the linked product fields and this batch&apos;s grade from
+              the inventory drawer.
+            </DialogDescription>
+          </DialogHeader>
+          {!hasLinkedProduct ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              This batch does not have a linked product record, so product
+              metadata cannot be edited here.
+            </div>
+          ) : !linkedProduct ? (
+            <div className="py-4 text-sm text-muted-foreground">
+              Loading linked product details...
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="product-name">Product Name</Label>
+                <Input
+                  id="product-name"
+                  value={productDraft.nameCanonical}
+                  onChange={event =>
+                    setProductDraft(current => ({
+                      ...current,
+                      nameCanonical: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="product-category">Category</Label>
+                <Input
+                  id="product-category"
+                  value={productDraft.category}
+                  onChange={event =>
+                    setProductDraft(current => ({
+                      ...current,
+                      category: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="product-strain">Strain</Label>
+                <select
+                  id="product-strain"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={productDraft.strainId}
+                  onChange={event =>
+                    setProductDraft(current => ({
+                      ...current,
+                      strainId: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="none">No strain</option>
+                  {strains.map(strain => (
+                    <option key={strain.id} value={String(strain.id)}>
+                      {strain.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="batch-grade">Grade</Label>
+                <select
+                  id="batch-grade"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={productDraft.grade}
+                  onChange={event =>
+                    setProductDraft(current => ({
+                      ...current,
+                      grade: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">Unassigned</option>
+                  {grades.map(grade => (
+                    <option key={grade.id} value={grade.name}>
+                      {grade.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProductEdit(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleSaveProductMetadata()}
+              disabled={!canEditProductMetadata || isSavingProductMetadata}
+            >
+              {isSavingProductMetadata ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Status Change Dialog */}
       <Dialog open={showStatusChange} onOpenChange={setShowStatusChange}>

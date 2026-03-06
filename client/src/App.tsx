@@ -330,8 +330,8 @@ function Router() {
                   path="/products"
                   component={RedirectWithTab(
                     "/products",
-                    "/inventory",
-                    "products"
+                    "/settings",
+                    "product-metadata"
                   )}
                 />
                 {/* Accounting workspace — all sub-pages as tabs */}

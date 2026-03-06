@@ -60,6 +60,10 @@ vi.mock("@/components/settings/TagManagementSettings", () => ({
   TagManagementSettings: () => <div>Mock Tags Section</div>,
 }));
 
+vi.mock("@/components/work-surface/ProductsWorkSurface", () => ({
+  default: () => <div>Mock Product Metadata Section</div>,
+}));
+
 describe("Settings", () => {
   beforeEach(() => {
     mockSearch = "";
@@ -101,5 +105,15 @@ describe("Settings", () => {
     await waitFor(() => {
       expect(mockSetLocation).toHaveBeenCalledWith("/account");
     });
+  });
+
+  it("renders product metadata under master data", () => {
+    mockSearch = "?tab=product-metadata";
+
+    render(<Settings />);
+
+    expect(
+      screen.getByText("Mock Product Metadata Section")
+    ).toBeInTheDocument();
   });
 });

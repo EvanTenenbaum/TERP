@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TagManagementSettings } from "@/components/settings/TagManagementSettings";
 import { useLocation, useSearch } from "wouter";
+import ProductsWorkSurface from "@/components/work-surface/ProductsWorkSurface";
 
 type SettingsGroupId =
   | "access-control"
@@ -66,6 +67,7 @@ type SettingsSectionId =
   | "user-roles"
   | "roles"
   | "permissions"
+  | "product-metadata"
   | "locations"
   | "categories"
   | "grades"
@@ -115,6 +117,11 @@ const SETTINGS_SECTIONS: SettingsSectionConfig[] = [
   { id: "user-roles", label: "User Roles", group: "access-control" },
   { id: "roles", label: "Roles", group: "access-control" },
   { id: "permissions", label: "Permissions", group: "access-control" },
+  {
+    id: "product-metadata",
+    label: "Product Metadata",
+    group: "master-data",
+  },
   { id: "locations", label: "Locations", group: "master-data" },
   { id: "categories", label: "Categories", group: "master-data" },
   { id: "grades", label: "Grades", group: "master-data" },
@@ -318,6 +325,13 @@ export default function Settings() {
               className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
             >
               <PermissionAssignment />
+            </TabsContent>
+
+            <TabsContent
+              value="product-metadata"
+              className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
+            >
+              <ProductsWorkSurface />
             </TabsContent>
 
             <TabsContent

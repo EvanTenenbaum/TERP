@@ -1479,6 +1479,7 @@ export const inventoryRouter = router({
         id: z.number(),
         version: z.number().optional(), // ST-026: Optional for backward compatibility
         ticket: z.number().min(0).optional(), // unitCogs value
+        grade: z.string().trim().max(100).nullable().optional(),
         notes: z.string().nullable().optional(),
         reason: z.string(),
       })
@@ -1512,6 +1513,10 @@ export const inventoryRouter = router({
           : {};
         currentMetadata.notes = input.notes;
         updates.metadata = JSON.stringify(currentMetadata);
+      }
+
+      if (input.grade !== undefined) {
+        updates.grade = input.grade?.trim() || null;
       }
 
       // ST-026: Increment version if version checking was used
