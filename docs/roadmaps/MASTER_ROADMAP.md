@@ -7338,3 +7338,158 @@ npx drizzle-kit push
 - [ ] Validation evidence for schema alignment.
 - [ ] Roadmap completion details recorded.
 - [ ] Deployment verification documented.
+
+---
+
+## 🔧 Retire Direct Intake + Streamline Procurement Terminology
+
+**Added:** 2026-03-06
+**Status:** NOT STARTED
+**Priority:** P1 — Blocks production readiness (conflicting UI flows confuse users)
+**Autonomy:** STRICT (except Task 3 label changes = SAFE, Task 4 = SAFE)
+
+> **Business Decision:** All intake must be preceded by a Purchase Order. Direct Intake (no-PO receiving) is no longer a valid business flow. The Terminology Bible (`docs/terminology/TERMINOLOGY_BIBLE.md`) defines correct terms — the UI doesn't reflect them yet.
+
+### Task Sequencing
+
+```
+Task 3 (SAFE) ─┐
+Task 4 (SAFE) ─┤─→ Task 1 (STRICT) → Task 2 (STRICT)
+   (parallel)       (sequential — 1 blocks 2)
+```
+
+### Overview
+
+| Task | ID | Description | Priority | Status | Estimate | Autonomy | Blocks |
+|------|----|-------------|----------|--------|----------|----------|--------|
+| 1 | BUG-140 / TER-563 | Fix Photo Upload in PO Intake (ProductIntakeSlicePage) | P0 | NOT STARTED | 4h | STRICT | DEPR-003 |
+| 2 | DEPR-003 / TER-566 | Retire Direct Intake flow + delete DirectIntakeWorkSurface | P1 | NOT STARTED | 4h | STRICT | None |
+| 3 | FEAT-026 / TER-564 | Fix Procurement Tab Naming & Terminology | P1 | NOT STARTED | 4h | SAFE/STRICT | None |
+| 4 | FEAT-027 / TER-565 | Remove Redundant CommandStrip Navigation | P2 | NOT STARTED | 2h | SAFE | None |
+
+---
+
+### BUG-140: Fix Photo Upload in PO Intake
+
+**Type:** Bug (data loss risk)
+**Status:** NOT STARTED
+**Priority:** P0
+**Estimate:** 4h
+**Module:** `client/src/components/uiux-slice/ProductIntakeSlicePage.tsx`
+**Dependencies:** None
+**Blocks:** DEPR-003
+
+**Problem / Goal:**
+ProductIntakeSlicePage has a photo attachment UI and even imports `trpc.inventory.uploadMedia`, but photos are stored only in the draft (localStorage) and are never actually uploaded to storage. DirectIntakeWorkSurface correctly auto-uploads photos to storage before submission, with rollback on failure. If we retire Direct Intake before fixing this, intake photo evidence is lost entirely.
+
+**What needs to happen:**
+- Wire photo upload in ProductIntakeSlicePage to call `trpc.inventory.uploadMedia` (same mutation Direct Intake already uses)
+- Photos should upload when attached, with cleanup (`trpc.inventory.deleteMedia`) if the intake is cancelled or fails
+- Match the behavior in DirectIntakeWorkSurface (upload before submit, rollback on failure)
+
+**Key Reference:** DirectIntakeWorkSurface.tsx line ~972 for the working upload pattern.
+
+**Acceptance Criteria:**
+- [ ] Photos attached in ProductIntakeSlicePage are uploaded to storage via `trpc.inventory.uploadMedia`
+- [ ] Failed/cancelled intakes trigger cleanup via `trpc.inventory.deleteMedia`
+- [ ] Upload-before-submit pattern matches DirectIntakeWorkSurface behavior
+- [ ] Photo URLs persist after page refresh (not just localStorage)
+- [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` pass
+
+---
+
+### DEPR-003: Retire Direct Intake Flow
+
+**Type:** Deprecation / Cleanup
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 4h
+**Module:** Multiple (see file list)
+**Dependencies:** BUG-140 (photo upload must be fixed first)
+
+**Problem / Goal:**
+Direct Intake (receiving without a PO) is no longer a valid business flow. All intake must be preceded by a Purchase Order. Remove the flow and clean up all references.
+
+**What needs to happen:**
+1. Remove the "PO Intake" tab (value: `receiving`) from `ProcurementWorkspacePage.tsx`
+2. Delete `client/src/components/work-surface/DirectIntakeWorkSurface.tsx`
+3. Delete or archive the server-side `inventory.intake` router procedure (exclusively called from DirectIntakeWorkSurface, no other consumers)
+4. Remove `DirectIntakeWorkSurface` export from `client/src/components/work-surface/index.ts` (line 21)
+5. Remove references in `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts` (lines 44, 90, 188, 224-225, 261)
+6. Remove references in `scripts/validate-work-surface-sprint2.ts` (line 288)
+7. Verify no remaining imports reference the deleted component
+
+**Do NOT touch:** ProductIntakeSlicePage, PurchaseOrdersWorkSurface, or any PO-related routers.
+
+**Supersedes:** BUG-112 (Direct Intake Form Not Rendering) — no longer relevant since the flow is being retired.
+
+**Acceptance Criteria:**
+- [ ] "PO Intake" tab removed from procurement workspace
+- [ ] DirectIntakeWorkSurface.tsx deleted
+- [ ] Server-side `inventory.intake` procedure removed
+- [ ] All imports/exports/feature flags cleaned up
+- [ ] No TypeScript errors (`pnpm check`)
+- [ ] No broken imports (`pnpm build`)
+- [ ] ProductIntakeSlicePage and PO flows unaffected
+
+---
+
+### FEAT-026: Fix Procurement Tab Naming & Terminology
+
+**Type:** Feature (UI terminology alignment)
+**Status:** NOT STARTED
+**Priority:** P1
+**Estimate:** 4h
+**Autonomy:** SAFE for label changes, STRICT for payment terms constant
+**Module:** Multiple (see file list)
+**Dependencies:** None (can run parallel to BUG-140)
+
+**Problem / Goal:**
+Tab labels in the Procurement workspace don't match what the tabs actually do, violating the Terminology Bible. Payment terms are defined inconsistently between PO creation and intake forms.
+
+**What needs to happen:**
+
+**In `client/src/pages/ProcurementWorkspacePage.tsx`:**
+- Rename tab label "Product Intake" → "PO Intake" (this IS the PO-linked flow)
+- Fix tab code value `receiving` → `direct-intake` on the Direct Intake tab (deprecated term leaking into URLs — will be removed by DEPR-003 anyway, but fix for interim)
+- Update workspace description: currently says "Purchase Order to Product Intake to Intake corrections" — update to accurately describe the workflow
+- Update meta operational spine: currently "Purchase Order -> Product Intake -> Intake -> Corrections" — fix to match real tab names
+
+**In `client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx`:**
+- Payment terms options are "Net 15", "Net 30", "Net 45", "Net 60", "Due on Receipt", "COD" — reconcile with intake payment terms (COD, NET_7, NET_15, NET_30, CONSIGNMENT, PARTIAL)
+- Create a shared constant so both forms use the same options and labels
+
+**In `client/src/components/inventory/PurchaseModal.tsx`:**
+- Dialog title says "New Product Intake" (line 337) but submit button says "Create Purchase" (line 755) — align to "Record Intake" per Terminology Bible Policy 4
+
+**Acceptance Criteria:**
+- [ ] Tab labels match Terminology Bible definitions
+- [ ] Payment terms shared constant created and used by both PO and intake forms
+- [ ] PurchaseModal title and submit button aligned
+- [ ] Workspace description and meta spine updated
+- [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` pass
+
+---
+
+### FEAT-027: Remove Redundant CommandStrip Navigation
+
+**Type:** Feature (UI cleanup)
+**Status:** NOT STARTED
+**Priority:** P2
+**Estimate:** 2h
+**Autonomy:** SAFE
+**Module:** `client/src/pages/ProcurementWorkspacePage.tsx`
+**Dependencies:** None (can run parallel to BUG-140)
+
+**Problem / Goal:**
+ProcurementWorkspacePage renders both a tab bar AND a commandStrip with `<Button>` elements that switch to the same tabs (lines 55-86). This duplicates navigation and wastes prime UI real estate.
+
+**What needs to happen:**
+- Remove the tab-switching buttons from the commandStrip slot
+- CommandStrip should either be empty or used for actual action buttons (e.g., "New PO") rather than tab-switchers
+
+**Acceptance Criteria:**
+- [ ] CommandStrip no longer contains tab-switching buttons
+- [ ] Tab bar remains the sole navigation mechanism
+- [ ] No functionality lost (all tabs still accessible via tab bar)
+- [ ] `pnpm check && pnpm lint && pnpm test && pnpm build` pass
