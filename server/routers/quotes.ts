@@ -288,11 +288,11 @@ export const quotesRouter = router({
       const client = result.clients;
 
       // SM-001: Validate quote status transition using state machine
-      const currentStatus = quote.quoteStatus || "DRAFT";
+      const currentStatus = quote.quoteStatus || "UNSENT";
       if (!isValidStatusTransition("quote", currentStatus, "SENT")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Cannot send quote: invalid transition from ${currentStatus} to SENT. Quote may have already been sent, accepted, rejected, or converted.`,
+          message: `Cannot send quote: invalid transition from ${currentStatus} to SENT. Quote may have already been sent, converted, rejected, or expired.`,
         });
       }
 
@@ -525,7 +525,7 @@ export const quotesRouter = router({
       }
 
       // SM-001: Validate quote status transition using state machine
-      const currentStatus = quote.quoteStatus || "DRAFT";
+      const currentStatus = quote.quoteStatus || "UNSENT";
       if (!isValidStatusTransition("quote", currentStatus, "REJECTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
