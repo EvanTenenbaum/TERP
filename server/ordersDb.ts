@@ -307,7 +307,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       totalMargin: totalMargin.toString(),
       avgMarginPercent: avgMarginPercent.toString(),
       validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
-      quoteStatus: input.orderType === "QUOTE" ? "DRAFT" : undefined,
+      quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
       paymentTerms: input.paymentTerms || "NET_30",
       cashPayment: input.cashPayment?.toString() || "0",
       dueDate: dueDate,
@@ -566,9 +566,9 @@ export async function getAllOrders(filters?: {
   if (normalizedQuoteStatus) {
     // Type assertion needed because filter input is string but schema expects enum
     const validQuoteStatuses = [
-      "DRAFT",
+      "UNSENT",
       "SENT",
-      "ACCEPTED",
+      "VIEWED",
       "REJECTED",
       "EXPIRED",
       "CONVERTED",
@@ -952,11 +952,11 @@ export async function convertQuoteToSale(
     }
 
     // SM-001: Validate quote status allows conversion
-    const currentStatus = quote.quoteStatus || "DRAFT";
+    const currentStatus = quote.quoteStatus || "UNSENT";
     if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
       throw new Error(
         `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +
-          `Only ACCEPTED quotes can be converted. Current status: ${currentStatus}`
+          `Quote must be in UNSENT, SENT, or VIEWED status to convert. Current status: ${currentStatus}`
       );
     }
 
@@ -1643,9 +1643,9 @@ const SALE_STATUS_TRANSITIONS: Record<string, string[]> = {
  * TERP-0016: Business logic guardrails for orders
  */
 const QUOTE_STATUS_TRANSITIONS: Record<string, string[]> = {
-  DRAFT: ["SENT", "ACCEPTED", "REJECTED", "EXPIRED"],
-  SENT: ["ACCEPTED", "REJECTED", "EXPIRED"],
-  ACCEPTED: ["CONVERTED"], // Only accepted quotes can be converted
+  UNSENT: ["SENT", "CONVERTED", "REJECTED", "EXPIRED"],
+  SENT: ["VIEWED", "CONVERTED", "REJECTED", "EXPIRED"],
+  VIEWED: ["CONVERTED", "REJECTED", "EXPIRED"],
   REJECTED: [], // Terminal state
   EXPIRED: [], // Terminal state
   CONVERTED: [], // Terminal state

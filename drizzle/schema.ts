@@ -2682,10 +2682,9 @@ export const orderTypeEnum = mysqlEnum("orderType", ["QUOTE", "SALE"]);
  * Lifecycle states for quotes
  */
 export const quoteStatusEnum = mysqlEnum("quoteStatus", [
-  "DRAFT",
+  "UNSENT",
   "SENT",
   "VIEWED",
-  "ACCEPTED",
   "REJECTED",
   "EXPIRED",
   "CONVERTED",

@@ -12,26 +12,32 @@ import {
 
 describe("Quote Status State Machine (SM-001)", () => {
   describe("isValidStatusTransition for quotes", () => {
-    // Valid transitions from DRAFT
-    it("should allow DRAFT -> SENT", () => {
-      expect(isValidStatusTransition("quote", "DRAFT", "SENT")).toBe(true);
+    // Valid transitions from UNSENT
+    it("should allow UNSENT -> SENT", () => {
+      expect(isValidStatusTransition("quote", "UNSENT", "SENT")).toBe(true);
     });
 
-    it("should allow DRAFT -> ACCEPTED", () => {
-      expect(isValidStatusTransition("quote", "DRAFT", "ACCEPTED")).toBe(true);
+    it("should allow UNSENT -> CONVERTED", () => {
+      expect(isValidStatusTransition("quote", "UNSENT", "CONVERTED")).toBe(
+        true
+      );
     });
 
-    it("should allow DRAFT -> REJECTED", () => {
-      expect(isValidStatusTransition("quote", "DRAFT", "REJECTED")).toBe(true);
+    it("should allow UNSENT -> REJECTED", () => {
+      expect(isValidStatusTransition("quote", "UNSENT", "REJECTED")).toBe(true);
     });
 
-    it("should allow DRAFT -> EXPIRED", () => {
-      expect(isValidStatusTransition("quote", "DRAFT", "EXPIRED")).toBe(true);
+    it("should allow UNSENT -> EXPIRED", () => {
+      expect(isValidStatusTransition("quote", "UNSENT", "EXPIRED")).toBe(true);
     });
 
     // Valid transitions from SENT
-    it("should allow SENT -> ACCEPTED", () => {
-      expect(isValidStatusTransition("quote", "SENT", "ACCEPTED")).toBe(true);
+    it("should allow SENT -> VIEWED", () => {
+      expect(isValidStatusTransition("quote", "SENT", "VIEWED")).toBe(true);
+    });
+
+    it("should allow SENT -> CONVERTED", () => {
+      expect(isValidStatusTransition("quote", "SENT", "CONVERTED")).toBe(true);
     });
 
     it("should allow SENT -> REJECTED", () => {
@@ -42,53 +48,51 @@ describe("Quote Status State Machine (SM-001)", () => {
       expect(isValidStatusTransition("quote", "SENT", "EXPIRED")).toBe(true);
     });
 
-    // Valid transitions from ACCEPTED
-    it("should allow ACCEPTED -> CONVERTED", () => {
-      expect(isValidStatusTransition("quote", "ACCEPTED", "CONVERTED")).toBe(
+    // Valid transitions from VIEWED
+    it("should allow VIEWED -> CONVERTED", () => {
+      expect(isValidStatusTransition("quote", "VIEWED", "CONVERTED")).toBe(
         true
       );
     });
 
+    it("should allow VIEWED -> REJECTED", () => {
+      expect(isValidStatusTransition("quote", "VIEWED", "REJECTED")).toBe(true);
+    });
+
+    it("should allow VIEWED -> EXPIRED", () => {
+      expect(isValidStatusTransition("quote", "VIEWED", "EXPIRED")).toBe(true);
+    });
+
     // Invalid transitions
-    it("should NOT allow SENT -> DRAFT (backwards)", () => {
-      expect(isValidStatusTransition("quote", "SENT", "DRAFT")).toBe(false);
+    it("should NOT allow SENT -> UNSENT (backwards)", () => {
+      expect(isValidStatusTransition("quote", "SENT", "UNSENT")).toBe(false);
     });
 
-    it("should NOT allow ACCEPTED -> SENT (backwards)", () => {
-      expect(isValidStatusTransition("quote", "ACCEPTED", "SENT")).toBe(false);
-    });
-
-    it("should NOT allow DRAFT -> CONVERTED (skip acceptance)", () => {
-      expect(isValidStatusTransition("quote", "DRAFT", "CONVERTED")).toBe(
-        false
-      );
-    });
-
-    it("should NOT allow SENT -> CONVERTED (skip acceptance)", () => {
-      expect(isValidStatusTransition("quote", "SENT", "CONVERTED")).toBe(false);
+    it("should NOT allow VIEWED -> SENT (backwards)", () => {
+      expect(isValidStatusTransition("quote", "VIEWED", "SENT")).toBe(false);
     });
 
     // Terminal states
     it("should NOT allow transitions from REJECTED", () => {
-      expect(isValidStatusTransition("quote", "REJECTED", "DRAFT")).toBe(false);
+      expect(isValidStatusTransition("quote", "REJECTED", "UNSENT")).toBe(
+        false
+      );
       expect(isValidStatusTransition("quote", "REJECTED", "SENT")).toBe(false);
-      expect(isValidStatusTransition("quote", "REJECTED", "ACCEPTED")).toBe(
+      expect(isValidStatusTransition("quote", "REJECTED", "CONVERTED")).toBe(
         false
       );
     });
 
     it("should NOT allow transitions from EXPIRED", () => {
-      expect(isValidStatusTransition("quote", "EXPIRED", "DRAFT")).toBe(false);
+      expect(isValidStatusTransition("quote", "EXPIRED", "UNSENT")).toBe(false);
       expect(isValidStatusTransition("quote", "EXPIRED", "SENT")).toBe(false);
     });
 
     it("should NOT allow transitions from CONVERTED", () => {
-      expect(isValidStatusTransition("quote", "CONVERTED", "ACCEPTED")).toBe(
+      expect(isValidStatusTransition("quote", "CONVERTED", "UNSENT")).toBe(
         false
       );
-      expect(isValidStatusTransition("quote", "CONVERTED", "DRAFT")).toBe(
-        false
-      );
+      expect(isValidStatusTransition("quote", "CONVERTED", "SENT")).toBe(false);
     });
 
     // Unknown status

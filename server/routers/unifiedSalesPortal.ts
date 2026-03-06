@@ -505,9 +505,9 @@ export const unifiedSalesPortalRouter = router({
         );
       }
 
-      if (quote.quoteStatus === "DRAFT") {
+      if (quote.quoteStatus === "UNSENT") {
         warnings.push(
-          "Quote is still in DRAFT status and has not been formally accepted by the client."
+          "Quote is still in UNSENT status and has not been sent to the client."
         );
       }
 
@@ -581,7 +581,7 @@ export const unifiedSalesPortalRouter = router({
           .values({
             orderNumber,
             orderType: "QUOTE",
-            quoteStatus: "DRAFT",
+            quoteStatus: "UNSENT",
             clientId: salesSheet.clientId,
             items: JSON.stringify(salesSheetItems), // Copy items from sales sheet
             subtotal: String(subtotal),

@@ -52,15 +52,7 @@ const createQuoteSchema = z.object({
 
 const listQuotesSchema = z.object({
   status: z
-    .enum([
-      "DRAFT",
-      "SENT",
-      "VIEWED",
-      "ACCEPTED",
-      "REJECTED",
-      "EXPIRED",
-      "CONVERTED",
-    ])
+    .enum(["UNSENT", "SENT", "VIEWED", "REJECTED", "EXPIRED", "CONVERTED"])
     .optional(),
   clientId: z.number().optional(),
   limit: z.number().min(1).max(100).default(50),
@@ -475,11 +467,11 @@ export const quotesRouter = router({
       }
 
       // SM-001: Validate quote status transition using state machine
-      const currentStatus = quote.quoteStatus || "DRAFT";
-      if (!isValidStatusTransition("quote", currentStatus, "ACCEPTED")) {
+      const currentStatus = quote.quoteStatus || "UNSENT";
+      if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Cannot accept quote: invalid transition from ${currentStatus} to ACCEPTED. Quote may have already been accepted, rejected, converted, or expired.`,
+          message: `Cannot accept quote: invalid transition from ${currentStatus} to CONVERTED. Quote may have already been converted, rejected, or expired.`,
         });
       }
 
@@ -496,10 +488,13 @@ export const quotesRouter = router({
 
       await db
         .update(orders)
-        .set({ quoteStatus: "ACCEPTED" })
+        .set({ quoteStatus: "CONVERTED" })
         .where(eq(orders.id, input.id));
 
-      logger.info({ msg: "[Quotes] Quote accepted", quoteId: input.id });
+      logger.info({
+        msg: "[Quotes] Quote accepted/converted",
+        quoteId: input.id,
+      });
 
       return { success: true, quoteId: input.id };
     }),

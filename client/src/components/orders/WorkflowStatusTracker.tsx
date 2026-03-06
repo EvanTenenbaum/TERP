@@ -2,7 +2,7 @@
  * WorkflowStatusTracker Component
  * TER-212: Canonical state machine visualization for Quote and Sale workflows
  *
- * Quote lifecycle:  Draft → Sent → Accepted → Converted (to Sale)
+ * Quote lifecycle:  Unsent → Sent → Viewed → Converted (to Sale)
  * Sale lifecycle:   Pending → Partial/Paid (payment) + Pending → Packed → Shipped (fulfillment)
  */
 
@@ -27,10 +27,9 @@ import {
 // ============================================================================
 
 type QuoteStatus =
-  | "DRAFT"
+  | "UNSENT"
   | "SENT"
   | "VIEWED"
-  | "ACCEPTED"
   | "REJECTED"
   | "EXPIRED"
   | "CONVERTED";
@@ -43,10 +42,9 @@ type FulfillmentStatus =
 
 /** TER-212: Canonical state transition map — mirrors server/ordersDb.ts */
 export const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
-  DRAFT: ["SENT", "ACCEPTED", "REJECTED", "EXPIRED"],
-  SENT: ["VIEWED", "ACCEPTED", "REJECTED", "EXPIRED"],
-  VIEWED: ["ACCEPTED", "REJECTED", "EXPIRED"],
-  ACCEPTED: ["CONVERTED"],
+  UNSENT: ["SENT", "CONVERTED", "REJECTED", "EXPIRED"],
+  SENT: ["VIEWED", "CONVERTED", "REJECTED", "EXPIRED"],
+  VIEWED: ["CONVERTED", "REJECTED", "EXPIRED"],
   REJECTED: [],
   EXPIRED: [],
   CONVERTED: [],
@@ -81,16 +79,11 @@ interface StepConfig {
 }
 
 const QUOTE_STEPS: StepConfig[] = [
-  { key: "DRAFT", label: "Draft", icon: <FileText className="h-4 w-4" /> },
+  { key: "UNSENT", label: "Unsent", icon: <FileText className="h-4 w-4" /> },
   { key: "SENT", label: "Sent", icon: <Send className="h-4 w-4" /> },
   {
     key: "VIEWED",
     label: "Viewed",
-    icon: <CheckCircle2 className="h-4 w-4" />,
-  },
-  {
-    key: "ACCEPTED",
-    label: "Accepted",
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
   {
@@ -189,7 +182,7 @@ export function QuoteWorkflowTracker({ status, className }: QuoteTrackerProps) {
     const terminalStep = QUOTE_TERMINAL_STEPS[status];
     // Show the happy path steps up to where it diverged, then the terminal step
     const completedUpTo =
-      status === "REJECTED" || status === "EXPIRED" ? "SENT" : "DRAFT";
+      status === "REJECTED" || status === "EXPIRED" ? "SENT" : "UNSENT";
     const happyIndex = QUOTE_STEPS.findIndex(s => s.key === completedUpTo);
 
     return (
