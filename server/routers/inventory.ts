@@ -24,6 +24,11 @@ import { eq, sql, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { env } from "../_core/env";
 import {
+  INVENTORY_ADJUSTMENT_REASONS,
+  formatInventoryAdjustmentReason,
+  type InventoryAdjustmentReason,
+} from "@shared/inventoryAdjustmentReasons";
+import {
   buildDemoMediaUrl,
   createDemoMediaBlob,
   deleteDemoMediaBlob,
@@ -96,6 +101,45 @@ const optionalDateInput = z
     z.coerce.date().optional()
   )
   .optional();
+
+const quantityAdjustmentInputSchema = z
+  .object({
+    id: z.number(),
+    field: z.enum([
+      "onHandQty",
+      "reservedQty",
+      "quarantineQty",
+      "holdQty",
+      "defectiveQty",
+    ]),
+    adjustment: z
+      .number()
+      .min(-1000000, "Adjustment too small")
+      .max(1000000, "Adjustment too large"),
+    adjustmentReason: z.enum(INVENTORY_ADJUSTMENT_REASONS).optional(),
+    notes: z.string().trim().max(500, "Notes too long").optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.field === "onHandQty" && !value.adjustmentReason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["adjustmentReason"],
+        message: "Adjustment reason is required for on-hand quantity changes",
+      });
+    }
+  });
+
+function buildQuantityAdjustmentAuditReason(input: {
+  adjustmentReason?: InventoryAdjustmentReason;
+  notes?: string;
+}): string {
+  const trimmedNotes = input.notes?.trim();
+  if (input.adjustmentReason) {
+    const reasonLabel = formatInventoryAdjustmentReason(input.adjustmentReason);
+    return trimmedNotes ? `${reasonLabel}: ${trimmedNotes}` : reasonLabel;
+  }
+  return trimmedNotes || "Quantity adjusted";
+}
 
 const enhancedInventoryInputSchema = z
   .object({
@@ -1294,30 +1338,12 @@ export const inventoryRouter = router({
   // This is a write operation that modifies inventory quantities
   adjustQty: protectedProcedure
     .use(requirePermission("inventory:update"))
-    .input(
-      z.object({
-        id: z.number(),
-        field: z.enum([
-          "onHandQty",
-          "reservedQty",
-          "quarantineQty",
-          "holdQty",
-          "defectiveQty",
-        ]),
-        // SEC-FIX: Add bounds validation to prevent overflow/precision issues
-        adjustment: z
-          .number()
-          .min(-1000000, "Adjustment too small")
-          .max(1000000, "Adjustment too large"),
-        reason: z
-          .string()
-          .min(1, "Reason is required")
-          .max(500, "Reason too long"),
-      })
-    )
+    .input(quantityAdjustmentInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+      const auditReason = buildQuantityAdjustmentAuditReason(input);
+      const trimmedNotes = input.notes?.trim();
 
       // TER-254: Wrap read-calculate-write in transaction with row-level lock
       const result = await db.transaction(async tx => {
@@ -1344,6 +1370,10 @@ export const inventoryRouter = router({
 
         const newQtyStr = inventoryUtils.formatQty(newQty);
         const before = inventoryUtils.createAuditSnapshot(batch);
+        const quantityChange =
+          input.adjustment > 0
+            ? `+${input.adjustment}`
+            : input.adjustment.toString();
 
         // Update within the locked transaction
         await tx
@@ -1386,14 +1416,23 @@ export const inventoryRouter = router({
           await tx.insert(inventoryMovements).values({
             batchId: input.id,
             inventoryMovementType: movementType,
-            quantityChange:
-              input.adjustment > 0
-                ? `+${input.adjustment}`
-                : input.adjustment.toString(),
+            quantityChange,
             quantityBefore: currentQty.toString(),
             quantityAfter: newQty.toString(),
             referenceType: "MANUAL_ADJUSTMENT",
-            notes: input.reason,
+            notes: auditReason,
+            performedBy: getAuthenticatedUserId(ctx),
+          });
+        } else if (input.field === "onHandQty") {
+          await tx.insert(inventoryMovements).values({
+            batchId: input.id,
+            inventoryMovementType: "ADJUSTMENT",
+            quantityChange,
+            quantityBefore: currentQty.toString(),
+            quantityAfter: newQty.toString(),
+            referenceType: "MANUAL_ADJUSTMENT",
+            adjustmentReason: input.adjustmentReason,
+            notes: trimmedNotes || null,
             performedBy: getAuthenticatedUserId(ctx),
           });
         }
@@ -1417,7 +1456,7 @@ export const inventoryRouter = router({
         after: inventoryUtils.createAuditSnapshot(
           result.after as unknown as Record<string, unknown>
         ),
-        reason: input.reason,
+        reason: auditReason,
       });
 
       return {

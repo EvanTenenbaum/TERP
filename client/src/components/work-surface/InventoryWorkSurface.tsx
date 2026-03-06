@@ -13,11 +13,11 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
+import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,10 @@ import { FilterChips } from "@/components/inventory/FilterChips";
 import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { SaveViewModal } from "@/components/inventory/SaveViewModal";
 import {
+  AdjustQuantityDialog,
+  type AdjustQuantityDialogValues,
+} from "@/components/AdjustQuantityDialog";
+import {
   AgingBadge,
   getAgingRowClass,
   type AgeBracket,
@@ -81,7 +85,6 @@ import {
   useExport,
   usePowersheetSelection,
   useUndo,
-  useValidationTiming,
 } from "../../hooks/work-surface";
 import {
   defaultFilters,
@@ -218,35 +221,6 @@ const ACTIONABLE_BATCH_STATUSES = BATCH_STATUSES.filter(
 ) as Array<{ value: InventoryBatchStatus; label: string }>;
 
 type BatchStatus = InventoryBatchStatus;
-
-const qtyAdjustmentSchema = z.object({
-  adjustment: z
-    .string()
-    .trim()
-    .min(
-      1,
-      "Field: Adjustment Amount. Rule: value is required. Fix: enter a whole-number adjustment before saving."
-    )
-    .refine(
-      value => !Number.isNaN(Number(value)),
-      "Field: Adjustment Amount. Rule: must be numeric. Fix: enter digits only (for example -5 or 12)."
-    )
-    .refine(
-      value => Number.isInteger(Number(value)),
-      "Field: Adjustment Amount. Rule: must be a whole number (step=1). Fix: remove decimals and enter an integer."
-    )
-    .refine(
-      value => Number(value) !== 0,
-      "Field: Adjustment Amount. Rule: cannot be zero. Fix: enter a positive or negative non-zero quantity."
-    ),
-  reason: z
-    .string()
-    .trim()
-    .min(
-      1,
-      "Field: Adjustment Reason. Rule: reason is required. Fix: describe why the quantity changed."
-    ),
-});
 
 // ============================================================================
 // HELPERS
@@ -587,8 +561,6 @@ export function InventoryWorkSurface() {
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-  const [qtyAdjustment, setQtyAdjustment] = useState("");
-  const [qtyReason, setQtyReason] = useState("");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editBatchId, setEditBatchId] = useState<number | null>(null);
   const [editRack, setEditRack] = useState("");
@@ -617,16 +589,6 @@ export function InventoryWorkSurface() {
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
   const undo = useUndo({ enableKeyboard: false });
-  const {
-    handleChange: handleQtyFieldChange,
-    handleBlur: handleQtyFieldBlur,
-    validateAll: validateQtyFields,
-    getFieldState: getQtyFieldState,
-    reset: resetQtyValidation,
-  } = useValidationTiming({
-    schema: qtyAdjustmentSchema,
-    initialValues: { adjustment: "", reason: "" },
-  });
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {
@@ -1198,9 +1160,6 @@ export function InventoryWorkSurface() {
       toast.success("Quantity adjusted");
       setSaved();
       setShowQtyAdjust(false);
-      setQtyAdjustment("");
-      setQtyReason("");
-      resetQtyValidation();
       setSuccessMessage("Inventory adjusted successfully.");
       refreshInventory();
     },
@@ -1349,70 +1308,66 @@ export function InventoryWorkSurface() {
   const handleAdjustQuantity = useCallback(
     (batchId: number) => {
       setSelectedBatchId(batchId);
-      setQtyAdjustment("");
-      setQtyReason("");
-      resetQtyValidation();
       setShowQtyAdjust(true);
     },
-    [resetQtyValidation, setSelectedBatchId]
+    [setSelectedBatchId]
   );
 
-  const handleSubmitAdjustQuantity = useCallback(() => {
-    const validation = validateQtyFields();
-    if (!validation.isValid) {
-      toast.error(validation.errors.adjustment || validation.errors.reason);
-      return;
-    }
-
-    const adjustment = Number.parseFloat(qtyAdjustment);
-    if (!selectedBatchId || Number.isNaN(adjustment) || adjustment === 0) {
-      toast.error("Enter a valid adjustment amount");
-      return;
-    }
-    const batchId = selectedBatchId;
-    const reason = qtyReason.trim();
-    const sku = selectedItem?.batch?.sku;
-
-    adjustQtyMutation.mutate(
-      {
-        id: batchId,
-        field: "onHandQty",
-        adjustment,
-        reason,
-      },
-      {
-        onSuccess: () => {
-          undo.registerAction({
-            description: `Adjusted quantity by ${adjustment} for ${sku || `batch ${batchId}`}`,
-            undo: async () => {
-              setSaving("Undoing quantity adjustment...");
-              await undoAdjustQtyMutation.mutateAsync({
-                id: batchId,
-                field: "onHandQty",
-                adjustment: -adjustment,
-                reason: `Undo quantity adjustment: ${reason}`,
-              });
-              await refreshInventory();
-              setSaved();
-            },
-            duration: 10000,
-          });
-        },
+  const handleSubmitAdjustQuantity = useCallback(
+    ({ adjustment, adjustmentReason, notes }: AdjustQuantityDialogValues) => {
+      if (!selectedBatchId || Number.isNaN(adjustment) || adjustment === 0) {
+        toast.error("Enter a valid adjustment amount");
+        return;
       }
-    );
-  }, [
-    validateQtyFields,
-    qtyAdjustment,
-    selectedBatchId,
-    qtyReason,
-    selectedItem,
-    adjustQtyMutation,
-    undo,
-    undoAdjustQtyMutation,
-    refreshInventory,
-    setSaved,
-    setSaving,
-  ]);
+
+      const batchId = selectedBatchId;
+      const sku = selectedItem?.batch?.sku;
+      const originalReasonLabel =
+        formatInventoryAdjustmentReason(adjustmentReason);
+
+      adjustQtyMutation.mutate(
+        {
+          id: batchId,
+          field: "onHandQty",
+          adjustment,
+          adjustmentReason,
+          notes,
+        },
+        {
+          onSuccess: () => {
+            undo.registerAction({
+              description: `Adjusted quantity by ${adjustment} for ${sku || `batch ${batchId}`}`,
+              undo: async () => {
+                setSaving("Undoing quantity adjustment...");
+                await undoAdjustQtyMutation.mutateAsync({
+                  id: batchId,
+                  field: "onHandQty",
+                  adjustment: -adjustment,
+                  adjustmentReason: "OTHER",
+                  notes: notes
+                    ? `Undo quantity adjustment (${originalReasonLabel}): ${notes}`
+                    : `Undo quantity adjustment (${originalReasonLabel})`,
+                });
+                await refreshInventory();
+                setSaved();
+              },
+              duration: 10000,
+            });
+          },
+        }
+      );
+    },
+    [
+      selectedBatchId,
+      selectedItem,
+      adjustQtyMutation,
+      undo,
+      undoAdjustQtyMutation,
+      refreshInventory,
+      setSaved,
+      setSaving,
+    ]
+  );
 
   const handleSubmitEditBatch = useCallback(() => {
     if (!editBatchId) {
@@ -2533,86 +2488,18 @@ export function InventoryWorkSurface() {
         isLoading={bulkDeleteMutation.isPending}
       />
 
-      <Dialog
+      <AdjustQuantityDialog
         open={showQtyAdjust}
-        onOpenChange={open => {
-          setShowQtyAdjust(open);
-          if (!open) {
-            setQtyAdjustment("");
-            setQtyReason("");
-            resetQtyValidation();
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adjust Quantity</DialogTitle>
-            <DialogDescription>
-              Enter a positive or negative value to adjust on-hand quantity.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="qty-adjustment">Adjustment Amount</Label>
-              <Input
-                id="qty-adjustment"
-                data-testid="qty-adjustment"
-                type="number"
-                step="1"
-                placeholder="e.g., -5"
-                value={qtyAdjustment}
-                onChange={e => {
-                  setQtyAdjustment(e.target.value);
-                  handleQtyFieldChange("adjustment", e.target.value);
-                }}
-                onBlur={() => handleQtyFieldBlur("adjustment")}
-                className={cn(
-                  getQtyFieldState("adjustment").showError && "border-red-500"
-                )}
-              />
-              {getQtyFieldState("adjustment").showError && (
-                <p className="text-xs text-red-500 mt-1">
-                  {getQtyFieldState("adjustment").error}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="qty-reason">Reason</Label>
-              <Input
-                id="qty-reason"
-                data-testid="qty-reason"
-                placeholder="Reason for adjustment"
-                value={qtyReason}
-                onChange={e => {
-                  setQtyReason(e.target.value);
-                  handleQtyFieldChange("reason", e.target.value);
-                }}
-                onBlur={() => handleQtyFieldBlur("reason")}
-                className={cn(
-                  getQtyFieldState("reason").showError && "border-red-500"
-                )}
-              />
-              {getQtyFieldState("reason").showError && (
-                <p className="text-xs text-red-500 mt-1">
-                  {getQtyFieldState("reason").error}
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowQtyAdjust(false)}>
-              Cancel
-            </Button>
-            <Button
-              data-testid="submit-adjustment"
-              onClick={handleSubmitAdjustQuantity}
-              disabled={adjustQtyMutation.isPending}
-            >
-              {adjustQtyMutation.isPending ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setShowQtyAdjust}
+        currentQuantity={selectedItem?.batch?.onHandQty}
+        itemLabel={
+          selectedItem?.batch
+            ? `Selected batch: ${selectedItem.batch.sku}`
+            : undefined
+        }
+        isPending={adjustQtyMutation.isPending}
+        onSubmit={handleSubmitAdjustQuantity}
+      />
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>

@@ -197,7 +197,8 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
             id: event.data.id,
             field: "onHandQty",
             adjustment: delta,
-            reason: "Spreadsheet view edit",
+            adjustmentReason: "COUNT_DISCREPANCY",
+            notes: "Spreadsheet view edit",
           },
           {
             onError: () => {

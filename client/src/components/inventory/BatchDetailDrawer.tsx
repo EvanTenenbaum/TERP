@@ -39,6 +39,7 @@ import { PotentialBuyersWidget } from "./PotentialBuyersWidget";
 import { PriceSimulationModal } from "./PriceSimulationModal";
 import { BatchMediaUpload } from "./BatchMediaUpload";
 import { CommentWidget } from "@/components/comments/CommentWidget";
+import { AdjustQuantityDialog } from "@/components/AdjustQuantityDialog";
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -223,8 +224,6 @@ export function BatchDetailDrawer({
   // FIX-BATCH-001: Add modals for action buttons
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
   const [showStatusChange, setShowStatusChange] = useState(false);
-  const [qtyAdjustment, setQtyAdjustment] = useState("");
-  const [qtyReason, setQtyReason] = useState("");
   const [newStatus, setNewStatus] = useState<string>("");
   const [statusReason, setStatusReason] = useState("");
   // BUG-041 FIX: Track closing state to prevent race conditions
@@ -236,8 +235,6 @@ export function BatchDetailDrawer({
       toast.success("Quantity adjusted successfully");
       refetch();
       setShowQtyAdjust(false);
-      setQtyAdjustment("");
-      setQtyReason("");
     },
     onError: error => {
       toast.error(`Failed to adjust quantity: ${error.message}`);
@@ -284,8 +281,6 @@ export function BatchDetailDrawer({
         // REDHAT-FIX-001: Reset action modal states added in BUG-041 fix
         setShowQtyAdjust(false);
         setShowStatusChange(false);
-        setQtyAdjustment("");
-        setQtyReason("");
         setNewStatus("");
         setStatusReason("");
         // Defer close to next animation frame to prevent render crashes
@@ -739,65 +734,27 @@ export function BatchDetailDrawer({
         )}
       </SheetContent>
 
-      {/* Quantity Adjustment Dialog */}
-      <Dialog open={showQtyAdjust} onOpenChange={setShowQtyAdjust}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adjust Quantity</DialogTitle>
-            <DialogDescription>
-              Enter a positive or negative number to adjust the on-hand
-              quantity.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="qty-adjustment">Adjustment Amount</Label>
-              <Input
-                id="qty-adjustment"
-                type="number"
-                placeholder="e.g., 10 or -5"
-                value={qtyAdjustment}
-                onChange={e => setQtyAdjustment(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Current on-hand:{" "}
-                {batch ? parseFloat(batch.onHandQty).toFixed(2) : 0}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="qty-reason">Reason</Label>
-              <Input
-                id="qty-reason"
-                placeholder="Reason for adjustment"
-                value={qtyReason}
-                onChange={e => setQtyReason(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowQtyAdjust(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (!qtyAdjustment || !qtyReason || !batchId) {
-                  toast.error("Please enter adjustment amount and reason");
-                  return;
-                }
-                adjustQtyMutation.mutate({
-                  id: batchId,
-                  field: "onHandQty",
-                  adjustment: parseFloat(qtyAdjustment),
-                  reason: qtyReason,
-                });
-              }}
-              disabled={adjustQtyMutation.isPending}
-            >
-              {adjustQtyMutation.isPending ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdjustQuantityDialog
+        open={showQtyAdjust}
+        onOpenChange={setShowQtyAdjust}
+        currentQuantity={batch?.onHandQty}
+        itemLabel={batch ? `Selected batch: ${batch.sku}` : undefined}
+        isPending={adjustQtyMutation.isPending}
+        onSubmit={({ adjustment, adjustmentReason, notes }) => {
+          if (!batchId) {
+            toast.error("Batch not found");
+            return;
+          }
+
+          adjustQtyMutation.mutate({
+            id: batchId,
+            field: "onHandQty",
+            adjustment,
+            adjustmentReason,
+            notes,
+          });
+        }}
+      />
 
       {/* Status Change Dialog */}
       <Dialog open={showStatusChange} onOpenChange={setShowStatusChange}>
