@@ -35,14 +35,42 @@ export const poReceivingRouter = router({
         receivedItems: z.array(
           z.object({
             poItemId: z.number(),
-            receivedQuantity: z.string(),
+            receivedQuantity: z.string().transform(val => {
+              const n = parseFloat(val);
+              if (!isFinite(n) || isNaN(n)) {
+                throw new Error(
+                  "receivedQuantity must be a valid finite number"
+                );
+              }
+              if (n <= 0) {
+                throw new Error("receivedQuantity must be greater than 0");
+              }
+              if (n > 1_000_000) {
+                throw new Error("receivedQuantity must not exceed 1,000,000");
+              }
+              return val;
+            }),
             batchId: z.number().optional(), // If receiving into existing batch
             newBatchData: z
               .object({
                 // If creating new batch
                 productId: z.number(),
                 lotCode: z.string(),
-                costPerUnit: z.string(),
+                costPerUnit: z.string().transform(val => {
+                  const n = parseFloat(val);
+                  if (!isFinite(n) || isNaN(n)) {
+                    throw new Error(
+                      "costPerUnit must be a valid finite number"
+                    );
+                  }
+                  if (n < 0) {
+                    throw new Error("costPerUnit cannot be negative");
+                  }
+                  if (n > 100_000) {
+                    throw new Error("costPerUnit must not exceed 100,000");
+                  }
+                  return val;
+                }),
               })
               .optional(),
           })
@@ -418,7 +446,10 @@ export const poReceivingRouter = router({
           .array(
             z.object({
               poItemId: z.number(),
-              quantity: z.number().positive("Quantity must be greater than 0"),
+              quantity: z
+                .number()
+                .positive("Quantity must be greater than 0")
+                .max(1_000_000, "Quantity must not exceed 1,000,000"),
               locationId: z.number().optional(),
               locationData: z
                 .object({

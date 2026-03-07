@@ -59,7 +59,10 @@ const listPaymentsSchema = z.object({
 
 const recordPaymentSchema = z.object({
   invoiceId: z.number(),
-  amount: z.number().positive("Amount must be positive"),
+  amount: z
+    .number()
+    .positive("Amount must be positive")
+    .max(10_000_000, "Amount must not exceed 10,000,000"),
   paymentMethod: z.enum([
     "CASH",
     "CHECK",
@@ -711,11 +714,17 @@ export const paymentsRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        totalAmount: z.number().positive(),
+        totalAmount: z
+          .number()
+          .positive()
+          .max(10_000_000, "Total amount must not exceed 10,000,000"),
         allocations: z.array(
           z.object({
             invoiceId: z.number(),
-            amount: z.number().positive(),
+            amount: z
+              .number()
+              .positive()
+              .max(10_000_000, "Allocation amount must not exceed 10,000,000"),
           })
         ),
         paymentMethod: z.enum([
@@ -995,7 +1004,10 @@ export const paymentsRouter = router({
     .input(
       z.object({
         invoiceId: z.number(),
-        amount: z.number().positive("Amount must be positive"),
+        amount: z
+          .number()
+          .positive("Amount must be positive")
+          .max(10_000_000, "Amount must not exceed 10,000,000"),
         wireConfirmationNumber: z
           .string()
           .min(1, "Wire confirmation number is required"),
