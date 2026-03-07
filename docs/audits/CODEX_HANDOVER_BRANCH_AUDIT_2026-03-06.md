@@ -159,7 +159,7 @@ VIEWED → [CONVERTED, REJECTED, EXPIRED]
 - `/products` → redirects to `/settings?tab=product-metadata` (correct)
 - `/settings/notifications` → redirects to `/account` (correct)
 
-**Issue**: The `InboxPage.tsx` and `AlertsPage.tsx` files are modified to be redirect stubs but not deleted. These are dead code that should be cleaned up.
+**Note**: The `InboxPage.tsx` and `AlertsPage.tsx` files were properly deleted. All imports cleaned up with no orphaned references.
 
 ### 5.2 Notifications Hub Consolidation
 - NotificationsHub.tsx properly combines Inbox + Alerts into two tabs
@@ -270,7 +270,7 @@ All 8 tasks have execution logs in `docs/execution/2026-03-06-waves-2r/`. Each l
 | W2 | `isPhotographyComplete` uses INT instead of TINYINT(1) — wasteful | LOW | TER-574 |
 | W3 | State collapse risk — code filtering `batchStatus = 'LIVE'` may incorrectly include photography-in-progress batches unless also checking `isPhotographyComplete` | MEDIUM | TER-574 |
 | W4 | `adjustmentReason` enum not enforced at database level — only Zod validation | LOW | TER-568 |
-| W5 | Dead redirect stub files (InboxPage.tsx, AlertsPage.tsx) should be deleted | LOW | TER-569 |
+| ~~W5~~ | ~~Dead redirect stub files~~ — **RETRACTED**: Client audit confirmed these files were properly deleted | N/A | TER-569 |
 | W6 | Null quoteStatus fallbacks (`|| "UNSENT"`) mask data quality issues | LOW | TER-573 |
 | W7 | No test coverage for gallery view (BatchGalleryCard), redirect behavior, or payment status column | MEDIUM | TER-570, TER-569, TER-567 |
 | W8 | Rollback for TER-573 is acknowledged as lossy (ACCEPTED→CONVERTED merge is irreversible without manual review) | MEDIUM | TER-573 |
@@ -302,8 +302,7 @@ All 8 tasks have execution logs in `docs/execution/2026-03-06-waves-2r/`. Each l
 ### Post-Merge Improvements
 4. Add transaction wrappers or document maintenance window requirements for multi-step migrations
 5. Add test coverage for BatchGalleryCard, redirect behavior, and payment status column
-6. Clean up dead redirect stub files (InboxPage.tsx, AlertsPage.tsx)
-7. Consider adding DB-level constraint for adjustmentReason enum
+6. Consider adding DB-level constraint for adjustmentReason enum
 8. Audit all `batchStatus = 'LIVE'` queries to ensure they correctly handle the new isPhotographyComplete dimension
 
 ### Process Improvements
