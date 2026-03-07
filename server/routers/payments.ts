@@ -28,6 +28,7 @@ import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import Decimal from "decimal.js";
 import { logger } from "../_core/logger";
+import { env } from "../_core/env";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
 import { getFiscalPeriodId } from "../_core/fiscalPeriod";
 import { captureException } from "../_core/monitoring";
@@ -110,8 +111,25 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-// Tolerance for floating-point rounding in payment comparisons (1 cent)
-const OVERPAYMENT_TOLERANCE = new Decimal("0.01");
+/**
+ * Returns the configured overpayment tolerance as a Decimal dollar amount.
+ *
+ * The tolerance is read from the `OVERPAYMENT_TOLERANCE_CENTS` environment
+ * variable (default: 100 cents = $1.00). A payment is accepted when it
+ * exceeds the invoice's amount-due by no more than this value. Payments that
+ * exceed the tolerance are rejected with a BAD_REQUEST error.
+ *
+ * When tolerance is applied (payment slightly exceeds amount due but stays
+ * within tolerance), the effective payment amount is capped at the exact
+ * amount due so that the invoice reaches PAID status without creating a
+ * credit balance.
+ *
+ * @see env.overpaymentToleranceCents
+ */
+function getOverpaymentTolerance(): Decimal {
+  const cents = env.overpaymentToleranceCents;
+  return new Decimal(cents).dividedBy(100);
+}
 
 // ============================================================================
 // PAYMENTS ROUTER
@@ -295,7 +313,7 @@ export const paymentsRouter = router({
       const inputAmountD = new Decimal(input.amount);
 
       // TERP-0016: Validate payment amount doesn't exceed amount due
-      if (inputAmountD.greaterThan(amountDueD.plus(OVERPAYMENT_TOLERANCE))) {
+      if (inputAmountD.greaterThan(amountDueD.plus(getOverpaymentTolerance()))) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDueD.toNumber())}). Overpayments are not allowed.`,
@@ -306,6 +324,18 @@ export const paymentsRouter = router({
       const effectiveAmountD = inputAmountD.greaterThan(amountDueD)
         ? amountDueD
         : inputAmountD;
+
+      // Log when overpayment tolerance is applied (payment accepted but capped)
+      if (inputAmountD.greaterThan(amountDueD)) {
+        logger.info({
+          msg: "[Payments] Overpayment tolerance applied — capping payment to amount due",
+          invoiceId: input.invoiceId,
+          requestedAmount: inputAmountD.toNumber(),
+          amountDue: amountDueD.toNumber(),
+          effectiveAmount: effectiveAmountD.toNumber(),
+          toleranceDollars: getOverpaymentTolerance().toNumber(),
+        });
+      }
 
       // Resolve GL account IDs and fiscal period before the transaction so that
       // missing accounts or periods produce descriptive TRPCErrors rather than a
@@ -355,7 +385,7 @@ export const paymentsRouter = router({
 
           // Determine new status
           let newStatus: "PARTIAL" | "PAID";
-          if (newDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
+          if (newDueD.lessThanOrEqualTo(getOverpaymentTolerance())) {
             newStatus = "PAID";
           } else {
             newStatus = "PARTIAL";
@@ -816,7 +846,7 @@ export const paymentsRouter = router({
             const allocAmountD = new Decimal(allocation.amount);
             if (
               allocAmountD.greaterThan(
-                allocAmountDueD.plus(OVERPAYMENT_TOLERANCE)
+                allocAmountDueD.plus(getOverpaymentTolerance())
               )
             ) {
               throw new TRPCError({
@@ -847,7 +877,7 @@ export const paymentsRouter = router({
             );
 
             let newStatus: string;
-            if (allocNewDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
+            if (allocNewDueD.lessThanOrEqualTo(getOverpaymentTolerance())) {
               newStatus = "PAID";
             } else if (allocNewPaidD.greaterThan(0)) {
               newStatus = "PARTIAL";
@@ -1038,7 +1068,7 @@ export const paymentsRouter = router({
 
       // Validate payment amount doesn't exceed amount due
       if (
-        wireInputAmountD.greaterThan(wireAmountDueD.plus(OVERPAYMENT_TOLERANCE))
+        wireInputAmountD.greaterThan(wireAmountDueD.plus(getOverpaymentTolerance()))
       ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -1049,6 +1079,18 @@ export const paymentsRouter = router({
       const wireEffectiveAmountD = wireInputAmountD.greaterThan(wireAmountDueD)
         ? wireAmountDueD
         : wireInputAmountD;
+
+      // Log when overpayment tolerance is applied (wire payment accepted but capped)
+      if (wireInputAmountD.greaterThan(wireAmountDueD)) {
+        logger.info({
+          msg: "[Payments] Overpayment tolerance applied (wire) — capping payment to amount due",
+          invoiceId: input.invoiceId,
+          requestedAmount: wireInputAmountD.toNumber(),
+          amountDue: wireAmountDueD.toNumber(),
+          effectiveAmount: wireEffectiveAmountD.toNumber(),
+          toleranceDollars: getOverpaymentTolerance().toNumber(),
+        });
+      }
 
       // Resolve GL account IDs and fiscal period before the transaction so that
       // missing accounts or periods produce descriptive TRPCErrors rather than a
@@ -1108,7 +1150,7 @@ export const paymentsRouter = router({
 
           // Determine new status
           let newStatus: "PARTIAL" | "PAID";
-          if (wireNewDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
+          if (wireNewDueD.lessThanOrEqualTo(getOverpaymentTolerance())) {
             newStatus = "PAID";
           } else {
             newStatus = "PARTIAL";

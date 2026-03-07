@@ -152,6 +152,32 @@ export const env = {
   get DEMO_MODE() {
     return process.env.DEMO_MODE === "true";
   },
+  /**
+   * OVERPAYMENT_TOLERANCE_CENTS controls how much a payment may exceed the
+   * outstanding invoice amount before it is rejected.
+   *
+   * Default: 100 cents ($1.00). This is intentionally generous enough to
+   * absorb rounding differences introduced by wire transfers and ACH batching,
+   * while still blocking clear overpayments.
+   *
+   * Set to 0 to disable tolerance entirely (strict mode).
+   * Set to a higher value (e.g. 500 for $5.00) if your banking partners
+   * commonly add small processing fees.
+   *
+   * @example OVERPAYMENT_TOLERANCE_CENTS=100   # default — allow up to $1.00 over
+   * @example OVERPAYMENT_TOLERANCE_CENTS=0     # strict — no overpayment at all
+   */
+  get overpaymentToleranceCents(): number {
+    const raw = process.env.OVERPAYMENT_TOLERANCE_CENTS;
+    if (raw === undefined || raw === "") {
+      return 100; // default: $1.00
+    }
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      return 100; // fall back to default on bad config
+    }
+    return parsed;
+  },
 };
 
 // Legacy export for compatibility
