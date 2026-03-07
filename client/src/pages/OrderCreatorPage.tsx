@@ -5,7 +5,7 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useSearch } from "wouter";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { ClientCombobox } from "@/components/ui/client-combobox";
 import { cn } from "@/lib/utils";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -47,7 +48,6 @@ import {
   FileText,
   Send,
 } from "lucide-react";
-import { BackButton } from "@/components/common/BackButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,13 +118,150 @@ const orderValidationSchema = z.object({
   orderType: z.enum(["SALE", "QUOTE"]),
 });
 
+interface DraftLineItemPayload {
+  id?: number;
+  batchId: number;
+  productId?: number | null;
+  batchSku?: string | null;
+  productDisplayName?: string | null;
+  quantity: number | string;
+  cogsPerUnit: number | string;
+  originalCogsPerUnit: number | string;
+  isCogsOverridden: boolean;
+  cogsOverrideReason?: string | null;
+  marginPercent: number | string;
+  marginDollar: number | string;
+  isMarginOverridden: boolean;
+  marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  unitPrice: number | string;
+  lineTotal: number | string;
+  isSample: boolean;
+}
+
+interface OrderDraftSnapshot {
+  clientId: number | null;
+  linkedNeedId: number | null;
+  orderType: "QUOTE" | "SALE";
+  referredByClientId: number | null;
+  adjustment: OrderAdjustment | null;
+  showAdjustmentOnDocument: boolean;
+  items: LineItem[];
+}
+
+const normalizeFingerprintNumber = (
+  value: number | null | undefined,
+  precision = 4
+): number | null => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return Number(value.toFixed(precision));
+};
+
+const buildOrderFingerprint = (snapshot: OrderDraftSnapshot): string =>
+  JSON.stringify({
+    clientId: snapshot.clientId,
+    linkedNeedId: snapshot.linkedNeedId,
+    orderType: snapshot.orderType,
+    referredByClientId: snapshot.referredByClientId,
+    adjustment: snapshot.adjustment
+      ? {
+          amount: normalizeFingerprintNumber(snapshot.adjustment.amount, 2),
+          mode: snapshot.adjustment.mode,
+          type: snapshot.adjustment.type,
+        }
+      : null,
+    showAdjustmentOnDocument: snapshot.showAdjustmentOnDocument,
+    items: snapshot.items.map(item => ({
+      batchId: item.batchId,
+      productId: item.productId ?? null,
+      productDisplayName: item.productDisplayName ?? null,
+      quantity: normalizeFingerprintNumber(item.quantity, 4),
+      cogsPerUnit: normalizeFingerprintNumber(item.cogsPerUnit, 4),
+      originalCogsPerUnit: normalizeFingerprintNumber(
+        item.originalCogsPerUnit,
+        4
+      ),
+      isCogsOverridden: item.isCogsOverridden,
+      cogsOverrideReason: item.cogsOverrideReason ?? null,
+      marginPercent: normalizeFingerprintNumber(item.marginPercent, 4),
+      marginDollar: normalizeFingerprintNumber(item.marginDollar, 4),
+      isMarginOverridden: item.isMarginOverridden,
+      marginSource: item.marginSource,
+      unitPrice: normalizeFingerprintNumber(item.unitPrice, 4),
+      lineTotal: normalizeFingerprintNumber(item.lineTotal, 4),
+      isSample: item.isSample,
+    })),
+  });
+
+const EMPTY_ORDER_FINGERPRINT = buildOrderFingerprint({
+  clientId: null,
+  linkedNeedId: null,
+  orderType: "SALE",
+  referredByClientId: null,
+  adjustment: null,
+  showAdjustmentOnDocument: true,
+  items: [],
+});
+
+const parseRouteEntityId = (value: string | null): number | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const mapDraftLineItemsToEditorState = (
+  lineItems: DraftLineItemPayload[]
+): LineItem[] =>
+  lineItems.map(item => ({
+    id: item.id,
+    batchId: item.batchId,
+    batchSku: item.batchSku ?? undefined,
+    productId: item.productId ?? undefined,
+    productDisplayName: item.productDisplayName ?? "Unknown Product",
+    quantity: Number(item.quantity),
+    cogsPerUnit: Number(item.cogsPerUnit),
+    originalCogsPerUnit: Number(item.originalCogsPerUnit),
+    isCogsOverridden: item.isCogsOverridden,
+    cogsOverrideReason: item.cogsOverrideReason ?? undefined,
+    marginPercent: Number(item.marginPercent),
+    marginDollar: Number(item.marginDollar),
+    isMarginOverridden: item.isMarginOverridden,
+    marginSource: item.marginSource,
+    unitPrice: Number(item.unitPrice),
+    lineTotal: Number(item.lineTotal),
+    isSample: item.isSample,
+  }));
+
 export default function OrderCreatorPageV2() {
   // TER-216: Navigation after save/finalize
   const [, setLocation] = useLocation();
   const searchString = useSearch();
+  const searchParams = useMemo(
+    () => new URLSearchParams(searchString),
+    [searchString]
+  );
+  const draftIdFromRoute = parseRouteEntityId(searchParams.get("draftId"));
+  const quoteIdFromRoute = parseRouteEntityId(searchParams.get("quoteId"));
+  const clientIdFromRoute = parseRouteEntityId(searchParams.get("clientId"));
+  const needIdFromRoute = parseRouteEntityId(searchParams.get("needId"));
+  const routeMode = searchParams.get("mode");
+  const isDuplicateRoute = routeMode === "duplicate" && quoteIdFromRoute !== null;
+  const routeOrderId = draftIdFromRoute ?? quoteIdFromRoute;
+  const isSalesSheetImport = searchParams.get("fromSalesSheet") === "true";
+  const hasRouteSeedContext =
+    routeOrderId !== null ||
+    clientIdFromRoute !== null ||
+    needIdFromRoute !== null ||
+    isSalesSheetImport;
 
   // State
   const [clientId, setClientId] = useState<number | null>(null);
+  const [linkedNeedId, setLinkedNeedId] = useState<number | null>(null);
   const [items, setItems] = useState<LineItem[]>([]);
   const [adjustment, setAdjustment] = useState<OrderAdjustment | null>(null);
   const [showAdjustmentOnDocument, setShowAdjustmentOnDocument] =
@@ -153,6 +290,10 @@ export default function OrderCreatorPageV2() {
 
   // Referral tracking state (WS-004)
   const [referredByClientId, setReferredByClientId] = useState<number | null>(
+    null
+  );
+  const [activeDraftId, setActiveDraftId] = useState<number | null>(null);
+  const [activeDraftVersion, setActiveDraftVersion] = useState<number | null>(
     null
   );
   const { hasAnyPermission } = usePermissions();
@@ -184,58 +325,100 @@ export default function OrderCreatorPageV2() {
   // before finalization completes
   const isFinalizingRef = useRef(false);
   const itemsRef = useRef<LineItem[]>([]);
+  const hydratedRouteKeyRef = useRef<string | null>(null);
+  const seededRouteKeyRef = useRef<string | null>(null);
+  const previousSearchRef = useRef(searchString);
+  const pendingPersistFingerprintRef = useRef<string | null>(null);
+  const persistedFingerprintRef = useRef(EMPTY_ORDER_FINGERPRINT);
 
-  // TER-215: Import items from Sales Sheet when navigating with ?fromSalesSheet=true
+  const currentOrderSnapshot = useMemo<OrderDraftSnapshot>(
+    () => ({
+      clientId,
+      linkedNeedId,
+      orderType,
+      referredByClientId,
+      adjustment,
+      showAdjustmentOnDocument,
+      items,
+    }),
+    [
+      adjustment,
+      clientId,
+      items,
+      linkedNeedId,
+      orderType,
+      referredByClientId,
+      showAdjustmentOnDocument,
+    ]
+  );
+  const currentOrderFingerprint = useMemo(
+    () => buildOrderFingerprint(currentOrderSnapshot),
+    [currentOrderSnapshot]
+  );
+  const currentOrderFingerprintRef = useRef(currentOrderFingerprint);
   useEffect(() => {
-    const params = new URLSearchParams(searchString);
-    if (params.get("fromSalesSheet") === "true") {
-      try {
-        const raw = sessionStorage.getItem("salesSheetToQuote");
-        if (raw) {
-          const data = JSON.parse(raw) as {
-            clientId: number;
-            items: InventoryItemForOrder[];
-          };
-          setClientId(data.clientId);
-          setOrderType("QUOTE");
-          // Convert will happen after inventory loads, but pre-set client
-          // Items will be added via convertInventoryToLineItems once available
-          const lineItems = convertInventoryToLineItems(data.items);
-          if (lineItems.length > 0) {
-            setItems(lineItems);
-          }
-          sessionStorage.removeItem("salesSheetToQuote");
-        }
-      } catch {
-        toast.error("Failed to import items from sales sheet");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    currentOrderFingerprintRef.current = currentOrderFingerprint;
+  }, [currentOrderFingerprint]);
+
+  const applyPersistedFingerprint = useCallback(
+    (fingerprint?: string) => {
+      persistedFingerprintRef.current =
+        fingerprint ??
+        pendingPersistFingerprintRef.current ??
+        currentOrderFingerprintRef.current;
+      pendingPersistFingerprintRef.current = null;
+      setSaved();
+    },
+    [setSaved]
+  );
+
+  const resetComposerState = useCallback(() => {
+    setClientId(null);
+    setLinkedNeedId(null);
+    setItems([]);
+    setAdjustment(null);
+    setShowAdjustmentOnDocument(true);
+    setOrderType("SALE");
+    setReferredByClientId(null);
+    setActiveDraftId(null);
+    setActiveDraftVersion(null);
+    hydratedRouteKeyRef.current = null;
+    seededRouteKeyRef.current = null;
+    pendingPersistFingerprintRef.current = null;
+    persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
+    setSaved();
+  }, [setSaved]);
 
   useEffect(() => {
     if (!clientId) {
       return;
     }
 
-    const params = new URLSearchParams(searchString);
-    const drawerSection = params.get("customerDrawer");
+    const drawerSection = searchParams.get("customerDrawer");
     if (drawerSection === "credit" || drawerSection === "pricing") {
       setCustomerDrawerSection(drawerSection);
       setCustomerDrawerOpen(true);
     }
-  }, [clientId, searchString]);
+  }, [clientId, searchParams]);
 
-  // QA-W2-005: Track unsaved changes - consider both items and auto-save status
-  // Warning should show when there are items OR when auto-save is pending/failed
+  // QA-W2-005: Track unsaved changes using persisted draft state plus active save status.
   useEffect(() => {
-    const hasItems = items.length > 0;
     const autoSavePending =
       saveState.status === "saving" ||
       saveState.status === "error" ||
       saveState.status === "queued";
-    setHasUnsavedChanges(hasItems || autoSavePending);
-  }, [items.length, saveState.status, setHasUnsavedChanges]);
+    const hasSnapshotChanges =
+      currentOrderFingerprint !== persistedFingerprintRef.current;
+    const hasOrderContent =
+      currentOrderFingerprint !== EMPTY_ORDER_FINGERPRINT || activeDraftId !== null;
+
+    setHasUnsavedChanges((hasOrderContent && hasSnapshotChanges) || autoSavePending);
+  }, [
+    activeDraftId,
+    currentOrderFingerprint,
+    saveState.status,
+    setHasUnsavedChanges,
+  ]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -254,11 +437,171 @@ export default function OrderCreatorPageV2() {
   const clients = Array.isArray(clientsData)
     ? clientsData
     : (clientsData?.items ?? []);
+  const {
+    data: routeOrderData,
+    error: routeOrderError,
+    isLoading: routeOrderLoading,
+  } = trpc.orders.getOrderWithLineItems.useQuery(
+    { orderId: routeOrderId ?? 0 },
+    {
+      enabled: routeOrderId !== null,
+      retry: false,
+      refetchOnWindowFocus: false,
+    }
+  );
   const { data: clientDetails, refetch: refetchClientDetails } =
     trpc.clients.getById.useQuery(
       { clientId: clientId || 0 },
       { enabled: !!clientId }
     );
+
+  useEffect(() => {
+    if (!routeOrderError || routeOrderId === null) {
+      return;
+    }
+
+    const entityLabel = draftIdFromRoute ? "draft" : "quote";
+    toast.error(`Failed to load ${entityLabel}: ${routeOrderError.message}`);
+  }, [draftIdFromRoute, routeOrderError, routeOrderId]);
+
+  useEffect(() => {
+    if (!routeOrderData || routeOrderId === null) {
+      return;
+    }
+
+    const hydrationKey = `${routeOrderId}:${isDuplicateRoute ? "duplicate" : "edit"}`;
+    if (hydratedRouteKeyRef.current === hydrationKey) {
+      return;
+    }
+
+    const draftItems = mapDraftLineItemsToEditorState(
+      routeOrderData.lineItems as DraftLineItemPayload[]
+    );
+    const snapshot: OrderDraftSnapshot = {
+      clientId: routeOrderData.order.clientId,
+      linkedNeedId: routeOrderData.order.clientNeedId ?? null,
+      orderType: routeOrderData.order.orderType,
+      referredByClientId: routeOrderData.order.referredByClientId ?? null,
+      adjustment: null,
+      showAdjustmentOnDocument: true,
+      items: draftItems,
+    };
+
+    setClientId(snapshot.clientId);
+    setLinkedNeedId(snapshot.linkedNeedId);
+    setOrderType(snapshot.orderType);
+    setItems(snapshot.items);
+    setAdjustment(snapshot.adjustment);
+    setShowAdjustmentOnDocument(snapshot.showAdjustmentOnDocument);
+    setReferredByClientId(snapshot.referredByClientId);
+    setActiveDraftId(isDuplicateRoute ? null : routeOrderData.order.id);
+    setActiveDraftVersion(
+      isDuplicateRoute ? null : routeOrderData.order.version ?? 1
+    );
+    hydratedRouteKeyRef.current = hydrationKey;
+    seededRouteKeyRef.current = null;
+    pendingPersistFingerprintRef.current = null;
+    applyPersistedFingerprint(buildOrderFingerprint(snapshot));
+
+    if (isDuplicateRoute) {
+      toast.success(`Quote #${routeOrderData.order.orderNumber} loaded for duplication`);
+    }
+  }, [applyPersistedFingerprint, isDuplicateRoute, routeOrderData, routeOrderId]);
+
+  useEffect(() => {
+    if (
+      routeOrderId !== null ||
+      routeOrderLoading ||
+      isSalesSheetImport ||
+      clientIdFromRoute === null
+    ) {
+      return;
+    }
+
+    const seedKey = `${clientIdFromRoute}:${needIdFromRoute ?? "none"}`;
+    if (seededRouteKeyRef.current === seedKey) {
+      return;
+    }
+
+    setClientId(clientIdFromRoute);
+    setLinkedNeedId(needIdFromRoute);
+    setItems([]);
+    setAdjustment(null);
+    setShowAdjustmentOnDocument(true);
+    setReferredByClientId(null);
+    setActiveDraftId(null);
+    setActiveDraftVersion(null);
+    hydratedRouteKeyRef.current = null;
+    pendingPersistFingerprintRef.current = null;
+    persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
+    setSaved();
+    setOrderType("SALE");
+    seededRouteKeyRef.current = seedKey;
+  }, [
+    clientIdFromRoute,
+    isSalesSheetImport,
+    needIdFromRoute,
+    routeOrderId,
+    routeOrderLoading,
+    setSaved,
+  ]);
+
+  // TER-215: Import items from Sales Sheet when navigating with ?fromSalesSheet=true
+  useEffect(() => {
+    if (!isSalesSheetImport || routeOrderId !== null) {
+      return;
+    }
+
+    try {
+      const raw = sessionStorage.getItem("salesSheetToQuote");
+      if (!raw) {
+        return;
+      }
+
+      const data = JSON.parse(raw) as {
+        clientId: number;
+        items: InventoryItemForOrder[];
+      };
+      const lineItems = convertInventoryToLineItems(data.items);
+
+      setClientId(data.clientId);
+      setLinkedNeedId(null);
+      setOrderType("QUOTE");
+      setItems(lineItems);
+      setAdjustment(null);
+      setShowAdjustmentOnDocument(true);
+      setReferredByClientId(null);
+      setActiveDraftId(null);
+      setActiveDraftVersion(null);
+      hydratedRouteKeyRef.current = null;
+      pendingPersistFingerprintRef.current = null;
+      persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
+      setSaved();
+      sessionStorage.removeItem("salesSheetToQuote");
+    } catch {
+      toast.error("Failed to import items from sales sheet");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSalesSheetImport, routeOrderId]);
+
+  useEffect(() => {
+    if (
+      hasRouteSeedContext ||
+      previousSearchRef.current === searchString ||
+      currentOrderFingerprint === EMPTY_ORDER_FINGERPRINT
+    ) {
+      previousSearchRef.current = searchString;
+      return;
+    }
+
+    resetComposerState();
+    previousSearchRef.current = searchString;
+  }, [
+    currentOrderFingerprint,
+    hasRouteSeedContext,
+    resetComposerState,
+    searchString,
+  ]);
 
   // Fetch inventory with pricing when client is selected
   // BUG-045: Use useRetryableQuery to preserve form state on retry
@@ -294,6 +637,39 @@ export default function OrderCreatorPageV2() {
       );
     }
   }, [inventoryError]);
+
+  useEffect(() => {
+    if (!inventory || items.length === 0) {
+      return;
+    }
+
+    const inventoryByBatchId = new Map(
+      inventory.map(item => [item.id, item.productId ?? null])
+    );
+
+    setItems(currentItems => {
+      let changed = false;
+
+      const nextItems = currentItems.map(item => {
+        if (item.productId) {
+          return item;
+        }
+
+        const productId = inventoryByBatchId.get(item.batchId);
+        if (!productId) {
+          return item;
+        }
+
+        changed = true;
+        return {
+          ...item,
+          productId,
+        };
+      });
+
+      return changed ? nextItems : currentItems;
+    });
+  }, [inventory, items.length]);
 
   const openCustomerDrawer = useCallback(
     (
@@ -390,25 +766,84 @@ export default function OrderCreatorPageV2() {
   // Calculations
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
 
+  const buildDraftMutationPayload = useCallback(
+    (effectiveOrderType: "QUOTE" | "SALE" = orderType) => ({
+      orderType: effectiveOrderType,
+      clientId: clientId as number,
+      clientNeedId: linkedNeedId ?? undefined,
+      referredByClientId: referredByClientId ?? undefined,
+      lineItems: items.map(item => ({
+        batchId: item.batchId,
+        productDisplayName: item.productDisplayName,
+        quantity: item.quantity,
+        cogsPerUnit: item.cogsPerUnit,
+        isCogsOverridden: item.isCogsOverridden,
+        cogsOverrideReason: item.cogsOverrideReason,
+        marginPercent: item.marginPercent,
+        isMarginOverridden: item.isMarginOverridden,
+        marginSource: item.marginSource,
+        isSample: item.isSample,
+      })),
+      orderLevelAdjustment: adjustment || undefined,
+      showAdjustmentOnDocument,
+    }),
+    [
+      adjustment,
+      clientId,
+      items,
+      linkedNeedId,
+      orderType,
+      referredByClientId,
+      showAdjustmentOnDocument,
+    ]
+  );
+
   // Mutations
   // BUG-093 FIX: Modified to support two-step finalization
   const createDraftMutation = trpc.orders.createDraftEnhanced.useMutation({
     onSuccess: data => {
+      const nextVersion = data.version ?? 1;
+
+      setActiveDraftId(data.orderId);
+      setActiveDraftVersion(nextVersion);
+      applyPersistedFingerprint();
+
       if (isFinalizingRef.current) {
-        // We're in finalization mode - proceed to finalize the draft
-        // Don't reset form yet - wait for finalization to complete
         toast.info(`Draft #${data.orderId} created, finalizing...`);
-        // BUG-045 FIX: Pass version 1 for newly created drafts (optimistic locking)
-        finalizeMutation.mutate({ orderId: data.orderId, version: 1 });
-      } else {
-        // Keep the user in the create workspace after draft save for low-friction edits.
-        toast.success(`Draft order #${data.orderId} saved successfully`);
-        setHasUnsavedChanges(false);
-        setLocation(`/orders/create?draftId=${data.orderId}`);
+        finalizeMutation.mutate({ orderId: data.orderId, version: nextVersion });
+        return;
       }
+
+      toast.success(`Draft order #${data.orderId} saved successfully`);
+      setLocation(
+        buildSalesWorkspacePath("create-order", { draftId: data.orderId })
+      );
     },
     onError: error => {
-      // Reset finalization flag on error
+      pendingPersistFingerprintRef.current = null;
+      isFinalizingRef.current = false;
+      toast.error(`Failed to save draft: ${error.message}`);
+    },
+  });
+
+  const updateDraftMutation = trpc.orders.updateDraftEnhanced.useMutation({
+    onSuccess: data => {
+      setActiveDraftId(data.orderId);
+      setActiveDraftVersion(data.version);
+      applyPersistedFingerprint();
+
+      if (isFinalizingRef.current) {
+        finalizeMutation.mutate({
+          orderId: data.orderId,
+          version: data.version,
+        });
+        return;
+      }
+
+      toast.success(`Draft order #${data.orderId} saved successfully`);
+    },
+    onError: error => {
+      pendingPersistFingerprintRef.current = null;
       isFinalizingRef.current = false;
       toast.error(`Failed to save draft: ${error.message}`);
     },
@@ -420,11 +855,12 @@ export default function OrderCreatorPageV2() {
       isFinalizingRef.current = false;
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
       // Keep creators in-place after finalize for quick follow-up edits/orders.
-      setHasUnsavedChanges(false);
-      setLocation("/orders/create");
+      resetComposerState();
+      setLocation(buildSalesWorkspacePath("create-order"));
     },
     onError: error => {
       // BUG-093 FIX: Reset flag on error, but preserve form data so user can retry
+      pendingPersistFingerprintRef.current = null;
       isFinalizingRef.current = false;
       toast.error(`Failed to finalize order: ${error.message}`);
     },
@@ -434,45 +870,42 @@ export default function OrderCreatorPageV2() {
   const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
 
   // Auto-save mutation (silent, no toast notifications)
-  const autoSaveMutation = trpc.orders.createDraftEnhanced.useMutation({
-    onSuccess: () => {
-      setSaved();
+  const autoSaveMutation = trpc.orders.updateDraftEnhanced.useMutation({
+    onSuccess: data => {
+      setActiveDraftVersion(data.version);
+      applyPersistedFingerprint();
     },
     onError: error => {
+      pendingPersistFingerprintRef.current = null;
       setError("Auto-save failed", error);
     },
   });
 
   // CHAOS-025: Debounced auto-save callback (2 second delay)
   const performAutoSave = useCallback(() => {
-    if (!clientId || items.length === 0) {
+    if (
+      !clientId ||
+      items.length === 0 ||
+      activeDraftId === null ||
+      activeDraftVersion === null
+    ) {
       return;
     }
 
+    pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
     setSaving();
     autoSaveMutation.mutate({
-      orderType,
-      clientId,
-      lineItems: items.map(item => ({
-        batchId: item.batchId,
-        quantity: item.quantity,
-        cogsPerUnit: item.cogsPerUnit,
-        isCogsOverridden: item.isCogsOverridden,
-        cogsOverrideReason: item.cogsOverrideReason,
-        marginPercent: item.marginPercent,
-        isMarginOverridden: item.isMarginOverridden,
-        marginSource: item.marginSource,
-      })),
-      orderLevelAdjustment: adjustment || undefined,
-      showAdjustmentOnDocument,
+      orderId: activeDraftId,
+      version: activeDraftVersion,
+      ...buildDraftMutationPayload(),
     });
   }, [
-    clientId,
-    items,
-    orderType,
-    adjustment,
-    showAdjustmentOnDocument,
+    activeDraftId,
+    activeDraftVersion,
     autoSaveMutation,
+    buildDraftMutationPayload,
+    clientId,
+    items.length,
     setSaving,
   ]);
 
@@ -480,15 +913,21 @@ export default function OrderCreatorPageV2() {
 
   // CHAOS-025: Trigger auto-save when order state changes
   useEffect(() => {
-    if (clientId && items.length > 0) {
+    if (
+      clientId &&
+      items.length > 0 &&
+      activeDraftId !== null &&
+      activeDraftVersion !== null &&
+      currentOrderFingerprint !== persistedFingerprintRef.current
+    ) {
       debouncedAutoSave();
     }
   }, [
+    activeDraftId,
+    activeDraftVersion,
     clientId,
-    items,
-    orderType,
-    adjustment,
-    showAdjustmentOnDocument,
+    currentOrderFingerprint,
+    items.length,
     debouncedAutoSave,
   ]);
 
@@ -526,22 +965,19 @@ export default function OrderCreatorPageV2() {
       return;
     }
 
-    createDraftMutation.mutate({
-      orderType: effectiveOrderType,
-      clientId: clientId as number,
-      lineItems: items.map(item => ({
-        batchId: item.batchId,
-        quantity: item.quantity,
-        cogsPerUnit: item.cogsPerUnit,
-        isCogsOverridden: item.isCogsOverridden,
-        cogsOverrideReason: item.cogsOverrideReason,
-        marginPercent: item.marginPercent,
-        isMarginOverridden: item.isMarginOverridden,
-        marginSource: item.marginSource,
-      })),
-      orderLevelAdjustment: adjustment || undefined,
-      showAdjustmentOnDocument,
-    });
+    pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
+    setSaving();
+
+    if (activeDraftId !== null && activeDraftVersion !== null) {
+      updateDraftMutation.mutate({
+        orderId: activeDraftId,
+        version: activeDraftVersion,
+        ...buildDraftMutationPayload(effectiveOrderType),
+      });
+      return;
+    }
+
+    createDraftMutation.mutate(buildDraftMutationPayload(effectiveOrderType));
   };
 
   const handlePreviewAndFinalize = async () => {
@@ -602,24 +1038,19 @@ export default function OrderCreatorPageV2() {
     // BUG-093 FIX: Set finalization mode BEFORE calling createDraftMutation
     // This ensures the onSuccess handler knows to call finalizeMutation
     isFinalizingRef.current = true;
+    pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
+    setSaving();
 
-    // First create the draft - finalization will happen in onSuccess callback
-    createDraftMutation.mutate({
-      orderType,
-      clientId,
-      lineItems: items.map(item => ({
-        batchId: item.batchId,
-        quantity: item.quantity,
-        cogsPerUnit: item.cogsPerUnit,
-        isCogsOverridden: item.isCogsOverridden,
-        cogsOverrideReason: item.cogsOverrideReason,
-        marginPercent: item.marginPercent,
-        isMarginOverridden: item.isMarginOverridden,
-        marginSource: item.marginSource,
-      })),
-      orderLevelAdjustment: adjustment || undefined,
-      showAdjustmentOnDocument,
-    });
+    if (activeDraftId !== null && activeDraftVersion !== null) {
+      updateDraftMutation.mutate({
+        orderId: activeDraftId,
+        version: activeDraftVersion,
+        ...buildDraftMutationPayload(),
+      });
+      return;
+    }
+
+    createDraftMutation.mutate(buildDraftMutationPayload());
   };
 
   // Convert inventory items to LineItem format
@@ -827,36 +1258,30 @@ export default function OrderCreatorPageV2() {
         {...keyboard.keyboardProps}
         className="container mx-auto p-3 md:p-4 space-y-4"
       >
-        <BackButton label="Back to Orders" to="/orders" className="mb-4" />
-        <section className="linear-workspace-shell">
-          <header className="linear-workspace-header">
-            <div className="linear-workspace-title-wrap">
-              <p className="linear-workspace-eyebrow">
-                <span className="linear-workspace-eyebrow-section">Sell</span>
-                <span className="linear-workspace-eyebrow-sep" aria-hidden>
-                  {" "}
-                  /{" "}
-                </span>
-                Order Workspace
+        <section className="rounded-xl border border-border/70 bg-card shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-border/70 px-4 py-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+                <ShoppingCart className="h-5 w-5" />
+                Create Sales Order
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Build the order, review margin, then save or finalize without
+                leaving the sales workspace.
               </p>
-              <div>
-                <h2 className="linear-workspace-title flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Create Sales Order
-                </h2>
-                <p className="linear-workspace-description">
-                  Build sales order with COGS visibility and margin management
-                </p>
-              </div>
             </div>
             <div className="flex items-center gap-2">
-              {clientId && items.length > 0 ? SaveStateIndicator : null}
+              {clientId &&
+              items.length > 0 &&
+              (activeDraftId !== null || saveState.status !== "saved")
+                ? SaveStateIndicator
+                : null}
             </div>
-          </header>
+          </div>
 
-          <div className="linear-workspace-meta">
+          <div className="grid gap-4 border-b border-border/70 bg-muted/20 px-4 py-4 md:grid-cols-2">
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-              <span className="linear-workspace-meta-label flex items-center gap-1">
+              <span className="flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Customer
                 {clientFieldState.showSuccess ? (
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
@@ -900,7 +1325,9 @@ export default function OrderCreatorPageV2() {
             </div>
 
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-              <span className="linear-workspace-meta-label">Referred By</span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Referred By
+              </span>
               {clientId ? (
                 <ReferredBySelector
                   excludeClientId={clientId}
@@ -915,7 +1342,7 @@ export default function OrderCreatorPageV2() {
             </div>
           </div>
 
-          <div className="linear-workspace-content">
+          <div className="p-4">
             {clientId ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}

@@ -85,6 +85,7 @@ import {
 } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
+import { PageLoading } from "@/components/ui/loading-state";
 
 type AnyRouteParams = Record<string, string | undefined>;
 type AnyRouteProps = WouterRouteComponentProps<AnyRouteParams>;
@@ -211,13 +212,7 @@ const withLazyErrorBoundary = (
 ): FC<AnyRouteProps> => {
   const WrappedLazyRoute: FC<AnyRouteProps> = props => (
     <PageErrorBoundary>
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-full p-8">
-            Loading...
-          </div>
-        }
-      >
+      <Suspense fallback={<PageLoading message="Loading page..." />}>
         <Component {...props} />
       </Suspense>
     </PageErrorBoundary>

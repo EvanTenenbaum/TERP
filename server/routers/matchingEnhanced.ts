@@ -1,8 +1,11 @@
 import { z } from "zod";
+import { inArray } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as historicalAnalysis from "../historicalAnalysis";
+import { getDb } from "../db";
+import { clients } from "../../drizzle/schema";
 
 /**
  * Matching Router (Enhanced Version)
@@ -161,6 +164,28 @@ export const matchingEnhancedRouter = router({
     .query(async () => {
       try {
         const results = await matchingEngine.getAllActiveNeedsWithMatches();
+        const db = await getDb();
+        const clientNameMap = new Map<number, string>();
+
+        if (db) {
+          const clientIds = Array.from(
+            new Set(results.map(result => result.clientId))
+          );
+
+          if (clientIds.length > 0) {
+            const clientRows = await db
+              .select({
+                id: clients.id,
+                name: clients.name,
+              })
+              .from(clients)
+              .where(inArray(clients.id, clientIds));
+
+            for (const client of clientRows) {
+              clientNameMap.set(client.id, client.name);
+            }
+          }
+        }
 
         // Helper to safely extract client name from sourceData
         const getClientName = (
@@ -209,10 +234,9 @@ export const matchingEnhancedRouter = router({
           result.matches.map(match => ({
             clientNeedId: result.clientNeedId ?? 0,
             clientId: result.clientId,
-            clientName: getClientName(
-              match.sourceData,
-              `Client ${result.clientId}`
-            ),
+            clientName:
+              clientNameMap.get(result.clientId) ||
+              getClientName(match.sourceData, `Client ${result.clientId}`),
             strain: getStrain(match.sourceData),
             priority:
               match.type === "EXACT"

@@ -5,6 +5,7 @@
 
 import { eq, and, or, like, desc, asc, sql, isNull } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
+import { hasPhotographyCompleteFlagColumn } from "./lib/photographyCompleteCompatibility";
 import { getDb } from "./db";
 import { AppError } from "./_core/errors";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
@@ -48,6 +49,52 @@ const safeProductSelect = {
   createdAt: products.createdAt,
   updatedAt: products.updatedAt,
 };
+
+async function getCompatibleBatchSelect() {
+  const hasPhotographyFlag = await hasPhotographyCompleteFlagColumn();
+  const isPhotographyCompleteSelect = hasPhotographyFlag
+    ? batches.isPhotographyComplete
+    : sql<boolean>`CASE
+        WHEN ${batches.batchStatus} = 'PHOTOGRAPHY_COMPLETE' THEN true
+        ELSE false
+      END`.as("isPhotographyComplete");
+
+  return {
+    id: batches.id,
+    code: batches.code,
+    deletedAt: batches.deletedAt,
+    version: batches.version,
+    sku: batches.sku,
+    productId: batches.productId,
+    lotId: batches.lotId,
+    batchStatus: batches.batchStatus,
+    isPhotographyComplete: isPhotographyCompleteSelect,
+    statusId: batches.statusId,
+    grade: batches.grade,
+    isSample: batches.isSample,
+    sampleOnly: batches.sampleOnly,
+    sampleAvailable: batches.sampleAvailable,
+    cogsMode: batches.cogsMode,
+    unitCogs: batches.unitCogs,
+    unitCogsMin: batches.unitCogsMin,
+    unitCogsMax: batches.unitCogsMax,
+    paymentTerms: batches.paymentTerms,
+    ownershipType: batches.ownershipType,
+    amountPaid: batches.amountPaid,
+    metadata: batches.metadata,
+    photoSessionEventId: batches.photoSessionEventId,
+    onHandQty: batches.onHandQty,
+    sampleQty: batches.sampleQty,
+    reservedQty: batches.reservedQty,
+    quarantineQty: batches.quarantineQty,
+    holdQty: batches.holdQty,
+    defectiveQty: batches.defectiveQty,
+    publishEcom: batches.publishEcom,
+    publishB2b: batches.publishB2b,
+    createdAt: batches.createdAt,
+    updatedAt: batches.updatedAt,
+  };
+}
 
 // ============================================================================
 // VENDOR QUERIES (DEPRECATED - Use Supplier functions below)
@@ -918,6 +965,7 @@ export async function getBatchesWithDetails(
   if (!db) return { items: [], nextCursor: null, hasMore: false };
 
   const applyPagination = options?.applyPagination !== false;
+  const batchSelect = await getCompatibleBatchSelect();
 
   // Build where conditions
   const conditions = [];
@@ -1038,7 +1086,7 @@ export async function getBatchesWithDetails(
   // Join batches with products, brands, lots, and canonical supplier client
   const baseQuery = db
     .select({
-      batch: batches,
+      batch: batchSelect,
       product: safeProductSelect,
       brand: brands,
       lot: lots,
@@ -1078,6 +1126,7 @@ export async function searchBatches(
 ) {
   const db = await getDb();
   if (!db) return { items: [], nextCursor: null, hasMore: false };
+  const batchSelect = await getCompatibleBatchSelect();
 
   // Build where conditions
   // BUG-098 FIX: Also search in clients.name for canonical supplier data
@@ -1101,7 +1150,7 @@ export async function searchBatches(
   // BUG-122: Removed deprecated vendor field - use supplierClient instead
   const result = await db
     .select({
-      batch: batches,
+      batch: batchSelect,
       product: safeProductSelect,
       brand: brands,
       lot: lots,
@@ -2114,7 +2163,11 @@ export async function calculateBatchProfitability(batchId: number) {
 
   // Get batch details
   const [batch] = await db
-    .select()
+    .select({
+      id: batches.id,
+      unitCogs: batches.unitCogs,
+      onHandQty: batches.onHandQty,
+    })
     .from(batches)
     .where(eq(batches.id, batchId));
   if (!batch) throw new Error("Batch not found");
@@ -2193,7 +2246,13 @@ export async function getTopProfitableBatches(limit: number = 10) {
   if (!db) throw new Error("Database not available");
 
   // Get all batches
-  const allBatches = await db.select().from(batches);
+  const allBatches = await db
+    .select({
+      id: batches.id,
+      sku: batches.sku,
+      batchStatus: batches.batchStatus,
+    })
+    .from(batches);
 
   // Calculate profitability for each and collect results
   const results = [];
@@ -2312,11 +2371,12 @@ export async function getProfitabilitySummary() {
 export async function getBatchesBySupplier(supplierClientId: number) {
   const db = await getDb();
   if (!db) return [];
+  const batchSelect = await getCompatibleBatchSelect();
 
   // INV-PARTY-001: Join batches → lots → filter by supplierClientId (party model)
   const result = await db
     .select({
-      batch: batches,
+      batch: batchSelect,
       lot: lots,
       product: safeProductSelect,
       brand: brands,

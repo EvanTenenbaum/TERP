@@ -24,6 +24,13 @@ import {
 } from "./services/orderAccountingService";
 import { syncClientBalance } from "./services/clientBalanceService";
 import { calculateAvailableQty } from "./inventoryUtils";
+import {
+  coerceOrderFulfillmentStatus,
+  coerceOrderStatusHistoryFulfillmentStatus,
+  getStoredFulfillmentStatus,
+  isReadyForPackingLikeStatus,
+  normalizeFulfillmentStatus,
+} from "./lib/fulfillmentStatusCompatibility";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
 // ST-053: Import DbTransaction type for proper typing
@@ -103,6 +110,15 @@ export interface ConvertQuoteToSaleInput {
     | "CONSIGNMENT";
   cashPayment?: number;
   notes?: string;
+}
+
+function normalizeOrderRecord<T extends { fulfillmentStatus?: string | null }>(
+  order: T
+): T {
+  return {
+    ...order,
+    fulfillmentStatus: normalizeFulfillmentStatus(order.fulfillmentStatus),
+  };
 }
 
 // ============================================================================
@@ -292,6 +308,10 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       dueDate = calculateDueDate(input.paymentTerms);
     }
 
+    const readyForPackingStatus = !isDraft
+      ? await getStoredFulfillmentStatus("READY_FOR_PACKING")
+      : undefined;
+
     // 7. Create order record
     await tx.insert(orders).values({
       orderNumber,
@@ -313,7 +333,9 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       dueDate: dueDate,
       saleStatus:
         !isDraft && input.orderType === "SALE" ? "PENDING" : undefined,
-      fulfillmentStatus: !isDraft ? "READY_FOR_PACKING" : undefined,
+      fulfillmentStatus: readyForPackingStatus
+        ? coerceOrderFulfillmentStatus(readyForPackingStatus)
+        : undefined,
       notes: input.notes,
       createdBy: actorId,
     });
@@ -403,7 +425,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       throw new Error("Failed to create order");
     }
 
-    return order;
+    return normalizeOrderRecord(order) as Order;
   });
 }
 
@@ -445,7 +467,7 @@ export async function getOrderById(id: number): Promise<Order | null> {
   }
 
   return {
-    ...order,
+    ...normalizeOrderRecord(order),
     items: parsedItems,
   } as Order;
 }
@@ -499,7 +521,7 @@ export async function getOrdersByClient(
       }
     }
     return {
-      ...order,
+      ...normalizeOrderRecord(order),
       items: parsedItems,
     };
   }) as Order[];
@@ -546,7 +568,7 @@ export async function getAllOrders(filters?: {
   const normalizedFulfillmentStatus =
     normalizeOptionalStatus(fulfillmentStatus);
 
-  const conditions: ReturnType<typeof eq>[] = [];
+  const conditions: SQL<unknown>[] = [];
 
   if (orderType) {
     conditions.push(eq(orders.orderType, orderType));
@@ -627,12 +649,21 @@ export async function getAllOrders(filters?: {
         normalizedFulfillmentStatus as (typeof validFulfillmentStatuses)[number]
       )
     ) {
-      conditions.push(
-        eq(
-          orders.fulfillmentStatus,
-          normalizedFulfillmentStatus as (typeof validFulfillmentStatuses)[number]
-        )
-      );
+      if (normalizedFulfillmentStatus === "READY_FOR_PACKING") {
+        conditions.push(
+          safeInArray(orders.fulfillmentStatus, [
+            "READY_FOR_PACKING",
+            "PENDING",
+          ])
+        );
+      } else {
+        conditions.push(
+          eq(
+            orders.fulfillmentStatus,
+            normalizedFulfillmentStatus as (typeof validFulfillmentStatuses)[number]
+          )
+        );
+      }
     }
   }
 
@@ -692,7 +723,7 @@ export async function getAllOrders(filters?: {
     }
 
     return {
-      ...row.orders,
+      ...normalizeOrderRecord(row.orders),
       items: parsedItems,
       client: row.clients,
     } as Order;
@@ -1285,6 +1316,8 @@ export async function confirmDraftOrder(input: {
     const total = parseFloat(draft.total as string);
     const saleStatus =
       cashPayment >= total ? "PAID" : cashPayment > 0 ? "PARTIAL" : "PENDING";
+    const readyForPackingStatus =
+      await getStoredFulfillmentStatus("READY_FOR_PACKING");
 
     // 6. Update order to confirmed
     await tx
@@ -1296,7 +1329,9 @@ export async function confirmDraftOrder(input: {
         cashPayment: cashPayment.toString(),
         dueDate: dueDate,
         saleStatus: saleStatus,
-        fulfillmentStatus: "READY_FOR_PACKING",
+        fulfillmentStatus: coerceOrderFulfillmentStatus(
+          readyForPackingStatus
+        ),
         notes: input.notes || draft.notes,
         confirmedAt: new Date(),
       })
@@ -1764,7 +1799,9 @@ export async function updateOrderStatus(input: {
       );
     }
 
-    const oldStatus = order.fulfillmentStatus || "READY_FOR_PACKING";
+    const oldStatus =
+      normalizeFulfillmentStatus(order.fulfillmentStatus) ??
+      "READY_FOR_PACKING";
 
     // TERP-0016: Validate status transition using state machine
     if (!isValidStatusTransition("fulfillment", oldStatus, newStatus)) {
@@ -1772,8 +1809,9 @@ export async function updateOrderStatus(input: {
     }
 
     // Prepare update data
+    const storedNewStatus = await getStoredFulfillmentStatus(newStatus);
     const updateData: Record<string, unknown> = {
-      fulfillmentStatus: newStatus,
+      fulfillmentStatus: coerceOrderFulfillmentStatus(storedNewStatus),
     };
     if (newStatus === "PACKED") {
       updateData.packedAt = new Date();
@@ -1882,7 +1920,7 @@ export async function updateOrderStatus(input: {
 
     // TER-258: Handle CANCELLED — restore reserved inventory
     if (newStatus === "CANCELLED") {
-      if (oldStatus === "PACKED" || oldStatus === "READY_FOR_PACKING") {
+      if (oldStatus === "PACKED" || isReadyForPackingLikeStatus(oldStatus)) {
         // When cancelling a PACKED or READY_FOR_PACKING order, release the reserved quantities
         // for each item. TER-259 reserves inventory at creation/confirmation time,
         // so both READY_FOR_PACKING and PACKED orders may have active reservations.
@@ -1921,20 +1959,15 @@ export async function updateOrderStatus(input: {
 
     // Log status change in history
     const { orderStatusHistory } = await import("../drizzle/schema");
-    const validStatus:
-      | "READY_FOR_PACKING"
-      | "PACKED"
-      | "SHIPPED"
-      | "CANCELLED" =
-      newStatus === "READY_FOR_PACKING" ||
-      newStatus === "PACKED" ||
-      newStatus === "SHIPPED" ||
-      newStatus === "CANCELLED"
-        ? newStatus
-        : "READY_FOR_PACKING";
+    const storedHistoryStatus = await getStoredFulfillmentStatus(
+      newStatus,
+      "order_status_history"
+    );
     await tx.insert(orderStatusHistory).values({
       orderId,
-      fulfillmentStatus: validStatus,
+      fulfillmentStatus: coerceOrderStatusHistoryFulfillmentStatus(
+        storedHistoryStatus
+      ),
       changedBy: userId,
       notes: sanitizedNotes,
     });
@@ -1956,7 +1989,7 @@ export async function getOrderStatusHistory(orderId: number) {
   if (!db) throw new Error("Database not available");
   const { orderStatusHistory, users } = await import("../drizzle/schema");
 
-  return await db
+  const history = await db
     .select({
       id: orderStatusHistory.id,
       orderId: orderStatusHistory.orderId,
@@ -1970,6 +2003,11 @@ export async function getOrderStatusHistory(orderId: number) {
     .leftJoin(users, eq(orderStatusHistory.changedBy, users.id))
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(orderStatusHistory.changedAt);
+
+  return history.map(entry => ({
+    ...entry,
+    fulfillmentStatus: normalizeFulfillmentStatus(entry.fulfillmentStatus),
+  }));
 }
 
 // ============================================================================

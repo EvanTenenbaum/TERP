@@ -1837,23 +1837,25 @@ export function DirectIntakeWorkSurface() {
   return (
     <section
       {...keyboardProps}
-      className="linear-workspace-shell h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden"
+      className="h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden bg-background"
     >
-      <header className="linear-workspace-header">
-        <div className="linear-workspace-title-wrap">
-          <p className="linear-workspace-eyebrow">Inventory Intake</p>
-          <div>
-            <h2 className="linear-workspace-title flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Intake
-            </h2>
-            <p className="linear-workspace-description">
-              Keep key fields front and center, then use row details for
-              everything else.
-            </p>
-          </div>
+      <div className="flex flex-col gap-3 border-b border-border/70 bg-background px-3 py-3 md:flex-row md:items-center md:justify-between md:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="px-2.5 py-1">
+            Receiving
+          </Badge>
+          <Badge variant="outline">Pending {pendingCount}</Badge>
+          <Badge variant="outline">Submitted {submittedCount}</Badge>
+          <Badge
+            variant="outline"
+            className={cn(errorCount > 0 && "border-red-200 text-red-600")}
+          >
+            Errors {errorCount}
+          </Badge>
+          <Badge variant="outline">Qty {summary.totalQty}</Badge>
+          <Badge variant="outline">${summary.totalValue.toFixed(2)}</Badge>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {SaveStateIndicator}
           <Button
             variant="outline"
@@ -1863,40 +1865,6 @@ export function DirectIntakeWorkSurface() {
           >
             Edit Selected Details
           </Button>
-        </div>
-      </header>
-
-      <div className="linear-workspace-meta">
-        <div className="linear-workspace-meta-item">
-          <span className="linear-workspace-meta-label">Pending</span>
-          <span className="linear-workspace-meta-value">{pendingCount}</span>
-        </div>
-        <div className="linear-workspace-meta-item">
-          <span className="linear-workspace-meta-label">Submitted</span>
-          <span className="linear-workspace-meta-value">{submittedCount}</span>
-        </div>
-        <div className="linear-workspace-meta-item">
-          <span className="linear-workspace-meta-label">Errors</span>
-          <span
-            className={cn(
-              "linear-workspace-meta-value",
-              errorCount > 0 && "text-red-600"
-            )}
-          >
-            {errorCount}
-          </span>
-        </div>
-        <div className="linear-workspace-meta-item">
-          <span className="linear-workspace-meta-label">Qty</span>
-          <span className="linear-workspace-meta-value">
-            {summary.totalQty}
-          </span>
-        </div>
-        <div className="linear-workspace-meta-item">
-          <span className="linear-workspace-meta-label">Value</span>
-          <span className="linear-workspace-meta-value">
-            ${summary.totalValue.toFixed(2)}
-          </span>
         </div>
       </div>
 

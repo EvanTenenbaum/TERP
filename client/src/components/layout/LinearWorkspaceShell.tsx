@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import { Command, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { useUiDensity } from "@/hooks/useUiDensity";
 import { cn } from "@/lib/utils";
 
 export interface LinearWorkspaceTab<T extends string = string> {
@@ -36,47 +33,44 @@ export function LinearWorkspaceShell<T extends string>({
   className,
   section,
 }: LinearWorkspaceShellProps<T>) {
-  const { isCompact, toggleDensity } = useUiDensity();
+  const showHeader = Boolean(title || description || section);
+  const showMeta = meta.length > 0;
+  const showTabs = tabs.length > 1;
+  const showTabRow = showTabs || Boolean(commandStrip);
 
   return (
-    <section className={cn("linear-workspace-shell", className)}>
-      <header className="linear-workspace-header">
-        <div className="linear-workspace-title-wrap">
-          <p className="linear-workspace-eyebrow">
-            {section ? (
-              <>
-                <span className="linear-workspace-eyebrow-section">
-                  {section}
-                </span>
-                <span className="linear-workspace-eyebrow-sep" aria-hidden>
-                  {" "}
-                  /{" "}
-                </span>
-              </>
-            ) : null}
-            Operations Workspace
-          </p>
-          <div>
-            <h1 className="linear-workspace-title">{title}</h1>
-            <p className="linear-workspace-description">{description}</p>
+    <section
+      className={cn("linear-workspace-shell", className)}
+      data-single-tab={!showTabs}
+    >
+      {showHeader && (
+        <header className="linear-workspace-header">
+          <div className="linear-workspace-title-wrap">
+            <p className="linear-workspace-eyebrow">
+              {section ? (
+                <>
+                  <span className="linear-workspace-eyebrow-section">
+                    {section}
+                  </span>
+                  <span className="linear-workspace-eyebrow-sep" aria-hidden>
+                    {" "}
+                    /{" "}
+                  </span>
+                </>
+              ) : null}
+              Operations Workspace
+            </p>
+            <div>
+              <h1 className="linear-workspace-title">{title}</h1>
+              {description ? (
+                <p className="linear-workspace-description">{description}</p>
+              ) : null}
+            </div>
           </div>
-        </div>
+        </header>
+      )}
 
-        <div
-          className="linear-workspace-shortcuts"
-          aria-label="Workspace shortcuts"
-        >
-          <span className="linear-workspace-shortcut-chip">
-            <Search className="h-3.5 w-3.5" />
-            Search
-          </span>
-          <span className="linear-workspace-shortcut-chip">
-            <Command className="h-3.5 w-3.5" />K
-          </span>
-        </div>
-      </header>
-
-      {meta.length > 0 && (
+      {showMeta && (
         <div className="linear-workspace-meta" aria-label="Workspace metadata">
           {meta.map(item => (
             <div key={item.label} className="linear-workspace-meta-item">
@@ -92,35 +86,28 @@ export function LinearWorkspaceShell<T extends string>({
         onValueChange={value => onTabChange(value as T)}
         className="linear-workspace-tabs"
       >
-        <div className="linear-workspace-tab-row">
-          <TabsList
-            className={cn(
-              "linear-workspace-tabs-list",
-              `linear-workspace-tabs-count-${tabs.length}`
+        {showTabRow ? (
+          <div className="linear-workspace-tab-row">
+            {showTabs ? (
+              <div className="linear-workspace-tabs-scroller scrollbar-hide">
+                <TabsList className="linear-workspace-tabs-list">
+                  {tabs.map(tab => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="linear-workspace-tabs-trigger"
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+            ) : (
+              <div className="linear-workspace-tabs-spacer" aria-hidden />
             )}
-          >
-            {tabs.map(tab => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="linear-workspace-tabs-trigger"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <div className="linear-workspace-command-strip">
-            {commandStrip}
-            <Button
-              size="sm"
-              variant={isCompact ? "secondary" : "outline"}
-              onClick={toggleDensity}
-              data-testid="workspace-density-toggle"
-            >
-              {isCompact ? "Comfortable" : "Compact"}
-            </Button>
+            <div className="linear-workspace-command-strip">{commandStrip}</div>
           </div>
-        </div>
+        ) : null}
         {children}
       </Tabs>
     </section>

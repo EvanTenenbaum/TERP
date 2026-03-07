@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   ChevronDown,
   ChevronRight,
@@ -24,13 +24,14 @@ import { APP_TITLE } from "@/const";
 import {
   buildNavigationAccessModel,
   defaultQuickLinkPaths,
+  navigationItems,
   type NavigationGroupKey,
 } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useNavigationState } from "@/hooks/useNavigationState";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export interface SidebarProps {
@@ -40,23 +41,74 @@ export interface SidebarProps {
 
 const TERRACOTTA_ACTIVE = "border-l-[oklch(0.53_0.13_44)]";
 
+function normalizeNavRoute(path: string) {
+  const [rawPath, queryString = ""] = path.split("?");
+  const params = new URLSearchParams(queryString);
+
+  let pathname = rawPath;
+  if (pathname === "/orders") {
+    pathname = "/sales";
+  }
+  if (pathname === "/pick-pack") {
+    pathname = "/sales";
+    params.set("tab", "pick-pack");
+  }
+  if (pathname === "/direct-intake" || pathname === "/receiving") {
+    pathname = "/purchase-orders";
+    params.set("tab", "receiving");
+  }
+
+  return {
+    pathname,
+    tab: params.get("tab"),
+  };
+}
+
+function matchesNavRoute(currentPath: string, targetPath: string) {
+  const current = normalizeNavRoute(currentPath);
+  const target = normalizeNavRoute(targetPath);
+  const samePath =
+    current.pathname === target.pathname ||
+    (target.pathname !== "/" &&
+      current.pathname.startsWith(`${target.pathname}/`));
+
+  if (!samePath) {
+    return false;
+  }
+
+  if (target.tab) {
+    return current.tab === target.tab;
+  }
+
+  return true;
+}
+
+function getDefaultOpenGroups(currentPath: string) {
+  const activeGroup =
+    navigationItems.find(item => matchesNavRoute(currentPath, item.path))
+      ?.group ?? "sales";
+
+  return {
+    sales: activeGroup === "sales",
+    inventory: activeGroup === "inventory",
+    finance: activeGroup === "finance",
+    admin: activeGroup === "admin",
+  } satisfies Record<NavigationGroupKey, boolean>;
+}
+
 export const Sidebar = React.memo(function Sidebar({
   open = false,
   onClose,
 }: SidebarProps) {
   const [location, setLocation] = useLocation();
+  const search = useSearch();
   const { flags, isLoading: featureFlagsLoading } = useFeatureFlags();
   const { data: currentUser } = trpc.auth.me.useQuery(undefined, {
     staleTime: 60_000,
   });
   const [openGroups, setOpenGroups] = useState<
     Record<NavigationGroupKey, boolean>
-  >({
-    sales: true,
-    inventory: true,
-    finance: true,
-    admin: true,
-  });
+  >(() => getDefaultOpenGroups(`${location}${search || ""}`));
   const [collapsed, setCollapsed] = useState(false);
   const [showQuickLinkEditor, setShowQuickLinkEditor] = useState(false);
 
@@ -89,13 +141,6 @@ export const Sidebar = React.memo(function Sidebar({
   const groupedNavigation = navigationAccessModel.groups;
   const quickLinks = navigationAccessModel.quickLinks;
 
-  const normalizePath = useCallback((path: string) => {
-    if (path === "/direct-intake") {
-      return "/receiving";
-    }
-    return path;
-  }, []);
-
   const toggleGroup = useCallback((key: NavigationGroupKey) => {
     flushSync(() => {
       setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
@@ -104,15 +149,9 @@ export const Sidebar = React.memo(function Sidebar({
 
   const isActivePath = useCallback(
     (path: string) => {
-      const normalizedCurrent = normalizePath(location);
-      const normalizedTarget = normalizePath(path);
-      return (
-        normalizedCurrent === normalizedTarget ||
-        (normalizedTarget !== "/" &&
-          normalizedCurrent.startsWith(`${normalizedTarget}/`))
-      );
+      return matchesNavRoute(`${location}${search || ""}`, path);
     },
-    [location, normalizePath]
+    [location, search]
   );
 
   const handleLogout = useCallback(() => {
@@ -121,6 +160,13 @@ export const Sidebar = React.memo(function Sidebar({
   }, [onClose, setLocation]);
 
   const navRef = useRef<HTMLElement>(null);
+  const activeGroupKey = useMemo(
+    () =>
+      groupedNavigation.find(group =>
+        group.items.some(item => isActivePath(item.path))
+      )?.key ?? "sales",
+    [groupedNavigation, isActivePath]
+  );
 
   // Scroll the active nav item into view whenever the location changes
   useEffect(() => {
@@ -130,7 +176,13 @@ export const Sidebar = React.memo(function Sidebar({
     if (activeLink) {
       activeLink.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-  }, [location]);
+  }, [location, search]);
+
+  useEffect(() => {
+    setOpenGroups(prev =>
+      prev[activeGroupKey] ? prev : { ...prev, [activeGroupKey]: true }
+    );
+  }, [activeGroupKey]);
 
   return (
     <>
@@ -380,7 +432,6 @@ export const Sidebar = React.memo(function Sidebar({
           {!collapsed && (
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarImage src="/avatar.png" alt="User avatar" />
                 <AvatarFallback>
                   <UserCircle2 className="h-5 w-5" />
                 </AvatarFallback>

@@ -102,10 +102,18 @@ export async function getInventoryWithPricing(
     // SCHEMA-015: Removed strainId and vendors joins - columns don't exist in production
     // Use clients table for supplier data via supplierClientId
     let inventoryWithDetails: Array<{
-      batch: typeof batches.$inferSelect;
-      product: typeof products.$inferSelect | null;
-      lot: typeof lots.$inferSelect | null;
-      supplier: typeof clients.$inferSelect | null;
+      batchId: number;
+      batchSku: string;
+      batchProductId: number;
+      batchStatus: string;
+      batchGrade: string | null;
+      batchUnitCogs: string | null;
+      batchOnHandQty: string;
+      productId: number | null;
+      productName: string | null;
+      productCategory: string | null;
+      productSubcategory: string | null;
+      supplierName: string | null;
     }>;
 
     try {
@@ -113,10 +121,18 @@ export async function getInventoryWithPricing(
       // Status is included in the response for display and filtering on frontend
       inventoryWithDetails = await db
         .select({
-          batch: batches,
-          product: products,
-          lot: lots,
-          supplier: clients,
+          batchId: batches.id,
+          batchSku: batches.sku,
+          batchProductId: batches.productId,
+          batchStatus: batches.batchStatus,
+          batchGrade: batches.grade,
+          batchUnitCogs: batches.unitCogs,
+          batchOnHandQty: batches.onHandQty,
+          productId: products.id,
+          productName: products.nameCanonical,
+          productCategory: products.category,
+          productSubcategory: products.subcategory,
+          supplierName: clients.name,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
@@ -143,9 +159,17 @@ export async function getInventoryWithPricing(
       // Fallback query without joins in case of other schema issues
       const fallbackResults = await db
         .select({
-          batch: batches,
-          product: products,
-          lot: lots,
+          batchId: batches.id,
+          batchSku: batches.sku,
+          batchProductId: batches.productId,
+          batchStatus: batches.batchStatus,
+          batchGrade: batches.grade,
+          batchUnitCogs: batches.unitCogs,
+          batchOnHandQty: batches.onHandQty,
+          productId: products.id,
+          productName: products.nameCanonical,
+          productCategory: products.category,
+          productSubcategory: products.subcategory,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
@@ -162,7 +186,7 @@ export async function getInventoryWithPricing(
       // Map fallback results to expected format with null supplier
       inventoryWithDetails = fallbackResults.map(row => ({
         ...row,
-        supplier: null,
+        supplierName: null,
       }));
     }
 
@@ -203,18 +227,18 @@ export async function getInventoryWithPricing(
     // INV-CONSISTENCY-002: Include status for display/filtering
     // SCHEMA-015: Updated to use supplier instead of vendor, removed strain fields
     const inventoryItems = inventoryWithDetails
-      .filter(({ batch }) => batch !== null && batch !== undefined)
-      .map(({ batch, product, supplier }) => ({
-        id: batch.id,
-        productId: product?.id || undefined, // WSQA-002: Include productId for flexible lot selection
-        name: product?.nameCanonical || batch.sku || `Batch #${batch.id}`,
-        category: product?.category || undefined,
-        subcategory: product?.subcategory || undefined,
-        basePrice: parseNumber(batch.unitCogs, 0),
-        quantity: parseNumber(batch.onHandQty, 0),
-        grade: batch.grade || undefined,
-        vendor: supplier?.name || undefined, // Keep 'vendor' key name for backward compatibility
-        status: batch.batchStatus || undefined,
+      .filter(row => row.batchId !== null && row.batchId !== undefined)
+      .map(row => ({
+        id: row.batchId,
+        productId: row.productId || row.batchProductId || undefined, // WSQA-002: Include productId for flexible lot selection
+        name: row.productName || row.batchSku || `Batch #${row.batchId}`,
+        category: row.productCategory || undefined,
+        subcategory: row.productSubcategory || undefined,
+        basePrice: parseNumber(row.batchUnitCogs, 0),
+        quantity: parseNumber(row.batchOnHandQty, 0),
+        grade: row.batchGrade || undefined,
+        vendor: row.supplierName || undefined, // Keep 'vendor' key name for backward compatibility
+        status: row.batchStatus || undefined,
       }));
 
     // Calculate retail prices using pricing engine with error handling

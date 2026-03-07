@@ -22,6 +22,7 @@ import {
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -1110,11 +1111,11 @@ export function OrdersWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation("/orders/create");
+        setLocation(buildSalesWorkspacePath("create-order"));
       },
       "ctrl+n": e => {
         e.preventDefault();
-        setLocation("/orders/create");
+        setLocation(buildSalesWorkspacePath("create-order"));
       },
       arrowdown: e => {
         e.preventDefault();
@@ -1162,7 +1163,7 @@ export function OrdersWorkSurface() {
 
   // Handlers
   const handleEdit = (orderId: number) =>
-    setLocation(`/orders/create?draftId=${orderId}`);
+    setLocation(buildSalesWorkspacePath("create-order", { draftId: orderId }));
   const handleConfirm = (orderId: number) => {
     setSelectedOrderId(orderId);
     setShowConfirmDialog(true);
@@ -1307,7 +1308,7 @@ export function OrdersWorkSurface() {
                 Refresh
               </Button>
               <Button
-                onClick={() => setLocation("/orders/create")}
+                onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
                 data-testid="new-order-button"
               >
                 <Plus className="h-4 w-4 mr-2" />
