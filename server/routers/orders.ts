@@ -99,20 +99,11 @@ function checkConfirmRateLimit(userId: number): void {
 const lineItemInputSchema = z.object({
   batchId: z.number(),
   productDisplayName: z.string().optional(),
-  quantity: z
-    .number()
-    .positive("Quantity must be greater than 0")
-    .max(1_000_000, "Quantity must not exceed 1,000,000"),
+  quantity: z.number().positive("Quantity must be greater than 0"),
   isSample: z.boolean().default(false),
   // ORD-002: COGS must be non-negative
-  cogsPerUnit: z
-    .number()
-    .nonnegative("COGS per unit cannot be negative")
-    .max(100_000, "COGS per unit must not exceed 100,000"),
-  marginPercent: z
-    .number()
-    .max(100, "Margin percent must not exceed 100")
-    .optional(),
+  cogsPerUnit: z.number().nonnegative("COGS per unit cannot be negative"),
+  marginPercent: z.number().optional(),
   marginDollar: z.number().optional(),
   isCogsOverridden: z.boolean().default(false),
   cogsOverrideReason: z.string().optional(),
@@ -172,24 +163,18 @@ export const ordersRouter = router({
               batchId: z.number(),
               displayName: z.string().optional(),
               // ORD-002: Quantity and prices must be positive/non-negative
-              quantity: z
-                .number()
-                .positive("Quantity must be greater than 0")
-                .max(1_000_000, "Quantity must not exceed 1,000,000"),
+              quantity: z.number().positive("Quantity must be greater than 0"),
               unitPrice: z
                 .number()
-                .nonnegative("Unit price cannot be negative")
-                .max(100_000, "Unit price must not exceed 100,000"),
+                .nonnegative("Unit price cannot be negative"),
               isSample: z.boolean(),
               overridePrice: z
                 .number()
                 .nonnegative("Override price cannot be negative")
-                .max(100_000, "Override price must not exceed 100,000")
                 .optional(),
               overrideCogs: z
                 .number()
                 .nonnegative("Override COGS cannot be negative")
-                .max(100_000, "Override COGS must not exceed 100,000")
                 .optional(),
             })
           )
@@ -208,7 +193,7 @@ export const ordersRouter = router({
       try {
         order = await ordersDb.createOrder({
           ...input,
-          createdBy: userId,
+          actorId: userId,
         });
       } catch (error) {
         // TER-253: Convert archived/missing client errors to proper TRPCError
@@ -705,24 +690,18 @@ export const ordersRouter = router({
               batchId: z.number(),
               displayName: z.string().optional(),
               // ORD-002: Quantity and prices must be positive/non-negative
-              quantity: z
-                .number()
-                .positive("Quantity must be greater than 0")
-                .max(1_000_000, "Quantity must not exceed 1,000,000"),
+              quantity: z.number().positive("Quantity must be greater than 0"),
               unitPrice: z
                 .number()
-                .nonnegative("Unit price cannot be negative")
-                .max(100_000, "Unit price must not exceed 100,000"),
+                .nonnegative("Unit price cannot be negative"),
               isSample: z.boolean(),
               overridePrice: z
                 .number()
                 .nonnegative("Override price cannot be negative")
-                .max(100_000, "Override price must not exceed 100,000")
                 .optional(),
               overrideCogs: z
                 .number()
                 .nonnegative("Override COGS cannot be negative")
-                .max(100_000, "Override COGS must not exceed 100,000")
                 .optional(),
             })
           )

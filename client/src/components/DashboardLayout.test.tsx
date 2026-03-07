@@ -78,7 +78,7 @@ describe("DashboardLayout navigation", () => {
     expect(labelTexts).toEqual(["Sell", "Buy", "Finance", "Admin"]);
   });
 
-  it("navigates to canonical procurement spreadsheet destination from the sidebar", () => {
+  it("navigates to Purchase Orders from the sidebar", () => {
     render(
       <ThemeProvider>
         <DashboardLayout>
@@ -87,10 +87,8 @@ describe("DashboardLayout navigation", () => {
       </ThemeProvider>
     );
 
-    fireEvent.click(screen.getByText("Spreadsheet View"));
+    fireEvent.click(screen.getByText("Purchase Orders"));
 
-    expect(mockSetLocation).toHaveBeenCalledWith(
-      "/purchase-orders?tab=receiving&mode=spreadsheet"
-    );
+    expect(mockSetLocation).toHaveBeenCalledWith("/purchase-orders");
   });
 });

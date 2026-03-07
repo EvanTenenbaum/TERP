@@ -240,7 +240,7 @@ export const quotesRouter = router({
         })),
         validUntil: input.validUntil || addDays(new Date(), 30).toISOString(),
         notes: input.notes,
-        createdBy: userId,
+        actorId: userId,
       });
 
       logger.info({

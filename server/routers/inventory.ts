@@ -1180,7 +1180,7 @@ export const inventoryRouter = router({
 
         const result = await processIntake({
           ...input,
-          userId: getAuthenticatedUserId(ctx),
+          actorId: getAuthenticatedUserId(ctx),
         });
 
         inventoryLogger.operationSuccess("intake", {

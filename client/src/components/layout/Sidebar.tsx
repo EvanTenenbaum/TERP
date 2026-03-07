@@ -13,14 +13,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LogOut,
-  Menu,
-  Pin,
-  PinOff,
   UserCircle2,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { APP_TITLE } from "@/const";
 import {
   buildNavigationAccessModel,
   defaultQuickLinkPaths,
@@ -38,8 +34,6 @@ export interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
 }
-
-const TERRACOTTA_ACTIVE = "border-l-[oklch(0.53_0.13_44)]";
 
 function normalizeNavRoute(path: string) {
   const [rawPath, queryString = ""] = path.split("?");
@@ -110,7 +104,6 @@ export const Sidebar = React.memo(function Sidebar({
     Record<NavigationGroupKey, boolean>
   >(() => getDefaultOpenGroups(`${location}${search || ""}`));
   const [collapsed, setCollapsed] = useState(false);
-  const [showQuickLinkEditor, setShowQuickLinkEditor] = useState(false);
 
   const navigationScopeKey = useMemo(() => {
     if (currentUser?.id !== undefined && currentUser?.id !== null) {
@@ -122,7 +115,7 @@ export const Sidebar = React.memo(function Sidebar({
     return "anonymous";
   }, [currentUser?.email, currentUser?.id]);
 
-  const { pinnedPaths, isPinned, togglePin } = useNavigationState({
+  const { pinnedPaths } = useNavigationState({
     scopeKey: navigationScopeKey,
     maxPinnedPaths: 4,
     defaultPinnedPaths: [...defaultQuickLinkPaths],
@@ -139,7 +132,6 @@ export const Sidebar = React.memo(function Sidebar({
     [featureFlagsLoading, flags, pinnedPaths]
   );
   const groupedNavigation = navigationAccessModel.groups;
-  const quickLinks = navigationAccessModel.quickLinks;
 
   const toggleGroup = useCallback((key: NavigationGroupKey) => {
     flushSync(() => {
@@ -203,20 +195,8 @@ export const Sidebar = React.memo(function Sidebar({
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        <div className="flex items-center justify-between h-14 px-3 border-b border-border/80">
-          {!collapsed && (
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 text-primary rounded-lg p-2">
-                <Menu className="h-5 w-5" aria-hidden />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  <span className="font-display">{APP_TITLE}</span>
-                </p>
-                <p className="font-semibold text-foreground">Navigation</p>
-              </div>
-            </div>
-          )}
+        {/* TER-599: Simplified header — just collapse/expand button */}
+        <div className="flex items-center justify-end h-12 px-3 border-b border-border/80">
           <button
             onClick={() => setCollapsed(prev => !prev)}
             className="hidden md:flex p-2 hover:bg-accent rounded-md text-muted-foreground"
@@ -235,96 +215,6 @@ export const Sidebar = React.memo(function Sidebar({
           >
             <X className="h-5 w-5" />
           </button>
-        </div>
-
-        <div
-          className={cn(
-            "border-b border-border/70",
-            collapsed ? "px-2 py-2" : "px-3 py-2.5"
-          )}
-        >
-          {!collapsed && (
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Quick Actions
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowQuickLinkEditor(prev => !prev)}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                {showQuickLinkEditor ? "Done" : "Customize"}
-              </button>
-            </div>
-          )}
-
-          <div
-            className={cn(
-              "flex gap-1",
-              collapsed ? "flex-col items-center" : "flex-wrap"
-            )}
-          >
-            {quickLinks.map(link => {
-              const Icon = link.icon;
-              const isActive = isActivePath(link.path);
-              return (
-                <Link
-                  key={link.path}
-                  href={link.path}
-                  onClick={onClose}
-                  title={link.name}
-                  aria-label={link.ariaLabel ?? link.name}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md text-sm font-medium border-l-2 transition-colors max-md:min-h-11",
-                    collapsed ? "p-2 justify-center" : "px-3 py-1.5",
-                    isActive
-                      ? cn(TERRACOTTA_ACTIVE, "bg-muted/60 text-foreground")
-                      : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {!collapsed && <span>{link.name}</span>}
-                </Link>
-              );
-            })}
-          </div>
-
-          {!collapsed && showQuickLinkEditor && (
-            <div className="mt-3 border rounded-md p-2 bg-muted/40">
-              <p className="text-[11px] text-muted-foreground mb-2">
-                Pin up to 4 quick actions.
-              </p>
-              <div className="grid grid-cols-1 gap-1">
-                {navigationAccessModel.quickLinkCandidates.map(link => {
-                  const Icon = link.icon;
-                  const pinned = isPinned(link.path);
-                  return (
-                    <button
-                      key={link.path}
-                      type="button"
-                      onClick={() => togglePin(link.path)}
-                      className={cn(
-                        "flex items-center justify-between rounded px-2 py-1.5 text-sm border",
-                        pinned
-                          ? "border-primary/40 bg-primary/10 text-foreground"
-                          : "border-border bg-background text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <span className="inline-flex items-center gap-2 truncate">
-                        <Icon className="h-3.5 w-3.5" />
-                        {link.name}
-                      </span>
-                      {pinned ? (
-                        <Pin className="h-3.5 w-3.5" />
-                      ) : (
-                        <PinOff className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <nav ref={navRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
@@ -391,16 +281,16 @@ export const Sidebar = React.memo(function Sidebar({
                               aria-label={item.ariaLabel ?? item.name}
                               title={collapsed ? item.name : undefined}
                               className={cn(
-                                "flex items-center gap-3 rounded-md text-sm font-medium border-l-2 transition-colors max-md:min-h-11",
+                                // TER-603: Reduced active state visual weight
+                                "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11",
                                 collapsed
                                   ? "px-2 py-2 justify-center"
                                   : "px-3 py-2",
                                 isActive
                                   ? cn(
-                                      TERRACOTTA_ACTIVE,
-                                      "bg-muted/60 text-foreground"
+                                      "border-l border-[oklch(0.53_0.13_44)] bg-muted/40 text-foreground font-medium"
                                     )
-                                  : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  : "border-l border-transparent font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                               )}
                               aria-current={isActive ? "page" : undefined}
                             >
@@ -428,27 +318,27 @@ export const Sidebar = React.memo(function Sidebar({
           })}
         </nav>
 
+        {/* TER-599: Simplified footer — user info + logout only */}
         <div className="border-t border-border/80 p-3">
           {!collapsed && (
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarFallback>
-                  <UserCircle2 className="h-5 w-5" />
+            <div className="flex items-center gap-2 mb-2">
+              <Avatar className="h-7 w-7">
+                <AvatarFallback className="text-xs">
+                  <UserCircle2 className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">
-                  Signed in
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {currentUser?.name || currentUser?.email || "TERP Operator"}
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground truncate">
+                {currentUser?.name || currentUser?.email || "TERP Operator"}
+              </p>
             </div>
           )}
           <Button
-            variant="outline"
-            className={cn("mt-3", collapsed ? "w-10 p-0" : "w-full")}
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "text-muted-foreground hover:text-foreground",
+              collapsed ? "w-10 p-0" : "w-full justify-start"
+            )}
             onClick={handleLogout}
             aria-label="Logout"
           >

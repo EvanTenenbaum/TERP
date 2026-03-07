@@ -49,6 +49,13 @@ export interface NavigationItem {
   group: NavigationGroupKey;
   ariaLabel?: string;
   featureFlag?: string;
+  /**
+   * TER-597: When false, item is hidden from the sidebar but still appears
+   * in the Command Palette search. Absorbed items that became workspace tabs
+   * should set this to false instead of being removed entirely.
+   * Defaults to true when omitted.
+   */
+  sidebarVisible?: boolean;
 }
 
 export interface QuickLinkItem {
@@ -76,28 +83,14 @@ export const navigationGroups: Array<{
 ];
 
 export const navigationItems: NavigationItem[] = [
-  // TER-569: Notifications Hub replaces legacy Inbox page
-  {
-    name: "Notifications",
-    path: "/notifications",
-    icon: Bell,
-    group: "sales",
-    ariaLabel: "Review notifications, inbox items, and alerts",
-  },
-
+  // ─── Sell group (3 sidebar items) ──────────────────────────────────────────
   {
     name: SALES_WORKSPACE.title,
     path: "/sales",
     icon: ShoppingCart,
     group: "sales",
     ariaLabel: SALES_WORKSPACE.description,
-  },
-  {
-    name: DEMAND_SUPPLY_WORKSPACE.title,
-    path: "/demand-supply",
-    icon: GitMerge,
-    group: "sales",
-    ariaLabel: DEMAND_SUPPLY_WORKSPACE.description,
+    sidebarVisible: true,
   },
   {
     name: RELATIONSHIPS_WORKSPACE.title,
@@ -105,15 +98,27 @@ export const navigationItems: NavigationItem[] = [
     icon: Users,
     group: "sales",
     ariaLabel: RELATIONSHIPS_WORKSPACE.description,
+    sidebarVisible: true,
   },
-  // NAV-002: Added Pick & Pack for order fulfillment workflow
-  // TERP-0005: Moved from Sales to Inventory group
+  {
+    name: DEMAND_SUPPLY_WORKSPACE.title,
+    path: "/demand-supply",
+    icon: GitMerge,
+    group: "sales",
+    ariaLabel: DEMAND_SUPPLY_WORKSPACE.description,
+    sidebarVisible: true,
+  },
+
+  // Absorbed into Sales workspace tabs — hidden from sidebar, visible in Command Palette
+  // NAV-002: Pick & Pack absorbed as Sales tab
+  // TERP-0005: Moved from Sales to Inventory group; now absorbed back under Sales workspace
   {
     name: "Pick & Pack",
     path: "/sales?tab=pick-pack",
     icon: PackageOpen,
-    group: "inventory",
+    group: "sales",
     ariaLabel: "Order fulfillment and packing workflow",
+    sidebarVisible: false,
   },
   {
     name: "Sales Sheets",
@@ -121,6 +126,7 @@ export const navigationItems: NavigationItem[] = [
     icon: Layers,
     group: "sales",
     ariaLabel: "Create and share sales sheets with clients",
+    sidebarVisible: false,
   },
   {
     name: "Live Shopping",
@@ -128,25 +134,20 @@ export const navigationItems: NavigationItem[] = [
     icon: Video,
     group: "sales",
     ariaLabel: "Live shopping sessions with clients",
+    sidebarVisible: false,
     // NOTE: Feature flag intentionally omitted to ensure BUG-073 fix remains active
-    // Add featureFlag: "live-shopping" when ready for controlled rollout
   },
-  // TERP-0005: Moved Invoices from Sales to Finance group
-  {
-    name: "Invoices",
-    path: "/accounting/invoices",
-    icon: FileText,
-    group: "finance",
-    ariaLabel: "Manage invoices and billing",
-  },
-  // NAV-006: Leaderboard for sales performance tracking
+  // NAV-006: Leaderboard absorbed — hidden from sidebar
   {
     name: "Leaderboard",
     path: "/leaderboard",
     icon: Trophy,
     group: "sales",
     ariaLabel: "Sales performance leaderboard",
+    sidebarVisible: false,
   },
+
+  // ─── Buy group (2 sidebar items) ───────────────────────────────────────────
   {
     // MEET-053: User-friendly terminology - "Inventory" instead of "Batches"
     name: INVENTORY_WORKSPACE.title,
@@ -154,23 +155,7 @@ export const navigationItems: NavigationItem[] = [
     icon: PackageCheck,
     group: "inventory",
     ariaLabel: INVENTORY_WORKSPACE.description,
-  },
-  // NAV-003: Added Photography Queue for product photography workflow
-  {
-    name: "Photography",
-    path: "/photography",
-    icon: Camera,
-    group: "inventory",
-    ariaLabel: "Product photography queue and workflow management",
-  },
-  { name: "Samples", path: "/samples", icon: Beaker, group: "inventory" },
-  // TERP-0005: Rename Direct Intake to Intake while preserving route alias
-  {
-    name: "Intake",
-    path: "/purchase-orders?tab=receiving",
-    icon: Download,
-    group: "inventory",
-    ariaLabel: "Intake inventory into the system",
+    sidebarVisible: true,
   },
   {
     name: "Purchase Orders",
@@ -178,6 +163,34 @@ export const navigationItems: NavigationItem[] = [
     icon: Truck,
     ariaLabel: "Purchase order queue",
     group: "inventory",
+    sidebarVisible: true,
+  },
+
+  // Absorbed into Inventory workspace tabs — hidden from sidebar, visible in Command Palette
+  // NAV-003: Photography absorbed as Inventory tab
+  {
+    name: "Photography",
+    path: "/photography",
+    icon: Camera,
+    group: "inventory",
+    ariaLabel: "Product photography queue and workflow management",
+    sidebarVisible: false,
+  },
+  {
+    name: "Samples",
+    path: "/samples",
+    icon: Beaker,
+    group: "inventory",
+    sidebarVisible: false,
+  },
+  // TERP-0005: Intake absorbed as Purchase Orders receiving tab
+  {
+    name: "Intake",
+    path: "/purchase-orders?tab=receiving",
+    icon: Download,
+    group: "inventory",
+    ariaLabel: "Intake inventory into the system",
+    sidebarVisible: false,
   },
   {
     name: "Spreadsheet View",
@@ -186,14 +199,17 @@ export const navigationItems: NavigationItem[] = [
     group: "inventory",
     ariaLabel: "Spreadsheet view for inventory and clients",
     featureFlag: "spreadsheet-view",
+    sidebarVisible: false,
   },
 
+  // ─── Finance group (3 sidebar items) ───────────────────────────────────────
   {
     name: "Accounting",
     path: "/accounting",
     icon: CreditCard,
     group: "finance",
     ariaLabel: "Accounts receivable and payable management",
+    sidebarVisible: true,
   },
   {
     name: CREDITS_WORKSPACE.title,
@@ -201,17 +217,36 @@ export const navigationItems: NavigationItem[] = [
     icon: Coins,
     group: "finance",
     ariaLabel: CREDITS_WORKSPACE.description,
+    sidebarVisible: true,
   },
-  // TER-99: Client Ledger — direct access to client transaction history
+  {
+    name: "Reports",
+    path: "/analytics",
+    icon: BarChart3,
+    group: "finance",
+    sidebarVisible: true,
+  },
+
+  // Absorbed into Finance workspaces — hidden from sidebar, visible in Command Palette
+  // TERP-0005: Invoices absorbed into Accounting workspace
+  {
+    name: "Invoices",
+    path: "/accounting/invoices",
+    icon: FileText,
+    group: "finance",
+    ariaLabel: "Manage invoices and billing",
+    sidebarVisible: false,
+  },
+  // TER-99: Client Ledger absorbed into Accounting workspace (Ledger tab)
   {
     name: "Client Ledger",
     path: "/client-ledger",
     icon: BookOpen,
     group: "finance",
     ariaLabel: "View client transaction history and balance",
+    sidebarVisible: false,
   },
-  { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
-  // NAV-012: Pricing Rules for managing pricing strategies
+  // NAV-012: Pricing Rules absorbed into Settings workspace
   // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules to match App.tsx route
   {
     name: "Pricing Rules",
@@ -219,6 +254,7 @@ export const navigationItems: NavigationItem[] = [
     icon: Tag,
     group: "finance",
     ariaLabel: "Configure pricing rules and strategies",
+    sidebarVisible: false,
   },
   {
     name: "COGS Settings",
@@ -226,64 +262,97 @@ export const navigationItems: NavigationItem[] = [
     icon: Coins,
     group: "finance",
     ariaLabel: "Configure cost of goods sold settings",
+    sidebarVisible: false,
   },
 
-  // QA-W2-008: Use UserCog icon to avoid duplicate with Clients
-  { name: "Users", path: "/users", icon: UserCog, group: "admin" },
-  // UX-010: Renamed "Settings" to "System Settings" to distinguish from personal account settings
+  // ─── Admin group (3 sidebar items) ─────────────────────────────────────────
+  // TER-595: Calendar absorbs Scheduling and Time Clock as tabs
   {
-    name: "System Settings",
+    name: "Calendar",
+    path: "/calendar",
+    icon: Calendar,
+    group: "admin",
+    sidebarVisible: true,
+  },
+  // UX-010: Settings absorbs Users, Locations, Pricing Rules, Feature Flags, COGS
+  {
+    name: "Settings",
     path: "/settings",
     icon: Settings,
     group: "admin",
+    sidebarVisible: true,
   },
-  { name: "Calendar", path: "/calendar", icon: Calendar, group: "admin" },
-  // NAV-005: Added Todo Lists for task management
+  // TER-569: Notifications Hub absorbs Todo Lists as tabs
   {
-    name: "Todo Lists",
-    path: "/todos",
-    icon: CheckSquare,
+    name: "Notifications",
+    path: "/notifications",
+    icon: Bell,
     group: "admin",
-    ariaLabel: "Personal task management and todo lists",
+    ariaLabel: "Review notifications, inbox items, alerts, and task lists",
+    sidebarVisible: true,
   },
-  // Sprint 4 Track D: Scheduling System - Room booking, shifts, deliveries
+
+  // Absorbed into Admin workspace tabs — hidden from sidebar, visible in Command Palette
+  // QA-W2-008: Users absorbed into Settings workspace
   {
-    name: "Scheduling",
-    path: "/scheduling",
-    icon: CalendarClock,
+    name: "Users",
+    path: "/users",
+    icon: UserCog,
     group: "admin",
+    sidebarVisible: false,
   },
-  // MEET-048: Time Clock for hour tracking
-  {
-    name: "Time Clock",
-    path: "/time-clock",
-    icon: Clock,
-    group: "admin",
-    ariaLabel: "Clock in/out and manage timesheets",
-  },
-  // FEAT-017: Direct access to Feature Flags for improved discoverability
-  {
-    name: "Feature Flags",
-    path: "/settings/feature-flags",
-    icon: Flag,
-    group: "admin",
-    ariaLabel: "Manage feature flags and rollouts",
-  },
-  // NAV-013: Workflow Queue for managing workflow states
-  {
-    name: "Workflow Queue",
-    path: "/workflow-queue",
-    icon: Workflow,
-    group: "admin",
-    ariaLabel: "Manage workflow statuses and queues",
-  },
-  // TERP-0005: Add Locations to Admin group
+  // TERP-0005: Locations absorbed into Settings workspace
   {
     name: "Locations",
     path: "/locations",
     icon: MapPin,
     group: "admin",
     ariaLabel: "Manage warehouse and storage locations",
+    sidebarVisible: false,
+  },
+  // Sprint 4 Track D: Scheduling absorbed into Calendar workspace
+  {
+    name: "Scheduling",
+    path: "/scheduling",
+    icon: CalendarClock,
+    group: "admin",
+    sidebarVisible: false,
+  },
+  // MEET-048: Time Clock absorbed into Calendar workspace
+  {
+    name: "Time Clock",
+    path: "/time-clock",
+    icon: Clock,
+    group: "admin",
+    ariaLabel: "Clock in/out and manage timesheets",
+    sidebarVisible: false,
+  },
+  // FEAT-017: Feature Flags absorbed into Settings workspace
+  {
+    name: "Feature Flags",
+    path: "/settings/feature-flags",
+    icon: Flag,
+    group: "admin",
+    ariaLabel: "Manage feature flags and rollouts",
+    sidebarVisible: false,
+  },
+  // NAV-013: Workflow Queue absorbed — hidden from sidebar
+  {
+    name: "Workflow Queue",
+    path: "/workflow-queue",
+    icon: Workflow,
+    group: "admin",
+    ariaLabel: "Manage workflow statuses and queues",
+    sidebarVisible: false,
+  },
+  // NAV-005: Todo Lists absorbed into Notifications workspace
+  {
+    name: "Todo Lists",
+    path: "/todos",
+    icon: CheckSquare,
+    group: "admin",
+    ariaLabel: "Personal task management and todo lists",
+    sidebarVisible: false,
   },
 ];
 
@@ -413,7 +482,14 @@ export function buildNavigationGroups(options?: {
       item => item.group === group.key
     );
 
-    const items = itemsInGroup.filter(item => {
+    // TER-597: Filter out items with sidebarVisible: false for the sidebar.
+    // Items with sidebarVisible: false are still included in commandNavigationItems
+    // (via buildNavigationAccessModel) for Command Palette continuity.
+    const sidebarItems = itemsInGroup.filter(
+      item => item.sidebarVisible !== false
+    );
+
+    const items = sidebarItems.filter(item => {
       if (!item.featureFlag) {
         return true;
       }
@@ -426,7 +502,7 @@ export function buildNavigationGroups(options?: {
     });
 
     const loadingFeatureItems = flagsLoading
-      ? itemsInGroup.filter(item => Boolean(item.featureFlag))
+      ? sidebarItems.filter(item => Boolean(item.featureFlag))
       : [];
 
     return {
@@ -454,7 +530,17 @@ export function buildNavigationAccessModel(options?: {
     flags: options?.flags,
     flagsLoading: options?.flagsLoading,
   });
-  const commandNavigationItems = groups.flatMap(group => group.items);
+
+  // TER-597: commandNavigationItems includes ALL navigation items (including
+  // sidebarVisible: false ones) so the Command Palette can navigate to any page.
+  const allAccessibleItems = navigationItems.filter(item => {
+    if (!item.featureFlag) return true;
+    if (options?.flagsLoading) return false;
+    return (options?.flags ?? {})[item.featureFlag] ?? false;
+  });
+
+  const commandNavigationItems = allAccessibleItems;
+
   const accessiblePaths = new Set(
     commandNavigationItems
       .map(item => item.path)
