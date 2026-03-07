@@ -136,6 +136,17 @@ export const env = {
   get enableTestAuth() {
     return process.env.ENABLE_TEST_AUTH === "true";
   },
+  // Idempotency cache backend: "db" (default, multi-instance safe) or "memory" (single-instance only)
+  // Set IDEMPOTENCY_BACKEND=memory to roll back to in-memory behavior during an incident.
+  // TER-593: Query-level timeout in milliseconds (default: 30000 = 30s)
+  get QUERY_TIMEOUT_MS(): number {
+    const val = parseInt(process.env.QUERY_TIMEOUT_MS ?? "30000", 10);
+    return Number.isNaN(val) || val <= 0 ? 30000 : val;
+  },
+  get idempotencyBackend(): "db" | "memory" {
+    const val = process.env.IDEMPOTENCY_BACKEND;
+    return val === "memory" ? "memory" : "db";
+  },
   // QA authentication (for deterministic RBAC testing)
   // SECURITY: Only enabled in non-production environments
   get qaAuthEnabled() {
@@ -144,13 +155,6 @@ export const env = {
     // Safety: Never enable in production
     return enabled && !isProduction;
   },
-  // Query timeout in milliseconds (used by transaction wrapper and query timeout utility)
-  get QUERY_TIMEOUT_MS() {
-    const raw = process.env.QUERY_TIMEOUT_MS;
-    if (raw === undefined) return 30000;
-    const parsed = parseInt(raw, 10);
-    return isNaN(parsed) || parsed <= 0 ? 30000 : parsed;
-  },
   // Demo mode: Auto-login as Super Admin for demo/internal use
   // When enabled:
   // - Visitors are auto-authenticated as Super Admin
@@ -158,32 +162,6 @@ export const env = {
   // - Works in production NODE_ENV (explicit demo flag)
   get DEMO_MODE() {
     return process.env.DEMO_MODE === "true";
-  },
-  /**
-   * OVERPAYMENT_TOLERANCE_CENTS controls how much a payment may exceed the
-   * outstanding invoice amount before it is rejected.
-   *
-   * Default: 100 cents ($1.00). This is intentionally generous enough to
-   * absorb rounding differences introduced by wire transfers and ACH batching,
-   * while still blocking clear overpayments.
-   *
-   * Set to 0 to disable tolerance entirely (strict mode).
-   * Set to a higher value (e.g. 500 for $5.00) if your banking partners
-   * commonly add small processing fees.
-   *
-   * @example OVERPAYMENT_TOLERANCE_CENTS=100   # default — allow up to $1.00 over
-   * @example OVERPAYMENT_TOLERANCE_CENTS=0     # strict — no overpayment at all
-   */
-  get overpaymentToleranceCents(): number {
-    const raw = process.env.OVERPAYMENT_TOLERANCE_CENTS;
-    if (raw === undefined || raw === "") {
-      return 100; // default: $1.00
-    }
-    const parsed = parseInt(raw, 10);
-    if (Number.isNaN(parsed) || parsed < 0) {
-      return 100; // fall back to default on bad config
-    }
-    return parsed;
   },
 };
 
