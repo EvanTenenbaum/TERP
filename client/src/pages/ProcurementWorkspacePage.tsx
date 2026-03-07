@@ -19,7 +19,7 @@ type ProcurementTab =
 const PROCUREMENT_TABS = [
   { value: "purchase-orders", label: "Purchase Orders" },
   { value: "product-intake", label: "Product Intake" },
-  { value: "receiving", label: "Receiving" },
+  { value: "receiving", label: "Intake" },
   { value: "inventory-browse", label: "Inventory Browse" },
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
@@ -34,7 +34,7 @@ export default function ProcurementWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title="Procurement"
-      description="Run the complete procurement spine from Purchase Order to Product Intake to Intake corrections."
+      description="Run the complete procurement spine from Purchase Order to Product Intake to Intake."
       section="Buy"
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}

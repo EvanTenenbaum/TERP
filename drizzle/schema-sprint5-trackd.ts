@@ -216,10 +216,7 @@ export const orderTransactionFees = mysqlTable(
     orderId: int("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    clientFeeConfigId: int("client_fee_config_id").references(
-      () => clientTransactionFees.id,
-      { onDelete: "set null" }
-    ),
+    clientFeeConfigId: int("client_fee_config_id"),
 
     // Fee details at time of order
     feeType: feeTypeEnum.notNull(),
@@ -242,6 +239,12 @@ export const orderTransactionFees = mysqlTable(
     clientFeeIdx: index("idx_order_fees_client_config").on(
       table.clientFeeConfigId
     ),
+    // Explicit short FK name to avoid MySQL 64-char identifier limit
+    clientFeeFk: foreignKey({
+      name: "fk_order_fees_client_config",
+      columns: [table.clientFeeConfigId],
+      foreignColumns: [clientTransactionFees.id],
+    }).onDelete("set null"),
   })
 );
 
@@ -380,9 +383,7 @@ export const productCategoryAssignments = mysqlTable(
     productId: int("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
-    categoryId: int("category_id")
-      .notNull()
-      .references(() => productCategories.id, { onDelete: "cascade" }),
+    categoryId: int("category_id").notNull(),
     isPrimary: boolean("is_primary").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
@@ -393,6 +394,12 @@ export const productCategoryAssignments = mysqlTable(
       table.productId,
       table.categoryId
     ),
+    // Explicit short FK name to avoid MySQL 64-char identifier limit
+    categoryFk: foreignKey({
+      name: "fk_pca_category",
+      columns: [table.categoryId],
+      foreignColumns: [productCategories.id],
+    }).onDelete("cascade"),
   })
 );
 
@@ -623,13 +630,8 @@ export const serviceInvoiceLineItems = mysqlTable(
   "service_invoice_line_items",
   {
     id: int("id").autoincrement().primaryKey(),
-    serviceInvoiceId: int("service_invoice_id")
-      .notNull()
-      .references(() => serviceInvoices.id, { onDelete: "cascade" }),
-    serviceDefinitionId: int("service_definition_id").references(
-      () => serviceDefinitions.id,
-      { onDelete: "set null" }
-    ),
+    serviceInvoiceId: int("service_invoice_id").notNull(),
+    serviceDefinitionId: int("service_definition_id"),
 
     serviceName: varchar("service_name", { length: 100 }).notNull(),
     serviceType: serviceTypeEnum.notNull(),
@@ -645,6 +647,17 @@ export const serviceInvoiceLineItems = mysqlTable(
   },
   table => ({
     invoiceIdIdx: index("idx_sili_invoice").on(table.serviceInvoiceId),
+    // Explicit short FK names to avoid MySQL 64-char identifier limit
+    invoiceFk: foreignKey({
+      name: "fk_sili_invoice",
+      columns: [table.serviceInvoiceId],
+      foreignColumns: [serviceInvoices.id],
+    }).onDelete("cascade"),
+    serviceDefFk: foreignKey({
+      name: "fk_sili_service_def",
+      columns: [table.serviceDefinitionId],
+      foreignColumns: [serviceDefinitions.id],
+    }).onDelete("set null"),
   })
 );
 

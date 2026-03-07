@@ -410,13 +410,18 @@ jobs:
           done
 
       - name: Push schema and seed
-        run: pnpm drizzle-kit push --force && pnpm seed:light
+        run: |
+          pnpm drizzle-kit push --force
+          pnpm seed:light
+          pnpm seed:qa-accounts
 
       - name: Start app server
         run: |
           JWT_SECRET="${JWT_SECRET:-terp-ci-jwt-secret-2026-000000000000}" \
           DATABASE_URL="$DATABASE_URL" \
           TEST_DATABASE_URL="$DATABASE_URL" \
+          QA_AUTH_ENABLED=true \
+          DEMO_MODE=true \
           PORT=5173 \
           pnpm dev > /tmp/terp-dev.log 2>&1 &
           echo $! > /tmp/terp-dev.pid
@@ -447,8 +452,18 @@ jobs:
           RESULT=$(bash scripts/ci/resolve-affected-tests.sh /tmp/changed-files.txt)
           echo "specs=$RESULT" >> $GITHUB_OUTPUT
 
+      - name: Start heartbeat
+        run: |
+          # Background heartbeat so GitHub Actions shows the job is alive during long Playwright runs
+          while true; do
+            echo "[heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') — E2E tests still running…"
+            sleep 60
+          done &
+          echo $! > /tmp/heartbeat.pid
+
       - name: Run targeted E2E tests
         id: e2e
+        timeout-minutes: 15
         run: |
           SPECS="${{ steps.resolve.outputs.specs }}"
 
@@ -471,13 +486,30 @@ jobs:
           E2E_USE_LIVE_DB: '1'
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
 
-      - name: Upload Playwright report on failure
+      - name: Stop heartbeat
+        if: always()
+        run: |
+          if [ -f /tmp/heartbeat.pid ]; then
+            kill "$(cat /tmp/heartbeat.pid)" 2>/dev/null || true
+          fi
+
+      - name: Upload Playwright report
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: targeted-e2e-report
           path: playwright-report/
           retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload app server logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: targeted-e2e-server-log
+          path: /tmp/terp-dev.log
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Print app server logs on failure
         if: failure()
