@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   LinearWorkspacePanel,
   LinearWorkspaceShell,
@@ -43,38 +42,7 @@ export default function AccountingWorkspacePage() {
           label: "Core flow",
           value: "Invoice / Bill -> Payment -> Ledger",
         },
-        {
-          label: "Current view",
-          value:
-            ACCOUNTING_WORKSPACE.tabs.find(tab => tab.value === activeTab)
-              ?.label ?? activeTab,
-        },
       ]}
-      commandStrip={
-        <>
-          <Button
-            size="sm"
-            variant={activeTab === "invoices" ? "default" : "outline"}
-            onClick={() => setActiveTab("invoices")}
-          >
-            Invoices
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "bills" ? "default" : "outline"}
-            onClick={() => setActiveTab("bills")}
-          >
-            Bills
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "payments" ? "default" : "outline"}
-            onClick={() => setActiveTab("payments")}
-          >
-            Payments
-          </Button>
-        </>
-      }
     >
       <LinearWorkspacePanel value="dashboard">
         <AccountingDashboard embedded />

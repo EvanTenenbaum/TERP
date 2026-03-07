@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
@@ -43,38 +42,7 @@ export default function SalesWorkspacePage() {
       onTabChange={tab => setActiveTab(tab)}
       meta={[
         { label: "Primary flow", value: "Quote -> Order -> Fulfillment" },
-        {
-          label: "Current view",
-          value:
-            SALES_TABS_CONFIG.find(tab => tab.value === activeTab)?.label ??
-            activeTab,
-        },
       ]}
-      commandStrip={
-        <>
-          <Button
-            size="sm"
-            variant={activeTab === "create-order" ? "default" : "outline"}
-            onClick={() => setActiveTab("create-order")}
-          >
-            New Sales Order
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "quotes" ? "default" : "outline"}
-            onClick={() => setActiveTab("quotes")}
-          >
-            Jump to Quotes
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "pick-pack" ? "default" : "ghost"}
-            onClick={() => setActiveTab("pick-pack")}
-          >
-            Pick & Pack
-          </Button>
-        </>
-      }
     >
       <LinearWorkspacePanel value="orders">
         <OrdersWorkSurface />

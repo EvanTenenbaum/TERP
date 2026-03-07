@@ -17,6 +17,7 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -538,7 +539,7 @@ export function QuotesWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation("/orders/create");
+        setLocation(buildSalesWorkspacePath("create-order"));
       },
       arrowdown: e => {
         e.preventDefault();
@@ -571,7 +572,7 @@ export function QuotesWorkSurface() {
 
   // Handlers
   const handleEdit = (quoteId: number) =>
-    setLocation(`/orders/create?quoteId=${quoteId}`);
+    setLocation(buildSalesWorkspacePath("create-order", { quoteId }));
   // API-016: Open send dialog
   const handleSend = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
@@ -583,7 +584,12 @@ export function QuotesWorkSurface() {
     setShowConvertDialog(true);
   };
   const handleDuplicate = (quoteId: number) =>
-    setLocation(`/orders/create?quoteId=${quoteId}&mode=duplicate`);
+    setLocation(
+      buildSalesWorkspacePath("create-order", {
+        quoteId,
+        mode: "duplicate",
+      })
+    );
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);
@@ -654,7 +660,7 @@ export function QuotesWorkSurface() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setLocation("/orders/create")}>
+          <Button onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}>
             <Plus className="h-4 w-4 mr-2" />
             New Quote
           </Button>

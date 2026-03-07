@@ -6,10 +6,10 @@ interface OrderStatusTimelineProps {
   orderId: number;
 }
 
-const formatFulfillmentStatus = (status: string) =>
+const formatFulfillmentStatus = (status: string | null | undefined) =>
   status === "READY_FOR_PACKING" || status === "PENDING"
     ? "Ready for Packing"
-    : status;
+    : status || "Unknown";
 
 export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
   const { data: history, isLoading } =

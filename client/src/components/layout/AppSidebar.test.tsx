@@ -16,7 +16,11 @@ const mockTogglePin = vi.fn();
 let mockSpreadsheetEnabled = true;
 
 vi.mock("wouter", () => ({
-  useLocation: () => [mockLocation, mockSetLocation],
+  useLocation: () => [mockLocation.split("?")[0], mockSetLocation],
+  useSearch: () => {
+    const [, search = ""] = mockLocation.split("?");
+    return search ? `?${search}` : "";
+  },
   Link: ({
     href,
     children,

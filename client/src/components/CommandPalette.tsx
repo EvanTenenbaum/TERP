@@ -12,6 +12,10 @@ import {
 import { HelpCircle, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
 import { buildNavigationAccessModel } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import {
+  buildProcurementWorkspacePath,
+  buildSalesWorkspacePath,
+} from "@/lib/workspaceRoutes";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -73,7 +77,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       icon: Plus,
       shortcut: "N",
       action: () => {
-        setLocation("/sales?tab=create-order");
+        setLocation(buildSalesWorkspacePath("create-order"));
         onOpenChange(false);
       },
     },
@@ -83,7 +87,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       icon: ReceiptText,
       shortcut: "R",
       action: () => {
-        setLocation("/receiving");
+        setLocation(buildProcurementWorkspacePath("receiving"));
         onOpenChange(false);
       },
     },

@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
+import { logger } from "../_core/logger";
 import {
   clients,
   orders,
@@ -23,29 +24,41 @@ export const referralsRouter = router({
    * Get referral settings (global and per-tier)
    */
   getSettings: adminProcedure.query(async () => {
-    const settings = await db
-      .select()
-      .from(referralCreditSettings)
-      .where(eq(referralCreditSettings.isActive, true))
-      .orderBy(referralCreditSettings.clientTier);
+    try {
+      const settings = await db
+        .select()
+        .from(referralCreditSettings)
+        .where(eq(referralCreditSettings.isActive, true))
+        .orderBy(referralCreditSettings.clientTier);
 
-    const globalSetting = settings.find(s => s.clientTier === null);
-    const tierSettings = settings.filter(s => s.clientTier !== null);
+      const globalSetting = settings.find(s => s.clientTier === null);
+      const tierSettings = settings.filter(s => s.clientTier !== null);
 
-    return {
-      globalPercentage: globalSetting
-        ? parseFloat(globalSetting.creditPercentage)
-        : 10.0,
-      tierSettings: tierSettings.map(s => ({
-        tier: s.clientTier,
-        percentage: parseFloat(s.creditPercentage),
-        minOrderAmount: s.minOrderAmount ? parseFloat(s.minOrderAmount) : 0,
-        maxCreditAmount: s.maxCreditAmount
-          ? parseFloat(s.maxCreditAmount)
-          : null,
-        creditExpiryDays: s.creditExpiryDays,
-      })),
-    };
+      return {
+        globalPercentage: globalSetting
+          ? parseFloat(globalSetting.creditPercentage)
+          : 10.0,
+        tierSettings: tierSettings.map(s => ({
+          tier: s.clientTier,
+          percentage: parseFloat(s.creditPercentage),
+          minOrderAmount: s.minOrderAmount ? parseFloat(s.minOrderAmount) : 0,
+          maxCreditAmount: s.maxCreditAmount
+            ? parseFloat(s.maxCreditAmount)
+            : null,
+          creditExpiryDays: s.creditExpiryDays,
+        })),
+      };
+    } catch (error) {
+      logger.warn(
+        { error, context: "referrals.getSettings" },
+        "Referral settings unavailable, using default settings"
+      );
+
+      return {
+        globalPercentage: 10.0,
+        tierSettings: [],
+      };
+    }
   }),
 
   /**

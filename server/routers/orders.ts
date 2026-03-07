@@ -45,6 +45,11 @@ import { cogsChangeIntegrationService } from "../services/cogsChangeIntegrationS
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { withTransaction, withRetryableTransaction } from "../dbTransaction";
 import { logger } from "../_core/logger";
+import {
+  coerceOrderFulfillmentStatus,
+  getStoredFulfillmentStatus,
+  normalizeFulfillmentStatus,
+} from "../lib/fulfillmentStatusCompatibility";
 
 // ============================================================================
 // BUG-502: In-memory rate limiting for confirm endpoint
@@ -114,6 +119,8 @@ const orderAdjustmentSchema = z.object({
 const createOrderInputSchema = z.object({
   orderType: z.enum(["QUOTE", "SALE"]),
   clientId: z.number(),
+  clientNeedId: z.number().optional(),
+  referredByClientId: z.number().optional(),
   lineItems: z
     .array(lineItemInputSchema)
     .min(1, "At least one line item is required"),
@@ -432,13 +439,16 @@ export const ordersRouter = router({
 
         // BUG-414: Check fulfillment status allows confirmation
         const nonConfirmableStatuses = ["SHIPPED", "DELIVERED", "RETURNED"];
+        const normalizedFulfillmentStatus = normalizeFulfillmentStatus(
+          order.fulfillmentStatus
+        );
         if (
-          order.fulfillmentStatus &&
-          nonConfirmableStatuses.includes(order.fulfillmentStatus)
+          normalizedFulfillmentStatus &&
+          nonConfirmableStatuses.includes(normalizedFulfillmentStatus)
         ) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Cannot confirm order with fulfillment status: ${order.fulfillmentStatus}`,
+            message: `Cannot confirm order with fulfillment status: ${normalizedFulfillmentStatus}`,
           });
         }
 
@@ -767,6 +777,11 @@ export const ordersRouter = router({
           // Get batch info for COGS
           const batch = await db.query.batches.findFirst({
             where: eq(batches.id, item.batchId),
+            columns: {
+              id: true,
+              productId: true,
+              unitCogs: true,
+            },
           });
 
           if (!batch) {
@@ -871,7 +886,10 @@ export const ordersRouter = router({
         orderNumber,
         orderType: input.orderType,
         clientId: input.clientId,
+        clientNeedId: input.clientNeedId ?? null,
         isDraft: true,
+        referredByClientId: input.referredByClientId ?? null,
+        isReferralOrder: Boolean(input.referredByClientId),
         items: JSON.stringify(
           lineItemsWithPrices.map(item => ({
             batchId: item.batchId,
@@ -926,6 +944,7 @@ export const ordersRouter = router({
       return {
         orderId,
         orderNumber,
+        version: 1,
         totals,
         validation,
       };
@@ -937,15 +956,9 @@ export const ordersRouter = router({
   updateDraftEnhanced: protectedProcedure
     .use(requirePermission("orders:update"))
     .input(
-      z.object({
+      createOrderInputSchema.extend({
         orderId: z.number(),
         version: z.number(), // Optimistic locking
-        lineItems: z
-          .array(lineItemInputSchema)
-          .min(1, "At least one line item is required"),
-        orderLevelAdjustment: orderAdjustmentSchema.optional(),
-        showAdjustmentOnDocument: z.boolean().optional(),
-        notes: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -967,11 +980,37 @@ export const ordersRouter = router({
         throw new Error("Order not found");
       }
 
+      const client = await db
+        .select({ id: clients.id, deletedAt: clients.deletedAt })
+        .from(clients)
+        .where(eq(clients.id, input.clientId))
+        .limit(1)
+        .then(rows => rows[0]);
+
+      if (!client) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Client ${input.clientId} not found`,
+        });
+      }
+
+      if (client.deletedAt !== null) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot update order for archived client ${input.clientId}`,
+        });
+      }
+
       // Calculate line item prices (same logic as createDraftEnhanced)
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
           const batch = await db.query.batches.findFirst({
             where: eq(batches.id, item.batchId),
+            columns: {
+              id: true,
+              productId: true,
+              unitCogs: true,
+            },
           });
 
           if (!batch) {
@@ -1001,7 +1040,7 @@ export const ordersRouter = router({
             // BUG-086 FIX: Use actual product category, not hardcoded "OTHER"
             const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
-              existingOrder.clientId,
+              input.clientId,
               productCategory
             );
 
@@ -1052,8 +1091,8 @@ export const ordersRouter = router({
 
       // Validate order
       const validation = orderValidationService.validateOrder({
-        orderType: existingOrder.orderType as "QUOTE" | "SALE",
-        clientId: existingOrder.clientId,
+        orderType: input.orderType,
+        clientId: input.clientId,
         lineItems: lineItemsWithPrices.map(item => ({
           batchId: item.batchId,
           quantity: item.quantity,
@@ -1068,15 +1107,34 @@ export const ordersRouter = router({
 
       // ST-026: Update order with line items in transaction to prevent orphaned records
       const { sql } = await import("drizzle-orm");
+      const resolvedPaymentTerms =
+        input.paymentTerms || existingOrder.paymentTerms || "NET_30";
+      const nextVersion = existingOrder.version + 1;
       await withTransaction(async tx => {
         // Update order with version increment
         await tx
           .update(orders)
           .set({
+            orderType: input.orderType,
+            clientId: input.clientId,
+            clientNeedId: input.clientNeedId ?? null,
+            referredByClientId: input.referredByClientId ?? null,
+            isReferralOrder: Boolean(input.referredByClientId),
+            items: JSON.stringify(
+              lineItemsWithPrices.map(item => ({
+                batchId: item.batchId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                isSample: item.isSample,
+              }))
+            ),
             total: totals.finalTotal.toString(),
             subtotal: totals.subtotal.toString(),
             avgMarginPercent: totals.avgMarginPercent.toString(),
             notes: input.notes,
+            validUntil: input.validUntil ? new Date(input.validUntil) : null,
+            paymentTerms: resolvedPaymentTerms,
+            cashPayment: input.cashPayment?.toString() || null,
             version: sql`version + 1`,
           })
           .where(eq(orders.id, input.orderId));
@@ -1118,6 +1176,7 @@ export const ordersRouter = router({
 
       return {
         orderId: input.orderId,
+        version: nextVersion,
         totals,
         validation,
       };
@@ -1188,7 +1247,15 @@ export const ordersRouter = router({
           // INV-003: Extract unique batch IDs and lock all batches
           const batchIds = [...new Set(lineItems.map(item => item.batchId))];
           const batchRecords = await tx
-            .select()
+            .select({
+              id: batches.id,
+              sku: batches.sku,
+              onHandQty: batches.onHandQty,
+              reservedQty: batches.reservedQty,
+              quarantineQty: batches.quarantineQty,
+              holdQty: batches.holdQty,
+              sampleQty: batches.sampleQty,
+            })
             .from(batches)
             .where(safeInArray(batches.id, batchIds))
             .for("update");
@@ -1270,13 +1337,18 @@ export const ordersRouter = router({
             }
           }
 
+          const readyForPackingStatus =
+            await getStoredFulfillmentStatus("READY_FOR_PACKING");
+
           // ST-026: Update order to finalized with version increment
           await tx
             .update(orders)
             .set({
               isDraft: false,
               confirmedAt: new Date(),
-              fulfillmentStatus: "READY_FOR_PACKING",
+              fulfillmentStatus: coerceOrderFulfillmentStatus(
+                readyForPackingStatus
+              ),
               version: sqlFn`version + 1`,
             })
             .where(eq(orders.id, input.orderId));
@@ -1321,13 +1393,44 @@ export const ordersRouter = router({
         throw new Error("Order not found");
       }
 
+      const normalizedOrder = {
+        ...order,
+        fulfillmentStatus: normalizeFulfillmentStatus(order.fulfillmentStatus),
+      };
+
       const lineItems = await db.query.orderLineItems.findMany({
         where: eq(orderLineItems.orderId, input.orderId),
       });
 
+      const batchIds = Array.from(new Set(lineItems.map(item => item.batchId)));
+      const batchMetadata =
+        batchIds.length > 0
+          ? await db
+              .select({
+                id: batches.id,
+                productId: batches.productId,
+                batchSku: batches.sku,
+              })
+              .from(batches)
+              .where(safeInArray(batches.id, batchIds))
+          : [];
+      const batchMetadataById = new Map(
+        batchMetadata.map(batch => [
+          batch.id,
+          {
+            productId: batch.productId,
+            batchSku: batch.batchSku,
+          },
+        ])
+      );
+
       return {
-        order,
-        lineItems,
+        order: normalizedOrder,
+        lineItems: lineItems.map(lineItem => ({
+          ...lineItem,
+          productId: batchMetadataById.get(lineItem.batchId)?.productId ?? null,
+          batchSku: batchMetadataById.get(lineItem.batchId)?.batchSku ?? null,
+        })),
       };
     }),
 
@@ -1689,11 +1792,12 @@ export const ordersRouter = router({
 
           if (
             order.saleStatus !== "PENDING" &&
-            order.fulfillmentStatus !== "READY_FOR_PACKING"
+            normalizeFulfillmentStatus(order.fulfillmentStatus) !==
+              "READY_FOR_PACKING"
           ) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Order cannot be confirmed. Current status: ${order.saleStatus || order.fulfillmentStatus}`,
+              message: `Order cannot be confirmed. Current status: ${order.saleStatus || normalizeFulfillmentStatus(order.fulfillmentStatus) || order.fulfillmentStatus}`,
             });
           }
 
@@ -1786,12 +1890,17 @@ export const ordersRouter = router({
             }
           }
 
+          const readyForPackingStatus =
+            await getStoredFulfillmentStatus("READY_FOR_PACKING");
+
           // Update order to confirmed
           await tx
             .update(orders)
             .set({
               confirmedAt: new Date(),
-              fulfillmentStatus: "READY_FOR_PACKING",
+              fulfillmentStatus: coerceOrderFulfillmentStatus(
+                readyForPackingStatus
+              ),
               notes: input.notes
                 ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
                 : order.notes,
@@ -1889,7 +1998,11 @@ export const ordersRouter = router({
         // ARCH-003: Use state machine for transition validation
         const { validateTransition } =
           await import("../services/orderStateMachine");
-        validateTransition(order.fulfillmentStatus, "SHIPPED", input.id);
+        validateTransition(
+          normalizeFulfillmentStatus(order.fulfillmentStatus) ?? null,
+          "SHIPPED",
+          input.id
+        );
 
         // INV-001: Get all line items for this order
         const lineItems = await tx
@@ -2071,7 +2184,11 @@ export const ordersRouter = router({
         // ARCH-003: Use state machine for transition validation
         const { validateTransition } =
           await import("../services/orderStateMachine");
-        validateTransition(order.fulfillmentStatus, "DELIVERED", input.id);
+        validateTransition(
+          normalizeFulfillmentStatus(order.fulfillmentStatus) ?? null,
+          "DELIVERED",
+          input.id
+        );
 
         // Build delivery notes
         let deliveryNotes = `Delivered: ${input.deliveredAt || new Date().toISOString()}\n`;
@@ -2139,7 +2256,7 @@ export const ordersRouter = router({
           await import("../services/orderStateMachine");
         try {
           validateTransition(
-            order.fulfillmentStatus,
+            normalizeFulfillmentStatus(order.fulfillmentStatus) ?? null,
             "RETURNED",
             input.orderId
           );
@@ -2261,9 +2378,12 @@ export const ordersRouter = router({
       }
 
       const batchIdList = Array.from(batchIds);
+      const normalizedOrderStatus = normalizeFulfillmentStatus(
+        order.fulfillmentStatus
+      );
       if (batchIdList.length === 0) {
         return {
-          orderStatus: order.fulfillmentStatus,
+          orderStatus: normalizedOrderStatus,
           items: [] as Array<{ id: number; label: string }>,
         };
       }
@@ -2276,7 +2396,7 @@ export const ordersRouter = router({
       const lotIds = Array.from(new Set(batchRows.map(batch => batch.lotId)));
       if (lotIds.length === 0) {
         return {
-          orderStatus: order.fulfillmentStatus,
+          orderStatus: normalizedOrderStatus,
           items: [] as Array<{ id: number; label: string }>,
         };
       }
@@ -2298,7 +2418,7 @@ export const ordersRouter = router({
       const vendorIdList = Array.from(vendorIds);
       if (vendorIdList.length === 0) {
         return {
-          orderStatus: order.fulfillmentStatus,
+          orderStatus: normalizedOrderStatus,
           items: [] as Array<{ id: number; label: string }>,
         };
       }
@@ -2309,7 +2429,7 @@ export const ordersRouter = router({
         .where(safeInArray(clients.id, vendorIdList));
 
       return {
-        orderStatus: order.fulfillmentStatus,
+        orderStatus: normalizedOrderStatus,
         items: vendorRows.map(vendor => ({
           id: vendor.id,
           label: vendor.name || `Vendor #${vendor.id}`,
@@ -2341,7 +2461,8 @@ export const ordersRouter = router({
       const { getNextStatuses, STATUS_LABELS } =
         await import("../services/orderStateMachine");
       const nextStatuses = getNextStatuses(
-        order.fulfillmentStatus || "READY_FOR_PACKING"
+        normalizeFulfillmentStatus(order.fulfillmentStatus) ??
+          "READY_FOR_PACKING"
       );
 
       return nextStatuses.map(status => ({
@@ -2398,10 +2519,13 @@ export const ordersRouter = router({
 
         // Only allow allocation for draft orders or orders awaiting fulfillment
         const editableStatuses = ["DRAFT", "READY_FOR_PACKING", "CONFIRMED"];
-        if (!editableStatuses.includes(order.fulfillmentStatus || "")) {
+        const normalizedFulfillmentStatus = normalizeFulfillmentStatus(
+          order.fulfillmentStatus
+        );
+        if (!editableStatuses.includes(normalizedFulfillmentStatus || "")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Cannot allocate batches for order in ${order.fulfillmentStatus} status`,
+            message: `Cannot allocate batches for order in ${normalizedFulfillmentStatus || order.fulfillmentStatus} status`,
           });
         }
 

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 // Alert components available from @/components/ui/alert when needed
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -276,7 +277,8 @@ export default function AnalyticsPage() {
                   size="sm"
                   action={{
                     label: "Create your first order",
-                    onClick: () => setLocation("/orders/create"),
+                    onClick: () =>
+                      setLocation(buildSalesWorkspacePath("create-order")),
                   }}
                 />
               )}

@@ -13,11 +13,39 @@ import {
   workflowStatuses, 
   batchStatusHistory, 
   batches,
+  products,
   type WorkflowStatus,
   type InsertWorkflowStatus,
   type BatchStatusHistory,
 } from "../../../drizzle/schema";
 import { eq, desc, asc, sql } from "drizzle-orm";
+
+export interface WorkflowQueueBatch {
+  [key: string]: string | number | Date | null;
+  id: number;
+  code: string;
+  sku: string;
+  statusId: number | null;
+  batchStatus: string;
+  status: string;
+  strain: string | null;
+  onHandQty: string;
+  quantity: string;
+  updatedAt: Date;
+}
+
+const workflowQueueBatchSelection = {
+  id: batches.id,
+  code: batches.code,
+  sku: batches.sku,
+  statusId: batches.statusId,
+  batchStatus: batches.batchStatus,
+  status: batches.batchStatus,
+  strain: products.nameCanonical,
+  onHandQty: batches.onHandQty,
+  quantity: batches.onHandQty,
+  updatedAt: batches.updatedAt,
+};
 
 // ============================================================================
 // WORKFLOW STATUS QUERIES
@@ -149,19 +177,20 @@ export async function reorderStatuses(statusIds: number[]): Promise<void> {
  * Get all batches grouped by workflow status
  */
 export async function getBatchesByStatus(): Promise<
-  Record<number, Array<typeof batches.$inferSelect>>
+  Record<number, WorkflowQueueBatch[]>
 > {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const allBatches = await db
-    .select()
+    .select(workflowQueueBatchSelection)
     .from(batches)
+    .leftJoin(products, eq(batches.productId, products.id))
     .where(sql`${batches.statusId} IS NOT NULL`)
     .orderBy(desc(batches.updatedAt));
   
   // Group by statusId
-  const grouped: Record<number, Array<typeof batches.$inferSelect>> = {};
+  const grouped: Record<number, WorkflowQueueBatch[]> = {};
   
   for (const batch of allBatches) {
     if (batch.statusId) {
@@ -180,13 +209,14 @@ export async function getBatchesByStatus(): Promise<
  */
 export async function getBatchesByStatusId(
   statusId: number
-): Promise<Array<typeof batches.$inferSelect>> {
+): Promise<WorkflowQueueBatch[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   return db
-    .select()
+    .select(workflowQueueBatchSelection)
     .from(batches)
+    .leftJoin(products, eq(batches.productId, products.id))
     .where(eq(batches.statusId, statusId))
     .orderBy(desc(batches.updatedAt));
 }
@@ -205,7 +235,7 @@ export async function updateBatchStatus(
   
   // Get current status
   const batch = await db
-    .select()
+    .select({ statusId: batches.statusId })
     .from(batches)
     .where(eq(batches.id, batchId))
     .limit(1);
@@ -292,13 +322,14 @@ export async function getStatusChangesByUser(
 export async function getBatchesNotInQueue(
   limit: number = 50,
   query?: string
-): Promise<Array<typeof batches.$inferSelect>> {
+): Promise<WorkflowQueueBatch[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   let batchQuery = db
-    .select()
+    .select(workflowQueueBatchSelection)
     .from(batches)
+    .leftJoin(products, eq(batches.productId, products.id))
     .where(sql`${batches.statusId} IS NULL`)
     .orderBy(desc(batches.createdAt))
     .limit(limit);
@@ -307,10 +338,11 @@ export async function getBatchesNotInQueue(
   if (query) {
     const searchTerm = `%${query}%`;
     batchQuery = db
-      .select()
+      .select(workflowQueueBatchSelection)
       .from(batches)
+      .leftJoin(products, eq(batches.productId, products.id))
       .where(
-        sql`${batches.statusId} IS NULL AND (${batches.sku} LIKE ${searchTerm} OR ${batches.code} LIKE ${searchTerm})`
+        sql`${batches.statusId} IS NULL AND (${batches.sku} LIKE ${searchTerm} OR ${batches.code} LIKE ${searchTerm} OR ${products.nameCanonical} LIKE ${searchTerm})`
       )
       .orderBy(desc(batches.createdAt))
       .limit(limit) as typeof batchQuery;
