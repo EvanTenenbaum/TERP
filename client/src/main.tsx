@@ -7,9 +7,13 @@ import "@/lib/ag-grid";
 import App from "./App";
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import { initializeUiDensity } from "@/lib/uiDensity";
+import { APP_TITLE } from "@/const";
 import "./index.css";
 
 initializeUiDensity();
+
+// Set document title from env (falls back to "TERP" via const.ts)
+document.title = APP_TITLE;
 
 // Initialize Sentry AFTER all other imports to prevent blocking
 // Sentry is already wrapped in try-catch in sentry.client.config.ts

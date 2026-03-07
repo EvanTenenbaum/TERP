@@ -48,16 +48,24 @@ export const referralsRouter = router({
           creditExpiryDays: s.creditExpiryDays,
         })),
       };
-    } catch (error) {
-      logger.warn(
-        { error, context: "referrals.getSettings" },
-        "Referral settings unavailable, using default settings"
-      );
-
-      return {
-        globalPercentage: 10.0,
-        tierSettings: [],
-      };
+    } catch (error: unknown) {
+      // Only return defaults for schema-mismatch errors (legacy DB without expected columns).
+      // Re-throw everything else so real failures (connection, permissions) surface properly.
+      const mysqlCode = (error as { code?: string })?.code;
+      if (
+        mysqlCode === "ER_BAD_FIELD_ERROR" ||
+        mysqlCode === "ER_NO_SUCH_TABLE"
+      ) {
+        logger.warn(
+          { error, context: "referrals.getSettings" },
+          "Referral settings table/columns missing (legacy schema), using defaults"
+        );
+        return {
+          globalPercentage: 10.0,
+          tierSettings: [],
+        };
+      }
+      throw error;
     }
   }),
 
@@ -82,49 +90,68 @@ export const referralsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // Update global setting
-      if (input.globalPercentage !== undefined) {
-        await db
-          .insert(referralCreditSettings)
-          .values({
-            clientTier: null,
-            creditPercentage: input.globalPercentage.toFixed(2),
-            isActive: true,
-          })
-          .onDuplicateKeyUpdate({
-            set: {
-              creditPercentage: input.globalPercentage.toFixed(2),
-              updatedAt: new Date(),
-            },
-          });
-      }
-
-      // Update tier settings
-      if (input.tierSettings) {
-        for (const tier of input.tierSettings) {
+      try {
+        // Update global setting
+        if (input.globalPercentage !== undefined) {
           await db
             .insert(referralCreditSettings)
             .values({
-              clientTier: tier.tier,
-              creditPercentage: tier.percentage.toFixed(2),
-              minOrderAmount: tier.minOrderAmount?.toFixed(2),
-              maxCreditAmount: tier.maxCreditAmount?.toFixed(2),
-              creditExpiryDays: tier.creditExpiryDays,
+              clientTier: null,
+              creditPercentage: input.globalPercentage.toFixed(2),
               isActive: true,
             })
             .onDuplicateKeyUpdate({
               set: {
-                creditPercentage: tier.percentage.toFixed(2),
-                minOrderAmount: tier.minOrderAmount?.toFixed(2),
-                maxCreditAmount: tier.maxCreditAmount?.toFixed(2),
-                creditExpiryDays: tier.creditExpiryDays,
+                creditPercentage: input.globalPercentage.toFixed(2),
                 updatedAt: new Date(),
               },
             });
         }
-      }
 
-      return { success: true };
+        // Update tier settings
+        if (input.tierSettings) {
+          for (const tier of input.tierSettings) {
+            await db
+              .insert(referralCreditSettings)
+              .values({
+                clientTier: tier.tier,
+                creditPercentage: tier.percentage.toFixed(2),
+                minOrderAmount: tier.minOrderAmount?.toFixed(2),
+                maxCreditAmount: tier.maxCreditAmount?.toFixed(2),
+                creditExpiryDays: tier.creditExpiryDays,
+                isActive: true,
+              })
+              .onDuplicateKeyUpdate({
+                set: {
+                  creditPercentage: tier.percentage.toFixed(2),
+                  minOrderAmount: tier.minOrderAmount?.toFixed(2),
+                  maxCreditAmount: tier.maxCreditAmount?.toFixed(2),
+                  creditExpiryDays: tier.creditExpiryDays,
+                  updatedAt: new Date(),
+                },
+              });
+          }
+        }
+
+        return { success: true };
+      } catch (error: unknown) {
+        const mysqlCode = (error as { code?: string })?.code;
+        if (
+          mysqlCode === "ER_BAD_FIELD_ERROR" ||
+          mysqlCode === "ER_NO_SUCH_TABLE"
+        ) {
+          logger.error(
+            { error, context: "referrals.updateSettings" },
+            "Referral settings table/columns missing — cannot save settings on legacy schema"
+          );
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Referral settings cannot be saved: the database schema needs migration. Contact support.",
+          });
+        }
+        throw error;
+      }
     }),
 
   /**

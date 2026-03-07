@@ -1842,7 +1842,7 @@ export function DirectIntakeWorkSurface() {
       <div className="flex flex-col gap-3 border-b border-border/70 bg-background px-3 py-3 md:flex-row md:items-center md:justify-between md:px-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className="px-2.5 py-1">
-            Receiving
+            Intake
           </Badge>
           <Badge variant="outline">Pending {pendingCount}</Badge>
           <Badge variant="outline">Submitted {submittedCount}</Badge>
