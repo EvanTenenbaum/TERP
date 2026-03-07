@@ -1,6 +1,6 @@
 # TERP UI/UX Massive Simplification Plan
 
-**Version:** 2.0 (Post-Adversarial QA Review)
+**Version:** 2.1 (Inventory as physical operations hub per Evan's feedback)
 **Date:** 2026-03-07
 **Goal:** Massively declutter, streamline, and simplify TERP's UI/UX while preserving existing functionality
 **Design North Star:** Linear meets power spreadsheet — fast, calm, keyboard-first, zero clutter
@@ -39,9 +39,9 @@ Current sidebar has **4 groups with 32 items**:
 
 **Issues:**
 - 32 items is 3-4x what Linear shows in its sidebar
-- Many items are sub-features of a parent (e.g., "Intake" is a tab within Purchase Orders, "Pick & Pack" is a tab within Sales)
-- Duplicated access: Pick & Pack appears in sidebar AND as Sales workspace tab
-- Duplicated access: Intake appears in sidebar AND as Purchase Orders tab
+- Many items are sub-features of a parent (e.g., "Photography" and "Samples" belong under Inventory)
+- Duplicated access: Pick & Pack appears in sidebar AND as Sales workspace tab (should live in Inventory — it's physical inventory movement)
+- Duplicated access: Intake appears in sidebar AND as Purchase Orders tab (should live in Inventory — it's physical receiving)
 - Low-usage items (Photography, Spreadsheet View, Workflow Queue, Leaderboard) clutter primary nav
 - COGS Settings, Pricing Rules, Feature Flags are admin/config items that belong in Settings
 
@@ -54,9 +54,9 @@ Current sidebar has **4 groups with 32 items**:
 ```
 WORK (primary operational areas)
 ├── Dashboard          (/)
-├── Sales              (/sales)           — Orders, Quotes, Returns, Pick & Pack, Create Order
-├── Inventory          (/inventory)       — Batches, Photography, Samples
-├── Procurement        (/purchase-orders) — POs, Intake, Spreadsheet View
+├── Sales              (/sales)           — Orders, Quotes, Returns, Create Order, Sales Sheets, Live Shopping
+├── Inventory          (/inventory)       — Batches, Pick & Pack, Intake, Photography, Samples
+├── Procurement        (/purchase-orders) — POs, Spreadsheet View
 ├── Relationships      (/relationships)   — Clients, Suppliers
 ├── Demand & Supply    (/demand-supply)   — Matchmaking, Needs, Interest List, Supply
 
@@ -76,8 +76,8 @@ MANAGE (admin & tools)
 
 | Removed Item | Absorbed Into | How |
 |-------------|---------------|-----|
-| Pick & Pack | Sales workspace tab (already exists) | Remove sidebar entry, keep as `/sales?tab=pick-pack` |
-| Intake | Procurement workspace tab (already exists) | Remove sidebar entry, keep as `/purchase-orders?tab=receiving` |
+| Pick & Pack | Inventory workspace tab | Add as tab in InventoryWorkspacePage — physical inventory movement |
+| Intake | Inventory workspace tab | Add as tab in InventoryWorkspacePage — physical inventory receiving |
 | Photography | Inventory workspace tab | Add as tab in InventoryWorkspacePage |
 | Samples | Inventory workspace tab | Add as tab in InventoryWorkspacePage |
 | Sales Sheets | Sales workspace tab | Add as tab in SalesWorkspacePage |
@@ -157,7 +157,7 @@ Dashboard, Invoices, Bills, Payments, General Ledger, Chart of Accounts, Expense
 
 10 tabs is extreme. Linear never shows more than 5 items in a tab rail. Most users only need Invoices, Bills, and Payments regularly. The others are admin/setup.
 
-**Sales workspace has 5 tabs + 2 hidden:** Orders, Quotes, Returns, + Create Order, Pick & Pack
+**Sales workspace has 5 tabs + 2 hidden:** Orders, Quotes, Returns, + Create Order, Pick & Pack (Pick & Pack should move to Inventory — it's physical inventory movement, not sales)
 
 **Demand & Supply has 4 tabs:** Matchmaking, Client Needs, Interest List, Supplier Supply — all different but related
 
@@ -198,13 +198,17 @@ export const ACCOUNTING_WORKSPACE = {
 
 **Redirect mapping:** All existing `/accounting/*` routes continue to redirect correctly via `RedirectWithTab` — just update the tab values.
 
-#### 2.2 — Inventory: Absorb Photography & Samples as Tabs
+#### 2.2 — Inventory: Hub for All Physical Inventory Operations
+
+Inventory becomes the home for everything involving physical product — managing batches, moving them (pick & pack), receiving them (intake), photographing them, and sampling them.
 
 **New Inventory tab structure:**
 
 | Tab | Contains | Notes |
 |-----|----------|-------|
-| **Operations** | Current inventory table/gallery | Already exists |
+| **Batches** | Current inventory table/gallery | Rename from "Operations" for clarity |
+| **Pick & Pack** | Order fulfillment / physical packing | Move from Sales — this is physical inventory movement |
+| **Intake** | Receiving inventory from POs | Move from Procurement — this is physical inventory receiving |
 | **Photography** | Photography queue page | Move from standalone page |
 | **Samples** | Sample management page | Move from standalone page |
 
@@ -213,9 +217,11 @@ export const ACCOUNTING_WORKSPACE = {
 export const INVENTORY_WORKSPACE = {
   title: "Inventory",
   homePath: "/inventory",
-  description: "Manage inventory, photography, and samples.",
+  description: "Manage physical inventory — batches, fulfillment, receiving, photography, samples.",
   tabs: [
-    { value: "inventory", label: "Operations" },
+    { value: "inventory", label: "Batches" },
+    { value: "pick-pack", label: "Pick & Pack" },
+    { value: "intake", label: "Intake" },
     { value: "photography", label: "Photography" },
     { value: "samples", label: "Samples" },
   ],
@@ -223,10 +229,20 @@ export const INVENTORY_WORKSPACE = {
 ```
 
 **File: `client/src/pages/InventoryWorkspacePage.tsx`**
-- Add Photography and Samples as workspace panels
-- Import existing `PhotographyPage` and `SampleManagement` components
+- Convert to use `LinearWorkspaceShell` (currently renders raw `InventoryWorkSurface` without workspace shell)
+- Add Pick & Pack, Intake, Photography, and Samples as workspace panels
+- Import existing `PickAndPackPage`, `IntakePage`, `PhotographyPage`, and `SampleManagement` components
+- Add `embedded` prop to each absorbed page to suppress standalone headers
 
-#### 2.3 — Sales: Absorb Sales Sheets & Live Shopping
+**Route redirects needed in `App.tsx`:**
+- `/pick-pack` → `/inventory?tab=pick-pack`
+- `/intake` → `/inventory?tab=intake`
+- `/photography` → `/inventory?tab=photography`
+- `/samples` → `/inventory?tab=samples`
+
+#### 2.3 — Sales: Absorb Sales Sheets & Live Shopping (Pick & Pack Moves Out)
+
+Pick & Pack moves to Inventory (physical inventory movement). Sales stays focused on the commercial side — orders, quotes, returns, sales sheets, live shopping.
 
 **New Sales tab structure:**
 
@@ -235,14 +251,13 @@ export const INVENTORY_WORKSPACE = {
 | **Orders** | Orders list | Exists |
 | **Quotes** | Quotes list | Exists |
 | **Create Order** | Order creator | Exists |
+| **Returns** | Returns management | Exists — stays in Sales |
 | **Sales Sheets** | Sales sheet creator | Move from standalone |
-| **Returns** | Returns management | Exists |
-| **Pick & Pack** | Fulfillment | Exists |
 | **Live Shopping** | Live sessions | Move from standalone |
 
-**Note:** 7 tabs is at the upper bound. Consider using a "More" dropdown for Pick & Pack, Returns, and Live Shopping if the tab rail feels too long.
+**6 tabs** — manageable, no overflow dropdown needed.
 
-**Implementation approach:** Same pattern as existing workspace tabs — add `LinearWorkspacePanel` entries.
+**Implementation approach:** Same pattern as existing workspace tabs — add `LinearWorkspacePanel` entries. Remove Pick & Pack tab from `SALES_WORKSPACE` config (it moves to Inventory).
 
 #### 2.4 — Settings: Consolidate All Admin/Config Pages
 
@@ -596,15 +611,18 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 Execute in sub-phases:
 
-**3a: Inventory + Photography + Samples** (2-3 hours)
-1. Update `INVENTORY_WORKSPACE` config to add Photography and Samples tabs
-2. Import existing page components as workspace panels
-3. Add `embedded` prop to Photography and Samples pages to suppress headers
-4. Update routes to redirect `/photography` and `/samples` to `/inventory?tab=*`
+**3a: Inventory — absorb Pick & Pack, Intake, Photography, Samples** (4-6 hours)
+1. Convert `InventoryWorkspacePage` to use `LinearWorkspaceShell` (currently renders raw work surface)
+2. Update `INVENTORY_WORKSPACE` config to add Pick & Pack, Intake, Photography, and Samples tabs
+3. Import existing page components as workspace panels
+4. Add `embedded` prop to Pick & Pack, Intake, Photography, and Samples pages to suppress headers
+5. Remove Pick & Pack tab from `SALES_WORKSPACE` config
+6. Remove Intake tab from Purchase Orders workspace config
+7. Update routes: `/pick-pack`, `/intake`, `/photography`, `/samples` → redirect to `/inventory?tab=*`
 
-**3b: Sales + Sales Sheets + Live Shopping** (2-3 hours)
-1. Update `SALES_WORKSPACE` config
-2. Add workspace panels
+**3b: Sales — absorb Sales Sheets & Live Shopping, remove Pick & Pack** (2-3 hours)
+1. Update `SALES_WORKSPACE` config — remove Pick & Pack, add Sales Sheets + Live Shopping
+2. Add workspace panels for Sales Sheets and Live Shopping
 3. Update redirects
 
 **3c: Accounting 10→4 tabs** (3-4 hours)
@@ -1015,9 +1033,9 @@ ADMIN
 ### PROPOSED (11 items, 3 groups)
 ```
 WORK
-  Sales               → [Orders] [Quotes] [Create] [Sales Sheets] [Returns] [Pick & Pack] [Live]
-  Inventory           → [Operations] [Photography] [Samples]
-  Procurement         → [Purchase Orders] [Intake] [Spreadsheet]
+  Sales               → [Orders] [Quotes] [Create] [Returns] [Sales Sheets] [Live Shopping]
+  Inventory           → [Batches] [Pick & Pack] [Intake] [Photography] [Samples]
+  Procurement         → [Purchase Orders] [Spreadsheet]
   Relationships       → [Clients] [Suppliers]
   Demand & Supply     → [Matchmaking] [Needs] [Interest] [Supply]
 
