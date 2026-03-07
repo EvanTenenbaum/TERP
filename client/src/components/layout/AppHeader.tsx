@@ -34,10 +34,11 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ onMenuClick }: AppHeaderProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, toggleTheme, switchable } = useTheme();
   const { isCompact, toggleDensity } = useUiDensity();
+  const showBreadcrumbRow = location !== "/";
 
   // Get current user
   const { data: user } = trpc.auth.me.useQuery();
@@ -180,7 +181,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                 <User className="h-4 w-4 mr-2" />
                 My Account
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLocation("/account")}>
+              <DropdownMenuItem onClick={() => setLocation("/notifications")}>
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
               </DropdownMenuItem>
@@ -209,16 +210,17 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         </div>
       </div>
 
-      {/* Breadcrumb row with version - CHAOS-027 */}
-      <div className="flex items-center justify-between px-3 md:px-4 py-1.5 border-t border-border/40">
-        <AppBreadcrumb />
-        <span
-          className="text-[11px] text-muted-foreground hidden sm:inline-block"
-          title={`Build: ${versionInfo.commit} (${versionInfo.date})`}
-        >
-          v{versionInfo.version}
-        </span>
-      </div>
+      {showBreadcrumbRow ? (
+        <div className="flex items-center justify-between px-3 md:px-4 py-1.5 border-t border-border/40">
+          <AppBreadcrumb />
+          <span
+            className="text-[11px] text-muted-foreground hidden sm:inline-block"
+            title={`Build: ${versionInfo.commit} (${versionInfo.date})`}
+          >
+            v{versionInfo.version}
+          </span>
+        </div>
+      ) : null}
     </header>
   );
 }

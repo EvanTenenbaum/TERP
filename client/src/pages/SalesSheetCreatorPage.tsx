@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import {
   Card,
   CardContent,
@@ -502,7 +503,11 @@ export default function SalesSheetCreatorPage() {
                           })),
                         })
                       );
-                      setLocation("/orders/create?fromSalesSheet=true");
+                      setLocation(
+                        buildSalesWorkspacePath("create-order", {
+                          fromSalesSheet: true,
+                        })
+                      );
                     }}
                   >
                     <ArrowRight className="h-4 w-4 mr-2" />

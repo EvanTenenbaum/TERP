@@ -15,6 +15,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 const mockSetLocation = vi.fn();
 vi.mock("wouter", () => ({
   useLocation: () => ["/", mockSetLocation],
+  useSearch: () => "",
 }));
 
 // Mock version.json
@@ -114,7 +115,7 @@ describe("AppHeader - Notification Bell", () => {
     expect(densityToggle).toBeInTheDocument();
   });
 
-  it("routes notification preferences through account", () => {
+  it("routes notifications to the notifications hub", () => {
     render(
       <ThemeProvider>
         <AppHeader />
@@ -124,6 +125,6 @@ describe("AppHeader - Notification Bell", () => {
     openAccountMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /notifications/i }));
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/account");
+    expect(mockSetLocation).toHaveBeenCalledWith("/notifications");
   });
 });

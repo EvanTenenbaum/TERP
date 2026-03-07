@@ -222,10 +222,9 @@
     min-width: 0;
     gap: 0;
     border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-    /* Accent left border that echoes the sidebar active-item indicator color */
-    border-left: 3px solid oklch(0.53 0.13 44 / 0.45);
-    border-radius: 12px;
-    background: color-mix(in oklab, var(--card) 96%, transparent);
+    border-left: 2px solid oklch(0.53 0.13 44 / 0.22);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--card) 98%, transparent);
     overflow: hidden;
   }
 
@@ -235,8 +234,8 @@
     align-items: flex-start;
     gap: 0.75rem;
     border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-    padding: 0.85rem 1rem;
-    background: color-mix(in oklab, var(--background) 85%, var(--card));
+    padding: 0.8rem 1rem 0.75rem;
+    background: color-mix(in oklab, var(--background) 90%, var(--card));
   }
 
   .linear-workspace-title-wrap {
@@ -281,33 +280,14 @@
     color: var(--muted-foreground);
   }
 
-  .linear-workspace-shortcuts {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--muted-foreground);
-  }
-
-  .linear-workspace-shortcut-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.32rem;
-    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-    border-radius: 999px;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.71rem;
-    font-weight: 500;
-    background: color-mix(in oklab, var(--background) 86%, var(--card));
-  }
-
   .linear-workspace-meta {
     display: flex;
     align-items: center;
     gap: 0.65rem 1.25rem;
     flex-wrap: wrap;
-    padding: 0.55rem 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-    background: color-mix(in oklab, var(--muted) 65%, transparent);
+    background: color-mix(in oklab, var(--muted) 52%, transparent);
   }
 
   .linear-workspace-meta-item {
@@ -342,39 +322,40 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.55rem 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
     background: color-mix(in oklab, var(--background) 92%, transparent);
-    min-height: 50px;
+    min-height: 46px;
     position: sticky;
     top: 0;
     z-index: 25;
     backdrop-filter: blur(10px);
   }
 
+  .linear-workspace-tabs-scroller {
+    min-width: 0;
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .linear-workspace-tabs-spacer {
+    flex: 1;
+    min-width: 0;
+  }
+
   .linear-workspace-tabs-list {
-    display: grid;
+    display: inline-flex;
     height: 34px;
+    min-width: max-content;
     border-radius: 9px;
     padding: 2px;
     border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
     background: color-mix(in oklab, var(--muted) 62%, transparent);
   }
 
-  .linear-workspace-tabs-count-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .linear-workspace-tabs-count-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .linear-workspace-tabs-count-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .linear-workspace-tabs-trigger {
     min-width: 88px;
+    white-space: nowrap;
     font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.005em;
@@ -399,7 +380,11 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0.55rem;
+    padding: 0.4rem;
+  }
+
+  .linear-workspace-shell[data-single-tab="true"] .linear-workspace-content {
+    padding: 0;
   }
 
   /**
@@ -572,10 +557,6 @@
       padding: 0.75rem;
     }
 
-    .linear-workspace-shortcuts {
-      justify-content: flex-start;
-    }
-
     .linear-workspace-meta,
     .linear-workspace-tab-row {
       padding-left: 0.75rem;
@@ -591,7 +572,7 @@
     }
 
     .linear-workspace-tabs-list {
-      width: 100%;
+      min-width: 100%;
     }
 
     .linear-workspace-command-strip {

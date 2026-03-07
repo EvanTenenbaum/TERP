@@ -26,6 +26,14 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
+  DatabaseErrorState,
+  EmptyState,
+  ErrorState,
+  NoSearchResults,
+  isDatabaseError,
+} from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import {
   Table,
   TableBody,
   TableCell,
@@ -643,6 +651,7 @@ export function InventoryWorkSurface() {
   const {
     data: enhancedData,
     isLoading: isEnhancedLoading,
+    error: enhancedError,
     refetch: refetchEnhanced,
   } = trpc.inventory.getEnhanced.useQuery(
     {
@@ -677,6 +686,7 @@ export function InventoryWorkSurface() {
   const {
     data: legacyData,
     isLoading: isLegacyLoading,
+    error: legacyError,
     refetch: refetchLegacy,
   } = trpc.inventory.list.useQuery(
     {
@@ -694,8 +704,11 @@ export function InventoryWorkSurface() {
     }
   );
 
-  const { data: dashboardStats, refetch: refetchDashboardStats } =
-    trpc.inventory.dashboardStats.useQuery();
+  const {
+    data: dashboardStats,
+    error: dashboardStatsError,
+    refetch: refetchDashboardStats,
+  } = trpc.inventory.dashboardStats.useQuery();
 
   const refreshInventory = useCallback(async () => {
     await Promise.all([
@@ -751,6 +764,9 @@ export function InventoryWorkSurface() {
   }, [useEnhancedApi, enhancedData?.items, legacyData?.items]);
 
   const items = normalizedItems;
+  const inventoryLoadError = useEnhancedApi
+    ? enhancedError ?? dashboardStatsError
+    : legacyError ?? dashboardStatsError;
   const clientSideFilterActive =
     !useEnhancedApi &&
     (filters.stockLevel !== "all" ||
@@ -2061,16 +2077,49 @@ export function InventoryWorkSurface() {
           )}
         >
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingState
+              className="h-64"
+              message="Loading inventory workspace..."
+            />
+          ) : inventoryLoadError ? (
+            isDatabaseError(inventoryLoadError) ? (
+              <DatabaseErrorState
+                entity="inventory"
+                errorMessage={inventoryLoadError.message}
+                onRetry={() => {
+                  void refreshInventory();
+                }}
+              />
+            ) : (
+              <ErrorState
+                title="Unable to load inventory"
+                description={inventoryLoadError.message}
+                onRetry={() => {
+                  void refreshInventory();
+                }}
+              />
+            )
           ) : displayItems.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No inventory found</p>
-              </div>
-            </div>
+            hasActiveFilters || search ? (
+              <NoSearchResults
+                searchTerm={search || undefined}
+                onClear={() => {
+                  clearAllFilters();
+                  setSearch("");
+                  setPage(0);
+                }}
+              />
+            ) : (
+              <EmptyState
+                variant="inventory"
+                title="No inventory found"
+                description="Intake products to start managing stock, locations, and availability."
+                action={{
+                  label: "Open Intake",
+                  onClick: () => setShowPurchaseModal(true),
+                }}
+              />
+            )
           ) : (
             <>
               {inventoryViewMode === "table" ? (

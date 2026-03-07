@@ -89,6 +89,26 @@ export interface MatchResult {
   matches: Match[];
 }
 
+const matchingBatchSelection = {
+  id: batches.id,
+  code: batches.code,
+  sku: batches.sku,
+  grade: batches.grade,
+  cogsMode: batches.cogsMode,
+  unitCogs: batches.unitCogs,
+  unitCogsMin: batches.unitCogsMin,
+  unitCogsMax: batches.unitCogsMax,
+  onHandQty: batches.onHandQty,
+};
+
+const matchingProductSelection = {
+  id: products.id,
+  nameCanonical: products.nameCanonical,
+  category: products.category,
+  subcategory: products.subcategory,
+  strainId: products.strainId,
+};
+
 /**
  * Calculate match confidence based on field matches
  * Enhanced version with quantity and price validation
@@ -353,8 +373,8 @@ async function calculateMatchConfidence(
 async function getBatchWithProduct(db: any, batchId: number) {
   const [batch] = await db
     .select({
-      batch: batches,
-      product: products,
+      batch: matchingBatchSelection,
+      product: matchingProductSelection,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
@@ -437,8 +457,8 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
     // 1. Check inventory (batches with available quantity) - ENHANCED
     const inventoryResults = await db
       .select({
-        batch: batches,
-        product: products,
+        batch: matchingBatchSelection,
+        product: matchingProductSelection,
       })
       .from(batches)
       .leftJoin(products, eq(batches.productId, products.id))

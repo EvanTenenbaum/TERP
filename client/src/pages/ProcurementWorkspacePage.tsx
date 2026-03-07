@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   LinearWorkspacePanel,
   LinearWorkspaceShell,
@@ -20,7 +19,7 @@ type ProcurementTab =
 const PROCUREMENT_TABS = [
   { value: "purchase-orders", label: "Purchase Orders" },
   { value: "product-intake", label: "Product Intake" },
-  { value: "receiving", label: "PO Intake" },
+  { value: "receiving", label: "Receiving" },
   { value: "inventory-browse", label: "Inventory Browse" },
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
@@ -52,38 +51,6 @@ export default function ProcurementWorkspacePage() {
             activeTab,
         },
       ]}
-      commandStrip={
-        <>
-          <Button
-            size="sm"
-            variant={activeTab === "purchase-orders" ? "default" : "outline"}
-            onClick={() => setActiveTab("purchase-orders")}
-          >
-            Purchase Orders
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "product-intake" ? "default" : "outline"}
-            onClick={() => setActiveTab("product-intake")}
-          >
-            Product Intake
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "inventory-browse" ? "default" : "outline"}
-            onClick={() => setActiveTab("inventory-browse")}
-          >
-            Inventory Browse
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "receiving" ? "default" : "outline"}
-            onClick={() => setActiveTab("receiving")}
-          >
-            PO Intake
-          </Button>
-        </>
-      }
     >
       <LinearWorkspacePanel value="purchase-orders">
         <PurchaseOrdersWorkSurface />

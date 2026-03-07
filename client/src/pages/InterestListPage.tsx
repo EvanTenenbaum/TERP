@@ -6,6 +6,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -221,7 +222,12 @@ export default function InterestListPage() {
   const totalMatches = items.reduce((sum, i) => sum + i.matchCount, 0);
 
   const handleConvertToOrder = (item: InterestItem) => {
-    setLocation(`/orders/create?clientId=${item.clientId}&needId=${item.id}`);
+    setLocation(
+      buildSalesWorkspacePath("create-order", {
+        clientId: item.clientId,
+        needId: item.id,
+      })
+    );
   };
 
   // CHAOS-016: Show confirm dialog instead of window.confirm

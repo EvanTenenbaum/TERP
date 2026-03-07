@@ -47,6 +47,12 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
+  EmptyState,
+  ErrorState,
+  NoSearchResults,
+} from "@/components/ui/empty-state";
+import { PageLoading } from "@/components/ui/loading-state";
+import {
   Plus,
   Edit,
   Trash,
@@ -101,7 +107,12 @@ export default function PricingRulesPage() {
   >(null);
 
   // Fetch pricing rules
-  const { data: rules, isLoading } = trpc.pricing.listRules.useQuery();
+  const {
+    data: rules,
+    isLoading,
+    error: rulesError,
+    refetch: refetchRules,
+  } = trpc.pricing.listRules.useQuery();
 
   // BUG-097 FIX: Use standardized error handling
   // Create mutation
@@ -394,9 +405,20 @@ export default function PricingRulesPage() {
   );
 
   if (isLoading) {
+    return <PageLoading message="Loading pricing rules..." />;
+  }
+
+  if (rulesError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading pricing rules...</p>
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
+        <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+        <ErrorState
+          title="Unable to load pricing rules"
+          description={rulesError.message}
+          onRetry={() => {
+            void refetchRules();
+          }}
+        />
       </div>
     );
   }
@@ -448,11 +470,24 @@ export default function PricingRulesPage() {
               <TableBody>
                 {filteredRules.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center text-muted-foreground"
-                    >
-                      No pricing rules found. Create one to get started.
+                    <TableCell colSpan={7} className="p-0">
+                      {search ? (
+                        <NoSearchResults
+                          searchTerm={search}
+                          onClear={() => setSearch("")}
+                        />
+                      ) : (
+                        <EmptyState
+                          variant="reports"
+                          size="sm"
+                          title="No pricing rules yet"
+                          description="Create a rule to standardize markups, markdowns, and conditional pricing."
+                          action={{
+                            label: "Create Rule",
+                            onClick: () => setCreateDialogOpen(true),
+                          }}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (
