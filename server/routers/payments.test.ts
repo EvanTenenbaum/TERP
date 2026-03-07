@@ -61,6 +61,10 @@ vi.mock("../_core/logger", () => ({
   },
 }));
 
+vi.mock("../_core/monitoring", () => ({
+  captureException: vi.fn(),
+}));
+
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import { getDb } from "../db";
@@ -750,26 +754,31 @@ describe("Wire Payment Recording (TER-39)", () => {
     });
 
     it("should reject payment for already paid invoice", async () => {
-      // Arrange
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([
-              {
-                id: 1,
-                invoiceNumber: "INV-001",
-                customerId: 1,
-                status: "PAID", // Already paid
-                totalAmount: "100.00",
-                amountPaid: "100.00",
-                amountDue: "0.00",
-              },
-            ]),
-          }),
-        }),
-      });
+      // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
+      const invoiceData = {
+        id: 1,
+        invoiceNumber: "INV-001",
+        customerId: 1,
+        status: "PAID", // Already paid
+        totalAmount: "100.00",
+        amountPaid: "100.00",
+        amountDue: "0.00",
+      };
 
-      (mockDb as unknown as { select: Mock }).select = mockSelect;
+      mockDb.transaction = vi.fn(async (callback: MockTxCallback) => {
+        const mockTx = {
+          insert: vi.fn(),
+          update: vi.fn(),
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                for: vi.fn().mockResolvedValue([invoiceData]),
+              }),
+            }),
+          }),
+        };
+        return await callback(mockTx);
+      });
 
       // Act & Assert
       await expect(
@@ -782,26 +791,31 @@ describe("Wire Payment Recording (TER-39)", () => {
     });
 
     it("should reject payment for voided invoice", async () => {
-      // Arrange
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([
-              {
-                id: 1,
-                invoiceNumber: "INV-001",
-                customerId: 1,
-                status: "VOID",
-                totalAmount: "100.00",
-                amountPaid: "0.00",
-                amountDue: "100.00",
-              },
-            ]),
-          }),
-        }),
-      });
+      // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
+      const invoiceData = {
+        id: 1,
+        invoiceNumber: "INV-001",
+        customerId: 1,
+        status: "VOID",
+        totalAmount: "100.00",
+        amountPaid: "0.00",
+        amountDue: "100.00",
+      };
 
-      (mockDb as unknown as { select: Mock }).select = mockSelect;
+      mockDb.transaction = vi.fn(async (callback: MockTxCallback) => {
+        const mockTx = {
+          insert: vi.fn(),
+          update: vi.fn(),
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                for: vi.fn().mockResolvedValue([invoiceData]),
+              }),
+            }),
+          }),
+        };
+        return await callback(mockTx);
+      });
 
       // Act & Assert
       await expect(
@@ -814,48 +828,58 @@ describe("Wire Payment Recording (TER-39)", () => {
     });
 
     it("should reject payment exceeding amount due", async () => {
-      // Arrange
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([
-              {
-                id: 1,
-                invoiceNumber: "INV-001",
-                customerId: 1,
-                status: "SENT",
-                totalAmount: "100.00",
-                amountPaid: "0.00",
-                amountDue: "100.00",
-              },
-            ]),
+      // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
+      const invoiceData = {
+        id: 1,
+        invoiceNumber: "INV-001",
+        customerId: 1,
+        status: "SENT",
+        totalAmount: "100.00",
+        amountPaid: "0.00",
+        amountDue: "100.00",
+      };
+
+      mockDb.transaction = vi.fn(async (callback: MockTxCallback) => {
+        const mockTx = {
+          insert: vi.fn(),
+          update: vi.fn(),
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                for: vi.fn().mockResolvedValue([invoiceData]),
+              }),
+            }),
           }),
-        }),
+        };
+        return await callback(mockTx);
       });
 
-      (mockDb as unknown as { select: Mock }).select = mockSelect;
-
-      // Act & Assert - Amount exceeds due
+      // Act & Assert - Amount exceeds due (150 > 100 + $1.00 tolerance)
       await expect(
         caller.payments.recordWirePayment({
           invoiceId: 1,
-          amount: 150, // Exceeds $100 due
+          amount: 150, // Exceeds $100 due + $1.00 tolerance
           wireConfirmationNumber: "WIRE-12345",
         })
       ).rejects.toThrow("exceeds amount due");
     });
 
     it("should reject payment for non-existent invoice", async () => {
-      // Arrange
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]), // No invoice found
+      // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
+      mockDb.transaction = vi.fn(async (callback: MockTxCallback) => {
+        const mockTx = {
+          insert: vi.fn(),
+          update: vi.fn(),
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                for: vi.fn().mockResolvedValue([]), // No invoice found
+              }),
+            }),
           }),
-        }),
+        };
+        return await callback(mockTx);
       });
-
-      (mockDb as unknown as { select: Mock }).select = mockSelect;
 
       // Act & Assert
       await expect(
@@ -979,16 +1003,30 @@ describe("recordPayment - TER-256 Status Validation", () => {
   let caller: Awaited<ReturnType<typeof createCaller>>;
   let mockDb: MockDb;
 
-  // Helper that builds a mock invoice select returning the provided invoice data
+  // Helper that builds a mock select returning invoice data with FOR UPDATE lock
+  // TER-581: Invoice lookup now happens inside the transaction with .for("update")
   const buildInvoiceSelectMock = (
     invoiceData: Record<string, unknown> | null
   ) =>
     vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue(invoiceData ? [invoiceData] : []),
+          for: vi.fn().mockResolvedValue(invoiceData ? [invoiceData] : []),
         }),
       }),
+    });
+
+  // Build a transaction mock that only does the invoice lookup (for rejection tests)
+  const buildRejectingTransactionMock = (
+    selectMock: ReturnType<typeof vi.fn>
+  ) =>
+    vi.fn(async (callback: MockTxCallback) => {
+      const mockTx = {
+        insert: vi.fn(),
+        update: vi.fn(),
+        select: selectMock,
+      };
+      return await callback(mockTx);
     });
 
   // A successful transaction mock that simulates a full payment flow
@@ -1019,7 +1057,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should succeed for a SENT invoice with a valid payment amount", async () => {
-    // Arrange
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
     const invoice = {
       id: 1,
       invoiceNumber: "INV-2026-0001",
@@ -1030,7 +1068,6 @@ describe("recordPayment - TER-256 Status Validation", () => {
       amountDue: "500.00",
     };
     const selectMock = buildInvoiceSelectMock(invoice);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
     mockDb.transaction = buildSuccessfulTransactionMock(selectMock);
 
     // Act
@@ -1047,7 +1084,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should succeed for a PARTIAL invoice with an additional payment", async () => {
-    // Arrange
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
     const invoice = {
       id: 2,
       invoiceNumber: "INV-2026-0002",
@@ -1058,7 +1095,6 @@ describe("recordPayment - TER-256 Status Validation", () => {
       amountDue: "200.00",
     };
     const selectMock = buildInvoiceSelectMock(invoice);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
     mockDb.transaction = buildSuccessfulTransactionMock(selectMock);
 
     // Act
@@ -1074,7 +1110,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should reject payment on a PAID invoice with BAD_REQUEST", async () => {
-    // Arrange
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
     const invoice = {
       id: 3,
       invoiceNumber: "INV-2026-0003",
@@ -1085,7 +1121,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
       amountDue: "0.00",
     };
     const selectMock = buildInvoiceSelectMock(invoice);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildRejectingTransactionMock(selectMock);
 
     // Act & Assert
     await expect(
@@ -1101,7 +1137,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should reject payment on a VOID invoice with BAD_REQUEST", async () => {
-    // Arrange
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
     const invoice = {
       id: 4,
       invoiceNumber: "INV-2026-0004",
@@ -1112,7 +1148,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
       amountDue: "150.00",
     };
     const selectMock = buildInvoiceSelectMock(invoice);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildRejectingTransactionMock(selectMock);
 
     // Act & Assert
     await expect(
@@ -1128,7 +1164,8 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should reject payment on a DRAFT invoice with BAD_REQUEST", async () => {
-    // Arrange: DRAFT invoices have not been sent yet and cannot receive payments
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
+    // DRAFT invoices have not been sent yet and cannot receive payments
     const invoice = {
       id: 5,
       invoiceNumber: "INV-2026-0005",
@@ -1139,7 +1176,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
       amountDue: "400.00",
     };
     const selectMock = buildInvoiceSelectMock(invoice);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildRejectingTransactionMock(selectMock);
 
     // Act & Assert
     await expect(
@@ -1155,7 +1192,7 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should reject payment amount that exceeds amount due with BAD_REQUEST", async () => {
-    // Arrange
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
     const invoice = {
       id: 6,
       invoiceNumber: "INV-2026-0006",
@@ -1166,9 +1203,9 @@ describe("recordPayment - TER-256 Status Validation", () => {
       amountDue: "100.00",
     };
     const selectMock = buildInvoiceSelectMock(invoice);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildRejectingTransactionMock(selectMock);
 
-    // Act & Assert — $200 > $100 due (exceeds tolerance of 0.01)
+    // Act & Assert — $200 > $100 due (exceeds $1.00 tolerance from TER-589)
     await expect(
       caller.payments.recordPayment({
         invoiceId: 6,
@@ -1182,9 +1219,9 @@ describe("recordPayment - TER-256 Status Validation", () => {
   });
 
   it("should reject payment for a non-existent invoiceId with NOT_FOUND", async () => {
-    // Arrange: invoice lookup returns empty array
+    // Arrange - TER-581: Invoice lookup now happens inside transaction with FOR UPDATE lock
     const selectMock = buildInvoiceSelectMock(null);
-    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildRejectingTransactionMock(selectMock);
 
     // Act & Assert
     await expect(

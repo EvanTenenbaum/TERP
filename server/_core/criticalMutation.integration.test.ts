@@ -40,6 +40,12 @@ import { logger } from "./logger";
 
 describe("criticalMutation Integration Tests", () => {
   beforeEach(() => {
+    // TER-585: Force in-memory idempotency backend for integration tests.
+    // The DB-backed default requires a real database connection; the in-memory
+    // backend lets us test idempotency logic without wiring up DB mocks for
+    // the idempotency_keys table.
+    vi.stubEnv("IDEMPOTENCY_BACKEND", "memory");
+
     // Clear idempotency cache before each test
     clearIdempotencyCache();
     vi.clearAllMocks();
@@ -52,6 +58,7 @@ describe("criticalMutation Integration Tests", () => {
     // Stop cache cleanup to prevent resource leaks
     stopCacheCleanup();
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   describe("Transaction Execution", () => {
