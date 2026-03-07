@@ -3082,37 +3082,38 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 > **Source:** Comprehensive Transaction Safety Audit - 2026-03-07
 > **Execution Plan:** `docs/roadmaps/TXSAFE-execution-plan.md`
+> **Linear:** TER-581 through TER-594
 > **Overall Score:** 74% → Target 92%+
 > **Total Effort:** ~20 hours across 3 phases
 
 ### Phase 1: CRITICAL (P0) — Blocks Production
 
-| Task      | Description                                         | Priority | Status | Est | Module                             | Mode   |
-| --------- | --------------------------------------------------- | -------- | ------ | --- | ---------------------------------- | ------ |
-| TXSAFE-01 | Fix Payment Invoice Race Condition (FOR UPDATE)     | P0       | ready  | 30m | `server/routers/payments.ts`       | RED    |
-| TXSAFE-02 | Fix PO Receiving Check-Then-Act Race Condition      | P0       | ready  | 1h  | `server/routers/poReceiving.ts`    | RED    |
-| TXSAFE-03 | Fix Batch Quantity Update Race Condition            | P0       | ready  | 1h  | `server/routers/poReceiving.ts`    | RED    |
-| TXSAFE-04 | Remove Forbidden Actor Attribution Patterns         | P0       | ready  | 30m | `server/routers/*.backup*`         | RED    |
-| TXSAFE-05 | Migrate Idempotency Cache to Redis (Multi-Instance) | P0       | ready  | 6h  | `server/_core/criticalMutation.ts` | RED    |
-| TXSAFE-06 | Fix Health Check Silent Failure in Production       | P0       | ready  | 30m | `server/_core/connectionPool.ts`   | STRICT |
+| Task      | Description                                         | Priority | Status | Est | Module                             | Mode   | Linear  |
+| --------- | --------------------------------------------------- | -------- | ------ | --- | ---------------------------------- | ------ | ------- |
+| TXSAFE-01 | Fix Payment Invoice Race Condition (FOR UPDATE)     | P0       | ready  | 30m | `server/routers/payments.ts`       | RED    | TER-581 |
+| TXSAFE-02 | Fix PO Receiving Check-Then-Act Race Condition      | P0       | ready  | 1h  | `server/routers/poReceiving.ts`    | RED    | TER-582 |
+| TXSAFE-03 | Fix Batch Quantity Update Race Condition            | P0       | ready  | 1h  | `server/routers/poReceiving.ts`    | RED    | TER-583 |
+| TXSAFE-04 | Remove Forbidden Actor Attribution Patterns         | P0       | ready  | 30m | `server/routers/*.backup*`         | RED    | TER-584 |
+| TXSAFE-05 | Migrate Idempotency Cache to Redis (Multi-Instance) | P0       | ready  | 6h  | `server/_core/criticalMutation.ts` | RED    | TER-585 |
+| TXSAFE-06 | Fix Health Check Silent Failure in Production       | P0       | ready  | 30m | `server/_core/connectionPool.ts`   | STRICT | TER-586 |
 
 ### Phase 2: HIGH (P1) — First Sprint Post-P0
 
-| Task      | Description                                          | Priority | Status | Est | Module                                   | Mode   |
-| --------- | ---------------------------------------------------- | -------- | ------ | --- | ---------------------------------------- | ------ |
-| TXSAFE-07 | Add .max() Bounds to Monetary Zod Schemas            | P1       | ready  | 45m | `server/routers/payments.ts` +3          | STRICT |
-| TXSAFE-08 | Fix String-to-Number Coercion in PO Receiving        | P1       | ready  | 1h  | `server/routers/poReceiving.ts`          | STRICT |
-| TXSAFE-09 | Add Notification Queue Persistence + Circuit Breaker | P1       | ready  | 2h  | `server/services/notificationService.ts` | STRICT |
-| TXSAFE-10 | Add Overpayment Tolerance Config + Documentation     | P1       | ready  | 1h  | `server/routers/payments.ts`             | SAFE   |
+| Task      | Description                                          | Priority | Status | Est | Module                                   | Mode   | Linear  |
+| --------- | ---------------------------------------------------- | -------- | ------ | --- | ---------------------------------------- | ------ | ------- |
+| TXSAFE-07 | Add .max() Bounds to Monetary Zod Schemas            | P1       | ready  | 45m | `server/routers/payments.ts` +3          | STRICT | TER-587 |
+| TXSAFE-08 | Fix String-to-Number Coercion in PO Receiving        | P1       | ready  | 1h  | `server/routers/poReceiving.ts`          | STRICT | TER-590 |
+| TXSAFE-09 | Add Notification Queue Persistence + Circuit Breaker | P1       | ready  | 2h  | `server/services/notificationService.ts` | STRICT | TER-588 |
+| TXSAFE-10 | Add Overpayment Tolerance Config + Documentation     | P1       | ready  | 1h  | `server/routers/payments.ts`             | SAFE   | TER-589 |
 
 ### Phase 3: MEDIUM (P2) — Next Quarter
 
-| Task      | Description                                 | Priority | Status | Est | Module                          | Mode   |
-| --------- | ------------------------------------------- | -------- | ------ | --- | ------------------------------- | ------ |
-| TXSAFE-11 | Support Custom Transaction Isolation Levels | P2       | ready  | 2h  | `server/_core/dbTransaction.ts` | STRICT |
-| TXSAFE-12 | Add Circuit Breaker for External Services   | P2       | ready  | 3h  | `server/_core/` (new)           | STRICT |
-| TXSAFE-13 | Add Query-Level Timeout Configuration       | P2       | ready  | 1h  | `server/_core/dbTransaction.ts` | STRICT |
-| TXSAFE-14 | Add Rate Limiting on Critical Mutations     | P2       | ready  | 1h  | `server/_core/` (new)           | STRICT |
+| Task      | Description                                 | Priority | Status | Est | Module                          | Mode   | Linear  |
+| --------- | ------------------------------------------- | -------- | ------ | --- | ------------------------------- | ------ | ------- |
+| TXSAFE-11 | Support Custom Transaction Isolation Levels | P2       | ready  | 2h  | `server/_core/dbTransaction.ts` | STRICT | TER-591 |
+| TXSAFE-12 | Add Circuit Breaker for External Services   | P2       | ready  | 3h  | `server/_core/` (new)           | STRICT | TER-592 |
+| TXSAFE-13 | Add Query-Level Timeout Configuration       | P2       | ready  | 1h  | `server/_core/dbTransaction.ts` | STRICT | TER-593 |
+| TXSAFE-14 | Add Rate Limiting on Critical Mutations     | P2       | ready  | 1h  | `server/_core/` (new)           | STRICT | TER-594 |
 
 ### Overlap with Existing Tasks
 

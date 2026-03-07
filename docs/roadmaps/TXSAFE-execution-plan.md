@@ -20,22 +20,22 @@ This plan addresses all findings from the 2026-03-07 transaction safety, error h
 
 ## Task Registry
 
-| Task ID   | Title                                                | Priority | Phase | Est | Status | Linear |
-| --------- | ---------------------------------------------------- | -------- | ----- | --- | ------ | ------ |
-| TXSAFE-01 | Fix Payment Invoice Race Condition (FOR UPDATE)      | P0       | 1     | 30m | ready  | TBD    |
-| TXSAFE-02 | Fix PO Receiving Check-Then-Act Race Condition       | P0       | 1     | 1h  | ready  | TBD    |
-| TXSAFE-03 | Fix Batch Quantity Update Race Condition             | P0       | 1     | 1h  | ready  | TBD    |
-| TXSAFE-04 | Remove Forbidden Actor Attribution Patterns          | P0       | 1     | 30m | ready  | TBD    |
-| TXSAFE-05 | Migrate Idempotency Cache to Redis                   | P0       | 1     | 6h  | ready  | TBD    |
-| TXSAFE-06 | Fix Health Check Silent Failure in Production        | P0       | 1     | 30m | ready  | TBD    |
-| TXSAFE-07 | Add .max() Bounds to Monetary Zod Schemas            | P1       | 2     | 45m | ready  | TBD    |
-| TXSAFE-08 | Fix String-to-Number Coercion in PO Receiving        | P1       | 2     | 1h  | ready  | TBD    |
-| TXSAFE-09 | Add Notification Queue Persistence + Circuit Breaker | P1       | 2     | 2h  | ready  | TBD    |
-| TXSAFE-10 | Add Overpayment Tolerance Config + Documentation     | P1       | 2     | 1h  | ready  | TBD    |
-| TXSAFE-11 | Support Custom Transaction Isolation Levels          | P2       | 3     | 2h  | ready  | TBD    |
-| TXSAFE-12 | Add Circuit Breaker for External Services            | P2       | 3     | 3h  | ready  | TBD    |
-| TXSAFE-13 | Add Query-Level Timeout Configuration                | P2       | 3     | 1h  | ready  | TBD    |
-| TXSAFE-14 | Add Rate Limiting on Critical Mutations              | P2       | 3     | 1h  | ready  | TBD    |
+| Task ID   | Title                                                | Priority | Phase | Est | Status | Linear                                                                                                            |
+| --------- | ---------------------------------------------------- | -------- | ----- | --- | ------ | ----------------------------------------------------------------------------------------------------------------- |
+| TXSAFE-01 | Fix Payment Invoice Race Condition (FOR UPDATE)      | P0       | 1     | 30m | ready  | [TER-581](https://linear.app/terpcorp/issue/TER-581/txsafe-01-fix-payment-invoice-race-condition-for-update)      |
+| TXSAFE-02 | Fix PO Receiving Check-Then-Act Race Condition       | P0       | 1     | 1h  | ready  | [TER-582](https://linear.app/terpcorp/issue/TER-582/txsafe-02-fix-po-receiving-check-then-act-race-condition)     |
+| TXSAFE-03 | Fix Batch Quantity Update Race Condition             | P0       | 1     | 1h  | ready  | [TER-583](https://linear.app/terpcorp/issue/TER-583/txsafe-03-fix-batch-quantity-update-race-condition)           |
+| TXSAFE-04 | Remove Forbidden Actor Attribution Patterns          | P0       | 1     | 30m | ready  | [TER-584](https://linear.app/terpcorp/issue/TER-584/txsafe-04-remove-forbidden-actor-attribution-patterns)        |
+| TXSAFE-05 | Migrate Idempotency Cache to Redis                   | P0       | 1     | 6h  | ready  | [TER-585](https://linear.app/terpcorp/issue/TER-585/txsafe-05-migrate-idempotency-cache-to-redis-multi-instance)  |
+| TXSAFE-06 | Fix Health Check Silent Failure in Production        | P0       | 1     | 30m | ready  | [TER-586](https://linear.app/terpcorp/issue/TER-586/txsafe-06-fix-health-check-silent-failure-in-production)      |
+| TXSAFE-07 | Add .max() Bounds to Monetary Zod Schemas            | P1       | 2     | 45m | ready  | [TER-587](https://linear.app/terpcorp/issue/TER-587/txsafe-07-add-max-bounds-to-monetary-zod-schemas)             |
+| TXSAFE-08 | Fix String-to-Number Coercion in PO Receiving        | P1       | 2     | 1h  | ready  | [TER-590](https://linear.app/terpcorp/issue/TER-590/txsafe-08-fix-string-to-number-coercion-in-po-receiving)      |
+| TXSAFE-09 | Add Notification Queue Persistence + Circuit Breaker | P1       | 2     | 2h  | ready  | [TER-588](https://linear.app/terpcorp/issue/TER-588/txsafe-09-add-notification-queue-persistence-circuit-breaker) |
+| TXSAFE-10 | Add Overpayment Tolerance Config + Documentation     | P1       | 2     | 1h  | ready  | [TER-589](https://linear.app/terpcorp/issue/TER-589/txsafe-10-add-overpayment-tolerance-config-documentation)     |
+| TXSAFE-11 | Support Custom Transaction Isolation Levels          | P2       | 3     | 2h  | ready  | [TER-591](https://linear.app/terpcorp/issue/TER-591/txsafe-11-support-custom-transaction-isolation-levels)        |
+| TXSAFE-12 | Add Circuit Breaker for External Services            | P2       | 3     | 3h  | ready  | [TER-592](https://linear.app/terpcorp/issue/TER-592/txsafe-12-add-circuit-breaker-for-external-services)          |
+| TXSAFE-13 | Add Query-Level Timeout Configuration                | P2       | 3     | 1h  | ready  | [TER-593](https://linear.app/terpcorp/issue/TER-593/txsafe-13-add-query-level-timeout-configuration)              |
+| TXSAFE-14 | Add Rate Limiting on Critical Mutations              | P2       | 3     | 1h  | ready  | [TER-594](https://linear.app/terpcorp/issue/TER-594/txsafe-14-add-rate-limiting-on-critical-mutations)            |
 
 ---
 
@@ -629,4 +629,4 @@ Run TXSAFE-11 through TXSAFE-14 in next quarter sprint.
 - **2026-03-07:** Initial audit completed, 14 tasks identified
 - **2026-03-07:** Execution plan created (this document)
 - **2026-03-07:** Tasks registered in MASTER_ROADMAP.md
-- **2026-03-07:** Linear tickets to be created by Evan
+- **2026-03-07:** Linear tickets created: TER-581 through TER-594
