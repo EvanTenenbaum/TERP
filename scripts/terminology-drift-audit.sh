@@ -169,12 +169,15 @@ get_files_to_audit() {
 
 declare -a FILES_TO_AUDIT=()
 FILES_TO_AUDIT_COUNT=0
+_tmp_filelist=$(mktemp)
+get_files_to_audit > "$_tmp_filelist"
 while IFS= read -r file_line; do
   if [[ -n "$file_line" ]]; then
     FILES_TO_AUDIT+=("$file_line")
     FILES_TO_AUDIT_COUNT=$((FILES_TO_AUDIT_COUNT + 1))
   fi
-done < <(get_files_to_audit)
+done < "$_tmp_filelist"
+rm -f "$_tmp_filelist"
 
 # ─── Main audit ───────────────────────────────────────────────────────────────
 DRIFT_COUNT=0
