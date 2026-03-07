@@ -85,7 +85,7 @@ jobs:
       - name: Apply migrations
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
-        run: pnpm db:push
+        run: pnpm drizzle-kit push --force
 
       - name: Run schema validation tests
         env:
