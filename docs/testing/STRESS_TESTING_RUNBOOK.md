@@ -4,6 +4,8 @@
 **Scope**: STX-001..STX-010 staging stress workflow
 **Target**: `https://terp-staging-yicld.ondigitalocean.app`
 
+Secret handling contract: [`docs/testing/STRESS_SECRETS.md`](./STRESS_SECRETS.md)
+
 ## Canonical Commands
 
 ```bash
