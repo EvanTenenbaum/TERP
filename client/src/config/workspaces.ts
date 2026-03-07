@@ -51,13 +51,9 @@ export const INVENTORY_WORKSPACE = {
   title: "Inventory",
   homePath: "/inventory",
   description:
-    "Inventory keeps operations and browse surfaces together so users can act without losing context.",
-  tabs: [
-    { value: "inventory", label: "Operations" },
-    { value: "browse", label: "Browse" },
-    { value: "products", label: "Products" },
-  ],
-} as const satisfies WorkspaceConfig<"inventory" | "browse" | "products">;
+    "Manage operational inventory with shared table and gallery workflows in one place.",
+  tabs: [{ value: "inventory", label: "Operations" }],
+} as const satisfies WorkspaceConfig<"inventory">;
 
 export const CREDITS_WORKSPACE = {
   title: "Credits",

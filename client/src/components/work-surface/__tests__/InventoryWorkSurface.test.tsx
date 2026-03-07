@@ -23,12 +23,20 @@ const {
   mockUsePowersheetSelection,
   mockGetEnhanced,
   mockBulkDelete,
+  mockGetBatchImagesFetch,
+  mockUseInspectorPanel,
+  mockInspectorOpen,
+  mockInspectorClose,
 } = vi.hoisted(() => {
   return {
     mockUseUndo: vi.fn(),
     mockUsePowersheetSelection: vi.fn(),
     mockGetEnhanced: vi.fn(),
     mockBulkDelete: vi.fn(),
+    mockGetBatchImagesFetch: vi.fn(),
+    mockUseInspectorPanel: vi.fn(),
+    mockInspectorOpen: vi.fn(),
+    mockInspectorClose: vi.fn(),
   };
 });
 
@@ -43,6 +51,11 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({
       inventory: {
         views: { list: { invalidate: vi.fn() } },
+      },
+      photography: {
+        getBatchImages: {
+          fetch: mockGetBatchImagesFetch,
+        },
       },
     }),
     inventory: {
@@ -159,11 +172,7 @@ vi.mock("../InspectorPanel", () => ({
   InspectorField: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  useInspectorPanel: () => ({
-    isOpen: false,
-    open: vi.fn(),
-    close: vi.fn(),
-  }),
+  useInspectorPanel: mockUseInspectorPanel,
 }));
 
 vi.mock("@/components/inventory/PurchaseModal", () => ({
@@ -183,6 +192,44 @@ vi.mock("@/components/inventory/InventoryCard", () => ({
   InventoryCard: ({ batch }: { batch: { id: number; sku: string } }) => (
     <div data-testid={`inventory-card-${batch?.id ?? "unknown"}`}>
       {batch?.sku}
+    </div>
+  ),
+}));
+
+vi.mock("@/components/inventory/BatchGalleryCard", () => ({
+  BatchGalleryCard: ({
+    sku,
+    onOpen,
+    onAdjustQuantity,
+  }: {
+    sku: string;
+    onOpen: () => void;
+    onAdjustQuantity: () => void;
+  }) => (
+    <div data-testid={`batch-gallery-card-${sku}`}>
+      <button type="button" onClick={onOpen}>
+        Open {sku}
+      </button>
+      <button type="button" onClick={onAdjustQuantity}>
+        Adjust {sku}
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/AdjustQuantityDialog", () => ({
+  AdjustQuantityDialog: ({
+    open,
+    itemLabel,
+  }: {
+    open: boolean;
+    itemLabel?: string;
+  }) => (
+    <div
+      data-testid="adjust-quantity-dialog"
+      data-open={open ? "true" : "false"}
+    >
+      {itemLabel}
     </div>
   ),
 }));
@@ -266,6 +313,12 @@ describe("InventoryWorkSurface", () => {
     mockUsePowersheetSelection.mockReturnValue(makeDefaultSelectionReturn());
     mockGetEnhanced.mockReturnValue(makeDefaultInventoryReturn());
     mockBulkDelete.mockReturnValue({ mutate: vi.fn(), isPending: false });
+    mockGetBatchImagesFetch.mockResolvedValue([]);
+    mockUseInspectorPanel.mockReturnValue({
+      isOpen: false,
+      open: mockInspectorOpen,
+      close: mockInspectorClose,
+    });
   });
 
   it("renders the Product Intake button", async () => {
@@ -273,6 +326,64 @@ describe("InventoryWorkSurface", () => {
     expect(
       screen.getByRole("button", { name: /product intake/i })
     ).toBeInTheDocument();
+  });
+
+  it("switches to gallery view from the shared display items set", async () => {
+    mockGetEnhanced.mockReturnValue({
+      data: {
+        items: [makeEnhancedItem(1, "12"), makeEnhancedItem(2, "4")],
+        pagination: { hasMore: false },
+        summary: {
+          totalItems: 2,
+          byStockStatus: { critical: 0, low: 1, optimal: 1, outOfStock: 0 },
+        },
+      },
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    render(<InventoryWorkSurface />);
+
+    fireEvent.click(screen.getByTestId("inventory-view-gallery"));
+
+    expect(screen.queryByTestId("inventory-table")).not.toBeInTheDocument();
+    expect(screen.getByTestId("inventory-gallery")).toBeInTheDocument();
+    expect(screen.getByTestId("batch-gallery-card-SKU-1")).toBeInTheDocument();
+    expect(screen.getByTestId("batch-gallery-card-SKU-2")).toBeInTheDocument();
+  });
+
+  it("opens the batch drawer and quantity dialog from gallery actions", () => {
+    const selection = makeDefaultSelectionReturn();
+    mockUsePowersheetSelection.mockReturnValue(selection);
+    mockGetEnhanced.mockReturnValue({
+      data: {
+        items: [makeEnhancedItem(1, "12")],
+        pagination: { hasMore: false },
+        summary: {
+          totalItems: 1,
+          byStockStatus: { critical: 0, low: 0, optimal: 1, outOfStock: 0 },
+        },
+      },
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    render(<InventoryWorkSurface />);
+
+    fireEvent.click(screen.getByTestId("inventory-view-gallery"));
+    fireEvent.click(screen.getByRole("button", { name: "Open SKU-1" }));
+
+    expect(selection.setActiveId).toHaveBeenCalledWith(1);
+    expect(selection.setActiveIndex).toHaveBeenCalledWith(0);
+    expect(mockInspectorOpen).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Adjust SKU-1" }));
+
+    expect(selection.setActiveId).toHaveBeenCalledWith(1);
+    expect(screen.getByTestId("adjust-quantity-dialog")).toHaveAttribute(
+      "data-open",
+      "true"
+    );
   });
 
   // ─── H1: Pre-click eligibility gate (TER-525) ────────────────────────────

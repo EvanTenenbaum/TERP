@@ -171,14 +171,14 @@ fastify.get('/db/verify/live-batches', async (request, reply) => {
     
     const [withQty] = await pool.query(`
       SELECT COUNT(*) as count FROM batches
-      WHERE batchStatus IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
+      WHERE batchStatus = 'LIVE'
         AND deleted_at IS NULL AND on_hand_qty IS NOT NULL
         AND CAST(on_hand_qty AS DECIMAL(18,6)) > 0
     `);
-    
+
     const [withCost] = await pool.query(`
       SELECT COUNT(*) as count FROM batches
-      WHERE batchStatus IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
+      WHERE batchStatus = 'LIVE'
         AND deleted_at IS NULL AND unit_cogs IS NOT NULL
         AND CAST(unit_cogs AS DECIMAL(18,6)) > 0
     `);

@@ -23,12 +23,12 @@ describe("Order State Machine (ORD-003)", () => {
       expect(canTransition("DRAFT", "CANCELLED")).toBe(true);
     });
 
-    it("should allow CONFIRMED -> PENDING", () => {
-      expect(canTransition("CONFIRMED", "PENDING")).toBe(true);
+    it("should allow CONFIRMED -> READY_FOR_PACKING", () => {
+      expect(canTransition("CONFIRMED", "READY_FOR_PACKING")).toBe(true);
     });
 
-    it("should allow PENDING -> PACKED", () => {
-      expect(canTransition("PENDING", "PACKED")).toBe(true);
+    it("should allow READY_FOR_PACKING -> PACKED", () => {
+      expect(canTransition("READY_FOR_PACKING", "PACKED")).toBe(true);
     });
 
     it("should allow PACKED -> SHIPPED", () => {
@@ -56,8 +56,8 @@ describe("Order State Machine (ORD-003)", () => {
     });
 
     // Invalid transitions (ORD-003 fix)
-    it("should NOT allow PACKED -> PENDING (ORD-003 fix)", () => {
-      expect(canTransition("PACKED", "PENDING")).toBe(false);
+    it("should NOT allow PACKED -> READY_FOR_PACKING (ORD-003 fix)", () => {
+      expect(canTransition("PACKED", "READY_FOR_PACKING")).toBe(false);
     });
 
     it("should NOT allow SHIPPED -> PACKED (backwards transition)", () => {
@@ -70,7 +70,7 @@ describe("Order State Machine (ORD-003)", () => {
 
     // Terminal states
     it("should NOT allow transitions from CANCELLED", () => {
-      expect(canTransition("CANCELLED", "PENDING")).toBe(false);
+      expect(canTransition("CANCELLED", "READY_FOR_PACKING")).toBe(false);
       expect(canTransition("CANCELLED", "DRAFT")).toBe(false);
     });
 
@@ -84,7 +84,7 @@ describe("Order State Machine (ORD-003)", () => {
 
     // Unknown status
     it("should return false for unknown status", () => {
-      expect(canTransition("UNKNOWN", "PENDING")).toBe(false);
+      expect(canTransition("UNKNOWN", "READY_FOR_PACKING")).toBe(false);
     });
   });
 
@@ -92,6 +92,7 @@ describe("Order State Machine (ORD-003)", () => {
     it("should return valid next statuses for DRAFT", () => {
       const next = getNextStatuses("DRAFT");
       expect(next).toContain("CONFIRMED");
+      expect(next).toContain("READY_FOR_PACKING");
       expect(next).toContain("CANCELLED");
       expect(next).not.toContain("SHIPPED");
     });
@@ -100,8 +101,7 @@ describe("Order State Machine (ORD-003)", () => {
       const next = getNextStatuses("PACKED");
       expect(next).toContain("SHIPPED");
       expect(next).toContain("CANCELLED");
-      // ORD-003: PENDING should not be allowed from PACKED
-      expect(next).not.toContain("PENDING");
+      expect(next).not.toContain("READY_FOR_PACKING");
     });
 
     it("should return empty array for terminal states", () => {
@@ -130,7 +130,7 @@ describe("Order State Machine (ORD-003)", () => {
 
     it("should return false for non-terminal statuses", () => {
       expect(isTerminalStatus("DRAFT")).toBe(false);
-      expect(isTerminalStatus("PENDING")).toBe(false);
+      expect(isTerminalStatus("READY_FOR_PACKING")).toBe(false);
       expect(isTerminalStatus("PACKED")).toBe(false);
       expect(isTerminalStatus("SHIPPED")).toBe(false);
     });
@@ -144,7 +144,7 @@ describe("Order State Machine (ORD-003)", () => {
     const allStatuses: FulfillmentStatus[] = [
       "DRAFT",
       "CONFIRMED",
-      "PENDING",
+      "READY_FOR_PACKING",
       "PACKED",
       "SHIPPED",
       "DELIVERED",

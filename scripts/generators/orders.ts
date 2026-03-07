@@ -54,8 +54,22 @@ export interface OrderData {
   totalMargin: string;
   avgMarginPercent: string;
   validUntil: Date | null;
-  quoteStatus: "DRAFT" | "SENT" | "VIEWED" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CONVERTED" | null;
-  paymentTerms: "NET_7" | "NET_15" | "NET_30" | "COD" | "PARTIAL" | "CONSIGNMENT" | null;
+  quoteStatus:
+    | "UNSENT"
+    | "SENT"
+    | "VIEWED"
+    | "REJECTED"
+    | "EXPIRED"
+    | "CONVERTED"
+    | null;
+  paymentTerms:
+    | "NET_7"
+    | "NET_15"
+    | "NET_30"
+    | "COD"
+    | "PARTIAL"
+    | "CONSIGNMENT"
+    | null;
   cashPayment: string;
   dueDate: Date | null;
   saleStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED" | null;
@@ -205,7 +219,7 @@ export function generateOrders(
       const marginPercent = (lineMargin / lineTotal) * 100;
 
       items.push({
-        batchId: batch.id || 0,
+        batchId: batch.id || 0, // safe: seed generator default, not user ID
         displayName: `Product ${batch.productId}`,
         originalName: `Product ${batch.productId}`,
         quantity,

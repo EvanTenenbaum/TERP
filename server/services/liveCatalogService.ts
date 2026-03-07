@@ -287,9 +287,7 @@ async function getCatalogInternal(
   )?.liveCatalog;
 
   // Build WHERE clause for batches
-  const conditions = [
-    inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]),
-  ];
+  const conditions = [eq(batches.batchStatus, "LIVE")];
 
   // Apply visibility filters from configuration
   if (
@@ -623,7 +621,7 @@ async function getFilterOptionsInternal(
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
-    .where(inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]))
+    .where(eq(batches.batchStatus, "LIVE"))
     .limit(FILTER_OPTIONS_BATCH_LIMIT);
 
   // BUG-409: Log if we hit the limit (indicates filter options may be incomplete)

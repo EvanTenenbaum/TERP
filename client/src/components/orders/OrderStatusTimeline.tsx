@@ -1,16 +1,24 @@
-import { trpc } from '@/lib/trpc';
-import { format } from 'date-fns';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { format } from "date-fns";
+import { CheckCircle2, Circle } from "lucide-react";
 
 interface OrderStatusTimelineProps {
   orderId: number;
 }
 
+const formatFulfillmentStatus = (status: string) =>
+  status === "READY_FOR_PACKING" || status === "PENDING"
+    ? "Ready for Packing"
+    : status;
+
 export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
-  const { data: history, isLoading } = trpc.orders.getOrderStatusHistory.useQuery({ orderId });
+  const { data: history, isLoading } =
+    trpc.orders.getOrderStatusHistory.useQuery({ orderId });
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading history...</div>;
+    return (
+      <div className="text-sm text-muted-foreground">Loading history...</div>
+    );
   }
 
   if (!history || history.length === 0) {
@@ -37,9 +45,11 @@ export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
           </div>
           <div className="flex-1 pb-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="font-medium">{entry.fulfillmentStatus}</span>
+              <span className="font-medium">
+                {formatFulfillmentStatus(entry.fulfillmentStatus)}
+              </span>
               <span className="text-sm text-muted-foreground">
-                {format(new Date(entry.changedAt), 'MMM d, h:mm a')}
+                {format(new Date(entry.changedAt), "MMM d, h:mm a")}
               </span>
             </div>
             {entry.changedByName && (
@@ -48,7 +58,9 @@ export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
               </div>
             )}
             {entry.notes && (
-              <p className="text-sm text-muted-foreground mt-1">{entry.notes}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {entry.notes}
+              </p>
             )}
           </div>
         </div>
@@ -56,4 +68,3 @@ export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
     </div>
   );
 }
-

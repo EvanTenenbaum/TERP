@@ -31,10 +31,10 @@ export interface PricedInventoryItem {
 }
 
 // TERP-0007: Known batch status values (for type safety in UI components)
+// TER-574: Removed PHOTOGRAPHY_COMPLETE (now isPhotographyComplete boolean flag)
 export type BatchStatus =
   | "AWAITING_INTAKE"
   | "LIVE"
-  | "PHOTOGRAPHY_COMPLETE"
   | "ON_HOLD"
   | "QUARANTINED"
   | "SOLD_OUT"

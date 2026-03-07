@@ -703,7 +703,6 @@ export async function updateBatchStatus(
   status:
     | "AWAITING_INTAKE"
     | "LIVE"
-    | "PHOTOGRAPHY_COMPLETE"
     | "ON_HOLD"
     | "QUARANTINED"
     | "SOLD_OUT"
@@ -1602,10 +1601,11 @@ export async function createStrain(data: {
  * INV-CONSISTENCY-001: Unified constant to ensure all inventory queries
  * use the same status filter for sellable inventory.
  */
-export const SELLABLE_BATCH_STATUSES = [
-  "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
-] as const;
+/**
+ * TER-574: PHOTOGRAPHY_COMPLETE removed; sellable is now just LIVE
+ * Photography completion is tracked via isPhotographyComplete boolean flag
+ */
+export const SELLABLE_BATCH_STATUSES = ["LIVE"] as const;
 
 /**
  * Get comprehensive dashboard statistics for inventory
@@ -1615,9 +1615,10 @@ export const SELLABLE_BATCH_STATUSES = [
  * This significantly improves performance as inventory grows, moving computation
  * from JavaScript to the database engine.
  *
- * INV-CONSISTENCY-001: Fixed to only count sellable inventory (LIVE, PHOTOGRAPHY_COMPLETE)
+ * INV-CONSISTENCY-001: Fixed to only count sellable inventory (LIVE)
  * for value/units metrics. Previously included all statuses which caused dashboard
  * to show inflated inventory values that didn't match sales module availability.
+ * TER-574: PHOTOGRAPHY_COMPLETE removed; sellable is now just LIVE
  */
 /**
  * Get dashboard statistics with caching
@@ -1635,7 +1636,7 @@ export async function getDashboardStats() {
       if (!db) return null;
 
       // INV-CONSISTENCY-001: Define sellable status filter for consistent inventory counting
-      // Only LIVE and PHOTOGRAPHY_COMPLETE batches are considered "available" inventory
+      // Only LIVE batches are considered "available" inventory (TER-574)
       // ST-058-B: Using safeInArray to handle empty array edge case gracefully
       // TERP-0019: Added isNull(batches.deletedAt) to exclude soft-deleted batches
       const sellableStatusFilter = and(
@@ -1670,10 +1671,10 @@ export async function getDashboardStats() {
         .groupBy(batches.batchStatus);
 
       // Build status counts object with defaults
+      // TER-574: Removed PHOTOGRAPHY_COMPLETE (now isPhotographyComplete boolean flag)
       const statusCounts: Record<string, number> = {
         AWAITING_INTAKE: 0,
         LIVE: 0,
-        PHOTOGRAPHY_COMPLETE: 0,
         ON_HOLD: 0,
         QUARANTINED: 0,
         SOLD_OUT: 0,
@@ -1862,7 +1863,6 @@ export async function bulkUpdateBatchStatus(
   newStatus:
     | "AWAITING_INTAKE"
     | "LIVE"
-    | "PHOTOGRAPHY_COMPLETE"
     | "ON_HOLD"
     | "QUARANTINED"
     | "SOLD_OUT"

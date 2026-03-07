@@ -180,9 +180,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                 <User className="h-4 w-4 mr-2" />
                 My Account
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setLocation("/settings/notifications")}
-              >
+              <DropdownMenuItem onClick={() => setLocation("/account")}>
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
               </DropdownMenuItem>

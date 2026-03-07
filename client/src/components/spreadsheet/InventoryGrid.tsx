@@ -23,7 +23,6 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 const statusOptions = [
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
   "SOLD_OUT",
@@ -197,7 +196,8 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
             id: event.data.id,
             field: "onHandQty",
             adjustment: delta,
-            reason: "Spreadsheet view edit",
+            adjustmentReason: "COUNT_DISCREPANCY",
+            notes: "Spreadsheet view edit",
           },
           {
             onError: () => {

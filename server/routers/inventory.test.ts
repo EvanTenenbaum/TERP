@@ -610,7 +610,8 @@ describe("Inventory Router", () => {
           id: 999999,
           field: "onHandQty",
           adjustment: 10,
-          reason: "Test non-existent",
+          adjustmentReason: "OTHER",
+          notes: "Test non-existent",
         })
       ).rejects.toThrow();
     });
@@ -638,12 +639,26 @@ describe("Inventory Router", () => {
         id: 1,
         field: "onHandQty",
         adjustment: 10,
-        reason: "Found additional units",
+        adjustmentReason: "COUNT_DISCREPANCY",
+        notes: "Found additional units",
       });
 
       // Assert
       expect(result.success).toBe(true);
       expect(inventoryDb.createAuditLog).toHaveBeenCalled();
+
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      const { inventoryMovements: inventoryMovementsTable } =
+        await import("../../drizzle/schema");
+      const movements = await db.select().from(inventoryMovementsTable);
+      const movement = movements.find(row => row.batchId === 1);
+
+      expect(movement).toMatchObject({
+        inventoryMovementType: "ADJUSTMENT",
+        adjustmentReason: "COUNT_DISCREPANCY",
+        notes: "Found additional units",
+      });
     });
 
     it("should reject negative quantity adjustment", async () => {
@@ -666,7 +681,8 @@ describe("Inventory Router", () => {
           id: 10,
           field: "onHandQty",
           adjustment: -20, // Would result in negative
-          reason: "Test",
+          adjustmentReason: "OTHER",
+          notes: "Test",
         })
       ).rejects.toThrow("Adjustment would result in negative inventory");
     });
@@ -694,7 +710,8 @@ describe("Inventory Router", () => {
         id: 20,
         field: "reservedQty",
         adjustment: -5,
-        reason: "Released reservation",
+        adjustmentReason: "OTHER",
+        notes: "Released reservation",
       });
 
       // Assert
@@ -725,7 +742,8 @@ describe("Inventory Router", () => {
         id: 30,
         field: "onHandQty",
         adjustment: 25,
-        reason: "Cycle count correction",
+        adjustmentReason: "COUNT_DISCREPANCY",
+        notes: "Cycle count correction",
       });
 
       // Assert: success flag AND batch.totalQty must be present and correct
@@ -761,7 +779,8 @@ describe("Inventory Router", () => {
         id: 40,
         field: "onHandQty",
         adjustment: 25,
-        reason: "Recount",
+        adjustmentReason: "COUNT_DISCREPANCY",
+        notes: "Recount",
       });
 
       // Assert
@@ -792,7 +811,8 @@ describe("Inventory Router", () => {
         id: 50,
         field: "onHandQty",
         adjustment: 0,
-        reason: "Verify zero state",
+        adjustmentReason: "OTHER",
+        notes: "Verify zero state",
       });
 
       // Assert: totalQty is "0.0000", not null/undefined/0

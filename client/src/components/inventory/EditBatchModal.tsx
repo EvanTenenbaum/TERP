@@ -27,7 +27,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 type BatchStatus =
   | "AWAITING_INTAKE"
   | "LIVE"
-  | "PHOTOGRAPHY_COMPLETE"
   | "ON_HOLD"
   | "QUARANTINED"
   | "SOLD_OUT"
@@ -56,7 +55,9 @@ export function EditBatchModal({
   });
 
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [deleteMediaConfirm, setDeleteMediaConfirm] = useState<number | null>(null);
+  const [deleteMediaConfirm, setDeleteMediaConfirm] = useState<number | null>(
+    null
+  );
 
   // Fetch batch details
   const { data: batch, isLoading } = trpc.inventory.getById.useQuery(batchId, {
@@ -177,9 +178,6 @@ export function EditBatchModal({
                   Awaiting Staging
                 </SelectItem>
                 <SelectItem value="LIVE">Live</SelectItem>
-                <SelectItem value="PHOTOGRAPHY_COMPLETE">
-                  Photography Complete
-                </SelectItem>
                 <SelectItem value="QUARANTINED">Quarantine</SelectItem>
                 <SelectItem value="SOLD_OUT">Sold Out</SelectItem>
               </SelectContent>
@@ -314,7 +312,7 @@ export function EditBatchModal({
       </DialogContent>
       <ConfirmDialog
         open={deleteMediaConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteMediaConfirm(null)}
+        onOpenChange={open => !open && setDeleteMediaConfirm(null)}
         title="Remove Media"
         description="Are you sure you want to remove this media file?"
         confirmLabel="Remove"

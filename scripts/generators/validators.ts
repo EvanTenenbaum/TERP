@@ -8,32 +8,28 @@
 
 /**
  * Batch Status State Machine
+ * TER-574: Removed PHOTOGRAPHY_COMPLETE (now isPhotographyComplete boolean flag)
  *
  * Valid transitions:
- * - AWAITING_INTAKE → LIVE
- * - LIVE → PHOTOGRAPHY_COMPLETE
- * - LIVE → ON_HOLD
- * - ON_HOLD → LIVE
- * - LIVE → QUARANTINED
- * - QUARANTINED → LIVE
- * - PHOTOGRAPHY_COMPLETE → SOLD_OUT
+ * - AWAITING_INTAKE → LIVE, QUARANTINED
+ * - LIVE → ON_HOLD, QUARANTINED, SOLD_OUT
+ * - ON_HOLD → LIVE, QUARANTINED
+ * - QUARANTINED → LIVE, ON_HOLD, CLOSED
  * - SOLD_OUT → CLOSED
  */
 export type BatchStatus =
   | "AWAITING_INTAKE"
   | "LIVE"
-  | "PHOTOGRAPHY_COMPLETE"
   | "ON_HOLD"
   | "QUARANTINED"
   | "SOLD_OUT"
   | "CLOSED";
 
 const BATCH_STATUS_TRANSITIONS: Record<BatchStatus, BatchStatus[]> = {
-  AWAITING_INTAKE: ["LIVE"],
-  LIVE: ["PHOTOGRAPHY_COMPLETE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
-  PHOTOGRAPHY_COMPLETE: ["SOLD_OUT", "ON_HOLD", "QUARANTINED"],
-  ON_HOLD: ["LIVE"],
-  QUARANTINED: ["LIVE", "CLOSED"],
+  AWAITING_INTAKE: ["LIVE", "QUARANTINED"],
+  LIVE: ["ON_HOLD", "QUARANTINED", "SOLD_OUT"],
+  ON_HOLD: ["LIVE", "QUARANTINED"],
+  QUARANTINED: ["LIVE", "ON_HOLD", "CLOSED"],
   SOLD_OUT: ["CLOSED"],
   CLOSED: [],
 };
@@ -311,7 +307,10 @@ export function validateConsignmentTerms(
 /**
  * AR Aging Bucket Calculation
  */
-export function calculateAgingBucket(invoiceDate: Date, currentDate: Date): string {
+export function calculateAgingBucket(
+  invoiceDate: Date,
+  currentDate: Date
+): string {
   const daysPastDue = Math.floor(
     (currentDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24)
   );
