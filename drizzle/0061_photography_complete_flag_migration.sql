@@ -1,7 +1,7 @@
 -- TER-574: Photography Complete Flag Migration (enum to boolean)
 --
 -- Step 1: Add isPhotographyComplete boolean column
-ALTER TABLE `batches` ADD COLUMN `isPhotographyComplete` INT NOT NULL DEFAULT 0;
+ALTER TABLE `batches` ADD COLUMN `isPhotographyComplete` TINYINT(1) NOT NULL DEFAULT 0;
 -- Step 2: Migrate data - set flag for batches currently in PHOTOGRAPHY_COMPLETE status
 UPDATE `batches` SET `isPhotographyComplete` = 1 WHERE `batchStatus` = 'PHOTOGRAPHY_COMPLETE';
 -- Step 3: Move PHOTOGRAPHY_COMPLETE batches back to LIVE status

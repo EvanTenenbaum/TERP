@@ -1,9 +1,16 @@
 /**
  * Photography Router Tests
  * BUG-112: Tests for schema drift error handling
+ * TER-574: Tests for isPhotographyComplete boolean flag migration
  */
 
 import { describe, it, expect } from "vitest";
+import { BATCH_STATUSES } from "../constants/batchStatuses";
+import {
+  SELLABLE_BATCH_STATUSES,
+  isSellableStatus,
+  isValidBatchStatus,
+} from "../constants/batchStatuses";
 
 /**
  * Replicate the isSchemaError function from photography.ts for testing
@@ -99,6 +106,48 @@ describe("Photography Router - Schema Error Detection (BUG-112)", () => {
     it("is case-insensitive", () => {
       expect(isSchemaError(new Error("UNKNOWN COLUMN 'x'"))).toBe(true);
       expect(isSchemaError(new Error("UnKnOwN CoLuMn 'x'"))).toBe(true);
+    });
+  });
+});
+
+describe("Photography Complete Flag Migration (TER-574)", () => {
+  describe("PHOTOGRAPHY_COMPLETE enum removal", () => {
+    it("should NOT include PHOTOGRAPHY_COMPLETE in valid batch statuses", () => {
+      expect(BATCH_STATUSES).not.toContain("PHOTOGRAPHY_COMPLETE");
+    });
+
+    it("should NOT recognize PHOTOGRAPHY_COMPLETE as a valid batch status", () => {
+      expect(isValidBatchStatus("PHOTOGRAPHY_COMPLETE")).toBe(false);
+    });
+
+    it("should still include all expected batch statuses", () => {
+      const expected = [
+        "AWAITING_INTAKE",
+        "LIVE",
+        "ON_HOLD",
+        "QUARANTINED",
+        "SOLD_OUT",
+        "CLOSED",
+      ];
+      expect([...BATCH_STATUSES]).toEqual(expected);
+    });
+  });
+
+  describe("Sellability after migration", () => {
+    it("should only include LIVE in sellable statuses", () => {
+      expect([...SELLABLE_BATCH_STATUSES]).toEqual(["LIVE"]);
+    });
+
+    it("should mark LIVE as sellable", () => {
+      expect(isSellableStatus("LIVE")).toBe(true);
+    });
+
+    it("should NOT mark non-LIVE statuses as sellable", () => {
+      expect(isSellableStatus("AWAITING_INTAKE")).toBe(false);
+      expect(isSellableStatus("ON_HOLD")).toBe(false);
+      expect(isSellableStatus("QUARANTINED")).toBe(false);
+      expect(isSellableStatus("SOLD_OUT")).toBe(false);
+      expect(isSellableStatus("CLOSED")).toBe(false);
     });
   });
 });

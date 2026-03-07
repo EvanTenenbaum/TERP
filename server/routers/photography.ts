@@ -731,7 +731,7 @@ export const photographyRouter = router({
       // Filter by status - map UI status to batch status
       if (input.status === "COMPLETED") {
         // TER-574: Photography complete is now a boolean flag, not a status
-        conditions.push(eq(batches.isPhotographyComplete, 1));
+        conditions.push(eq(batches.isPhotographyComplete, true));
       } else if (input.status === "PENDING" || input.status === "IN_PROGRESS") {
         // Pending/In-Progress are LIVE batches without photos
         conditions.push(eq(batches.batchStatus, "LIVE"));
@@ -1085,7 +1085,7 @@ export const photographyRouter = router({
       await db
         .update(batches)
         .set({
-          isPhotographyComplete: 1,
+          isPhotographyComplete: true,
           updatedAt: new Date(),
         })
         .where(eq(batches.id, input.batchId));
@@ -1317,7 +1317,7 @@ export const photographyRouter = router({
       await database
         .update(batches)
         .set({
-          isPhotographyComplete: 1,
+          isPhotographyComplete: true,
           metadata: JSON.stringify(metadata),
           updatedAt: new Date(),
         })

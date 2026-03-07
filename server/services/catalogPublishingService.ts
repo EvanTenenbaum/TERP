@@ -248,7 +248,7 @@ export async function getBatchesReadyForPublishing(limit: number = 50): Promise<
     .where(
       and(
         eq(batches.batchStatus, "LIVE"),
-        eq(batches.isPhotographyComplete, 1),
+        eq(batches.isPhotographyComplete, true),
         isNull(batches.deletedAt)
       )
     )
@@ -591,7 +591,7 @@ export async function getCatalogStats(): Promise<{
     .where(
       and(
         eq(batches.batchStatus, "LIVE"),
-        eq(batches.isPhotographyComplete, 1),
+        eq(batches.isPhotographyComplete, true),
         isNull(batches.deletedAt)
       )
     );

@@ -952,7 +952,12 @@ export async function convertQuoteToSale(
     }
 
     // SM-001: Validate quote status allows conversion
-    const currentStatus = quote.quoteStatus || "UNSENT";
+    if (!quote.quoteStatus) {
+      throw new Error(
+        `Quote ${input.quoteId} has no status set. Cannot convert.`
+      );
+    }
+    const currentStatus = quote.quoteStatus;
     if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
       throw new Error(
         `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +

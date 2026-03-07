@@ -642,7 +642,9 @@ export const batches = mysqlTable(
     productId: int("productId").notNull(),
     lotId: int("lotId").notNull(),
     batchStatus: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
-    isPhotographyComplete: int("isPhotographyComplete").notNull().default(0), // TER-574: boolean flag (0=false, 1=true)
+    isPhotographyComplete: boolean("isPhotographyComplete")
+      .notNull()
+      .default(false), // TER-574: boolean flag
     statusId: int("statusId").references(() => workflowStatuses.id, {
       onDelete: "set null",
     }), // New workflow queue status (nullable for backward compatibility)
