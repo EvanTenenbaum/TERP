@@ -311,7 +311,21 @@ All 8 tasks have execution logs in `docs/execution/2026-03-06-waves-2r/`. Each l
 
 ---
 
-## 10. Appendix: Full File Change Inventory
+## 10. Pre-Existing Technical Debt (Not Introduced by This Branch)
+
+The server-side deep audit identified several forbidden pattern violations that exist in the codebase but were **NOT introduced by this branch**. These are pre-existing issues that should be tracked separately:
+
+| Issue | File | Line(s) | Pattern |
+|-------|------|---------|---------|
+| `ctx.user?.id ?? null` | server/routers/inventory.ts | ~851 | Forbidden nullish coalescing on user ID |
+| `input.createdBy` trusted from input | server/ordersDb.ts | ~120 | Actor attribution from client input |
+| `ctx.user?.id` direct access (5 instances) | server/routers/inventory.ts | ~1634, 1677, 1707, 1726, 1755 | Should use `getAuthenticatedUserId(ctx)` |
+
+**Recommendation**: Create a dedicated tech debt ticket for these pre-existing violations. They are real security concerns but are out of scope for this branch audit.
+
+---
+
+## 11. Appendix: Full File Change Inventory
 
 ### Schema & Migrations (4 files)
 - `drizzle/schema.ts`
