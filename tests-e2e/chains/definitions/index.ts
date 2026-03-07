@@ -10,12 +10,14 @@ import { INVENTORY_CHAINS } from "./inventory-chains";
 import { ACCOUNTING_CHAINS } from "./accounting-chains";
 import { OPS_CHAINS } from "./ops-chains";
 import { CROSS_DOMAIN_CHAINS } from "./cross-domain-chains";
+import { EDGE_CASE_CHAINS } from "./edge-case-chains";
 
 export { SALES_CHAINS } from "./sales-chains";
 export { INVENTORY_CHAINS } from "./inventory-chains";
 export { ACCOUNTING_CHAINS } from "./accounting-chains";
 export { OPS_CHAINS } from "./ops-chains";
 export { CROSS_DOMAIN_CHAINS } from "./cross-domain-chains";
+export { EDGE_CASE_CHAINS } from "./edge-case-chains";
 
 export const ALL_CHAINS: TestChain[] = [
   ...SALES_CHAINS,
@@ -23,6 +25,7 @@ export const ALL_CHAINS: TestChain[] = [
   ...ACCOUNTING_CHAINS,
   ...OPS_CHAINS,
   ...CROSS_DOMAIN_CHAINS,
+  ...EDGE_CASE_CHAINS,
 ];
 
 export function getChainById(chainId: string): TestChain | undefined {
