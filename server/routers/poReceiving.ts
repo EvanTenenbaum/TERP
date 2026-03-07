@@ -186,16 +186,30 @@ export const poReceivingRouter = router({
             });
           }
 
-          // Update PO item received quantity
+          // TER-582: Lock the PO item row before reading to prevent concurrent receiving
+          // from both reading the same quantityReceived and double-counting received quantity.
           const [poItem] = await tx
             .select()
             .from(purchaseOrderItems)
-            .where(eq(purchaseOrderItems.id, item.poItemId));
+            .where(eq(purchaseOrderItems.id, item.poItemId))
+            .for("update");
 
           if (poItem) {
             const currentReceived = parseFloat(poItem.quantityReceived || "0");
             const newReceived =
               currentReceived + parseFloat(item.receivedQuantity);
+
+            // TER-582: Validate that receiving does not exceed ordered quantity
+            // (checked after locking to ensure the value is current).
+            if (
+              newReceived >
+              parseFloat(poItem.quantityOrdered || "0") + 0.001
+            ) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Receiving quantity for PO item ${item.poItemId} would exceed ordered quantity. Ordered: ${poItem.quantityOrdered}, already received: ${currentReceived}, attempting to receive: ${item.receivedQuantity}`,
+              });
+            }
 
             await tx
               .update(purchaseOrderItems)
@@ -433,52 +447,57 @@ export const poReceivingRouter = router({
         "[Receiving] Starting goods receiving"
       );
 
-      // Verify PO exists and is in receivable status
-      const [po] = await db
-        .select()
-        .from(purchaseOrders)
-        .where(eq(purchaseOrders.id, input.purchaseOrderId));
-
-      if (!po) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Purchase order not found",
-        });
-      }
-
-      if (!["CONFIRMED", "RECEIVING"].includes(po.purchaseOrderStatus)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Purchase order cannot be received from ${po.purchaseOrderStatus} status`,
-        });
-      }
-
-      // Get PO items with product info (exclude soft-deleted products)
-      const poItems = await db
-        .select({
-          item: purchaseOrderItems,
-          product: products,
-        })
-        .from(purchaseOrderItems)
-        .leftJoin(
-          products,
-          and(
-            eq(purchaseOrderItems.productId, products.id),
-            isNull(products.deletedAt)
-          )
-        )
-        .where(eq(purchaseOrderItems.purchaseOrderId, input.purchaseOrderId));
-
-      const poItemMap = new Map(poItems.map(i => [i.item.id, i]));
-
       const createdBatches: Array<{
         id: number;
         code: string;
         quantity: number;
       }> = [];
 
+      // TER-582: PO and PO items are read INSIDE the transaction with FOR UPDATE to prevent
+      // concurrent receiving from racing on the same PO's status and item quantities.
       // Process each received item in a transaction
       await db.transaction(async tx => {
+        // TER-582: Lock the PO row for update so concurrent receiveGoodsWithBatch calls
+        // block until the first one commits, preventing status transition races.
+        const [po] = await tx
+          .select()
+          .from(purchaseOrders)
+          .where(eq(purchaseOrders.id, input.purchaseOrderId))
+          .for("update");
+
+        if (!po) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Purchase order not found",
+          });
+        }
+
+        if (!["CONFIRMED", "RECEIVING"].includes(po.purchaseOrderStatus)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Purchase order cannot be received from ${po.purchaseOrderStatus} status`,
+          });
+        }
+
+        // Get PO items with product info (exclude soft-deleted products) inside the
+        // transaction so we see the most current quantityReceived values under the PO lock.
+        const poItems = await tx
+          .select({
+            item: purchaseOrderItems,
+            product: products,
+          })
+          .from(purchaseOrderItems)
+          .leftJoin(
+            products,
+            and(
+              eq(purchaseOrderItems.productId, products.id),
+              isNull(products.deletedAt)
+            )
+          )
+          .where(eq(purchaseOrderItems.purchaseOrderId, input.purchaseOrderId));
+
+        const poItemMap = new Map(poItems.map(i => [i.item.id, i]));
+
         // Create or get lot for this receiving
         const lotCode = await generateLotCode(db);
         // TER-97: po.vendorId is now nullable; fall back to supplierClientId for legacy column
@@ -630,9 +649,30 @@ export const poReceivingRouter = router({
             }
           }
 
-          // Update PO item received quantity
-          const newReceived =
-            parseFloat(poItem.quantityReceived || "0") + item.quantity;
+          // TER-582: Re-read the PO item with FOR UPDATE to get the most current
+          // quantityReceived before updating (guards against concurrent receives
+          // that may have incremented it since our initial read of poItems above).
+          const [lockedPoItem] = await tx
+            .select()
+            .from(purchaseOrderItems)
+            .where(eq(purchaseOrderItems.id, item.poItemId))
+            .for("update");
+
+          const baseReceived = parseFloat(
+            (lockedPoItem ?? poItem).quantityReceived || "0"
+          );
+          const newReceived = baseReceived + item.quantity;
+
+          if (
+            newReceived >
+            parseFloat((lockedPoItem ?? poItem).quantityOrdered || "0") + 0.001
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Receiving quantity for PO item ${item.poItemId} would exceed ordered quantity.`,
+            });
+          }
+
           await tx
             .update(purchaseOrderItems)
             .set({ quantityReceived: newReceived.toString() })
