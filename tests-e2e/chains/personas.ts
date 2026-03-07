@@ -25,6 +25,11 @@ export const PERSONAS: UserPersona[] = [
       "sales.process-return",
       "sales.manage-credits",
       "sales.edit-pricing-rules",
+      "sales.view-demand-supply",
+      "sales.view-relationships",
+      "sales.view-live-shopping",
+      "sales.view-leaderboard",
+      "sales.view-pricing-profiles",
     ],
   },
   {
@@ -44,6 +49,8 @@ export const PERSONAS: UserPersona[] = [
       "inventory.adjust-inventory",
       "inventory.manage-strains",
       "inventory.process-intake",
+      "inventory.view-photography",
+      "inventory.view-samples",
     ],
   },
   {
@@ -63,6 +70,9 @@ export const PERSONAS: UserPersona[] = [
       "accounting.manage-chart-of-accounts",
       "accounting.manage-fiscal-periods",
       "accounting.review-general-ledger",
+      "accounting.view-client-ledger",
+      "accounting.view-cogs-settings",
+      "accounting.view-cash-locations",
     ],
   },
   {
@@ -82,6 +92,10 @@ export const PERSONAS: UserPersona[] = [
       "ops.manage-users",
       "ops.manage-feature-flags",
       "ops.review-notifications",
+      "ops.view-scheduling",
+      "ops.view-time-clock",
+      "ops.view-system-settings",
+      "ops.view-pick-pack",
     ],
   },
 ];

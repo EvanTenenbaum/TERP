@@ -832,4 +832,217 @@ export const SALES_CHAINS: TestChain[] = [
       },
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // sales.view-demand-supply — Demand & Supply workspace
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "sales.view-demand-supply",
+    description:
+      "View the Demand & Supply workspace for matching supply with demand",
+    tags: ["route:/demand-supply", "persona:sales", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-demand-supply",
+        description: "Navigate to demand supply page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/demand-supply",
+            wait_for: "text=Demand, text=Supply, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "demand" },
+        screenshot: "sales-demand-supply-loaded",
+      },
+      {
+        phase_id: "verify-demand-supply-content",
+        description: "Verify demand and supply sections display",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], main',
+          },
+          { action: "screenshot", name: "sales-demand-supply-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // sales.view-relationships — Relationships workspace
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "sales.view-relationships",
+    description:
+      "View the Relationships workspace with buyer and supplier records",
+    tags: [
+      "route:/relationships",
+      "route:/clients",
+      "persona:sales",
+      "occasional",
+      "read",
+    ],
+    phases: [
+      {
+        phase_id: "load-relationships",
+        description: "Navigate to relationships workspace",
+        steps: [
+          {
+            action: "navigate",
+            path: "/clients",
+            wait_for: "text=Relationship, text=Client, text=Buyer, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "client" },
+        screenshot: "sales-relationships-loaded",
+      },
+      {
+        phase_id: "verify-buyer-records",
+        description: "Verify buyer records tab displays",
+        steps: [
+          {
+            action: "assert",
+            visible: 'table, [role="table"], [class*="list"], main',
+          },
+          { action: "screenshot", name: "sales-relationships-buyers" },
+        ],
+      },
+      {
+        phase_id: "check-supplier-records",
+        description: "Switch to supplier records tab",
+        steps: [
+          {
+            action: "click",
+            target:
+              'button:has-text("Supplier"), [role="tab"]:has-text("Supplier"), a:has-text("Supplier")',
+            wait_for: "main",
+          },
+          { action: "wait", network_idle: true, timeout: 5000 },
+          { action: "assert", visible: "main" },
+          { action: "screenshot", name: "sales-relationships-suppliers" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // sales.view-live-shopping — Live Shopping sessions
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "sales.view-live-shopping",
+    description:
+      "View the Live Shopping page and verify sessions can be managed",
+    tags: ["route:/live-shopping", "persona:sales", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-live-shopping",
+        description: "Navigate to live shopping page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/live-shopping",
+            wait_for: "text=Live, text=Shopping, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "live-shopping" },
+        screenshot: "sales-live-shopping-loaded",
+      },
+      {
+        phase_id: "verify-live-shopping-content",
+        description: "Verify live shopping content displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], [class*="session"], main',
+          },
+          { action: "screenshot", name: "sales-live-shopping-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // sales.view-leaderboard — Sales Leaderboard
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "sales.view-leaderboard",
+    description: "View the sales leaderboard for team performance tracking",
+    tags: ["route:/leaderboard", "persona:sales", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-leaderboard",
+        description: "Navigate to leaderboard page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/leaderboard",
+            wait_for: "text=Leaderboard, text=Performance, text=Sales, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "leaderboard" },
+        screenshot: "sales-leaderboard-loaded",
+      },
+      {
+        phase_id: "verify-leaderboard-content",
+        description: "Verify leaderboard data displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], [class*="leaderboard"], [class*="rank"], main',
+          },
+          { action: "screenshot", name: "sales-leaderboard-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // sales.view-pricing-profiles — Pricing Profiles
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "sales.view-pricing-profiles",
+    description: "View pricing profiles configuration",
+    tags: ["route:/pricing/profiles", "persona:sales", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-pricing-profiles",
+        description: "Navigate to pricing profiles page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/pricing/profiles",
+            wait_for: "text=Pricing, text=Profile, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "pricing" },
+        screenshot: "sales-pricing-profiles-loaded",
+      },
+      {
+        phase_id: "verify-profiles-content",
+        description: "Verify pricing profiles display",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], main',
+          },
+          { action: "screenshot", name: "sales-pricing-profiles-content" },
+        ],
+      },
+    ],
+  },
 ];

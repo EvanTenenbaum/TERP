@@ -867,4 +867,80 @@ export const INVENTORY_CHAINS: TestChain[] = [
       },
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // inventory.view-photography — Photography Queue
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "inventory.view-photography",
+    description: "View the photography queue for product photo workflow",
+    tags: ["route:/photography", "persona:inventory", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-photography",
+        description: "Navigate to photography page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/photography",
+            wait_for: "text=Photography, text=Photo, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "photograph" },
+        screenshot: "inventory-photography-loaded",
+      },
+      {
+        phase_id: "verify-photography-content",
+        description: "Verify photography queue displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], [class*="photo"], main',
+          },
+          { action: "screenshot", name: "inventory-photography-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // inventory.view-samples — Sample Management
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "inventory.view-samples",
+    description: "View sample management for tracking product samples",
+    tags: ["route:/samples", "persona:inventory", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-samples",
+        description: "Navigate to samples page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/samples",
+            wait_for: "text=Sample, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "sample" },
+        screenshot: "inventory-samples-loaded",
+      },
+      {
+        phase_id: "verify-samples-content",
+        description: "Verify samples list displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], main',
+          },
+          { action: "screenshot", name: "inventory-samples-content" },
+        ],
+      },
+    ],
+  },
 ];

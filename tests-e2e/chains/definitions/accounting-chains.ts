@@ -417,4 +417,117 @@ export const ACCOUNTING_CHAINS: TestChain[] = [
       },
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // accounting.view-client-ledger — Client Ledger
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "accounting.view-client-ledger",
+    description: "View client ledger for transaction history across clients",
+    tags: ["route:/client-ledger", "persona:accounting", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-client-ledger",
+        description: "Navigate to client ledger page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/client-ledger",
+            wait_for: "text=Client, text=Ledger, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "ledger" },
+        screenshot: "accounting-client-ledger-loaded",
+      },
+      {
+        phase_id: "verify-client-ledger-content",
+        description: "Verify client ledger data displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], main',
+          },
+          { action: "screenshot", name: "accounting-client-ledger-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // accounting.view-cogs-settings — COGS Settings
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "accounting.view-cogs-settings",
+    description: "View COGS (Cost of Goods Sold) configuration settings",
+    tags: ["route:/settings/cogs", "persona:accounting", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-cogs-settings",
+        description: "Navigate to COGS settings page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/settings/cogs",
+            wait_for: "text=COGS, text=Cost, text=Settings, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "cogs" },
+        screenshot: "accounting-cogs-settings-loaded",
+      },
+      {
+        phase_id: "verify-cogs-content",
+        description: "Verify COGS configuration form displays",
+        steps: [
+          {
+            action: "assert",
+            visible: 'form, [class*="card"], [class*="setting"], input, main',
+          },
+          { action: "screenshot", name: "accounting-cogs-settings-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // accounting.view-cash-locations — Cash Audit Locations
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "accounting.view-cash-locations",
+    description: "View cash locations for cash audit management",
+    tags: ["route:/cash-locations", "persona:accounting", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-cash-locations",
+        description: "Navigate to cash locations page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/cash-locations",
+            wait_for: "text=Cash, text=Location, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "cash" },
+        screenshot: "accounting-cash-locations-loaded",
+      },
+      {
+        phase_id: "verify-cash-locations-content",
+        description: "Verify cash locations display",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], main',
+          },
+          { action: "screenshot", name: "accounting-cash-locations-content" },
+        ],
+      },
+    ],
+  },
 ];

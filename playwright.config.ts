@@ -24,6 +24,25 @@ const envTaggedPattern =
   /@prod-smoke|@prod-regression|@dev-only|@staging-critical/;
 const shouldUploadToArgos = Boolean(process.env.CI && process.env.ARGOS_TOKEN);
 
+// Parse HTTP(S) proxy for Playwright browser context when running in proxied environments
+function getProxyConfig():
+  | { server: string; username?: string; password?: string }
+  | undefined {
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  if (!proxyUrl) return undefined;
+  try {
+    const parsed = new URL(proxyUrl);
+    return {
+      server: `${parsed.protocol}//${parsed.hostname}:${parsed.port}`,
+      username: parsed.username || undefined,
+      password: parsed.password || undefined,
+    };
+  } catch {
+    return undefined;
+  }
+}
+const proxyConfig = getProxyConfig();
+
 export default defineConfig({
   testDir: ".",
   testMatch: [
@@ -81,6 +100,10 @@ export default defineConfig({
         // Longer timeouts for staging — cold starts and DB queries are slower
         actionTimeout: 30000,
         navigationTimeout: 60000,
+        // Use proxy when available (e.g. sandboxed CI environments)
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        // Accept proxy TLS certificates in sandboxed environments
+        ignoreHTTPSErrors: !!proxyConfig,
       },
     },
     {

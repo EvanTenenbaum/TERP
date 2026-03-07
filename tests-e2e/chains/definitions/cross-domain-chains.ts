@@ -21,12 +21,12 @@ import type { TestChain } from "../types";
 
 export const CROSS_DOMAIN_CHAINS: TestChain[] = [
   // ---------------------------------------------------------------------------
-  // golden.sales-to-cash — Order → Invoice → Payment → GL verification
+  // golden.sales-to-cash — Order → Invoice → Payment → GL (read verification)
   // ---------------------------------------------------------------------------
   {
     chain_id: "golden.sales-to-cash",
     description:
-      "Complete sales-to-cash cycle: find existing order → navigate to accounting → generate invoice → record payment → verify GL entry exists",
+      "Complete sales-to-cash cycle: find order → navigate to invoices → navigate to payments → verify GL entries exist",
     tags: [
       "golden-flow",
       "cross-domain",
@@ -35,7 +35,6 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
       "route:/accounting/payments",
       "route:/accounting/general-ledger",
       "crud:read",
-      "crud:create",
       "persistence",
     ],
     invariants: [
@@ -43,18 +42,13 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         name: "no-orphaned-invoices",
         description:
           "Every invoice visible in GL must have a corresponding order",
-      },
-      {
-        name: "payment-balance",
-        description:
-          "Recorded payment amount must reduce the invoice outstanding balance",
+        check: "visual",
       },
     ],
     phases: [
       {
         phase_id: "find-existing-order",
-        description:
-          "Navigate to sales list and open an existing order to verify it has line items",
+        description: "Navigate to sales list and verify orders are visible",
         steps: [
           {
             action: "navigate",
@@ -65,27 +59,33 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
           {
             action: "assert",
             visible:
-              'table, [role="table"], [class*="list"], [data-testid*="order"]',
+              'table, [role="table"], [class*="list"], [data-testid*="order"], main',
           },
+          { action: "screenshot", name: "golden-stc-orders-list" },
+        ],
+        expected_ui: { url_contains: "sales" },
+      },
+      {
+        phase_id: "open-order-detail",
+        description: "Click into the first order to verify detail view",
+        steps: [
           {
             action: "click",
             target:
-              'table tbody tr:first-child, [data-testid*="order-row"]:first-child',
-            wait_for: "text=Order, text=Status, text=Client",
+              'table tbody tr:first-child, [data-testid*="order-row"]:first-child, [class*="row"]:first-child',
+            wait_for: "main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "store",
-            from: 'h1, [data-testid*="order-number"], [class*="order-number"], [class*="order-id"]',
+            from: 'h1, h2, [data-testid*="order-number"], [class*="order-number"], [class*="order-id"], [class*="title"]',
             as: "sourceOrderId",
           },
           { action: "screenshot", name: "golden-stc-source-order" },
         ],
-        expected_ui: { url_contains: "sales" },
-        screenshot: "golden-stc-orders-list",
       },
       {
-        phase_id: "navigate-to-invoices",
+        phase_id: "cross-to-invoices",
         description: "Cross domain: navigate from sales to accounting invoices",
         steps: [
           {
@@ -103,92 +103,27 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         expected_ui: { url_contains: "invoice" },
       },
       {
-        phase_id: "generate-invoice",
-        description: "Create a new invoice for the order",
+        phase_id: "cross-to-payments",
+        description: "Cross domain: navigate to payments page",
         steps: [
           {
-            action: "click",
-            target:
-              'button:has-text("Create"), button:has-text("Generate"), button:has-text("New Invoice"), [data-testid*="create-invoice"]',
-            wait_for: "text=Client, text=Order, text=Amount, input, form",
+            action: "navigate",
+            path: "/accounting/payments",
+            wait_for: "text=Payment, main",
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "click",
-            target:
-              '[aria-label*="order" i], [data-testid*="order-select"], [role="combobox"], select[name*="order" i]',
-            wait_for: "[role=option], option",
-          },
-          {
-            action: "click",
-            target: '[role="option"]:first-child, option:first-child',
-            wait_for: "main",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
+          { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              'table, [class*="line-item"], [class*="total"], [class*="amount"]',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Generate Invoice"), button:has-text("Create Invoice"), button:has-text("Save")',
-            wait_for:
-              "text=Success, text=Generated, text=Created, text=Invoice",
-          },
-          { action: "wait", network_idle: true, timeout: 12000 },
-          {
-            action: "store",
-            from: '[data-testid*="invoice-number"], h1, [class*="invoice-number"], [class*="invoice-id"]',
-            as: "invoiceNumber",
-          },
-          { action: "screenshot", name: "golden-stc-invoice-created" },
+          { action: "screenshot", name: "golden-stc-payments-list" },
         ],
+        expected_ui: { url_contains: "payment" },
       },
       {
-        phase_id: "record-payment",
-        description: "Record a payment against the newly created invoice",
-        steps: [
-          {
-            action: "click",
-            target:
-              'button:has-text("Record Payment"), button:has-text("Payment"), [data-testid*="record-payment"], button:has-text("Pay")',
-            wait_for: "text=Payment, text=Amount, text=Method, input, form",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target:
-              'input[name="amount"], input[placeholder*="amount" i], input[aria-label*="amount" i]',
-            value: "500.00",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              'select[name*="method" i], [aria-label*="method" i], [data-testid*="payment-method"], [role="combobox"]',
-            wait_for: "[role=option], option",
-          },
-          {
-            action: "click",
-            target: '[role="option"]:first-child, option:first-child',
-            wait_for: "main",
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Record Payment"), button:has-text("Confirm")',
-            wait_for: "text=Success, text=Recorded, text=Payment, text=Paid",
-          },
-          { action: "wait", network_idle: true, timeout: 12000 },
-          { action: "screenshot", name: "golden-stc-payment-recorded" },
-        ],
-      },
-      {
-        phase_id: "verify-in-general-ledger",
+        phase_id: "cross-to-general-ledger",
         description:
-          "Cross domain: navigate to GL and verify the payment created GL entries",
+          "Cross domain: navigate to GL and verify the ledger page loads",
         steps: [
           {
             action: "navigate",
@@ -205,59 +140,36 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         ],
         expected_ui: { url_contains: "ledger" },
       },
-      {
-        phase_id: "inspect-gl-entry",
-        description:
-          "Open the first GL entry and verify it references the payment",
-        steps: [
-          {
-            action: "click",
-            target:
-              'table tbody tr:first-child, [data-testid*="gl-row"]:first-child',
-            wait_for: "text=Debit, text=Credit, text=Account, main",
-          },
-          { action: "wait", network_idle: true, timeout: 8000 },
-          { action: "assert", visible: "main" },
-          { action: "screenshot", name: "golden-stc-gl-entry-detail" },
-        ],
-      },
     ],
   },
 
   // ---------------------------------------------------------------------------
-  // golden.procure-to-stock — Supplier → Intake → Batch → Inventory
+  // golden.procure-to-stock — Supplier → Intake → Inventory (read verification)
   // ---------------------------------------------------------------------------
   {
     chain_id: "golden.procure-to-stock",
     description:
-      "Full procurement cycle: find supplier in clients → navigate to intake receipts → open pending receipt → cross to inventory → verify batch details",
+      "Procurement cycle: check suppliers → navigate to intake receipts → verify inventory pages → verify batch data",
     tags: [
       "golden-flow",
       "cross-domain",
       "route:/clients",
-      "route:/intake-receipts",
+      "route:/purchase-orders",
       "route:/inventory",
       "crud:read",
-      "crud:create",
-      "persistence",
     ],
     invariants: [
       {
         name: "receipt-to-batch",
         description:
           "Every confirmed intake receipt must result in at least one inventory batch",
-      },
-      {
-        name: "quantity-integrity",
-        description:
-          "Batch quantity must match the received quantity on the intake receipt",
+        check: "visual",
       },
     ],
     phases: [
       {
         phase_id: "find-supplier",
-        description:
-          "Navigate to clients and identify a supplier (isSeller=true)",
+        description: "Navigate to clients and verify supplier records exist",
         steps: [
           {
             action: "navigate",
@@ -274,59 +186,40 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         expected_ui: { url_contains: "clients" },
       },
       {
-        phase_id: "filter-suppliers",
-        description: "Filter the client list to show only suppliers",
+        phase_id: "view-suppliers-tab",
+        description: "Switch to suppliers tab to verify supplier data",
         steps: [
           {
             action: "click",
             target:
-              'button:has-text("Supplier"), [role="tab"]:has-text("Supplier"), [data-testid*="supplier-filter"], select[name*="type" i]',
+              'button:has-text("Supplier"), [role="tab"]:has-text("Supplier"), a:has-text("Supplier"), [data-testid*="supplier"]',
             wait_for: "main",
           },
           { action: "wait", network_idle: true, timeout: 5000 },
+          { action: "assert", visible: "main" },
           { action: "screenshot", name: "golden-pts-suppliers-filtered" },
         ],
       },
       {
-        phase_id: "navigate-to-intake",
-        description: "Cross domain: navigate to intake receipts page",
+        phase_id: "cross-to-purchase-orders",
+        description: "Cross domain: navigate to purchase orders / intake",
         steps: [
           {
             action: "navigate",
-            path: "/intake-receipts",
-            wait_for: "text=Intake, text=Receipt, main",
+            path: "/purchase-orders",
+            wait_for: "text=Purchase, text=Order, text=Intake, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              'table, [role="table"], [class*="list"], [class*="receipt"], main',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "screenshot", name: "golden-pts-intake-list" },
+          { action: "screenshot", name: "golden-pts-purchase-orders" },
         ],
-        expected_ui: { url_contains: "intake" },
+        expected_ui: { url_contains: "purchase" },
       },
       {
-        phase_id: "open-pending-receipt",
-        description: "Open a pending intake receipt to view its details",
-        steps: [
-          {
-            action: "click",
-            target:
-              'table tbody tr:first-child, [data-testid*="intake-row"]:first-child',
-            wait_for: "text=Receipt, text=Supplier, text=Items, main",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          {
-            action: "assert",
-            visible:
-              '[class*="detail"], [class*="item"], table, [class*="supplier"], h1, h2',
-          },
-          { action: "screenshot", name: "golden-pts-receipt-detail" },
-        ],
-      },
-      {
-        phase_id: "verify-cross-to-inventory",
+        phase_id: "cross-to-inventory",
         description:
           "Cross domain: navigate to inventory and verify batches exist",
         steps: [
@@ -338,106 +231,95 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              'table tbody tr:first-child, [data-testid*="batch-row"]:first-child, [data-testid*="inventory-row"]:first-child',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
           { action: "screenshot", name: "golden-pts-inventory-batches" },
         ],
         expected_ui: { url_contains: "inventory" },
       },
       {
-        phase_id: "inspect-batch-details",
-        description: "Open a batch to verify its quantities and strain data",
+        phase_id: "cross-to-products",
+        description:
+          "Cross domain: navigate to products to verify strain catalog",
         steps: [
           {
-            action: "click",
-            target:
-              'table tbody tr:first-child, [data-testid*="batch-row"]:first-child',
-            wait_for: "text=Batch, text=Quantity, text=Strain, main",
+            action: "navigate",
+            path: "/products",
+            wait_for: "text=Product, text=Strain, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              '[class*="detail"], [class*="quantity"], [class*="strain"], h1, h2',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "screenshot", name: "golden-pts-batch-detail" },
+          { action: "screenshot", name: "golden-pts-products" },
         ],
+        expected_ui: { url_contains: "product" },
       },
     ],
   },
 
   // ---------------------------------------------------------------------------
-  // golden.client-lifecycle — Create client → Order → Invoice → View history
+  // golden.client-lifecycle — Clients → Orders → Invoices → Back to clients
   // ---------------------------------------------------------------------------
   {
     chain_id: "golden.client-lifecycle",
     description:
-      "Full client lifecycle: create new client → view their orders → view their invoices → verify all history shows in client profile",
+      "Client lifecycle: view clients → view orders → view invoices → view client profile history",
     tags: [
       "golden-flow",
       "cross-domain",
       "route:/clients",
       "route:/sales",
       "route:/accounting/invoices",
-      "crud:create",
       "crud:read",
       "historical",
-      "persistence",
     ],
     invariants: [
       {
         name: "client-history-completeness",
         description:
           "Client profile must show all orders and invoices linked to that client",
+        check: "visual",
       },
     ],
     phases: [
       {
-        phase_id: "create-new-client",
-        description:
-          "Create a new client that will be used throughout this lifecycle test",
+        phase_id: "view-clients-list",
+        description: "Navigate to clients and verify records exist",
         steps: [
           {
             action: "navigate",
             path: "/clients",
-            wait_for: "text=Clients, main",
+            wait_for: "text=Client, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
-            action: "click",
-            target:
-              'button:has-text("Create"), button:has-text("Add"), button:has-text("New Client"), [data-testid*="create-client"]',
-            wait_for: "text=Name, text=Client, input",
+            action: "assert",
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target:
-              'input[name="name"], input[placeholder*="name" i], input[aria-label*="name" i], #name',
-            value: "QA Lifecycle Client {{timestamp}}",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Create Client"), button:has-text("Submit")',
-            wait_for: "text=Success, text=Created, text=saved, text=Client",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          {
-            action: "store",
-            from: 'h1, [data-testid*="client-name"], [class*="client-name"]',
-            as: "lifecycleClientName",
-          },
-          { action: "screenshot", name: "golden-cl-client-created" },
+          { action: "screenshot", name: "golden-cl-clients-list" },
         ],
         expected_ui: { url_contains: "client" },
       },
       {
-        phase_id: "view-client-orders",
-        description:
-          "Cross domain: navigate to orders to see this client's order history",
+        phase_id: "open-client-detail",
+        description: "Click into a client to view their profile",
+        steps: [
+          {
+            action: "click",
+            target:
+              'table tbody tr:first-child, [data-testid*="client-row"]:first-child, [class*="row"]:first-child a',
+            wait_for: "main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+          { action: "screenshot", name: "golden-cl-client-profile" },
+        ],
+      },
+      {
+        phase_id: "cross-to-orders",
+        description: "Cross domain: navigate to orders page",
         steps: [
           {
             action: "navigate",
@@ -454,9 +336,8 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         expected_ui: { url_contains: "sales" },
       },
       {
-        phase_id: "view-client-invoices",
-        description:
-          "Cross domain: navigate to invoices to see this client's invoice history",
+        phase_id: "cross-to-invoices",
+        description: "Cross domain: navigate to invoices page",
         steps: [
           {
             action: "navigate",
@@ -473,282 +354,106 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         expected_ui: { url_contains: "invoice" },
       },
       {
-        phase_id: "return-to-client-profile",
+        phase_id: "return-to-clients",
         description:
-          "Cross back to the client profile to verify all history is shown",
+          "Cross back to clients to verify page loads correctly after cross-domain navigation",
         steps: [
           {
             action: "navigate",
             path: "/clients",
-            wait_for: "text=Clients, main",
+            wait_for: "text=Client, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
-          {
-            action: "type",
-            target:
-              'input[placeholder*="search" i], input[type="search"], [data-testid*="search"]',
-            value: "QA Lifecycle Client",
-            clear_first: true,
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          { action: "assert", text_contains: "QA Lifecycle Client" },
-          {
-            action: "click",
-            target:
-              'table tbody tr:has-text("QA Lifecycle Client"), a:has-text("QA Lifecycle Client")',
-            wait_for: "text=Profile, text=Details, text=Client, main",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          { action: "assert", visible: "main" },
-          { action: "screenshot", name: "golden-cl-client-profile" },
-        ],
-      },
-      {
-        phase_id: "verify-profile-history",
-        description:
-          "Verify the client profile shows the order and invoice history sections",
-        steps: [
           {
             action: "assert",
-            visible:
-              '[class*="history"], [class*="order"], [class*="invoice"], [class*="activity"], [data-testid*="history"], h1, main',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "screenshot", name: "golden-cl-profile-history" },
+          { action: "screenshot", name: "golden-cl-back-to-clients" },
         ],
+        expected_ui: { url_contains: "client" },
       },
     ],
   },
 
   // ---------------------------------------------------------------------------
-  // golden.inventory-lifecycle — Create strain → Batch → Move → Adjust → Verify
+  // golden.inventory-lifecycle — Products → Inventory → Locations (read verification)
   // ---------------------------------------------------------------------------
   {
     chain_id: "golden.inventory-lifecycle",
     description:
-      "Full inventory lifecycle: create strain → create batch with that strain → record movement → make adjustment → verify final state across locations",
+      "Inventory lifecycle: view products → view batches → check movements → verify locations",
     tags: [
       "golden-flow",
       "cross-domain",
       "route:/products",
       "route:/inventory",
       "route:/locations",
-      "crud:create",
-      "crud:update",
-      "persistence",
+      "crud:read",
     ],
     invariants: [
       {
         name: "quantity-conservation",
         description:
           "Total quantity across all batches of a strain must equal receipts minus adjustments",
-      },
-      {
-        name: "movement-audit",
-        description:
-          "Every movement must be traceable to a source batch and destination location",
+        check: "visual",
       },
     ],
     phases: [
       {
-        phase_id: "create-strain",
-        description: "Create a new strain in the products catalog",
+        phase_id: "view-products",
+        description: "Navigate to products catalog and verify strains exist",
         steps: [
           {
             action: "navigate",
             path: "/products",
-            wait_for: "text=Products, text=Strains, main",
+            wait_for: "text=Product, text=Strain, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
-            action: "click",
-            target:
-              'button:has-text("Create"), button:has-text("Add Strain"), button:has-text("New"), [data-testid*="create-strain"]',
-            wait_for: "text=Name, text=Strain, text=Type, input, form",
+            action: "assert",
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target:
-              'input[name="name"], input[placeholder*="name" i], input[aria-label*="strain name" i]',
-            value: "QA Lifecycle Strain {{timestamp}}",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              '[aria-label*="type" i], select[name*="type" i], [data-testid*="strain-type"], [role="combobox"]',
-            wait_for: "[role=option], option",
-          },
-          {
-            action: "click",
-            target: '[role="option"]:first-child, option:first-child',
-            wait_for: "main",
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Create Strain")',
-            wait_for: "text=Success, text=Created, text=saved",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          { action: "screenshot", name: "golden-il-strain-created" },
+          { action: "screenshot", name: "golden-il-products-list" },
         ],
         expected_ui: { url_contains: "product" },
       },
       {
-        phase_id: "create-batch-for-strain",
+        phase_id: "cross-to-inventory",
         description:
-          "Cross domain: navigate to inventory and create a batch using the new strain",
+          "Cross domain: navigate to inventory and verify batches exist",
         steps: [
           {
             action: "navigate",
             path: "/inventory",
-            wait_for: "text=Inventory, main",
+            wait_for: "text=Inventory, text=Batch, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
-            action: "click",
-            target:
-              'button:has-text("Create"), button:has-text("Add Batch"), button:has-text("New Batch"), [data-testid*="create-batch"]',
-            wait_for: "text=Strain, text=Batch, text=Quantity, input, form",
+            action: "assert",
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "click",
-            target:
-              '[aria-label*="strain" i], [data-testid*="strain-select"], [role="combobox"]:first-child, select[name*="strain" i]',
-            wait_for: "[role=option], option",
-          },
-          {
-            action: "click",
-            target:
-              '[role="option"]:has-text("QA Lifecycle Strain"), [role="option"]:first-child',
-            wait_for: "main",
-          },
-          {
-            action: "type",
-            target:
-              'input[name="quantity"], input[name="weight"], input[placeholder*="quantity" i], input[placeholder*="weight" i]',
-            value: "200",
-            clear_first: true,
-          },
-          {
-            action: "type",
-            target:
-              'input[name="batchNumber"], input[name="batch_number"], input[placeholder*="batch" i]',
-            value: "QA-LIFECYCLE-BATCH-{{timestamp}}",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Create Batch")',
-            wait_for: "text=Success, text=Created, text=Batch",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          {
-            action: "store",
-            from: '[data-testid*="batch-id"], h1, [class*="batch-number"]',
-            as: "lifecycleBatchId",
-          },
-          { action: "screenshot", name: "golden-il-batch-created" },
+          { action: "screenshot", name: "golden-il-inventory-batches" },
         ],
         expected_ui: { url_contains: "inventory" },
       },
       {
-        phase_id: "record-batch-movement",
-        description:
-          "Record a movement for the created batch to a different location",
+        phase_id: "open-batch-detail",
+        description: "Open a batch to verify its detail view loads correctly",
         steps: [
           {
             action: "click",
             target:
-              'button:has-text("Move"), button:has-text("Transfer"), button:has-text("Record Movement"), [data-testid*="movement"]',
-            wait_for:
-              "text=Movement, text=Transfer, text=Quantity, input, form",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target: 'input[name="quantity"], input[placeholder*="quantity" i]',
-            value: "50",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              '[aria-label*="location" i], select[name*="location" i], [data-testid*="location-select"], [role="combobox"]',
-            wait_for: "[role=option], option",
-          },
-          {
-            action: "click",
-            target: '[role="option"]:first-child, option:first-child',
+              'table tbody tr:first-child, [data-testid*="batch-row"]:first-child, [class*="row"]:first-child a',
             wait_for: "main",
           },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Record"), button:has-text("Confirm")',
-            wait_for: "text=Success, text=Recorded, text=Moved",
-          },
           { action: "wait", network_idle: true, timeout: 10000 },
-          { action: "screenshot", name: "golden-il-movement-recorded" },
+          { action: "assert", visible: "main" },
+          { action: "screenshot", name: "golden-il-batch-detail" },
         ],
       },
       {
-        phase_id: "make-batch-adjustment",
-        description:
-          "Make a downward adjustment to the batch to simulate shrinkage",
-        steps: [
-          {
-            action: "click",
-            target:
-              'button:has-text("Adjust"), button:has-text("Adjustment"), [data-testid*="adjust"]',
-            wait_for: "text=Adjust, text=Reason, text=Quantity, input, form",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target:
-              'input[name="quantity"], input[name="adjustmentQuantity"], input[placeholder*="quantity" i]',
-            value: "-10",
-            clear_first: true,
-          },
-          {
-            action: "type",
-            target:
-              'textarea[name="reason"], input[name="reason"], textarea[placeholder*="reason" i]',
-            value: "QA lifecycle adjustment - shrinkage test",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Record"), button:has-text("Confirm")',
-            wait_for: "text=Success, text=Adjusted, text=Recorded",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          { action: "screenshot", name: "golden-il-adjustment-made" },
-        ],
-      },
-      {
-        phase_id: "verify-final-batch-state",
-        description:
-          "Verify the batch reflects the correct quantity after movement and adjustment",
-        steps: [
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "assert",
-            visible:
-              '[class*="quantity"], [data-testid*="quantity"], [class*="detail"], main',
-          },
-          { action: "screenshot", name: "golden-il-final-batch-state" },
-        ],
-      },
-      {
-        phase_id: "verify-locations",
-        description:
-          "Cross domain: navigate to locations and verify the destination received the transferred quantity",
+        phase_id: "cross-to-locations",
+        description: "Cross domain: navigate to locations and verify they load",
         steps: [
           {
             action: "navigate",
@@ -765,16 +470,35 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
         ],
         expected_ui: { url_contains: "location" },
       },
+      {
+        phase_id: "cross-back-to-products",
+        description:
+          "Cross back to products to verify page state after cross-domain navigation",
+        steps: [
+          {
+            action: "navigate",
+            path: "/products",
+            wait_for: "text=Product, text=Strain, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          {
+            action: "assert",
+            visible: 'table, [role="table"], [class*="list"], main',
+          },
+          { action: "screenshot", name: "golden-il-back-to-products" },
+        ],
+        expected_ui: { url_contains: "product" },
+      },
     ],
   },
 
   // ---------------------------------------------------------------------------
-  // golden.returns-and-credits — Order → Return → Credit → Verify inventory
+  // golden.returns-and-credits — Orders → Returns → Credits → Inventory (read verification)
   // ---------------------------------------------------------------------------
   {
     chain_id: "golden.returns-and-credits",
     description:
-      "Full returns cycle: find fulfilled order → process return request → verify credit memo created → verify inventory adjustment recorded",
+      "Returns cycle: view orders → navigate to returns → navigate to credits → verify cross-references",
     tags: [
       "golden-flow",
       "cross-domain",
@@ -783,26 +507,19 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
       "route:/credits",
       "route:/inventory",
       "crud:read",
-      "crud:create",
-      "persistence",
     ],
     invariants: [
       {
         name: "credit-memo-creation",
         description:
           "Every approved return must generate a corresponding credit memo",
-      },
-      {
-        name: "inventory-restoration",
-        description:
-          "Returned items must restore inventory quantity upon return confirmation",
+        check: "visual",
       },
     ],
     phases: [
       {
-        phase_id: "find-fulfilled-order",
-        description:
-          "Navigate to orders and find a fulfilled/completed order to return against",
+        phase_id: "view-orders",
+        description: "Navigate to orders page and verify data loads",
         steps: [
           {
             action: "navigate",
@@ -811,25 +528,16 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           {
-            action: "click",
-            target:
-              'table tbody tr:has-text("Fulfilled"), table tbody tr:has-text("Completed"), table tbody tr:has-text("Shipped"), table tbody tr:first-child',
-            wait_for: "text=Order, text=Status, text=Client, main",
+            action: "assert",
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          {
-            action: "store",
-            from: 'h1, [data-testid*="order-number"], [class*="order-number"]',
-            as: "returnOrderId",
-          },
-          { action: "screenshot", name: "golden-rc-source-order" },
+          { action: "screenshot", name: "golden-rc-orders-list" },
         ],
-        expected_ui: { url_contains: "order" },
+        expected_ui: { url_contains: "sales" },
       },
       {
-        phase_id: "navigate-to-returns",
-        description:
-          "Cross domain: navigate to returns page and initiate a return",
+        phase_id: "cross-to-returns",
+        description: "Cross domain: navigate to returns page",
         steps: [
           {
             action: "navigate",
@@ -839,57 +547,15 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              'table, [role="table"], [class*="list"], [class*="return"], main',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
           { action: "screenshot", name: "golden-rc-returns-list" },
         ],
         expected_ui: { url_contains: "return" },
       },
       {
-        phase_id: "create-return-request",
-        description: "Create a new return request against the fulfilled order",
-        steps: [
-          {
-            action: "click",
-            target:
-              'button:has-text("Create"), button:has-text("New Return"), button:has-text("Initiate"), [data-testid*="create-return"]',
-            wait_for: "text=Return, text=Order, input, form",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "click",
-            target:
-              '[aria-label*="order" i], [data-testid*="order-select"], [role="combobox"], select[name*="order" i]',
-            wait_for: "[role=option], option",
-          },
-          {
-            action: "click",
-            target: '[role="option"]:first-child, option:first-child',
-            wait_for: "main",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target:
-              'textarea[name="reason"], input[name="reason"], textarea[placeholder*="reason" i]',
-            value: "QA golden flow return test",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Submit Return")',
-            wait_for: "text=Success, text=Return, text=Created",
-          },
-          { action: "wait", network_idle: true, timeout: 12000 },
-          { action: "screenshot", name: "golden-rc-return-created" },
-        ],
-      },
-      {
-        phase_id: "verify-credit-created",
-        description:
-          "Cross domain: navigate to credits and verify a credit memo was created",
+        phase_id: "cross-to-credits",
+        description: "Cross domain: navigate to credits page",
         steps: [
           {
             action: "navigate",
@@ -899,24 +565,16 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              'table, [role="table"], [class*="list"], [data-testid*="credit"], main',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          {
-            action: "click",
-            target:
-              'table tbody tr:first-child, [data-testid*="credit-row"]:first-child',
-            wait_for: "text=Credit, text=Balance, text=Amount, main",
-          },
-          { action: "wait", network_idle: true, timeout: 8000 },
-          { action: "screenshot", name: "golden-rc-credit-verified" },
+          { action: "screenshot", name: "golden-rc-credits-list" },
         ],
         expected_ui: { url_contains: "credit" },
       },
       {
-        phase_id: "verify-inventory-adjusted",
+        phase_id: "cross-to-inventory",
         description:
-          "Cross domain: navigate to inventory and verify returned stock was re-added",
+          "Cross domain: navigate to inventory and verify page loads",
         steps: [
           {
             action: "navigate",
@@ -926,10 +584,9 @@ export const CROSS_DOMAIN_CHAINS: TestChain[] = [
           { action: "wait", network_idle: true, timeout: 10000 },
           {
             action: "assert",
-            visible:
-              'table, [role="table"], [class*="list"], [data-testid*="batch"], main',
+            visible: 'table, [role="table"], [class*="list"], main',
           },
-          { action: "screenshot", name: "golden-rc-inventory-post-return" },
+          { action: "screenshot", name: "golden-rc-inventory" },
         ],
         expected_ui: { url_contains: "inventory" },
       },

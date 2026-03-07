@@ -687,4 +687,157 @@ export const OPS_CHAINS: TestChain[] = [
       },
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // ops.view-scheduling — Scheduling system
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "ops.view-scheduling",
+    description:
+      "View the scheduling system for deliveries, shifts, and room bookings",
+    tags: ["route:/scheduling", "persona:ops", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-scheduling",
+        description: "Navigate to scheduling page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/scheduling",
+            wait_for: "text=Scheduling, text=Schedule, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "scheduling" },
+        screenshot: "ops-scheduling-loaded",
+      },
+      {
+        phase_id: "verify-scheduling-content",
+        description: "Verify scheduling views display correctly",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], [class*="schedule"], [class*="calendar"], main',
+          },
+          { action: "screenshot", name: "ops-scheduling-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // ops.view-time-clock — Time Clock
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "ops.view-time-clock",
+    description: "View the time clock page for tracking employee hours",
+    tags: ["route:/time-clock", "persona:ops", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-time-clock",
+        description: "Navigate to time clock page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/time-clock",
+            wait_for: "text=Time, text=Clock, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "time-clock" },
+        screenshot: "ops-time-clock-loaded",
+      },
+      {
+        phase_id: "verify-time-clock-content",
+        description: "Verify time clock content displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], [class*="time"], main',
+          },
+          { action: "screenshot", name: "ops-time-clock-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // ops.view-system-settings — System Settings
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "ops.view-system-settings",
+    description: "View system settings and configuration options",
+    tags: ["route:/settings", "persona:ops", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-system-settings",
+        description: "Navigate to system settings",
+        steps: [
+          {
+            action: "navigate",
+            path: "/settings",
+            wait_for: "text=Settings, text=System, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "setting" },
+        screenshot: "ops-system-settings-loaded",
+      },
+      {
+        phase_id: "verify-settings-sections",
+        description: "Verify settings sections display",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              '[class*="card"], [class*="section"], [class*="setting"], form, main',
+          },
+          { action: "screenshot", name: "ops-system-settings-content" },
+        ],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // ops.view-pick-pack — Pick & Pack fulfillment
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "ops.view-pick-pack",
+    description: "View the Pick & Pack page for order fulfillment workflow",
+    tags: ["route:/pick-pack", "persona:ops", "occasional", "read"],
+    phases: [
+      {
+        phase_id: "load-pick-pack",
+        description: "Navigate to pick and pack page",
+        steps: [
+          {
+            action: "navigate",
+            path: "/pick-pack",
+            wait_for: "text=Pick, text=Pack, text=Fulfillment, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "assert", visible: "main" },
+        ],
+        expected_ui: { url_contains: "pick" },
+        screenshot: "ops-pick-pack-loaded",
+      },
+      {
+        phase_id: "verify-pick-pack-content",
+        description: "Verify pick pack workflow displays",
+        steps: [
+          {
+            action: "assert",
+            visible:
+              'table, [role="table"], [class*="list"], [class*="card"], main',
+          },
+          { action: "screenshot", name: "ops-pick-pack-content" },
+        ],
+      },
+    ],
+  },
 ];
