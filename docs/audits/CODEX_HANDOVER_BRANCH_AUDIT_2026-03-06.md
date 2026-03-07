@@ -201,17 +201,49 @@ VIEWED → [CONVERTED, REJECTED, EXPIRED]
 | State Machine | orderStateMachine.test.ts | New quote status transitions |
 | Data Integrity | data-integrity.test.ts | Updated valid status lists |
 
-### 6.2 Coverage Gaps
+### 6.2 Coverage Gaps (Deep Audit)
 
-- **No integration test for quote status migration path** — the expand-migrate-shrink SQL is untested
-- **No test for photography status collapse** — does sellability logic correctly exclude isPhotographyComplete=1 batches?
-- **No test for concurrent status transitions** — what happens if two users try to transition the same quote simultaneously?
-- **Gallery view has no dedicated test** — BatchGalleryCard rendering is untested
-- **Redirect behavior untested** — /inbox → /notifications redirect path has no test
-- **Payment status column** (TER-567 Part B) — no dedicated test for the new payment status column in orders table
+**HIGH RISK — No test coverage at all:**
+
+| File Changed | Lines Changed | Test Status |
+|--------------|---------------|-------------|
+| `server/routers/quotes.ts` | 29 | **NO test file exists** — quote status enum rename entirely untested |
+| `server/routers/inventoryMovements.ts` | 325 | **NO test file exists** — massive refactor for adjustment reasons |
+| `server/routers/photography.ts` | 30 | **NO test** — photography boolean flag logic |
+| `server/services/orderOrchestrator.ts` | 28 | **NO test** — order orchestration with new statuses |
+| `server/services/catalogPublishingService.ts` | 18 | **NO test** — catalog logic changed |
+
+**MEDIUM RISK — Partial coverage:**
+
+| Gap | Details |
+|-----|---------|
+| Photography status collapse | No test that sellability excludes `isPhotographyComplete=1` batches |
+| Quote transitions end-to-end | No test for `UNSENT → SENT → VIEWED → CONVERTED` flow |
+| Gallery view component | `BatchGalleryCard` has no rendering test |
+| Payment status column | TER-567 Part B has no dedicated test |
+| Redirect behavior | `/inbox → /notifications` redirect path untested |
+| OrderStatusActions | Only 1 test case — doesn't test DRAFT→READY_FOR_PACKING, invalid backwards transitions, or CANCELLED |
+
+**Risk by Feature:**
+
+| Feature | Risk | Reason |
+|---------|------|--------|
+| Quote Status Rename (TER-573) | HIGH | Zero server-side test coverage |
+| Fulfillment Status Rename (TER-567) | MEDIUM | Some UI tests but limited backend verification |
+| Photography Flag Migration (TER-574) | MEDIUM | Enum removed but boolean flag not directly tested |
+| Adjustment Reasons (TER-568) | MEDIUM | `inventoryMovements` router has 325 changed lines and no tests |
+| Notifications Consolidation (TER-569) | LOW | Good test coverage |
+| Settings Reorganization (TER-571) | LOW | Good test coverage |
 
 ### 6.3 Test Quality
-Tests appear to test meaningful behavior rather than mocking everything. The state machine tests verify actual transition logic. The UI tests verify rendering and user interaction patterns. No tautological tests identified.
+
+**Mixed quality.** State machine unit tests are strong and test real transition logic. UI tests like `NotificationsPage.test.tsx` and `Settings.test.tsx` verify meaningful behavior.
+
+However, two tautological test patterns were identified:
+- `navigation.consolidation.test.ts` — verifies hardcoded paths exist in a config array (checks data against itself)
+- `seed-batches.test.ts` status validation — defines "valid" using the same enum the code uses, so it can never fail
+
+Several UI tests (BatchDetailDrawer, AppHeader, ConsolidatedWorkspaces) mock ALL tRPC calls and only verify that mocked values render — they will always pass regardless of backend changes.
 
 ---
 
@@ -272,7 +304,7 @@ All 8 tasks have execution logs in `docs/execution/2026-03-06-waves-2r/`. Each l
 | W4 | `adjustmentReason` enum not enforced at database level — only Zod validation | LOW | TER-568 |
 | ~~W5~~ | ~~Dead redirect stub files~~ — **RETRACTED**: Client audit confirmed these files were properly deleted | N/A | TER-569 |
 | W6 | Null quoteStatus fallbacks (`|| "UNSENT"`) mask data quality issues | LOW | TER-573 |
-| W7 | No test coverage for gallery view (BatchGalleryCard), redirect behavior, or payment status column | MEDIUM | TER-570, TER-569, TER-567 |
+| W7 | **Significant test gaps**: quotes router (0 tests for 29-line enum rename), inventoryMovements (0 tests for 325-line refactor), photography router (0 tests for boolean flag), plus BatchGalleryCard, redirect behavior, payment status column | **HIGH** | TER-573, TER-568, TER-574, TER-570, TER-567 |
 | W8 | Rollback for TER-573 is acknowledged as lossy (ACCEPTED→CONVERTED merge is irreversible without manual review) | MEDIUM | TER-573 |
 
 ### STRENGTHS
@@ -299,11 +331,17 @@ All 8 tasks have execution logs in `docs/execution/2026-03-06-waves-2r/`. Each l
 2. **Update TER-574 Linear status** to Done
 3. **Verify sellability queries** account for `isPhotographyComplete` flag after TER-574
 
+### Before Merge (Test Coverage — Elevated from Post-Merge)
+4. **Create `server/routers/quotes.test.ts`** — test UNSENT→SENT→VIEWED→CONVERTED transitions, DRAFT fallback handling, quote conversion validation
+5. **Add photography flag test** — verify `isPhotographyComplete=1` batches handled correctly in sellability queries
+6. **Add inventoryMovements test** — structured adjustment reason enum persistence and filtering
+
 ### Post-Merge Improvements
-4. Add transaction wrappers or document maintenance window requirements for multi-step migrations
-5. Add test coverage for BatchGalleryCard, redirect behavior, and payment status column
-6. Consider adding DB-level constraint for adjustmentReason enum
-8. Audit all `batchStatus = 'LIVE'` queries to ensure they correctly handle the new isPhotographyComplete dimension
+7. Add transaction wrappers or document maintenance window requirements for multi-step migrations
+8. Add test coverage for BatchGalleryCard, redirect behavior, and payment status column
+9. Consider adding DB-level constraint for adjustmentReason enum
+10. Audit all `batchStatus = 'LIVE'` queries to ensure they correctly handle the new isPhotographyComplete dimension
+11. Fix tautological tests: navigation.consolidation.test.ts, seed-batches.test.ts status validation
 
 ### Process Improvements
 9. RED task approval should be explicit (comment on Linear ticket) rather than implicit via handoff documents
