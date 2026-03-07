@@ -15,6 +15,8 @@ import type {
   ClickAction,
   TypeAction,
   SelectAction,
+  AddLineItemAction,
+  CustomAction,
   AssertAction,
   WaitAction,
   ScreenshotAction,
@@ -62,14 +64,17 @@ export function createChainContext(): OracleContext {
 function resolveTemplateString(value: string, context: OracleContext): string {
   if (!value) return value;
 
+  // Built-in template variables
+  let resolved = value
+    .replace("{{timestamp}}", Date.now().toString())
+    .replace("{{date}}", new Date().toISOString().split("T")[0])
+    .replace("{{random}}", Math.random().toString(36).substring(7));
+
   // $ctx.key → context.stored[key]
-  let resolved = value.replace(
-    /\$ctx\.([a-zA-Z0-9_.-]+)/g,
-    (_, key: string) => {
-      const stored = context.stored[key];
-      return stored !== undefined && stored !== null ? String(stored) : "";
-    }
-  );
+  resolved = resolved.replace(/\$ctx\.([a-zA-Z0-9_.-]+)/g, (_, key: string) => {
+    const stored = context.stored[key];
+    return stored !== undefined && stored !== null ? String(stored) : "";
+  });
 
   // {{ stored:key }} oracle-style
   resolved = resolved.replace(/{{\s*stored:([^}]+)\s*}}/g, (_, key: string) => {
@@ -554,6 +559,169 @@ async function executeStore(
   return {};
 }
 
+// ---------------------------------------------------------------------------
+// Add Line Item — domain-specific order line item interaction
+// ---------------------------------------------------------------------------
+
+async function executeAddLineItem(
+  page: Page,
+  action: AddLineItemAction,
+  context: OracleContext,
+  timeout: number
+): Promise<ActionResult> {
+  // Step 1: Click the "Add Item" button to open batch/product selection
+  const addItemCandidates = [
+    'button:has-text("Add Item")',
+    'button:has-text("Add Line")',
+    '[data-testid="add-line-item"]',
+    '[data-testid="add-item"]',
+    'button:has-text("+")',
+  ];
+
+  const addBtn = await waitForVisibleCandidate(
+    page,
+    addItemCandidates,
+    timeout
+  );
+  if (!addBtn) {
+    throw new Error('add_line_item: Could not find "Add Item" button on page');
+  }
+  await clickWithFallback(page, addBtn, timeout);
+  await page.waitForTimeout(300); // Wait for dialog/row to appear
+
+  // Step 2: If a batch selection dialog opens, select a batch
+  const dialogVisible = await page
+    .locator(
+      '[role="dialog"], [data-testid*="batch-select"], [data-testid*="product-select"]'
+    )
+    .first()
+    .isVisible()
+    .catch(() => false);
+
+  if (dialogVisible) {
+    // Type to search for batch/product if ref provided
+    const searchRef = action.batch_ref
+      ? resolveTemplateString(action.batch_ref, context)
+      : action.product_ref
+        ? resolveTemplateString(action.product_ref, context)
+        : "";
+
+    if (searchRef) {
+      const searchInput = page
+        .locator(
+          '[role="dialog"] input[type="search"], [role="dialog"] input[placeholder*="search" i], [role="dialog"] input'
+        )
+        .first();
+      if (await searchInput.isVisible().catch(() => false)) {
+        await searchInput.fill(searchRef, { timeout });
+        await page.waitForTimeout(300);
+      }
+    }
+
+    // Click first available option/row
+    const optionCandidates = [
+      '[role="dialog"] [role="option"]:first-child',
+      '[role="dialog"] table tbody tr:first-child',
+      '[role="dialog"] [data-testid*="row"]:first-child',
+      '[role="dialog"] li:first-child',
+    ];
+    const option = await waitForVisibleCandidate(
+      page,
+      optionCandidates,
+      timeout
+    );
+    if (option) {
+      await clickWithFallback(page, option, timeout);
+      await page.waitForTimeout(200);
+    }
+
+    // Close dialog if still open (some dialogs auto-close on selection)
+    const confirmBtn = await findVisibleCandidate(page, [
+      '[role="dialog"] button:has-text("Add")',
+      '[role="dialog"] button:has-text("Select")',
+      '[role="dialog"] button:has-text("Confirm")',
+      '[role="dialog"] button[type="submit"]',
+    ]);
+    if (confirmBtn) {
+      await clickWithFallback(page, confirmBtn, timeout);
+      await page.waitForTimeout(200);
+    }
+  }
+
+  // Step 3: Fill quantity in the newest (last) line item row
+  if (action.quantity) {
+    const qtyInputCandidates = [
+      'input[name="quantity"]:last-of-type',
+      '[data-testid*="quantity"]:last-of-type',
+      'table tbody tr:last-child input[name="quantity"]',
+      'table tbody tr:last-child input[type="number"]',
+      "table tbody tr:last-child input",
+    ];
+    const qtyInput = await waitForVisibleCandidate(
+      page,
+      qtyInputCandidates,
+      timeout
+    );
+    if (qtyInput) {
+      const locator = page.locator(qtyInput).first();
+      await locator.clear().catch(() => undefined);
+      await locator.fill(String(action.quantity), { timeout });
+    }
+  }
+
+  // Step 4: Fill unit price if provided
+  if (action.unit_price !== undefined) {
+    const priceInputCandidates = [
+      'table tbody tr:last-child input[name*="price" i]',
+      'table tbody tr:last-child input[name*="unitPrice" i]',
+      'table tbody tr:last-child input[placeholder*="price" i]',
+    ];
+    const priceInput = await findVisibleCandidate(page, priceInputCandidates);
+    if (priceInput) {
+      const locator = page.locator(priceInput).first();
+      await locator.clear().catch(() => undefined);
+      await locator.fill(String(action.unit_price), { timeout });
+    }
+  }
+
+  await safeWaitForNetworkIdle(page);
+  return {};
+}
+
+// ---------------------------------------------------------------------------
+// Custom action — evaluate JavaScript in page context
+// ---------------------------------------------------------------------------
+
+async function executeCustom(
+  page: Page,
+  action: CustomAction,
+  context: OracleContext
+): Promise<ActionResult> {
+  // Execute the custom code string in the page context
+  // The code has access to `document`, `window`, etc.
+  // For safety, we wrap in a try-catch and capture any return value
+  try {
+    const result = await page.evaluate((code: string) => {
+      // eslint-disable-next-line no-eval
+      return eval(code);
+    }, action.code);
+
+    // If the custom code returns a string, store it in context.temp
+    if (typeof result === "string" || typeof result === "number") {
+      context.temp["custom_result"] = { value: result };
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Custom action failed: ${message}`);
+  }
+
+  return {};
+}
+
+// ---------------------------------------------------------------------------
+// Action dispatch
+// ---------------------------------------------------------------------------
+
 async function executeAction(
   page: Page,
   action: OracleAction,
@@ -578,16 +746,9 @@ async function executeAction(
     case "store":
       return executeStore(page, action, context);
     case "add_line_item":
-      // Domain-specific action — not implemented in chain executor; log and skip
-      console.warn(
-        `[ChainExecutor] "add_line_item" action not implemented in chain executor, skipping`
-      );
-      return {};
+      return executeAddLineItem(page, action, context, timeout);
     case "custom":
-      console.warn(
-        `[ChainExecutor] "custom" action not implemented in chain executor, skipping`
-      );
-      return {};
+      return executeCustom(page, action, context);
     default: {
       const exhaustiveCheck: never = action;
       console.warn(
@@ -916,6 +1077,109 @@ async function assertExpectedUI(
 }
 
 // ---------------------------------------------------------------------------
+// Precondition setup — seed test data before chain execution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve chain preconditions by navigating to relevant pages and verifying
+ * required entities exist. Seeds context with entity references.
+ */
+async function setupPreconditions(
+  page: Page,
+  chain: TestChain,
+  context: OracleContext
+): Promise<string[]> {
+  const errors: string[] = [];
+
+  if (!chain.preconditions?.ensure) return errors;
+
+  for (const precondition of chain.preconditions.ensure) {
+    const entityKey = `${precondition.entity}.${precondition.ref}`;
+    try {
+      // Map entity types to pages for verification
+      const entityPageMap: Record<string, string> = {
+        client: "/clients",
+        order: "/sales",
+        invoice: "/accounting/invoices",
+        batch: "/inventory",
+        product: "/products",
+        location: "/locations",
+        payment: "/accounting/payments",
+      };
+
+      const entityPage = entityPageMap[precondition.entity];
+      if (entityPage) {
+        await page.goto(`${BASE_URL}${entityPage}`, {
+          waitUntil: "domcontentloaded",
+          timeout: 15000,
+        });
+        await safeWaitForNetworkIdle(page);
+
+        // Verify at least one entity exists (table has rows)
+        const hasData = await page
+          .locator("table tbody tr, [data-testid*='row']")
+          .first()
+          .isVisible({ timeout: 5000 })
+          .catch(() => false);
+
+        if (hasData) {
+          // Store a reference that the entity type exists
+          context.seed[entityKey] = {
+            exists: true,
+            ...precondition.where,
+          };
+        } else {
+          errors.push(
+            `Precondition failed: no ${precondition.entity} records found for ref "${precondition.ref}"`
+          );
+        }
+      } else {
+        // Unknown entity type — store the reference for chain use
+        context.seed[entityKey] = { ...precondition.where };
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`Precondition setup error for ${entityKey}: ${message}`);
+    }
+  }
+
+  return errors;
+}
+
+// ---------------------------------------------------------------------------
+// Cleanup — soft-delete entities created during chain execution
+// ---------------------------------------------------------------------------
+
+/**
+ * Best-effort cleanup of entities created during chain execution.
+ * Navigates to relevant pages and attempts to delete test-created records.
+ */
+async function cleanupChainEntities(
+  page: Page,
+  context: OracleContext
+): Promise<void> {
+  // Look through stored values for created entity IDs
+  const createdEntities = Object.entries(context.created);
+  if (createdEntities.length === 0) return;
+
+  for (const [_entityKey, entityData] of createdEntities) {
+    try {
+      const data = entityData as Record<string, unknown>;
+      if (data.deleteUrl && typeof data.deleteUrl === "string") {
+        // Navigate to delete URL if provided
+        await page.goto(`${BASE_URL}${data.deleteUrl}`, {
+          waitUntil: "domcontentloaded",
+          timeout: 10000,
+        });
+        await safeWaitForNetworkIdle(page);
+      }
+    } catch {
+      // Cleanup is best-effort — don't fail the chain for cleanup errors
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Chain executor
 // ---------------------------------------------------------------------------
 
@@ -942,6 +1206,28 @@ export async function executeChain(
   try {
     // Authenticate as admin (single role, full access)
     await loginAsAdmin(page);
+
+    // Setup preconditions — verify required entities exist
+    if (chain.preconditions?.ensure) {
+      const preconditionErrors = await setupPreconditions(page, chain, context);
+      if (preconditionErrors.length > 0) {
+        result.phases.push({
+          phase_id: "precondition-setup",
+          success: false,
+          duration_ms: Date.now() - startTime,
+          steps_completed: 0,
+          total_steps: chain.preconditions.ensure.length,
+          extracted_values: {},
+          errors: preconditionErrors,
+          screenshots: [],
+          failure_type: "data_issue",
+          failure_evidence: preconditionErrors[0],
+        });
+        result.failure_type = "data_issue";
+        result.duration_ms = Date.now() - startTime;
+        return result;
+      }
+    }
 
     for (const phase of chain.phases) {
       const phaseResult = await executePhase(page, phase, context);
@@ -995,6 +1281,8 @@ export async function executeChain(
       `[ChainExecutor] Chain "${chain.chain_id}" failed: ${message}`
     );
   } finally {
+    // Best-effort cleanup of created entities
+    await cleanupChainEntities(page, context).catch(() => undefined);
     result.duration_ms = Date.now() - startTime;
   }
 
