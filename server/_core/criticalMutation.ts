@@ -82,7 +82,10 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { withRetryableTransaction } from "./dbTransaction";
+import {
+  withRetryableTransaction,
+  TransactionIsolationLevel,
+} from "./dbTransaction";
 import { logger } from "./logger";
 
 // ============================================================================
@@ -127,6 +130,12 @@ export interface CriticalMutationOptions {
    * User ID performing the mutation (for audit)
    */
   userId?: number;
+
+  /**
+   * Transaction isolation level
+   * Default: REPEATABLE_READ (MySQL default)
+   */
+  isolationLevel?: TransactionIsolationLevel;
 }
 
 /**
@@ -326,6 +335,7 @@ export async function criticalMutation<T>(
     domain = "unknown",
     operation = "mutation",
     userId,
+    isolationLevel,
   } = options;
 
   const startTime = Date.now();
@@ -358,6 +368,7 @@ export async function criticalMutation<T>(
       const result = await withRetryableTransaction(fn, {
         timeout,
         maxRetries: 0, // We handle retries ourselves
+        ...(isolationLevel !== undefined ? { isolationLevel } : {}),
       });
 
       // Cache result if idempotency key provided

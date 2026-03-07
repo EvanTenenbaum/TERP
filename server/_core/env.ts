@@ -144,6 +144,13 @@ export const env = {
     // Safety: Never enable in production
     return enabled && !isProduction;
   },
+  // Query timeout in milliseconds (used by transaction wrapper and query timeout utility)
+  get QUERY_TIMEOUT_MS() {
+    const raw = process.env.QUERY_TIMEOUT_MS;
+    if (raw === undefined) return 30000;
+    const parsed = parseInt(raw, 10);
+    return isNaN(parsed) || parsed <= 0 ? 30000 : parsed;
+  },
   // Demo mode: Auto-login as Super Admin for demo/internal use
   // When enabled:
   // - Visitors are auto-authenticated as Super Admin
