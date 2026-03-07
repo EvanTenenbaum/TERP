@@ -410,13 +410,18 @@ jobs:
           done
 
       - name: Push schema and seed
-        run: pnpm drizzle-kit push --force && pnpm seed:light
+        run: |
+          pnpm drizzle-kit push --force
+          pnpm seed:light
+          pnpm seed:qa-accounts
 
       - name: Start app server
         run: |
           JWT_SECRET="${JWT_SECRET:-terp-ci-jwt-secret-2026-000000000000}" \
           DATABASE_URL="$DATABASE_URL" \
           TEST_DATABASE_URL="$DATABASE_URL" \
+          QA_AUTH_ENABLED=true \
+          DEMO_MODE=true \
           PORT=5173 \
           pnpm dev > /tmp/terp-dev.log 2>&1 &
           echo $! > /tmp/terp-dev.pid
