@@ -8,6 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AdjustQuantityDialog,
+  type AdjustQuantityDialogValues,
+} from "@/components/AdjustQuantityDialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -52,6 +56,7 @@ import {
   saveGridPreference,
   type GridViewMode,
 } from "@/lib/gridPreferences";
+import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 import {
   createProductIntakeDraftFromPO,
   getProductIntakeDraft,
@@ -176,8 +181,6 @@ export function ProductIntakeSlicePage() {
   const [transferOpen, setTransferOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
 
-  const [adjustAmount, setAdjustAmount] = useState("0");
-  const [adjustReason, setAdjustReason] = useState("");
   const [transferLocationId, setTransferLocationId] = useState<string>("");
   const [transferQty, setTransferQty] = useState("0");
   const [transferReason, setTransferReason] = useState("");
@@ -844,24 +847,26 @@ export function ProductIntakeSlicePage() {
     toast.success("Grade applied to selected lines.");
   };
 
-  const submitAdjust = async () => {
+  const submitAdjust = async ({
+    adjustment,
+    adjustmentReason,
+    notes,
+  }: AdjustQuantityDialogValues) => {
     const startedAt = Date.now();
     if (!selectedLine) return;
-    const adjustment = Number(adjustAmount || 0);
     if (!Number.isFinite(adjustment) || adjustment === 0) {
       toast.error("Enter a non-zero adjustment.");
       return;
     }
-    if (!adjustReason.trim()) {
-      toast.error("Reason is required.");
-      return;
-    }
+    const auditReason = notes
+      ? `${formatInventoryAdjustmentReason(adjustmentReason)}: ${notes}`
+      : formatInventoryAdjustmentReason(adjustmentReason);
 
     if (isLabRoute) {
       recordLabActivity(
         "ADJUST_QUANTITY",
         adjustment.toString(),
-        adjustReason,
+        auditReason,
         selectedLine.batchId ?? 0
       );
       setActivityReloadToken(token => token + 1);
@@ -885,7 +890,8 @@ export function ProductIntakeSlicePage() {
         id: selectedLine.batchId,
         field: "onHandQty",
         adjustment,
-        reason: adjustReason,
+        adjustmentReason,
+        notes,
       });
       setActivityReloadToken(token => token + 1);
       toast.success("Quantity adjustment recorded.");
@@ -1831,45 +1837,16 @@ export function ProductIntakeSlicePage() {
         </DrawerContent>
       </Drawer>
 
-      <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adjust Quantity</DialogTitle>
-            <DialogDescription className="sr-only">
-              Record a post-receive quantity correction as a movement.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Selected line: {selectedLine?.productName ?? "-"}
-            </p>
-            <div>
-              <Label>Adjustment (+ / -)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={adjustAmount}
-                onChange={e => setAdjustAmount(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Reason</Label>
-              <Textarea
-                value={adjustReason}
-                onChange={e => setAdjustReason(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={submitAdjust} disabled={adjustMutation.isPending}>
-              {adjustMutation.isPending ? "Saving..." : "Record Adjustment"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdjustQuantityDialog
+        open={adjustOpen}
+        onOpenChange={setAdjustOpen}
+        itemLabel={`Selected line: ${selectedLine?.productName ?? "-"}`}
+        description="Record a post-receive quantity correction as a movement."
+        submitLabel="Record Adjustment"
+        step="0.01"
+        isPending={adjustMutation.isPending}
+        onSubmit={submitAdjust}
+      />
 
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
         <DialogContent>

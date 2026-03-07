@@ -106,12 +106,11 @@ export const userDashboardPreferencesRelations = relations(
  * Batch Status Enum
  * Represents the lifecycle state of an inventory batch
  * REMOVED: QC_PENDING (per user feedback)
- * ADDED: PHOTOGRAPHY_COMPLETE (sub-status under LIVE)
+ * REMOVED: PHOTOGRAPHY_COMPLETE (TER-574: migrated to isPhotographyComplete boolean)
  */
 export const batchStatusEnum = mysqlEnum("batchStatus", [
   "AWAITING_INTAKE",
   "LIVE",
-  "PHOTOGRAPHY_COMPLETE",
   "ON_HOLD",
   "QUARANTINED",
   "SOLD_OUT",
@@ -643,6 +642,9 @@ export const batches = mysqlTable(
     productId: int("productId").notNull(),
     lotId: int("lotId").notNull(),
     batchStatus: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
+    isPhotographyComplete: boolean("isPhotographyComplete")
+      .notNull()
+      .default(false), // TER-574: boolean flag
     statusId: int("statusId").references(() => workflowStatuses.id, {
       onDelete: "set null",
     }), // New workflow queue status (nullable for backward compatibility)
@@ -2682,10 +2684,9 @@ export const orderTypeEnum = mysqlEnum("orderType", ["QUOTE", "SALE"]);
  * Lifecycle states for quotes
  */
 export const quoteStatusEnum = mysqlEnum("quoteStatus", [
-  "DRAFT",
+  "UNSENT",
   "SENT",
   "VIEWED",
-  "ACCEPTED",
   "REJECTED",
   "EXPIRED",
   "CONVERTED",
@@ -2712,7 +2713,7 @@ export const saleStatusEnum = mysqlEnum("saleStatus", [
 export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
   "DRAFT",
   "CONFIRMED",
-  "PENDING",
+  "READY_FOR_PACKING",
   "PACKED",
   "SHIPPED",
   "DELIVERED",
@@ -2781,7 +2782,7 @@ export const orders = mysqlTable(
     invoiceId: int("invoice_id"),
 
     // Fulfillment tracking (for SALE orders)
-    fulfillmentStatus: fulfillmentStatusEnum.default("PENDING"),
+    fulfillmentStatus: fulfillmentStatusEnum.default("READY_FOR_PACKING"),
     packedAt: timestamp("packed_at"),
     packedBy: int("packed_by").references(() => users.id),
     shippedAt: timestamp("shipped_at"),
@@ -2859,7 +2860,9 @@ export const orderStatusHistory = mysqlTable(
     orderId: int("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "restrict" }), // QUAL-004: Protect audit trail
-    fulfillmentStatus: fulfillmentStatusEnum.notNull().default("PENDING"),
+    fulfillmentStatus: fulfillmentStatusEnum
+      .notNull()
+      .default("READY_FOR_PACKING"),
     changedBy: int("changed_by")
       .notNull()
       .references(() => users.id),

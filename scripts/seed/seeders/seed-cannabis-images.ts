@@ -15,7 +15,7 @@
  * Tables seeded:
  * - productMedia (product-level, used by LiveCatalog/VIP Portal)
  * - product_images (batch-level, used by photography workflow)
- * - batches (updates status to PHOTOGRAPHY_COMPLETE)
+ * - batches (sets isPhotographyComplete flag)
  *
  * Depends on: products, batches, users
  *
@@ -283,12 +283,12 @@ async function main() {
         productImagesInserted++;
       }
 
-      // Update batch status to PHOTOGRAPHY_COMPLETE and update metadata
+      // TER-574: Set isPhotographyComplete flag instead of changing status
       const newMetadata = generatePhotographyMetadata(batch.metadata, systemUserId, imageCount);
 
       await connection.query(
         `UPDATE batches
-         SET batchStatus = 'PHOTOGRAPHY_COMPLETE', metadata = ?
+         SET isPhotographyComplete = 1, metadata = ?
          WHERE id = ?`,
         [newMetadata, batch.id]
       );
@@ -300,7 +300,7 @@ async function main() {
     }
 
     console.log(`   Inserted ${productImagesInserted} product_images records`);
-    console.log(`   Updated ${batchesUpdated} batches to PHOTOGRAPHY_COMPLETE`);
+    console.log(`   Updated ${batchesUpdated} batches with isPhotographyComplete=1`);
     console.log(`   Skipped ${batchesSkipped} batches (for queue testing)\n`);
 
     // ========================================================================
@@ -314,7 +314,7 @@ Summary:
   productMedia:   ${productMediaInserted} images (100% of products)
   product_images: ${productImagesInserted} images (99% of batches)
 
-  Batches with photos:    ${batchesUpdated} (PHOTOGRAPHY_COMPLETE)
+  Batches with photos:    ${batchesUpdated} (isPhotographyComplete=1)
   Batches without photos: ${batchesSkipped} (for queue testing)
 
 Coverage:

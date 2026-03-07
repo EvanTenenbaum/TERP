@@ -33,6 +33,11 @@ import {
 } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import {
+  INVENTORY_ADJUSTMENT_REASONS,
+  INVENTORY_ADJUSTMENT_REASON_LABELS,
+  type InventoryAdjustmentReason,
+} from "@shared/inventoryAdjustmentReasons";
 
 import {
   AlertTriangle,
@@ -56,7 +61,15 @@ import {
   Tooltip,
 } from "recharts";
 
-const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"];
+const COLORS = [
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+];
 
 const REASON_COLORS: Record<string, string> = {
   DAMAGED: "#f97316",
@@ -86,12 +99,20 @@ export const ShrinkageReport = memo(function ShrinkageReport({
     format(new Date(), "yyyy-MM-dd")
   );
   const [category, setCategory] = useState<string>("all");
+  const [adjustmentReason, setAdjustmentReason] = useState<
+    InventoryAdjustmentReason | "all"
+  >("all");
   const [minShrinkage, setMinShrinkage] = useState<number>(0);
 
-  const { data, isLoading, refetch: _refetch } = trpc.inventoryMovements.getShrinkageReport.useQuery({
+  const {
+    data,
+    isLoading,
+    refetch: _refetch,
+  } = trpc.inventoryMovements.getShrinkageReport.useQuery({
     startDate,
     endDate,
     category: category !== "all" ? category : undefined,
+    adjustmentReason: adjustmentReason !== "all" ? adjustmentReason : undefined,
     minShrinkage,
   });
 
@@ -118,7 +139,17 @@ export const ShrinkageReport = memo(function ShrinkageReport({
   const exportToCsv = () => {
     if (!data) return;
 
-    const headers = ["Date", "SKU", "Product", "Category", "Qty Lost", "Reason", "Notes", "Performed By", "Suspicious"];
+    const headers = [
+      "Date",
+      "SKU",
+      "Product",
+      "Category",
+      "Qty Lost",
+      "Reason",
+      "Notes",
+      "Performed By",
+      "Suspicious",
+    ];
     const rows = data.items.map(item => [
       format(new Date(item.date), "yyyy-MM-dd HH:mm"),
       item.sku,
@@ -131,15 +162,21 @@ export const ShrinkageReport = memo(function ShrinkageReport({
       item.isSuspicious ? "Yes" : "No",
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map(row =>
-      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-    )].join("\n");
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row =>
+        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      ),
+    ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `shrinkage-report-${startDate}-to-${endDate}.csv`);
+    link.setAttribute(
+      "download",
+      `shrinkage-report-${startDate}-to-${endDate}.csv`
+    );
     link.click();
   };
 
@@ -161,18 +198,30 @@ export const ShrinkageReport = memo(function ShrinkageReport({
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total Events</span>
-                <Badge variant="outline">{data?.summary.totalShrinkageEvents || 0}</Badge>
+                <span className="text-sm text-muted-foreground">
+                  Total Events
+                </span>
+                <Badge variant="outline">
+                  {data?.summary.totalShrinkageEvents || 0}
+                </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total Qty Lost</span>
+                <span className="text-sm text-muted-foreground">
+                  Total Qty Lost
+                </span>
                 <Badge variant="destructive">
                   {data?.summary.totalShrinkageQty?.toFixed(0) || 0}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Suspicious</span>
-                <Badge variant={data?.summary.suspiciousEvents ? "destructive" : "outline"}>
+                <span className="text-sm text-muted-foreground">
+                  Suspicious
+                </span>
+                <Badge
+                  variant={
+                    data?.summary.suspiciousEvents ? "destructive" : "outline"
+                  }
+                >
                   {data?.summary.suspiciousEvents || 0}
                 </Badge>
               </div>
@@ -214,13 +263,13 @@ export const ShrinkageReport = memo(function ShrinkageReport({
       {/* Filters */}
       <Card>
         <CardContent className="pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <Label className="text-xs">Start Date</Label>
               <Input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => setStartDate(e.target.value)}
               />
             </div>
             <div>
@@ -228,7 +277,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
               <Input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={e => setEndDate(e.target.value)}
               />
             </div>
             <div>
@@ -239,9 +288,32 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {data?.byCategory.map((cat) => (
+                  {data?.byCategory.map(cat => (
                     <SelectItem key={cat.category} value={cat.category}>
                       {cat.category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Reason</Label>
+              <Select
+                value={adjustmentReason}
+                onValueChange={value =>
+                  setAdjustmentReason(
+                    value as InventoryAdjustmentReason | "all"
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Reasons" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Reasons</SelectItem>
+                  {INVENTORY_ADJUSTMENT_REASONS.map(reason => (
+                    <SelectItem key={reason} value={reason}>
+                      {INVENTORY_ADJUSTMENT_REASON_LABELS[reason]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -252,7 +324,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
               <Input
                 type="number"
                 value={minShrinkage}
-                onChange={(e) => setMinShrinkage(Number(e.target.value))}
+                onChange={e => setMinShrinkage(Number(e.target.value))}
                 placeholder="0"
               />
             </div>
@@ -277,7 +349,9 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                     <AlertTriangle className="h-6 w-6 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Events</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Events
+                    </p>
                     <p className="text-2xl font-bold">
                       {data?.summary.totalShrinkageEvents || 0}
                     </p>
@@ -292,7 +366,9 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                     <Package className="h-6 w-6 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Qty Lost</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Qty Lost
+                    </p>
                     <p className="text-2xl font-bold text-red-600">
                       {data?.summary.totalShrinkageQty?.toFixed(0) || 0}
                     </p>
@@ -307,7 +383,9 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                     <AlertCircle className="h-6 w-6 text-yellow-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Suspicious Events</p>
+                    <p className="text-sm text-muted-foreground">
+                      Suspicious Events
+                    </p>
                     <p className="text-2xl font-bold text-yellow-600">
                       {data?.summary.suspiciousEvents || 0}
                     </p>
@@ -326,7 +404,9 @@ export const ShrinkageReport = memo(function ShrinkageReport({
               </CardHeader>
               <CardContent>
                 {chartDataByReason.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground">No data</p>
+                  <p className="text-center py-8 text-muted-foreground">
+                    No data
+                  </p>
                 ) : (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -342,7 +422,10 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                           }
                         >
                           {chartDataByReason.map((entry, _index) => (
-                            <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                            <Cell
+                              key={`cell-${entry.name}`}
+                              fill={entry.fill}
+                            />
                           ))}
                         </Pie>
                         <Tooltip
@@ -365,7 +448,9 @@ export const ShrinkageReport = memo(function ShrinkageReport({
               </CardHeader>
               <CardContent>
                 {chartDataByCategory.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground">No data</p>
+                  <p className="text-center py-8 text-muted-foreground">
+                    No data
+                  </p>
                 ) : (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -415,12 +500,15 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                 <TableBody>
                   {data?.items.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No shrinkage events found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data?.items.slice(0, 50).map((item) => (
+                    data?.items.slice(0, 50).map(item => (
                       <TableRow
                         key={item.id}
                         className={item.isSuspicious ? "bg-red-50" : ""}

@@ -1,10 +1,5 @@
 import { getDb } from "./db";
-import { 
-  orders,
-  batches,
-  sales,
-  clientTransactions,
-} from "../drizzle/schema";
+import { orders, batches, sales, clientTransactions } from "../drizzle/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 
 /**
@@ -61,34 +56,51 @@ export async function getSalesPerformance(
 
   try {
     // Get all sales orders in date range
-    const salesOrders = await db.select()
+    const salesOrders = await db
+      .select()
       .from(orders)
-      .where(and(
-        eq(orders.orderType, "SALE"),
-        gte(orders.createdAt, startDate),
-        lte(orders.createdAt, endDate)
-      ));
+      .where(
+        and(
+          eq(orders.orderType, "SALE"),
+          gte(orders.createdAt, startDate),
+          lte(orders.createdAt, endDate)
+        )
+      );
 
-    const totalRevenue = salesOrders.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0);
-    const totalCOGS = salesOrders.reduce((sum, order) => sum + parseFloat(order.totalCogs?.toString() || "0"), 0);
+    const totalRevenue = salesOrders.reduce(
+      (sum, order) => sum + parseFloat(order.total.toString()),
+      0
+    );
+    const totalCOGS = salesOrders.reduce(
+      (sum, order) => sum + parseFloat(order.totalCogs?.toString() || "0"),
+      0
+    );
     const totalMargin = totalRevenue - totalCOGS;
-    const avgMarginPercent = totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0;
+    const avgMarginPercent =
+      totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0;
 
     // Get previous period for comparison
     const periodLength = endDate.getTime() - startDate.getTime();
     const prevStartDate = new Date(startDate.getTime() - periodLength);
     const prevEndDate = new Date(startDate.getTime());
 
-    const prevSalesOrders = await db.select()
+    const prevSalesOrders = await db
+      .select()
       .from(orders)
-      .where(and(
-        eq(orders.orderType, "SALE"),
-        gte(orders.createdAt, prevStartDate),
-        lte(orders.createdAt, prevEndDate)
-      ));
+      .where(
+        and(
+          eq(orders.orderType, "SALE"),
+          gte(orders.createdAt, prevStartDate),
+          lte(orders.createdAt, prevEndDate)
+        )
+      );
 
-    const prevRevenue = prevSalesOrders.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0);
-    const revenueGrowth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+    const prevRevenue = prevSalesOrders.reduce(
+      (sum, order) => sum + parseFloat(order.total.toString()),
+      0
+    );
+    const revenueGrowth =
+      prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
 
     return {
       totalRevenue: totalRevenue.toFixed(2),
@@ -96,12 +108,17 @@ export async function getSalesPerformance(
       totalMargin: totalMargin.toFixed(2),
       avgMarginPercent: avgMarginPercent.toFixed(2),
       orderCount: salesOrders.length,
-      averageOrderValue: salesOrders.length > 0 ? (totalRevenue / salesOrders.length).toFixed(2) : "0.00",
+      averageOrderValue:
+        salesOrders.length > 0
+          ? (totalRevenue / salesOrders.length).toFixed(2)
+          : "0.00",
       revenueGrowth: revenueGrowth.toFixed(2),
-      previousPeriodRevenue: prevRevenue.toFixed(2)
+      previousPeriodRevenue: prevRevenue.toFixed(2),
     };
   } catch (error) {
-    throw new Error(`Failed to get sales performance: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get sales performance: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -114,27 +131,35 @@ export async function getARAgingReport(): Promise<ARAgingData> {
 
   try {
     // Get all unpaid/partial client transactions
-    const transactions = await db.select()
+    const transactions = await db
+      .select()
       .from(clientTransactions)
-      .where(sql`${clientTransactions.paymentStatus} IN ('PENDING', 'OVERDUE', 'PARTIAL')`);
+      .where(
+        sql`${clientTransactions.paymentStatus} IN ('PENDING', 'OVERDUE', 'PARTIAL')`
+      );
 
     const today = new Date();
     const aging = {
       current: 0, // 0-30 days
-      days30: 0,  // 31-60 days
-      days60: 0,  // 61-90 days
-      days90: 0,  // 90+ days
-      total: 0
+      days30: 0, // 31-60 days
+      days60: 0, // 61-90 days
+      days90: 0, // 90+ days
+      total: 0,
     };
 
     for (const transaction of transactions) {
       const amount = parseFloat(transaction.amount.toString());
-      const paymentAmount = parseFloat(transaction.paymentAmount?.toString() || "0");
+      const paymentAmount = parseFloat(
+        transaction.paymentAmount?.toString() || "0"
+      );
       const balance = amount - paymentAmount;
-      
+
       if (balance <= 0) continue;
-      
-      const daysOutstanding = Math.floor((today.getTime() - new Date(transaction.transactionDate).getTime()) / (1000 * 60 * 60 * 24));
+
+      const daysOutstanding = Math.floor(
+        (today.getTime() - new Date(transaction.transactionDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
 
       aging.total += balance;
 
@@ -155,10 +180,12 @@ export async function getARAgingReport(): Promise<ARAgingData> {
       days60: aging.days60.toFixed(2),
       days90: aging.days90.toFixed(2),
       total: aging.total.toFixed(2),
-      transactionCount: transactions.length
+      transactionCount: transactions.length,
     };
   } catch (error) {
-    throw new Error(`Failed to get AR aging report: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get AR aging report: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -170,18 +197,22 @@ export async function getInventoryValuation(): Promise<InventoryValuationData> {
   if (!db) throw new Error("Database not available");
 
   try {
-    const activeBatches = await db.select()
+    const activeBatches = await db
+      .select()
       .from(batches)
-      .where(sql`${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD')`);
+      .where(sql`${batches.batchStatus} IN ('LIVE', 'ON_HOLD')`);
 
     let totalValue = 0;
     let totalUnits = 0;
 
     for (const batch of activeBatches) {
       const onHandQty = parseFloat(batch.onHandQty);
-      const unitCogs = batch.cogsMode === "FIXED" 
-        ? parseFloat(batch.unitCogs || "0")
-        : (parseFloat(batch.unitCogsMin || "0") + parseFloat(batch.unitCogsMax || "0")) / 2;
+      const unitCogs =
+        batch.cogsMode === "FIXED"
+          ? parseFloat(batch.unitCogs || "0")
+          : (parseFloat(batch.unitCogsMin || "0") +
+              parseFloat(batch.unitCogsMax || "0")) /
+            2;
 
       totalValue += onHandQty * unitCogs;
       totalUnits += onHandQty;
@@ -191,10 +222,13 @@ export async function getInventoryValuation(): Promise<InventoryValuationData> {
       totalValue: totalValue.toFixed(2),
       totalUnits: totalUnits.toFixed(2),
       batchCount: activeBatches.length,
-      averageValuePerUnit: totalUnits > 0 ? (totalValue / totalUnits).toFixed(2) : "0.00"
+      averageValuePerUnit:
+        totalUnits > 0 ? (totalValue / totalUnits).toFixed(2) : "0.00",
     };
   } catch (error) {
-    throw new Error(`Failed to get inventory valuation: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get inventory valuation: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -210,22 +244,23 @@ export async function getTopPerformingProducts(
   if (!db) throw new Error("Database not available");
 
   try {
-    const salesData = await db.select()
+    const salesData = await db
+      .select()
       .from(sales)
-      .where(and(
-        gte(sales.saleDate, startDate),
-        lte(sales.saleDate, endDate)
-      ));
+      .where(and(gte(sales.saleDate, startDate), lte(sales.saleDate, endDate)));
 
     // Aggregate by product
-    const productStats: Record<number, {
-      productId: number,
-      revenue: number,
-      cogs: number,
-      margin: number,
-      quantity: number,
-      salesCount: number
-    }> = {};
+    const productStats: Record<
+      number,
+      {
+        productId: number;
+        revenue: number;
+        cogs: number;
+        margin: number;
+        quantity: number;
+        salesCount: number;
+      }
+    > = {};
 
     for (const sale of salesData) {
       const productId = sale.productId;
@@ -241,7 +276,7 @@ export async function getTopPerformingProducts(
           cogs: 0,
           margin: 0,
           quantity: 0,
-          salesCount: 0
+          salesCount: 0,
         };
       }
 
@@ -259,17 +294,21 @@ export async function getTopPerformingProducts(
         revenue: p.revenue.toFixed(2),
         cogs: p.cogs.toFixed(2),
         margin: p.margin.toFixed(2),
-        marginPercent: p.revenue > 0 ? ((p.margin / p.revenue) * 100).toFixed(2) : "0.00",
+        marginPercent:
+          p.revenue > 0 ? ((p.margin / p.revenue) * 100).toFixed(2) : "0.00",
         quantity: p.quantity.toFixed(2),
         salesCount: p.salesCount,
-        averagePrice: p.quantity > 0 ? (p.revenue / p.quantity).toFixed(2) : "0.00"
+        averagePrice:
+          p.quantity > 0 ? (p.revenue / p.quantity).toFixed(2) : "0.00",
       }))
       .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))
       .slice(0, limit);
 
     return topProducts;
   } catch (error) {
-    throw new Error(`Failed to get top performing products: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get top performing products: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -285,21 +324,27 @@ export async function getTopClients(
   if (!db) throw new Error("Database not available");
 
   try {
-    const salesOrders = await db.select()
+    const salesOrders = await db
+      .select()
       .from(orders)
-      .where(and(
-        eq(orders.orderType, "SALE"),
-        gte(orders.createdAt, startDate),
-        lte(orders.createdAt, endDate)
-      ));
+      .where(
+        and(
+          eq(orders.orderType, "SALE"),
+          gte(orders.createdAt, startDate),
+          lte(orders.createdAt, endDate)
+        )
+      );
 
     // Aggregate by client
-    const clientStats: Record<number, {
-      clientId: number,
-      revenue: number,
-      orderCount: number,
-      margin: number
-    }> = {};
+    const clientStats: Record<
+      number,
+      {
+        clientId: number;
+        revenue: number;
+        orderCount: number;
+        margin: number;
+      }
+    > = {};
 
     for (const order of salesOrders) {
       const clientId = order.clientId;
@@ -312,7 +357,7 @@ export async function getTopClients(
           clientId,
           revenue: 0,
           orderCount: 0,
-          margin: 0
+          margin: 0,
         };
       }
 
@@ -328,15 +373,19 @@ export async function getTopClients(
         revenue: c.revenue.toFixed(2),
         orderCount: c.orderCount,
         margin: c.margin.toFixed(2),
-        marginPercent: c.revenue > 0 ? ((c.margin / c.revenue) * 100).toFixed(2) : "0.00",
-        averageOrderValue: c.orderCount > 0 ? (c.revenue / c.orderCount).toFixed(2) : "0.00"
+        marginPercent:
+          c.revenue > 0 ? ((c.margin / c.revenue) * 100).toFixed(2) : "0.00",
+        averageOrderValue:
+          c.orderCount > 0 ? (c.revenue / c.orderCount).toFixed(2) : "0.00",
       }))
       .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))
       .slice(0, limit);
 
     return topClients;
   } catch (error) {
-    throw new Error(`Failed to get top clients: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get top clients: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -346,7 +395,11 @@ export async function getTopClients(
 export async function getProfitabilityMetrics(
   startDate: Date,
   endDate: Date
-): Promise<{ summary: SalesPerformanceData; topProducts: TopProductData[]; topClients: TopClientData[] }> {
+): Promise<{
+  summary: SalesPerformanceData;
+  topProducts: TopProductData[];
+  topClients: TopClientData[];
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -358,10 +411,12 @@ export async function getProfitabilityMetrics(
     return {
       summary: salesPerformance,
       topProducts,
-      topClients
+      topClients,
     };
   } catch (error) {
-    throw new Error(`Failed to get profitability metrics: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get profitability metrics: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -376,19 +431,14 @@ export async function getDashboardData(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [
-      salesPerformance,
-      arAging,
-      inventoryVal,
-      topProducts,
-      topClients
-    ] = await Promise.all([
-      getSalesPerformance(startDate, endDate),
-      getARAgingReport(),
-      getInventoryValuation(),
-      getTopPerformingProducts(startDate, endDate, 10),
-      getTopClients(startDate, endDate, 10)
-    ]);
+    const [salesPerformance, arAging, inventoryVal, topProducts, topClients] =
+      await Promise.all([
+        getSalesPerformance(startDate, endDate),
+        getARAgingReport(),
+        getInventoryValuation(),
+        getTopPerformingProducts(startDate, endDate, 10),
+        getTopClients(startDate, endDate, 10),
+      ]);
 
     return {
       salesPerformance,
@@ -396,10 +446,12 @@ export async function getDashboardData(
       inventoryValuation: inventoryVal,
       topProducts,
       topClients,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     };
   } catch (error) {
-    throw new Error(`Failed to get dashboard data: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get dashboard data: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -459,7 +511,8 @@ export async function exportDashboardData(
 
     return csv;
   } catch (error) {
-    throw new Error(`Failed to export dashboard data: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to export dashboard data: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
-

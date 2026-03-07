@@ -14,12 +14,17 @@ import CreditsWorkspacePage from "./CreditsWorkspacePage";
 
 let mockActiveTab = "matchmaking";
 const mockSetActiveTab = vi.fn();
+const mockSetLocation = vi.fn();
 
 vi.mock("@/hooks/useQueryTabState", () => ({
   useQueryTabState: () => ({
     activeTab: mockActiveTab,
     setActiveTab: mockSetActiveTab,
   }),
+}));
+
+vi.mock("wouter", () => ({
+  useLocation: () => ["/inventory", mockSetLocation],
 }));
 
 vi.mock("@/pages/NeedsManagementPage", () => ({
@@ -49,9 +54,6 @@ vi.mock("@/components/work-surface/VendorsWorkSurface", () => ({
 vi.mock("@/components/work-surface/InventoryWorkSurface", () => ({
   default: () => <div>Inventory Surface</div>,
 }));
-vi.mock("@/components/work-surface/ProductsWorkSurface", () => ({
-  default: () => <div>Products Surface</div>,
-}));
 vi.mock("@/components/work-surface/OrdersWorkSurface", () => ({
   default: () => <div>Orders Surface</div>,
 }));
@@ -77,6 +79,7 @@ vi.mock("@/pages/CreditSettingsPage", () => ({
 describe("Consolidated workspace pages", () => {
   beforeEach(() => {
     mockSetActiveTab.mockClear();
+    mockSetLocation.mockClear();
   });
 
   it("renders Demand & Supply workspace with embedded content", () => {
@@ -104,6 +107,16 @@ describe("Consolidated workspace pages", () => {
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /browse sku grid/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Browse")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: /products/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /jump to products/i })
+    ).not.toBeInTheDocument();
   });
 
   it("renders Sales workspace with quotes tab content", () => {

@@ -70,7 +70,7 @@ TERP streamlines your entire order process, from creating quotes to managing ret
 ### Key Highlights
 
 - **Unified Order System**: Manage both quotes and sales orders in one integrated view.
-- **Simple 3-Step Fulfillment**: A clear and simple `PENDING` → `PACKED` → `SHIPPED` workflow.
+- **Simple 3-Step Fulfillment**: A clear and simple `READY_FOR_PACKING` → `PACKED` → `SHIPPED` workflow.
 - **Integrated Returns**: Process returns directly from the original order, automatically updating inventory.
 - **Complete Status History**: Every action is logged, providing a full audit trail for each order.
 
@@ -82,7 +82,7 @@ The orders page shows all your confirmed orders, with clear status indicators an
 
 ![Orders Overview](terp_training_screenshots/04_orders_overview.webp)
 
-*Note: The detailed order view, including the fulfillment workflow and returns interface, appears to be under development as it currently returns a "Page Not Found" error. The functionality is built in the backend and will be accessible here once the UI is fully deployed.*
+_Note: The detailed order view, including the fulfillment workflow and returns interface, appears to be under development as it currently returns a "Page Not Found" error. The functionality is built in the backend and will be accessible here once the UI is fully deployed._
 
 ### Backend Intelligence
 
@@ -130,4 +130,3 @@ During our review, we noticed that some pages and features returned a "Page Not 
 This indicates that while the backend functionality for these features is in place, the user interface may not be fully deployed yet. This guide focuses on the features that are currently live and accessible. As the remaining pages are deployed, this guide will be updated.
 
 This concludes the initial version of the TERP Visual Training Guide. We will continue to expand this guide as more features become available.
-

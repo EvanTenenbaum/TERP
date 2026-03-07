@@ -15,7 +15,7 @@ import { AlertCircle } from "lucide-react";
 
 interface ShipOrderModalProps {
   orderId: number;
-  currentStatus: "PENDING" | "PACKED" | "SHIPPED";
+  currentStatus: "PENDING" | "READY_FOR_PACKING" | "PACKED" | "SHIPPED";
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -30,13 +30,16 @@ export function ShipOrderModal({
 }: ShipOrderModalProps) {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const normalizedCurrentStatus =
+    currentStatus === "PENDING" ? "READY_FOR_PACKING" : currentStatus;
 
   const updateStatus = trpc.orders.updateOrderStatus.useMutation();
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const newStatus = currentStatus === "PENDING" ? "PACKED" : "SHIPPED";
+      const newStatus =
+        normalizedCurrentStatus === "READY_FOR_PACKING" ? "PACKED" : "SHIPPED";
       await updateStatus.mutateAsync({
         orderId,
         newStatus,
@@ -59,9 +62,11 @@ export function ShipOrderModal({
   };
 
   const actionLabel =
-    currentStatus === "PENDING" ? "Mark as Packed" : "Mark as Shipped";
+    normalizedCurrentStatus === "READY_FOR_PACKING"
+      ? "Mark as Packed"
+      : "Mark as Shipped";
   const warningText =
-    currentStatus === "PACKED"
+    normalizedCurrentStatus === "PACKED"
       ? "This will decrement inventory quantities and cannot be undone."
       : "";
 

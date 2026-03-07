@@ -52,15 +52,7 @@ const createQuoteSchema = z.object({
 
 const listQuotesSchema = z.object({
   status: z
-    .enum([
-      "DRAFT",
-      "SENT",
-      "VIEWED",
-      "ACCEPTED",
-      "REJECTED",
-      "EXPIRED",
-      "CONVERTED",
-    ])
+    .enum(["UNSENT", "SENT", "VIEWED", "REJECTED", "EXPIRED", "CONVERTED"])
     .optional(),
   clientId: z.number().optional(),
   limit: z.number().min(1).max(100).default(50),
@@ -296,11 +288,17 @@ export const quotesRouter = router({
       const client = result.clients;
 
       // SM-001: Validate quote status transition using state machine
-      const currentStatus = quote.quoteStatus || "DRAFT";
+      if (!quote.quoteStatus) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Quote has no status set. Cannot transition to SENT.",
+        });
+      }
+      const currentStatus = quote.quoteStatus;
       if (!isValidStatusTransition("quote", currentStatus, "SENT")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Cannot send quote: invalid transition from ${currentStatus} to SENT. Quote may have already been sent, accepted, rejected, or converted.`,
+          message: `Cannot send quote: invalid transition from ${currentStatus} to SENT. Quote may have already been sent, converted, rejected, or expired.`,
         });
       }
 
@@ -475,11 +473,17 @@ export const quotesRouter = router({
       }
 
       // SM-001: Validate quote status transition using state machine
-      const currentStatus = quote.quoteStatus || "DRAFT";
-      if (!isValidStatusTransition("quote", currentStatus, "ACCEPTED")) {
+      if (!quote.quoteStatus) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Cannot accept quote: invalid transition from ${currentStatus} to ACCEPTED. Quote may have already been accepted, rejected, converted, or expired.`,
+          message: "Quote has no status set. Cannot transition to CONVERTED.",
+        });
+      }
+      const currentStatus = quote.quoteStatus;
+      if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot accept quote: invalid transition from ${currentStatus} to CONVERTED. Quote may have already been converted, rejected, or expired.`,
         });
       }
 
@@ -496,10 +500,13 @@ export const quotesRouter = router({
 
       await db
         .update(orders)
-        .set({ quoteStatus: "ACCEPTED" })
+        .set({ quoteStatus: "CONVERTED" })
         .where(eq(orders.id, input.id));
 
-      logger.info({ msg: "[Quotes] Quote accepted", quoteId: input.id });
+      logger.info({
+        msg: "[Quotes] Quote accepted/converted",
+        quoteId: input.id,
+      });
 
       return { success: true, quoteId: input.id };
     }),
@@ -530,7 +537,13 @@ export const quotesRouter = router({
       }
 
       // SM-001: Validate quote status transition using state machine
-      const currentStatus = quote.quoteStatus || "DRAFT";
+      if (!quote.quoteStatus) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Quote has no status set. Cannot transition to REJECTED.",
+        });
+      }
+      const currentStatus = quote.quoteStatus;
       if (!isValidStatusTransition("quote", currentStatus, "REJECTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",

@@ -2,7 +2,7 @@
  * WorkflowStatusTracker Component
  * TER-212: Canonical state machine visualization for Quote and Sale workflows
  *
- * Quote lifecycle:  Draft → Sent → Accepted → Converted (to Sale)
+ * Quote lifecycle:  Unsent → Sent → Viewed → Converted (to Sale)
  * Sale lifecycle:   Pending → Partial/Paid (payment) + Pending → Packed → Shipped (fulfillment)
  */
 
@@ -27,22 +27,24 @@ import {
 // ============================================================================
 
 type QuoteStatus =
-  | "DRAFT"
+  | "UNSENT"
   | "SENT"
   | "VIEWED"
-  | "ACCEPTED"
   | "REJECTED"
   | "EXPIRED"
   | "CONVERTED";
 type SaleStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED";
-type FulfillmentStatus = "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED";
+type FulfillmentStatus =
+  | "READY_FOR_PACKING"
+  | "PACKED"
+  | "SHIPPED"
+  | "CANCELLED";
 
 /** TER-212: Canonical state transition map — mirrors server/ordersDb.ts */
 export const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
-  DRAFT: ["SENT", "ACCEPTED", "REJECTED", "EXPIRED"],
-  SENT: ["VIEWED", "ACCEPTED", "REJECTED", "EXPIRED"],
-  VIEWED: ["ACCEPTED", "REJECTED", "EXPIRED"],
-  ACCEPTED: ["CONVERTED"],
+  UNSENT: ["SENT", "CONVERTED", "REJECTED", "EXPIRED"],
+  SENT: ["VIEWED", "CONVERTED", "REJECTED", "EXPIRED"],
+  VIEWED: ["CONVERTED", "REJECTED", "EXPIRED"],
   REJECTED: [],
   EXPIRED: [],
   CONVERTED: [],
@@ -60,7 +62,7 @@ export const FULFILLMENT_TRANSITIONS: Record<
   FulfillmentStatus,
   FulfillmentStatus[]
 > = {
-  PENDING: ["PACKED", "SHIPPED", "CANCELLED"],
+  READY_FOR_PACKING: ["PACKED", "SHIPPED", "CANCELLED"],
   PACKED: ["SHIPPED", "CANCELLED"],
   SHIPPED: [],
   CANCELLED: [],
@@ -77,16 +79,11 @@ interface StepConfig {
 }
 
 const QUOTE_STEPS: StepConfig[] = [
-  { key: "DRAFT", label: "Draft", icon: <FileText className="h-4 w-4" /> },
+  { key: "UNSENT", label: "Unsent", icon: <FileText className="h-4 w-4" /> },
   { key: "SENT", label: "Sent", icon: <Send className="h-4 w-4" /> },
   {
     key: "VIEWED",
     label: "Viewed",
-    icon: <CheckCircle2 className="h-4 w-4" />,
-  },
-  {
-    key: "ACCEPTED",
-    label: "Accepted",
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
   {
@@ -110,7 +107,11 @@ const QUOTE_TERMINAL_STEPS: Record<string, StepConfig> = {
 };
 
 const FULFILLMENT_STEPS: StepConfig[] = [
-  { key: "PENDING", label: "Pending", icon: <Clock className="h-4 w-4" /> },
+  {
+    key: "READY_FOR_PACKING",
+    label: "Ready for Packing",
+    icon: <Clock className="h-4 w-4" />,
+  },
   { key: "PACKED", label: "Packed", icon: <Package className="h-4 w-4" /> },
   { key: "SHIPPED", label: "Shipped", icon: <Truck className="h-4 w-4" /> },
 ];
@@ -181,7 +182,7 @@ export function QuoteWorkflowTracker({ status, className }: QuoteTrackerProps) {
     const terminalStep = QUOTE_TERMINAL_STEPS[status];
     // Show the happy path steps up to where it diverged, then the terminal step
     const completedUpTo =
-      status === "REJECTED" || status === "EXPIRED" ? "SENT" : "DRAFT";
+      status === "REJECTED" || status === "EXPIRED" ? "SENT" : "UNSENT";
     const happyIndex = QUOTE_STEPS.findIndex(s => s.key === completedUpTo);
 
     return (
@@ -260,8 +261,10 @@ export function SaleWorkflowTracker({
   fulfillmentStatus,
   className,
 }: SaleTrackerProps) {
+  const normalizedFulfillmentStatus =
+    fulfillmentStatus === "PENDING" ? "READY_FOR_PACKING" : fulfillmentStatus;
   const isCancelled =
-    saleStatus === "CANCELLED" || fulfillmentStatus === "CANCELLED";
+    saleStatus === "CANCELLED" || normalizedFulfillmentStatus === "CANCELLED";
 
   if (isCancelled) {
     return (
@@ -280,7 +283,7 @@ export function SaleWorkflowTracker({
   }
 
   const fulfillmentIndex = FULFILLMENT_STEPS.findIndex(
-    s => s.key === fulfillmentStatus
+    s => s.key === normalizedFulfillmentStatus
   );
   const paymentIndex = SALE_PAYMENT_STEPS.findIndex(
     s =>
@@ -293,8 +296,8 @@ export function SaleWorkflowTracker({
       <div className={cn("space-y-2", className)}>
         <WorkflowStep
           step={{
-            key: fulfillmentStatus,
-            label: `${fulfillmentStatus} / ${saleStatus}`,
+            key: normalizedFulfillmentStatus,
+            label: `${normalizedFulfillmentStatus} / ${saleStatus}`,
             icon: <AlertTriangle className="h-4 w-4" />,
           }}
           state="current"

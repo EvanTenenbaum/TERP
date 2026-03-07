@@ -268,7 +268,7 @@ export class OrderOrchestrator {
         cashPayment: cashPayment.toString(),
         dueDate,
         saleStatus,
-        fulfillmentStatus: "PENDING",
+        fulfillmentStatus: "READY_FOR_PACKING",
         notes: input.notes,
         createdBy: actorId,
         confirmedAt: new Date(),
@@ -302,7 +302,7 @@ export class OrderOrchestrator {
       // 11. Log status history
       await tx.insert(orderStatusHistory).values({
         orderId,
-        fulfillmentStatus: "PENDING",
+        fulfillmentStatus: "READY_FOR_PACKING",
         changedBy: actorId,
         notes: "Order created",
       });
@@ -315,7 +315,7 @@ export class OrderOrchestrator {
       return {
         id: orderId,
         orderNumber,
-        status: "PENDING",
+        status: "READY_FOR_PACKING",
         invoiceId,
       };
     });
@@ -376,7 +376,7 @@ export class OrderOrchestrator {
         totalMargin: totalMargin.toString(),
         avgMarginPercent: avgMarginPercent.toString(),
         validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
-        quoteStatus: input.orderType === "QUOTE" ? "DRAFT" : undefined,
+        quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
         paymentTerms: "NET_30",
         notes: input.notes,
         createdBy: actorId,
@@ -447,7 +447,7 @@ export class OrderOrchestrator {
           cashPayment: cashPayment.toString(),
           dueDate,
           saleStatus,
-          fulfillmentStatus: "PENDING",
+          fulfillmentStatus: "READY_FOR_PACKING",
           notes: input.notes || order.notes,
           confirmedAt: new Date(),
           version: sql`version + 1`,
@@ -480,7 +480,7 @@ export class OrderOrchestrator {
       // 10. Log status history
       await tx.insert(orderStatusHistory).values({
         orderId: input.orderId,
-        fulfillmentStatus: "PENDING",
+        fulfillmentStatus: "READY_FOR_PACKING",
         changedBy: actorId,
         notes: "Order confirmed",
       });
@@ -493,7 +493,7 @@ export class OrderOrchestrator {
       return {
         id: input.orderId,
         orderNumber: order.orderNumber || "",
-        status: "PENDING",
+        status: "READY_FOR_PACKING",
         invoiceId,
       };
     });
@@ -523,11 +523,11 @@ export class OrderOrchestrator {
 
       // 2. Validate state transition
       const currentStatus = (order.fulfillmentStatus ||
-        "PENDING") as FulfillmentStatus;
+        "READY_FOR_PACKING") as FulfillmentStatus;
       if (!canTransition(currentStatus, "SHIPPED")) {
         throw new Error(
           `Cannot ship order from ${currentStatus} status. ` +
-            `Valid transitions: PENDING → PACKED → SHIPPED`
+            `Valid transitions: READY_FOR_PACKING → PACKED → SHIPPED`
         );
       }
 
@@ -597,7 +597,7 @@ export class OrderOrchestrator {
 
       // 2. Validate state transition
       const currentStatus = (order.fulfillmentStatus ||
-        "PENDING") as FulfillmentStatus;
+        "READY_FOR_PACKING") as FulfillmentStatus;
       if (!canTransition(currentStatus, "DELIVERED")) {
         throw new Error(
           `Cannot mark order as delivered from ${currentStatus} status. ` +
@@ -671,7 +671,7 @@ export class OrderOrchestrator {
       // 2. Check if order can be cancelled
       const currentStatus = (order.fulfillmentStatus ||
         order.saleStatus ||
-        "PENDING") as FulfillmentStatus;
+        "READY_FOR_PACKING") as FulfillmentStatus;
       if (isTerminalStatus(currentStatus)) {
         throw new Error(
           `Cannot cancel order in ${currentStatus} status - it is a terminal state`
@@ -752,7 +752,7 @@ export class OrderOrchestrator {
 
       // 2. Check if order is in a terminal state or not pickable
       const currentStatus = (order.fulfillmentStatus ||
-        "PENDING") as FulfillmentStatus;
+        "READY_FOR_PACKING") as FulfillmentStatus;
 
       if (isTerminalStatus(currentStatus)) {
         throw new Error(
@@ -814,7 +814,7 @@ export class OrderOrchestrator {
       }
 
       // 5. Determine new status
-      const newStatus = allFullyPicked ? "PACKED" : "PENDING";
+      const newStatus = allFullyPicked ? "PACKED" : "READY_FOR_PACKING";
 
       // 6. Validate status transition using state machine (only if changing)
       if (
@@ -903,7 +903,7 @@ export class OrderOrchestrator {
 
       // 2. Validate state transition
       const currentStatus = (order.fulfillmentStatus ||
-        "PENDING") as FulfillmentStatus;
+        "READY_FOR_PACKING") as FulfillmentStatus;
 
       if (!canTransition(currentStatus, "RETURNED")) {
         throw new Error(

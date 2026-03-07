@@ -14,7 +14,7 @@ export function InboxWidget() {
     includeArchived: false,
     limit: 5, // Only fetch 5 items for widget
   });
-  
+
   // Extract items from paginated response
   const items = itemsData?.items ?? [];
 
@@ -24,11 +24,11 @@ export function InboxWidget() {
       refetch();
     },
   });
-  
+
   // Display items (already limited by query)
   const displayItems = items;
 
-  const unreadCount = displayItems.filter((item) => !item.seenAt).length;
+  const unreadCount = displayItems.filter(item => !item.seenAt).length;
 
   const handleItemClick = (item: (typeof items)[0]) => {
     // Mark as seen
@@ -37,7 +37,10 @@ export function InboxWidget() {
     }
 
     // Navigate to the entity based on sourceType and referenceType
-    if (item.sourceType === "task_assignment" || item.sourceType === "task_update") {
+    if (
+      item.sourceType === "task_assignment" ||
+      item.sourceType === "task_update"
+    ) {
       setLocation(`/todos/${item.referenceId || ""}`);
     } else if (item.sourceType === "mention") {
       // Navigate based on reference type
@@ -84,7 +87,7 @@ export function InboxWidget() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setLocation("/inbox")}
+          onClick={() => setLocation("/notifications")}
           className="h-8"
         >
           View All
@@ -104,7 +107,7 @@ export function InboxWidget() {
           </div>
         ) : (
           <div className="space-y-2">
-            {displayItems.map((item) => (
+            {displayItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item)}

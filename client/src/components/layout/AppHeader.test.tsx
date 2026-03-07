@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { AppHeader } from "./AppHeader";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
@@ -90,6 +90,12 @@ describe("AppHeader - Notification Bell", () => {
     vi.clearAllMocks();
   });
 
+  const openAccountMenu = () => {
+    const trigger = screen.getByRole("button", { name: /test user/i });
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+  };
+
   it("renders the notification bell with unread badge", () => {
     render(
       <ThemeProvider>
@@ -106,5 +112,18 @@ describe("AppHeader - Notification Bell", () => {
 
     const densityToggle = screen.getByTestId("density-toggle-button");
     expect(densityToggle).toBeInTheDocument();
+  });
+
+  it("routes notification preferences through account", () => {
+    render(
+      <ThemeProvider>
+        <AppHeader />
+      </ThemeProvider>
+    );
+
+    openAccountMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /notifications/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/account");
   });
 });

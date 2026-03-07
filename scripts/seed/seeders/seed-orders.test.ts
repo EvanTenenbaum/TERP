@@ -12,7 +12,11 @@
 
 import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
-import { generateOrderItems, generateOrder, type BatchWithMetadata, type OrderItem, type OrderData } from "./seed-orders";
+import {
+  generateOrderItems,
+  generateOrder,
+  type BatchWithMetadata,
+} from "./seed-orders";
 
 // ============================================================================
 // Arbitraries (Generators)
@@ -53,8 +57,12 @@ const strainNameArb = fc.constantFrom<string | null>(
 const batchWithMetadataArb: fc.Arbitrary<BatchWithMetadata> = fc.record({
   id: fc.integer({ min: 1, max: 10000 }),
   productId: fc.integer({ min: 1, max: 10000 }),
-  unitCogs: fc.float({ min: Math.fround(50), max: Math.fround(2000), noNaN: true }).map(n => n.toFixed(2)),
-  onHandQty: fc.float({ min: Math.fround(1), max: Math.fround(1000), noNaN: true }).map(n => n.toFixed(2)),
+  unitCogs: fc
+    .float({ min: Math.fround(50), max: Math.fround(2000), noNaN: true })
+    .map(n => n.toFixed(2)),
+  onHandQty: fc
+    .float({ min: Math.fround(1), max: Math.fround(1000), noNaN: true })
+    .map(n => n.toFixed(2)),
   grade: gradeArb,
   productName: fc.stringMatching(/^Product-[A-Z]{3}-[0-9]{3}$/),
   category: categoryArb,
@@ -66,7 +74,10 @@ const batchWithMetadataArb: fc.Arbitrary<BatchWithMetadata> = fc.record({
 /**
  * Generate an array of batches with metadata
  */
-const batchArrayArb = fc.array(batchWithMetadataArb, { minLength: 1, maxLength: 20 });
+const batchArrayArb = fc.array(batchWithMetadataArb, {
+  minLength: 1,
+  maxLength: 20,
+});
 
 // ============================================================================
 // Property Tests
@@ -175,7 +186,7 @@ describe("Order Items Product Metadata", () => {
             for (let i = 0; i < items.length; i++) {
               const item = items[i];
               const sourceBatch = batches[i % batches.length];
-              
+
               if (sourceBatch.strainName) {
                 expect(item.displayName).toBe(sourceBatch.strainName);
               } else if (sourceBatch.category) {
@@ -268,7 +279,10 @@ describe("Order Items Product Metadata", () => {
 
             // Property: subtotal should equal sum of all lineTotals
             // Using 0 decimal places due to accumulated floating-point errors
-            const expectedSubtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+            const expectedSubtotal = items.reduce(
+              (sum, item) => sum + item.lineTotal,
+              0
+            );
             expect(subtotal).toBeCloseTo(expectedSubtotal, 0);
           }
         ),
@@ -286,7 +300,10 @@ describe("Order Items Product Metadata", () => {
 
             // Property: totalCogs should equal sum of all lineCogs
             // Using 0 decimal places due to accumulated floating-point errors
-            const expectedTotalCogs = items.reduce((sum, item) => sum + item.lineCogs, 0);
+            const expectedTotalCogs = items.reduce(
+              (sum, item) => sum + item.lineCogs,
+              0
+            );
             expect(totalCogs).toBeCloseTo(expectedTotalCogs, 0);
           }
         ),
@@ -357,7 +374,6 @@ describe("Order Items Product Metadata", () => {
   });
 });
 
-
 describe("Draft Orders and Today's Orders", () => {
   /**
    * **Feature: data-completeness-fix, Property 5: Draft Orders Presence**
@@ -373,7 +389,9 @@ describe("Draft Orders and Today's Orders", () => {
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isDraft: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isDraft: true,
+            });
 
             // Property: Draft orders should have isDraft: true
             expect(order.isDraft).toBe(true);
@@ -389,7 +407,9 @@ describe("Draft Orders and Today's Orders", () => {
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isDraft: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isDraft: true,
+            });
 
             // Property: Draft orders should have null saleStatus
             expect(order.saleStatus).toBeNull();
@@ -399,16 +419,18 @@ describe("Draft Orders and Today's Orders", () => {
       );
     });
 
-    it("should set quoteStatus to DRAFT for draft orders", () => {
+    it("should set quoteStatus to UNSENT for draft orders", () => {
       fc.assert(
         fc.property(
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isDraft: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isDraft: true,
+            });
 
-            // Property: Draft orders should have quoteStatus: "DRAFT"
-            expect(order.quoteStatus).toBe("DRAFT");
+            // Property: Draft orders should have quoteStatus: "UNSENT"
+            expect(order.quoteStatus).toBe("UNSENT");
           }
         ),
         { numRuns: 100 }
@@ -421,7 +443,9 @@ describe("Draft Orders and Today's Orders", () => {
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isDraft: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isDraft: true,
+            });
 
             // Property: Draft orders should have orderType: "QUOTE"
             expect(order.orderType).toBe("QUOTE");
@@ -446,12 +470,14 @@ describe("Draft Orders and Today's Orders", () => {
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isToday: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isToday: true,
+            });
 
             // Property: Today's orders should have today's date
             const today = new Date();
             const orderDate = new Date(order.createdAt);
-            
+
             expect(orderDate.getFullYear()).toBe(today.getFullYear());
             expect(orderDate.getMonth()).toBe(today.getMonth());
             expect(orderDate.getDate()).toBe(today.getDate());
@@ -467,7 +493,9 @@ describe("Draft Orders and Today's Orders", () => {
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isToday: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isToday: true,
+            });
 
             // Property: Today's orders should not be drafts
             expect(order.isDraft).toBe(false);
@@ -484,7 +512,9 @@ describe("Draft Orders and Today's Orders", () => {
           batchArrayArb,
           fc.integer({ min: 1, max: 1000 }),
           (batches, clientId) => {
-            const order = generateOrder(0, clientId, batches, false, { isToday: true });
+            const order = generateOrder(0, clientId, batches, false, {
+              isToday: true,
+            });
 
             // Property: Today's orders should have a valid saleStatus
             const validStatuses = ["PENDING", "PARTIAL", "PAID", "OVERDUE"];

@@ -26,6 +26,7 @@ import {
   date,
   index,
   unique,
+  foreignKey,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 import { users, clients, invoices, products, orders } from "./schema";
@@ -65,7 +66,10 @@ export const invoiceDisputes = mysqlTable(
     disputeNumber: varchar("dispute_number", { length: 50 }).notNull().unique(),
     disputeStatus: disputeStatusEnum.notNull().default("OPEN"),
     disputeReason: text("dispute_reason").notNull(),
-    disputedAmount: decimal("disputed_amount", { precision: 15, scale: 2 }).notNull(),
+    disputedAmount: decimal("disputed_amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
     // Resolution tracking
     resolutionNotes: text("resolution_notes"),
@@ -82,7 +86,7 @@ export const invoiceDisputes = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     invoiceIdIdx: index("idx_invoice_disputes_invoice").on(table.invoiceId),
     clientIdIdx: index("idx_invoice_disputes_client").on(table.clientId),
     statusIdx: index("idx_invoice_disputes_status").on(table.disputeStatus),
@@ -113,7 +117,7 @@ export const disputeAttachments = mysqlTable(
       .references(() => users.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     disputeIdIdx: index("idx_dispute_attachments_dispute").on(table.disputeId),
   })
 );
@@ -139,7 +143,7 @@ export const disputeNotes = mysqlTable(
       .references(() => users.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     disputeIdIdx: index("idx_dispute_notes_dispute").on(table.disputeId),
     createdAtIdx: index("idx_dispute_notes_created").on(table.createdAt),
   })
@@ -156,10 +160,7 @@ export type InsertDisputeNote = typeof disputeNotes.$inferInsert;
  * Fee Type Enum
  * Defines how transaction fees are calculated
  */
-export const feeTypeEnum = mysqlEnum("fee_type", [
-  "PERCENTAGE",
-  "FLAT",
-]);
+export const feeTypeEnum = mysqlEnum("fee_type", ["PERCENTAGE", "FLAT"]);
 
 /**
  * Client Transaction Fees Table
@@ -176,7 +177,9 @@ export const clientTransactionFees = mysqlTable(
 
     // Fee configuration
     feeType: feeTypeEnum.notNull().default("PERCENTAGE"),
-    feeValue: decimal("fee_value", { precision: 10, scale: 4 }).notNull().default("0"),
+    feeValue: decimal("fee_value", { precision: 10, scale: 4 })
+      .notNull()
+      .default("0"),
     minFee: decimal("min_fee", { precision: 10, scale: 2 }),
     maxFee: decimal("max_fee", { precision: 10, scale: 2 }),
 
@@ -192,14 +195,15 @@ export const clientTransactionFees = mysqlTable(
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
     createdBy: int("created_by").references(() => users.id),
   },
-  (table) => ({
+  table => ({
     clientIdIdx: index("idx_client_fees_client").on(table.clientId),
     isActiveIdx: index("idx_client_fees_active").on(table.isActive),
   })
 );
 
 export type ClientTransactionFee = typeof clientTransactionFees.$inferSelect;
-export type InsertClientTransactionFee = typeof clientTransactionFees.$inferInsert;
+export type InsertClientTransactionFee =
+  typeof clientTransactionFees.$inferInsert;
 
 /**
  * Order Transaction Fees Table
@@ -212,13 +216,18 @@ export const orderTransactionFees = mysqlTable(
     orderId: int("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    clientFeeConfigId: int("client_fee_config_id")
-      .references(() => clientTransactionFees.id, { onDelete: "set null" }),
+    clientFeeConfigId: int("client_fee_config_id").references(
+      () => clientTransactionFees.id,
+      { onDelete: "set null" }
+    ),
 
     // Fee details at time of order
     feeType: feeTypeEnum.notNull(),
     feeRate: decimal("fee_rate", { precision: 10, scale: 4 }).notNull(),
-    orderSubtotal: decimal("order_subtotal", { precision: 15, scale: 2 }).notNull(),
+    orderSubtotal: decimal("order_subtotal", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
     feeAmount: decimal("fee_amount", { precision: 15, scale: 2 }).notNull(),
 
     // Override tracking
@@ -228,14 +237,17 @@ export const orderTransactionFees = mysqlTable(
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     orderIdIdx: index("idx_order_fees_order").on(table.orderId),
-    clientFeeIdx: index("idx_order_fees_client_config").on(table.clientFeeConfigId),
+    clientFeeIdx: index("idx_order_fees_client_config").on(
+      table.clientFeeConfigId
+    ),
   })
 );
 
 export type OrderTransactionFee = typeof orderTransactionFees.$inferSelect;
-export type InsertOrderTransactionFee = typeof orderTransactionFees.$inferInsert;
+export type InsertOrderTransactionFee =
+  typeof orderTransactionFees.$inferInsert;
 
 // ============================================================================
 // 5.D.3: MEET-035 - Payment Terms
@@ -279,7 +291,10 @@ export const clientPaymentTermsConfig = mysqlTable(
     consignmentLimit: decimal("consignment_limit", { precision: 15, scale: 2 }),
 
     // Cash discount
-    earlyPaymentDiscount: decimal("early_payment_discount", { precision: 5, scale: 2 }),
+    earlyPaymentDiscount: decimal("early_payment_discount", {
+      precision: 5,
+      scale: 2,
+    }),
     earlyPaymentDays: int("early_payment_days"),
 
     // Late fee
@@ -287,7 +302,9 @@ export const clientPaymentTermsConfig = mysqlTable(
     lateFeeGraceDays: int("late_fee_grace_days").default(0),
 
     // Display settings
-    showTermsOnInvoice: boolean("show_terms_on_invoice").default(true).notNull(),
+    showTermsOnInvoice: boolean("show_terms_on_invoice")
+      .default(true)
+      .notNull(),
     customTermsText: text("custom_terms_text"),
 
     notes: text("notes"),
@@ -295,13 +312,15 @@ export const clientPaymentTermsConfig = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     clientIdIdx: index("idx_payment_terms_client").on(table.clientId),
   })
 );
 
-export type ClientPaymentTermsConfig = typeof clientPaymentTermsConfig.$inferSelect;
-export type InsertClientPaymentTermsConfig = typeof clientPaymentTermsConfig.$inferInsert;
+export type ClientPaymentTermsConfig =
+  typeof clientPaymentTermsConfig.$inferSelect;
+export type InsertClientPaymentTermsConfig =
+  typeof clientPaymentTermsConfig.$inferInsert;
 
 // ============================================================================
 // 5.D.4: MEET-032 - Customizable Categories (Hierarchy)
@@ -339,7 +358,7 @@ export const productCategories = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     parentIdIdx: index("idx_product_categories_parent").on(table.parentId),
     levelIdx: index("idx_product_categories_level").on(table.level),
     slugIdx: index("idx_product_categories_slug").on(table.slug),
@@ -367,7 +386,7 @@ export const productCategoryAssignments = mysqlTable(
     isPrimary: boolean("is_primary").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     productIdIdx: index("idx_pca_product").on(table.productId),
     categoryIdIdx: index("idx_pca_category").on(table.categoryId),
     uniqueAssignment: unique("unique_product_category").on(
@@ -377,8 +396,10 @@ export const productCategoryAssignments = mysqlTable(
   })
 );
 
-export type ProductCategoryAssignment = typeof productCategoryAssignments.$inferSelect;
-export type InsertProductCategoryAssignment = typeof productCategoryAssignments.$inferInsert;
+export type ProductCategoryAssignment =
+  typeof productCategoryAssignments.$inferSelect;
+export type InsertProductCategoryAssignment =
+  typeof productCategoryAssignments.$inferInsert;
 
 // ============================================================================
 // 5.D.5: MEET-070 - Product Grades
@@ -401,8 +422,14 @@ export const productGrades = mysqlTable(
     color: varchar("color", { length: 20 }),
 
     // Pricing modifiers
-    pricingMultiplier: decimal("pricing_multiplier", { precision: 5, scale: 4 }).default("1.0000"),
-    suggestedMarkupPercent: decimal("suggested_markup_percent", { precision: 5, scale: 2 }),
+    pricingMultiplier: decimal("pricing_multiplier", {
+      precision: 5,
+      scale: 4,
+    }).default("1.0000"),
+    suggestedMarkupPercent: decimal("suggested_markup_percent", {
+      precision: 5,
+      scale: 2,
+    }),
 
     // Status
     isActive: boolean("is_active").default(true).notNull(),
@@ -411,7 +438,7 @@ export const productGrades = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     codeIdx: index("idx_product_grades_code").on(table.code),
     sortOrderIdx: index("idx_product_grades_sort").on(table.sortOrder),
   })
@@ -456,7 +483,9 @@ export const serviceDefinitions = mysqlTable(
     serviceType: serviceTypeEnum.notNull(),
 
     // Default pricing
-    defaultPrice: decimal("default_price", { precision: 15, scale: 2 }).notNull().default("0"),
+    defaultPrice: decimal("default_price", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0"),
     pricingUnit: varchar("pricing_unit", { length: 50 }).default("each"), // each, per lb, per hour, etc.
 
     // Tax settings
@@ -470,7 +499,7 @@ export const serviceDefinitions = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     codeIdx: index("idx_service_definitions_code").on(table.code),
     typeIdx: index("idx_service_definitions_type").on(table.serviceType),
     isActiveIdx: index("idx_service_definitions_active").on(table.isActive),
@@ -491,8 +520,7 @@ export const orderServiceCharges = mysqlTable(
     orderId: int("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    serviceDefinitionId: int("service_definition_id")
-      .references(() => serviceDefinitions.id, { onDelete: "set null" }),
+    serviceDefinitionId: int("service_definition_id"),
 
     // Service details
     serviceName: varchar("service_name", { length: 100 }).notNull(),
@@ -500,7 +528,9 @@ export const orderServiceCharges = mysqlTable(
     description: text("description"),
 
     // Pricing
-    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull().default("1"),
+    quantity: decimal("quantity", { precision: 10, scale: 2 })
+      .notNull()
+      .default("1"),
     unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
     totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
 
@@ -511,10 +541,18 @@ export const orderServiceCharges = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     createdBy: int("created_by").references(() => users.id),
   },
-  (table) => ({
+  table => ({
     orderIdIdx: index("idx_order_services_order").on(table.orderId),
-    serviceDefIdx: index("idx_order_services_definition").on(table.serviceDefinitionId),
+    serviceDefIdx: index("idx_order_services_definition").on(
+      table.serviceDefinitionId
+    ),
     typeIdx: index("idx_order_services_type").on(table.serviceType),
+    // Explicitly name FK to stay under MySQL's 64-char identifier limit.
+    serviceDefinitionFk: foreignKey({
+      name: "fk_order_services_definition",
+      columns: [table.serviceDefinitionId],
+      foreignColumns: [serviceDefinitions.id],
+    }).onDelete("set null"),
   })
 );
 
@@ -542,7 +580,9 @@ export const serviceInvoices = mysqlTable(
     subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
     taxAmount: decimal("tax_amount", { precision: 15, scale: 2 }).default("0"),
     totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
-    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default("0"),
+    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default(
+      "0"
+    ),
     amountDue: decimal("amount_due", { precision: 15, scale: 2 }).notNull(),
 
     // Status
@@ -566,7 +606,7 @@ export const serviceInvoices = mysqlTable(
       .notNull()
       .references(() => users.id),
   },
-  (table) => ({
+  table => ({
     clientIdIdx: index("idx_service_invoices_client").on(table.clientId),
     statusIdx: index("idx_service_invoices_status").on(table.status),
     dateIdx: index("idx_service_invoices_date").on(table.invoiceDate),
@@ -586,26 +626,32 @@ export const serviceInvoiceLineItems = mysqlTable(
     serviceInvoiceId: int("service_invoice_id")
       .notNull()
       .references(() => serviceInvoices.id, { onDelete: "cascade" }),
-    serviceDefinitionId: int("service_definition_id")
-      .references(() => serviceDefinitions.id, { onDelete: "set null" }),
+    serviceDefinitionId: int("service_definition_id").references(
+      () => serviceDefinitions.id,
+      { onDelete: "set null" }
+    ),
 
     serviceName: varchar("service_name", { length: 100 }).notNull(),
     serviceType: serviceTypeEnum.notNull(),
     description: text("description"),
 
-    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull().default("1"),
+    quantity: decimal("quantity", { precision: 10, scale: 2 })
+      .notNull()
+      .default("1"),
     unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
     lineTotal: decimal("line_total", { precision: 15, scale: 2 }).notNull(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     invoiceIdIdx: index("idx_sili_invoice").on(table.serviceInvoiceId),
   })
 );
 
-export type ServiceInvoiceLineItem = typeof serviceInvoiceLineItems.$inferSelect;
-export type InsertServiceInvoiceLineItem = typeof serviceInvoiceLineItems.$inferInsert;
+export type ServiceInvoiceLineItem =
+  typeof serviceInvoiceLineItems.$inferSelect;
+export type InsertServiceInvoiceLineItem =
+  typeof serviceInvoiceLineItems.$inferInsert;
 
 // ============================================================================
 // 5.D.7: MEET-019 - Crypto Payment Tracking
@@ -634,12 +680,14 @@ export const cryptoPayments = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
 
     // Link to standard payment record
-    paymentId: int("payment_id")
-      .references(() => invoices.id, { onDelete: "cascade" }), // Actually references payments table
+    paymentId: int("payment_id").references(() => invoices.id, {
+      onDelete: "cascade",
+    }), // Actually references payments table
 
     // Or standalone crypto record for non-invoice payments
-    clientId: int("client_id")
-      .references(() => clients.id, { onDelete: "cascade" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
 
     // Crypto details
     cryptoCurrency: cryptoCurrencyEnum.notNull(),
@@ -647,9 +695,15 @@ export const cryptoPayments = mysqlTable(
     transactionHash: varchar("transaction_hash", { length: 255 }),
 
     // Amounts
-    cryptoAmount: decimal("crypto_amount", { precision: 20, scale: 8 }).notNull(),
+    cryptoAmount: decimal("crypto_amount", {
+      precision: 20,
+      scale: 8,
+    }).notNull(),
     usdAmount: decimal("usd_amount", { precision: 15, scale: 2 }).notNull(),
-    exchangeRate: decimal("exchange_rate", { precision: 20, scale: 8 }).notNull(),
+    exchangeRate: decimal("exchange_rate", {
+      precision: 20,
+      scale: 8,
+    }).notNull(),
 
     // Tracking
     networkFee: decimal("network_fee", { precision: 20, scale: 8 }),
@@ -665,7 +719,7 @@ export const cryptoPayments = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     paymentIdIdx: index("idx_crypto_payments_payment").on(table.paymentId),
     clientIdIdx: index("idx_crypto_payments_client").on(table.clientId),
     currencyIdx: index("idx_crypto_payments_currency").on(table.cryptoCurrency),
@@ -698,7 +752,7 @@ export const clientCryptoWallets = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     clientIdIdx: index("idx_client_wallets_client").on(table.clientId),
     currencyIdx: index("idx_client_wallets_currency").on(table.cryptoCurrency),
     uniqueWallet: unique("unique_client_wallet").on(
@@ -738,10 +792,12 @@ export const installmentPlans = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
 
     // Link to invoice or order
-    invoiceId: int("invoice_id")
-      .references(() => invoices.id, { onDelete: "cascade" }),
-    orderId: int("order_id")
-      .references(() => orders.id, { onDelete: "cascade" }),
+    invoiceId: int("invoice_id").references(() => invoices.id, {
+      onDelete: "cascade",
+    }),
+    orderId: int("order_id").references(() => orders.id, {
+      onDelete: "cascade",
+    }),
     clientId: int("client_id")
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
@@ -755,15 +811,23 @@ export const installmentPlans = mysqlTable(
       "BIWEEKLY",
       "MONTHLY",
       "CUSTOM",
-    ]).notNull().default("MONTHLY"),
+    ])
+      .notNull()
+      .default("MONTHLY"),
 
     // First payment
     firstPaymentDate: date("first_payment_date").notNull(),
-    downPaymentAmount: decimal("down_payment_amount", { precision: 15, scale: 2 }).default("0"),
+    downPaymentAmount: decimal("down_payment_amount", {
+      precision: 15,
+      scale: 2,
+    }).default("0"),
 
     // Tracking
     totalPaid: decimal("total_paid", { precision: 15, scale: 2 }).default("0"),
-    remainingBalance: decimal("remaining_balance", { precision: 15, scale: 2 }).notNull(),
+    remainingBalance: decimal("remaining_balance", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
     // Status
     status: mysqlEnum("plan_status", [
@@ -771,11 +835,18 @@ export const installmentPlans = mysqlTable(
       "COMPLETED",
       "DEFAULTED",
       "CANCELLED",
-    ]).notNull().default("ACTIVE"),
+    ])
+      .notNull()
+      .default("ACTIVE"),
 
     // Interest/fees
-    interestRate: decimal("interest_rate", { precision: 5, scale: 2 }).default("0"),
-    lateFeeAmount: decimal("late_fee_amount", { precision: 10, scale: 2 }).default("0"),
+    interestRate: decimal("interest_rate", { precision: 5, scale: 2 }).default(
+      "0"
+    ),
+    lateFeeAmount: decimal("late_fee_amount", {
+      precision: 10,
+      scale: 2,
+    }).default("0"),
 
     notes: text("notes"),
     deletedAt: timestamp("deleted_at"),
@@ -785,7 +856,7 @@ export const installmentPlans = mysqlTable(
       .notNull()
       .references(() => users.id),
   },
-  (table) => ({
+  table => ({
     invoiceIdIdx: index("idx_installment_plans_invoice").on(table.invoiceId),
     orderIdIdx: index("idx_installment_plans_order").on(table.orderId),
     clientIdIdx: index("idx_installment_plans_client").on(table.clientId),
@@ -814,7 +885,9 @@ export const installments = mysqlTable(
     amountDue: decimal("amount_due", { precision: 15, scale: 2 }).notNull(),
 
     // Payment tracking
-    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default("0"),
+    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default(
+      "0"
+    ),
     paidDate: date("paid_date"),
     paymentId: int("payment_id"), // Link to payments table when paid
 
@@ -822,14 +895,17 @@ export const installments = mysqlTable(
     status: installmentStatusEnum.notNull().default("SCHEDULED"),
 
     // Late fee tracking
-    lateFeeApplied: decimal("late_fee_applied", { precision: 10, scale: 2 }).default("0"),
+    lateFeeApplied: decimal("late_fee_applied", {
+      precision: 10,
+      scale: 2,
+    }).default("0"),
     reminderSentAt: timestamp("reminder_sent_at"),
 
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     planIdIdx: index("idx_installments_plan").on(table.planId),
     dueDateIdx: index("idx_installments_due_date").on(table.dueDate),
     statusIdx: index("idx_installments_status").on(table.status),
@@ -843,56 +919,65 @@ export type InsertInstallment = typeof installments.$inferInsert;
 // Relations
 // ============================================================================
 
-export const invoiceDisputesRelations = relations(invoiceDisputes, ({ one, many }) => ({
-  invoice: one(invoices, {
-    fields: [invoiceDisputes.invoiceId],
-    references: [invoices.id],
-  }),
-  client: one(clients, {
-    fields: [invoiceDisputes.clientId],
-    references: [clients.id],
-  }),
-  creator: one(users, {
-    fields: [invoiceDisputes.createdBy],
-    references: [users.id],
-    relationName: "disputeCreator",
-  }),
-  resolver: one(users, {
-    fields: [invoiceDisputes.resolvedBy],
-    references: [users.id],
-    relationName: "disputeResolver",
-  }),
-  assignee: one(users, {
-    fields: [invoiceDisputes.assignedTo],
-    references: [users.id],
-    relationName: "disputeAssignee",
-  }),
-  attachments: many(disputeAttachments),
-  notes: many(disputeNotes),
-}));
+export const invoiceDisputesRelations = relations(
+  invoiceDisputes,
+  ({ one, many }) => ({
+    invoice: one(invoices, {
+      fields: [invoiceDisputes.invoiceId],
+      references: [invoices.id],
+    }),
+    client: one(clients, {
+      fields: [invoiceDisputes.clientId],
+      references: [clients.id],
+    }),
+    creator: one(users, {
+      fields: [invoiceDisputes.createdBy],
+      references: [users.id],
+      relationName: "disputeCreator",
+    }),
+    resolver: one(users, {
+      fields: [invoiceDisputes.resolvedBy],
+      references: [users.id],
+      relationName: "disputeResolver",
+    }),
+    assignee: one(users, {
+      fields: [invoiceDisputes.assignedTo],
+      references: [users.id],
+      relationName: "disputeAssignee",
+    }),
+    attachments: many(disputeAttachments),
+    notes: many(disputeNotes),
+  })
+);
 
-export const productCategoriesRelations = relations(productCategories, ({ one, many }) => ({
-  parent: one(productCategories, {
-    fields: [productCategories.parentId],
-    references: [productCategories.id],
-    relationName: "categoryHierarchy",
-  }),
-  children: many(productCategories, { relationName: "categoryHierarchy" }),
-  assignments: many(productCategoryAssignments),
-}));
+export const productCategoriesRelations = relations(
+  productCategories,
+  ({ one, many }) => ({
+    parent: one(productCategories, {
+      fields: [productCategories.parentId],
+      references: [productCategories.id],
+      relationName: "categoryHierarchy",
+    }),
+    children: many(productCategories, { relationName: "categoryHierarchy" }),
+    assignments: many(productCategoryAssignments),
+  })
+);
 
-export const installmentPlansRelations = relations(installmentPlans, ({ one, many }) => ({
-  invoice: one(invoices, {
-    fields: [installmentPlans.invoiceId],
-    references: [invoices.id],
-  }),
-  order: one(orders, {
-    fields: [installmentPlans.orderId],
-    references: [orders.id],
-  }),
-  client: one(clients, {
-    fields: [installmentPlans.clientId],
-    references: [clients.id],
-  }),
-  installments: many(installments),
-}));
+export const installmentPlansRelations = relations(
+  installmentPlans,
+  ({ one, many }) => ({
+    invoice: one(invoices, {
+      fields: [installmentPlans.invoiceId],
+      references: [invoices.id],
+    }),
+    order: one(orders, {
+      fields: [installmentPlans.orderId],
+      references: [orders.id],
+    }),
+    client: one(clients, {
+      fields: [installmentPlans.clientId],
+      references: [clients.id],
+    }),
+    installments: many(installments),
+  })
+);

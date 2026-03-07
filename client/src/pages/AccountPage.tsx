@@ -10,9 +10,9 @@ import { ProfileSection } from "@/components/account/ProfileSection";
 import { PasswordChangeSection } from "@/components/account/PasswordChangeSection";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 import {
   Bell,
-  Settings,
   User,
   Shield,
   Palette,
@@ -119,13 +119,9 @@ export default function AccountPage() {
                 <CardDescription>Customize the app appearance</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link
-                  href="/settings?tab=organization"
-                  className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                >
-                  Manage theme settings
-                  <Settings className="h-3 w-3" />
-                </Link>
+                <p className="text-sm text-muted-foreground">
+                  Use the theme toggle in the header to switch appearance.
+                </p>
               </CardContent>
             </Card>
 
@@ -172,16 +168,25 @@ export default function AccountPage() {
                 <CardDescription>Manage how you receive alerts</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link
-                  href="/settings?tab=notifications"
-                  className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                >
-                  Manage notification preferences
-                  <Settings className="h-3 w-3" />
-                </Link>
+                <p className="text-sm text-muted-foreground">
+                  Your personal notification preferences are managed below.
+                </p>
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        <Separator />
+
+        <section id="notification-preferences">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">Notification Preferences</h2>
+            <Badge variant="outline" className="ml-2">
+              Personal
+            </Badge>
+          </div>
+          <NotificationPreferencesPage />
         </section>
       </div>
     </div>

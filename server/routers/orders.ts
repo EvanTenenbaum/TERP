@@ -1276,7 +1276,7 @@ export const ordersRouter = router({
             .set({
               isDraft: false,
               confirmedAt: new Date(),
-              fulfillmentStatus: "PENDING",
+              fulfillmentStatus: "READY_FOR_PACKING",
               version: sqlFn`version + 1`,
             })
             .where(eq(orders.id, input.orderId));
@@ -1475,7 +1475,12 @@ export const ordersRouter = router({
       z.object({
         orderId: z.number(),
         // ORD-003: Added CANCELLED for order cancellation before shipping
-        newStatus: z.enum(["PENDING", "PACKED", "SHIPPED", "CANCELLED"]),
+        newStatus: z.enum([
+          "READY_FOR_PACKING",
+          "PACKED",
+          "SHIPPED",
+          "CANCELLED",
+        ]),
         notes: z.string().optional(),
       })
     )
@@ -1684,7 +1689,7 @@ export const ordersRouter = router({
 
           if (
             order.saleStatus !== "PENDING" &&
-            order.fulfillmentStatus !== "PENDING"
+            order.fulfillmentStatus !== "READY_FOR_PACKING"
           ) {
             throw new TRPCError({
               code: "BAD_REQUEST",
@@ -1786,7 +1791,7 @@ export const ordersRouter = router({
             .update(orders)
             .set({
               confirmedAt: new Date(),
-              fulfillmentStatus: "PENDING",
+              fulfillmentStatus: "READY_FOR_PACKING",
               notes: input.notes
                 ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
                 : order.notes,
@@ -2336,7 +2341,7 @@ export const ordersRouter = router({
       const { getNextStatuses, STATUS_LABELS } =
         await import("../services/orderStateMachine");
       const nextStatuses = getNextStatuses(
-        order.fulfillmentStatus || "PENDING"
+        order.fulfillmentStatus || "READY_FOR_PACKING"
       );
 
       return nextStatuses.map(status => ({
@@ -2392,12 +2397,7 @@ export const ordersRouter = router({
         }
 
         // Only allow allocation for draft orders or orders awaiting fulfillment
-        const editableStatuses = [
-          "DRAFT",
-          "PENDING",
-          "PROCESSING",
-          "CONFIRMED",
-        ];
+        const editableStatuses = ["DRAFT", "READY_FOR_PACKING", "CONFIRMED"];
         if (!editableStatuses.includes(order.fulfillmentStatus || "")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
