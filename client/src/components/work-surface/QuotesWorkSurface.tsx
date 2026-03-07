@@ -184,7 +184,7 @@ const formatDate = (dateString: string | undefined): string => {
 // ============================================================================
 
 function QuoteStatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.UNSENT;
   return (
     <Badge variant="outline" className={cn("gap-1", config.color)}>
       {config.icon}

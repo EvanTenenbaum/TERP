@@ -74,7 +74,7 @@ export interface OrderData {
   dueDate: Date | null;
   saleStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED" | null;
   invoiceId: number | null;
-  fulfillmentStatus?: "PENDING" | "PACKED" | "SHIPPED" | null;
+  fulfillmentStatus?: "READY_FOR_PACKING" | "PACKED" | "SHIPPED" | null;
   createdBy: number;
   createdAt: Date;
 }
@@ -271,7 +271,7 @@ export function generateOrders(
       dueDate,
       saleStatus: "PAID",
       invoiceId: null, // Will be set when invoices are generated
-      fulfillmentStatus: "PENDING",
+      fulfillmentStatus: "READY_FOR_PACKING",
       createdBy: 1, // Default admin user
       createdAt: orderDate,
     });
