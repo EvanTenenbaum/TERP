@@ -50,7 +50,6 @@ describe("Batch Seeder Properties", () => {
             const validStatuses: BatchStatus[] = [
               "AWAITING_INTAKE",
               "LIVE",
-              "PHOTOGRAPHY_COMPLETE",
               "ON_HOLD",
               "QUARANTINED",
               "SOLD_OUT",
@@ -73,7 +72,6 @@ describe("Batch Seeder Properties", () => {
         ON_HOLD: 0,
         QUARANTINED: 0,
         CLOSED: 0,
-        PHOTOGRAPHY_COMPLETE: 0,
       };
 
       for (let i = 0; i < sampleSize; i++) {

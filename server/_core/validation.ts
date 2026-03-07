@@ -121,7 +121,6 @@ export const validators = {
   batchStatus: z.enum([
     "AWAITING_INTAKE",
     "LIVE",
-    "PHOTOGRAPHY_COMPLETE",
     "ON_HOLD",
     "QUARANTINED",
     "SOLD_OUT",

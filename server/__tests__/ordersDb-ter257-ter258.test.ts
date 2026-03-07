@@ -207,11 +207,11 @@ describe("TER-258: CANCELLED — status history records CANCELLED not PENDING", 
     vi.clearAllMocks();
   });
 
-  it("PENDING -> CANCELLED: state machine allows transition", () => {
+  it("READY_FOR_PACKING -> CANCELLED: state machine allows transition", () => {
     // Pure unit test — no DB needed
-    expect(isValidStatusTransition("fulfillment", "PENDING", "CANCELLED")).toBe(
-      true
-    );
+    expect(
+      isValidStatusTransition("fulfillment", "READY_FOR_PACKING", "CANCELLED")
+    ).toBe(true);
   });
 
   it("PACKED -> CANCELLED: state machine allows transition", () => {
@@ -226,14 +226,16 @@ describe("TER-258: CANCELLED — status history records CANCELLED not PENDING", 
     );
   });
 
-  it("CANCELLED -> PENDING: state machine rejects (terminal state)", () => {
-    expect(isValidStatusTransition("fulfillment", "CANCELLED", "PENDING")).toBe(
-      false
-    );
+  it("CANCELLED -> READY_FOR_PACKING: state machine rejects (terminal state)", () => {
+    expect(
+      isValidStatusTransition("fulfillment", "CANCELLED", "READY_FOR_PACKING")
+    ).toBe(false);
   });
 
-  it("PENDING -> CANCELLED: completes without inventory changes", async () => {
-    const pendingOrder = makeOrderRow({ fulfillmentStatus: "PENDING" });
+  it("READY_FOR_PACKING -> CANCELLED: completes without inventory changes", async () => {
+    const pendingOrder = makeOrderRow({
+      fulfillmentStatus: "READY_FOR_PACKING",
+    });
 
     // select results: [order, updatedOrder version]
     const selectResults: unknown[][] = [
@@ -269,9 +271,11 @@ describe("TER-258: CANCELLED — status history records CANCELLED not PENDING", 
       expect(result.newStatus).toBe("CANCELLED");
     } catch (err: unknown) {
       // The mock chain may not fully satisfy all drizzle internals,
-      // but we should NOT see a raw SQL enum error from CANCELLED defaulting to PENDING.
+      // but we should NOT see a raw SQL enum error from CANCELLED defaulting to READY_FOR_PACKING.
       const message = err instanceof Error ? err.message : String(err);
-      expect(message).not.toMatch(/PENDING.*CANCELLED|enum.*PENDING/i);
+      expect(message).not.toMatch(
+        /READY_FOR_PACKING.*CANCELLED|enum.*READY_FOR_PACKING/i
+      );
     }
   });
 

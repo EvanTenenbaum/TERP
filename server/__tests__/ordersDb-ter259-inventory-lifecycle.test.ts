@@ -300,10 +300,10 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
     vi.clearAllMocks();
   });
 
-  it("PENDING -> CANCELLED: state machine allows transition", () => {
-    expect(isValidStatusTransition("fulfillment", "PENDING", "CANCELLED")).toBe(
-      true
-    );
+  it("READY_FOR_PACKING -> CANCELLED: state machine allows transition", () => {
+    expect(
+      isValidStatusTransition("fulfillment", "READY_FOR_PACKING", "CANCELLED")
+    ).toBe(true);
   });
 
   it("PACKED -> CANCELLED: state machine allows transition", () => {
@@ -371,8 +371,10 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
     expect(tx.update).toHaveBeenCalled();
   });
 
-  it("PENDING -> CANCELLED: no inventory update attempted (nothing reserved at fulfillmentStatus level)", async () => {
-    const pendingOrder = makeOrderRow({ fulfillmentStatus: "PENDING" });
+  it("READY_FOR_PACKING -> CANCELLED releases the reservation", async () => {
+    const pendingOrder = makeOrderRow({
+      fulfillmentStatus: "READY_FOR_PACKING",
+    });
     let selectResultsIdx = 0;
     const selectResults: unknown[][] = [
       [pendingOrder], // order fetch
@@ -420,8 +422,8 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
       // Acceptable: mock may not fully satisfy all internals.
     }
 
-    // Under TER-259, PENDING orders have active reservations (reservedQty was
-    // incremented at creation/confirmation). Cancelling a PENDING order SHOULD
+    // Under TER-259, READY_FOR_PACKING orders have active reservations (reservedQty was
+    // incremented at creation/confirmation). Cancelling a READY_FOR_PACKING order SHOULD
     // release the reservation by decrementing reservedQty.
     const setCalls = setFn.mock.calls;
     const batchReservationRelease = setCalls.find(
@@ -431,7 +433,7 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
         "reservedQty" in (call[0] as Record<string, unknown>)
     );
 
-    // PENDING -> CANCELLED SHOULD release reservedQty (QA-001 fix)
+    // READY_FOR_PACKING -> CANCELLED SHOULD release reservedQty (QA-001 fix)
     expect(batchReservationRelease).toBeDefined();
   });
 });
@@ -441,19 +443,19 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
 // ---------------------------------------------------------------------------
 
 describe("TER-259 Inventory lifecycle state machine", () => {
-  it("valid progression: PENDING -> PACKED -> SHIPPED", () => {
-    expect(isValidStatusTransition("fulfillment", "PENDING", "PACKED")).toBe(
-      true
-    );
+  it("valid progression: READY_FOR_PACKING -> PACKED -> SHIPPED", () => {
+    expect(
+      isValidStatusTransition("fulfillment", "READY_FOR_PACKING", "PACKED")
+    ).toBe(true);
     expect(isValidStatusTransition("fulfillment", "PACKED", "SHIPPED")).toBe(
       true
     );
   });
 
   it("invalid: SHIPPED -> any (terminal state)", () => {
-    expect(isValidStatusTransition("fulfillment", "SHIPPED", "PENDING")).toBe(
-      false
-    );
+    expect(
+      isValidStatusTransition("fulfillment", "SHIPPED", "READY_FOR_PACKING")
+    ).toBe(false);
     expect(isValidStatusTransition("fulfillment", "SHIPPED", "PACKED")).toBe(
       false
     );
@@ -463,9 +465,9 @@ describe("TER-259 Inventory lifecycle state machine", () => {
   });
 
   it("invalid: CANCELLED -> any (terminal state)", () => {
-    expect(isValidStatusTransition("fulfillment", "CANCELLED", "PENDING")).toBe(
-      false
-    );
+    expect(
+      isValidStatusTransition("fulfillment", "CANCELLED", "READY_FOR_PACKING")
+    ).toBe(false);
     expect(isValidStatusTransition("fulfillment", "CANCELLED", "PACKED")).toBe(
       false
     );

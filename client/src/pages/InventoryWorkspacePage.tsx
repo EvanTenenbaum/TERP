@@ -1,8 +1,6 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
-import ProductsWorkSurface from "@/components/work-surface/ProductsWorkSurface";
-import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
@@ -33,33 +31,17 @@ export default function InventoryWorkspacePage() {
       tabs={INVENTORY_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
       meta={[
-        { label: "Primary", value: "Inventory positions" },
-        { label: "Secondary", value: "Product catalog" },
+        { label: "Views", value: "Table + Gallery" },
+        { label: "Focus", value: "Batch operations" },
       ]}
       commandStrip={
-        <>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setLocation("/direct-intake")}
-          >
-            New Intake
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setActiveTab("browse")}
-          >
-            Browse SKU Grid
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setActiveTab("products")}
-          >
-            Jump to Products
-          </Button>
-        </>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setLocation("/direct-intake")}
+        >
+          New Intake
+        </Button>
       }
       className="min-h-[calc(100vh-8.5rem)]"
     >
@@ -67,12 +49,6 @@ export default function InventoryWorkspacePage() {
         <div data-testid="inventory-header" className="contents">
           <InventoryWorkSurface />
         </div>
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="browse">
-        <InventoryBrowseSlicePage />
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="products">
-        <ProductsWorkSurface />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

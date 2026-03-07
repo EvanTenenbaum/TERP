@@ -6,7 +6,7 @@
 export type FulfillmentStatus =
   | "DRAFT"
   | "CONFIRMED"
-  | "PENDING"
+  | "READY_FOR_PACKING"
   | "PACKED"
   | "SHIPPED"
   | "DELIVERED"
@@ -20,17 +20,17 @@ export type FulfillmentStatus =
  * Each key is a current status, value is array of valid next statuses
  *
  * ARCH-003: Updated to match actual business rules:
- * - PENDING -> SHIPPED allowed for flexibility (skip PACKED step)
+ * - READY_FOR_PACKING -> SHIPPED allowed for flexibility (skip PACKED step)
  * - CONFIRMED -> SHIPPED allowed for direct shipping
  */
 export const ORDER_STATUS_TRANSITIONS: Record<
   FulfillmentStatus,
   FulfillmentStatus[]
 > = {
-  DRAFT: ["CONFIRMED", "PENDING", "CANCELLED"],
-  CONFIRMED: ["PENDING", "PACKED", "SHIPPED", "CANCELLED"], // Can skip to PACKED or SHIPPED
-  PENDING: ["PACKED", "SHIPPED", "CANCELLED"], // Can skip PACKED step
-  PACKED: ["SHIPPED", "CANCELLED"], // Can go back to PENDING if unpacked
+  DRAFT: ["CONFIRMED", "READY_FOR_PACKING", "CANCELLED"],
+  CONFIRMED: ["READY_FOR_PACKING", "PACKED", "SHIPPED", "CANCELLED"],
+  READY_FOR_PACKING: ["PACKED", "SHIPPED", "CANCELLED"],
+  PACKED: ["SHIPPED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "RETURNED"],
   DELIVERED: ["RETURNED"],
   RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
@@ -61,7 +61,7 @@ export function getTransitionError(
   newStatus: string,
   orderId?: number
 ): string | null {
-  const from = currentStatus || "PENDING";
+  const from = currentStatus || "READY_FOR_PACKING";
 
   if (!canTransition(from, newStatus)) {
     const validNext = getNextStatuses(from);
@@ -119,7 +119,7 @@ export function isTerminalStatus(status: string): boolean {
 export const STATUS_LABELS: Record<FulfillmentStatus, string> = {
   DRAFT: "Draft",
   CONFIRMED: "Confirmed",
-  PENDING: "Pending",
+  READY_FOR_PACKING: "Ready for Packing",
   PACKED: "Packed",
   SHIPPED: "Shipped",
   DELIVERED: "Delivered",
@@ -135,7 +135,7 @@ export const STATUS_LABELS: Record<FulfillmentStatus, string> = {
 export const STATUS_COLORS: Record<FulfillmentStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
   CONFIRMED: "bg-blue-100 text-blue-800",
-  PENDING: "bg-yellow-100 text-yellow-800",
+  READY_FOR_PACKING: "bg-yellow-100 text-yellow-800",
   PACKED: "bg-purple-100 text-purple-800",
   SHIPPED: "bg-indigo-100 text-indigo-800",
   DELIVERED: "bg-green-100 text-green-800",

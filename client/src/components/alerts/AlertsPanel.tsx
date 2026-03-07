@@ -201,7 +201,7 @@ export const AlertsPanel = memo(function AlertsPanel({
               variant="ghost"
               size="sm"
               className="w-full"
-              onClick={() => setLocation("/alerts")}
+              onClick={() => setLocation("/notifications?tab=alerts")}
             >
               View All Alerts
               <ExternalLink className="h-3 w-3 ml-2" />

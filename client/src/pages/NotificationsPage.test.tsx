@@ -2,90 +2,35 @@
  * @vitest-environment jsdom
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationsPage } from "./NotificationsPage";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
-const mockMarkRead = vi.fn();
-const mockDelete = vi.fn();
-const mockMarkAll = vi.fn();
-const mockInvalidate = vi.fn();
+let mockSearch = "";
+const mockSetLocation = vi.fn();
 
-const sampleNotifications = [
-  {
-    id: 1,
-    title: "New Event",
-    message: "Meeting scheduled",
-    type: "info",
-    channel: "in_app",
-    read: false,
-    createdAt: new Date(),
-  },
-  {
-    id: 2,
-    title: "Update",
-    message: "Task completed",
-    type: "success",
-    channel: "in_app",
-    read: true,
-    createdAt: new Date(),
-  },
-];
+vi.mock("wouter", () => ({
+  useLocation: () => ["/notifications", mockSetLocation],
+  useSearch: () => mockSearch,
+}));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    notifications: {
-      list: {
-        useQuery: vi.fn(() => ({
-          data: {
-            items: sampleNotifications,
-            total: 2,
-            unread: 1,
-            pagination: { limit: 50, offset: 0 },
-          },
-          isLoading: false,
-          isError: false,
-        })),
-      },
-      markRead: {
-        useMutation: vi.fn(() => ({
-          mutate: mockMarkRead,
-          isLoading: false,
-        })),
-      },
-      delete: {
-        useMutation: vi.fn(() => ({
-          mutate: mockDelete,
-          isLoading: false,
-        })),
-      },
-      markAllRead: {
-        useMutation: vi.fn(() => ({
-          mutate: mockMarkAll,
-          isLoading: false,
-        })),
-      },
-      getUnreadCount: {
-        useQuery: vi.fn(() => ({
-          data: { unread: 1 },
-          isLoading: false,
-          isError: false,
-        })),
-      },
-    },
-    useContext: vi.fn(() => ({
-      notifications: {
-        list: { invalidate: mockInvalidate },
-        getUnreadCount: { invalidate: mockInvalidate },
-      },
-    })),
-  },
+vi.mock("@/components/common/BackButton", () => ({
+  BackButton: ({ label }: { label: string }) => <button>{label}</button>,
+}));
+
+vi.mock("@/components/inbox/InboxPanel", () => ({
+  InboxPanel: () => <div>Mock Inbox Panel</div>,
+}));
+
+vi.mock("@/components/alerts/AlertsPanel", () => ({
+  AlertsPanel: () => <div>Mock Alerts Panel</div>,
 }));
 
 describe("NotificationsPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockSearch = "";
+    mockSetLocation.mockClear();
   });
 
   const renderPage = () =>
@@ -95,21 +40,33 @@ describe("NotificationsPage", () => {
       </ThemeProvider>
     );
 
-  it("renders notification items", () => {
+  it("renders the system notifications hub by default", () => {
     renderPage();
-    expect(screen.getByText("New Event")).toBeInTheDocument();
-    expect(screen.getByText("Update")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Notifications" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: "System Notifications" })
+    ).toHaveAttribute("data-state", "active");
+    expect(screen.getByText("Mock Inbox Panel")).toBeInTheDocument();
   });
 
-  it("marks a notification as read", () => {
+  it("opens the alerts tab from the query string", () => {
+    mockSearch = "?tab=alerts";
     renderPage();
-    fireEvent.click(screen.getAllByRole("button", { name: /mark read/i })[0]);
-    expect(mockMarkRead).toHaveBeenCalledWith({ notificationId: 1 });
+    expect(screen.getByRole("tab", { name: "Alerts" })).toHaveAttribute(
+      "data-state",
+      "active"
+    );
+    expect(screen.getByText("Mock Alerts Panel")).toBeInTheDocument();
   });
 
-  it("deletes a notification", () => {
+  it("falls back to system notifications for unknown tab values", () => {
+    mockSearch = "?tab=legacy";
     renderPage();
-    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
-    expect(mockDelete).toHaveBeenCalledWith({ notificationId: 1 });
+    expect(
+      screen.getByRole("tab", { name: "System Notifications" })
+    ).toHaveAttribute("data-state", "active");
+    expect(screen.getByText("Mock Inbox Panel")).toBeInTheDocument();
   });
 });

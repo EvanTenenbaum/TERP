@@ -9,25 +9,44 @@ import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import * as inventoryMovementsDb from "../inventoryMovementsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { db } from "../db";
-import { inventoryMovements, batches, products, users } from "../../drizzle/schema";
+import {
+  inventoryMovements,
+  batches,
+  products,
+  users,
+} from "../../drizzle/schema";
 import { eq, desc, sql, and, gte, lte, isNull } from "drizzle-orm";
+import { INVENTORY_ADJUSTMENT_REASONS } from "@shared/inventoryAdjustmentReasons";
 
 export const inventoryMovementsRouter = router({
   // Record a manual inventory movement
-  record: protectedProcedure.use(requirePermission("inventory:update"))
-    .input(z.object({
-      batchId: z.number(),
-      movementType: z.enum(["INTAKE", "SALE", "REFUND_RETURN", "ADJUSTMENT", "QUARANTINE", "RELEASE_FROM_QUARANTINE", "DISPOSAL", "TRANSFER", "SAMPLE"]),
-      quantityChange: z.string(),
-      quantityBefore: z.string(),
-      quantityAfter: z.string(),
-      referenceType: z.string().optional(),
-      referenceId: z.number().optional(),
-      reason: z.string().optional(),
-    }))
+  record: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        batchId: z.number(),
+        movementType: z.enum([
+          "INTAKE",
+          "SALE",
+          "REFUND_RETURN",
+          "ADJUSTMENT",
+          "QUARANTINE",
+          "RELEASE_FROM_QUARANTINE",
+          "DISPOSAL",
+          "TRANSFER",
+          "SAMPLE",
+        ]),
+        quantityChange: z.string(),
+        quantityBefore: z.string(),
+        quantityAfter: z.string(),
+        referenceType: z.string().optional(),
+        referenceId: z.number().optional(),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
+
       return await inventoryMovementsDb.recordInventoryMovement({
         batchId: input.batchId,
         inventoryMovementType: input.movementType,
@@ -37,22 +56,25 @@ export const inventoryMovementsRouter = router({
         referenceType: input.referenceType,
         referenceId: input.referenceId,
         notes: input.reason,
-        performedBy: ctx.user.id
+        performedBy: ctx.user.id,
       });
     }),
 
   // Decrease inventory (for sales)
-  decrease: protectedProcedure.use(requirePermission("inventory:update"))
-    .input(z.object({
-      batchId: z.number(),
-      quantity: z.string(),
-      referenceType: z.string(),
-      referenceId: z.number(),
-      reason: z.string().optional(),
-    }))
+  decrease: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        batchId: z.number(),
+        quantity: z.string(),
+        referenceType: z.string(),
+        referenceId: z.number(),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
+
       return await inventoryMovementsDb.decreaseInventory(
         input.batchId,
         input.quantity,
@@ -64,17 +86,20 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Increase inventory (for refunds)
-  increase: protectedProcedure.use(requirePermission("inventory:update"))
-    .input(z.object({
-      batchId: z.number(),
-      quantity: z.string(),
-      referenceType: z.string(),
-      referenceId: z.number(),
-      reason: z.string().optional(),
-    }))
+  increase: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        batchId: z.number(),
+        quantity: z.string(),
+        referenceType: z.string(),
+        referenceId: z.number(),
+        reason: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
+
       return await inventoryMovementsDb.increaseInventory(
         input.batchId,
         input.quantity,
@@ -86,18 +111,18 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Adjust inventory (manual adjustment)
-  adjust: protectedProcedure.use(requirePermission("inventory:update"))
-    .input(z.object({
-      batchId: z.number(),
-      newQuantity: z.string(),
-      reason: z.string(),
-      notes: z.string().optional(),
-      // Optional structured adjustment reason (DATA-010: maps to adjustmentReason enum column)
-      adjustmentReason: z.enum([
-        "DAMAGED", "EXPIRED", "LOST", "THEFT",
-        "COUNT_DISCREPANCY", "QUALITY_ISSUE", "REWEIGH", "OTHER"
-      ]).optional(),
-    }))
+  adjust: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        batchId: z.number(),
+        newQuantity: z.string(),
+        reason: z.string(),
+        notes: z.string().optional(),
+        // Optional structured adjustment reason (DATA-010: maps to adjustmentReason enum column)
+        adjustmentReason: z.enum(INVENTORY_ADJUSTMENT_REASONS).optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -112,21 +137,30 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Get movements for a batch
-  getByBatch: protectedProcedure.use(requirePermission("inventory:read"))
-    .input(z.object({
-      batchId: z.number(),
-      limit: z.number().optional().default(100),
-    }))
+  getByBatch: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(
+      z.object({
+        batchId: z.number(),
+        limit: z.number().optional().default(100),
+      })
+    )
     .query(async ({ input }) => {
-      return await inventoryMovementsDb.getBatchMovements(input.batchId, input.limit);
+      return await inventoryMovementsDb.getBatchMovements(
+        input.batchId,
+        input.limit
+      );
     }),
 
   // Get movements by reference
-  getByReference: protectedProcedure.use(requirePermission("inventory:read"))
-    .input(z.object({
-      referenceType: z.string(),
-      referenceId: z.number(),
-    }))
+  getByReference: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(
+      z.object({
+        referenceType: z.string(),
+        referenceId: z.number(),
+      })
+    )
     .query(async ({ input }) => {
       return await inventoryMovementsDb.getMovementsByReference(
         input.referenceType,
@@ -135,11 +169,14 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Validate inventory availability
-  validateAvailability: protectedProcedure.use(requirePermission("inventory:read"))
-    .input(z.object({
-      batchId: z.number(),
-      requestedQuantity: z.string(),
-    }))
+  validateAvailability: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(
+      z.object({
+        batchId: z.number(),
+        requestedQuantity: z.string(),
+      })
+    )
     .query(async ({ input }) => {
       return await inventoryMovementsDb.validateInventoryAvailability(
         input.batchId,
@@ -148,18 +185,22 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Get movement summary for a batch
-  getSummary: protectedProcedure.use(requirePermission("inventory:read"))
+  getSummary: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       return await inventoryMovementsDb.getBatchMovementSummary(input.batchId);
     }),
 
   // Reverse a movement
-  reverse: protectedProcedure.use(requirePermission("inventory:update"))
-    .input(z.object({
-      movementId: z.number(),
-      reason: z.string().min(1),
-    }))
+  reverse: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        movementId: z.number(),
+        reason: z.string().min(1),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -175,21 +216,27 @@ export const inventoryMovementsRouter = router({
    * Get movement analytics for a time period
    */
   getAnalytics: adminProcedure
-    .input(z.object({
-      startDate: z.string().optional(), // ISO date string
-      endDate: z.string().optional(),
-      batchId: z.number().optional(),
-      movementTypes: z.array(z.string()).optional(),
-      groupBy: z.enum(["day", "week", "month", "type"]).default("day"),
-    }))
+    .input(
+      z.object({
+        startDate: z.string().optional(), // ISO date string
+        endDate: z.string().optional(),
+        batchId: z.number().optional(),
+        movementTypes: z.array(z.string()).optional(),
+        groupBy: z.enum(["day", "week", "month", "type"]).default("day"),
+      })
+    )
     .query(async ({ input }) => {
       const conditions = [isNull(inventoryMovements.deletedAt)];
 
       if (input.startDate) {
-        conditions.push(gte(inventoryMovements.createdAt, new Date(input.startDate)));
+        conditions.push(
+          gte(inventoryMovements.createdAt, new Date(input.startDate))
+        );
       }
       if (input.endDate) {
-        conditions.push(lte(inventoryMovements.createdAt, new Date(input.endDate)));
+        conditions.push(
+          lte(inventoryMovements.createdAt, new Date(input.endDate))
+        );
       }
       if (input.batchId) {
         conditions.push(eq(inventoryMovements.batchId, input.batchId));
@@ -216,7 +263,8 @@ export const inventoryMovementsRouter = router({
         .limit(1000);
 
       // Calculate totals by type
-      const byType: Record<string, { count: number; totalQuantity: number }> = {};
+      const byType: Record<string, { count: number; totalQuantity: number }> =
+        {};
       let totalMovements = 0;
       let totalInbound = 0;
       let totalOutbound = 0;
@@ -240,7 +288,10 @@ export const inventoryMovementsRouter = router({
       }
 
       // Group by time period
-      const timeGroups: Record<string, { count: number; inbound: number; outbound: number }> = {};
+      const timeGroups: Record<
+        string,
+        { count: number; inbound: number; outbound: number }
+      > = {};
 
       for (const mov of movements) {
         if (!mov.createdAt) continue;
@@ -280,10 +331,12 @@ export const inventoryMovementsRouter = router({
           netChange: totalInbound - totalOutbound,
         },
         byType,
-        byTimePeriod: Object.entries(timeGroups).map(([period, data]) => ({
-          period,
-          ...data,
-        })).sort((a, b) => a.period.localeCompare(b.period)),
+        byTimePeriod: Object.entries(timeGroups)
+          .map(([period, data]) => ({
+            period,
+            ...data,
+          }))
+          .sort((a, b) => a.period.localeCompare(b.period)),
       };
     }),
 
@@ -292,12 +345,15 @@ export const inventoryMovementsRouter = router({
    * Detect and report unexplained inventory losses
    */
   getShrinkageReport: adminProcedure
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      category: z.string().optional(),
-      minShrinkage: z.number().default(0),
-    }))
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        category: z.string().optional(),
+        adjustmentReason: z.enum(INVENTORY_ADJUSTMENT_REASONS).optional(),
+        minShrinkage: z.number().default(0),
+      })
+    )
     .query(async ({ input }) => {
       const conditions = [
         isNull(inventoryMovements.deletedAt),
@@ -305,10 +361,19 @@ export const inventoryMovementsRouter = router({
       ];
 
       if (input.startDate) {
-        conditions.push(gte(inventoryMovements.createdAt, new Date(input.startDate)));
+        conditions.push(
+          gte(inventoryMovements.createdAt, new Date(input.startDate))
+        );
       }
       if (input.endDate) {
-        conditions.push(lte(inventoryMovements.createdAt, new Date(input.endDate)));
+        conditions.push(
+          lte(inventoryMovements.createdAt, new Date(input.endDate))
+        );
+      }
+      if (input.adjustmentReason) {
+        conditions.push(
+          eq(inventoryMovements.adjustmentReason, input.adjustmentReason)
+        );
       }
 
       // Get adjustment movements (potential shrinkage)
@@ -339,7 +404,13 @@ export const inventoryMovementsRouter = router({
 
       // Identify shrinkage (negative adjustments)
       // Valid shrinkage reasons for reference
-      const _shrinkageReasons = ["DAMAGED", "EXPIRED", "LOST", "THEFT", "COUNT_DISCREPANCY"];
+      const _shrinkageReasons = [
+        "DAMAGED",
+        "EXPIRED",
+        "LOST",
+        "THEFT",
+        "COUNT_DISCREPANCY",
+      ];
 
       const shrinkageItems: Array<{
         id: number;
@@ -405,7 +476,8 @@ export const inventoryMovementsRouter = router({
       }
 
       // Group by category
-      const byCategory: Record<string, { count: number; totalQty: number }> = {};
+      const byCategory: Record<string, { count: number; totalQty: number }> =
+        {};
       for (const item of shrinkageItems) {
         const cat = item.category || "Uncategorized";
         if (!byCategory[cat]) {
@@ -421,16 +493,22 @@ export const inventoryMovementsRouter = router({
           totalShrinkageQty: totalShrinkage,
           suspiciousEvents: suspiciousCount,
         },
-        byReason: Object.entries(byReason).map(([reason, data]) => ({
-          reason,
-          ...data,
-        })).sort((a, b) => b.totalQty - a.totalQty),
-        byCategory: Object.entries(byCategory).map(([category, data]) => ({
-          category,
-          ...data,
-        })).sort((a, b) => b.totalQty - a.totalQty),
-        items: shrinkageItems.sort((a, b) =>
-          b.shrinkageQty - a.shrinkageQty || new Date(b.date).getTime() - new Date(a.date).getTime()
+        byReason: Object.entries(byReason)
+          .map(([reason, data]) => ({
+            reason,
+            ...data,
+          }))
+          .sort((a, b) => b.totalQty - a.totalQty),
+        byCategory: Object.entries(byCategory)
+          .map(([category, data]) => ({
+            category,
+            ...data,
+          }))
+          .sort((a, b) => b.totalQty - a.totalQty),
+        items: shrinkageItems.sort(
+          (a, b) =>
+            b.shrinkageQty - a.shrinkageQty ||
+            new Date(b.date).getTime() - new Date(a.date).getTime()
         ),
       };
     }),
@@ -440,29 +518,49 @@ export const inventoryMovementsRouter = router({
    * Get paginated movement history with filtering
    */
   getHistory: adminProcedure
-    .input(z.object({
-      page: z.number().default(1),
-      pageSize: z.number().default(50),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      batchId: z.number().optional(),
-      movementType: z.string().optional(),
-      search: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        page: z.number().default(1),
+        pageSize: z.number().default(50),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        batchId: z.number().optional(),
+        movementType: z.string().optional(),
+        search: z.string().optional(),
+      })
+    )
     .query(async ({ input }) => {
       const conditions = [isNull(inventoryMovements.deletedAt)];
 
       if (input.startDate) {
-        conditions.push(gte(inventoryMovements.createdAt, new Date(input.startDate)));
+        conditions.push(
+          gte(inventoryMovements.createdAt, new Date(input.startDate))
+        );
       }
       if (input.endDate) {
-        conditions.push(lte(inventoryMovements.createdAt, new Date(input.endDate)));
+        conditions.push(
+          lte(inventoryMovements.createdAt, new Date(input.endDate))
+        );
       }
       if (input.batchId) {
         conditions.push(eq(inventoryMovements.batchId, input.batchId));
       }
       if (input.movementType) {
-        conditions.push(eq(inventoryMovements.inventoryMovementType, input.movementType as 'INTAKE' | 'SALE' | 'REFUND_RETURN' | 'ADJUSTMENT' | 'QUARANTINE' | 'RELEASE_FROM_QUARANTINE' | 'DISPOSAL' | 'TRANSFER' | 'SAMPLE'));
+        conditions.push(
+          eq(
+            inventoryMovements.inventoryMovementType,
+            input.movementType as
+              | "INTAKE"
+              | "SALE"
+              | "REFUND_RETURN"
+              | "ADJUSTMENT"
+              | "QUARANTINE"
+              | "RELEASE_FROM_QUARANTINE"
+              | "DISPOSAL"
+              | "TRANSFER"
+              | "SAMPLE"
+          )
+        );
       }
 
       const offset = (input.page - 1) * input.pageSize;
@@ -522,4 +620,3 @@ export const inventoryMovementsRouter = router({
       };
     }),
 });
-

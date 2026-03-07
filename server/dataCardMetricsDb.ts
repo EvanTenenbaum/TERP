@@ -293,7 +293,7 @@ async function calculateOrdersMetrics(
     .select({
       total: count(),
       pending: count(
-        sql`CASE WHEN ${orders.fulfillmentStatus} = 'PENDING' THEN 1 END`
+        sql`CASE WHEN ${orders.fulfillmentStatus} = 'READY_FOR_PACKING' THEN 1 END`
       ),
       packed: count(
         sql`CASE WHEN ${orders.fulfillmentStatus} = 'PACKED' THEN 1 END`
@@ -320,7 +320,7 @@ async function calculateOrdersMetrics(
   if (metricIds.includes("orders_pending")) {
     results["orders_pending"] = {
       value: Number(aggregates.pending) || 0,
-      subtext: "awaiting fulfillment",
+      subtext: "ready for packing",
       updatedAt: new Date().toISOString(),
     };
   }
@@ -377,7 +377,7 @@ async function calculateOrdersMetrics(
   }
 
   if (metricIds.includes("orders_overdue")) {
-    // Count orders that have been PENDING for more than 7 days
+    // Count orders that have been READY_FOR_PACKING for more than 7 days
     // (using createdAt since expectedShipDate doesn't exist in schema)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -389,13 +389,13 @@ async function calculateOrdersMetrics(
         and(
           eq(orders.orderType, "SALE"),
           lte(orders.createdAt, sevenDaysAgo),
-          eq(orders.fulfillmentStatus, "PENDING")
+          eq(orders.fulfillmentStatus, "READY_FOR_PACKING")
         )
       );
 
     results["orders_overdue"] = {
       value: result?.count || 0,
-      subtext: "pending >7 days",
+      subtext: "ready >7 days",
       updatedAt: new Date().toISOString(),
     };
   }

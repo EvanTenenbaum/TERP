@@ -21,7 +21,7 @@ export async function generateInventoryAlerts(): Promise<void> {
     const activeBatches = await db
       .select()
       .from(batches)
-      .where(sql`${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')`);
+      .where(sql`${batches.batchStatus} = 'LIVE'`);
 
     for (const batch of activeBatches) {
       // Check for low stock
@@ -311,7 +311,10 @@ export async function getActiveInventoryAlerts(
       .select()
       .from(inventoryAlerts)
       .where(eq(inventoryAlerts.alertStatus, "ACTIVE"))
-      .orderBy(desc(inventoryAlerts.alertSeverity), desc(inventoryAlerts.createdAt));
+      .orderBy(
+        desc(inventoryAlerts.alertSeverity),
+        desc(inventoryAlerts.createdAt)
+      );
 
     return alerts;
   } catch (error) {
@@ -406,10 +409,14 @@ export async function getAlertSummary(): Promise<{
     const summary = {
       total: alerts.length,
       byType: {
-        LOW_STOCK: alerts.filter(a => a.inventoryAlertType === "LOW_STOCK").length,
-        EXPIRING: alerts.filter(a => a.inventoryAlertType === "EXPIRING").length,
-        OVERSTOCK: alerts.filter(a => a.inventoryAlertType === "OVERSTOCK").length,
-        SLOW_MOVING: alerts.filter(a => a.inventoryAlertType === "SLOW_MOVING").length,
+        LOW_STOCK: alerts.filter(a => a.inventoryAlertType === "LOW_STOCK")
+          .length,
+        EXPIRING: alerts.filter(a => a.inventoryAlertType === "EXPIRING")
+          .length,
+        OVERSTOCK: alerts.filter(a => a.inventoryAlertType === "OVERSTOCK")
+          .length,
+        SLOW_MOVING: alerts.filter(a => a.inventoryAlertType === "SLOW_MOVING")
+          .length,
       },
       bySeverity: {
         HIGH: alerts.filter(a => a.alertSeverity === "HIGH").length,

@@ -1,25 +1,37 @@
-import { useState, useEffect } from 'react';
-import { Search, BookOpen, Package, ShoppingCart, Users, BarChart3, DollarSign, ChevronDown, ChevronUp, Download, FileText } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  Search,
+  BookOpen,
+  Package,
+  ShoppingCart,
+  Users,
+  BarChart3,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  FileText,
+} from "lucide-react";
 
 export default function Help() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   // Clear search when component mounts
   useEffect(() => {
-    setSearchQuery('');
+    setSearchQuery("");
   }, []);
 
   const sections = [
     {
-      id: 'dashboard',
-      title: 'Dashboard',
+      id: "dashboard",
+      title: "Dashboard",
       icon: BarChart3,
-      description: 'Your command center for real-time business insights',
+      description: "Your command center for real-time business insights",
       topics: [
-        'Customizing data cards',
-        'Understanding key metrics',
-        'Drill-down navigation'
+        "Customizing data cards",
+        "Understanding key metrics",
+        "Drill-down navigation",
       ],
       training: `**Getting Started with Your Dashboard**
 
@@ -39,20 +51,20 @@ Use the notes section to track important reminders or action items. These persis
 
 **What's Happening Behind the Scenes**
 
-TERP continuously aggregates data from inventory, orders, and clients to calculate dashboard metrics in real-time. Trends are computed automatically based on historical data, and alerts are triggered when thresholds are exceeded.`
+TERP continuously aggregates data from inventory, orders, and clients to calculate dashboard metrics in real-time. Trends are computed automatically based on historical data, and alerts are triggered when thresholds are exceeded.`,
     },
     {
-      id: 'inventory',
-      title: 'Inventory Management',
+      id: "inventory",
+      title: "Inventory Management",
       icon: Package,
-      description: 'Track batches, locations, and stock levels',
+      description: "Track batches, locations, and stock levels",
       topics: [
-        'Creating and managing batches',
-        'Location hierarchy (Site → Zone → Rack → Shelf → Bin)',
-        'Batch lifecycle and status management',
-        'COGS tracking (Fixed vs Range)',
-        'Profitability analysis',
-        'Price simulation tool'
+        "Creating and managing batches",
+        "Location hierarchy (Site → Zone → Rack → Shelf → Bin)",
+        "Batch lifecycle and status management",
+        "COGS tracking (Fixed vs Range)",
+        "Profitability analysis",
+        "Price simulation tool",
       ],
       training: `**Understanding Batch-Based Inventory**
 
@@ -80,24 +92,24 @@ The simulation tool lets you model pricing changes before implementing them. Adj
 
 **Best Practice**
 
-Low stock alerts exist for a reason. Set appropriate thresholds and monitor them regularly to avoid stockouts.`
+Low stock alerts exist for a reason. Set appropriate thresholds and monitor them regularly to avoid stockouts.`,
     },
     {
-      id: 'orders',
-      title: 'Orders & Fulfillment',
+      id: "orders",
+      title: "Orders & Fulfillment",
       icon: ShoppingCart,
-      description: 'From quote to delivery',
+      description: "From quote to delivery",
       topics: [
-        'Creating orders and quotes',
-        'Fulfillment workflow (PENDING → PACKED → SHIPPED)',
-        'Processing returns',
-        'Order status history'
+        "Creating orders and quotes",
+        "Fulfillment workflow (READY FOR PACKING → PACKED → SHIPPED)",
+        "Processing returns",
+        "Order status history",
       ],
       training: `**Order Workflow Overview**
 
 Orders progress through three primary states:
 
-1. **PENDING** - Order created, awaiting fulfillment
+1. **READY FOR PACKING** - Order created and waiting to be picked
 2. **PACKED** - Items prepared for shipment
 3. **SHIPPED** - Order dispatched to customer
 
@@ -121,18 +133,18 @@ Every status change, modification, and note is logged with a timestamp and user 
 
 **Useful Pattern**
 
-Review order history by client to identify purchasing patterns. This data can inform inventory planning and reveal opportunities for proactive outreach.`
+Review order history by client to identify purchasing patterns. This data can inform inventory planning and reveal opportunities for proactive outreach.`,
     },
     {
-      id: 'clients',
-      title: 'Client Management',
+      id: "clients",
+      title: "Client Management",
       icon: Users,
-      description: 'Build strong customer relationships',
+      description: "Build strong customer relationships",
       topics: [
-        'Managing client profiles',
-        'Communication logging',
-        'Tracking client needs',
-        'Viewing order history'
+        "Managing client profiles",
+        "Communication logging",
+        "Tracking client needs",
+        "Viewing order history",
       ],
       training: `**Client Profile Management**
 
@@ -156,18 +168,18 @@ High order volume doesn't always correlate with high profitability. Cross-refere
 
 **Preparation Strategy**
 
-Before client calls, review their profile and recent order history. This context allows for more informed conversations and demonstrates attention to detail.`
+Before client calls, review their profile and recent order history. This context allows for more informed conversations and demonstrates attention to detail.`,
     },
     {
-      id: 'profitability',
-      title: 'Profitability Analysis',
+      id: "profitability",
+      title: "Profitability Analysis",
       icon: DollarSign,
-      description: 'Understand your margins and ROI',
+      description: "Understand your margins and ROI",
       topics: [
-        'Batch profitability metrics',
-        'Margin vs markup calculations',
-        'Price simulation',
-        'Top performers report'
+        "Batch profitability metrics",
+        "Margin vs markup calculations",
+        "Price simulation",
+        "Top performers report",
       ],
       training: `**Understanding Profitability Metrics**
 
@@ -200,14 +212,17 @@ Many businesses unknowingly sell certain products at a loss or minimal margin. R
 
 **Recommended Cadence**
 
-Run profitability analysis monthly rather than quarterly or annually. Market conditions and costs change frequently enough to warrant regular review.`
-    }
+Run profitability analysis monthly rather than quarterly or annually. Market conditions and costs change frequently enough to warrant regular review.`,
+    },
   ];
 
-  const filteredSections = sections.filter(section =>
-    section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    section.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    section.topics.some(topic => topic.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredSections = sections.filter(
+    section =>
+      section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      section.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      section.topics.some(topic =>
+        topic.toLowerCase().includes(searchQuery.toLowerCase())
+      )
   );
 
   const handleCardClick = (sectionId: string) => {
@@ -221,7 +236,9 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <BookOpen className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">TERP Help Center</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              TERP Help Center
+            </h1>
           </div>
           <p className="text-lg text-gray-600">
             Learn how to use TERP's powerful features to manage your business
@@ -237,7 +254,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
               placeholder="Search for help topics..."
               aria-label="Search help topics"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -245,7 +262,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
 
         {/* Sections Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredSections.map((section) => {
+          {filteredSections.map(section => {
             const Icon = section.icon;
             const isExpanded = expandedSection === section.id;
             return (
@@ -273,8 +290,11 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                     </div>
                     <p className="text-gray-600 mb-4">{section.description}</p>
                     <ul className="space-y-2">
-                      {section.topics.map((topic) => (
-                        <li key={`topic-${topic.substring(0, 30)}`} className="flex items-start gap-2">
+                      {section.topics.map(topic => (
+                        <li
+                          key={`topic-${topic.substring(0, 30)}`}
+                          className="flex items-start gap-2"
+                        >
                           <span className="text-blue-600 mt-1">•</span>
                           <span className="text-sm text-gray-700">{topic}</span>
                         </li>
@@ -282,39 +302,50 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                     </ul>
                   </div>
                 </div>
-                
+
                 {/* Expanded Content */}
                 {isExpanded && (
                   <div className="mt-6 pt-6 border-t border-gray-200 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="prose prose-sm max-w-none">
-                      <div 
+                      <div
                         className="text-gray-700 leading-relaxed"
-                        dangerouslySetInnerHTML={{ 
+                        dangerouslySetInnerHTML={{
                           __html: section.training
-                            .split('\n\n')
+                            .split("\n\n")
                             .map(para => {
                               // Handle bold text
-                              para = para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                              para = para.replace(
+                                /\*\*(.*?)\*\*/g,
+                                "<strong>$1</strong>"
+                              );
                               // Handle list items
-                              if (para.trim().startsWith('-')) {
-                                const items = para.split('\n').map(item => 
-                                  item.trim().startsWith('-') 
-                                    ? `<li>${item.substring(1).trim()}</li>` 
-                                    : item
-                                ).join('');
+                              if (para.trim().startsWith("-")) {
+                                const items = para
+                                  .split("\n")
+                                  .map(item =>
+                                    item.trim().startsWith("-")
+                                      ? `<li>${item.substring(1).trim()}</li>`
+                                      : item
+                                  )
+                                  .join("");
                                 return `<ul class="list-disc pl-5 space-y-1 my-3">${items}</ul>`;
                               }
                               // Handle numbered lists
                               if (/^\d+\./.test(para.trim())) {
-                                const items = para.split('\n').map(item => {
-                                  const match = item.match(/^\d+\.\s*(.+)/);
-                                  return match ? `<li>${match[1]}</li>` : item;
-                                }).join('');
+                                const items = para
+                                  .split("\n")
+                                  .map(item => {
+                                    const match = item.match(/^\d+\.\s*(.+)/);
+                                    return match
+                                      ? `<li>${match[1]}</li>`
+                                      : item;
+                                  })
+                                  .join("");
                                 return `<ol class="list-decimal pl-5 space-y-1 my-3">${items}</ol>`;
                               }
                               return `<p class="mb-3">${para}</p>`;
                             })
-                            .join('')
+                            .join(""),
                         }}
                       />
                     </div>
@@ -349,33 +380,35 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                   📚 Complete Training Guide
                 </h3>
                 <p className="text-gray-700 mb-6">
-                  Download the comprehensive training guide with screenshots, detailed workflows, 
-                  and step-by-step instructions for all TERP features. Includes technical explanations 
-                  and best practices for each module.
+                  Download the comprehensive training guide with screenshots,
+                  detailed workflows, and step-by-step instructions for all TERP
+                  features. Includes technical explanations and best practices
+                  for each module.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <a 
-                    href="/TERP_Training_Guide.pdf" 
+                  <a
+                    href="/TERP_Training_Guide.pdf"
                     download
                     className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
                   >
                     <Download className="w-5 h-5" />
                     Download PDF Guide
                   </a>
-                  <a 
-                    href="/TERP_Training_Guide.md" 
+                  <a
+                    href="/TERP_Training_Guide.md"
                     download
                     className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
                   >
                     <FileText className="w-5 h-5" />
                     Download Markdown
                   </a>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  The PDF includes real screenshots from TERP and "Backend Intelligence" sections 
-                  that explain system architecture and automated processes.
+                  The PDF includes real screenshots from TERP and "Backend
+                  Intelligence" sections that explain system architecture and
+                  automated processes.
                 </p>
               </div>
             </div>
@@ -389,7 +422,8 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
               Need Additional Help?
             </h3>
             <p className="text-gray-700">
-              Contact your system administrator for questions not covered in this documentation.
+              Contact your system administrator for questions not covered in
+              this documentation.
             </p>
           </div>
         </div>
@@ -397,4 +431,3 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
     </div>
   );
 }
-

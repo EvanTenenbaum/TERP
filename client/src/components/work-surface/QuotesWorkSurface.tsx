@@ -95,7 +95,13 @@ interface Quote {
   id: number;
   orderNumber: string;
   clientId: number;
-  quoteStatus: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED";
+  quoteStatus:
+    | "UNSENT"
+    | "SENT"
+    | "VIEWED"
+    | "REJECTED"
+    | "EXPIRED"
+    | "CONVERTED";
   total: string;
   subtotal: string;
   tax: string;
@@ -117,15 +123,16 @@ interface Quote {
 
 const QUOTE_STATUSES = [
   { value: "ALL", label: "All Statuses" },
-  { value: "DRAFT", label: "Draft" },
+  { value: "UNSENT", label: "Unsent" },
   { value: "SENT", label: "Sent" },
-  { value: "ACCEPTED", label: "Accepted" },
+  { value: "VIEWED", label: "Viewed" },
+  { value: "CONVERTED", label: "Converted" },
   { value: "REJECTED", label: "Rejected" },
   { value: "EXPIRED", label: "Expired" },
 ];
 
 const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
-  DRAFT: {
+  UNSENT: {
     icon: <FileText className="h-4 w-4" />,
     color: "bg-gray-100 text-gray-800",
   },
@@ -133,7 +140,11 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
     icon: <Clock className="h-4 w-4" />,
     color: "bg-blue-100 text-blue-800",
   },
-  ACCEPTED: {
+  VIEWED: {
+    icon: <CheckCircle2 className="h-4 w-4" />,
+    color: "bg-purple-100 text-purple-800",
+  },
+  CONVERTED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
     color: "bg-green-100 text-green-800",
   },
@@ -173,7 +184,7 @@ const formatDate = (dateString: string | undefined): string => {
 // ============================================================================
 
 function QuoteStatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.UNSENT;
   return (
     <Badge variant="outline" className={cn("gap-1", config.color)}>
       {config.icon}
@@ -317,7 +328,7 @@ function QuoteInspectorContent({
 
       <InspectorSection title="Actions" defaultOpen>
         <div className="space-y-2">
-          {quote.quoteStatus === "DRAFT" && (
+          {quote.quoteStatus === "UNSENT" && (
             <>
               <Button
                 variant="outline"
@@ -337,7 +348,9 @@ function QuoteInspectorContent({
               </Button>
             </>
           )}
-          {quote.quoteStatus === "ACCEPTED" && (
+          {(quote.quoteStatus === "UNSENT" ||
+            quote.quoteStatus === "SENT" ||
+            quote.quoteStatus === "VIEWED") && (
             <Button
               variant="default"
               className="w-full justify-start"
@@ -355,7 +368,7 @@ function QuoteInspectorContent({
             <Copy className="h-4 w-4 mr-2" />
             Duplicate Quote
           </Button>
-          {quote.quoteStatus === "DRAFT" && (
+          {quote.quoteStatus === "UNSENT" && (
             <Button
               variant="outline"
               className="w-full justify-start text-red-600 hover:text-red-700"
@@ -446,9 +459,9 @@ export function QuotesWorkSurface() {
   // Statistics
   const stats = useMemo(
     () => ({
-      draft: quotes.filter(q => q.quoteStatus === "DRAFT").length,
+      draft: quotes.filter(q => q.quoteStatus === "UNSENT").length,
       sent: quotes.filter(q => q.quoteStatus === "SENT").length,
-      accepted: quotes.filter(q => q.quoteStatus === "ACCEPTED").length,
+      converted: quotes.filter(q => q.quoteStatus === "CONVERTED").length,
       total: quotes.length,
     }),
     [quotes]
@@ -593,7 +606,7 @@ export function QuotesWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Draft:{" "}
+              Unsent:{" "}
               <span className="font-semibold text-foreground">
                 {stats.draft}
               </span>
@@ -605,9 +618,9 @@ export function QuotesWorkSurface() {
               </span>
             </span>
             <span>
-              Accepted:{" "}
+              Converted:{" "}
               <span className="font-semibold text-foreground">
-                {stats.accepted}
+                {stats.converted}
               </span>
             </span>
           </div>
