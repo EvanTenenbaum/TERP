@@ -25,43 +25,50 @@ A task is NOT complete until ALL pass:
 ## V4 QA Gate (Required for STRICT/RED Mode)
 
 ### 1. Requirements Coverage
+
 - Map each acceptance criterion to a test, screenshot, or command output
 - Mark any unmet criterion explicitly as blocked (never silently defer)
 
 ### 2. Functional Validation
+
 - Run unit/integration/build checks
 - Validate user-visible behavior in browser for changed flows
 
 ### 3. Blast Radius Assessment
+
 - List touched domains (UI, business logic, auth, DB, integrations)
 - Execute targeted regression checks for each impacted domain
 
 ### 4. Adversarial Review
+
 - Try likely failure paths and edge cases
 - Confirm rollback path and monitoring checks are documented
 
 ## Autonomy Mode Details
 
 ### SAFE Mode (Green)
+
 - Documentation, simple bug fixes, style changes, test additions
 - Standard verification, may batch commits
 
 ### STRICT Mode (Yellow)
+
 - New features, database queries (read-only), UI components, business logic
 - Full verification at each step, explicit testing
 
 ### RED Mode — Critical Paths
+
 - Database migrations, financial calculations, inventory valuation
 - Auth/authorization, order fulfillment, accounting, multi-table transactions
 - **Requires**: Evan's explicit approval, rollback plan, staging verification, document every step
 
-| Domain | Why RED |
-|--------|---------|
-| Inventory/Valuation | Financial accuracy, audit trail |
-| Accounting/Financial | Money movement, compliance |
-| Auth/RBAC | Security, access control |
-| Orders/Fulfillment | Customer impact, inventory |
-| Database Migrations | Data integrity, rollback difficulty |
+| Domain               | Why RED                             |
+| -------------------- | ----------------------------------- |
+| Inventory/Valuation  | Financial accuracy, audit trail     |
+| Accounting/Financial | Money movement, compliance          |
+| Auth/RBAC            | Security, access control            |
+| Orders/Fulfillment   | Customer impact, inventory          |
+| Database Migrations  | Data integrity, rollback difficulty |
 
 ## Verification Commands
 
@@ -110,3 +117,12 @@ Linear Evidence: [ticket + links/artifacts]
 - Uses `COLUMNS_PENDING_MIGRATION` array for known pending migrations
 - Runs automatically on PRs via `.github/workflows/schema-validation.yml`
 - See `tests/integration/schema-verification.test.ts` for implementation
+
+## Full Testing Reference
+
+See `docs/TESTING.md` for the complete testing guide including:
+
+- All test layers (unit, integration, E2E, oracle, chain, stress)
+- Every `pnpm` test command with descriptions
+- Test file locations and organization
+- Quality gates and QA pipeline
