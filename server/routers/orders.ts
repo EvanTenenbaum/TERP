@@ -193,7 +193,7 @@ export const ordersRouter = router({
       try {
         order = await ordersDb.createOrder({
           ...input,
-          createdBy: userId,
+          actorId: userId,
         });
       } catch (error) {
         // TER-253: Convert archived/missing client errors to proper TRPCError

@@ -100,7 +100,7 @@ export interface IntakeInput {
     fileType: string;
     fileSize: number;
   }>;
-  userId: number;
+  actorId: number;
 }
 
 export interface IntakeResult {
@@ -139,180 +139,104 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
     // lock waits/deadlocks under concurrent intake load.
     const result = await withRetryableTransaction(
       async tx => {
-      // 1. Find or create vendor
-      // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
-      const vendor = await findOrCreate<typeof vendors, Vendor>(
-        tx,
-        vendors,
-        [eq(vendors.name, input.vendorName)],
-        { name: input.vendorName }
-      );
+        // 1. Find or create vendor
+        // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+        const vendor = await findOrCreate<typeof vendors, Vendor>(
+          tx,
+          vendors,
+          [eq(vendors.name, input.vendorName)],
+          { name: input.vendorName }
+        );
 
-      // 2. Find or create brand
-      // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
-      const brand = await findOrCreate<typeof brands, Brand>(
-        tx,
-        brands,
-        [eq(brands.name, input.brandName), eq(brands.vendorId, vendor.id)],
-        { name: input.brandName, vendorId: vendor.id }
-      );
+        // 2. Find or create brand
+        // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+        const brand = await findOrCreate<typeof brands, Brand>(
+          tx,
+          brands,
+          [eq(brands.name, input.brandName), eq(brands.vendorId, vendor.id)],
+          { name: input.brandName, vendorId: vendor.id }
+        );
 
-      // 3. Find or create product
-      // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
-      const normalizedProductName = inventoryUtils.normalizeProductName(
-        input.productName
-      );
-      // SCHEMA-016: Removed strainId from insert - column doesn't exist in production
-      // strainId will be added when migration is run
-      const product = await findOrCreate<typeof products, Product>(
-        tx,
-        products,
-        [
-          eq(products.nameCanonical, normalizedProductName),
-          eq(products.brandId, brand.id),
-        ],
-        {
-          brandId: brand.id,
-          nameCanonical: normalizedProductName,
-          category: input.category,
-          subcategory: input.subcategory,
-          // Note: strainId omitted - column pending migration (SCHEMA-016)
-        }
-      );
+        // 3. Find or create product
+        // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+        const normalizedProductName = inventoryUtils.normalizeProductName(
+          input.productName
+        );
+        // SCHEMA-016: Removed strainId from insert - column doesn't exist in production
+        // strainId will be added when migration is run
+        const product = await findOrCreate<typeof products, Product>(
+          tx,
+          products,
+          [
+            eq(products.nameCanonical, normalizedProductName),
+            eq(products.brandId, brand.id),
+          ],
+          {
+            brandId: brand.id,
+            nameCanonical: normalizedProductName,
+            category: input.category,
+            subcategory: input.subcategory,
+            // Note: strainId omitted - column pending migration (SCHEMA-016)
+          }
+        );
 
-      // 4. Generate lot code and create lot
-      // Note: Sequence generation happens outside transaction but is atomic
-      const lotCode = await inventoryUtils.generateLotCode();
+        // 4. Generate lot code and create lot
+        // Note: Sequence generation happens outside transaction but is atomic
+        const lotCode = await inventoryUtils.generateLotCode();
 
-      const [existingLot] = await tx
-        .select()
-        .from(lots)
-        .where(eq(lots.code, lotCode))
-        .limit(1);
-
-      let lot: Lot;
-      if (existingLot) {
-        lot = existingLot;
-      } else {
-        const [created] = await tx
-          .insert(lots)
-          .values({
-            code: lotCode,
-            vendorId: vendor.id,
-            date: new Date(),
-          })
-          .$returningId();
-
-        const [newLot] = await tx
+        const [existingLot] = await tx
           .select()
           .from(lots)
-          .where(eq(lots.id, created.id));
-
-        lot = newLot;
-      }
-
-      // 5. Generate batch code and a collision-safe SKU
-      let batchCode = await inventoryUtils.generateBatchCode();
-      const brandKey = inventoryUtils.normalizeToKey(brand.name);
-      const productKey = inventoryUtils.normalizeToKey(product.nameCanonical);
-      const skuDate = new Date();
-      let skuSequence = 1;
-      let sku = inventoryUtils.generateSKU(
-        brandKey,
-        productKey,
-        skuDate,
-        skuSequence
-      );
-
-      // Prevent duplicate-SKU insert failures for repeated intake of the same
-      // brand/product/day combination by bumping sequence until available.
-      const maxSkuAttempts = 10_000;
-
-      while (true) {
-        const [existingSku] = await tx
-          .select({ id: batches.id })
-          .from(batches)
-          .where(eq(batches.sku, sku))
+          .where(eq(lots.code, lotCode))
           .limit(1);
 
-        if (!existingSku) break;
+        let lot: Lot;
+        if (existingLot) {
+          lot = existingLot;
+        } else {
+          const [created] = await tx
+            .insert(lots)
+            .values({
+              code: lotCode,
+              vendorId: vendor.id,
+              date: new Date(),
+            })
+            .$returningId();
 
-        skuSequence += 1;
-        if (skuSequence > maxSkuAttempts) {
-          throw new Error(
-            `Failed to generate unique SKU for ${brandKey}/${productKey} after ${maxSkuAttempts} attempts`
-          );
+          const [newLot] = await tx
+            .select()
+            .from(lots)
+            .where(eq(lots.id, created.id));
+
+          lot = newLot;
         }
-        sku = inventoryUtils.generateSKU(
+
+        // 5. Generate batch code and a collision-safe SKU
+        let batchCode = await inventoryUtils.generateBatchCode();
+        const brandKey = inventoryUtils.normalizeToKey(brand.name);
+        const productKey = inventoryUtils.normalizeToKey(product.nameCanonical);
+        const skuDate = new Date();
+        let skuSequence = 1;
+        let sku = inventoryUtils.generateSKU(
           brandKey,
           productKey,
           skuDate,
           skuSequence
         );
-      }
 
-      // 6. Create batch
-      // MEET-006: Determine ownership type based on payment terms if not explicitly set
-      const ownershipType =
-        input.ownershipType ||
-        (input.paymentTerms === "CONSIGNMENT" ? "CONSIGNED" : "OFFICE_OWNED");
+        // Prevent duplicate-SKU insert failures for repeated intake of the same
+        // brand/product/day combination by bumping sequence until available.
+        const maxSkuAttempts = 10_000;
 
-      let batch: Batch | undefined;
-      while (!batch) {
-        try {
-          const [batchCreated] = await tx
-            .insert(batches)
-            .values({
-              code: batchCode,
-              sku: sku,
-              productId: product.id,
-              lotId: lot.id,
-              batchStatus: "AWAITING_INTAKE",
-              grade: input.grade,
-              isSample: 0,
-              sampleOnly: 0,
-              sampleAvailable: 0,
-              cogsMode: input.cogsMode,
-              unitCogs: input.unitCogs,
-              unitCogsMin: input.unitCogsMin,
-              unitCogsMax: input.unitCogsMax,
-              paymentTerms: input.paymentTerms,
-              ownershipType: ownershipType, // MEET-006
-              metadata: (() => {
-                const metadata = input.metadata || {};
-                if (input.mediaUrls && input.mediaUrls.length > 0) {
-                  metadata.mediaFiles = input.mediaUrls;
-                }
-                return Object.keys(metadata).length > 0
-                  ? inventoryUtils.stringifyMetadata(metadata)
-                  : null;
-              })(),
-              onHandQty: inventoryUtils.formatQty(input.quantity),
-              sampleQty: "0",
-              reservedQty: "0",
-              quarantineQty: "0",
-              holdQty: "0",
-              defectiveQty: "0",
-              publishEcom: 0,
-              publishB2b: 0,
-            })
-            .$returningId();
-
-          const [createdBatch] = await tx
-            .select()
+        while (true) {
+          const [existingSku] = await tx
+            .select({ id: batches.id })
             .from(batches)
-            .where(eq(batches.id, batchCreated.id));
+            .where(eq(batches.sku, sku))
+            .limit(1);
 
-          if (!createdBatch) {
-            throw new Error("Failed to create batch");
-          }
-          batch = createdBatch;
-        } catch (insertError) {
-          if (!isDuplicateEntryError(insertError)) {
-            throw insertError;
-          }
+          if (!existingSku) break;
 
-          // Any duplicate-key race (SKU/code) gets a fresh candidate and retries.
           skuSequence += 1;
           if (skuSequence > maxSkuAttempts) {
             throw new Error(
@@ -325,52 +249,128 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             skuDate,
             skuSequence
           );
-          batchCode = await inventoryUtils.generateBatchCode();
         }
-      }
 
-      // Persist intake-uploaded media as batch images (Photography source of truth)
-      if (input.mediaUrls && input.mediaUrls.length > 0) {
-        await tx.insert(productImages).values(
-          input.mediaUrls.map((media, index) => ({
-            batchId: batch.id,
-            productId: product.id,
-            imageUrl: media.url,
-            thumbnailUrl: null,
-            caption: media.fileName ? media.fileName.slice(0, 255) : null,
-            isPrimary: index === 0,
-            sortOrder: index,
-            status: "APPROVED" as const,
-            uploadedBy: input.userId,
-            uploadedAt: new Date(),
-            deletedAt: null,
-          }))
-        );
-      }
+        // 6. Create batch
+        // MEET-006: Determine ownership type based on payment terms if not explicitly set
+        const ownershipType =
+          input.ownershipType ||
+          (input.paymentTerms === "CONSIGNMENT" ? "CONSIGNED" : "OFFICE_OWNED");
 
-      // 7. Create batch location
-      await tx.insert(batchLocations).values({
-        batchId: batch.id,
-        site: input.location.site,
-        zone: input.location.zone,
-        rack: input.location.rack,
-        shelf: input.location.shelf,
-        bin: input.location.bin,
-        qty: inventoryUtils.formatQty(input.quantity),
-        deletedAt: null,
-      });
+        let batch: Batch | undefined;
+        while (!batch) {
+          try {
+            const [batchCreated] = await tx
+              .insert(batches)
+              .values({
+                code: batchCode,
+                sku: sku,
+                productId: product.id,
+                lotId: lot.id,
+                batchStatus: "AWAITING_INTAKE",
+                grade: input.grade,
+                isSample: 0,
+                sampleOnly: 0,
+                sampleAvailable: 0,
+                cogsMode: input.cogsMode,
+                unitCogs: input.unitCogs,
+                unitCogsMin: input.unitCogsMin,
+                unitCogsMax: input.unitCogsMax,
+                paymentTerms: input.paymentTerms,
+                ownershipType: ownershipType, // MEET-006
+                metadata: (() => {
+                  const metadata = input.metadata || {};
+                  if (input.mediaUrls && input.mediaUrls.length > 0) {
+                    metadata.mediaFiles = input.mediaUrls;
+                  }
+                  return Object.keys(metadata).length > 0
+                    ? inventoryUtils.stringifyMetadata(metadata)
+                    : null;
+                })(),
+                onHandQty: inventoryUtils.formatQty(input.quantity),
+                sampleQty: "0",
+                reservedQty: "0",
+                quarantineQty: "0",
+                holdQty: "0",
+                defectiveQty: "0",
+                publishEcom: 0,
+                publishB2b: 0,
+              })
+              .$returningId();
 
-      // 8. Create audit log
-      await tx.insert(auditLogs).values({
-        actorId: input.userId,
-        entity: "Batch",
-        entityId: batch.id,
-        action: "CREATED",
-        before: null,
-        after: inventoryUtils.createAuditSnapshot(batch),
-        reason: "Initial intake",
-        deletedAt: null,
-      });
+            const [createdBatch] = await tx
+              .select()
+              .from(batches)
+              .where(eq(batches.id, batchCreated.id));
+
+            if (!createdBatch) {
+              throw new Error("Failed to create batch");
+            }
+            batch = createdBatch;
+          } catch (insertError) {
+            if (!isDuplicateEntryError(insertError)) {
+              throw insertError;
+            }
+
+            // Any duplicate-key race (SKU/code) gets a fresh candidate and retries.
+            skuSequence += 1;
+            if (skuSequence > maxSkuAttempts) {
+              throw new Error(
+                `Failed to generate unique SKU for ${brandKey}/${productKey} after ${maxSkuAttempts} attempts`
+              );
+            }
+            sku = inventoryUtils.generateSKU(
+              brandKey,
+              productKey,
+              skuDate,
+              skuSequence
+            );
+            batchCode = await inventoryUtils.generateBatchCode();
+          }
+        }
+
+        // Persist intake-uploaded media as batch images (Photography source of truth)
+        if (input.mediaUrls && input.mediaUrls.length > 0) {
+          await tx.insert(productImages).values(
+            input.mediaUrls.map((media, index) => ({
+              batchId: batch.id,
+              productId: product.id,
+              imageUrl: media.url,
+              thumbnailUrl: null,
+              caption: media.fileName ? media.fileName.slice(0, 255) : null,
+              isPrimary: index === 0,
+              sortOrder: index,
+              status: "APPROVED" as const,
+              uploadedBy: input.actorId,
+              uploadedAt: new Date(),
+              deletedAt: null,
+            }))
+          );
+        }
+
+        // 7. Create batch location
+        await tx.insert(batchLocations).values({
+          batchId: batch.id,
+          site: input.location.site,
+          zone: input.location.zone,
+          rack: input.location.rack,
+          shelf: input.location.shelf,
+          bin: input.location.bin,
+          qty: inventoryUtils.formatQty(input.quantity),
+          deletedAt: null,
+        });
+
+        // 8. Create audit log
+        await tx.insert(auditLogs).values({
+          actorId: input.actorId,
+          entity: "Batch",
+          entityId: batch.id,
+          action: "CREATED",
+          before: null,
+          after: inventoryUtils.createAuditSnapshot(batch),
+          reason: "Initial intake",
+          deletedAt: null,
+        });
 
         return {
           success: true,
@@ -411,7 +411,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
               vendorClientId: supplierClient.id,
               cogsPerUnit,
             },
-            input.userId
+            input.actorId
           );
           logger.info({
             msg: "[MEET-005] Created payable for consigned batch",

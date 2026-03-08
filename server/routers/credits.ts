@@ -27,20 +27,25 @@ const creditReasonEnum = z.enum([
   "REFUND",
   "DAMAGE_CLAIM",
   "BILLING_ERROR",
-  "OTHER"
+  "OTHER",
 ]);
 
 export const creditsRouter = router({
   // List all credits with filtering and pagination
-  list: protectedProcedure.use(requirePermission("credits:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-      status: z.enum(["ACTIVE", "PARTIALLY_USED", "FULLY_USED", "EXPIRED", "VOID"]).optional(),
-      reason: creditReasonEnum.optional(),
-      searchTerm: z.string().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+  list: protectedProcedure
+    .use(requirePermission("credits:read"))
+    .input(
+      z.object({
+        clientId: z.number().optional(),
+        status: z
+          .enum(["ACTIVE", "PARTIALLY_USED", "FULLY_USED", "EXPIRED", "VOID"])
+          .optional(),
+        reason: creditReasonEnum.optional(),
+        searchTerm: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -60,7 +65,7 @@ export const creditsRouter = router({
       }
       if (input.searchTerm) {
         // Escape SQL LIKE special characters to prevent injection
-        const escapedTerm = input.searchTerm.replace(/[%_\\]/g, '\\$&');
+        const escapedTerm = input.searchTerm.replace(/[%_\\]/g, "\\$&");
         conditions.push(
           or(
             like(credits.creditNumber, `%${escapedTerm}%`),
@@ -98,7 +103,8 @@ export const creditsRouter = router({
       const creditList = await query;
 
       // Get total count
-      const countConditions = conditions.length > 0 ? and(...conditions) : undefined;
+      const countConditions =
+        conditions.length > 0 ? and(...conditions) : undefined;
       const countResult = await db
         .select({ count: sql<number>`COUNT(*)` })
         .from(credits)
@@ -118,7 +124,8 @@ export const creditsRouter = router({
     }),
 
   // Get credit summary statistics
-  getSummary: protectedProcedure.use(requirePermission("credits:read"))
+  getSummary: protectedProcedure
+    .use(requirePermission("credits:read"))
     .query(async () => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -149,8 +156,10 @@ export const creditsRouter = router({
       // Calculate overall totals
       const overallTotals = statusTotals.reduce(
         (acc, s) => ({
-          totalCreditsIssued: acc.totalCreditsIssued + Number(s.totalAmount || 0),
-          totalCreditsRemaining: acc.totalCreditsRemaining + Number(s.totalRemaining || 0),
+          totalCreditsIssued:
+            acc.totalCreditsIssued + Number(s.totalAmount || 0),
+          totalCreditsRemaining:
+            acc.totalCreditsRemaining + Number(s.totalRemaining || 0),
           creditCount: acc.creditCount + Number(s.count || 0),
         }),
         { totalCreditsIssued: 0, totalCreditsRemaining: 0, creditCount: 0 }
@@ -179,23 +188,34 @@ export const creditsRouter = router({
 
       return {
         ...overallTotals,
-        totalCreditsUsed: overallTotals.totalCreditsIssued - overallTotals.totalCreditsRemaining,
-        byStatus: statusTotals.reduce((acc, s) => {
-          acc[s.status] = {
-            count: Number(s.count),
-            totalAmount: Number(s.totalAmount || 0),
-            totalRemaining: Number(s.totalRemaining || 0),
-          };
-          return acc;
-        }, {} as Record<string, { count: number; totalAmount: number; totalRemaining: number }>),
-        byReason: reasonTotals.reduce((acc, r) => {
-          const reason = r.reason || "OTHER";
-          acc[reason] = {
-            count: Number(r.count),
-            totalAmount: Number(r.totalAmount || 0),
-          };
-          return acc;
-        }, {} as Record<string, { count: number; totalAmount: number }>),
+        totalCreditsUsed:
+          overallTotals.totalCreditsIssued -
+          overallTotals.totalCreditsRemaining,
+        byStatus: statusTotals.reduce(
+          (acc, s) => {
+            acc[s.status] = {
+              count: Number(s.count),
+              totalAmount: Number(s.totalAmount || 0),
+              totalRemaining: Number(s.totalRemaining || 0),
+            };
+            return acc;
+          },
+          {} as Record<
+            string,
+            { count: number; totalAmount: number; totalRemaining: number }
+          >
+        ),
+        byReason: reasonTotals.reduce(
+          (acc, r) => {
+            const reason = r.reason || "OTHER";
+            acc[reason] = {
+              count: Number(r.count),
+              totalAmount: Number(r.totalAmount || 0),
+            };
+            return acc;
+          },
+          {} as Record<string, { count: number; totalAmount: number }>
+        ),
         expiringWithin30Days: {
           count: Number(expiringCredits[0]?.count || 0),
           totalAmount: Number(expiringCredits[0]?.totalAmount || 0),
@@ -204,24 +224,35 @@ export const creditsRouter = router({
     }),
 
   // Issue a new credit with enhanced options
-  issue: protectedProcedure.use(requirePermission("credits:create"))
-    .input(z.object({
-      clientId: z.number(),
-      amount: z.number().positive(),
-      reason: creditReasonEnum,
-      description: z.string().optional(),
-      expiresAt: z.date().optional(),
-      relatedInvoiceId: z.number().optional(),
-      relatedReturnId: z.number().optional(),
-      notes: z.string().optional(),
-    }))
+  issue: protectedProcedure
+    .use(requirePermission("credits:create"))
+    .input(
+      z.object({
+        clientId: z.number(),
+        amount: z
+          .number()
+          .positive()
+          .max(10_000_000, "Credit amount must not exceed 10,000,000"),
+        reason: creditReasonEnum,
+        description: z.string().optional(),
+        expiresAt: z.date().optional(),
+        relatedInvoiceId: z.number().optional(),
+        relatedReturnId: z.number().optional(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      logger.info({ msg: "[Credits] Issuing credit", clientId: input.clientId, amount: input.amount, reason: input.reason });
+      logger.info({
+        msg: "[Credits] Issuing credit",
+        clientId: input.clientId,
+        amount: input.amount,
+        reason: input.reason,
+      });
 
       // Validate client exists
       const [client] = await db
@@ -238,11 +269,18 @@ export const creditsRouter = router({
 
       // Build description/notes
       const creditNotes = [
-        input.description || `Credit issued for ${input.reason.toLowerCase().replace(/_/g, " ")}`,
-        input.relatedInvoiceId ? `Related Invoice ID: ${input.relatedInvoiceId}` : null,
-        input.relatedReturnId ? `Related Return ID: ${input.relatedReturnId}` : null,
+        input.description ||
+          `Credit issued for ${input.reason.toLowerCase().replace(/_/g, " ")}`,
+        input.relatedInvoiceId
+          ? `Related Invoice ID: ${input.relatedInvoiceId}`
+          : null,
+        input.relatedReturnId
+          ? `Related Return ID: ${input.relatedReturnId}`
+          : null,
         input.notes,
-      ].filter(Boolean).join(" | ");
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       const credit = await creditsDb.createCredit({
         creditNumber,
@@ -254,23 +292,30 @@ export const creditsRouter = router({
         expirationDate: input.expiresAt,
         notes: creditNotes,
         createdBy: ctx.user.id,
-        creditStatus: "ACTIVE"
+        creditStatus: "ACTIVE",
       });
 
-      logger.info({ msg: "[Credits] Credit issued", creditId: credit.id, creditNumber });
+      logger.info({
+        msg: "[Credits] Credit issued",
+        creditId: credit.id,
+        creditNumber,
+      });
 
       return credit;
     }),
 
   // Create a new credit (legacy endpoint - kept for backwards compatibility)
-  create: protectedProcedure.use(requirePermission("credits:create"))
-    .input(z.object({
-      clientId: z.number(),
-      creditAmount: z.string(),
-      creditReason: z.string().optional(),
-      expirationDate: z.date().optional(),
-      notes: z.string().optional(),
-    }))
+  create: protectedProcedure
+    .use(requirePermission("credits:create"))
+    .input(
+      z.object({
+        clientId: z.number(),
+        creditAmount: z.string(),
+        creditReason: z.string().optional(),
+        expirationDate: z.date().optional(),
+        notes: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -287,50 +332,62 @@ export const creditsRouter = router({
         expirationDate: input.expirationDate,
         notes: input.notes,
         createdBy: ctx.user.id,
-        creditStatus: "ACTIVE"
+        creditStatus: "ACTIVE",
       });
     }),
 
   // Get credit by ID
-  getById: protectedProcedure.use(requirePermission("credits:read"))
+  getById: protectedProcedure
+    .use(requirePermission("credits:read"))
     .input(z.object({ creditId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getCreditById(input.creditId);
     }),
 
   // Get credit by number
-  getByNumber: protectedProcedure.use(requirePermission("credits:read"))
+  getByNumber: protectedProcedure
+    .use(requirePermission("credits:read"))
     .input(z.object({ creditNumber: z.string() }))
     .query(async ({ input }) => {
       return await creditsDb.getCreditByNumber(input.creditNumber);
     }),
 
   // Get all credits for a client
-  getByClient: protectedProcedure.use(requirePermission("credits:read"))
-    .input(z.object({
-      clientId: z.number(),
-      activeOnly: z.boolean().optional().default(false),
-    }))
+  getByClient: protectedProcedure
+    .use(requirePermission("credits:read"))
+    .input(
+      z.object({
+        clientId: z.number(),
+        activeOnly: z.boolean().optional().default(false),
+      })
+    )
     .query(async ({ input }) => {
-      return await creditsDb.getCreditsByClient(input.clientId, input.activeOnly);
+      return await creditsDb.getCreditsByClient(
+        input.clientId,
+        input.activeOnly
+      );
     }),
 
   // Get client credit balance
-  getBalance: protectedProcedure.use(requirePermission("credits:read"))
+  getBalance: protectedProcedure
+    .use(requirePermission("credits:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getClientCreditBalance(input.clientId);
     }),
 
   // Apply credit to an invoice
-  applyCredit: protectedProcedure.use(requirePermission("credits:update"))
-    .input(z.object({
-      creditId: z.number(),
-      invoiceId: z.number(),
-      amountToApply: z.string(),
-      notes: z.string().optional(),
-      idempotencyKey: z.string().optional(),
-    }))
+  applyCredit: protectedProcedure
+    .use(requirePermission("credits:update"))
+    .input(
+      z.object({
+        creditId: z.number(),
+        invoiceId: z.number(),
+        amountToApply: z.string(),
+        notes: z.string().optional(),
+        idempotencyKey: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -345,28 +402,32 @@ export const creditsRouter = router({
     }),
 
   // Get applications for a credit
-  getApplications: protectedProcedure.use(requirePermission("credits:read"))
+  getApplications: protectedProcedure
+    .use(requirePermission("credits:read"))
     .input(z.object({ creditId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getCreditApplications(input.creditId);
     }),
 
   // Get credits applied to an invoice
-  getInvoiceApplications: protectedProcedure.use(requirePermission("credits:read"))
+  getInvoiceApplications: protectedProcedure
+    .use(requirePermission("credits:read"))
     .input(z.object({ invoiceId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getInvoiceCreditApplications(input.invoiceId);
     }),
 
   // Get credit history for a client
-  getHistory: protectedProcedure.use(requirePermission("credits:read"))
+  getHistory: protectedProcedure
+    .use(requirePermission("credits:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getClientCreditHistory(input.clientId);
     }),
 
   // Void a credit
-  void: protectedProcedure.use(requirePermission("credits:delete"))
+  void: protectedProcedure
+    .use(requirePermission("credits:delete"))
     .input(z.object({ creditId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
@@ -374,11 +435,11 @@ export const creditsRouter = router({
     }),
 
   // Mark expired credits (admin function, could be run as cron job)
-  markExpired: protectedProcedure.use(requirePermission("credits:update"))
+  markExpired: protectedProcedure
+    .use(requirePermission("credits:update"))
     .mutation(async ({ ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
       const count = await creditsDb.markExpiredCredits();
       return { expiredCount: count };
     }),
 });
-

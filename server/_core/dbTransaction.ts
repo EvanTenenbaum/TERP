@@ -1,5 +1,6 @@
 import { getDb } from "../db";
 import { logger } from "./logger";
+import { env } from "./env";
 import { sql } from "drizzle-orm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import type * as schema from "../../drizzle/schema";
@@ -36,6 +37,13 @@ export interface TransactionOptions {
    * Default: 30 seconds
    */
   timeout?: number;
+
+  /**
+   * Query execution timeout in milliseconds, applied via MySQL max_execution_time.
+   * When not provided, falls back to QUERY_TIMEOUT_MS env var (default: 30000).
+   * Set to 0 to disable query-level timeout.
+   */
+  queryTimeoutMs?: number;
 }
 
 /**
@@ -56,62 +64,120 @@ export async function withTransaction<T>(
   const {
     isolationLevel = TransactionIsolationLevel.REPEATABLE_READ,
     timeout = 30,
+    queryTimeoutMs: queryTimeoutMsOpt,
   } = options;
 
-  // IMPORTANT: In MySQL, SET TRANSACTION ISOLATION LEVEL must be executed BEFORE starting the transaction
-  // Since Drizzle's db.transaction() starts the transaction immediately, we can't set it per-transaction
-  // Instead, we use the default REPEATABLE READ (MySQL default) for all transactions
-  // For custom isolation levels, they would need to be set at session level before db.transaction() is called
-  // This is a known limitation - custom isolation levels require explicit connection management
+  // Resolve query timeout: explicit option > env var > 0 (no limit)
+  const queryTimeoutMs =
+    queryTimeoutMsOpt !== undefined ? queryTimeoutMsOpt : env.QUERY_TIMEOUT_MS;
+  const warningThresholdMs = Math.floor(queryTimeoutMs * 0.8);
 
-  // Note: Setting session-level isolation affects all transactions on that connection
-  // With connection pooling, this is generally safe as connections are reused appropriately
-  // but we avoid doing it here to prevent unintended side effects
+  // IMPORTANT: In MySQL, SET TRANSACTION ISOLATION LEVEL must be executed BEFORE starting
+  // the transaction. We set it at session level prior to calling db.transaction(), then
+  // reset to the MySQL default (REPEATABLE READ) after the transaction completes.
+  // This approach works safely with connection pooling because each pooled connection
+  // is used by one request at a time; we restore the default before returning the
+  // connection to the pool.
 
-  // For now, we only support the default REPEATABLE READ isolation level
-  // Custom isolation levels can be added later if needed via explicit connection management
+  const useDefaultIsolation =
+    isolationLevel === TransactionIsolationLevel.REPEATABLE_READ;
+
+  if (!useDefaultIsolation) {
+    try {
+      await db.execute(
+        sql.raw(`SET SESSION TRANSACTION ISOLATION LEVEL ${isolationLevel}`)
+      );
+      logger.info(
+        { isolationLevel },
+        "Set session transaction isolation level"
+      );
+    } catch (error) {
+      logger.warn(
+        { error, isolationLevel },
+        "Failed to set transaction isolation level, using session default"
+      );
+    }
+  }
 
   // Execute transaction with proper error handling
-  return await db.transaction(async tx => {
-    try {
-      // Set lock wait timeout for this transaction's connection
-      // This is safe because it only affects lock acquisition time, not transaction isolation
+  let result: T;
+  try {
+    result = await db.transaction(async tx => {
       try {
-        await tx.execute(
-          sql.raw(`SET SESSION innodb_lock_wait_timeout = ${timeout}`)
-        );
+        // Set lock wait timeout for this transaction's connection
+        // This is safe because it only affects lock acquisition time, not transaction isolation
+        try {
+          await tx.execute(
+            sql.raw(`SET SESSION innodb_lock_wait_timeout = ${timeout}`)
+          );
+        } catch (error) {
+          logger.warn(
+            { error, timeout },
+            "Failed to set lock wait timeout, using default"
+          );
+        }
+
+        // Set query-level execution timeout (max_execution_time, in milliseconds)
+        // MySQL will automatically kill queries that exceed this limit.
+        // A value of 0 disables the per-query timeout.
+        if (queryTimeoutMs > 0) {
+          try {
+            await tx.execute(
+              sql.raw(`SET SESSION max_execution_time = ${queryTimeoutMs}`)
+            );
+          } catch (error) {
+            logger.warn(
+              { error, queryTimeoutMs },
+              "Failed to set max_execution_time; continuing without query timeout"
+            );
+          }
+        }
+
+        const txStartMs = Date.now();
+        const result = await callback(tx);
+        const elapsed = Date.now() - txStartMs;
+
+        // Warn if elapsed time approaches the timeout threshold
+        if (queryTimeoutMs > 0 && elapsed >= warningThresholdMs) {
+          logger.warn(
+            { elapsed, queryTimeoutMs, warningThresholdMs },
+            "Transaction elapsed time exceeded 80% of query timeout threshold"
+          );
+        }
+
+        return result;
       } catch (error) {
-        logger.warn(
-          { error, timeout },
-          "Failed to set lock wait timeout, using default"
-        );
-      }
-
-      // Execute callback - use default REPEATABLE READ isolation level
-      // Note: If custom isolation level is requested but not REPEATABLE_READ, log a warning
-      if (isolationLevel !== TransactionIsolationLevel.REPEATABLE_READ) {
-        logger.warn(
+        logger.error(
           {
-            requested: isolationLevel,
-            using: TransactionIsolationLevel.REPEATABLE_READ,
+            error,
+            isolationLevel,
+            timeout,
           },
-          "Custom transaction isolation level requested but not supported - using default REPEATABLE READ"
+          "Transaction failed, rolling back"
+        );
+        throw error;
+      }
+    });
+  } finally {
+    // Always reset isolation level to MySQL default after the transaction,
+    // regardless of success or failure, so the pooled connection is clean.
+    if (!useDefaultIsolation) {
+      try {
+        await db.execute(
+          sql.raw(
+            `SET SESSION TRANSACTION ISOLATION LEVEL ${TransactionIsolationLevel.REPEATABLE_READ}`
+          )
+        );
+      } catch (resetError) {
+        logger.warn(
+          { error: resetError, isolationLevel },
+          "Failed to reset transaction isolation level to default after transaction"
         );
       }
-
-      return await callback(tx);
-    } catch (error) {
-      logger.error(
-        {
-          error,
-          isolationLevel,
-          timeout,
-        },
-        "Transaction failed, rolling back"
-      );
-      throw error;
     }
-  });
+  }
+
+  return result;
 }
 
 /**

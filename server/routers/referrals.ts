@@ -4,6 +4,12 @@
  *
  * NOTE: Client tier-based referral percentages disabled - clients.tier doesn't exist.
  * Uses global default percentage for all referrals.
+ *
+ * TER-579: Legacy Schema Compatibility
+ * The referral_credits and referral_settings tables may not exist on older DB schemas.
+ * All endpoints that touch these tables are wrapped with isLegacySchemaError() guards:
+ *   - Read endpoints return empty/default results with a logged warning
+ *   - Write endpoints throw PRECONDITION_FAILED with a clear user-facing message
  */
 
 import { TRPCError } from "@trpc/server";
@@ -18,6 +24,61 @@ import {
   referralCreditSettings,
 } from "../../drizzle/schema";
 import { adminProcedure, router } from "../_core/trpc";
+
+/**
+ * Detects MySQL errors caused by missing tables or columns in a legacy schema.
+ * Use this to guard all referral table queries — the referral_credits and
+ * referral_settings tables may not exist on older DB deployments.
+ */
+function isLegacySchemaError(error: unknown): boolean {
+  const code = (error as { code?: string })?.code;
+  return code === "ER_BAD_FIELD_ERROR" || code === "ER_NO_SUCH_TABLE";
+}
+
+/**
+ * TER-575: Retrieve the active referral credit percentage from DB settings.
+ * Falls back to the documented default (10%) when the settings table is missing
+ * or empty (legacy schema). Logs a warning when the fallback is used so operators
+ * know a migration is required.
+ *
+ * Exported so orders.ts (and any future callers) can use the same logic
+ * without duplicating the fallback behaviour.
+ */
+export async function getReferralPercentage(): Promise<number> {
+  const DEFAULT_PERCENTAGE = 10.0;
+  try {
+    const [globalSetting] = await db
+      .select()
+      .from(referralCreditSettings)
+      .where(
+        and(
+          isNull(referralCreditSettings.clientTier),
+          eq(referralCreditSettings.isActive, true)
+        )
+      )
+      .limit(1);
+
+    if (globalSetting) {
+      return parseFloat(globalSetting.creditPercentage);
+    }
+
+    // Settings table exists but has no global row yet — use default
+    logger.warn(
+      { context: "getReferralPercentage" },
+      "No global referral setting found in referral_settings table — using default 10%"
+    );
+    return DEFAULT_PERCENTAGE;
+  } catch (error: unknown) {
+    if (isLegacySchemaError(error)) {
+      logger.warn(
+        { error, context: "getReferralPercentage" },
+        "Referral settings table/columns missing (legacy schema) — using default 10%"
+      );
+      return DEFAULT_PERCENTAGE;
+    }
+    throw error;
+  }
+}
 
 export const referralsRouter = router({
   /**
@@ -51,11 +112,7 @@ export const referralsRouter = router({
     } catch (error: unknown) {
       // Only return defaults for schema-mismatch errors (legacy DB without expected columns).
       // Re-throw everything else so real failures (connection, permissions) surface properly.
-      const mysqlCode = (error as { code?: string })?.code;
-      if (
-        mysqlCode === "ER_BAD_FIELD_ERROR" ||
-        mysqlCode === "ER_NO_SUCH_TABLE"
-      ) {
+      if (isLegacySchemaError(error)) {
         logger.warn(
           { error, context: "referrals.getSettings" },
           "Referral settings table/columns missing (legacy schema), using defaults"
@@ -135,11 +192,7 @@ export const referralsRouter = router({
 
         return { success: true };
       } catch (error: unknown) {
-        const mysqlCode = (error as { code?: string })?.code;
-        if (
-          mysqlCode === "ER_BAD_FIELD_ERROR" ||
-          mysqlCode === "ER_NO_SUCH_TABLE"
-        ) {
+        if (isLegacySchemaError(error)) {
           logger.error(
             { error, context: "referrals.updateSettings" },
             "Referral settings table/columns missing — cannot save settings on legacy schema"
@@ -160,53 +213,68 @@ export const referralsRouter = router({
   getPendingCredits: adminProcedure
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
-      const credits = await db
-        .select({
-          id: referralCredits.id,
-          referredClientId: referralCredits.referredClientId,
-          referredClientName: clients.name,
-          referredOrderId: referralCredits.referredOrderId,
-          referredOrderNumber: orders.orderNumber,
-          creditAmount: referralCredits.creditAmount,
-          status: referralCredits.status,
-          createdAt: referralCredits.createdAt,
-          expiresAt: referralCredits.expiresAt,
-        })
-        .from(referralCredits)
-        .innerJoin(clients, eq(referralCredits.referredClientId, clients.id))
-        .innerJoin(orders, eq(referralCredits.referredOrderId, orders.id))
-        .where(
-          and(
-            eq(referralCredits.referrerClientId, input.clientId),
-            or(
-              eq(referralCredits.status, "PENDING"),
-              eq(referralCredits.status, "AVAILABLE")
+      try {
+        const credits = await db
+          .select({
+            id: referralCredits.id,
+            referredClientId: referralCredits.referredClientId,
+            referredClientName: clients.name,
+            referredOrderId: referralCredits.referredOrderId,
+            referredOrderNumber: orders.orderNumber,
+            creditAmount: referralCredits.creditAmount,
+            status: referralCredits.status,
+            createdAt: referralCredits.createdAt,
+            expiresAt: referralCredits.expiresAt,
+          })
+          .from(referralCredits)
+          .innerJoin(clients, eq(referralCredits.referredClientId, clients.id))
+          .innerJoin(orders, eq(referralCredits.referredOrderId, orders.id))
+          .where(
+            and(
+              eq(referralCredits.referrerClientId, input.clientId),
+              or(
+                eq(referralCredits.status, "PENDING"),
+                eq(referralCredits.status, "AVAILABLE")
+              )
             )
           )
-        )
-        .orderBy(desc(referralCredits.createdAt));
+          .orderBy(desc(referralCredits.createdAt));
 
-      const totalPending = credits
-        .filter(c => c.status === "PENDING")
-        .reduce((sum, c) => sum + parseFloat(c.creditAmount), 0);
+        const totalPending = credits
+          .filter(c => c.status === "PENDING")
+          .reduce((sum, c) => sum + parseFloat(c.creditAmount), 0);
 
-      const totalAvailable = credits
-        .filter(c => c.status === "AVAILABLE")
-        .reduce((sum, c) => sum + parseFloat(c.creditAmount), 0);
+        const totalAvailable = credits
+          .filter(c => c.status === "AVAILABLE")
+          .reduce((sum, c) => sum + parseFloat(c.creditAmount), 0);
 
-      return {
-        totalPending,
-        totalAvailable,
-        credits: credits.map(c => ({
-          id: c.id,
-          referredClientName: c.referredClientName,
-          referredOrderNumber: c.referredOrderNumber,
-          creditAmount: parseFloat(c.creditAmount),
-          status: c.status,
-          createdAt: c.createdAt,
-          expiresAt: c.expiresAt,
-        })),
-      };
+        return {
+          totalPending,
+          totalAvailable,
+          credits: credits.map(c => ({
+            id: c.id,
+            referredClientName: c.referredClientName,
+            referredOrderNumber: c.referredOrderNumber,
+            creditAmount: parseFloat(c.creditAmount),
+            status: c.status,
+            createdAt: c.createdAt,
+            expiresAt: c.expiresAt,
+          })),
+        };
+      } catch (error: unknown) {
+        if (isLegacySchemaError(error)) {
+          logger.warn(
+            {
+              error,
+              context: "referrals.getPendingCredits",
+              clientId: input.clientId,
+            },
+            "Referral credits table/columns missing (legacy schema) — returning empty results"
+          );
+          return { totalPending: 0, totalAvailable: 0, credits: [] };
+        }
+        throw error;
+      }
     }),
 
   /**
@@ -220,57 +288,72 @@ export const referralsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const statusFilter = input.includeApplied
-        ? undefined
-        : or(
-            eq(referralCredits.status, "PENDING"),
-            eq(referralCredits.status, "AVAILABLE")
-          );
+      try {
+        const statusFilter = input.includeApplied
+          ? undefined
+          : or(
+              eq(referralCredits.status, "PENDING"),
+              eq(referralCredits.status, "AVAILABLE")
+            );
 
-      const credits = await db
-        .select({
-          id: referralCredits.id,
-          referredClientId: referralCredits.referredClientId,
-          referredClientName: clients.name,
-          referredOrderId: referralCredits.referredOrderId,
-          referredOrderNumber: orders.orderNumber,
-          creditPercentage: referralCredits.creditPercentage,
-          orderTotal: referralCredits.orderTotal,
-          creditAmount: referralCredits.creditAmount,
-          status: referralCredits.status,
-          appliedToOrderId: referralCredits.appliedToOrderId,
-          appliedAmount: referralCredits.appliedAmount,
-          appliedAt: referralCredits.appliedAt,
-          createdAt: referralCredits.createdAt,
-          expiresAt: referralCredits.expiresAt,
-          notes: referralCredits.notes,
-        })
-        .from(referralCredits)
-        .innerJoin(clients, eq(referralCredits.referredClientId, clients.id))
-        .innerJoin(orders, eq(referralCredits.referredOrderId, orders.id))
-        .where(
-          and(
-            eq(referralCredits.referrerClientId, input.clientId),
-            statusFilter
+        const credits = await db
+          .select({
+            id: referralCredits.id,
+            referredClientId: referralCredits.referredClientId,
+            referredClientName: clients.name,
+            referredOrderId: referralCredits.referredOrderId,
+            referredOrderNumber: orders.orderNumber,
+            creditPercentage: referralCredits.creditPercentage,
+            orderTotal: referralCredits.orderTotal,
+            creditAmount: referralCredits.creditAmount,
+            status: referralCredits.status,
+            appliedToOrderId: referralCredits.appliedToOrderId,
+            appliedAmount: referralCredits.appliedAmount,
+            appliedAt: referralCredits.appliedAt,
+            createdAt: referralCredits.createdAt,
+            expiresAt: referralCredits.expiresAt,
+            notes: referralCredits.notes,
+          })
+          .from(referralCredits)
+          .innerJoin(clients, eq(referralCredits.referredClientId, clients.id))
+          .innerJoin(orders, eq(referralCredits.referredOrderId, orders.id))
+          .where(
+            and(
+              eq(referralCredits.referrerClientId, input.clientId),
+              statusFilter
+            )
           )
-        )
-        .orderBy(desc(referralCredits.createdAt));
+          .orderBy(desc(referralCredits.createdAt));
 
-      return credits.map(c => ({
-        id: c.id,
-        referredClientName: c.referredClientName,
-        referredOrderNumber: c.referredOrderNumber,
-        creditPercentage: parseFloat(c.creditPercentage),
-        orderTotal: parseFloat(c.orderTotal),
-        creditAmount: parseFloat(c.creditAmount),
-        status: c.status,
-        appliedToOrderId: c.appliedToOrderId,
-        appliedAmount: c.appliedAmount ? parseFloat(c.appliedAmount) : null,
-        appliedAt: c.appliedAt,
-        createdAt: c.createdAt,
-        expiresAt: c.expiresAt,
-        notes: c.notes,
-      }));
+        return credits.map(c => ({
+          id: c.id,
+          referredClientName: c.referredClientName,
+          referredOrderNumber: c.referredOrderNumber,
+          creditPercentage: parseFloat(c.creditPercentage),
+          orderTotal: parseFloat(c.orderTotal),
+          creditAmount: parseFloat(c.creditAmount),
+          status: c.status,
+          appliedToOrderId: c.appliedToOrderId,
+          appliedAmount: c.appliedAmount ? parseFloat(c.appliedAmount) : null,
+          appliedAt: c.appliedAt,
+          createdAt: c.createdAt,
+          expiresAt: c.expiresAt,
+          notes: c.notes,
+        }));
+      } catch (error: unknown) {
+        if (isLegacySchemaError(error)) {
+          logger.warn(
+            {
+              error,
+              context: "referrals.getCreditHistory",
+              clientId: input.clientId,
+            },
+            "Referral credits table/columns missing (legacy schema) — returning empty history"
+          );
+          return [];
+        }
+        throw error;
+      }
     }),
 
   /**
@@ -295,42 +378,42 @@ export const referralsRouter = router({
         });
       }
 
-      // Get referral percentage (global setting only - clients.tier doesn't exist)
-      let creditPercentage = 10.0; // Default
+      try {
+        // TER-575: Use the shared helper so the fallback logic is consistent
+        const creditPercentage = await getReferralPercentage();
+        const creditAmount = (input.orderTotal * creditPercentage) / 100;
 
-      const globalSetting = await db
-        .select()
-        .from(referralCreditSettings)
-        .where(
-          and(
-            isNull(referralCreditSettings.clientTier),
-            eq(referralCreditSettings.isActive, true)
-          )
-        )
-        .limit(1);
+        // Create pending credit
+        const [result] = await db.insert(referralCredits).values({
+          referrerClientId: input.referrerClientId,
+          referredClientId: input.referredClientId,
+          referredOrderId: input.referredOrderId,
+          creditPercentage: creditPercentage.toFixed(2),
+          orderTotal: input.orderTotal.toFixed(2),
+          creditAmount: creditAmount.toFixed(2),
+          status: "PENDING",
+        });
 
-      if (globalSetting[0]) {
-        creditPercentage = parseFloat(globalSetting[0].creditPercentage);
+        return {
+          creditId: result.insertId,
+          creditAmount,
+          creditPercentage,
+        };
+      } catch (error: unknown) {
+        if (error instanceof TRPCError) throw error;
+        if (isLegacySchemaError(error)) {
+          logger.error(
+            { error, context: "referrals.createReferralCredit", input },
+            "Referral credits table/columns missing — cannot create referral credit on legacy schema"
+          );
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Referral credits cannot be recorded: the database schema needs migration. Contact support.",
+          });
+        }
+        throw error;
       }
-
-      const creditAmount = (input.orderTotal * creditPercentage) / 100;
-
-      // Create pending credit
-      const [result] = await db.insert(referralCredits).values({
-        referrerClientId: input.referrerClientId,
-        referredClientId: input.referredClientId,
-        referredOrderId: input.referredOrderId,
-        creditPercentage: creditPercentage.toFixed(2),
-        orderTotal: input.orderTotal.toFixed(2),
-        creditAmount: creditAmount.toFixed(2),
-        status: "PENDING",
-      });
-
-      return {
-        creditId: result.insertId,
-        creditAmount,
-        creditPercentage,
-      };
     }),
 
   /**
@@ -339,20 +422,39 @@ export const referralsRouter = router({
   markCreditAvailable: adminProcedure
     .input(z.object({ orderId: z.number() }))
     .mutation(async ({ input }) => {
-      await db
-        .update(referralCredits)
-        .set({
-          status: "AVAILABLE",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(referralCredits.referredOrderId, input.orderId),
-            eq(referralCredits.status, "PENDING")
-          )
-        );
+      try {
+        await db
+          .update(referralCredits)
+          .set({
+            status: "AVAILABLE",
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(referralCredits.referredOrderId, input.orderId),
+              eq(referralCredits.status, "PENDING")
+            )
+          );
 
-      return { success: true };
+        return { success: true };
+      } catch (error: unknown) {
+        if (isLegacySchemaError(error)) {
+          logger.error(
+            {
+              error,
+              context: "referrals.markCreditAvailable",
+              orderId: input.orderId,
+            },
+            "Referral credits table/columns missing — cannot update credit status on legacy schema"
+          );
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Referral credit status cannot be updated: the database schema needs migration. Contact support.",
+          });
+        }
+        throw error;
+      }
     }),
 
   /**
@@ -366,24 +468,43 @@ export const referralsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      await db
-        .update(referralCredits)
-        .set({
-          status: "CANCELLED",
-          notes: input.reason || "Referred order cancelled",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(referralCredits.referredOrderId, input.orderId),
-            or(
-              eq(referralCredits.status, "PENDING"),
-              eq(referralCredits.status, "AVAILABLE")
+      try {
+        await db
+          .update(referralCredits)
+          .set({
+            status: "CANCELLED",
+            notes: input.reason || "Referred order cancelled",
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(referralCredits.referredOrderId, input.orderId),
+              or(
+                eq(referralCredits.status, "PENDING"),
+                eq(referralCredits.status, "AVAILABLE")
+              )
             )
-          )
-        );
+          );
 
-      return { success: true };
+        return { success: true };
+      } catch (error: unknown) {
+        if (isLegacySchemaError(error)) {
+          logger.error(
+            {
+              error,
+              context: "referrals.cancelCredit",
+              orderId: input.orderId,
+            },
+            "Referral credits table/columns missing — cannot cancel referral credit on legacy schema"
+          );
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Referral credit cannot be cancelled: the database schema needs migration. Contact support.",
+          });
+        }
+        throw error;
+      }
     }),
 
   /**
@@ -398,141 +519,162 @@ export const referralsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Get the order
-      const [order] = await db
-        .select({
-          id: orders.id,
-          clientId: orders.clientId,
-          total: orders.total,
-          discount: orders.discount,
-          isDraft: orders.isDraft,
-        })
-        .from(orders)
-        .where(eq(orders.id, input.orderId))
-        .limit(1);
-
-      if (!order) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Order not found",
-        });
-      }
-
-      // Get available credits for this client
-      // BUG-118 FIX: Check array length, not just truthiness (empty array [] is truthy but crashes inArray)
-      const availableCreditsQuery = db
-        .select()
-        .from(referralCredits)
-        .where(
-          and(
-            eq(referralCredits.referrerClientId, order.clientId),
-            eq(referralCredits.status, "AVAILABLE"),
-            input.creditIds?.length
-              ? inArray(referralCredits.id, input.creditIds)
-              : undefined
-          )
-        )
-        .orderBy(referralCredits.createdAt); // FIFO
-
-      const availableCredits = await availableCreditsQuery;
-
-      if (availableCredits.length === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No available credits to apply",
-        });
-      }
-
-      // Calculate total available credit
-      const totalAvailableCredit = availableCredits.reduce(
-        (sum, c) => sum + parseFloat(c.creditAmount),
-        0
-      );
-
-      // Calculate maximum applicable amount
-      const orderTotal = parseFloat(order.total);
-      const currentDiscount = parseFloat(order.discount || "0");
-      const maxApplicable = Math.min(
-        totalAvailableCredit,
-        orderTotal - currentDiscount, // Can't exceed order total
-        input.maxAmount || Infinity
-      );
-
-      if (maxApplicable <= 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Credit cannot be applied (order total already covered)",
-        });
-      }
-
-      // Apply credits (FIFO)
-      let remainingToApply = maxApplicable;
-      const appliedCredits: { creditId: number; appliedAmount: number }[] = [];
-
-      for (const credit of availableCredits) {
-        if (remainingToApply <= 0) break;
-
-        const creditAmount = parseFloat(credit.creditAmount);
-        const applyAmount = Math.min(creditAmount, remainingToApply);
-
-        // Update credit status
-        await db
-          .update(referralCredits)
-          .set({
-            status: "APPLIED",
-            appliedToOrderId: order.id,
-            appliedAmount: applyAmount.toFixed(2),
-            appliedAt: new Date(),
-            appliedBy: ctx.user?.id,
-            updatedAt: new Date(),
+      try {
+        // Get the order
+        const [order] = await db
+          .select({
+            id: orders.id,
+            clientId: orders.clientId,
+            total: orders.total,
+            discount: orders.discount,
+            isDraft: orders.isDraft,
           })
-          .where(eq(referralCredits.id, credit.id));
+          .from(orders)
+          .where(eq(orders.id, input.orderId))
+          .limit(1);
 
-        appliedCredits.push({
-          creditId: credit.id,
-          appliedAmount: applyAmount,
-        });
-
-        remainingToApply -= applyAmount;
-
-        // If partial application, create a new credit for remainder
-        if (applyAmount < creditAmount) {
-          const remainder = creditAmount - applyAmount;
-          await db.insert(referralCredits).values({
-            referrerClientId: credit.referrerClientId,
-            referredClientId: credit.referredClientId,
-            referredOrderId: credit.referredOrderId,
-            creditPercentage: credit.creditPercentage,
-            orderTotal: credit.orderTotal,
-            creditAmount: remainder.toFixed(2),
-            status: "AVAILABLE",
-            notes: `Remainder from partial application to order ${order.id}`,
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
           });
         }
+
+        // Get available credits for this client
+        // BUG-118 FIX: Check array length, not just truthiness (empty array [] is truthy but crashes inArray)
+        const availableCreditsQuery = db
+          .select()
+          .from(referralCredits)
+          .where(
+            and(
+              eq(referralCredits.referrerClientId, order.clientId),
+              eq(referralCredits.status, "AVAILABLE"),
+              input.creditIds?.length
+                ? inArray(referralCredits.id, input.creditIds)
+                : undefined
+            )
+          )
+          .orderBy(referralCredits.createdAt); // FIFO
+
+        const availableCredits = await availableCreditsQuery;
+
+        if (availableCredits.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No available credits to apply",
+          });
+        }
+
+        // Calculate total available credit
+        const totalAvailableCredit = availableCredits.reduce(
+          (sum, c) => sum + parseFloat(c.creditAmount),
+          0
+        );
+
+        // Calculate maximum applicable amount
+        const orderTotal = parseFloat(order.total);
+        const currentDiscount = parseFloat(order.discount || "0");
+        const maxApplicable = Math.min(
+          totalAvailableCredit,
+          orderTotal - currentDiscount, // Can't exceed order total
+          input.maxAmount || Infinity
+        );
+
+        if (maxApplicable <= 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Credit cannot be applied (order total already covered)",
+          });
+        }
+
+        // Apply credits (FIFO)
+        let remainingToApply = maxApplicable;
+        const appliedCredits: { creditId: number; appliedAmount: number }[] =
+          [];
+
+        for (const credit of availableCredits) {
+          if (remainingToApply <= 0) break;
+
+          const creditAmount = parseFloat(credit.creditAmount);
+          const applyAmount = Math.min(creditAmount, remainingToApply);
+
+          // Update credit status
+          await db
+            .update(referralCredits)
+            .set({
+              status: "APPLIED",
+              appliedToOrderId: order.id,
+              appliedAmount: applyAmount.toFixed(2),
+              appliedAt: new Date(),
+              appliedBy: ctx.user?.id,
+              updatedAt: new Date(),
+            })
+            .where(eq(referralCredits.id, credit.id));
+
+          appliedCredits.push({
+            creditId: credit.id,
+            appliedAmount: applyAmount,
+          });
+
+          remainingToApply -= applyAmount;
+
+          // If partial application, create a new credit for remainder
+          if (applyAmount < creditAmount) {
+            const remainder = creditAmount - applyAmount;
+            await db.insert(referralCredits).values({
+              referrerClientId: credit.referrerClientId,
+              referredClientId: credit.referredClientId,
+              referredOrderId: credit.referredOrderId,
+              creditPercentage: credit.creditPercentage,
+              orderTotal: credit.orderTotal,
+              creditAmount: remainder.toFixed(2),
+              status: "AVAILABLE",
+              notes: `Remainder from partial application to order ${order.id}`,
+            });
+          }
+        }
+
+        // Update order discount
+        const totalApplied = appliedCredits.reduce(
+          (sum, c) => sum + c.appliedAmount,
+          0
+        );
+        const newDiscount = currentDiscount + totalApplied;
+        const newTotal = orderTotal - totalApplied;
+
+        await db
+          .update(orders)
+          .set({
+            discount: newDiscount.toFixed(2),
+            total: newTotal.toFixed(2),
+          })
+          .where(eq(orders.id, order.id));
+
+        return {
+          appliedAmount: totalApplied,
+          remainingCredits: totalAvailableCredit - totalApplied,
+          orderNewTotal: newTotal,
+          appliedCredits,
+        };
+      } catch (error: unknown) {
+        if (error instanceof TRPCError) throw error;
+        if (isLegacySchemaError(error)) {
+          logger.error(
+            {
+              error,
+              context: "referrals.applyCreditsToOrder",
+              orderId: input.orderId,
+            },
+            "Referral credits table/columns missing — cannot apply credits on legacy schema"
+          );
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Referral credits cannot be applied: the database schema needs migration. Contact support.",
+          });
+        }
+        throw error;
       }
-
-      // Update order discount
-      const totalApplied = appliedCredits.reduce(
-        (sum, c) => sum + c.appliedAmount,
-        0
-      );
-      const newDiscount = currentDiscount + totalApplied;
-      const newTotal = orderTotal - totalApplied;
-
-      await db
-        .update(orders)
-        .set({
-          discount: newDiscount.toFixed(2),
-          total: newTotal.toFixed(2),
-        })
-        .where(eq(orders.id, order.id));
-
-      return {
-        appliedAmount: totalApplied,
-        remainingCredits: totalAvailableCredit - totalApplied,
-        orderNewTotal: newTotal,
-        appliedCredits,
-      };
     }),
 
   /**
@@ -585,63 +727,79 @@ export const referralsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const dateFilter =
-        input.startDate && input.endDate
-          ? and(
-              sql`${referralCredits.createdAt} >= ${input.startDate}`,
-              sql`${referralCredits.createdAt} <= ${input.endDate}`
-            )
-          : undefined;
+      try {
+        const dateFilter =
+          input.startDate && input.endDate
+            ? and(
+                sql`${referralCredits.createdAt} >= ${input.startDate}`,
+                sql`${referralCredits.createdAt} <= ${input.endDate}`
+              )
+            : undefined;
 
-      // Total credits created
-      const [totalCreated] = await db
-        .select({
-          count: sql<number>`COUNT(*)`,
-          totalAmount: sql<number>`SUM(${referralCredits.creditAmount})`,
-        })
-        .from(referralCredits)
-        .where(dateFilter);
+        // Total credits created
+        const [totalCreated] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(${referralCredits.creditAmount})`,
+          })
+          .from(referralCredits)
+          .where(dateFilter);
 
-      // Credits by status
-      const byStatus = await db
-        .select({
-          status: referralCredits.status,
-          count: sql<number>`COUNT(*)`,
-          totalAmount: sql<number>`SUM(${referralCredits.creditAmount})`,
-        })
-        .from(referralCredits)
-        .where(dateFilter)
-        .groupBy(referralCredits.status);
+        // Credits by status
+        const byStatus = await db
+          .select({
+            status: referralCredits.status,
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(${referralCredits.creditAmount})`,
+          })
+          .from(referralCredits)
+          .where(dateFilter)
+          .groupBy(referralCredits.status);
 
-      // Top referrers
-      const topReferrers = await db
-        .select({
-          clientId: referralCredits.referrerClientId,
-          clientName: clients.name,
-          referralCount: sql<number>`COUNT(*)`,
-          totalEarned: sql<number>`SUM(${referralCredits.creditAmount})`,
-        })
-        .from(referralCredits)
-        .innerJoin(clients, eq(referralCredits.referrerClientId, clients.id))
-        .where(dateFilter)
-        .groupBy(referralCredits.referrerClientId, clients.name)
-        .orderBy(sql`SUM(${referralCredits.creditAmount}) DESC`)
-        .limit(10);
+        // Top referrers
+        const topReferrers = await db
+          .select({
+            clientId: referralCredits.referrerClientId,
+            clientName: clients.name,
+            referralCount: sql<number>`COUNT(*)`,
+            totalEarned: sql<number>`SUM(${referralCredits.creditAmount})`,
+          })
+          .from(referralCredits)
+          .innerJoin(clients, eq(referralCredits.referrerClientId, clients.id))
+          .where(dateFilter)
+          .groupBy(referralCredits.referrerClientId, clients.name)
+          .orderBy(sql`SUM(${referralCredits.creditAmount}) DESC`)
+          .limit(10);
 
-      return {
-        totalCreditsCreated: totalCreated.count || 0,
-        totalCreditAmount: totalCreated.totalAmount || 0,
-        byStatus: byStatus.map(s => ({
-          status: s.status,
-          count: s.count,
-          totalAmount: s.totalAmount || 0,
-        })),
-        topReferrers: topReferrers.map(r => ({
-          clientId: r.clientId,
-          clientName: r.clientName,
-          referralCount: r.referralCount,
-          totalEarned: r.totalEarned || 0,
-        })),
-      };
+        return {
+          totalCreditsCreated: totalCreated.count || 0,
+          totalCreditAmount: totalCreated.totalAmount || 0,
+          byStatus: byStatus.map(s => ({
+            status: s.status,
+            count: s.count,
+            totalAmount: s.totalAmount || 0,
+          })),
+          topReferrers: topReferrers.map(r => ({
+            clientId: r.clientId,
+            clientName: r.clientName,
+            referralCount: r.referralCount,
+            totalEarned: r.totalEarned || 0,
+          })),
+        };
+      } catch (error: unknown) {
+        if (isLegacySchemaError(error)) {
+          logger.warn(
+            { error, context: "referrals.getStats" },
+            "Referral credits table/columns missing (legacy schema) — returning empty stats"
+          );
+          return {
+            totalCreditsCreated: 0,
+            totalCreditAmount: 0,
+            byStatus: [],
+            topReferrers: [],
+          };
+        }
+        throw error;
+      }
     }),
 });

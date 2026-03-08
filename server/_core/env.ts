@@ -136,6 +136,17 @@ export const env = {
   get enableTestAuth() {
     return process.env.ENABLE_TEST_AUTH === "true";
   },
+  // Idempotency cache backend: "db" (default, multi-instance safe) or "memory" (single-instance only)
+  // Set IDEMPOTENCY_BACKEND=memory to roll back to in-memory behavior during an incident.
+  // TER-593: Query-level timeout in milliseconds (default: 30000 = 30s)
+  get QUERY_TIMEOUT_MS(): number {
+    const val = parseInt(process.env.QUERY_TIMEOUT_MS ?? "30000", 10);
+    return Number.isNaN(val) || val <= 0 ? 30000 : val;
+  },
+  get idempotencyBackend(): "db" | "memory" {
+    const val = process.env.IDEMPOTENCY_BACKEND;
+    return val === "memory" ? "memory" : "db";
+  },
   // QA authentication (for deterministic RBAC testing)
   // SECURITY: Only enabled in non-production environments
   get qaAuthEnabled() {

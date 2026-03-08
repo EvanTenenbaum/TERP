@@ -102,7 +102,7 @@ export const sessionOrderService = {
       orderType: "SALE",
       clientId: session.clientId,
       items: orderItems,
-      createdBy: options.userId,
+      actorId: options.userId,
       paymentTerms: options.paymentTerms || "NET_30",
       notes: [
         `Live Shopping Session #${session.roomCode}`,

@@ -29,7 +29,8 @@ import * as schema from "../../drizzle/schema";
  * Add tables here temporarily while waiting for migration to run
  */
 const TABLES_PENDING_MIGRATION: string[] = [
-  // Example: "new_feature_table"
+  // TER-585: idempotency_keys table added to schema, migration pending
+  "idempotency_keys",
 ];
 
 /**

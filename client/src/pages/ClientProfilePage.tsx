@@ -68,10 +68,19 @@ import {
   CheckCircle,
   Settings,
   BookOpen,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
+// TER-626: Reduced to 2 primary tabs; old deep-link tab params map to these
 const TABBABLE_SECTIONS = new Set([
   "overview",
+  "history",
+  // Legacy tab names kept for backward-compat deep links
   "supplier",
   "transactions",
   "payments",
@@ -83,11 +92,24 @@ const TABBABLE_SECTIONS = new Set([
   "live-catalog",
 ]);
 
+// TER-626: Old tab names redirect to one of the 2 new tabs
+const LEGACY_TAB_MAP: Record<string, string> = {
+  supplier: "overview",
+  pricing: "overview",
+  needs: "overview",
+  communications: "overview",
+  calendar: "overview",
+  notes: "overview",
+  "live-catalog": "overview",
+  transactions: "history",
+  payments: "history",
+};
+
 function getInitialClientTab(search: string): string {
   const tabParam = new URLSearchParams(search).get("tab");
-  if (tabParam && TABBABLE_SECTIONS.has(tabParam)) {
-    return tabParam;
-  }
+  if (!tabParam) return "overview";
+  if (LEGACY_TAB_MAP[tabParam]) return LEGACY_TAB_MAP[tabParam];
+  if (TABBABLE_SECTIONS.has(tabParam)) return tabParam;
   return "overview";
 }
 
@@ -224,11 +246,12 @@ export default function ClientProfilePage() {
     },
   });
 
+  // TER-626: Tab validation — only "overview" and "history" are valid tabs now
   useEffect(() => {
-    if (activeTab === "supplier" && client && !client.isSeller) {
+    if (activeTab !== "overview" && activeTab !== "history") {
       setActiveTab("overview");
     }
-  }, [activeTab, client]);
+  }, [activeTab]);
 
   if (clientLoading) {
     return <PageSkeleton variant="dashboard" />;
@@ -495,7 +518,7 @@ export default function ClientProfilePage() {
           </Card>
         </div>
 
-        {/* Tabbed Content */}
+        {/* TER-626: Tabbed Content — reduced to 2 tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
             <TabsList className="inline-flex w-full min-w-max md:w-auto h-auto gap-1">
@@ -505,67 +528,17 @@ export default function ClientProfilePage() {
               >
                 Overview
               </TabsTrigger>
-              {client.isSeller && (
-                <TabsTrigger
-                  value="supplier"
-                  className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-                >
-                  Supplier
-                </TabsTrigger>
-              )}
               <TabsTrigger
-                value="transactions"
+                value="history"
                 data-testid="transactions-tab"
                 className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
               >
-                Transactions
-              </TabsTrigger>
-              <TabsTrigger
-                value="payments"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Payments
-              </TabsTrigger>
-              <TabsTrigger
-                value="pricing"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Pricing
-              </TabsTrigger>
-              <TabsTrigger
-                value="needs"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Needs
-              </TabsTrigger>
-              <TabsTrigger
-                value="communications"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Comms
-              </TabsTrigger>
-              <TabsTrigger
-                value="calendar"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Calendar
-              </TabsTrigger>
-              <TabsTrigger
-                value="notes"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Notes
-              </TabsTrigger>
-              <TabsTrigger
-                value="live-catalog"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Catalog
+                History
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* Overview Tab */}
+          {/* TER-626: Overview Tab — combined key info + collapsible sections */}
           <TabsContent value="overview" className="space-y-4">
             {/* Credit Status Card (only for buyers with visibility enabled) */}
             {client.isBuyer && shouldShowCreditWidgetInProfile && (
@@ -756,289 +729,382 @@ export default function ClientProfilePage() {
                 />
               </CardContent>
             </Card>
+
+            {/* TER-626: Collapsible sections absorbed into Overview */}
+            {client.isSeller && (
+              <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+                <CollapsibleTrigger asChild>
+                  <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                    <CardHeader className="py-3">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                        <CardTitle className="text-base">
+                          Supplier Profile
+                        </CardTitle>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <SupplierProfileSection
+                    clientId={clientId}
+                    clientName={client.name}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+              <CollapsibleTrigger asChild>
+                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                      <CardTitle className="text-base">
+                        Pricing Config
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <PricingConfigTab clientId={clientId} />
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+              <CollapsibleTrigger asChild>
+                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                      <CardTitle className="text-base">
+                        Needs & Wishlist
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-4">
+                <ClientNeedsTab clientId={clientId} />
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+              <CollapsibleTrigger asChild>
+                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                      <CardTitle className="text-base">
+                        Communications
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <CommunicationTimeline
+                  clientId={clientId}
+                  onAddClick={() => setCommunicationModalOpen(true)}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+              <CollapsibleTrigger asChild>
+                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                      <CardTitle className="text-base">Calendar</CardTitle>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <ClientCalendarTab clientId={clientId} />
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+              <CollapsibleTrigger asChild>
+                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                      <CardTitle className="text-base">Notes</CardTitle>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="h-[400px]">
+                      <FreeformNoteWidget noteId={noteId || undefined} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {client.isBuyer && (
+              <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
+                <CollapsibleTrigger asChild>
+                  <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
+                    <CardHeader className="py-3">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                        <CardTitle className="text-base">
+                          Live Catalog
+                        </CardTitle>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <LiveCatalogConfig clientId={clientId} />
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </TabsContent>
 
-          {/* Supplier Tab (only for sellers) */}
-          {client.isSeller && (
-            <TabsContent value="supplier" className="space-y-4">
-              <SupplierProfileSection
-                clientId={clientId}
-                clientName={client.name}
-              />
-            </TabsContent>
-          )}
+          {/* TER-626: History Tab — transactions + payments combined */}
+          <TabsContent value="history" className="space-y-4">
+            {/* Transactions Section */}
+            <div>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Transaction History</CardTitle>
+                      <CardDescription>
+                        All transactions (invoices, quotes, orders, etc.)
+                      </CardDescription>
+                    </div>
+                    <Button
+                      data-testid="add-transaction-btn"
+                      onClick={() => setTransactionDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Transaction
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent
+                  className="space-y-4"
+                  data-testid="transactions-list"
+                >
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search transactions..."
+                      value={transactionSearch}
+                      onChange={e => setTransactionSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
 
-          {/* Transactions Tab */}
-          <TabsContent value="transactions" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+                  {/* Transactions Table */}
+                  {transactionsLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Loading transactions...
+                    </div>
+                  ) : !transactions || transactions.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-lg font-medium">
+                        No transactions found
+                      </p>
+                      <p className="text-sm mt-2">
+                        Add a transaction to get started
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Transaction #</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Payment Status</TableHead>
+                            <TableHead>Notes</TableHead>
+                            <TableHead>Audit</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {transactions.map((txn: ClientTransaction) => (
+                            <TableRow
+                              key={txn.id}
+                              data-testid={`transaction-row-${txn.id}`}
+                              data-status={txn.paymentStatus}
+                            >
+                              <TableCell className="font-medium">
+                                {txn.transactionNumber || "-"}
+                              </TableCell>
+                              <TableCell>
+                                {getTransactionTypeBadge(txn.transactionType)}
+                              </TableCell>
+                              <TableCell>
+                                {txn.transactionDate
+                                  ? formatDate(txn.transactionDate)
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {txn.amount !== null && txn.amount !== undefined
+                                  ? formatCurrency(txn.amount)
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>
+                                {getPaymentStatusBadge(
+                                  txn.paymentStatus || "PENDING"
+                                )}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {txn.notes || "-"}
+                              </TableCell>
+                              <TableCell>
+                                <AuditIcon
+                                  entityType="transaction"
+                                  entityId={txn.id}
+                                  size="sm"
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {txn.paymentStatus !== "PAID" && (
+                                  <Button
+                                    data-testid="record-payment-btn"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedTransaction(txn);
+                                      setPaymentDialogOpen(true);
+                                    }}
+                                  >
+                                    Record Payment
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Payments Section */}
+            <div>
+              <Card>
+                <CardHeader>
                   <div>
-                    <CardTitle>Transaction History</CardTitle>
+                    <CardTitle>Payment History</CardTitle>
                     <CardDescription>
-                      All transactions (invoices, quotes, orders, etc.)
+                      All completed payments for this client
                     </CardDescription>
                   </div>
-                  <Button
-                    data-testid="add-transaction-btn"
-                    onClick={() => setTransactionDialogOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Transaction
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent
-                className="space-y-4"
-                data-testid="transactions-list"
-              >
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search transactions..."
-                    value={transactionSearch}
-                    onChange={e => setTransactionSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search payments..."
+                      value={paymentSearch}
+                      onChange={e => setPaymentSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
 
-                {/* Transactions Table */}
-                {transactionsLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Loading transactions...
-                  </div>
-                ) : !transactions || transactions.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-lg font-medium">No transactions found</p>
-                    <p className="text-sm mt-2">
-                      Add a transaction to get started
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Transaction #</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                          <TableHead>Payment Status</TableHead>
-                          <TableHead>Notes</TableHead>
-                          <TableHead>Audit</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {transactions.map((txn: ClientTransaction) => (
-                          <TableRow
-                            key={txn.id}
-                            data-testid={`transaction-row-${txn.id}`}
-                            data-status={txn.paymentStatus}
-                          >
-                            <TableCell className="font-medium">
-                              {txn.transactionNumber || "-"}
-                            </TableCell>
-                            <TableCell>
-                              {getTransactionTypeBadge(txn.transactionType)}
-                            </TableCell>
-                            <TableCell>
-                              {txn.transactionDate
-                                ? formatDate(txn.transactionDate)
-                                : "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {txn.amount !== null && txn.amount !== undefined
-                                ? formatCurrency(txn.amount)
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {getPaymentStatusBadge(
-                                txn.paymentStatus || "PENDING"
-                              )}
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate">
-                              {txn.notes || "-"}
-                            </TableCell>
-                            <TableCell>
-                              <AuditIcon
-                                entityType="transaction"
-                                entityId={txn.id}
-                                size="sm"
-                              />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {txn.paymentStatus !== "PAID" && (
-                                <Button
-                                  data-testid="record-payment-btn"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedTransaction(txn);
-                                    setPaymentDialogOpen(true);
-                                  }}
-                                >
-                                  Record Payment
-                                </Button>
-                              )}
-                            </TableCell>
+                  {/* Payments Table */}
+                  {transactionsLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Loading payments...
+                    </div>
+                  ) : filteredPayments.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-medium">No payments found</p>
+                      <p className="text-sm mt-2">
+                        Payments will appear here once transactions are marked
+                        as paid
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Transaction #</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Transaction Date</TableHead>
+                            <TableHead>Payment Date</TableHead>
+                            <TableHead className="text-right">
+                              Amount Paid
+                            </TableHead>
+                            <TableHead className="text-right">
+                              Transaction Amount
+                            </TableHead>
+                            <TableHead>Status</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div>
-                  <CardTitle>Payment History</CardTitle>
-                  <CardDescription>
-                    All completed payments for this client
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search payments..."
-                    value={paymentSearch}
-                    onChange={e => setPaymentSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                {/* Payments Table */}
-                {transactionsLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Loading payments...
-                  </div>
-                ) : filteredPayments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-lg font-medium">No payments found</p>
-                    <p className="text-sm mt-2">
-                      Payments will appear here once transactions are marked as
-                      paid
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Transaction #</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Transaction Date</TableHead>
-                          <TableHead>Payment Date</TableHead>
-                          <TableHead className="text-right">
-                            Amount Paid
-                          </TableHead>
-                          <TableHead className="text-right">
-                            Transaction Amount
-                          </TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPayments.map((txn: ClientTransaction) => (
-                          <TableRow key={txn.id}>
-                            <TableCell className="font-medium">
-                              {txn.transactionNumber || "-"}
-                            </TableCell>
-                            <TableCell>
-                              {getTransactionTypeBadge(txn.transactionType)}
-                            </TableCell>
-                            <TableCell>
-                              {txn.transactionDate
-                                ? formatDate(txn.transactionDate)
-                                : "-"}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {txn.paymentDate
-                                ? formatDate(txn.paymentDate)
-                                : "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-medium text-green-600">
-                              {(txn.paymentAmount ?? txn.amount) !== null &&
-                              (txn.paymentAmount ?? txn.amount) !== undefined
-                                ? formatCurrency(
-                                    txn.paymentAmount ?? txn.amount ?? 0
-                                  )
-                                : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {txn.amount !== null && txn.amount !== undefined
-                                ? formatCurrency(txn.amount)
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                <span className="text-green-600 font-medium">
-                                  Paid
-                                </span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          {/* Pricing Tab */}
-          <TabsContent value="pricing">
-            <PricingConfigTab clientId={clientId} />
-          </TabsContent>
-
-          {/* Notes Tab */}
-          {/* Needs & History Tab */}
-          <TabsContent value="needs" className="space-y-4">
-            <ClientNeedsTab clientId={clientId} />
-          </TabsContent>
-
-          {/* Communications Tab */}
-          <TabsContent value="communications" className="space-y-4">
-            <CommunicationTimeline
-              clientId={clientId}
-              onAddClick={() => setCommunicationModalOpen(true)}
-            />
-          </TabsContent>
-
-          <TabsContent value="calendar" className="space-y-4">
-            <ClientCalendarTab clientId={clientId} />
-          </TabsContent>
-
-          <TabsContent value="notes" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Notes</CardTitle>
-                <CardDescription>
-                  Freeform notes for this client
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[600px]">
-                  <FreeformNoteWidget noteId={noteId || undefined} />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Live Catalog Tab */}
-          <TabsContent value="live-catalog" className="space-y-4">
-            <LiveCatalogConfig clientId={clientId} />
+                        </TableHeader>
+                        <TableBody>
+                          {filteredPayments.map((txn: ClientTransaction) => (
+                            <TableRow key={txn.id}>
+                              <TableCell className="font-medium">
+                                {txn.transactionNumber || "-"}
+                              </TableCell>
+                              <TableCell>
+                                {getTransactionTypeBadge(txn.transactionType)}
+                              </TableCell>
+                              <TableCell>
+                                {txn.transactionDate
+                                  ? formatDate(txn.transactionDate)
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {txn.paymentDate
+                                  ? formatDate(txn.paymentDate)
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-green-600">
+                                {(txn.paymentAmount ?? txn.amount) !== null &&
+                                (txn.paymentAmount ?? txn.amount) !== undefined
+                                  ? formatCurrency(
+                                      txn.paymentAmount ?? txn.amount ?? 0
+                                    )
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {txn.amount !== null && txn.amount !== undefined
+                                  ? formatCurrency(txn.amount)
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <span className="text-green-600 font-medium">
+                                    Paid
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

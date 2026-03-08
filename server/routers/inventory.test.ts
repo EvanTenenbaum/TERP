@@ -517,7 +517,7 @@ describe("Inventory Router", () => {
 
       expect(processIntake).toHaveBeenCalledWith({
         ...input,
-        userId: mockUser.id,
+        actorId: mockUser.id,
       });
       expect(result).toEqual({
         success: true,

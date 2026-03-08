@@ -15,7 +15,7 @@ import {
   uniqueIndex,
   foreignKey,
 } from "drizzle-orm/mysql-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -7919,3 +7919,26 @@ export const intakeDiscrepanciesRelations = relations(
     }),
   })
 );
+
+// ============================================================================
+// IDEMPOTENCY KEYS (TER-585)
+// ============================================================================
+//
+// Database-backed idempotency cache for multi-instance deployments.
+// Replaces the in-memory Map cache in criticalMutation.ts.
+// Entries are expired by the expiresAt column; a cron job or cleanup function
+// should periodically DELETE rows WHERE expiresAt < NOW().
+
+export const idempotencyKeys = mysqlTable("idempotency_keys", {
+  key: varchar("key", { length: 255 }).primaryKey(),
+  result: json("result").notNull(),
+  domain: varchar("domain", { length: 50 }),
+  operation: varchar("operation", { length: 100 }),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type InsertIdempotencyKey = typeof idempotencyKeys.$inferInsert;
