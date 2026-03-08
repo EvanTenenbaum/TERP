@@ -25,6 +25,11 @@ import {
 import { syncClientBalance } from "./services/clientBalanceService";
 import { calculateAvailableQty } from "./inventoryUtils";
 import {
+  isSellableStatus,
+  BATCH_STATUS_LABELS,
+} from "./constants/batchStatuses";
+import type { BatchStatus } from "./constants/batchStatuses";
+import {
   coerceOrderFulfillmentStatus,
   coerceOrderStatusHistoryFulfillmentStatus,
   getStoredFulfillmentStatus,
@@ -201,6 +206,17 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
 
       if (!batch) {
         throw new Error(`Batch ${item.batchId} not found`);
+      }
+
+      // TERP-0007: Server-side batch status validation
+      // Reject orders for batches that are not in a sellable status
+      const batchStatus = batch.batchStatus as BatchStatus;
+      if (!isSellableStatus(batchStatus)) {
+        const statusLabel = BATCH_STATUS_LABELS[batchStatus] || batchStatus;
+        throw new Error(
+          `Batch ${batch.sku || batch.id} is not available for sale (status: ${statusLabel}). ` +
+            `Only batches with LIVE status can be added to orders.`
+        );
       }
 
       // Verify sufficient inventory BEFORE processing order

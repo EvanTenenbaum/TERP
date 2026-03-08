@@ -3,21 +3,23 @@
 These SQL migration files exist outside the Drizzle-managed `drizzle/migrations/` directory.
 They are NOT tracked by drizzle-kit and their application status is UNKNOWN.
 
-## Status Audit (2026-02-19)
+## Status Audit (2026-03-08)
 
-| File                              | Purpose                                                   | Applied? | Action Needed          |
-| --------------------------------- | --------------------------------------------------------- | -------- | ---------------------- |
-| 001_needs_and_matching_module.sql | Creates client_needs, vendor_supply, match_records tables | UNKNOWN  | Verify against prod DB |
-| add_strainId_to_client_needs.sql  | Adds strainId FK column to client_needs table             | UNKNOWN  | Verify against prod DB |
-| add_strain_family_support.sql     | Adds parentStrainId and baseStrainName to strains table   | UNKNOWN  | Verify against prod DB |
-| add_strain_indexes.sql            | Adds performance indexes on strains and products tables   | UNKNOWN  | Verify against prod DB |
-| create_strain_views.sql           | Creates 4 SQL views for strain family aggregation         | UNKNOWN  | Verify against prod DB |
+All tables, columns, and indexes defined in these SQL files are confirmed present in the
+Drizzle schema (`drizzle/schema.ts`). These files are **OBSOLETE** — the schema is managed
+by Drizzle Kit and these manual SQL files are no longer needed.
 
-**Resolution**: These files should be either:
+| File                              | Purpose                                                   | Status                                  | Drizzle Schema Location          |
+| --------------------------------- | --------------------------------------------------------- | --------------------------------------- | -------------------------------- |
+| 001_needs_and_matching_module.sql | Creates client_needs, vendor_supply, match_records tables | OBSOLETE                                | schema.ts lines 4131, 4206, 4275 |
+| add_strainId_to_client_needs.sql  | Adds strainId FK column to client_needs table             | OBSOLETE                                | schema.ts line 4141              |
+| add_strain_family_support.sql     | Adds parentStrainId and baseStrainName to strains table   | OBSOLETE                                | schema.ts lines 432-433          |
+| add_strain_indexes.sql            | Adds performance indexes on strains and products tables   | OBSOLETE                                | schema.ts index definitions      |
+| create_strain_views.sql           | Creates 4 SQL views for strain family aggregation         | KEEP (SQL views not managed by Drizzle) |
 
-1. Verified as applied and moved to `drizzle/migrations/` with proper sequence numbers
-2. Verified as NOT applied and scheduled for application via the production migration runbook
-3. Confirmed as obsolete and deleted
+**Resolution**: Files confirmed obsolete on 2026-03-08 by schema cross-reference. The SQL view
+file (`create_strain_views.sql`) should be retained since Drizzle Kit does not manage SQL views.
+The remaining 4 files can be safely deleted once verified against the production database.
 
 See `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` for the correct procedure to run migrations
 against the DigitalOcean Managed Database.

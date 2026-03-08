@@ -2,6 +2,10 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import type { Request, Response } from "express";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
+import {
+  BATCH_STATUSES,
+  SELLABLE_BATCH_STATUSES,
+} from "../constants/batchStatuses";
 
 // Mock the database (MUST be before other imports)
 vi.mock("../db", () => setupDbMock());
@@ -89,7 +93,7 @@ const createMockBatch = (overrides: Partial<Batch> = {}): Batch => ({
   sku: "SKU-001",
   productId: 100,
   lotId: 200,
-  batchStatus: "AWAITING_INTAKE",
+  batchStatus: BATCH_STATUSES[0], // AWAITING_INTAKE
   statusId: null,
   grade: null,
   isSample: 0,
@@ -268,7 +272,7 @@ describe("Inventory Router", () => {
       // Act
       const result = await caller.inventory.list({
         limit: 50,
-        status: "LIVE",
+        status: SELLABLE_BATCH_STATUSES[0],
       });
 
       // Assert
@@ -276,7 +280,7 @@ describe("Inventory Router", () => {
       expect(inventoryDb.getBatchesWithDetails).toHaveBeenCalledWith(
         50,
         undefined,
-        { status: "LIVE", category: undefined }
+        { status: SELLABLE_BATCH_STATUSES[0], category: undefined }
       );
     });
   });
