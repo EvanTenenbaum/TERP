@@ -84,6 +84,10 @@
 import { TRPCError } from "@trpc/server";
 import { withRetryableTransaction } from "./dbTransaction";
 import { logger } from "./logger";
+import { env } from "./env";
+import { getDb } from "./db";
+import { idempotencyKeys } from "../../drizzle/schema";
+import { eq, lt } from "drizzle-orm";
 
 // ============================================================================
 // TYPES
@@ -197,57 +201,57 @@ export interface CriticalMutationResult<T> {
 // IDEMPOTENCY CACHE
 // ============================================================================
 //
-// KNOWN LIMITATION: This in-memory cache only works for single-instance deployments.
-// For multi-instance/horizontal scaling, migrate to one of:
-// - Redis-backed cache (recommended for production)
-// - Database table with idempotency_keys (alternative)
+// TER-585: Migrated to database-backed idempotency for multi-instance safety.
 //
-// Migration path:
-// 1. Create idempotency_keys table with (key, result, expires_at, created_at)
-// 2. Replace getCachedResult/setCachedResult with database queries
-// 3. Use SELECT ... FOR UPDATE to prevent race conditions
+// Production runs 2-4 instances on DigitalOcean App Platform. The in-memory
+// Map cache was broken for multi-instance deployments because each instance
+// had its own isolated map. The database-backed implementation shares state
+// across all instances.
+//
+// Feature flag: IDEMPOTENCY_BACKEND env var
+//   "db"     (default) — database-backed, multi-instance safe
+//   "memory" — in-memory fallback for rollback during incidents
+//
+// DB implementation uses INSERT IGNORE to handle concurrent duplicate requests
+// gracefully — if two instances race on the same key, the second INSERT is
+// silently dropped and the first result is returned.
+//
+// Cleanup: Call cleanupExpiredIdempotencyKeys() from a cron job to purge
+// rows older than their expiresAt. The cleanup timer only runs for memory mode.
 // ============================================================================
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (IDEMPOTENCY_BACKEND=memory)
+// ---------------------------------------------------------------------------
 
 interface CachedResult {
   result: unknown;
   expiresAt: number;
 }
 
-// In-memory cache with TTL (24 hours default)
 const idempotencyCache = new Map<string, CachedResult>();
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// Timer reference for cleanup (allows proper cleanup in tests/shutdown)
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-/**
- * Get cached result for idempotency key
- */
-function getCachedResult<T>(key: string): T | null {
+function getCachedResultMemory<T>(key: string): T | null {
   const cached = idempotencyCache.get(key);
   if (!cached) return null;
-
   if (Date.now() > cached.expiresAt) {
     idempotencyCache.delete(key);
     return null;
   }
-
   return cached.result as T;
 }
 
-/**
- * Cache result for idempotency key
- */
-function setCachedResult<T>(key: string, result: T): void {
+function setCachedResultMemory<T>(key: string, result: T): void {
   idempotencyCache.set(key, {
     result,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
 }
 
-/**
- * Cleanup expired cache entries (called periodically)
- */
 function cleanupExpiredCache(): void {
   const now = Date.now();
   for (const [key, value] of idempotencyCache.entries()) {
@@ -258,17 +262,18 @@ function cleanupExpiredCache(): void {
 }
 
 /**
- * Start the periodic cache cleanup timer
- * Called automatically on module load, but can be restarted after stopCacheCleanup()
+ * Start the periodic in-memory cache cleanup timer.
+ * No-op when using DB backend. Called automatically in memory mode.
  */
 export function startCacheCleanup(): void {
-  if (cleanupTimer) return; // Already running
+  if (env.idempotencyBackend !== "memory") return;
+  if (cleanupTimer) return;
   cleanupTimer = setInterval(cleanupExpiredCache, 60 * 60 * 1000); // Every hour
 }
 
 /**
- * Stop the periodic cache cleanup timer
- * Call this during graceful shutdown or in tests to prevent resource leaks
+ * Stop the periodic in-memory cache cleanup timer.
+ * Call during graceful shutdown or in tests to prevent resource leaks.
  */
 export function stopCacheCleanup(): void {
   if (cleanupTimer) {
@@ -278,14 +283,105 @@ export function stopCacheCleanup(): void {
 }
 
 /**
- * Clear the idempotency cache (useful for testing)
+ * Clear the in-memory idempotency cache (useful for testing).
+ * No-op when using DB backend.
  */
 export function clearIdempotencyCache(): void {
   idempotencyCache.clear();
 }
 
-// Start cleanup timer on module load
-startCacheCleanup();
+// ---------------------------------------------------------------------------
+// Database-backed implementation (IDEMPOTENCY_BACKEND=db, default)
+// ---------------------------------------------------------------------------
+
+/**
+ * Get cached result for idempotency key from the database.
+ * Returns null if not found or expired.
+ */
+async function getCachedResultDb<T>(key: string): Promise<T | null> {
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(idempotencyKeys)
+    .where(eq(idempotencyKeys.key, key))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+
+  // Respect DB-stored expiry
+  if (new Date() > row.expiresAt) {
+    return null;
+  }
+
+  return row.result as T;
+}
+
+/**
+ * Store result for idempotency key in the database.
+ * Uses INSERT IGNORE to handle concurrent duplicate requests gracefully.
+ */
+async function setCachedResultDb<T>(
+  key: string,
+  result: T,
+  domain: string,
+  operation: string
+): Promise<void> {
+  const db = await getDb();
+  const expiresAt = new Date(Date.now() + CACHE_TTL_MS);
+
+  try {
+    await db.insert(idempotencyKeys).values({
+      key,
+      result: result as Record<string, unknown>,
+      domain,
+      operation,
+      expiresAt,
+    });
+  } catch (error) {
+    // If the key already exists (duplicate key), ignore it.
+    // This can happen when two concurrent requests race — the second
+    // request's INSERT fails after the first committed, which is safe.
+    const message =
+      error instanceof Error ? error.message.toLowerCase() : String(error);
+    if (
+      message.includes("duplicate entry") ||
+      message.includes("unique constraint") ||
+      message.includes("er_dup_entry")
+    ) {
+      logger.debug(
+        { key, domain, operation },
+        "Idempotency key already exists (concurrent insert), ignoring"
+      );
+      return;
+    }
+    logger.error(
+      { key, domain, operation, error },
+      "Failed to store idempotency key"
+    );
+    throw error;
+  }
+}
+
+/**
+ * Delete expired rows from the idempotency_keys table.
+ * Call this from a cron job to keep the table from growing unbounded.
+ * Safe to call concurrently — each instance deletes by timestamp.
+ */
+export async function cleanupExpiredIdempotencyKeys(): Promise<number> {
+  const db = await getDb();
+  const now = new Date();
+  await db
+    .delete(idempotencyKeys) // hard-delete-ok: cache table, no business entity, cleanup by expiry
+    .where(lt(idempotencyKeys.expiresAt, now));
+  logger.info("Cleaned up expired idempotency keys");
+  return 0; // MySQL2 driver does not reliably expose affectedRows via Drizzle's typed return
+}
+
+// Start cleanup timer only in memory mode (DB mode doesn't need it)
+if (env.idempotencyBackend === "memory") {
+  startCacheCleanup();
+}
 
 // ============================================================================
 // CRITICAL MUTATION WRAPPER
@@ -332,7 +428,10 @@ export async function criticalMutation<T>(
 
   // Check idempotency cache first
   if (idempotencyKey) {
-    const cached = getCachedResult<T>(idempotencyKey);
+    const cached =
+      env.idempotencyBackend === "db"
+        ? await getCachedResultDb<T>(idempotencyKey)
+        : getCachedResultMemory<T>(idempotencyKey);
     if (cached !== null) {
       logger.info(
         { domain, operation, idempotencyKey, userId },
@@ -362,7 +461,11 @@ export async function criticalMutation<T>(
 
       // Cache result if idempotency key provided
       if (idempotencyKey) {
-        setCachedResult(idempotencyKey, result);
+        if (env.idempotencyBackend === "db") {
+          await setCachedResultDb(idempotencyKey, result, domain, operation);
+        } else {
+          setCachedResultMemory(idempotencyKey, result);
+        }
       }
 
       const duration = Date.now() - startTime;

@@ -10,6 +10,127 @@ import {
 import { getDb } from "../db";
 import { logger } from "../_core/logger";
 
+// ============================================================================
+// CIRCUIT BREAKER
+// ============================================================================
+
+/**
+ * Circuit breaker states for DB connectivity protection.
+ *
+ * CLOSED  — Normal operation; all calls go to DB.
+ * OPEN    — DB is down; all calls go to in-memory fallback. After
+ *           CIRCUIT_RESET_MS milliseconds, the breaker transitions to HALF_OPEN.
+ * HALF_OPEN — One probe call is allowed through to the DB to test recovery.
+ *             Success → CLOSED; failure → OPEN (resets the timer).
+ */
+type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
+
+const CIRCUIT_FAILURE_THRESHOLD = 3;   // consecutive DB failures before opening
+const CIRCUIT_RESET_MS = 30_000;       // ms in OPEN state before trying HALF_OPEN
+
+interface CircuitBreaker {
+  state: CircuitState;
+  consecutiveFailures: number;
+  openedAt: number | null;  // Date.now() when circuit opened
+}
+
+const circuitBreaker: CircuitBreaker = {
+  state: "CLOSED",
+  consecutiveFailures: 0,
+  openedAt: null,
+};
+
+function recordCircuitSuccess(): void {
+  if (circuitBreaker.state !== "CLOSED") {
+    logger.info(
+      { previousState: circuitBreaker.state },
+      "[NotificationRepository] Circuit breaker CLOSED — DB recovered"
+    );
+  }
+  circuitBreaker.state = "CLOSED";
+  circuitBreaker.consecutiveFailures = 0;
+  circuitBreaker.openedAt = null;
+}
+
+function recordCircuitFailure(): void {
+  circuitBreaker.consecutiveFailures += 1;
+
+  if (
+    circuitBreaker.state === "CLOSED" &&
+    circuitBreaker.consecutiveFailures >= CIRCUIT_FAILURE_THRESHOLD
+  ) {
+    circuitBreaker.state = "OPEN";
+    circuitBreaker.openedAt = Date.now();
+    logger.warn(
+      { consecutiveFailures: circuitBreaker.consecutiveFailures },
+      "[NotificationRepository] Circuit breaker OPEN — switching to in-memory fallback"
+    );
+    return;
+  }
+
+  if (circuitBreaker.state === "HALF_OPEN") {
+    // Probe failed — re-open the circuit
+    circuitBreaker.state = "OPEN";
+    circuitBreaker.openedAt = Date.now();
+    logger.warn(
+      {},
+      "[NotificationRepository] Circuit breaker OPEN (probe failed) — remaining on in-memory fallback"
+    );
+  }
+}
+
+/**
+ * Returns whether a DB call should be attempted given the current circuit state.
+ * Handles the OPEN → HALF_OPEN timeout transition automatically.
+ */
+function shouldAttemptDb(): boolean {
+  if (circuitBreaker.state === "CLOSED") {
+    return true;
+  }
+
+  if (circuitBreaker.state === "OPEN") {
+    const elapsed = Date.now() - (circuitBreaker.openedAt ?? 0);
+    if (elapsed >= CIRCUIT_RESET_MS) {
+      circuitBreaker.state = "HALF_OPEN";
+      logger.info(
+        {},
+        "[NotificationRepository] Circuit breaker HALF_OPEN — probing DB"
+      );
+      return true;
+    }
+    return false;
+  }
+
+  // HALF_OPEN: allow the single probe through
+  return true;
+}
+
+/**
+ * Wrap a DB call with circuit breaker logic. Falls back to the provided
+ * fallback function when the circuit is open or when the DB call fails.
+ */
+async function withCircuitBreaker<T>(
+  dbCall: () => Promise<T>,
+  fallback: () => Promise<T>
+): Promise<T> {
+  if (!shouldAttemptDb()) {
+    return fallback();
+  }
+
+  try {
+    const result = await dbCall();
+    recordCircuitSuccess();
+    return result;
+  } catch (error) {
+    recordCircuitFailure();
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[NotificationRepository] DB call failed — using in-memory fallback"
+    );
+    return fallback();
+  }
+}
+
 export type NotificationChannel = "in_app" | "email" | "sms";
 export type NotificationType = "info" | "warning" | "success" | "error";
 export type NotificationCategory = "appointment" | "order" | "system" | "general";
@@ -184,7 +305,20 @@ const preferenceRecipientWhere = (recipient: ResolvedRecipient) =>
     eq(notificationPreferences.isDeleted, false)
   );
 
-const inMemoryNotifications: Notification[] = [];
+// ============================================================================
+// IN-MEMORY STORE (degraded mode)
+// ============================================================================
+
+/**
+ * Extended in-memory notification record that tracks whether this entry has
+ * been synced to the DB. When the circuit closes, `flushInMemoryToDb` will
+ * write all entries where `pendingSync === true` to the DB.
+ */
+interface InMemoryNotification extends Notification {
+  pendingSync: boolean;
+}
+
+const inMemoryNotifications: InMemoryNotification[] = [];
 const inMemoryPreferences = new Map<string, NotificationPreference>();
 let inMemoryNotificationId = 1;
 let inMemoryPreferenceId = 1;
@@ -210,6 +344,7 @@ const inMemoryRepository: NotificationRepository = {
       isDeleted: input.isDeleted ?? false,
       createdAt,
       updatedAt,
+      pendingSync: true,
     });
     return id;
   },
@@ -438,13 +573,180 @@ function createDbRepository(db: Database): NotificationRepository {
   };
 }
 
+// ============================================================================
+// PENDING SYNC FLUSH
+// ============================================================================
+
+/**
+ * Attempt to write all in-memory notifications that have `pendingSync === true`
+ * into the DB. Called automatically when the circuit breaker closes (DB
+ * recovers). Notifications that are successfully synced are marked
+ * `pendingSync = false` so they are not re-written on the next flush.
+ *
+ * This is best-effort: individual insert failures are logged but do not abort
+ * the batch.
+ */
+async function flushInMemoryToDb(db: Database): Promise<void> {
+  const pending = inMemoryNotifications.filter(n => n.pendingSync && !n.isDeleted);
+  if (pending.length === 0) {
+    return;
+  }
+
+  logger.info(
+    { count: pending.length },
+    "[NotificationRepository] Flushing in-memory notifications to DB"
+  );
+
+  for (const notification of pending) {
+    try {
+      const { pendingSync: _pendingSync, ...insertPayload } = notification;
+      await db.insert(notifications).values(insertPayload);
+      notification.pendingSync = false;
+    } catch (error) {
+      logger.error(
+        {
+          notificationId: notification.id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "[NotificationRepository] Failed to sync in-memory notification to DB"
+      );
+      // Continue — do not abort the whole batch
+    }
+  }
+}
+
+// ============================================================================
+// PERIODIC FLUSH INTERVAL
+// ============================================================================
+
+const FLUSH_INTERVAL_MS = 30_000; // attempt flush every 30 seconds
+
+let flushIntervalHandle: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start the background flush interval. Safe to call multiple times — only
+ * starts one interval. Tests can stop it via `stopNotificationFlushInterval`.
+ */
+export function startNotificationFlushInterval(): void {
+  if (flushIntervalHandle !== null) {
+    return;
+  }
+  flushIntervalHandle = setInterval(() => {
+    void (async () => {
+      const pending = inMemoryNotifications.filter(n => n.pendingSync);
+      if (pending.length === 0) {
+        return;
+      }
+      const dbInstance = await getDb();
+      if (!dbInstance || !shouldAttemptDb()) {
+        return;
+      }
+      try {
+        await flushInMemoryToDb(dbInstance);
+        recordCircuitSuccess();
+      } catch (error) {
+        recordCircuitFailure();
+        logger.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          "[NotificationRepository] Periodic flush failed"
+        );
+      }
+    })();
+  }, FLUSH_INTERVAL_MS);
+}
+
+/** Stop the background flush interval (primarily for tests). */
+export function stopNotificationFlushInterval(): void {
+  if (flushIntervalHandle !== null) {
+    clearInterval(flushIntervalHandle);
+    flushIntervalHandle = null;
+  }
+}
+
+// ============================================================================
+// CIRCUIT-BREAKER-AWARE REPOSITORY FACTORY
+// ============================================================================
+
+/**
+ * Returns a circuit-breaker-wrapped repository. When the circuit is CLOSED the
+ * DB repository is used. When OPEN or when DB calls fail, the in-memory
+ * repository is used as a degraded fallback. On recovery, pending in-memory
+ * notifications are flushed to the DB.
+ */
 export async function getNotificationRepository(): Promise<NotificationRepository> {
   const dbInstance = await getDb();
+
   if (!dbInstance) {
     logger.warn("Database unavailable, using in-memory notification store");
     return inMemoryRepository;
   }
-  return createDbRepository(dbInstance);
+
+  if (!shouldAttemptDb()) {
+    // Circuit is OPEN — skip DB entirely
+    return inMemoryRepository;
+  }
+
+  const dbRepo = createDbRepository(dbInstance);
+
+  return {
+    insertNotification: (input) =>
+      withCircuitBreaker(
+        async () => {
+          const id = await dbRepo.insertNotification(input);
+          // Flush any previously pending in-memory entries now that DB is reachable
+          void flushInMemoryToDb(dbInstance).catch(err =>
+            logger.error(
+              { error: err instanceof Error ? err.message : String(err) },
+              "[NotificationRepository] Post-insert flush failed"
+            )
+          );
+          return id;
+        },
+        () => inMemoryRepository.insertNotification(input)
+      ),
+
+    listNotifications: (recipient, limit, offset) =>
+      withCircuitBreaker(
+        () => dbRepo.listNotifications(recipient, limit, offset),
+        () => inMemoryRepository.listNotifications(recipient, limit, offset)
+      ),
+
+    markRead: (id, recipient) =>
+      withCircuitBreaker(
+        () => dbRepo.markRead(id, recipient),
+        () => inMemoryRepository.markRead(id, recipient)
+      ),
+
+    markAllRead: (recipient) =>
+      withCircuitBreaker(
+        () => dbRepo.markAllRead(recipient),
+        () => inMemoryRepository.markAllRead(recipient)
+      ),
+
+    softDelete: (id, recipient) =>
+      withCircuitBreaker(
+        () => dbRepo.softDelete(id, recipient),
+        () => inMemoryRepository.softDelete(id, recipient)
+      ),
+
+    countUnread: (recipient) =>
+      withCircuitBreaker(
+        () => dbRepo.countUnread(recipient),
+        () => inMemoryRepository.countUnread(recipient)
+      ),
+
+    getPreferences: (recipient) =>
+      withCircuitBreaker(
+        () => dbRepo.getPreferences(recipient),
+        () => inMemoryRepository.getPreferences(recipient)
+      ),
+
+    savePreferences: (recipient, updates) =>
+      withCircuitBreaker(
+        () => dbRepo.savePreferences(recipient, updates),
+        () => inMemoryRepository.savePreferences(recipient, updates)
+      ),
+  };
 }
 
 export function resetNotificationRepositoryState(): void {
@@ -452,6 +754,10 @@ export function resetNotificationRepositoryState(): void {
   inMemoryPreferences.clear();
   inMemoryNotificationId = 1;
   inMemoryPreferenceId = 1;
+  // Reset circuit breaker state for clean test isolation
+  circuitBreaker.state = "CLOSED";
+  circuitBreaker.consecutiveFailures = 0;
+  circuitBreaker.openedAt = null;
 }
 
 export function getDefaultPreferenceFlags(): PreferenceFlags {

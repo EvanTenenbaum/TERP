@@ -81,7 +81,7 @@ describe("Orders Router", () => {
         expect.objectContaining({
           orderType: "QUOTE",
           clientId: 1,
-          createdBy: 1,
+          actorId: 1,
         })
       );
     });

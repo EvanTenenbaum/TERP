@@ -6,7 +6,7 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Sidebar } from "./Sidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
@@ -113,36 +113,23 @@ describe("AppSidebar navigation", () => {
     expect(labelTexts).toEqual(["Sell", "Buy", "Finance", "Admin"]);
   });
 
-  it("shows quick actions with Record Intake label", () => {
+  it("renders sidebar-visible navigation items only", () => {
     render(
       <ThemeProvider>
         <Sidebar open />
       </ThemeProvider>
     );
 
-    const quickActionsHeading = screen.getByText("Quick Actions");
-    const quickActionsSection =
-      quickActionsHeading.closest("div")?.parentElement;
-    expect(quickActionsSection).not.toBeNull();
+    // The Sell group is open by default when on "/", so its sidebar-visible items appear
+    expect(screen.getByText("Sales")).toBeInTheDocument();
+    expect(screen.getByText("Relationships")).toBeInTheDocument();
+    expect(screen.getByText("Demand & Supply")).toBeInTheDocument();
 
-    const quickActions = within(quickActionsSection as HTMLElement);
-
-    const dashboardQuickAction = quickActions.getByTitle("Dashboard");
-    const newSaleQuickAction = quickActions.getByTitle("New Sales Order");
-    const recordReceiptQuickAction = quickActions.getByTitle("Record Intake");
-    const clientsQuickAction = quickActions.getByTitle("Clients");
-
-    expect(dashboardQuickAction).toBeVisible();
-    expect(newSaleQuickAction).toBeVisible();
-    expect(recordReceiptQuickAction).toBeVisible();
-    expect(clientsQuickAction).toBeVisible();
-
-    expect(recordReceiptQuickAction.closest("a")).toHaveAttribute(
-      "href",
-      "/purchase-orders?tab=receiving"
-    );
-    expect(clientsQuickAction.closest("a")).toHaveAttribute("href", "/clients");
-  }, 20000);
+    // Items with sidebarVisible: false should NOT appear anywhere
+    expect(screen.queryByText("Pick & Pack")).not.toBeInTheDocument();
+    expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sales Sheets")).not.toBeInTheDocument();
+  });
 
   it("highlights active navigation item", () => {
     mockLocation = "/sales";
@@ -153,31 +140,23 @@ describe("AppSidebar navigation", () => {
     );
 
     const salesLink = screen.getByRole("link", {
-      name: /Manage orders, quotes, and returns/i,
+      name: /Manage orders, quotes, returns/i,
     });
     expect(salesLink).toHaveAttribute("aria-current", "page");
   });
 
-  it("treats intake tab variants as the same active nav destination", () => {
-    mockLocation = "/purchase-orders?tab=receiving";
-    const { rerender } = render(
+  it("highlights Purchase Orders when navigating to its sub-paths", () => {
+    mockLocation = "/purchase-orders";
+    render(
       <ThemeProvider>
         <Sidebar open />
       </ThemeProvider>
     );
 
-    const receivingLink = screen.getByRole("link", {
-      name: /Intake inventory into the system/i,
+    const purchaseOrdersLink = screen.getByRole("link", {
+      name: /Purchase order queue/i,
     });
-    expect(receivingLink).toHaveAttribute("aria-current", "page");
-
-    mockLocation = "/purchase-orders?tab=receiving&mode=spreadsheet";
-    rerender(
-      <ThemeProvider>
-        <Sidebar open />
-      </ThemeProvider>
-    );
-    expect(receivingLink).toHaveAttribute("aria-current", "page");
+    expect(purchaseOrdersLink).toHaveAttribute("aria-current", "page");
   });
 
   it("shows user actions", () => {
@@ -190,7 +169,7 @@ describe("AppSidebar navigation", () => {
     expect(screen.getByRole("button", { name: /Logout/i })).toBeInTheDocument();
   });
 
-  it("hides feature-flagged routes from quicklink customization when disabled", () => {
+  it("does not show feature-flagged items with sidebarVisible false in the sidebar", () => {
     mockSpreadsheetEnabled = false;
     render(
       <ThemeProvider>
@@ -198,7 +177,7 @@ describe("AppSidebar navigation", () => {
       </ThemeProvider>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Customize/i }));
+    // Spreadsheet View has sidebarVisible: false, so it should never appear in the sidebar
     expect(screen.queryByText("Spreadsheet View")).not.toBeInTheDocument();
   });
 });

@@ -96,7 +96,7 @@ export interface CreateOrderInput {
   cashPayment?: number;
 
   notes?: string;
-  createdBy: number;
+  actorId: number;
 }
 
 export interface ConvertQuoteToSaleInput {
@@ -132,8 +132,8 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Extract actor ID from input (already validated by router using ctx.user.id)
-  const actorId = input.createdBy;
+  // Extract actor ID from input (set by router using getAuthenticatedUserId(ctx))
+  const actorId = input.actorId;
 
   // ORD-002: Validate positive quantities and non-negative prices
   for (const item of input.items) {
@@ -1329,9 +1329,7 @@ export async function confirmDraftOrder(input: {
         cashPayment: cashPayment.toString(),
         dueDate: dueDate,
         saleStatus: saleStatus,
-        fulfillmentStatus: coerceOrderFulfillmentStatus(
-          readyForPackingStatus
-        ),
+        fulfillmentStatus: coerceOrderFulfillmentStatus(readyForPackingStatus),
         notes: input.notes || draft.notes,
         confirmedAt: new Date(),
       })
@@ -1965,9 +1963,8 @@ export async function updateOrderStatus(input: {
     );
     await tx.insert(orderStatusHistory).values({
       orderId,
-      fulfillmentStatus: coerceOrderStatusHistoryFulfillmentStatus(
-        storedHistoryStatus
-      ),
+      fulfillmentStatus:
+        coerceOrderStatusHistoryFulfillmentStatus(storedHistoryStatus),
       changedBy: userId,
       notes: sanitizedNotes,
     });

@@ -59,7 +59,10 @@ const listPaymentsSchema = z.object({
 
 const recordPaymentSchema = z.object({
   invoiceId: z.number(),
-  amount: z.number().positive("Amount must be positive"),
+  amount: z
+    .number()
+    .positive("Amount must be positive")
+    .max(10_000_000, "Amount must not exceed 10,000,000"),
   paymentMethod: z.enum([
     "CASH",
     "CHECK",
@@ -110,8 +113,21 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-// Tolerance for floating-point rounding in payment comparisons (1 cent)
-const OVERPAYMENT_TOLERANCE = new Decimal("0.01");
+/**
+ * TER-589: Configurable overpayment tolerance.
+ * The tolerance is read from the `OVERPAYMENT_TOLERANCE_CENTS` environment
+ * variable (default: 100 = $1.00). Payments that exceed the invoice amount by
+ * less than this are accepted and capped to the amount due. Payments that
+ * exceed by more are rejected outright.
+ */
+function getOverpaymentTolerance(): Decimal {
+  const centsStr = process.env.OVERPAYMENT_TOLERANCE_CENTS ?? "100";
+  const cents = parseInt(centsStr, 10);
+  if (Number.isNaN(cents) || cents < 0) {
+    return new Decimal("1.00"); // safe default
+  }
+  return new Decimal(cents).dividedBy(100);
+}
 
 // ============================================================================
 // PAYMENTS ROUTER
@@ -255,58 +271,6 @@ export const paymentsRouter = router({
         method: input.paymentMethod,
       });
 
-      // Get invoice
-      const [invoice] = await db
-        .select()
-        .from(invoices)
-        .where(eq(invoices.id, input.invoiceId))
-        .limit(1);
-
-      if (!invoice) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Invoice not found",
-        });
-      }
-
-      if (invoice.status === "DRAFT") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message:
-            "Cannot apply payment to a draft invoice. Invoice must be sent first.",
-        });
-      }
-
-      if (invoice.status === "PAID") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invoice is already paid in full",
-        });
-      }
-
-      if (invoice.status === "VOID") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cannot apply payment to a voided invoice",
-        });
-      }
-
-      const amountDueD = new Decimal(invoice.amountDue || "0");
-      const inputAmountD = new Decimal(input.amount);
-
-      // TERP-0016: Validate payment amount doesn't exceed amount due
-      if (inputAmountD.greaterThan(amountDueD.plus(OVERPAYMENT_TOLERANCE))) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDueD.toNumber())}). Overpayments are not allowed.`,
-        });
-      }
-
-      // TERP-0016: Cap payment if slightly over due to rounding
-      const effectiveAmountD = inputAmountD.greaterThan(amountDueD)
-        ? amountDueD
-        : inputAmountD;
-
       // Resolve GL account IDs and fiscal period before the transaction so that
       // missing accounts or periods produce descriptive TRPCErrors rather than a
       // generic INTERNAL_SERVER_ERROR from inside the transaction.
@@ -319,10 +283,68 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
-      // REL-003: Wrap transaction in try/catch for Sentry logging
+      // TER-581: REL-003: Wrap transaction in try/catch for Sentry logging
+      // Invoice is fetched INSIDE the transaction with FOR UPDATE to prevent
+      // concurrent payments from racing on the same invoice's amountDue/amountPaid.
       let txResult;
       try {
         txResult = await db.transaction(async tx => {
+          // TER-581: Lock invoice row for update to prevent concurrent payment race conditions.
+          // Two concurrent payments reading the same amountDue outside the transaction would
+          // both pass the overpayment check, then both commit, resulting in over-allocation.
+          const [invoice] = await tx
+            .select()
+            .from(invoices)
+            .where(eq(invoices.id, input.invoiceId))
+            .for("update");
+
+          if (!invoice) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Invoice not found",
+            });
+          }
+
+          if (invoice.status === "DRAFT") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Cannot apply payment to a draft invoice. Invoice must be sent first.",
+            });
+          }
+
+          if (invoice.status === "PAID") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Invoice is already paid in full",
+            });
+          }
+
+          if (invoice.status === "VOID") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Cannot apply payment to a voided invoice",
+            });
+          }
+
+          const amountDueD = new Decimal(invoice.amountDue || "0");
+          const inputAmountD = new Decimal(input.amount);
+
+          // TERP-0016: Validate payment amount doesn't exceed amount due
+          if (
+            inputAmountD.greaterThan(amountDueD.plus(getOverpaymentTolerance()))
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDueD.toNumber())}). Overpayments are not allowed.`,
+            });
+          }
+
+          // TERP-0016: Cap payment if slightly over due to rounding
+          const effectiveAmountD = inputAmountD.greaterThan(amountDueD)
+            ? amountDueD
+            : inputAmountD;
+
           // Generate payment number
           const paymentNumber = await generatePaymentNumber();
 
@@ -355,7 +377,7 @@ export const paymentsRouter = router({
 
           // Determine new status
           let newStatus: "PARTIAL" | "PAID";
-          if (newDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
+          if (newDueD.lessThanOrEqualTo(getOverpaymentTolerance())) {
             newStatus = "PAID";
           } else {
             newStatus = "PARTIAL";
@@ -692,11 +714,17 @@ export const paymentsRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        totalAmount: z.number().positive(),
+        totalAmount: z
+          .number()
+          .positive()
+          .max(10_000_000, "Total amount must not exceed 10,000,000"),
         allocations: z.array(
           z.object({
             invoiceId: z.number(),
-            amount: z.number().positive(),
+            amount: z
+              .number()
+              .positive()
+              .max(10_000_000, "Allocation amount must not exceed 10,000,000"),
           })
         ),
         paymentMethod: z.enum([
@@ -775,8 +803,21 @@ export const paymentsRouter = router({
             newStatus: string;
           }[] = [];
 
+          // TER-581: Lock all invoices in ascending ID order before processing to prevent
+          // deadlocks when concurrent payments target the same set of invoices.
+          const sortedInvoiceIds = [...input.allocations]
+            .map(a => a.invoiceId)
+            .sort((a, b) => a - b);
+          for (const invoiceId of sortedInvoiceIds) {
+            await tx
+              .select({ id: invoices.id })
+              .from(invoices)
+              .where(eq(invoices.id, invoiceId))
+              .for("update");
+          }
+
           for (const allocation of input.allocations) {
-            // Get invoice
+            // Get invoice (row is already locked above)
             const [invoice] = await tx
               .select()
               .from(invoices)
@@ -816,7 +857,7 @@ export const paymentsRouter = router({
             const allocAmountD = new Decimal(allocation.amount);
             if (
               allocAmountD.greaterThan(
-                allocAmountDueD.plus(OVERPAYMENT_TOLERANCE)
+                allocAmountDueD.plus(getOverpaymentTolerance())
               )
             ) {
               throw new TRPCError({
@@ -847,7 +888,7 @@ export const paymentsRouter = router({
             );
 
             let newStatus: string;
-            if (allocNewDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
+            if (allocNewDueD.lessThanOrEqualTo(getOverpaymentTolerance())) {
               newStatus = "PAID";
             } else if (allocNewPaidD.greaterThan(0)) {
               newStatus = "PARTIAL";
@@ -963,7 +1004,10 @@ export const paymentsRouter = router({
     .input(
       z.object({
         invoiceId: z.number(),
-        amount: z.number().positive("Amount must be positive"),
+        amount: z
+          .number()
+          .positive("Amount must be positive")
+          .max(10_000_000, "Amount must not exceed 10,000,000"),
         wireConfirmationNumber: z
           .string()
           .min(1, "Wire confirmation number is required"),
@@ -997,59 +1041,6 @@ export const paymentsRouter = router({
         });
       }
 
-      // Get invoice
-      const [invoice] = await db
-        .select()
-        .from(invoices)
-        .where(eq(invoices.id, input.invoiceId))
-        .limit(1);
-
-      if (!invoice) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Invoice not found",
-        });
-      }
-
-      if (invoice.status === "DRAFT") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message:
-            "Invoice is still in DRAFT status. Send it before recording payment.",
-        });
-      }
-
-      if (invoice.status === "PAID") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invoice is already paid in full",
-        });
-      }
-
-      if (invoice.status === "VOID") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cannot apply payment to a voided invoice",
-        });
-      }
-
-      const wireAmountDueD = new Decimal(invoice.amountDue || "0");
-      const wireInputAmountD = new Decimal(input.amount);
-
-      // Validate payment amount doesn't exceed amount due
-      if (
-        wireInputAmountD.greaterThan(wireAmountDueD.plus(OVERPAYMENT_TOLERANCE))
-      ) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(wireAmountDueD.toNumber())}). Overpayments are not allowed.`,
-        });
-      }
-
-      const wireEffectiveAmountD = wireInputAmountD.greaterThan(wireAmountDueD)
-        ? wireAmountDueD
-        : wireInputAmountD;
-
       // Resolve GL account IDs and fiscal period before the transaction so that
       // missing accounts or periods produce descriptive TRPCErrors rather than a
       // generic INTERNAL_SERVER_ERROR from inside the transaction.
@@ -1059,7 +1050,7 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodId(new Date());
 
-      // Build wire details for notes
+      // Build wire details for notes (input fields only, no invoice state)
       const wireDetails = [
         `Wire Confirmation: ${input.wireConfirmationNumber}`,
         input.bankName && `Bank: ${input.bankName}`,
@@ -1070,9 +1061,68 @@ export const paymentsRouter = router({
         .filter(Boolean)
         .join("\n");
 
+      // TER-581: Invoice is fetched INSIDE the transaction with FOR UPDATE to prevent
+      // concurrent wire payments from racing on the same invoice's amountDue/amountPaid.
       let txResult;
       try {
         txResult = await db.transaction(async tx => {
+          // Lock invoice row for update to prevent concurrent payment race conditions
+          const [invoice] = await tx
+            .select()
+            .from(invoices)
+            .where(eq(invoices.id, input.invoiceId))
+            .for("update");
+
+          if (!invoice) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Invoice not found",
+            });
+          }
+
+          if (invoice.status === "DRAFT") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Invoice is still in DRAFT status. Send it before recording payment.",
+            });
+          }
+
+          if (invoice.status === "PAID") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Invoice is already paid in full",
+            });
+          }
+
+          if (invoice.status === "VOID") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Cannot apply payment to a voided invoice",
+            });
+          }
+
+          const wireAmountDueD = new Decimal(invoice.amountDue || "0");
+          const wireInputAmountD = new Decimal(input.amount);
+
+          // Validate payment amount doesn't exceed amount due
+          if (
+            wireInputAmountD.greaterThan(
+              wireAmountDueD.plus(getOverpaymentTolerance())
+            )
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(wireAmountDueD.toNumber())}). Overpayments are not allowed.`,
+            });
+          }
+
+          const wireEffectiveAmountD = wireInputAmountD.greaterThan(
+            wireAmountDueD
+          )
+            ? wireAmountDueD
+            : wireInputAmountD;
+
           // Generate payment number
           const paymentNumber = await generatePaymentNumber();
 
@@ -1108,7 +1158,7 @@ export const paymentsRouter = router({
 
           // Determine new status
           let newStatus: "PARTIAL" | "PAID";
-          if (wireNewDueD.lessThanOrEqualTo(OVERPAYMENT_TOLERANCE)) {
+          if (wireNewDueD.lessThanOrEqualTo(getOverpaymentTolerance())) {
             newStatus = "PAID";
           } else {
             newStatus = "PARTIAL";
@@ -1279,6 +1329,19 @@ export const paymentsRouter = router({
             .where(eq(invoicePayments.paymentId, input.id));
 
           if (allocations.length > 0) {
+            // TER-581: Lock all affected invoices in ascending ID order before reversing
+            // to prevent deadlocks when concurrent voids target overlapping invoice sets.
+            const sortedVoidInvoiceIds = [...allocations]
+              .map(a => a.invoiceId)
+              .sort((a, b) => a - b);
+            for (const invoiceId of sortedVoidInvoiceIds) {
+              await tx
+                .select({ id: invoices.id })
+                .from(invoices)
+                .where(eq(invoices.id, invoiceId))
+                .for("update");
+            }
+
             // Handle multi-invoice payment: reverse each allocation
             for (const allocation of allocations) {
               const allocatedAmountD = new Decimal(
@@ -1327,11 +1390,12 @@ export const paymentsRouter = router({
               .where(eq(invoicePayments.paymentId, input.id));
           } else if (payment.invoiceId) {
             // Handle legacy single-invoice payment
+            // TER-581: Lock the invoice row before reading to prevent concurrent void races.
             const [invoice] = await tx
               .select()
               .from(invoices)
               .where(eq(invoices.id, payment.invoiceId))
-              .limit(1);
+              .for("update");
 
             if (invoice) {
               const legacyCurrentPaidD = new Decimal(invoice.amountPaid || "0");

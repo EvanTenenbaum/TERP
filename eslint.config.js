@@ -132,13 +132,36 @@ export default [
       'no-eval': 'error', // Security: no eval
 
       // ============================================================
-      // SECURITY PATTERNS - Not catchable by ESLint, enforced in pre-commit
-      // See .husky/pre-commit for enforcement of:
-      // - || 1 fallback patterns (use getAuthenticatedUserId instead)
-      // - input.createdBy usage (actor must come from ctx, not input)
-      // - vendors table usage (use clients with isSeller=true)
-      // - Hard deletes (use soft deletes with deletedAt)
+      // SECURITY PATTERNS — Actor attribution from client input
+      //
+      // These selectors flag specific property assignments where actor
+      // identity is sourced from client-supplied tRPC input instead of
+      // getAuthenticatedUserId(ctx). The || 1 / ?? 1 auth fallback
+      // patterns are enforced by the pre-commit hook (see .husky/pre-commit).
       // ============================================================
+      'no-restricted-syntax': [
+        'error',
+        // Forbidden: actorId: input.createdBy
+        {
+          selector: "Property[key.name='actorId'][value.type='MemberExpression'][value.object.name='input'][value.property.name='createdBy']",
+          message: "Forbidden: actor attribution via input.createdBy. Actor must come from getAuthenticatedUserId(ctx).",
+        },
+        // Forbidden: createdBy: input.createdBy
+        {
+          selector: "Property[key.name='createdBy'][value.type='MemberExpression'][value.object.name='input'][value.property.name='createdBy']",
+          message: "Forbidden: actor attribution via input.createdBy. Actor must come from getAuthenticatedUserId(ctx).",
+        },
+        // Forbidden: uploadedBy: input.userId
+        {
+          selector: "Property[key.name='uploadedBy'][value.type='MemberExpression'][value.object.name='input'][value.property.name='userId']",
+          message: "Forbidden: actor attribution via input.userId. Actor must come from getAuthenticatedUserId(ctx).",
+        },
+        // Forbidden: actorId: input.userId
+        {
+          selector: "Property[key.name='actorId'][value.type='MemberExpression'][value.object.name='input'][value.property.name='userId']",
+          message: "Forbidden: actor attribution via input.userId. Actor must come from getAuthenticatedUserId(ctx).",
+        },
+      ],
     },
     settings: {
       react: {

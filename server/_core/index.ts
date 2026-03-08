@@ -352,19 +352,20 @@ async function startServer() {
     app.use("/api/trpc/auth", authLimiter);
 
     // Health check endpoints
-    // Always return 200 to prevent Railway deployment failures
-    // Railway's health check should pass as long as the app is running
+    // Returns appropriate HTTP status codes so DigitalOcean's load balancer
+    // can detect when critical components (database) are unavailable.
     app.get("/health", async (req, res) => {
       try {
         const health = await performHealthCheck();
-        // Always return 200 - Railway just needs to know the app is alive
-        res.status(200).json(health);
+        // 200 = healthy/degraded (app is up, minor issues ok for load balancer)
+        // 503 = unhealthy (critical failure like DB down — stop sending traffic)
+        const statusCode = health.status === "unhealthy" ? 503 : 200;
+        res.status(statusCode).json(health);
       } catch (error) {
-        // Always return 200 for health check to prevent deployment failures
-        // Log the error but don't fail the health check
+        // If the health check itself throws, that is a critical failure.
         logger.error({ msg: "Health check error", error });
-        res.status(200).json({
-          status: "degraded",
+        res.status(503).json({
+          status: "unhealthy",
           timestamp: new Date().toISOString(),
           uptime: process.uptime(),
           error: error instanceof Error ? error.message : "Health check failed",

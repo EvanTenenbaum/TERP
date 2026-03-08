@@ -145,8 +145,12 @@ export const purchaseOrdersRouter = router({
                 .positive("Product ID must be a positive integer"),
               quantityOrdered: z
                 .number()
-                .positive("Quantity must be greater than 0"),
-              unitCost: z.number().min(0, "Unit cost cannot be negative"),
+                .positive("Quantity must be greater than 0")
+                .max(1_000_000, "Quantity must not exceed 1,000,000"),
+              unitCost: z
+                .number()
+                .min(0, "Unit cost cannot be negative")
+                .max(100_000, "Unit cost must not exceed 100,000"),
             })
           ),
         })
@@ -536,8 +540,14 @@ export const purchaseOrdersRouter = router({
           .number()
           .int()
           .positive("Product ID must be a positive integer"),
-        quantityOrdered: z.number().positive("Quantity must be greater than 0"),
-        unitCost: z.number().min(0, "Unit cost cannot be negative"),
+        quantityOrdered: z
+          .number()
+          .positive("Quantity must be greater than 0")
+          .max(1_000_000, "Quantity must not exceed 1,000,000"),
+        unitCost: z
+          .number()
+          .min(0, "Unit cost cannot be negative")
+          .max(100_000, "Unit cost must not exceed 100,000"),
         notes: z.string().optional(),
       })
     )
@@ -570,8 +580,13 @@ export const purchaseOrdersRouter = router({
         quantityOrdered: z
           .number()
           .positive("Quantity must be greater than 0")
+          .max(1_000_000, "Quantity must not exceed 1,000,000")
           .optional(),
-        unitCost: z.number().min(0, "Unit cost cannot be negative").optional(),
+        unitCost: z
+          .number()
+          .min(0, "Unit cost cannot be negative")
+          .max(100_000, "Unit cost must not exceed 100,000")
+          .optional(),
         notes: z.string().optional(),
       })
     )

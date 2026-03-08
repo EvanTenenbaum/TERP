@@ -34,6 +34,8 @@ export interface DataTableColumn<T> {
   enableSorting?: boolean;
   enableFiltering?: boolean;
   searchable?: boolean;
+  /** Whether this column is hidden by default (TER-620) */
+  defaultHidden?: boolean;
 }
 
 export interface DataTableEmptyState {
@@ -208,7 +210,8 @@ function DataTableComponent<T>({
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumnState>(() =>
     columns.reduce<VisibleColumnState>((acc, column) => {
-      acc[String(column.id)] = true;
+      // TER-620: Respect defaultHidden flag for sensible column defaults
+      acc[String(column.id)] = !column.defaultHidden;
       return acc;
     }, {})
   );

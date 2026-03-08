@@ -455,8 +455,16 @@ jobs:
       - name: Start heartbeat
         run: |
           # Background heartbeat so GitHub Actions shows the job is alive during long Playwright runs
+          # Shows elapsed time, current Playwright test file, and memory usage
+          HEARTBEAT_START=$(date +%s)
           while true; do
-            echo "[heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') — E2E tests still running…"
+            NOW=$(date +%s)
+            ELAPSED=$(( NOW - HEARTBEAT_START ))
+            ELAPSED_MIN=$(( ELAPSED / 60 ))
+            ELAPSED_SEC=$(( ELAPSED % 60 ))
+            CURRENT_SPEC=$(tail -5 /tmp/playwright-output.log 2>/dev/null | grep -oP '(?<=Running )\S+\.spec\.ts' | tail -1 || true)
+            MEM_USAGE=$(free -m 2>/dev/null | awk '/^Mem:/ { printf "%dMB used / %dMB total", $3, $2 }' || echo "unavailable")
+            echo "[heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') — elapsed ${ELAPSED_MIN}m${ELAPSED_SEC}s | mem: ${MEM_USAGE}${CURRENT_SPEC:+ | running: $CURRENT_SPEC}"
             sleep 60
           done &
           echo $! > /tmp/heartbeat.pid
@@ -475,16 +483,32 @@ jobs:
               tests-e2e/critical-paths/accounting-quick-payment.spec.ts \
               tests-e2e/critical-paths/client-credit-workflow.spec.ts \
               --project=chromium \
-              --reporter=list
+              --reporter=list 2>&1 | tee /tmp/playwright-output.log
           else
             echo "Running targeted E2E specs: $SPECS"
             # shellcheck disable=SC2086
-            pnpm exec playwright test $SPECS --project=chromium --reporter=list
+            pnpm exec playwright test $SPECS --project=chromium --reporter=list 2>&1 | tee /tmp/playwright-output.log
           fi
         env:
           CI: true
           E2E_USE_LIVE_DB: '1'
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
+
+      - name: Capture stall diagnostics on timeout
+        if: failure() && steps.e2e.outcome == 'failure'
+        run: |
+          echo "==== STALL DIAGNOSTICS ===="
+          echo "---- Running processes ----"
+          ps aux --sort=-%cpu | head -40 || true
+          echo "---- Open network connections ----"
+          ss -tulpn 2>/dev/null || netstat -tulpn 2>/dev/null || true
+          echo "---- Playwright process state ----"
+          ps aux | grep -E '(playwright|chromium|chrome)' || true
+          echo "---- Last 100 lines of Playwright output ----"
+          tail -100 /tmp/playwright-output.log 2>/dev/null || echo "(no playwright output captured)"
+          echo "---- Last 100 lines of app server log ----"
+          tail -100 /tmp/terp-dev.log 2>/dev/null || echo "(no server log captured)"
+          echo "==== END STALL DIAGNOSTICS ===="
 
       - name: Stop heartbeat
         if: always()
