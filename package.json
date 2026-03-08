@@ -209,7 +209,16 @@
     "qa:stress:peak": "bash scripts/stress/run-stress-testing.sh --env staging --profile peak",
     "qa:stress:soak": "bash scripts/stress/run-stress-testing.sh --env staging --profile soak",
     "qa:stress:preflight": "bash scripts/stress/preflight.sh",
-    "test:staging-critical": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-https://terp-staging-yicld.ondigitalocean.app} SKIP_E2E_SETUP=1 playwright test --project=staging-critical"
+    "test:staging-critical": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-https://terp-staging-yicld.ondigitalocean.app} SKIP_E2E_SETUP=1 playwright test --project=staging-critical",
+    "staging:load-test": "tsx scripts/staging-load-test.ts",
+    "staging:load-test:quick": "tsx scripts/staging-load-test.ts --quick",
+    "staging:load-test:sales": "tsx scripts/staging-load-test.ts --persona=sales",
+    "staging:load-test:inventory": "tsx scripts/staging-load-test.ts --persona=inventory",
+    "staging:load-test:accounting": "tsx scripts/staging-load-test.ts --persona=accounting",
+    "staging:load-test:ops": "tsx scripts/staging-load-test.ts --persona=ops",
+    "staging:load-test:golden": "tsx scripts/staging-load-test.ts --golden",
+    "staging:chains": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical",
+    "staging:chains:headed": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical --headed"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
