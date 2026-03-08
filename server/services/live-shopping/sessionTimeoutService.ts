@@ -48,7 +48,7 @@ async function checkSchemaCompatibility(): Promise<boolean> {
     await db.execute(
       sql`SELECT expiresAt, autoReleaseEnabled FROM liveShoppingSessions LIMIT 1`
     );
-    
+
     schemaCompatible = true;
     logger.info("[SessionTimeoutService] Schema compatibility check passed");
     return true;
@@ -82,7 +82,9 @@ export const sessionTimeoutService = {
     timeoutSeconds: number = DEFAULT_TIMEOUT_SECONDS
   ): Promise<void> {
     if (!(await checkSchemaCompatibility())) {
-      logger.debug("[SessionTimeoutService] Skipping initializeTimeout - schema not compatible");
+      logger.debug(
+        "[SessionTimeoutService] Skipping initializeTimeout - schema not compatible"
+      );
       return;
     }
 
@@ -200,7 +202,8 @@ export const sessionTimeoutService = {
     const now = new Date();
     const currentExpiry = session.expiresAt || now;
     const newExpiresAt = new Date(
-      Math.max(currentExpiry.getTime(), now.getTime()) + additionalSeconds * 1000
+      Math.max(currentExpiry.getTime(), now.getTime()) +
+        additionalSeconds * 1000
     );
 
     await db
@@ -268,7 +271,8 @@ export const sessionTimeoutService = {
     for (const session of expiredSessions) {
       try {
         // Update session status to ENDED
-        await db.update(liveShoppingSessions)
+        await db
+          .update(liveShoppingSessions)
           .set({
             status: "ENDED",
             endedAt: now,
@@ -320,6 +324,7 @@ export const sessionTimeoutService = {
       id: number;
       expiresAt: Date;
       roomCode: string;
+      extensionCount: number;
     }>
   > {
     if (!(await checkSchemaCompatibility())) {
@@ -339,6 +344,7 @@ export const sessionTimeoutService = {
         id: liveShoppingSessions.id,
         expiresAt: liveShoppingSessions.expiresAt,
         roomCode: liveShoppingSessions.roomCode,
+        extensionCount: liveShoppingSessions.extensionCount,
       })
       .from(liveShoppingSessions)
       .where(
@@ -349,10 +355,11 @@ export const sessionTimeoutService = {
         )
       );
 
-    return sessions.map((s) => ({
+    return sessions.map(s => ({
       id: s.id,
       expiresAt: s.expiresAt ?? new Date(),
       roomCode: s.roomCode,
+      extensionCount: s.extensionCount ?? 0,
     }));
   },
 
@@ -379,7 +386,7 @@ export const sessionTimeoutService = {
           sessionId: session.id,
           expiresAt: session.expiresAt.toISOString(),
           secondsRemaining,
-          canExtend: true, // TODO: Check extension count
+          canExtend: (session.extensionCount ?? 0) < MAX_EXTENSIONS,
         },
       });
 
@@ -428,8 +435,7 @@ export const sessionTimeoutService = {
     const extensionCount = session.extensionCount || 0;
     const extensionsRemaining = MAX_EXTENSIONS - extensionCount;
     const canExtend =
-      extensionsRemaining > 0 &&
-      ["ACTIVE", "PAUSED"].includes(session.status);
+      extensionsRemaining > 0 && ["ACTIVE", "PAUSED"].includes(session.status);
 
     if (!session.expiresAt) {
       return {

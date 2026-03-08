@@ -14,6 +14,7 @@ import {
   searchBatches,
   SELLABLE_BATCH_STATUSES,
 } from "./inventoryDb";
+import { BATCH_STATUSES } from "./constants/batchStatuses";
 import { products } from "../drizzle/schema";
 
 // Type definitions for test data
@@ -65,11 +66,7 @@ describe("getBatchesBySupplier", () => {
               sku: fc.string({ minLength: 5, maxLength: 20 }),
               productId: fc.integer({ min: 1, max: 100 }),
               lotId: fc.integer({ min: 1, max: 1000 }),
-              batchStatus: fc.constantFrom(
-                "LIVE",
-                "AWAITING_INTAKE",
-                "SOLD_OUT"
-              ),
+              batchStatus: fc.constantFrom(...BATCH_STATUSES),
               onHandQty: fc.string({ minLength: 1, maxLength: 10 }),
               createdAt: fc.date(),
             }),
@@ -184,7 +181,7 @@ describe("getBatchesBySupplier", () => {
             sku: "SKU-001",
             lotId: 1,
             productId: 1,
-            batchStatus: "LIVE",
+            batchStatus: SELLABLE_BATCH_STATUSES[0],
             onHandQty: "100",
           },
           lot: {

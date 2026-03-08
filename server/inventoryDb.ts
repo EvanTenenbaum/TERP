@@ -1643,18 +1643,11 @@ export async function createStrain(data: {
 // ============================================================================
 
 /**
- * Sellable batch statuses - inventory that can be sold to customers
- * These are the only statuses that should appear in sales modules and
- * be counted in "available inventory" metrics.
- *
- * INV-CONSISTENCY-001: Unified constant to ensure all inventory queries
- * use the same status filter for sellable inventory.
- */
-/**
+ * INV-CONSISTENCY-001: Re-exported from centralized constants (server/constants/batchStatuses.ts)
  * TER-574: PHOTOGRAPHY_COMPLETE removed; sellable is now just LIVE
- * Photography completion is tracked via isPhotographyComplete boolean flag
  */
-export const SELLABLE_BATCH_STATUSES = ["LIVE"] as const;
+import { SELLABLE_BATCH_STATUSES } from "./constants/batchStatuses";
+export { SELLABLE_BATCH_STATUSES };
 
 /**
  * Get comprehensive dashboard statistics for inventory

@@ -13,6 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -82,7 +92,7 @@ export function OrderPreview({
   const [selectedItemForCogs, setSelectedItemForCogs] =
     useState<OrderItem | null>(null);
   const [showTotalsBreakdown, setShowTotalsBreakdown] = useState(false);
-  const [_showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   const createOrderMutation = trpc.orders.create.useMutation({
     onSuccess: data => {
@@ -370,10 +380,7 @@ export function OrderPreview({
               </Button>
 
               <Button
-                onClick={() => {
-                  setShowClearAllConfirm(true);
-                  // TODO: Implement clear all confirmation dialog
-                }}
+                onClick={() => setShowClearAllConfirm(true)}
                 variant="outline"
                 className="w-full"
                 disabled={createOrderMutation.isPending}
@@ -385,6 +392,35 @@ export function OrderPreview({
           </>
         )}
       </CardContent>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog
+        open={showClearAllConfirm}
+        onOpenChange={setShowClearAllConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all items?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all {items.length} item
+              {items.length !== 1 ? "s" : ""} from the current{" "}
+              {orderType === "QUOTE" ? "quote" : "order"}. This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onClearAll();
+                setShowClearAllConfirm(false);
+              }}
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* COGS Adjustment Modal */}
       {selectedItemForCogs && (
