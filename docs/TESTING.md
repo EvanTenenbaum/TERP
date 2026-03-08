@@ -154,8 +154,9 @@ pnpm qa:stress:soak          # Long-duration soak test
 pnpm qa:stress               # Full orchestrated run
 ```
 
-k6 profiles: `tests/stress/*.k6.js`
+k6 profile: `scripts/stress/staging-mixed-traffic.k6.js`
 Orchestrator: `scripts/stress/run-stress-testing.sh`
+Profiles config: `scripts/stress/profiles.json`
 
 **Stress contract (from CLAUDE.md):**
 
