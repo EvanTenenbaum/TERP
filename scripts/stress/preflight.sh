@@ -62,7 +62,12 @@ mkdir -p "$OUTPUT_DIR"
 BLOCKERS_FILE="$OUTPUT_DIR/BLOCKERS.md"
 LOG_FILE="$OUTPUT_DIR/preflight.log"
 
-exec > >(tee "$LOG_FILE") 2>&1
+# Redirect output to log file (process substitution requires /dev/fd support)
+if [[ -d /dev/fd ]]; then
+  exec > >(tee "$LOG_FILE") 2>&1
+else
+  exec > "$LOG_FILE" 2>&1
+fi
 
 declare -a BLOCKERS=()
 
