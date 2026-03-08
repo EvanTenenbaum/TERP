@@ -47,7 +47,6 @@ export default defineConfig({
   testDir: ".",
   testMatch: [
     "tests-e2e/**/*.spec.ts",
-    "tests/e2e/**/*.spec.ts",
     "tests/smoke/**/*.spec.ts",
     "tests/stress/**/*.spec.ts",
   ],

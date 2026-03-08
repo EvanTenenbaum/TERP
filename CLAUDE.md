@@ -115,9 +115,10 @@ Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run a
 
 ## Essential References
 
-| File                                            | Purpose                                 |
-| ----------------------------------------------- | --------------------------------------- |
-| `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear) |
-| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work             |
-| `.claude/known-bug-patterns.md`                 | Recurring bug catalog                   |
-| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures               |
+| File                                            | Purpose                                    |
+| ----------------------------------------------- | ------------------------------------------ |
+| `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear)    |
+| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work                |
+| `.claude/known-bug-patterns.md`                 | Recurring bug catalog                      |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures                  |
+| `docs/TESTING.md`                               | Testing guide — all test commands & layers |

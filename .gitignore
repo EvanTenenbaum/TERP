@@ -148,11 +148,9 @@ test-results.json
 playwright-report/
 playwright/.cache/
 
-# QA Results - keep history but ignore local test outputs
-!qa-results/
+# QA Results - gitignore all artifacts, only keep .gitkeep
+qa-results/
 !qa-results/.gitkeep
-!qa-results/history.json
-!qa-results/audit/
 .env.production
 .vercel/
 scripts/seed-qa-test-users.ts
