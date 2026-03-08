@@ -1,0 +1,238 @@
+# TERP Testing Guide
+
+**For AI agents and developers. Single source of truth for all test infrastructure.**
+
+---
+
+## Quick Reference: What to Run When
+
+| Situation              | Command                                                           | Time    |
+| ---------------------- | ----------------------------------------------------------------- | ------- |
+| Before every commit    | `pnpm check && pnpm lint && pnpm test && pnpm build`              | ~2 min  |
+| Schema changes         | `pnpm test:schema:ci`                                             | ~3 min  |
+| UI/flow changes        | `pnpm test:e2e` (local) or `pnpm test:staging-critical` (staging) | ~5 min  |
+| Pre-production deploy  | `pnpm test:smoke:prod`                                            | ~2 min  |
+| Stress testing staging | `pnpm qa:stress --env=staging --profile=smoke`                    | ~5 min  |
+| Full QA pipeline       | `pnpm qa:pipeline`                                                | ~15 min |
+
+---
+
+## Test Layers (Testing Pyramid)
+
+### 1. Unit Tests (Vitest) — `pnpm test`
+
+**229 test suites** across server, client, scripts, and utilities.
+
+```bash
+pnpm test                    # All unit tests
+pnpm test:unit               # tests/unit/ only
+pnpm test:watch              # Watch mode
+pnpm test:coverage           # With coverage report
+pnpm test:property           # Property-based tests (fast-check)
+pnpm test:property:full      # Property tests with 10,000 runs
+```
+
+**Where tests live:**
+
+- `server/routers/*.test.ts` — Router endpoint tests (49 files)
+- `server/_core/*.test.ts` — Core utility tests (15 files)
+- `server/services/__tests__/` — Business logic tests (12 files)
+- `client/src/**/*.test.tsx` — React component tests (43 files)
+- `client/src/hooks/**/*.test.ts` — React hooks tests (13 files)
+- `tests/unit/` — Domain-specific unit tests
+- `tests/property/` — Property-based fuzz tests
+- `tests/contracts/` — Contract tests
+- `tests/security/` — Security tests
+
+**Config:** `vitest.config.ts` (primary), `vitest.config.integration.ts` (integration)
+
+### 2. Integration Tests — `pnpm test:schema`
+
+Requires a running database (Docker).
+
+```bash
+pnpm test:schema:ci          # Full: start DB → reset → test → stop
+pnpm test:schema             # Schema verification only (needs running DB)
+```
+
+**Database utilities:**
+
+```bash
+pnpm test:env:up             # Start test MySQL container
+pnpm test:env:down           # Stop test container
+pnpm test:db:reset           # Reset and migrate test DB
+pnpm test:db:preflight       # Check DB connectivity
+```
+
+**Config:** `vitest.config.integration.ts`, `testing/docker-compose.yml`
+
+### 3. E2E Tests (Playwright) — `pnpm test:e2e`
+
+Browser-based tests organized by purpose:
+
+```bash
+# Local development
+pnpm test:e2e                # All E2E tests
+pnpm test:e2e:headed         # Visible browser
+pnpm test:e2e:debug          # Debug mode
+pnpm test:e2e:ui             # Playwright UI
+
+# Staging
+pnpm test:staging-critical   # Gate tests for staging (fast, read-only)
+
+# Production
+pnpm test:e2e:prod           # All prod tests (smoke + regression)
+pnpm test:e2e:prod-smoke     # Production smoke only
+pnpm test:smoke              # Smoke suite
+```
+
+**E2E spec organization (`tests-e2e/`):**
+
+| Directory         | Purpose                                          | Count                     |
+| ----------------- | ------------------------------------------------ | ------------------------- |
+| `golden-flows/`   | Core business flow tests (gf-001 through gf-008) | 10 specs                  |
+| `critical-paths/` | Feature-specific critical paths                  | 15 specs                  |
+| `rbac/`           | Role-based access control tests                  | 5 specs                   |
+| `mega/`           | Comprehensive sprint feature tests               | 2 specs                   |
+| `ai-generated/`   | AI-agent generated scenario tests                | 2 specs                   |
+| `oracles/`        | Declarative YAML-based oracle runner             | 1 spec + YAML definitions |
+| `chains/`         | Chain-based scenario executor (57 chains)        | 1 spec + definitions      |
+| Root level        | Auth, CRUD, navigation, dashboard                | 7 specs                   |
+
+**Golden flows (canonical business paths):**
+
+- `gf-001` — Direct Intake
+- `gf-002` — Procure-to-Pay
+- `gf-003` — Order-to-Cash
+- `gf-004` — Invoice Payment + GL Entries
+- `gf-005` — Pick & Pack
+- `gf-006` — Client Ledger Review
+- `gf-007` — Inventory Management
+- `gf-008` — Sample Request
+
+**Config:** `playwright.config.ts`
+
+### 4. Oracle Tests — `pnpm qa:test:core`
+
+Declarative YAML-based test system for deterministic flow validation.
+
+```bash
+pnpm qa:test:core            # Tier 1 (critical paths)
+pnpm qa:test:all             # All oracle tests
+pnpm qa:test:smoke           # Smoke-tagged oracles
+pnpm qa:test:orders          # Orders domain only
+pnpm qa:test:clients         # Clients domain only
+pnpm qa:test:inventory       # Inventory domain only
+pnpm qa:test:accounting      # Accounting domain only
+pnpm qa:test:headed          # With visible browser
+```
+
+Oracle definitions live in `tests-e2e/oracles/` as YAML files. See `docs/qa/TEST_ORACLE_SCHEMA.md` for the DSL reference.
+
+### 5. Chain Tests — `pnpm staging:chains`
+
+57 scenario chains testing staging end-to-end via browser automation.
+
+```bash
+pnpm staging:chains          # Run all chains against staging
+pnpm staging:chains:headed   # With visible browser
+pnpm staging:load-test       # Full persona simulation
+pnpm staging:load-test:quick # Quick 1-day simulation
+```
+
+Chain definitions: `tests-e2e/chains/definitions/`
+
+### 6. Stress Tests — `pnpm qa:stress`
+
+API load testing against staging using k6 + browser preflight.
+
+```bash
+pnpm qa:stress:preflight     # Preflight checks only
+pnpm qa:stress:smoke         # Light load (10 VU, 30s)
+pnpm qa:stress:peak          # Peak load profile
+pnpm qa:stress:soak          # Long-duration soak test
+pnpm qa:stress               # Full orchestrated run
+```
+
+k6 profiles: `tests/stress/*.k6.js`
+Orchestrator: `scripts/stress/run-stress-testing.sh`
+
+**Stress contract (from CLAUDE.md):**
+
+- `run stress testing` = `pnpm qa:stress --env=staging --profile=peak`
+- Stress runs enforce **NO_REPAIR** mode
+- k6 must be installed separately (`brew install k6` or `apt install k6`)
+
+---
+
+## Quality Gates — `pnpm gate:all`
+
+Static analysis gates that don't require a running app:
+
+```bash
+pnpm gate:placeholder        # Scan for placeholder text
+pnpm gate:rbac               # RBAC contract verification
+pnpm gate:parity             # Feature parity check
+pnpm gate:invariants         # Database invariant checks
+pnpm gate:e2e-quality        # Golden flow assertion quality
+pnpm gate:terminology        # Terminology drift audit
+pnpm gate:all                # Run all gates
+```
+
+---
+
+## QA Pipeline — `pnpm qa:pipeline`
+
+End-to-end QA orchestrator: runs E2E tests, parses results, generates reports.
+
+```bash
+pnpm qa:pipeline             # Full pipeline (uses existing test results)
+pnpm qa:pipeline:local       # Run E2E first, then analyze
+pnpm qa:coverage             # Oracle coverage report
+```
+
+---
+
+## Mega QA — `pnpm mega:qa`
+
+Comprehensive multi-journey QA suite for full regression testing.
+
+```bash
+pnpm mega:qa                 # Full mega QA
+pnpm mega:qa:quick           # Quick (25 journeys)
+pnpm mega:qa:invariants      # DB invariant checks only
+```
+
+---
+
+## Test Infrastructure
+
+| File/Directory                 | Purpose                                          |
+| ------------------------------ | ------------------------------------------------ |
+| `vitest.config.ts`             | Unit test configuration                          |
+| `vitest.config.integration.ts` | Integration test configuration                   |
+| `playwright.config.ts`         | E2E test configuration                           |
+| `testing/`                     | Shared infra: Docker DB, setup scripts, fixtures |
+| `server/test-utils/`           | Test DB helpers, permission mocking              |
+| `tests-e2e/fixtures/auth.ts`   | E2E authentication helpers                       |
+| `tests-e2e/page-objects/`      | Page object model for E2E                        |
+| `tests-e2e/utils/`             | E2E helper utilities                             |
+
+## Output Directories
+
+| Directory            | Tracked       | Purpose                   |
+| -------------------- | ------------- | ------------------------- |
+| `qa-results/`        | .gitkeep only | QA artifacts (gitignored) |
+| `test-results/`      | No            | Playwright HTML reports   |
+| `playwright-report/` | No            | Playwright report output  |
+
+---
+
+## Archived Documentation
+
+Historical QA reports and one-off testing docs are in:
+
+- `docs/qa/archive/` — Past sprint QA reports, Red Team audits, validation logs
+- `docs/testing/archive/` — Historical test execution logs, persona testing reports
+
+These are kept for reference but are not active guides.
