@@ -765,8 +765,8 @@ export function InventoryWorkSurface() {
 
   const items = normalizedItems;
   const inventoryLoadError = useEnhancedApi
-    ? enhancedError ?? dashboardStatsError
-    : legacyError ?? dashboardStatsError;
+    ? (enhancedError ?? dashboardStatsError)
+    : (legacyError ?? dashboardStatsError);
   const clientSideFilterActive =
     !useEnhancedApi &&
     (filters.stockLevel !== "all" ||
@@ -1754,10 +1754,17 @@ export function InventoryWorkSurface() {
     );
   };
 
+  const inventorySummaryStats = [
+    { label: "Rows in view", value: stats.total.toLocaleString() },
+    { label: "Units in view", value: formatQuantity(stats.totalUnits) },
+    { label: "Inventory value", value: formatCurrency(stats.totalValue) },
+    { label: "Live batches", value: stats.liveCount.toLocaleString() },
+  ] as const;
+
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-3 px-6 py-4 border-b bg-background md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 px-6 py-4 border-b bg-background md:flex-row md:items-start md:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <Package className="h-6 w-6" />
@@ -1767,62 +1774,55 @@ export function InventoryWorkSurface() {
             Manage batches and stock levels
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {SaveStateIndicator}
-          <div
-            className="inline-flex items-center rounded-md border bg-muted/30 p-1"
-            role="group"
-            aria-label="Inventory view mode"
-          >
-            <Button
-              size="sm"
-              variant={inventoryViewMode === "table" ? "secondary" : "ghost"}
-              aria-pressed={inventoryViewMode === "table"}
-              data-testid="inventory-view-table"
-              onClick={() => setInventoryViewMode("table")}
+        <div className="flex flex-col gap-3 md:items-end">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {SaveStateIndicator}
+            <div
+              className="inline-flex items-center rounded-md border bg-muted/30 p-1"
+              role="group"
+              aria-label="Inventory view mode"
             >
-              Table
-            </Button>
-            <Button
-              size="sm"
-              variant={inventoryViewMode === "gallery" ? "secondary" : "ghost"}
-              aria-pressed={inventoryViewMode === "gallery"}
-              data-testid="inventory-view-gallery"
-              onClick={() => {
-                if (selectedBatchIds.size > 0) {
-                  selection.clear();
+              <Button
+                size="sm"
+                variant={inventoryViewMode === "table" ? "secondary" : "ghost"}
+                aria-pressed={inventoryViewMode === "table"}
+                data-testid="inventory-view-table"
+                onClick={() => setInventoryViewMode("table")}
+              >
+                Table
+              </Button>
+              <Button
+                size="sm"
+                variant={
+                  inventoryViewMode === "gallery" ? "secondary" : "ghost"
                 }
-                setInventoryViewMode("gallery");
-              }}
-            >
-              Gallery
-            </Button>
+                aria-pressed={inventoryViewMode === "gallery"}
+                data-testid="inventory-view-gallery"
+                onClick={() => {
+                  if (selectedBatchIds.size > 0) {
+                    selection.clear();
+                  }
+                  setInventoryViewMode("gallery");
+                }}
+              >
+                Gallery
+              </Button>
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Page Rows:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.total}
-              </span>
-            </span>
-            <span>
-              Units:{" "}
-              <span className="font-semibold text-foreground">
-                {formatQuantity(stats.totalUnits)}
-              </span>
-            </span>
-            <span>
-              Value:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalValue)}
-              </span>
-            </span>
-            <span>
-              Live:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.liveCount}
-              </span>
-            </span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {inventorySummaryStats.map(item => (
+              <div
+                key={item.label}
+                className="min-w-[120px] rounded-md border bg-muted/25 px-3 py-2"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground sm:text-base">
+                  {item.value}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

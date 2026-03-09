@@ -333,9 +333,27 @@
   }
 
   .linear-workspace-tabs-scroller {
+    position: relative;
     min-width: 0;
     flex: 1;
     overflow-x: auto;
+  }
+
+  .linear-workspace-tabs-scroller::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 28px;
+    background: linear-gradient(to right, transparent, var(--background));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .linear-workspace-tabs-scroller[data-overflowing="true"]::after {
+    opacity: 1;
   }
 
   .linear-workspace-tabs-spacer {
@@ -572,7 +590,11 @@
     }
 
     .linear-workspace-tabs-list {
-      min-width: 100%;
+      min-width: max-content;
+    }
+
+    .linear-workspace-tabs-trigger {
+      flex: 0 0 auto;
     }
 
     .linear-workspace-command-strip {

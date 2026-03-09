@@ -154,7 +154,7 @@ export default function LiveShoppingPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Video className="h-8 w-8" />
@@ -322,7 +322,7 @@ export default function LiveShoppingPage() {
       {/* Sessions Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Sessions</CardTitle>
               <CardDescription>
@@ -335,7 +335,7 @@ export default function LiveShoppingPage() {
                 setStatusFilter(value as SessionStatus | "all")
               }
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -356,10 +356,25 @@ export default function LiveShoppingPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : sessions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No sessions found</p>
-              <p className="text-sm">Create a new session to get started</p>
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/10 px-6 py-12 text-center">
+              <Video className="h-12 w-12 text-muted-foreground/70" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
+                No sessions found
+              </h3>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                Start your first live shopping session to review products with a
+                client in real time.
+              </p>
+              <Button
+                className="mt-4"
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Session
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Choose a client now, or schedule a session for later.
+              </p>
             </div>
           ) : (
             <Table>

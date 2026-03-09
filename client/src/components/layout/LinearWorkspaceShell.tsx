@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,35 @@ export function LinearWorkspaceShell<T extends string>({
   const showMeta = meta.length > 0;
   const showTabs = tabs.length > 1;
   const showTabRow = showTabs || Boolean(commandStrip);
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
+  const [showTabsOverflowCue, setShowTabsOverflowCue] = useState(false);
+
+  useEffect(() => {
+    const container = tabsScrollRef.current;
+    if (!container || !showTabs) {
+      setShowTabsOverflowCue(false);
+      return;
+    }
+
+    const updateOverflowCue = () => {
+      const hasOverflow = container.scrollWidth > container.clientWidth + 1;
+      const isScrolledToEnd =
+        container.scrollLeft + container.clientWidth >=
+        container.scrollWidth - 1;
+      setShowTabsOverflowCue(hasOverflow && !isScrolledToEnd);
+    };
+
+    updateOverflowCue();
+
+    container.addEventListener("scroll", updateOverflowCue, { passive: true });
+    const resizeObserver = new ResizeObserver(updateOverflowCue);
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener("scroll", updateOverflowCue);
+      resizeObserver.disconnect();
+    };
+  }, [showTabs, tabs.length]);
 
   return (
     <section
@@ -89,7 +118,11 @@ export function LinearWorkspaceShell<T extends string>({
         {showTabRow ? (
           <div className="linear-workspace-tab-row">
             {showTabs ? (
-              <div className="linear-workspace-tabs-scroller scrollbar-hide">
+              <div
+                ref={tabsScrollRef}
+                className="linear-workspace-tabs-scroller scrollbar-hide"
+                data-overflowing={showTabsOverflowCue}
+              >
                 <TabsList className="linear-workspace-tabs-list">
                   {tabs.map(tab => (
                     <TabsTrigger

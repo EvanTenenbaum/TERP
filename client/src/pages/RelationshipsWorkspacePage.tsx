@@ -1,5 +1,3 @@
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import ClientsWorkSurface from "@/components/work-surface/ClientsWorkSurface";
 import VendorsWorkSurface from "@/components/work-surface/VendorsWorkSurface";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
@@ -16,7 +14,6 @@ const RELATIONSHIP_TABS = RELATIONSHIPS_WORKSPACE.tabs.map(
 ) as readonly RelationshipTab[];
 
 export default function RelationshipsWorkspacePage() {
-  const [, setLocation] = useLocation();
   const { activeTab, setActiveTab } = useQueryTabState<RelationshipTab>({
     defaultTab: "clients",
     validTabs: RELATIONSHIP_TABS,
@@ -35,24 +32,6 @@ export default function RelationshipsWorkspacePage() {
         { label: "Buyer records", value: "Clients" },
         { label: "Supplier records", value: "Suppliers" },
       ]}
-      commandStrip={
-        <>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setLocation("/clients")}
-          >
-            Open Client List
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setActiveTab("suppliers")}
-          >
-            Jump to Suppliers
-          </Button>
-        </>
-      }
     >
       <LinearWorkspacePanel value="clients">
         <ClientsWorkSurface />
