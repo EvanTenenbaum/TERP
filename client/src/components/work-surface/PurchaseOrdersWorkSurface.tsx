@@ -210,13 +210,14 @@ const PAYMENT_TERMS_OPTIONS = [
   { value: "COD", label: "COD" },
 ];
 
+// TER-670: Updated to WCAG 2.2 AA-compliant color combinations (-900 text on -100 bg).
 const PO_STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
-  SENT: "bg-blue-100 text-blue-800",
-  CONFIRMED: "bg-green-100 text-green-800",
-  RECEIVING: "bg-yellow-100 text-yellow-800",
-  RECEIVED: "bg-purple-100 text-purple-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  SENT: "bg-blue-100 text-blue-900",
+  CONFIRMED: "bg-green-100 text-green-900",
+  RECEIVING: "bg-yellow-100 text-yellow-900",
+  RECEIVED: "bg-purple-100 text-purple-900",
+  CANCELLED: "bg-red-100 text-red-900",
 };
 
 const PO_STATUSES = [

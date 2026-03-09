@@ -21,49 +21,54 @@ interface OrderStatusBadgeProps {
   className?: string;
 }
 
+/**
+ * TER-670: Status badge colors use -100 backgrounds with -800 text to achieve
+ * WCAG 2.2 AA contrast (≥4.5:1 for normal text). Using -700 text on -100
+ * backgrounds fails contrast for yellow, amber, blue, and cyan variants.
+ */
 const STATUS_CONFIG: Record<
   FulfillmentStatus,
   { label: string; className: string }
 > = {
   DRAFT: {
     label: "Draft",
-    className: "bg-gray-100 text-gray-800 border-gray-300",
+    className: "bg-gray-100 text-gray-800 border-gray-400",
   },
   CONFIRMED: {
     label: "Confirmed",
-    className: "bg-blue-100 text-blue-800 border-blue-300",
+    className: "bg-blue-100 text-blue-900 border-blue-400",
   },
   READY_FOR_PACKING: {
     label: "Ready for Packing",
-    className: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    className: "bg-yellow-100 text-yellow-900 border-yellow-500",
   },
   PACKED: {
     label: "Packed",
-    className: "bg-purple-100 text-purple-800 border-purple-300",
+    className: "bg-purple-100 text-purple-900 border-purple-400",
   },
   SHIPPED: {
     label: "Shipped",
-    className: "bg-indigo-100 text-indigo-800 border-indigo-300",
+    className: "bg-indigo-100 text-indigo-900 border-indigo-400",
   },
   DELIVERED: {
     label: "Delivered",
-    className: "bg-green-100 text-green-800 border-green-300",
+    className: "bg-green-100 text-green-900 border-green-400",
   },
   RETURNED: {
     label: "Returned",
-    className: "bg-orange-100 text-orange-800 border-orange-300",
+    className: "bg-orange-100 text-orange-900 border-orange-400",
   },
   RESTOCKED: {
     label: "Restocked",
-    className: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    className: "bg-emerald-100 text-emerald-900 border-emerald-400",
   },
   RETURNED_TO_VENDOR: {
     label: "Returned to Supplier",
-    className: "bg-amber-100 text-amber-800 border-amber-300",
+    className: "bg-amber-100 text-amber-900 border-amber-500",
   },
   CANCELLED: {
     label: "Cancelled",
-    className: "bg-red-100 text-red-800 border-red-300",
+    className: "bg-red-100 text-red-900 border-red-400",
   },
 };
 

@@ -95,7 +95,9 @@ export interface ClientComboboxProps {
  * Custom hook for debounced search input
  * BUG-073 FIX: Added request ID tracking to prevent race conditions
  */
-function useDebouncedSearch(delay: number = 300): [string, string, (value: string) => void, number] {
+function useDebouncedSearch(
+  delay: number = 300
+): [string, string, (value: string) => void, number] {
   const [inputValue, setInputValue] = useState("");
   const [debouncedValue, setDebouncedValue] = useState("");
   const [requestId, setRequestId] = useState(0);
@@ -133,11 +135,12 @@ export function ClientCombobox({
 }: ClientComboboxProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   // BUG-073 FIX: Track request ID from debounced search (prevents race conditions)
-  const [inputValue, debouncedSearch, setInputValue, _searchRequestId] = useDebouncedSearch(debounceMs);
+  const [inputValue, debouncedSearch, setInputValue, _searchRequestId] =
+    useDebouncedSearch(debounceMs);
 
   // Find the selected client for display
   const selectedClient = useMemo(() => {
-    return clients.find((client) => client.id === value);
+    return clients.find(client => client.id === value);
   }, [clients, value]);
 
   // Filter clients based on search with case-insensitive matching
@@ -149,10 +152,12 @@ export function ClientCombobox({
     const searchLower = debouncedSearch.toLowerCase().trim();
 
     return clients
-      .filter((client) => {
+      .filter(client => {
         const nameMatch = client.name?.toLowerCase().includes(searchLower);
         const emailMatch = client.email?.toLowerCase().includes(searchLower);
-        const phoneMatch = client.phone?.replace(/\D/g, "").includes(searchLower.replace(/\D/g, ""));
+        const phoneMatch = client.phone
+          ?.replace(/\D/g, "")
+          .includes(searchLower.replace(/\D/g, ""));
         return nameMatch || emailMatch || phoneMatch;
       })
       .slice(0, maxResults);
@@ -193,6 +198,7 @@ export function ClientCombobox({
           role="combobox"
           aria-expanded={open}
           aria-label="Select a client"
+          data-testid="client-select"
           disabled={disabled || isLoading}
           className={cn(
             "w-full justify-between font-normal",
@@ -213,7 +219,10 @@ export function ClientCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search clients..."
@@ -233,7 +242,7 @@ export function ClientCombobox({
               </div>
             </CommandEmpty>
             <CommandGroup>
-              {filteredClients.map((client) => (
+              {filteredClients.map(client => (
                 <CommandItem
                   key={client.id}
                   value={client.id.toString()}
@@ -251,7 +260,9 @@ export function ClientCombobox({
                     {(client.email || client.clientType) && (
                       <span className="text-xs text-muted-foreground truncate">
                         {client.clientType && (
-                          <span className="capitalize">{client.clientType}</span>
+                          <span className="capitalize">
+                            {client.clientType}
+                          </span>
                         )}
                         {client.clientType && client.email && " · "}
                         {client.email}
