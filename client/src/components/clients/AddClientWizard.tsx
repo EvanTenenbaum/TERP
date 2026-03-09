@@ -1058,11 +1058,17 @@ export function AddClientWizard({
             >
               Cancel
             </Button>
-            {step < 3 ? (
+            {step < TOTAL_STEPS ? (
               <Button
                 type="button"
                 onClick={handleNext}
-                disabled={step === 1 ? !canProceedStep1 : !canProceedStep2}
+                disabled={
+                  step === 1
+                    ? !canProceedStep1
+                    : step === 2
+                      ? !canProceedStep2
+                      : false
+                }
               >
                 Next
               </Button>
