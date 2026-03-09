@@ -339,6 +339,13 @@
     overflow-x: auto;
   }
 
+  .linear-workspace-tabs-stack {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+
   .linear-workspace-tabs-scroller::after {
     content: "";
     position: absolute;
@@ -359,6 +366,10 @@
   .linear-workspace-tabs-spacer {
     flex: 1;
     min-width: 0;
+  }
+
+  .linear-workspace-tabs-overflow-hint {
+    display: none;
   }
 
   .linear-workspace-tabs-list {
@@ -595,6 +606,14 @@
 
     .linear-workspace-tabs-trigger {
       flex: 0 0 auto;
+    }
+
+    .linear-workspace-tabs-overflow-hint {
+      display: block;
+      margin-top: 0.1rem;
+      align-self: flex-end;
+      font-size: 0.68rem;
+      color: var(--muted-foreground);
     }
 
     .linear-workspace-command-strip {

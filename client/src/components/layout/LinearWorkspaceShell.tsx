@@ -118,22 +118,29 @@ export function LinearWorkspaceShell<T extends string>({
         {showTabRow ? (
           <div className="linear-workspace-tab-row">
             {showTabs ? (
-              <div
-                ref={tabsScrollRef}
-                className="linear-workspace-tabs-scroller scrollbar-hide"
-                data-overflowing={showTabsOverflowCue}
-              >
-                <TabsList className="linear-workspace-tabs-list">
-                  {tabs.map(tab => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className="linear-workspace-tabs-trigger"
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+              <div className="linear-workspace-tabs-stack">
+                <div
+                  ref={tabsScrollRef}
+                  className="linear-workspace-tabs-scroller scrollbar-hide"
+                  data-overflowing={showTabsOverflowCue}
+                >
+                  <TabsList className="linear-workspace-tabs-list">
+                    {tabs.map(tab => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className="linear-workspace-tabs-trigger"
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+                {showTabsOverflowCue ? (
+                  <p className="linear-workspace-tabs-overflow-hint">
+                    Swipe for more tabs
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div className="linear-workspace-tabs-spacer" aria-hidden />
