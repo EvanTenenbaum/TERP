@@ -91,14 +91,19 @@ type AnyRouteParams = Record<string, string | undefined>;
 type AnyRouteProps = WouterRouteComponentProps<AnyRouteParams>;
 
 // Helper to wrap route components with error boundary
+// TER-639: Use location as key so error boundary resets on route changes
+// (prevents stale error state after rapid navigation)
 const withErrorBoundary = (
   Component: ComponentType<AnyRouteProps>
 ): FC<AnyRouteProps> => {
-  const WrappedRoute: FC<AnyRouteProps> = props => (
-    <PageErrorBoundary>
-      <Component {...props} />
-    </PageErrorBoundary>
-  );
+  const WrappedRoute: FC<AnyRouteProps> = props => {
+    const [location] = useLocation();
+    return (
+      <PageErrorBoundary key={location}>
+        <Component {...props} />
+      </PageErrorBoundary>
+    );
+  };
   return WrappedRoute;
 };
 
@@ -445,6 +450,14 @@ function Router() {
                 <Route
                   path="/sales-sheets"
                   component={withErrorBoundary(SalesSheetCreatorPage)}
+                />
+                {/* TER-189: Redirect legacy singular route to plural */}
+                <Route
+                  path="/sales-sheet"
+                  component={RedirectWithSearch(
+                    "/sales-sheet",
+                    "/sales-sheets"
+                  )}
                 />
                 <Route
                   path="/sales-portal"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -14,21 +14,26 @@ import { Badge } from "@/components/ui/badge";
 import { Search, FileText, Users, Package, Loader2 } from "lucide-react";
 
 export default function SearchResultsPage() {
-  const [location, setLocation] = useLocation();
-  const params = new URLSearchParams(location.split("?")[1] || "");
+  const [, setLocation] = useLocation();
+  // TER-634 FIX: useSearch() returns the query string (?q=...) correctly in wouter.
+  // useLocation() only returns the path portion — it never includes "?..." — so
+  // manually splitting location on "?" always yields an empty search string and
+  // the query is never populated, causing results to never appear.
+  const searchString = useSearch();
+  const params = new URLSearchParams(searchString || "");
   const initialQuery = params.get("q") || "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   // BUG-042 FIX: Track navigation state to prevent stale UI
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Update query when URL changes
+  // Update query when URL's search string changes (e.g. user submits new search)
   useEffect(() => {
-    const newParams = new URLSearchParams(location.split("?")[1] || "");
+    const newParams = new URLSearchParams(searchString || "");
     const newQuery = newParams.get("q") || "";
     setSearchQuery(newQuery);
     // Reset navigation state when URL changes
     setIsNavigating(false);
-  }, [location]);
+  }, [searchString]);
 
   // Fetch search results
   const {
@@ -126,7 +131,7 @@ export default function SearchResultsPage() {
 
           {/* Results */}
           {!isLoading && !error && searchQuery.trim() && results && (
-            <div className="space-y-6">
+            <div className="space-y-6" data-testid="search-results">
               {/* Quotes Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.quotes.length > 0 && (
                 <div>
@@ -143,7 +148,10 @@ export default function SearchResultsPage() {
                         href={quote.url}
                         onClick={e => handleResultClick(quote.url, e)}
                       >
-                        <Card className="hover:bg-accent cursor-pointer transition-colors">
+                        <Card
+                          className="search-result hover:bg-accent cursor-pointer transition-colors"
+                          data-testid="search-result"
+                        >
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -156,10 +164,18 @@ export default function SearchResultsPage() {
                                     {quote.description}
                                   </p>
                                 )}
-                                {(quote.metadata as Record<string, unknown>)?.total ? (
+                                {(quote.metadata as Record<string, unknown>)
+                                  ?.total ? (
                                   <p className="text-sm text-muted-foreground mt-1">
                                     Total: $
-                                    {Number((quote.metadata as Record<string, unknown>).total).toFixed(2)}
+                                    {Number(
+                                      (
+                                        quote.metadata as Record<
+                                          string,
+                                          unknown
+                                        >
+                                      ).total
+                                    ).toFixed(2)}
                                   </p>
                                 ) : null}
                               </div>
@@ -188,7 +204,10 @@ export default function SearchResultsPage() {
                         href={customer.url}
                         onClick={e => handleResultClick(customer.url, e)}
                       >
-                        <Card className="hover:bg-accent cursor-pointer transition-colors">
+                        <Card
+                          className="search-result hover:bg-accent cursor-pointer transition-colors"
+                          data-testid="search-result"
+                        >
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -203,9 +222,18 @@ export default function SearchResultsPage() {
                                     {customer.description}
                                   </p>
                                 )}
-                                {(customer.metadata as Record<string, unknown>)?.phone ? (
+                                {(customer.metadata as Record<string, unknown>)
+                                  ?.phone ? (
                                   <p className="text-sm text-muted-foreground mt-1">
-                                    Phone: {String((customer.metadata as Record<string, unknown>).phone)}
+                                    Phone:{" "}
+                                    {String(
+                                      (
+                                        customer.metadata as Record<
+                                          string,
+                                          unknown
+                                        >
+                                      ).phone
+                                    )}
                                   </p>
                                 ) : null}
                               </div>
@@ -234,7 +262,10 @@ export default function SearchResultsPage() {
                         href={product.url}
                         onClick={e => handleResultClick(product.url, e)}
                       >
-                        <Card className="hover:bg-accent cursor-pointer transition-colors">
+                        <Card
+                          className="search-result hover:bg-accent cursor-pointer transition-colors"
+                          data-testid="search-result"
+                        >
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -250,20 +281,31 @@ export default function SearchResultsPage() {
                                   </p>
                                 )}
                                 <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                                  {(product.metadata as Record<string, unknown>)?.quantityAvailable !==
-                                    undefined ? (
+                                  {(product.metadata as Record<string, unknown>)
+                                    ?.quantityAvailable !== undefined ? (
                                     <span>
                                       Qty:{" "}
                                       {Number(
-                                        (product.metadata as Record<string, unknown>).quantityAvailable
+                                        (
+                                          product.metadata as Record<
+                                            string,
+                                            unknown
+                                          >
+                                        ).quantityAvailable
                                       )}
                                     </span>
                                   ) : null}
-                                  {(product.metadata as Record<string, unknown>)?.unitPrice ? (
+                                  {(product.metadata as Record<string, unknown>)
+                                    ?.unitPrice ? (
                                     <span>
                                       Price: $
                                       {Number(
-                                        (product.metadata as Record<string, unknown>).unitPrice
+                                        (
+                                          product.metadata as Record<
+                                            string,
+                                            unknown
+                                          >
+                                        ).unitPrice
                                       ).toFixed(2)}
                                     </span>
                                   ) : null}
@@ -282,9 +324,16 @@ export default function SearchResultsPage() {
               {results.quotes.length === 0 &&
                 results.customers.length === 0 &&
                 results.products.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p>No results found for "{searchQuery}"</p>
-                    <p className="text-sm mt-2">Try a different search term</p>
+                  <div
+                    className="text-center py-12 text-muted-foreground"
+                    data-testid="search-empty-state"
+                  >
+                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No results found</p>
+                    <p className="text-sm mt-2">
+                      No results found for &quot;{searchQuery}&quot;. Try a
+                      different search term.
+                    </p>
                   </div>
                 )}
             </div>
