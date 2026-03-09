@@ -538,6 +538,7 @@ export function UserManagement() {
                 {paginatedUsers.map(user => (
                   <div
                     key={user.openId}
+                    data-testid="user-row"
                     className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -546,6 +547,7 @@ export function UserManagement() {
                           {user.name || "Unnamed User"}
                         </span>
                         <Badge
+                          data-testid="role"
                           variant={
                             user.role === "admin" ? "default" : "secondary"
                           }
