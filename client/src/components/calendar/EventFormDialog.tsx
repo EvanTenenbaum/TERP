@@ -254,11 +254,13 @@ export default function EventFormDialog({
             <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
+              name="title"
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
               placeholder="Event title"
+              aria-label="Event title"
             />
           </div>
 
