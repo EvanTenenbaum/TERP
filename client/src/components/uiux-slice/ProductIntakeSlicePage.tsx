@@ -742,6 +742,51 @@ export function ProductIntakeSlicePage() {
         return;
       }
 
+      // TER-563: Upload any photos that are stored as data: URLs (pending upload)
+      // before submitting the intake. This mirrors the DirectIntakeWorkSurface pattern.
+      const pendingUploadLines: Map<
+        string,
+        (typeof latestDraft.lines)[number]["mediaUrls"]
+      > = new Map();
+      for (const line of latestDraft.lines) {
+        const pending = (line.mediaUrls ?? []).filter(m =>
+          m.url.startsWith("data:")
+        );
+        if (pending.length === 0) continue;
+
+        const uploaded: NonNullable<typeof line.mediaUrls> = [];
+        for (const media of pending) {
+          try {
+            const base64 = media.url.split(",")[1] ?? "";
+            const uploadResult = await uploadMediaMutation.mutateAsync({
+              fileData: base64,
+              fileName: media.fileName,
+              fileType: media.fileType,
+            });
+            uploaded.push({
+              url: uploadResult.url,
+              fileName: uploadResult.fileName,
+              fileType: uploadResult.fileType,
+              fileSize: uploadResult.fileSize,
+            });
+          } catch {
+            // If upload fails, keep the original data: URL entry
+            uploaded.push(media);
+          }
+        }
+        const kept = (line.mediaUrls ?? []).filter(
+          m => !m.url.startsWith("data:")
+        );
+        pendingUploadLines.set(line.id, [...kept, ...uploaded]);
+      }
+
+      // Apply the uploaded URLs to draft lines before mutation
+      if (pendingUploadLines.size > 0) {
+        for (const [lineId, updatedMedia] of pendingUploadLines) {
+          updateLine(lineId, { mediaUrls: updatedMedia });
+        }
+      }
+
       const result = await receiveMutation.mutateAsync({
         purchaseOrderId: latestDraft.poId,
         items: latestDraft.lines.map(line => ({
@@ -757,6 +802,8 @@ export function ProductIntakeSlicePage() {
         ...line,
         batchId: result.batches[index]?.id,
         sku: result.batches[index]?.code,
+        // Preserve any uploaded media URLs
+        mediaUrls: pendingUploadLines.get(line.id) ?? line.mediaUrls,
       }));
 
       markProductIntakeDraftReceived(

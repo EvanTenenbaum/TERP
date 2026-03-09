@@ -78,9 +78,9 @@ export const LocationFormDialog = React.memo(function LocationFormDialog({
   const handleChange = useCallback(
     (field: keyof LocationFormData) =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+        setFormData(prev => ({ ...prev, [field]: e.target.value }));
         if (errors[field]) {
-          setErrors((prev) => {
+          setErrors(prev => {
             const next = { ...prev };
             delete next[field];
             return next;
@@ -91,7 +91,7 @@ export const LocationFormDialog = React.memo(function LocationFormDialog({
   );
 
   const handleSwitchChange = useCallback((checked: boolean) => {
-    setFormData((prev) => ({ ...prev, isActive: checked }));
+    setFormData(prev => ({ ...prev, isActive: checked }));
   }, []);
 
   const validate = useCallback((): boolean => {
@@ -129,10 +129,12 @@ export const LocationFormDialog = React.memo(function LocationFormDialog({
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="site">
-                Site <span className="text-destructive">*</span>
+                Name / Site <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="site"
+                name="name"
+                aria-label="name"
                 placeholder="e.g., Main Warehouse"
                 value={formData.site}
                 onChange={handleChange("site")}

@@ -323,10 +323,8 @@ function Router() {
                 />
                 <Route
                   path="/products"
-                  component={RedirectWithTab(
-                    "/products",
-                    "/settings",
-                    "product-metadata"
+                  component={withErrorBoundary(
+                    lazy(() => import("@/pages/ProductsPage"))
                   )}
                 />
                 {/* Accounting workspace — all sub-pages as tabs */}

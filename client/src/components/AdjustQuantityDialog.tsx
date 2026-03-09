@@ -142,9 +142,10 @@ export function AdjustQuantityDialog({
             <Input
               id="qty-adjustment"
               data-testid="qty-adjustment"
+              name="quantity"
               type="number"
               step={step}
-              placeholder="e.g., -5"
+              placeholder="e.g., -5 (quantity)"
               value={adjustment}
               onChange={event => {
                 setAdjustment(event.target.value);
@@ -198,11 +199,14 @@ export function AdjustQuantityDialog({
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="qty-adjustment-notes">Notes (Optional)</Label>
+            <Label htmlFor="qty-adjustment-notes">
+              Notes / Reason Details (Optional)
+            </Label>
             <Textarea
               id="qty-adjustment-notes"
               data-testid="qty-adjustment-notes"
-              placeholder="Add any extra context for this adjustment."
+              name="reason"
+              placeholder="Add reason details or extra context for this adjustment."
               value={notes}
               onChange={event => setNotes(event.target.value)}
             />
