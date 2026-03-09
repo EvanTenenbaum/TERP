@@ -3,7 +3,7 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, type SQL } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import {
@@ -584,7 +584,10 @@ export async function getAllOrders(filters?: {
   const normalizedFulfillmentStatus =
     normalizeOptionalStatus(fulfillmentStatus);
 
-  const conditions: SQL<unknown>[] = [];
+  const conditions: SQL<unknown>[] = [
+    // TER-229: Always exclude soft-deleted orders from list queries
+    isNull(orders.deletedAt),
+  ];
 
   if (orderType) {
     conditions.push(eq(orders.orderType, orderType));

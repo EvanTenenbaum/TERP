@@ -5,7 +5,13 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { useLocation, useSearch } from "wouter";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
@@ -250,7 +256,8 @@ export default function OrderCreatorPageV2() {
   const clientIdFromRoute = parseRouteEntityId(searchParams.get("clientId"));
   const needIdFromRoute = parseRouteEntityId(searchParams.get("needId"));
   const routeMode = searchParams.get("mode");
-  const isDuplicateRoute = routeMode === "duplicate" && quoteIdFromRoute !== null;
+  const isDuplicateRoute =
+    routeMode === "duplicate" && quoteIdFromRoute !== null;
   const routeOrderId = draftIdFromRoute ?? quoteIdFromRoute;
   const isSalesSheetImport = searchParams.get("fromSalesSheet") === "true";
   const hasRouteSeedContext =
@@ -410,9 +417,12 @@ export default function OrderCreatorPageV2() {
     const hasSnapshotChanges =
       currentOrderFingerprint !== persistedFingerprintRef.current;
     const hasOrderContent =
-      currentOrderFingerprint !== EMPTY_ORDER_FINGERPRINT || activeDraftId !== null;
+      currentOrderFingerprint !== EMPTY_ORDER_FINGERPRINT ||
+      activeDraftId !== null;
 
-    setHasUnsavedChanges((hasOrderContent && hasSnapshotChanges) || autoSavePending);
+    setHasUnsavedChanges(
+      (hasOrderContent && hasSnapshotChanges) || autoSavePending
+    );
   }, [
     activeDraftId,
     currentOrderFingerprint,
@@ -496,7 +506,7 @@ export default function OrderCreatorPageV2() {
     setReferredByClientId(snapshot.referredByClientId);
     setActiveDraftId(isDuplicateRoute ? null : routeOrderData.order.id);
     setActiveDraftVersion(
-      isDuplicateRoute ? null : routeOrderData.order.version ?? 1
+      isDuplicateRoute ? null : (routeOrderData.order.version ?? 1)
     );
     hydratedRouteKeyRef.current = hydrationKey;
     seededRouteKeyRef.current = null;
@@ -504,9 +514,16 @@ export default function OrderCreatorPageV2() {
     applyPersistedFingerprint(buildOrderFingerprint(snapshot));
 
     if (isDuplicateRoute) {
-      toast.success(`Quote #${routeOrderData.order.orderNumber} loaded for duplication`);
+      toast.success(
+        `Quote #${routeOrderData.order.orderNumber} loaded for duplication`
+      );
     }
-  }, [applyPersistedFingerprint, isDuplicateRoute, routeOrderData, routeOrderId]);
+  }, [
+    applyPersistedFingerprint,
+    isDuplicateRoute,
+    routeOrderData,
+    routeOrderId,
+  ]);
 
   useEffect(() => {
     if (
@@ -810,7 +827,10 @@ export default function OrderCreatorPageV2() {
 
       if (isFinalizingRef.current) {
         toast.info(`Draft #${data.orderId} created, finalizing...`);
-        finalizeMutation.mutate({ orderId: data.orderId, version: nextVersion });
+        finalizeMutation.mutate({
+          orderId: data.orderId,
+          version: nextVersion,
+        });
         return;
       }
 
@@ -1613,6 +1633,25 @@ export default function OrderCreatorPageV2() {
                         ) : null}
                       </div>
 
+                      {/* TER-645: Direct Save Draft button for reliable E2E access */}
+                      <Button
+                        data-testid="order-save-draft-button"
+                        className="w-full"
+                        variant="outline"
+                        disabled={
+                          items.length === 0 ||
+                          createDraftMutation.isPending ||
+                          updateDraftMutation.isPending
+                        }
+                        onClick={() => handleSaveDraft()}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {createDraftMutation.isPending ||
+                        updateDraftMutation.isPending
+                          ? "Saving..."
+                          : "Save Draft"}
+                      </Button>
+
                       {/* Unified Save Dropdown Menu */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1626,7 +1665,7 @@ export default function OrderCreatorPageV2() {
                             }
                           >
                             <Save className="h-4 w-4 mr-2" />
-                            Save
+                            Save Options
                             <ChevronDown className="h-4 w-4 ml-auto" />
                           </Button>
                         </DropdownMenuTrigger>
