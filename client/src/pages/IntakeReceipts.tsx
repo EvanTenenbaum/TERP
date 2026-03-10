@@ -338,10 +338,10 @@ function CreateReceiptDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
-            New Intake Receipt
+            New Receiving Receipt
           </DialogTitle>
           <DialogDescription>
-            Create a new intake receipt for supplier deliveries.
+            Create a new receiving receipt for supplier deliveries.
           </DialogDescription>
         </DialogHeader>
 
@@ -1246,7 +1246,7 @@ export default function IntakeReceipts() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Intake Receipts
+              Receiving Receipts
             </h1>
             <p className="text-muted-foreground mt-1">
               Manage supplier deliveries and verification workflow
@@ -1254,7 +1254,7 @@ export default function IntakeReceipts() {
           </div>
           <Button onClick={() => setShowCreateDialog(true)}>
             <PlusCircle className="h-4 w-4 mr-2" />
-            New Intake Receipt
+            New Receiving Receipt
           </Button>
         </div>
 
@@ -1363,16 +1363,16 @@ export default function IntakeReceipts() {
             ) : receipts.length === 0 ? (
               <EmptyState
                 variant="invoices"
-                title="No intake receipts"
+                title="No receiving receipts"
                 description={
                   searchQuery || statusFilter !== "ALL"
                     ? "No receipts match your filters. Try adjusting your search or status filter."
-                    : "Create your first intake receipt to start tracking supplier deliveries."
+                    : "Create your first receiving receipt to start tracking supplier deliveries."
                 }
                 action={
                   !searchQuery && statusFilter === "ALL"
                     ? {
-                        label: "New Intake Receipt",
+                        label: "New Receiving Receipt",
                         onClick: () => setShowCreateDialog(true),
                       }
                     : undefined

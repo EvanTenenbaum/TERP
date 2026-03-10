@@ -32,7 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SupplierCombobox } from "@/components/ui/supplier-combobox";
-import { ProductCombobox } from "@/components/ui/product-combobox";
 import {
   Table,
   TableBody,
@@ -117,30 +116,98 @@ const toValidationNumber = (value: unknown) => {
   return 0;
 };
 
-const poLineSchema = z.object({
-  supplierId: z.preprocess(
-    toValidationNumber,
-    z.number().positive("Select a supplier")
-  ),
-  productId: z.preprocess(
-    toValidationNumber,
-    z.number().positive("Select a product")
-  ),
-  quantity: z.preprocess(
-    toValidationNumber,
-    z.number().positive("Quantity must be > 0")
-  ),
-  unitCost: z.preprocess(
-    toValidationNumber,
-    z.number().nonnegative("Cost must be >= 0")
-  ),
-});
+const toOptionalValidationNumber = (value: unknown) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const next = Number(trimmed);
+    return Number.isFinite(next) ? next : undefined;
+  }
+  return undefined;
+};
+
+const poLineSchema = z
+  .object({
+    supplierId: z.preprocess(
+      toValidationNumber,
+      z.number().positive("Select a supplier")
+    ),
+    productName: z.string().trim().min(1, "Type a product"),
+    quantity: z.preprocess(
+      toValidationNumber,
+      z.number().positive("Quantity must be > 0")
+    ),
+    cogsMode: z.enum(["FIXED", "RANGE"]),
+    unitCost: z.preprocess(
+      toOptionalValidationNumber,
+      z.number().nonnegative("Cost must be >= 0").optional()
+    ),
+    unitCostMin: z.preprocess(
+      toOptionalValidationNumber,
+      z.number().nonnegative("Min cost must be >= 0").optional()
+    ),
+    unitCostMax: z.preprocess(
+      toOptionalValidationNumber,
+      z.number().nonnegative("Max cost must be >= 0").optional()
+    ),
+  })
+  .superRefine((value, ctx) => {
+    if (value.cogsMode === "FIXED") {
+      if (value.unitCost === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["unitCost"],
+          message: "Unit cost is required",
+        });
+      }
+      return;
+    }
+
+    if (value.unitCostMin === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unitCostMin"],
+        message: "Min cost is required",
+      });
+    }
+    if (value.unitCostMax === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unitCostMax"],
+        message: "Max cost is required",
+      });
+    }
+    if (
+      value.unitCostMin !== undefined &&
+      value.unitCostMax !== undefined &&
+      value.unitCostMax < value.unitCostMin
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unitCostMax"],
+        message: "Max cost must be >= min cost",
+      });
+    }
+  });
+
+type PoCogsMode = "FIXED" | "RANGE";
 
 interface LineItem {
   tempId: string; // Unique identifier for React keys
   productId: string;
+  productName: string;
+  category: string;
+  subcategory: string;
+  cogsMode: PoCogsMode;
   quantityOrdered: string;
   unitCost: string;
+  unitCostMin: string;
+  unitCostMax: string;
 }
 
 interface POFormData {
@@ -154,13 +221,24 @@ interface POFormData {
 }
 
 type PoLineValues = z.infer<typeof poLineSchema>;
-type PoDraftField = "productId" | "quantityOrdered" | "unitCost";
+type PoDraftField =
+  | "productName"
+  | "category"
+  | "subcategory"
+  | "quantityOrdered"
+  | "unitCost"
+  | "unitCostMin"
+  | "unitCostMax";
 type PoDraftFieldErrors = Partial<Record<PoDraftField, string>>;
 
 const poDraftFieldToSchemaField: Record<PoDraftField, keyof PoLineValues> = {
-  productId: "productId",
+  productName: "productName",
+  category: "productName",
+  subcategory: "productName",
   quantityOrdered: "quantity",
   unitCost: "unitCost",
+  unitCostMin: "unitCostMin",
+  unitCostMax: "unitCostMax",
 };
 
 interface PurchaseOrder {
@@ -179,9 +257,15 @@ interface PurchaseOrder {
   items?: Array<{
     id: number;
     productId: number;
+    productName?: string;
+    category?: string;
+    subcategory?: string;
     quantityOrdered: number;
     quantityReceived?: number;
+    cogsMode?: PoCogsMode;
     unitCost: number;
+    unitCostMin?: number;
+    unitCostMax?: number;
   }>;
 }
 
@@ -203,13 +287,23 @@ interface POLineExportRow extends Record<string, unknown> {
 // ============================================================================
 
 const PAYMENT_TERMS_OPTIONS = [
-  { value: "Net 15", label: "Net 15" },
-  { value: "Net 30", label: "Net 30" },
-  { value: "Net 45", label: "Net 45" },
-  { value: "Net 60", label: "Net 60" },
-  { value: "Due on Receipt", label: "Due on Receipt" },
+  { value: "CONSIGNMENT", label: "Consignment" },
   { value: "COD", label: "COD" },
+  { value: "NET_7", label: "Net 7" },
+  { value: "NET_15", label: "Net 15" },
+  { value: "NET_30", label: "Net 30" },
+  { value: "PARTIAL", label: "Partial" },
 ];
+
+const CATEGORY_OPTIONS = [
+  { value: "Flower", label: "Flower" },
+  { value: "Deps", label: "Deps" },
+  { value: "Concentrate", label: "Concentrate" },
+  { value: "Edible", label: "Edible" },
+  { value: "PreRoll", label: "Pre-Roll" },
+  { value: "Vape", label: "Vape" },
+  { value: "Other", label: "Other" },
+] as const;
 
 // TER-670: Updated to WCAG 2.2 AA-compliant color combinations (-900 text on -100 bg).
 const PO_STATUS_COLORS: Record<string, string> = {
@@ -235,7 +329,7 @@ const PO_STATUS_LABELS: Record<string, string> = {
   DRAFT: "Draft",
   SENT: "Sent",
   CONFIRMED: "Confirmed",
-  RECEIVING: "Intaking",
+  RECEIVING: "Receiving",
   RECEIVED: "Received",
   CANCELLED: "Cancelled",
 };
@@ -260,6 +354,33 @@ const formatCurrency = (amount: string | number | null | undefined): string => {
   return `$${(num || 0).toFixed(2)}`;
 };
 
+const getDraftUnitCostValue = (
+  item: Pick<LineItem, "cogsMode" | "unitCost" | "unitCostMin" | "unitCostMax">
+): number => {
+  if (item.cogsMode === "RANGE") {
+    const min = Number(item.unitCostMin || 0);
+    const max = Number(item.unitCostMax || 0);
+    return (min + max) / 2;
+  }
+  return Number(item.unitCost || 0);
+};
+
+const formatItemCostLabel = (item: {
+  cogsMode?: PoCogsMode;
+  unitCost: number;
+  unitCostMin?: number;
+  unitCostMax?: number;
+}) => {
+  if (
+    item.cogsMode === "RANGE" &&
+    item.unitCostMin !== undefined &&
+    item.unitCostMax !== undefined
+  ) {
+    return `${formatCurrency(item.unitCostMin)}-${formatCurrency(item.unitCostMax)}`;
+  }
+  return formatCurrency(item.unitCost);
+};
+
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -267,15 +388,21 @@ const createEmptyForm = (): POFormData => ({
   supplierClientId: "",
   orderDate: new Date().toISOString().split("T")[0],
   expectedDeliveryDate: "",
-  paymentTerms: "",
+  paymentTerms: "CONSIGNMENT",
   notes: "",
   supplierNotes: "",
   items: [
     {
       tempId: generateTempId(),
       productId: "",
+      productName: "",
+      category: "Flower",
+      subcategory: "",
+      cogsMode: "FIXED",
       quantityOrdered: "",
       unitCost: "",
+      unitCostMin: "",
+      unitCostMax: "",
     },
   ],
 });
@@ -398,7 +525,12 @@ function POInspectorContent({
                       <p className="font-medium">{productName}</p>
                       <p className="text-sm text-muted-foreground">
                         Qty: {item.quantityOrdered} @{" "}
-                        {formatCurrency(item.unitCost)}
+                        {formatItemCostLabel({
+                          cogsMode: item.cogsMode,
+                          unitCost: item.unitCost,
+                          unitCostMin: item.unitCostMin,
+                          unitCostMax: item.unitCostMax,
+                        })}
                       </p>
                     </div>
                     <p className="font-semibold">
@@ -524,9 +656,12 @@ export function PurchaseOrdersWorkSurface() {
     schema: poLineSchema,
     initialValues: {
       supplierId: 0,
-      productId: 0,
+      productName: "",
       quantity: 0,
-      unitCost: 0,
+      cogsMode: "FIXED",
+      unitCost: undefined,
+      unitCostMin: undefined,
+      unitCostMax: undefined,
     },
   });
   const { exportCSV: exportPOCSV, state: poExportState } =
@@ -609,13 +744,63 @@ export function PurchaseOrdersWorkSurface() {
       .map(product => ({
         id: product.id,
         name: product.nameCanonical,
+        category: product.category ?? "",
+        subcategory: product.subcategory ?? "",
       }));
   }, [productsData, productsListFallback]);
+
+  const recentSupplierProductsQuery =
+    trpc.purchaseOrders.getRecentProductsBySupplier.useQuery(
+      {
+        supplierClientId: Number(formData.supplierClientId || 0),
+        limit: 8,
+      },
+      {
+        enabled: Number(formData.supplierClientId || 0) > 0,
+      }
+    );
+
+  const productNameLookup = useMemo(
+    () =>
+      new Map(
+        products.map(product => [product.name.trim().toLowerCase(), product])
+      ),
+    [products]
+  );
 
   // Selected PO
   const selectedPO = useMemo(
     () => (pos as PurchaseOrder[]).find(po => po.id === selectedPOId) || null,
     [pos, selectedPOId]
+  );
+
+  const resolveTypedProduct = useCallback(
+    (item: LineItem): LineItem => {
+      const normalizedName = item.productName.trim().toLowerCase();
+      if (!normalizedName) {
+        return {
+          ...item,
+          productId: "",
+        };
+      }
+
+      const match = productNameLookup.get(normalizedName);
+      if (!match) {
+        return {
+          ...item,
+          productId: "",
+        };
+      }
+
+      return {
+        ...item,
+        productId: String(match.id),
+        productName: match.name,
+        category: item.category || match.category || "Flower",
+        subcategory: item.subcategory || match.subcategory || "",
+      };
+    },
+    [productNameLookup]
   );
 
   // Mutations
@@ -785,7 +970,7 @@ export function PurchaseOrdersWorkSurface() {
     () =>
       formData.items.reduce((sum, item) => {
         const quantity = Number(item.quantityOrdered || 0);
-        const unitCost = Number(item.unitCost || 0);
+        const unitCost = getDraftUnitCostValue(item);
         return sum + quantity * unitCost;
       }, 0),
     [formData.items]
@@ -820,9 +1005,12 @@ export function PurchaseOrdersWorkSurface() {
   const buildPoLineValues = useCallback(
     (item: LineItem): PoLineValues => ({
       supplierId: Number(formData.supplierClientId || 0),
-      productId: Number(item.productId || 0),
+      productName: item.productName,
       quantity: Number(item.quantityOrdered || 0),
-      unitCost: Number(item.unitCost || 0),
+      cogsMode: item.cogsMode,
+      unitCost: toOptionalValidationNumber(item.unitCost),
+      unitCostMin: toOptionalValidationNumber(item.unitCostMin),
+      unitCostMax: toOptionalValidationNumber(item.unitCostMax),
     }),
     [formData.supplierClientId]
   );
@@ -841,14 +1029,20 @@ export function PurchaseOrdersWorkSurface() {
             nextSupplierError ??= issue.message;
             continue;
           }
-          if (field === "productId") {
-            rowErrors.productId = issue.message;
+          if (field === "productName") {
+            rowErrors.productName = issue.message;
           }
           if (field === "quantity") {
             rowErrors.quantityOrdered = issue.message;
           }
           if (field === "unitCost") {
             rowErrors.unitCost = issue.message;
+          }
+          if (field === "unitCostMin") {
+            rowErrors.unitCostMin = issue.message;
+          }
+          if (field === "unitCostMax") {
+            rowErrors.unitCostMax = issue.message;
           }
         }
       }
@@ -901,10 +1095,16 @@ export function PurchaseOrdersWorkSurface() {
       : "Unknown";
     return selectedPO.items.map(item => {
       const productName =
+        item.productName ||
         products.find(product => product.id === item.productId)?.name ||
         `Product #${item.productId}`;
       const quantityOrdered = Number(item.quantityOrdered || 0);
-      const unitCost = Number(item.unitCost || 0);
+      const unitCost =
+        item.cogsMode === "RANGE" &&
+        item.unitCostMin !== undefined &&
+        item.unitCostMax !== undefined
+          ? (Number(item.unitCostMin) + Number(item.unitCostMax)) / 2
+          : Number(item.unitCost || 0);
       return {
         poNumber: selectedPO.poNumber || `PO #${selectedPO.id}`,
         supplier: supplierName,
@@ -951,11 +1151,23 @@ export function PurchaseOrdersWorkSurface() {
       return;
     }
 
-    const items = formData.items.map(item => ({
-      productId: Number(item.productId),
-      quantityOrdered: Number(item.quantityOrdered),
-      unitCost: Number(item.unitCost),
-    }));
+    const items = formData.items.map(rawItem => {
+      const item = resolveTypedProduct(rawItem);
+      return {
+        productId: item.productId ? Number(item.productId) : undefined,
+        productName: item.productName,
+        category: item.category || undefined,
+        subcategory: item.subcategory || undefined,
+        quantityOrdered: Number(item.quantityOrdered),
+        cogsMode: item.cogsMode,
+        unitCost:
+          item.cogsMode === "FIXED" ? Number(item.unitCost || 0) : undefined,
+        unitCostMin:
+          item.cogsMode === "RANGE" ? Number(item.unitCostMin || 0) : undefined,
+        unitCostMax:
+          item.cogsMode === "RANGE" ? Number(item.unitCostMax || 0) : undefined,
+      };
+    });
 
     createPO.mutate({
       supplierClientId: Number(formData.supplierClientId),
@@ -980,7 +1192,7 @@ export function PurchaseOrdersWorkSurface() {
   const focusPoDraftCell = useCallback(
     (
       rowId: string,
-      field: "quantityOrdered" | "unitCost" = "quantityOrdered"
+      field: "productName" | "quantityOrdered" | "unitCost" = "productName"
     ) => {
       const root = poDraftRowsRef.current;
       if (!root) {
@@ -995,12 +1207,63 @@ export function PurchaseOrdersWorkSurface() {
     []
   );
 
+  const appendQuickAddItem = useCallback(
+    (item: {
+      productId: number;
+      productName: string | null;
+      category: string | null;
+      subcategory: string | null;
+      cogsMode: PoCogsMode;
+      unitCost: string | number | null;
+      unitCostMin?: string | number | null;
+      unitCostMax?: string | number | null;
+    }) => {
+      const nextRow: LineItem = {
+        tempId: generateTempId(),
+        productId: String(item.productId),
+        productName: item.productName ?? "",
+        category: item.category ?? "Flower",
+        subcategory: item.subcategory ?? "",
+        cogsMode: item.cogsMode ?? "FIXED",
+        quantityOrdered: "",
+        unitCost:
+          item.unitCost !== null && item.unitCost !== undefined
+            ? String(item.unitCost)
+            : "",
+        unitCostMin:
+          item.unitCostMin !== null && item.unitCostMin !== undefined
+            ? String(item.unitCostMin)
+            : "",
+        unitCostMax:
+          item.unitCostMax !== null && item.unitCostMax !== undefined
+            ? String(item.unitCostMax)
+            : "",
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, nextRow],
+      }));
+      poDraftSelection.setSelection([nextRow.tempId]);
+      requestAnimationFrame(() => {
+        focusPoDraftCell(nextRow.tempId);
+      });
+    },
+    [focusPoDraftCell, poDraftSelection]
+  );
+
   const handleAddItem = () => {
     const newItem: LineItem = {
       tempId: generateTempId(),
       productId: "",
+      productName: "",
+      category: "Flower",
+      subcategory: "",
+      cogsMode: "FIXED",
       quantityOrdered: "",
       unitCost: "",
+      unitCostMin: "",
+      unitCostMax: "",
     };
     setFormData(prev => ({
       ...prev,
@@ -1181,6 +1444,10 @@ export function PurchaseOrdersWorkSurface() {
 
       handleItemChange(index, field, value);
 
+      if (field === "category" || field === "subcategory") {
+        return;
+      }
+
       const nextItem = {
         ...currentItem,
         [field]: value,
@@ -1204,9 +1471,19 @@ export function PurchaseOrdersWorkSurface() {
 
   const handleLineItemFieldBlur = useCallback(
     (item: LineItem, field: PoDraftField) => {
-      validatePoDraftRow(item, field);
+      const nextItem =
+        field === "productName" ? resolveTypedProduct(item) : item;
+      if (field === "productName" && nextItem !== item) {
+        setFormData(prev => ({
+          ...prev,
+          items: prev.items.map(existing =>
+            existing.tempId === item.tempId ? nextItem : existing
+          ),
+        }));
+      }
+      validatePoDraftRow(nextItem, field);
     },
-    [validatePoDraftRow]
+    [resolveTypedProduct, validatePoDraftRow]
   );
 
   const applyBulkFieldToSelectedRows = useCallback(
@@ -1251,7 +1528,7 @@ export function PurchaseOrdersWorkSurface() {
     (
       event: KeyboardEvent<HTMLInputElement>,
       rowIndex: number,
-      field: "quantityOrdered" | "unitCost"
+      field: "productName" | "quantityOrdered" | "unitCost"
     ) => {
       if (event.key === "Escape") {
         (event.currentTarget as HTMLInputElement).blur();
@@ -1521,8 +1798,84 @@ export function PurchaseOrdersWorkSurface() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Defaulting to consignment keeps the receiving and payable flow
+                  aligned.
+                </p>
               </div>
             </div>
+
+            {Number(formData.supplierClientId || 0) > 0 && (
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Quick add from previous purchase orders
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Tap a prior supplier product to copy it into a fresh row.
+                    </p>
+                  </div>
+                  {recentSupplierProductsQuery.isLoading && (
+                    <span className="text-xs text-muted-foreground">
+                      Loading supplier history...
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(recentSupplierProductsQuery.data ?? []).map(item => (
+                    <Button
+                      key={`${item.productId}-${item.poNumber}`}
+                      type="button"
+                      variant="outline"
+                      className="h-auto items-start justify-start px-3 py-2 text-left"
+                      onClick={() =>
+                        appendQuickAddItem({
+                          productId: item.productId,
+                          productName: item.productName,
+                          category: item.category,
+                          subcategory: item.subcategory,
+                          cogsMode: item.cogsMode,
+                          unitCost: item.unitCost,
+                          unitCostMin: item.unitCostMin,
+                          unitCostMax: item.unitCostMax,
+                        })
+                      }
+                    >
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {item.productName ?? `Product #${item.productId}`}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatItemCostLabel({
+                            cogsMode: item.cogsMode,
+                            unitCost: Number(item.unitCost ?? 0),
+                            unitCostMin:
+                              item.unitCostMin !== null &&
+                              item.unitCostMin !== undefined
+                                ? Number(item.unitCostMin)
+                                : undefined,
+                            unitCostMax:
+                              item.unitCostMax !== null &&
+                              item.unitCostMax !== undefined
+                                ? Number(item.unitCostMax)
+                                : undefined,
+                          })}{" "}
+                          • {item.poNumber}
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                  {!recentSupplierProductsQuery.isLoading &&
+                    (recentSupplierProductsQuery.data ?? []).length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No prior supplier items yet. Type the first product
+                        below and it will show up here next time.
+                      </p>
+                    )}
+                </div>
+              </div>
+            )}
 
             <div
               className={cn(
@@ -1633,6 +1986,11 @@ export function PurchaseOrdersWorkSurface() {
                 ref={poDraftRowsRef}
                 className="space-y-2 rounded-md border p-3"
               >
+                <datalist id="po-product-suggestions">
+                  {products.map(product => (
+                    <option key={product.id} value={product.name} />
+                  ))}
+                </datalist>
                 <div className="grid grid-cols-12 gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                   <span className="col-span-1">
                     <Checkbox
@@ -1649,16 +2007,24 @@ export function PurchaseOrdersWorkSurface() {
                       }
                     />
                   </span>
-                  <span className="col-span-5">Product</span>
-                  <span className="col-span-2 text-right">Qty</span>
-                  <span className="col-span-2 text-right">Unit Cost</span>
+                  <span className="col-span-4">Product</span>
+                  <span className="col-span-2">Category</span>
+                  <span className="col-span-1 text-right">Qty</span>
+                  <span className="col-span-3">COGS</span>
                   <span className="col-span-1 text-right">Total</span>
                   <span className="col-span-1 text-right">Action</span>
                 </div>
                 {formData.items.map((item, index) => {
                   const quantity = Number(item.quantityOrdered || 0);
-                  const unitCost = Number(item.unitCost || 0);
+                  const unitCost = getDraftUnitCostValue(item);
                   const rowTotal = quantity * unitCost;
+                  const matchedProduct = item.productId
+                    ? products.find(
+                        product => product.id === Number(item.productId)
+                      )
+                    : productNameLookup.get(
+                        item.productName.trim().toLowerCase()
+                      );
 
                   return (
                     <div
@@ -1682,37 +2048,89 @@ export function PurchaseOrdersWorkSurface() {
                           }}
                         />
                       </div>
-                      <div className="col-span-5">
-                        <ProductCombobox
-                          value={item.productId ? Number(item.productId) : null}
-                          onValueChange={productId => {
-                            const nextValue =
-                              productId !== null ? String(productId) : "";
-                            const nextItem = {
-                              ...item,
-                              productId: nextValue,
-                            };
+                      <div className="col-span-4">
+                        <Input
+                          list="po-product-suggestions"
+                          placeholder="Type product name"
+                          value={item.productName}
+                          data-po-draft-row-id={item.tempId}
+                          data-po-draft-field="productName"
+                          onChange={e =>
                             handleLineItemFieldChange(
                               index,
-                              "productId",
-                              nextValue
-                            );
-                            validatePoDraftRow(nextItem, "productId");
-                          }}
-                          products={products.map(product => ({
-                            id: product.id,
-                            label: product.name,
-                          }))}
-                          isLoading={productsLoading}
-                          placeholder="Select product"
+                              "productName",
+                              e.target.value
+                            )
+                          }
+                          onBlur={e =>
+                            handleLineItemFieldBlur(
+                              {
+                                ...item,
+                                productName: e.target.value,
+                              },
+                              "productName"
+                            )
+                          }
+                          onKeyDown={event =>
+                            handleDraftFieldKeyDown(event, index, "productName")
+                          }
                         />
-                        {poDraftFieldErrors[item.tempId]?.productId && (
+                        <div className="mt-1 flex items-center gap-2 text-xs">
+                          {matchedProduct ? (
+                            <Badge variant="secondary">
+                              Matched existing product
+                            </Badge>
+                          ) : item.productName.trim() ? (
+                            <Badge variant="outline">
+                              New product will be created
+                            </Badge>
+                          ) : null}
+                          {productsLoading && (
+                            <span className="text-muted-foreground">
+                              Loading products...
+                            </span>
+                          )}
+                        </div>
+                        {poDraftFieldErrors[item.tempId]?.productName && (
                           <p className="text-xs text-red-500 mt-1">
-                            {poDraftFieldErrors[item.tempId]?.productId}
+                            {poDraftFieldErrors[item.tempId]?.productName}
                           </p>
                         )}
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-2 space-y-1">
+                        <Select
+                          value={item.category}
+                          onValueChange={value =>
+                            handleLineItemFieldChange(index, "category", value)
+                          }
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORY_OPTIONS.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          placeholder="Subcategory"
+                          value={item.subcategory}
+                          onChange={e =>
+                            handleLineItemFieldChange(
+                              index,
+                              "subcategory",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="col-span-1">
                         <Input
                           type="number"
                           className={cn(
@@ -1756,44 +2174,155 @@ export function PurchaseOrdersWorkSurface() {
                           </p>
                         )}
                       </div>
-                      <div className="col-span-2">
-                        <Input
-                          type="number"
-                          className={cn(
-                            "text-right",
-                            poDraftFieldErrors[item.tempId]?.unitCost &&
-                              "border-red-500"
-                          )}
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          data-po-draft-row-id={item.tempId}
-                          data-po-draft-field="unitCost"
-                          value={item.unitCost}
-                          onChange={e =>
-                            handleLineItemFieldChange(
-                              index,
-                              "unitCost",
-                              e.target.value
-                            )
-                          }
-                          onBlur={e =>
-                            handleLineItemFieldBlur(
-                              {
-                                ...item,
-                                unitCost: e.target.value,
-                              },
-                              "unitCost"
-                            )
-                          }
-                          onKeyDown={event =>
-                            handleDraftFieldKeyDown(event, index, "unitCost")
-                          }
-                        />
-                        {poDraftFieldErrors[item.tempId]?.unitCost && (
-                          <p className="text-xs text-red-500 mt-1 text-right">
-                            {poDraftFieldErrors[item.tempId]?.unitCost}
-                          </p>
+                      <div className="col-span-3 space-y-2">
+                        <Select
+                          value={item.cogsMode}
+                          onValueChange={value => {
+                            const nextMode = value as PoCogsMode;
+                            setFormData(prev => ({
+                              ...prev,
+                              items: prev.items.map(existing =>
+                                existing.tempId === item.tempId
+                                  ? {
+                                      ...existing,
+                                      cogsMode: nextMode,
+                                      unitCost:
+                                        nextMode === "FIXED"
+                                          ? existing.unitCost ||
+                                            existing.unitCostMin
+                                          : existing.unitCost,
+                                    }
+                                  : existing
+                              ),
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FIXED">Fixed COGS</SelectItem>
+                            <SelectItem value="RANGE">Range COGS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {item.cogsMode === "FIXED" ? (
+                          <>
+                            <Input
+                              type="number"
+                              className={cn(
+                                "text-right",
+                                poDraftFieldErrors[item.tempId]?.unitCost &&
+                                  "border-red-500"
+                              )}
+                              placeholder="0.00"
+                              min="0"
+                              step="0.01"
+                              data-po-draft-row-id={item.tempId}
+                              data-po-draft-field="unitCost"
+                              value={item.unitCost}
+                              onChange={e =>
+                                handleLineItemFieldChange(
+                                  index,
+                                  "unitCost",
+                                  e.target.value
+                                )
+                              }
+                              onBlur={e =>
+                                handleLineItemFieldBlur(
+                                  {
+                                    ...item,
+                                    unitCost: e.target.value,
+                                  },
+                                  "unitCost"
+                                )
+                              }
+                              onKeyDown={event =>
+                                handleDraftFieldKeyDown(
+                                  event,
+                                  index,
+                                  "unitCost"
+                                )
+                              }
+                            />
+                            {poDraftFieldErrors[item.tempId]?.unitCost && (
+                              <p className="text-xs text-red-500 text-right">
+                                {poDraftFieldErrors[item.tempId]?.unitCost}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Input
+                                type="number"
+                                className={cn(
+                                  "text-right",
+                                  poDraftFieldErrors[item.tempId]
+                                    ?.unitCostMin && "border-red-500"
+                                )}
+                                placeholder="Min"
+                                min="0"
+                                step="0.01"
+                                value={item.unitCostMin}
+                                onChange={e =>
+                                  handleLineItemFieldChange(
+                                    index,
+                                    "unitCostMin",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={e =>
+                                  handleLineItemFieldBlur(
+                                    {
+                                      ...item,
+                                      unitCostMin: e.target.value,
+                                    },
+                                    "unitCostMin"
+                                  )
+                                }
+                              />
+                              {poDraftFieldErrors[item.tempId]?.unitCostMin && (
+                                <p className="mt-1 text-xs text-red-500">
+                                  {poDraftFieldErrors[item.tempId]?.unitCostMin}
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <Input
+                                type="number"
+                                className={cn(
+                                  "text-right",
+                                  poDraftFieldErrors[item.tempId]
+                                    ?.unitCostMax && "border-red-500"
+                                )}
+                                placeholder="Max"
+                                min="0"
+                                step="0.01"
+                                value={item.unitCostMax}
+                                onChange={e =>
+                                  handleLineItemFieldChange(
+                                    index,
+                                    "unitCostMax",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={e =>
+                                  handleLineItemFieldBlur(
+                                    {
+                                      ...item,
+                                      unitCostMax: e.target.value,
+                                    },
+                                    "unitCostMax"
+                                  )
+                                }
+                              />
+                              {poDraftFieldErrors[item.tempId]?.unitCostMax && (
+                                <p className="mt-1 text-xs text-red-500">
+                                  {poDraftFieldErrors[item.tempId]?.unitCostMax}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                       <div className="col-span-1 text-right text-sm font-medium">

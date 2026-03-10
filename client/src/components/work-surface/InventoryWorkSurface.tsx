@@ -1872,13 +1872,13 @@ export function InventoryWorkSurface() {
               </>
             )}
           </Button>
-          {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
+          {/* TER-220: Unified receiving entry point */}
           <Button
             data-testid="new-batch-btn"
             onClick={() => setShowPurchaseModal(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Product Intake
+            Receive Inventory
           </Button>
         </div>
 
@@ -2113,9 +2113,9 @@ export function InventoryWorkSurface() {
               <EmptyState
                 variant="inventory"
                 title="No inventory found"
-                description="Intake products to start managing stock, locations, and availability."
+                description="Receive products to start managing stock, locations, and availability."
                 action={{
-                  label: "Open Intake",
+                  label: "Open Receiving",
                   onClick: () => setShowPurchaseModal(true),
                 }}
               />

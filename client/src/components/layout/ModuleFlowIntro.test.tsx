@@ -38,10 +38,10 @@ describe("ModuleFlowIntro", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows orders explainer on pick-pack routes", () => {
-    renderIntro("/pick-pack");
+  it("shows inventory explainer on operations routes", () => {
+    renderIntro("/operations");
     expect(
-      screen.getByRole("heading", { name: "How Orders Work" })
+      screen.getByRole("heading", { name: "How Inventory Works" })
     ).toBeInTheDocument();
   });
 

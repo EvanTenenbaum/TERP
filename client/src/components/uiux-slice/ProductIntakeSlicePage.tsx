@@ -151,7 +151,10 @@ type PoDetailItem = {
   subcategory?: string | null;
   quantityOrdered?: string | number | null;
   quantityReceived?: string | number | null;
+  cogsMode?: "FIXED" | "RANGE" | null;
   unitCost?: string | number | null;
+  unitCostMin?: string | number | null;
+  unitCostMax?: string | number | null;
 };
 
 type PoDetail = {
@@ -300,7 +303,17 @@ export function ProductIntakeSlicePage() {
             quantityOrdered: ordered,
             quantityReceived: received,
             intakeQty: Math.min(remaining, Math.max(1, remaining)),
+            cogsMode:
+              (line.cogsMode as "FIXED" | "RANGE" | undefined) ?? "FIXED",
             unitCost: Number(line.unitCost ?? 0),
+            unitCostMin:
+              line.unitCostMin !== null && line.unitCostMin !== undefined
+                ? Number(line.unitCostMin)
+                : undefined,
+            unitCostMax:
+              line.unitCostMax !== null && line.unitCostMax !== undefined
+                ? Number(line.unitCostMax)
+                : undefined,
             grade: "A",
             locationId: defaultWarehouse?.id ?? null,
             locationName: defaultWarehouse?.site ?? "Main Warehouse",

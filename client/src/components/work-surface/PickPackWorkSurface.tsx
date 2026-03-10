@@ -1187,7 +1187,7 @@ export function PickPackWorkSurface() {
               data-testid="pick-pack-header"
             >
               <Package className="w-6 h-6 text-blue-600" />
-              Pick & Pack
+              Shipping
             </h2>
             <div className="flex items-center gap-2">
               {SaveStateIndicator}
@@ -1302,7 +1302,7 @@ export function PickPackWorkSurface() {
               data-testid="order-queue-empty"
             >
               <Package className="w-8 h-8 mb-2" />
-              <p>No orders to pick</p>
+              <p>No orders ready for shipping</p>
             </div>
           ) : (
             filteredPickList.map((order, index) => (
@@ -1324,7 +1324,7 @@ export function PickPackWorkSurface() {
           <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
             <Box className="w-16 h-16 mb-4 text-gray-300" />
             <p className="text-lg font-medium">
-              Select an order to start packing
+              Select an order to prepare for shipping
             </p>
             <p className="text-sm">
               Use arrow keys to navigate, Enter to select
@@ -1383,7 +1383,7 @@ export function PickPackWorkSurface() {
                 title={
                   canManagePickPack
                     ? undefined
-                    : "Pick & Pack manage permissions required"
+                    : "Shipping manage permissions required"
                 }
               >
                 <CheckSquare className="w-4 h-4 mr-2" />
@@ -1400,7 +1400,7 @@ export function PickPackWorkSurface() {
                 title={
                   pickPackManifestRows.length === 0
                     ? "Select an order with items to export"
-                    : "Export pick-pack manifest to CSV"
+                    : "Export shipping manifest to CSV"
                 }
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -1419,7 +1419,7 @@ export function PickPackWorkSurface() {
                 title={
                   canManagePickPack
                     ? undefined
-                    : "Pick & Pack manage permissions required"
+                    : "Shipping manage permissions required"
                 }
               >
                 {packItemsMutation.isPending ? (
@@ -1441,7 +1441,7 @@ export function PickPackWorkSurface() {
                 title={
                   canManagePickPack
                     ? undefined
-                    : "Pick & Pack manage permissions required"
+                    : "Shipping manage permissions required"
                 }
               >
                 Pack All to One Bag
@@ -1461,7 +1461,7 @@ export function PickPackWorkSurface() {
                 title={
                   canManagePickPack
                     ? undefined
-                    : "Pick & Pack manage permissions required"
+                    : "Shipping manage permissions required"
                 }
               >
                 {markReadyMutation.isPending ? (

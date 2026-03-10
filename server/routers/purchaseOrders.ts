@@ -10,6 +10,8 @@ import {
   purchaseOrderItems,
   products,
   clients,
+  brands,
+  vendors,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
@@ -19,6 +21,97 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import * as productsDb from "../productsDb";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
+
+const PO_COGS_MODES = ["FIXED", "RANGE"] as const;
+const _PO_PAYMENT_TERMS = [
+  "COD",
+  "NET_7",
+  "NET_15",
+  "NET_30",
+  "CONSIGNMENT",
+  "PARTIAL",
+] as const;
+
+const purchaseOrderItemInputSchema = z
+  .object({
+    productId: z
+      .number()
+      .int()
+      .positive("Product ID must be a positive integer")
+      .optional(),
+    productName: z.string().trim().min(1).max(500).optional(),
+    category: z.string().trim().max(100).optional(),
+    subcategory: z.string().trim().max(100).optional().nullable(),
+    quantityOrdered: z
+      .number()
+      .positive("Quantity must be greater than 0")
+      .max(1_000_000, "Quantity must not exceed 1,000,000"),
+    cogsMode: z.enum(PO_COGS_MODES).default("FIXED"),
+    unitCost: z
+      .number()
+      .min(0, "Unit cost cannot be negative")
+      .max(100_000, "Unit cost must not exceed 100,000")
+      .optional(),
+    unitCostMin: z
+      .number()
+      .min(0, "Minimum unit cost cannot be negative")
+      .max(100_000, "Minimum unit cost must not exceed 100,000")
+      .optional(),
+    unitCostMax: z
+      .number()
+      .min(0, "Maximum unit cost cannot be negative")
+      .max(100_000, "Maximum unit cost must not exceed 100,000")
+      .optional(),
+  })
+  .superRefine((item, ctx) => {
+    if (!item.productId && !item.productName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["productName"],
+        message: "Product name or product ID is required",
+      });
+    }
+
+    if (item.cogsMode === "FIXED") {
+      if (item.unitCost === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["unitCost"],
+          message: "Unit cost is required for fixed COGS",
+        });
+      }
+      return;
+    }
+
+    if (item.unitCostMin === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unitCostMin"],
+        message: "Minimum unit cost is required for range COGS",
+      });
+    }
+    if (item.unitCostMax === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unitCostMax"],
+        message: "Maximum unit cost is required for range COGS",
+      });
+    }
+    if (
+      item.unitCostMin !== undefined &&
+      item.unitCostMax !== undefined &&
+      item.unitCostMax < item.unitCostMin
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unitCostMax"],
+        message:
+          "Maximum unit cost must be greater than or equal to minimum unit cost",
+      });
+    }
+  });
+
+type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemInputSchema>;
 
 export const purchaseOrdersRouter = router({
   // Product options for PO creation (use product catalogue)
@@ -137,22 +230,7 @@ export const purchaseOrdersRouter = router({
           paymentTerms: z.string().optional(),
           notes: z.string().optional(),
           vendorNotes: z.string().optional(),
-          items: z.array(
-            z.object({
-              productId: z
-                .number()
-                .int()
-                .positive("Product ID must be a positive integer"),
-              quantityOrdered: z
-                .number()
-                .positive("Quantity must be greater than 0")
-                .max(1_000_000, "Quantity must not exceed 1,000,000"),
-              unitCost: z
-                .number()
-                .min(0, "Unit cost cannot be negative")
-                .max(100_000, "Unit cost must not exceed 100,000"),
-            })
-          ),
+          items: z.array(purchaseOrderItemInputSchema),
         })
         .refine(
           data =>
@@ -169,11 +247,16 @@ export const purchaseOrdersRouter = router({
       // Resolve supplier client ID
       let resolvedSupplierClientId = poData.supplierClientId;
       let resolvedVendorId = poData.vendorId;
+      let supplierName: string | null = null;
 
       // PARTY-001: Validate supplierClientId is a seller client if provided directly
       if (resolvedSupplierClientId) {
         const [supplierClient] = await db
-          .select({ id: clients.id, isSeller: clients.isSeller })
+          .select({
+            id: clients.id,
+            isSeller: clients.isSeller,
+            name: clients.name,
+          })
           .from(clients)
           .where(eq(clients.id, resolvedSupplierClientId))
           .limit(1);
@@ -191,6 +274,8 @@ export const purchaseOrdersRouter = router({
             message: `Client with ID ${resolvedSupplierClientId} is not a supplier (isSeller=false)`,
           });
         }
+
+        supplierName = supplierClient.name;
       }
 
       // If only vendorId provided, resolve to supplierClientId via supplier_profiles
@@ -201,6 +286,7 @@ export const purchaseOrdersRouter = router({
         const supplier = await getSupplierByLegacyVendorId(resolvedVendorId);
         if (supplier) {
           resolvedSupplierClientId = supplier.id;
+          supplierName = supplier.name;
         }
       }
 
@@ -239,12 +325,46 @@ export const purchaseOrdersRouter = router({
         });
       }
 
+      if (!supplierName && resolvedVendorId) {
+        const [legacyVendor] = await db
+          .select({ name: vendors.name })
+          .from(vendors)
+          .where(eq(vendors.id, resolvedVendorId))
+          .limit(1);
+        supplierName = legacyVendor?.name ?? null;
+      }
+
       // Generate PO number
       const poNumber = await generatePONumber(db);
 
+      const normalizedPaymentTerms = normalizePurchaseOrderPaymentTerms(
+        poData.paymentTerms
+      );
+
+      const resolvedItems = await Promise.all(
+        items.map(async item => {
+          const product = await resolvePurchaseOrderLineProduct(db, item, {
+            supplierClientId: resolvedSupplierClientId,
+            vendorId: resolvedVendorId,
+            supplierName,
+          });
+          const costSummary = summarizePurchaseOrderItemCost(item);
+
+          return {
+            productId: product.id,
+            cogsMode: costSummary.cogsMode,
+            unitCost: costSummary.unitCost,
+            unitCostMin: costSummary.unitCostMin,
+            unitCostMax: costSummary.unitCostMax,
+            quantityOrdered: item.quantityOrdered,
+            totalCost: costSummary.unitCost * item.quantityOrdered,
+          };
+        })
+      );
+
       // Calculate totals
-      const subtotal = items.reduce(
-        (sum, item) => sum + item.quantityOrdered * item.unitCost,
+      const subtotal = resolvedItems.reduce(
+        (sum, item) => sum + item.totalCost,
         0
       );
 
@@ -252,7 +372,7 @@ export const purchaseOrdersRouter = router({
       const createdBy = getAuthenticatedUserId(ctx);
 
       // Create PO with both IDs
-      const [po] = await db.insert(purchaseOrders).values({
+      const poInsertResult = await db.insert(purchaseOrders).values({
         vendorId: resolvedVendorId,
         supplierClientId: resolvedSupplierClientId || null,
         intakeSessionId: poData.intakeSessionId,
@@ -260,7 +380,7 @@ export const purchaseOrdersRouter = router({
         expectedDeliveryDate: poData.expectedDeliveryDate
           ? new Date(poData.expectedDeliveryDate)
           : null,
-        paymentTerms: poData.paymentTerms,
+        paymentTerms: normalizedPaymentTerms,
         notes: poData.notes,
         vendorNotes: poData.vendorNotes,
         createdBy,
@@ -270,17 +390,25 @@ export const purchaseOrdersRouter = router({
         purchaseOrderStatus: "DRAFT",
       });
 
-      const poId = Number(po.insertId);
+      const poId = Number(
+        Array.isArray(poInsertResult)
+          ? (poInsertResult[0]?.insertId ?? 0)
+          : ((poInsertResult as { insertId?: number })?.insertId ?? 0)
+      );
 
       // Create PO items
-      if (items.length > 0) {
+      if (resolvedItems.length > 0) {
         await db.insert(purchaseOrderItems).values(
-          items.map(item => ({
+          resolvedItems.map(item => ({
             purchaseOrderId: poId,
             productId: item.productId,
+            cogsMode: item.cogsMode,
             quantityOrdered: item.quantityOrdered.toString(),
             unitCost: item.unitCost.toString(),
+            unitCostMin: item.unitCostMin?.toString() ?? null,
+            unitCostMax: item.unitCostMax?.toString() ?? null,
             totalCost: (item.quantityOrdered * item.unitCost).toString(),
+            supplierClientId: resolvedSupplierClientId ?? null,
             notes: null, // Explicit null for nullable column (BUG-002)
           }))
         );
@@ -392,9 +520,13 @@ export const purchaseOrdersRouter = router({
           productId: purchaseOrderItems.productId,
           productName: products.nameCanonical,
           category: products.category,
+          subcategory: products.subcategory,
           quantityOrdered: purchaseOrderItems.quantityOrdered,
           quantityReceived: purchaseOrderItems.quantityReceived,
+          cogsMode: purchaseOrderItems.cogsMode,
           unitCost: purchaseOrderItems.unitCost,
+          unitCostMin: purchaseOrderItems.unitCostMin,
+          unitCostMax: purchaseOrderItems.unitCostMax,
           totalCost: purchaseOrderItems.totalCost,
           notes: purchaseOrderItems.notes,
         })
@@ -544,10 +676,22 @@ export const purchaseOrdersRouter = router({
           .number()
           .positive("Quantity must be greater than 0")
           .max(1_000_000, "Quantity must not exceed 1,000,000"),
+        cogsMode: z.enum(PO_COGS_MODES).default("FIXED"),
         unitCost: z
           .number()
           .min(0, "Unit cost cannot be negative")
-          .max(100_000, "Unit cost must not exceed 100,000"),
+          .max(100_000, "Unit cost must not exceed 100,000")
+          .optional(),
+        unitCostMin: z
+          .number()
+          .min(0, "Minimum unit cost cannot be negative")
+          .max(100_000, "Minimum unit cost must not exceed 100,000")
+          .optional(),
+        unitCostMax: z
+          .number()
+          .min(0, "Maximum unit cost cannot be negative")
+          .max(100_000, "Maximum unit cost must not exceed 100,000")
+          .optional(),
         notes: z.string().optional(),
       })
     )
@@ -555,13 +699,17 @@ export const purchaseOrdersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const totalCost = input.quantityOrdered * input.unitCost;
+      const costSummary = summarizePurchaseOrderItemCost(input);
+      const totalCost = input.quantityOrdered * costSummary.unitCost;
 
       await db.insert(purchaseOrderItems).values({
         purchaseOrderId: input.purchaseOrderId,
         productId: input.productId,
+        cogsMode: costSummary.cogsMode,
         quantityOrdered: input.quantityOrdered.toString(),
-        unitCost: input.unitCost.toString(),
+        unitCost: costSummary.unitCost.toString(),
+        unitCostMin: costSummary.unitCostMin?.toString() ?? null,
+        unitCostMax: costSummary.unitCostMax?.toString() ?? null,
         totalCost: totalCost.toString(),
         notes: input.notes,
       });
@@ -582,10 +730,21 @@ export const purchaseOrdersRouter = router({
           .positive("Quantity must be greater than 0")
           .max(1_000_000, "Quantity must not exceed 1,000,000")
           .optional(),
+        cogsMode: z.enum(PO_COGS_MODES).optional(),
         unitCost: z
           .number()
           .min(0, "Unit cost cannot be negative")
           .max(100_000, "Unit cost must not exceed 100,000")
+          .optional(),
+        unitCostMin: z
+          .number()
+          .min(0, "Minimum unit cost cannot be negative")
+          .max(100_000, "Minimum unit cost must not exceed 100,000")
+          .optional(),
+        unitCostMax: z
+          .number()
+          .min(0, "Maximum unit cost cannot be negative")
+          .max(100_000, "Maximum unit cost must not exceed 100,000")
           .optional(),
         notes: z.string().optional(),
       })
@@ -608,15 +767,33 @@ export const purchaseOrdersRouter = router({
 
       const quantityOrdered =
         data.quantityOrdered ?? parseFloat(item.quantityOrdered);
-      const unitCost = data.unitCost ?? parseFloat(item.unitCost);
-      const totalCost = quantityOrdered * unitCost;
+      const costSummary = summarizePurchaseOrderItemCost({
+        cogsMode: data.cogsMode ?? item.cogsMode,
+        unitCost:
+          data.unitCost ??
+          (item.unitCost !== null ? parseFloat(item.unitCost) : undefined),
+        unitCostMin:
+          data.unitCostMin ??
+          (item.unitCostMin !== null
+            ? parseFloat(item.unitCostMin)
+            : undefined),
+        unitCostMax:
+          data.unitCostMax ??
+          (item.unitCostMax !== null
+            ? parseFloat(item.unitCostMax)
+            : undefined),
+      });
+      const totalCost = quantityOrdered * costSummary.unitCost;
 
       await db
         .update(purchaseOrderItems)
         .set({
           ...data,
+          cogsMode: costSummary.cogsMode,
           quantityOrdered: quantityOrdered.toString(),
-          unitCost: unitCost.toString(),
+          unitCost: costSummary.unitCost.toString(),
+          unitCostMin: costSummary.unitCostMin?.toString() ?? null,
+          unitCostMax: costSummary.unitCostMax?.toString() ?? null,
           totalCost: totalCost.toString(),
         })
         .where(eq(purchaseOrderItems.id, id));
@@ -669,6 +846,61 @@ export const purchaseOrdersRouter = router({
         .orderBy(desc(purchaseOrders.createdAt));
     }),
 
+  getRecentProductsBySupplier: protectedProcedure
+    .input(
+      z.object({
+        supplierClientId: z.number(),
+        limit: z.number().min(1).max(50).default(12),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const rows = await db
+        .select({
+          productId: purchaseOrderItems.productId,
+          productName: products.nameCanonical,
+          category: products.category,
+          subcategory: products.subcategory,
+          cogsMode: purchaseOrderItems.cogsMode,
+          unitCost: purchaseOrderItems.unitCost,
+          unitCostMin: purchaseOrderItems.unitCostMin,
+          unitCostMax: purchaseOrderItems.unitCostMax,
+          poNumber: purchaseOrders.poNumber,
+          orderDate: purchaseOrders.orderDate,
+        })
+        .from(purchaseOrderItems)
+        .innerJoin(
+          purchaseOrders,
+          eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id)
+        )
+        .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+        .where(
+          and(
+            eq(purchaseOrders.supplierClientId, input.supplierClientId),
+            isNull(purchaseOrders.deletedAt),
+            isNull(purchaseOrderItems.deletedAt)
+          )
+        )
+        .orderBy(desc(purchaseOrders.orderDate), desc(purchaseOrderItems.id));
+
+      const seen = new Set<number>();
+      const recentProducts = [];
+      for (const row of rows) {
+        if (seen.has(row.productId)) {
+          continue;
+        }
+        seen.add(row.productId);
+        recentProducts.push(row);
+        if (recentProducts.length >= input.limit) {
+          break;
+        }
+      }
+
+      return recentProducts;
+    }),
+
   // Get PO history for a vendor (DEPRECATED - use getBySupplier instead)
   getByVendor: protectedProcedure
     .input(z.object({ vendorId: z.number() }))
@@ -701,8 +933,11 @@ export const purchaseOrdersRouter = router({
           vendorId: purchaseOrders.vendorId, // Deprecated but included for backward compat
           purchaseOrderStatus: purchaseOrders.purchaseOrderStatus,
           orderDate: purchaseOrders.orderDate,
+          cogsMode: purchaseOrderItems.cogsMode,
           quantityOrdered: purchaseOrderItems.quantityOrdered,
           unitCost: purchaseOrderItems.unitCost,
+          unitCostMin: purchaseOrderItems.unitCostMin,
+          unitCostMax: purchaseOrderItems.unitCostMax,
           totalCost: purchaseOrderItems.totalCost,
         })
         .from(purchaseOrderItems)
@@ -854,7 +1089,10 @@ export const purchaseOrdersRouter = router({
           productId: purchaseOrderItems.productId,
           quantityOrdered: purchaseOrderItems.quantityOrdered,
           quantityReceived: purchaseOrderItems.quantityReceived,
+          cogsMode: purchaseOrderItems.cogsMode,
           unitCost: purchaseOrderItems.unitCost,
+          unitCostMin: purchaseOrderItems.unitCostMin,
+          unitCostMax: purchaseOrderItems.unitCostMax,
           totalCost: purchaseOrderItems.totalCost,
           notes: purchaseOrderItems.notes,
           productName: products.nameCanonical,
@@ -887,6 +1125,217 @@ export const purchaseOrdersRouter = router({
       };
     }),
 });
+
+export function normalizePurchaseOrderPaymentTerms(
+  value?: string | null
+): (typeof _PO_PAYMENT_TERMS)[number] {
+  const normalized = (value ?? "").trim().toUpperCase();
+  const map: Record<string, (typeof _PO_PAYMENT_TERMS)[number]> = {
+    COD: "COD",
+    "DUE ON RECEIPT": "COD",
+    NET_7: "NET_7",
+    "NET 7": "NET_7",
+    NET_15: "NET_15",
+    "NET 15": "NET_15",
+    NET_30: "NET_30",
+    "NET 30": "NET_30",
+    CONSIGNMENT: "CONSIGNMENT",
+    PARTIAL: "PARTIAL",
+  };
+
+  return map[normalized] ?? "CONSIGNMENT";
+}
+
+function normalizeProductName(name: string): string {
+  return name.replace(/\s+/g, " ").trim();
+}
+
+export function summarizePurchaseOrderItemCost(input: {
+  cogsMode?: (typeof PO_COGS_MODES)[number];
+  unitCost?: number;
+  unitCostMin?: number;
+  unitCostMax?: number;
+}) {
+  const cogsMode = input.cogsMode ?? "FIXED";
+
+  if (cogsMode === "RANGE") {
+    if (
+      input.unitCostMin === undefined ||
+      input.unitCostMax === undefined ||
+      input.unitCostMax < input.unitCostMin
+    ) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Range COGS requires a valid minimum and maximum unit cost",
+      });
+    }
+
+    return {
+      cogsMode,
+      unitCost: (input.unitCostMin + input.unitCostMax) / 2,
+      unitCostMin: input.unitCostMin,
+      unitCostMax: input.unitCostMax,
+    };
+  }
+
+  if (input.unitCost === undefined) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Fixed COGS requires a unit cost",
+    });
+  }
+
+  return {
+    cogsMode,
+    unitCost: input.unitCost,
+    unitCostMin: undefined,
+    unitCostMax: undefined,
+  };
+}
+
+async function findExactProductByName(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  name: string,
+  brandId?: number
+) {
+  const conditions = [
+    sql`LOWER(${products.nameCanonical}) = ${name.toLowerCase()}`,
+    isNull(products.deletedAt),
+  ];
+
+  if (brandId) {
+    conditions.push(eq(products.brandId, brandId));
+  }
+
+  const [product] = await db
+    .select({
+      id: products.id,
+      nameCanonical: products.nameCanonical,
+      category: products.category,
+      subcategory: products.subcategory,
+      brandId: products.brandId,
+    })
+    .from(products)
+    .where(and(...conditions))
+    .limit(1);
+
+  return product ?? null;
+}
+
+async function ensureSupplierBrand(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  input: {
+    supplierName?: string | null;
+    vendorId?: number;
+  }
+): Promise<number> {
+  const brandName = input.supplierName?.trim() || "Unassigned Supplier";
+  const conditions = [eq(brands.name, brandName)];
+  if (input.vendorId) {
+    conditions.push(eq(brands.vendorId, input.vendorId));
+  }
+
+  const [existingBrand] = await db
+    .select({ id: brands.id })
+    .from(brands)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (existingBrand) {
+    return existingBrand.id;
+  }
+
+  const insertedBrand = await db.insert(brands).values({
+    name: brandName,
+    vendorId: input.vendorId,
+  });
+
+  return Number(
+    Array.isArray(insertedBrand)
+      ? (insertedBrand[0]?.insertId ?? 0)
+      : ((insertedBrand as { insertId?: number })?.insertId ?? 0)
+  );
+}
+
+async function resolvePurchaseOrderLineProduct(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  item: PurchaseOrderItemInput,
+  context: {
+    supplierClientId?: number;
+    vendorId?: number;
+    supplierName?: string | null;
+  }
+) {
+  if (item.productId) {
+    const [existingProduct] = await db
+      .select({
+        id: products.id,
+        nameCanonical: products.nameCanonical,
+        category: products.category,
+        subcategory: products.subcategory,
+      })
+      .from(products)
+      .where(and(eq(products.id, item.productId), isNull(products.deletedAt)))
+      .limit(1);
+
+    if (!existingProduct) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Product ${item.productId} not found`,
+      });
+    }
+
+    return existingProduct;
+  }
+
+  const normalizedName = normalizeProductName(item.productName ?? "");
+  if (!normalizedName) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Product name is required",
+    });
+  }
+
+  const supplierBrandId = await ensureSupplierBrand(db, {
+    supplierName: context.supplierName,
+    vendorId: context.vendorId,
+  });
+
+  const supplierMatch = await findExactProductByName(
+    db,
+    normalizedName,
+    supplierBrandId
+  );
+  if (supplierMatch) {
+    return supplierMatch;
+  }
+
+  const globalMatch = await findExactProductByName(db, normalizedName);
+  if (globalMatch) {
+    return globalMatch;
+  }
+
+  const createdProduct = await db.insert(products).values({
+    brandId: supplierBrandId,
+    supplierClientId: context.supplierClientId ?? null,
+    nameCanonical: normalizedName,
+    category: item.category?.trim() || "Flower",
+    subcategory: item.subcategory?.trim() || null,
+    uomSellable: "EA",
+    description: null,
+  });
+
+  return {
+    id: Number(
+      Array.isArray(createdProduct)
+        ? (createdProduct[0]?.insertId ?? 0)
+        : ((createdProduct as { insertId?: number })?.insertId ?? 0)
+    ),
+    nameCanonical: normalizedName,
+    category: item.category?.trim() || "Flower",
+    subcategory: item.subcategory?.trim() || null,
+  };
+}
 
 // Helper function to generate PO number
 async function generatePONumber(

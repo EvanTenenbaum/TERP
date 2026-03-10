@@ -5,64 +5,63 @@ import {
 } from "@/components/layout/LinearWorkspaceShell";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
-import ProductIntakeSlicePage from "@/components/uiux-slice/ProductIntakeSlicePage";
-import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
 import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
-import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
+import { Redirect } from "wouter";
 
-type ProcurementTab =
-  | "purchase-orders"
+type ProcurementTab = "purchase-orders";
+type ProcurementQueryTab =
+  | ProcurementTab
   | "product-intake"
-  | "receiving"
-  | "inventory-browse";
+  | "inventory-browse"
+  | "receiving";
 
 const PROCUREMENT_TABS = [
   { value: "purchase-orders", label: "Purchase Orders" },
-  { value: "product-intake", label: "Product Intake" },
-  { value: "receiving", label: "Intake" },
-  { value: "inventory-browse", label: "Inventory Browse" },
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
 export default function ProcurementWorkspacePage() {
-  const { activeTab, setActiveTab } = useQueryTabState<ProcurementTab>({
+  const { activeTab, setActiveTab } = useQueryTabState<ProcurementQueryTab>({
     defaultTab: "purchase-orders",
-    validTabs: PROCUREMENT_TABS.map(tab => tab.value),
+    validTabs: [
+      ...PROCUREMENT_TABS.map(tab => tab.value),
+      "product-intake",
+      "inventory-browse",
+      "receiving",
+    ],
   });
 
   useWorkspaceHomeTelemetry("procurement", activeTab);
 
+  if (activeTab === "receiving" || activeTab === "product-intake") {
+    return <Redirect to={buildOperationsWorkspacePath("receiving")} />;
+  }
+
+  if (activeTab === "inventory-browse") {
+    return <Redirect to={buildOperationsWorkspacePath("inventory")} />;
+  }
+
   return (
     <LinearWorkspaceShell
       title="Procurement"
-      description="Run the complete procurement spine from Purchase Order to Product Intake to Intake."
-      section="Buy"
+      description="Create purchase orders here, then complete receiving and inventory work from Operations."
+      section="Operations"
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}
       onTabChange={setActiveTab}
       meta={[
         {
           label: "Operational spine",
-          value: "Purchase Order -> Product Intake -> Intake -> Corrections",
+          value: "Purchase Order -> Receiving -> Inventory",
         },
         {
-          label: "Mode",
-          value:
-            PROCUREMENT_TABS.find(tab => tab.value === activeTab)?.label ??
-            activeTab,
+          label: "Downstream work",
+          value: "Use Operations for receiving, shipping, and stock control",
         },
       ]}
     >
       <LinearWorkspacePanel value="purchase-orders">
         <PurchaseOrdersWorkSurface />
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="product-intake">
-        <ProductIntakeSlicePage />
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="receiving">
-        <DirectIntakeWorkSurface />
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="inventory-browse">
-        <InventoryBrowseSlicePage />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

@@ -334,10 +334,10 @@ export function PurchaseModal({
     <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
       <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Product Intake</DialogTitle>
+          <DialogTitle>New Receiving Entry</DialogTitle>
           <DialogDescription>
-            Record a new product intake. You can add detailed location and other
-            information after intake.
+            Record a new receiving entry. You can add detailed location and
+            other information after receipt.
           </DialogDescription>
         </DialogHeader>
 

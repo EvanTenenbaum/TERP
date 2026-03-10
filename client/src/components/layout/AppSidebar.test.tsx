@@ -74,7 +74,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
       [
         "/",
         "/sales?tab=create-order",
-        "/purchase-orders?tab=receiving",
+        "/operations?tab=receiving",
         "/clients",
       ].includes(path),
     togglePin: mockTogglePin,
@@ -82,7 +82,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
     pinnedPaths: [
       "/",
       "/sales?tab=create-order",
-      "/purchase-orders?tab=receiving",
+      "/operations?tab=receiving",
       "/clients",
     ],
   }),
@@ -110,7 +110,7 @@ describe("AppSidebar navigation", () => {
     const groupLabels = screen.getAllByTestId("nav-group-label");
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
-    expect(labelTexts).toEqual(["Sell", "Buy", "Finance", "Admin"]);
+    expect(labelTexts).toEqual(["Sell", "Operations", "Finance", "Admin"]);
   });
 
   it("renders sidebar-visible navigation items only", () => {
@@ -126,7 +126,8 @@ describe("AppSidebar navigation", () => {
     expect(screen.getByText("Demand & Supply")).toBeInTheDocument();
 
     // Items with sidebarVisible: false should NOT appear anywhere
-    expect(screen.queryByText("Pick & Pack")).not.toBeInTheDocument();
+    expect(screen.queryByText("Shipping")).not.toBeInTheDocument();
+    expect(screen.queryByText("Receiving")).not.toBeInTheDocument();
     expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Sales Sheets")).not.toBeInTheDocument();
   });
@@ -157,6 +158,33 @@ describe("AppSidebar navigation", () => {
       name: /Purchase order queue/i,
     });
     expect(purchaseOrdersLink).toHaveAttribute("aria-current", "page");
+  });
+
+  it("highlights Operations for legacy receiving and shipping aliases", () => {
+    mockLocation = "/pick-pack";
+    const { rerender } = render(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    const operationsLink = screen.getByRole("link", {
+      name: /Manage inventory, receiving, shipping/i,
+    });
+    expect(operationsLink).toHaveAttribute("aria-current", "page");
+
+    mockLocation = "/receiving";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: /Manage inventory, receiving, shipping/i,
+      })
+    ).toHaveAttribute("aria-current", "page");
   });
 
   it("shows user actions", () => {
