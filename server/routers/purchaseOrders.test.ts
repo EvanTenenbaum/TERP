@@ -251,6 +251,33 @@ describe("Purchase Orders Router", () => {
     ).toBe(true);
   });
 
+  it("excludes soft-deleted purchase orders from supplier history queries", async () => {
+    const supplierClientId = 91501;
+
+    await seedPurchaseOrder({
+      id: 915001,
+      supplierClientId,
+      deletedAt: null,
+    });
+    await seedPurchaseOrder({
+      id: 915002,
+      supplierClientId,
+      deletedAt: new Date("2026-02-16"),
+    });
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    vi.mocked(db.select).mockClear();
+    await caller.purchaseOrders.getBySupplier({ supplierClientId });
+    const supplierWhereConditions = getWhereConditionsFromSelectMock(db);
+    expect(
+      supplierWhereConditions.some(condition =>
+        hasDeletedAtNullPredicate(condition)
+      )
+    ).toBe(true);
+  });
+
   it("supports delete then restore lifecycle for purchase orders", async () => {
     const supplierClientId = 92001;
     const activePoId = 920001;

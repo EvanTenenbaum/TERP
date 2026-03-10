@@ -759,6 +759,14 @@ export function PurchaseOrdersWorkSurface() {
         enabled: Number(formData.supplierClientId || 0) > 0,
       }
     );
+  const supplierHistoryQuery = trpc.purchaseOrders.getBySupplier.useQuery(
+    {
+      supplierClientId: Number(formData.supplierClientId || 0),
+    },
+    {
+      enabled: Number(formData.supplierClientId || 0) > 0,
+    }
+  );
 
   const productNameLookup = useMemo(
     () =>
@@ -1421,20 +1429,6 @@ export function PurchaseOrdersWorkSurface() {
     selectedPoDraftRowSet,
   ]);
 
-  const handleItemChange = useCallback(
-    (index: number, field: keyof LineItem, value: string) => {
-      setFormData(prev => {
-        const nextItems = [...prev.items];
-        nextItems[index] = { ...nextItems[index], [field]: value };
-        return {
-          ...prev,
-          items: nextItems,
-        };
-      });
-    },
-    []
-  );
-
   const handleLineItemFieldChange = useCallback(
     (index: number, field: PoDraftField, value: string) => {
       const currentItem = formData.items[index];
@@ -1442,16 +1436,30 @@ export function PurchaseOrdersWorkSurface() {
         return;
       }
 
-      handleItemChange(index, field, value);
+      const nextItem =
+        field === "productName"
+          ? resolveTypedProduct({
+              ...currentItem,
+              productName: value,
+            })
+          : {
+              ...currentItem,
+              [field]: value,
+            };
+
+      setFormData(prev => {
+        const nextItems = [...prev.items];
+        nextItems[index] = nextItem;
+        return {
+          ...prev,
+          items: nextItems,
+        };
+      });
 
       if (field === "category" || field === "subcategory") {
         return;
       }
 
-      const nextItem = {
-        ...currentItem,
-        [field]: value,
-      };
       const values = buildPoLineValues(nextItem);
       const schemaField = poDraftFieldToSchemaField[field];
 
@@ -1463,8 +1471,8 @@ export function PurchaseOrdersWorkSurface() {
       buildPoLineValues,
       clearPoDraftFieldError,
       formData.items,
-      handleItemChange,
       handlePoLineValidationChange,
+      resolveTypedProduct,
       setPoLineValidationValues,
     ]
   );
@@ -1806,73 +1814,193 @@ export function PurchaseOrdersWorkSurface() {
             </div>
 
             {Number(formData.supplierClientId || 0) > 0 && (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">
-                      Quick add from previous purchase orders
+                    <p className="text-sm font-semibold">
+                      Supplier history and quick add
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Tap a prior supplier product to copy it into a fresh row.
+                      Start typing in the spreadsheet below. Existing products
+                      snap to the catalog automatically, and new names create a
+                      fresh product on submit.
                     </p>
                   </div>
-                  {recentSupplierProductsQuery.isLoading && (
+                  {(recentSupplierProductsQuery.isLoading ||
+                    supplierHistoryQuery.isLoading) && (
                     <span className="text-xs text-muted-foreground">
                       Loading supplier history...
                     </span>
                   )}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(recentSupplierProductsQuery.data ?? []).map(item => (
-                    <Button
-                      key={`${item.productId}-${item.poNumber}`}
-                      type="button"
-                      variant="outline"
-                      className="h-auto items-start justify-start px-3 py-2 text-left"
-                      onClick={() =>
-                        appendQuickAddItem({
-                          productId: item.productId,
-                          productName: item.productName,
-                          category: item.category,
-                          subcategory: item.subcategory,
-                          cogsMode: item.cogsMode,
-                          unitCost: item.unitCost,
-                          unitCostMin: item.unitCostMin,
-                          unitCostMax: item.unitCostMax,
-                        })
-                      }
-                    >
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {item.productName ?? `Product #${item.productId}`}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatItemCostLabel({
-                            cogsMode: item.cogsMode,
-                            unitCost: Number(item.unitCost ?? 0),
-                            unitCostMin:
-                              item.unitCostMin !== null &&
-                              item.unitCostMin !== undefined
-                                ? Number(item.unitCostMin)
-                                : undefined,
-                            unitCostMax:
-                              item.unitCostMax !== null &&
-                              item.unitCostMax !== undefined
-                                ? Number(item.unitCostMax)
-                                : undefined,
-                          })}{" "}
-                          • {item.poNumber}
-                        </div>
-                      </div>
-                    </Button>
-                  ))}
-                  {!recentSupplierProductsQuery.isLoading &&
-                    (recentSupplierProductsQuery.data ?? []).length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No prior supplier items yet. Type the first product
-                        below and it will show up here next time.
+                <div className="mt-4 grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+                  <div className="rounded-lg border bg-background">
+                    <div className="border-b px-3 py-2">
+                      <p className="text-sm font-medium">
+                        Reorder products from prior POs
                       </p>
-                    )}
+                      <p className="text-xs text-muted-foreground">
+                        Each quick add creates a new draft row for a new batch
+                        and lot.
+                      </p>
+                    </div>
+                    <div className="max-h-64 overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Product</TableHead>
+                            <TableHead>Last Cost</TableHead>
+                            <TableHead>Source PO</TableHead>
+                            <TableHead className="w-[96px] text-right">
+                              Action
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(recentSupplierProductsQuery.data ?? []).map(
+                            item => (
+                              <TableRow
+                                key={`${item.productId}-${item.poNumber}`}
+                                className="align-top"
+                              >
+                                <TableCell>
+                                  <div className="font-medium">
+                                    {item.productName ??
+                                      `Product #${item.productId}`}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {[item.category, item.subcategory]
+                                      .filter(Boolean)
+                                      .join(" / ") || "Uncategorized"}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {formatItemCostLabel({
+                                    cogsMode: item.cogsMode,
+                                    unitCost: Number(item.unitCost ?? 0),
+                                    unitCostMin:
+                                      item.unitCostMin !== null &&
+                                      item.unitCostMin !== undefined
+                                        ? Number(item.unitCostMin)
+                                        : undefined,
+                                    unitCostMax:
+                                      item.unitCostMax !== null &&
+                                      item.unitCostMax !== undefined
+                                        ? Number(item.unitCostMax)
+                                        : undefined,
+                                  })}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <div>{item.poNumber}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatDate(item.orderDate)}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      appendQuickAddItem({
+                                        productId: item.productId,
+                                        productName: item.productName,
+                                        category: item.category,
+                                        subcategory: item.subcategory,
+                                        cogsMode: item.cogsMode,
+                                        unitCost: item.unitCost,
+                                        unitCostMin: item.unitCostMin,
+                                        unitCostMax: item.unitCostMax,
+                                      })
+                                    }
+                                  >
+                                    Add row
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          )}
+                          {!recentSupplierProductsQuery.isLoading &&
+                            (recentSupplierProductsQuery.data ?? []).length ===
+                              0 && (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-sm text-muted-foreground"
+                                >
+                                  No prior supplier items yet. Type the first
+                                  product below and it will show up here next
+                                  time.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border bg-background">
+                    <div className="border-b px-3 py-2">
+                      <p className="text-sm font-medium">
+                        Previous purchase orders
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Use this to sanity-check cadence, terms, and prior PO
+                        totals while you build the new batch.
+                      </p>
+                    </div>
+                    <div className="max-h-64 overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>PO</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(supplierHistoryQuery.data ?? [])
+                            .slice(0, 8)
+                            .map(po => (
+                              <TableRow key={po.id}>
+                                <TableCell>
+                                  <div className="font-medium">
+                                    {po.poNumber}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {po.paymentTerms || "CONSIGNMENT"}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {formatDate(po.orderDate)}
+                                </TableCell>
+                                <TableCell>
+                                  <StatusBadge
+                                    status={po.purchaseOrderStatus}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-right text-sm font-medium">
+                                  {formatCurrency(po.total)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          {!supplierHistoryQuery.isLoading &&
+                            (supplierHistoryQuery.data ?? []).length === 0 && (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-sm text-muted-foreground"
+                                >
+                                  This supplier does not have prior purchase
+                                  orders yet.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1916,7 +2044,13 @@ export function PurchaseOrdersWorkSurface() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Line Items *</Label>
+                <div>
+                  <Label>Line Items *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Spreadsheet drafting with typed product lookup, bulk fills,
+                    and fixed or range COGS.
+                  </p>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
@@ -1984,246 +2118,95 @@ export function PurchaseOrdersWorkSurface() {
               )}
               <div
                 ref={poDraftRowsRef}
-                className="space-y-2 rounded-md border p-3"
+                className="overflow-x-auto rounded-lg border bg-background"
               >
                 <datalist id="po-product-suggestions">
                   {products.map(product => (
                     <option key={product.id} value={product.name} />
                   ))}
                 </datalist>
-                <div className="grid grid-cols-12 gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  <span className="col-span-1">
-                    <Checkbox
-                      aria-label="Select all draft rows"
-                      checked={
-                        allPoDraftRowsSelected
-                          ? true
-                          : poDraftSelection.selectedCount > 0
-                            ? "indeterminate"
-                            : false
-                      }
-                      onCheckedChange={() =>
-                        poDraftSelection.toggleAll(poDraftRowIds)
-                      }
-                    />
-                  </span>
-                  <span className="col-span-4">Product</span>
-                  <span className="col-span-2">Category</span>
-                  <span className="col-span-1 text-right">Qty</span>
-                  <span className="col-span-3">COGS</span>
-                  <span className="col-span-1 text-right">Total</span>
-                  <span className="col-span-1 text-right">Action</span>
-                </div>
-                {formData.items.map((item, index) => {
-                  const quantity = Number(item.quantityOrdered || 0);
-                  const unitCost = getDraftUnitCostValue(item);
-                  const rowTotal = quantity * unitCost;
-                  const matchedProduct = item.productId
-                    ? products.find(
-                        product => product.id === Number(item.productId)
-                      )
-                    : productNameLookup.get(
-                        item.productName.trim().toLowerCase()
-                      );
-
-                  return (
-                    <div
-                      key={item.tempId}
-                      className={cn(
-                        "grid grid-cols-12 gap-2 items-center rounded px-1 py-1",
-                        selectedPoDraftRowSet.has(item.tempId) && "bg-muted/50"
-                      )}
-                    >
-                      <div className="col-span-1">
+                <Table className="min-w-[1120px]">
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="w-[48px]">
                         <Checkbox
-                          aria-label={`Select draft row ${index + 1}`}
-                          checked={selectedPoDraftRowSet.has(item.tempId)}
-                          onCheckedChange={checked => {
-                            if (
-                              (checked === true) !==
-                              poDraftSelection.isSelected(item.tempId)
-                            ) {
-                              poDraftSelection.toggleRow(item.tempId);
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="col-span-4">
-                        <Input
-                          list="po-product-suggestions"
-                          placeholder="Type product name"
-                          value={item.productName}
-                          data-po-draft-row-id={item.tempId}
-                          data-po-draft-field="productName"
-                          onChange={e =>
-                            handleLineItemFieldChange(
-                              index,
-                              "productName",
-                              e.target.value
-                            )
+                          aria-label="Select all draft rows"
+                          checked={
+                            allPoDraftRowsSelected
+                              ? true
+                              : poDraftSelection.selectedCount > 0
+                                ? "indeterminate"
+                                : false
                           }
-                          onBlur={e =>
-                            handleLineItemFieldBlur(
-                              {
-                                ...item,
-                                productName: e.target.value,
-                              },
-                              "productName"
-                            )
-                          }
-                          onKeyDown={event =>
-                            handleDraftFieldKeyDown(event, index, "productName")
+                          onCheckedChange={() =>
+                            poDraftSelection.toggleAll(poDraftRowIds)
                           }
                         />
-                        <div className="mt-1 flex items-center gap-2 text-xs">
-                          {matchedProduct ? (
-                            <Badge variant="secondary">
-                              Matched existing product
-                            </Badge>
-                          ) : item.productName.trim() ? (
-                            <Badge variant="outline">
-                              New product will be created
-                            </Badge>
-                          ) : null}
-                          {productsLoading && (
-                            <span className="text-muted-foreground">
-                              Loading products...
-                            </span>
-                          )}
-                        </div>
-                        {poDraftFieldErrors[item.tempId]?.productName && (
-                          <p className="text-xs text-red-500 mt-1">
-                            {poDraftFieldErrors[item.tempId]?.productName}
-                          </p>
-                        )}
-                      </div>
-                      <div className="col-span-2 space-y-1">
-                        <Select
-                          value={item.category}
-                          onValueChange={value =>
-                            handleLineItemFieldChange(index, "category", value)
-                          }
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CATEGORY_OPTIONS.map(option => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          placeholder="Subcategory"
-                          value={item.subcategory}
-                          onChange={e =>
-                            handleLineItemFieldChange(
-                              index,
-                              "subcategory",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Input
-                          type="number"
+                      </TableHead>
+                      <TableHead className="w-[56px]">Row</TableHead>
+                      <TableHead className="min-w-[320px]">Product</TableHead>
+                      <TableHead className="min-w-[220px]">Category</TableHead>
+                      <TableHead className="w-[96px] text-right">Qty</TableHead>
+                      <TableHead className="w-[160px]">COGS Mode</TableHead>
+                      <TableHead className="min-w-[220px]">Cost</TableHead>
+                      <TableHead className="w-[120px] text-right">
+                        Total
+                      </TableHead>
+                      <TableHead className="w-[72px] text-right">
+                        Action
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {formData.items.map((item, index) => {
+                      const quantity = Number(item.quantityOrdered || 0);
+                      const unitCost = getDraftUnitCostValue(item);
+                      const rowTotal = quantity * unitCost;
+                      const matchedProduct = item.productId
+                        ? products.find(
+                            product => product.id === Number(item.productId)
+                          )
+                        : productNameLookup.get(
+                            item.productName.trim().toLowerCase()
+                          );
+
+                      return (
+                        <TableRow
+                          key={item.tempId}
                           className={cn(
-                            "text-right",
-                            poDraftFieldErrors[item.tempId]?.quantityOrdered &&
-                              "border-red-500"
+                            "align-top",
+                            selectedPoDraftRowSet.has(item.tempId) &&
+                              "bg-muted/40"
                           )}
-                          placeholder="0"
-                          min="0.01"
-                          step="0.01"
-                          data-po-draft-row-id={item.tempId}
-                          data-po-draft-field="quantityOrdered"
-                          value={item.quantityOrdered}
-                          onChange={e =>
-                            handleLineItemFieldChange(
-                              index,
-                              "quantityOrdered",
-                              e.target.value
-                            )
-                          }
-                          onBlur={e =>
-                            handleLineItemFieldBlur(
-                              {
-                                ...item,
-                                quantityOrdered: e.target.value,
-                              },
-                              "quantityOrdered"
-                            )
-                          }
-                          onKeyDown={event =>
-                            handleDraftFieldKeyDown(
-                              event,
-                              index,
-                              "quantityOrdered"
-                            )
-                          }
-                        />
-                        {poDraftFieldErrors[item.tempId]?.quantityOrdered && (
-                          <p className="text-xs text-red-500 mt-1 text-right">
-                            {poDraftFieldErrors[item.tempId]?.quantityOrdered}
-                          </p>
-                        )}
-                      </div>
-                      <div className="col-span-3 space-y-2">
-                        <Select
-                          value={item.cogsMode}
-                          onValueChange={value => {
-                            const nextMode = value as PoCogsMode;
-                            setFormData(prev => ({
-                              ...prev,
-                              items: prev.items.map(existing =>
-                                existing.tempId === item.tempId
-                                  ? {
-                                      ...existing,
-                                      cogsMode: nextMode,
-                                      unitCost:
-                                        nextMode === "FIXED"
-                                          ? existing.unitCost ||
-                                            existing.unitCostMin
-                                          : existing.unitCost,
-                                    }
-                                  : existing
-                              ),
-                            }));
-                          }}
                         >
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="FIXED">Fixed COGS</SelectItem>
-                            <SelectItem value="RANGE">Range COGS</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {item.cogsMode === "FIXED" ? (
-                          <>
+                          <TableCell className="align-top">
+                            <Checkbox
+                              aria-label={`Select draft row ${index + 1}`}
+                              checked={selectedPoDraftRowSet.has(item.tempId)}
+                              onCheckedChange={checked => {
+                                if (
+                                  (checked === true) !==
+                                  poDraftSelection.isSelected(item.tempId)
+                                ) {
+                                  poDraftSelection.toggleRow(item.tempId);
+                                }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="align-top text-sm text-muted-foreground">
+                            {index + 1}
+                          </TableCell>
+                          <TableCell className="space-y-2 align-top">
                             <Input
-                              type="number"
-                              className={cn(
-                                "text-right",
-                                poDraftFieldErrors[item.tempId]?.unitCost &&
-                                  "border-red-500"
-                              )}
-                              placeholder="0.00"
-                              min="0"
-                              step="0.01"
+                              list="po-product-suggestions"
+                              placeholder="Type product name"
+                              value={item.productName}
                               data-po-draft-row-id={item.tempId}
-                              data-po-draft-field="unitCost"
-                              value={item.unitCost}
+                              data-po-draft-field="productName"
                               onChange={e =>
                                 handleLineItemFieldChange(
                                   index,
-                                  "unitCost",
+                                  "productName",
                                   e.target.value
                                 )
                               }
@@ -2231,118 +2214,311 @@ export function PurchaseOrdersWorkSurface() {
                                 handleLineItemFieldBlur(
                                   {
                                     ...item,
-                                    unitCost: e.target.value,
+                                    productName: e.target.value,
                                   },
-                                  "unitCost"
+                                  "productName"
                                 )
                               }
                               onKeyDown={event =>
                                 handleDraftFieldKeyDown(
                                   event,
                                   index,
-                                  "unitCost"
+                                  "productName"
                                 )
                               }
                             />
-                            {poDraftFieldErrors[item.tempId]?.unitCost && (
-                              <p className="text-xs text-red-500 text-right">
-                                {poDraftFieldErrors[item.tempId]?.unitCost}
+                            <div className="flex items-center gap-2 text-xs">
+                              {matchedProduct ? (
+                                <Badge variant="secondary">
+                                  Matched existing product
+                                </Badge>
+                              ) : item.productName.trim() ? (
+                                <Badge variant="outline">
+                                  New product will be created
+                                </Badge>
+                              ) : null}
+                              {productsLoading && (
+                                <span className="text-muted-foreground">
+                                  Loading products...
+                                </span>
+                              )}
+                            </div>
+                            {poDraftFieldErrors[item.tempId]?.productName && (
+                              <p className="text-xs text-red-500">
+                                {poDraftFieldErrors[item.tempId]?.productName}
                               </p>
                             )}
-                          </>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Input
-                                type="number"
-                                className={cn(
-                                  "text-right",
-                                  poDraftFieldErrors[item.tempId]
-                                    ?.unitCostMin && "border-red-500"
-                                )}
-                                placeholder="Min"
-                                min="0"
-                                step="0.01"
-                                value={item.unitCostMin}
-                                onChange={e =>
-                                  handleLineItemFieldChange(
-                                    index,
-                                    "unitCostMin",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={e =>
-                                  handleLineItemFieldBlur(
-                                    {
-                                      ...item,
-                                      unitCostMin: e.target.value,
-                                    },
-                                    "unitCostMin"
-                                  )
-                                }
-                              />
-                              {poDraftFieldErrors[item.tempId]?.unitCostMin && (
-                                <p className="mt-1 text-xs text-red-500">
-                                  {poDraftFieldErrors[item.tempId]?.unitCostMin}
-                                </p>
+                          </TableCell>
+                          <TableCell className="space-y-2 align-top">
+                            <Select
+                              value={item.category}
+                              onValueChange={value =>
+                                handleLineItemFieldChange(
+                                  index,
+                                  "category",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CATEGORY_OPTIONS.map(option => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              placeholder="Subcategory"
+                              value={item.subcategory}
+                              onChange={e =>
+                                handleLineItemFieldChange(
+                                  index,
+                                  "subcategory",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Input
+                              type="number"
+                              className={cn(
+                                "text-right",
+                                poDraftFieldErrors[item.tempId]
+                                  ?.quantityOrdered && "border-red-500"
                               )}
-                            </div>
-                            <div>
-                              <Input
-                                type="number"
-                                className={cn(
-                                  "text-right",
+                              placeholder="0"
+                              min="0.01"
+                              step="0.01"
+                              data-po-draft-row-id={item.tempId}
+                              data-po-draft-field="quantityOrdered"
+                              value={item.quantityOrdered}
+                              onChange={e =>
+                                handleLineItemFieldChange(
+                                  index,
+                                  "quantityOrdered",
+                                  e.target.value
+                                )
+                              }
+                              onBlur={e =>
+                                handleLineItemFieldBlur(
+                                  {
+                                    ...item,
+                                    quantityOrdered: e.target.value,
+                                  },
+                                  "quantityOrdered"
+                                )
+                              }
+                              onKeyDown={event =>
+                                handleDraftFieldKeyDown(
+                                  event,
+                                  index,
+                                  "quantityOrdered"
+                                )
+                              }
+                            />
+                            {poDraftFieldErrors[item.tempId]
+                              ?.quantityOrdered && (
+                              <p className="mt-1 text-xs text-red-500 text-right">
+                                {
                                   poDraftFieldErrors[item.tempId]
-                                    ?.unitCostMax && "border-red-500"
+                                    ?.quantityOrdered
+                                }
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Select
+                              value={item.cogsMode}
+                              onValueChange={value => {
+                                const nextMode = value as PoCogsMode;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  items: prev.items.map(existing =>
+                                    existing.tempId === item.tempId
+                                      ? {
+                                          ...existing,
+                                          cogsMode: nextMode,
+                                          unitCost:
+                                            nextMode === "FIXED"
+                                              ? existing.unitCost ||
+                                                existing.unitCostMin
+                                              : existing.unitCost,
+                                        }
+                                      : existing
+                                  ),
+                                }));
+                              }}
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="FIXED">
+                                  Fixed COGS
+                                </SelectItem>
+                                <SelectItem value="RANGE">
+                                  Range COGS
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            {item.cogsMode === "FIXED" ? (
+                              <>
+                                <Input
+                                  type="number"
+                                  className={cn(
+                                    "text-right",
+                                    poDraftFieldErrors[item.tempId]?.unitCost &&
+                                      "border-red-500"
+                                  )}
+                                  placeholder="0.00"
+                                  min="0"
+                                  step="0.01"
+                                  data-po-draft-row-id={item.tempId}
+                                  data-po-draft-field="unitCost"
+                                  value={item.unitCost}
+                                  onChange={e =>
+                                    handleLineItemFieldChange(
+                                      index,
+                                      "unitCost",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={e =>
+                                    handleLineItemFieldBlur(
+                                      {
+                                        ...item,
+                                        unitCost: e.target.value,
+                                      },
+                                      "unitCost"
+                                    )
+                                  }
+                                  onKeyDown={event =>
+                                    handleDraftFieldKeyDown(
+                                      event,
+                                      index,
+                                      "unitCost"
+                                    )
+                                  }
+                                />
+                                {poDraftFieldErrors[item.tempId]?.unitCost && (
+                                  <p className="mt-1 text-xs text-red-500 text-right">
+                                    {poDraftFieldErrors[item.tempId]?.unitCost}
+                                  </p>
                                 )}
-                                placeholder="Max"
-                                min="0"
-                                step="0.01"
-                                value={item.unitCostMax}
-                                onChange={e =>
-                                  handleLineItemFieldChange(
-                                    index,
-                                    "unitCostMax",
-                                    e.target.value
-                                  )
-                                }
-                                onBlur={e =>
-                                  handleLineItemFieldBlur(
-                                    {
-                                      ...item,
-                                      unitCostMax: e.target.value,
-                                    },
-                                    "unitCostMax"
-                                  )
-                                }
-                              />
-                              {poDraftFieldErrors[item.tempId]?.unitCostMax && (
-                                <p className="mt-1 text-xs text-red-500">
-                                  {poDraftFieldErrors[item.tempId]?.unitCostMax}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-span-1 text-right text-sm font-medium">
-                        {formatCurrency(rowTotal)}
-                      </div>
-                      <div className="col-span-1 flex justify-end">
-                        {formData.items.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveItem(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                              </>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Input
+                                    type="number"
+                                    className={cn(
+                                      "text-right",
+                                      poDraftFieldErrors[item.tempId]
+                                        ?.unitCostMin && "border-red-500"
+                                    )}
+                                    placeholder="Min"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.unitCostMin}
+                                    onChange={e =>
+                                      handleLineItemFieldChange(
+                                        index,
+                                        "unitCostMin",
+                                        e.target.value
+                                      )
+                                    }
+                                    onBlur={e =>
+                                      handleLineItemFieldBlur(
+                                        {
+                                          ...item,
+                                          unitCostMin: e.target.value,
+                                        },
+                                        "unitCostMin"
+                                      )
+                                    }
+                                  />
+                                  {poDraftFieldErrors[item.tempId]
+                                    ?.unitCostMin && (
+                                    <p className="mt-1 text-xs text-red-500">
+                                      {
+                                        poDraftFieldErrors[item.tempId]
+                                          ?.unitCostMin
+                                      }
+                                    </p>
+                                  )}
+                                </div>
+                                <div>
+                                  <Input
+                                    type="number"
+                                    className={cn(
+                                      "text-right",
+                                      poDraftFieldErrors[item.tempId]
+                                        ?.unitCostMax && "border-red-500"
+                                    )}
+                                    placeholder="Max"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.unitCostMax}
+                                    onChange={e =>
+                                      handleLineItemFieldChange(
+                                        index,
+                                        "unitCostMax",
+                                        e.target.value
+                                      )
+                                    }
+                                    onBlur={e =>
+                                      handleLineItemFieldBlur(
+                                        {
+                                          ...item,
+                                          unitCostMax: e.target.value,
+                                        },
+                                        "unitCostMax"
+                                      )
+                                    }
+                                  />
+                                  {poDraftFieldErrors[item.tempId]
+                                    ?.unitCostMax && (
+                                    <p className="mt-1 text-xs text-red-500">
+                                      {
+                                        poDraftFieldErrors[item.tempId]
+                                          ?.unitCostMax
+                                      }
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="align-top text-right text-sm font-medium">
+                            {formatCurrency(rowTotal)}
+                          </TableCell>
+                          <TableCell className="align-top text-right">
+                            {formData.items.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveItem(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>

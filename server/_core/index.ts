@@ -313,6 +313,23 @@ async function startServer() {
 
     // Request logging
     app.use(requestLogger);
+
+    // GitHub webhook endpoint must run before the JSON parser so signature
+    // verification sees the untouched request body.
+    app.post(
+      "/api/webhooks/github",
+      express.raw({ type: "application/json" }),
+      async (req, res) => {
+        try {
+          const { handleGitHubWebhook } = await import("../webhooks/github.js");
+          await handleGitHubWebhook(req, res);
+        } catch (error) {
+          logger.error({ err: error, msg: "GitHub webhook route error" });
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+    );
+
     // Configure body parser with larger size limit for file uploads
     app.use(express.json({ limit: "50mb" }));
     app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -326,26 +343,6 @@ async function startServer() {
 
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
-
-    // GitHub webhook endpoint (must be before JSON body parser middleware)
-    // We need raw body for signature verification
-    app.post(
-      "/api/webhooks/github",
-      express.raw({ type: "application/json" }),
-      async (req, res) => {
-        try {
-          const { handleGitHubWebhook } = await import("../webhooks/github.js");
-          // Convert raw body back to JSON if it's a Buffer
-          if (Buffer.isBuffer(req.body)) {
-            req.body = JSON.parse(req.body.toString());
-          }
-          await handleGitHubWebhook(req, res);
-        } catch (error) {
-          logger.error({ err: error, msg: "GitHub webhook route error" });
-          res.status(500).json({ error: "Internal server error" });
-        }
-      }
-    );
 
     // Apply rate limiting
     app.use("/api/trpc", apiLimiter);

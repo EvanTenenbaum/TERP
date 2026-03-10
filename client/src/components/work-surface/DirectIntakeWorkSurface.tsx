@@ -101,36 +101,79 @@ import {
 // TYPES & SCHEMAS
 // ============================================================================
 
-const intakeRowSchema = z.object({
-  vendorName: z.string().min(1, "Supplier is required"),
-  brandName: z.string().min(1, "Brand/Farmer is required"),
-  category: z.enum([
-    "Flower",
-    "Deps",
-    "Concentrate",
-    "Edible",
-    "PreRoll",
-    "Vape",
-    "Other",
-  ]),
-  item: z.string().min(1, "Product is required"),
-  // TER-223: Subcategory is first-class, category defaults to Flower
-  subcategory: z.string().optional(),
-  qty: z.number().min(0.01, "Quantity must be greater than 0"),
-  cogs: z.number().min(0.01, "COGS must be greater than 0"),
-  paymentTerms: z.enum([
-    "COD",
-    "NET_7",
-    "NET_15",
-    "NET_30",
-    "CONSIGNMENT",
-    "PARTIAL",
-  ]),
-  site: z.string().min(1, "Location is required"),
-  notes: z.string().optional(),
-});
+const intakeRowSchema = z
+  .object({
+    vendorName: z.string().min(1, "Supplier is required"),
+    brandName: z.string().min(1, "Brand/Farmer is required"),
+    category: z.enum([
+      "Flower",
+      "Deps",
+      "Concentrate",
+      "Edible",
+      "PreRoll",
+      "Vape",
+      "Other",
+    ]),
+    item: z.string().min(1, "Product is required"),
+    // TER-223: Subcategory is first-class, category defaults to Flower
+    subcategory: z.string().optional(),
+    qty: z.number().min(0.01, "Quantity must be greater than 0"),
+    cogsMode: z.enum(["FIXED", "RANGE"]),
+    cogs: z.number().min(0, "COGS must be 0 or greater"),
+    cogsMin: z.number().min(0, "Min COGS must be 0 or greater").optional(),
+    cogsMax: z.number().min(0, "Max COGS must be 0 or greater").optional(),
+    paymentTerms: z.enum([
+      "COD",
+      "NET_7",
+      "NET_15",
+      "NET_30",
+      "CONSIGNMENT",
+      "PARTIAL",
+    ]),
+    site: z.string().min(1, "Location is required"),
+    notes: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.cogsMode === "FIXED") {
+      if (!value.cogs || value.cogs <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["cogs"],
+          message: "COGS must be greater than 0",
+        });
+      }
+      return;
+    }
+
+    if (!value.cogsMin || value.cogsMin <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cogsMin"],
+        message: "Min COGS must be greater than 0",
+      });
+    }
+    if (!value.cogsMax || value.cogsMax <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cogsMax"],
+        message: "Max COGS must be greater than 0",
+      });
+    }
+    if (
+      value.cogsMin !== undefined &&
+      value.cogsMax !== undefined &&
+      value.cogsMax < value.cogsMin
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cogsMax"],
+        message: "Max COGS must be greater than or equal to min COGS",
+      });
+    }
+  });
 
 type IntakeRowData = z.infer<typeof intakeRowSchema>;
+type IntakeCogsMode = IntakeRowData["cogsMode"];
 
 interface IntakeGridRow extends IntakeRowData {
   id: string;
@@ -197,7 +240,10 @@ const FILL_DOWN_FIELD_OPTIONS = [
   { value: "category", label: "Category" },
   { value: "subcategory", label: "Subcategory" },
   { value: "qty", label: "Qty" },
+  { value: "cogsMode", label: "COGS Mode" },
   { value: "cogs", label: "COGS" },
+  { value: "cogsMin", label: "COGS Min" },
+  { value: "cogsMax", label: "COGS Max" },
   { value: "paymentTerms", label: "Payment Terms" },
   { value: "notes", label: "Notes" },
 ] as const;
@@ -224,7 +270,10 @@ const createEmptyRow = (defaults?: {
   productId: null,
   strainId: null,
   qty: 0,
+  cogsMode: "FIXED",
   cogs: 0,
+  cogsMin: 0,
+  cogsMax: 0,
   paymentTerms: INTAKE_DEFAULTS.paymentTerms,
   locationId: defaults?.locationId ?? null,
   locationName: defaults?.locationName ?? "",
@@ -233,19 +282,56 @@ const createEmptyRow = (defaults?: {
   status: "pending",
 });
 
+const getEffectiveCogs = (
+  row: Pick<IntakeGridRow, "cogsMode" | "cogs" | "cogsMin" | "cogsMax">
+) => {
+  if (row.cogsMode === "RANGE") {
+    const min = Number(row.cogsMin || 0);
+    const max = Number(row.cogsMax || 0);
+    return (min + max) / 2;
+  }
+  return Number(row.cogs || 0);
+};
+
+const normalizeIntakeCogs = (row: IntakeGridRow): IntakeGridRow => {
+  if (row.cogsMode !== "RANGE") {
+    return {
+      ...row,
+      cogsMin: 0,
+      cogsMax: 0,
+    };
+  }
+
+  return {
+    ...row,
+    cogs: getEffectiveCogs(row),
+  };
+};
+
+const formatCogsLabel = (
+  row: Pick<IntakeGridRow, "cogsMode" | "cogs" | "cogsMin" | "cogsMax">
+) => {
+  if (row.cogsMode === "RANGE") {
+    return `$${Number(row.cogsMin || 0).toFixed(2)}-$${Number(
+      row.cogsMax || 0
+    ).toFixed(2)}`;
+  }
+  return `$${Number(row.cogs || 0).toFixed(2)}`;
+};
+
 const normalizeRowForValidation = (row: IntakeGridRow): IntakeGridRow => {
   const vendorName = row.vendorName.trim();
   const brandName = row.brandName.trim() || vendorName;
   const item = row.item.trim();
   const site = row.site.trim();
 
-  return {
+  return normalizeIntakeCogs({
     ...row,
     vendorName,
     brandName,
     item,
     site,
-  };
+  });
 };
 
 // ============================================================================
@@ -550,6 +636,28 @@ function RowInspectorContent({
             )}
           </InspectorField>
 
+          <InspectorField label="COGS Mode" required>
+            <Select
+              value={row.cogsMode}
+              onValueChange={value => {
+                onUpdate({
+                  cogsMode: value as IntakeCogsMode,
+                });
+                validation.handleChange("cogsMode", value);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FIXED">Fixed COGS</SelectItem>
+                <SelectItem value="RANGE">Range COGS</SelectItem>
+              </SelectContent>
+            </Select>
+          </InspectorField>
+        </div>
+
+        {row.cogsMode === "FIXED" ? (
           <InspectorField label="COGS ($)" required>
             <Input
               type="number"
@@ -572,7 +680,56 @@ function RowInspectorContent({
               </p>
             )}
           </InspectorField>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <InspectorField label="Min COGS ($)" required>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={row.cogsMin || ""}
+                onChange={e => {
+                  const val = parseFloat(e.target.value) || 0;
+                  onUpdate({ cogsMin: val });
+                  validation.handleChange("cogsMin", val);
+                }}
+                onBlur={() => validation.handleBlur("cogsMin")}
+                className={cn(
+                  validation.getFieldState("cogsMin").showError &&
+                    "border-red-500"
+                )}
+              />
+              {validation.getFieldState("cogsMin").showError && (
+                <p className="text-xs text-red-500 mt-1">
+                  {validation.getFieldState("cogsMin").error}
+                </p>
+              )}
+            </InspectorField>
+            <InspectorField label="Max COGS ($)" required>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={row.cogsMax || ""}
+                onChange={e => {
+                  const val = parseFloat(e.target.value) || 0;
+                  onUpdate({ cogsMax: val });
+                  validation.handleChange("cogsMax", val);
+                }}
+                onBlur={() => validation.handleBlur("cogsMax")}
+                className={cn(
+                  validation.getFieldState("cogsMax").showError &&
+                    "border-red-500"
+                )}
+              />
+              {validation.getFieldState("cogsMax").showError && (
+                <p className="text-xs text-red-500 mt-1">
+                  {validation.getFieldState("cogsMax").error}
+                </p>
+              )}
+            </InspectorField>
+          </div>
+        )}
       </InspectorSection>
 
       <InspectorSection title="Transaction Details" defaultOpen>
@@ -718,9 +875,14 @@ function RowInspectorContent({
         <div className="flex justify-between items-center">
           <span className="text-sm text-muted-foreground">Line Total</span>
           <span className="font-semibold text-lg">
-            ${((row.qty || 0) * (row.cogs || 0)).toFixed(2)}
+            ${((row.qty || 0) * getEffectiveCogs(row)).toFixed(2)}
           </span>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {row.cogsMode === "RANGE"
+            ? `Range midpoint used for line total: ${formatCogsLabel(row)}`
+            : `Fixed COGS: ${formatCogsLabel(row)}`}
+        </p>
       </div>
     </div>
   );
@@ -1020,11 +1182,56 @@ export function DirectIntakeWorkSurface() {
         },
       },
       {
+        headerName: "COGS Mode",
+        field: "cogsMode",
+        width: 120,
+        editable: params => params.data?.status === "pending",
+        cellEditor: "agSelectCellEditor",
+        cellEditorParams: { values: ["FIXED", "RANGE"] },
+      },
+      {
         headerName: "COGS",
         field: "cogs",
         width: 100,
-        editable: params => params.data?.status === "pending",
-        valueFormatter: params => `$${(params.value ?? 0).toFixed(2)}`,
+        editable: params =>
+          params.data?.status === "pending" &&
+          params.data?.cogsMode !== "RANGE",
+        valueFormatter: params =>
+          params.data
+            ? formatCogsLabel(params.data)
+            : `$${(params.value ?? 0).toFixed(2)}`,
+        valueParser: params => {
+          const val = Number(params.newValue);
+          return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
+        },
+      },
+      {
+        headerName: "COGS Min",
+        field: "cogsMin",
+        width: 100,
+        editable: params =>
+          params.data?.status === "pending" &&
+          params.data?.cogsMode === "RANGE",
+        valueFormatter: params =>
+          params.data?.cogsMode === "RANGE"
+            ? `$${(params.value ?? 0).toFixed(2)}`
+            : "Fixed",
+        valueParser: params => {
+          const val = Number(params.newValue);
+          return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
+        },
+      },
+      {
+        headerName: "COGS Max",
+        field: "cogsMax",
+        width: 100,
+        editable: params =>
+          params.data?.status === "pending" &&
+          params.data?.cogsMode === "RANGE",
+        valueFormatter: params =>
+          params.data?.cogsMode === "RANGE"
+            ? `$${(params.value ?? 0).toFixed(2)}`
+            : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1170,6 +1377,15 @@ export function DirectIntakeWorkSurface() {
           nextRow.productId = null;
           nextRow.strainId = null;
         }
+      }
+
+      if (
+        event.colDef.field === "cogsMode" ||
+        event.colDef.field === "cogs" ||
+        event.colDef.field === "cogsMin" ||
+        event.colDef.field === "cogsMax"
+      ) {
+        Object.assign(nextRow, normalizeIntakeCogs(nextRow));
       }
 
       // Reset error status when editing after a validation failure
@@ -1428,8 +1644,19 @@ export function DirectIntakeWorkSurface() {
           subcategory: normalizedRow.subcategory || undefined,
           strainId: normalizedRow.strainId,
           quantity: normalizedRow.qty,
-          cogsMode: "FIXED" as const,
-          unitCogs: normalizedRow.cogs.toFixed(2),
+          cogsMode: normalizedRow.cogsMode,
+          unitCogs:
+            normalizedRow.cogsMode === "FIXED"
+              ? normalizedRow.cogs.toFixed(2)
+              : undefined,
+          unitCogsMin:
+            normalizedRow.cogsMode === "RANGE"
+              ? Number(normalizedRow.cogsMin || 0).toFixed(2)
+              : undefined,
+          unitCogsMax:
+            normalizedRow.cogsMode === "RANGE"
+              ? Number(normalizedRow.cogsMax || 0).toFixed(2)
+              : undefined,
           paymentTerms: normalizedRow.paymentTerms,
           location: { site: normalizedRow.site },
           metadata: normalizedRow.notes
@@ -1574,8 +1801,16 @@ export function DirectIntakeWorkSurface() {
           subcategory: row.subcategory || undefined,
           strainId: row.strainId,
           quantity: row.qty,
-          cogsMode: "FIXED" as const,
-          unitCogs: row.cogs.toFixed(2),
+          cogsMode: row.cogsMode,
+          unitCogs: row.cogsMode === "FIXED" ? row.cogs.toFixed(2) : undefined,
+          unitCogsMin:
+            row.cogsMode === "RANGE"
+              ? Number(row.cogsMin || 0).toFixed(2)
+              : undefined,
+          unitCogsMax:
+            row.cogsMode === "RANGE"
+              ? Number(row.cogsMax || 0).toFixed(2)
+              : undefined,
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
@@ -1657,12 +1892,20 @@ export function DirectIntakeWorkSurface() {
           { key: "category", label: "Category" },
           { key: "subcategory", label: "Subcategory" },
           { key: "qty", label: "Qty" },
+          { key: "cogsMode", label: "COGS Mode" },
           { key: "cogs", label: "COGS" },
+          { key: "cogsMin", label: "COGS Min" },
+          { key: "cogsMax", label: "COGS Max" },
+          {
+            key: "effectiveCogs",
+            label: "Effective COGS",
+            formatter: (_value, row) => getEffectiveCogs(row).toFixed(2),
+          },
           {
             key: "lineTotal",
             label: "Line Total",
             formatter: (_value, row) =>
-              ((row.qty || 0) * (row.cogs || 0)).toFixed(2),
+              ((row.qty || 0) * getEffectiveCogs(row)).toFixed(2),
           },
           { key: "paymentTerms", label: "Payment Terms" },
           { key: "site", label: "Location" },
@@ -1687,6 +1930,10 @@ export function DirectIntakeWorkSurface() {
         prev.map(r =>
           r.id === selectedRowId
             ? (() => {
+                const nextRow = normalizeIntakeCogs({
+                  ...r,
+                  ...updates,
+                } as IntakeGridRow);
                 const nextVendorName =
                   typeof updates.vendorName === "string"
                     ? updates.vendorName.trim()
@@ -1697,8 +1944,7 @@ export function DirectIntakeWorkSurface() {
                   !r.brandName.trim();
 
                 return {
-                  ...r,
-                  ...updates,
+                  ...nextRow,
                   ...(typeof nextVendorName === "string"
                     ? { vendorName: nextVendorName }
                     : {}),
@@ -1735,7 +1981,10 @@ export function DirectIntakeWorkSurface() {
     return {
       totalItems: pendingRows.length,
       totalQty: pendingRows.reduce((sum, r) => sum + r.qty, 0),
-      totalValue: pendingRows.reduce((sum, r) => sum + r.qty * r.cogs, 0),
+      totalValue: pendingRows.reduce(
+        (sum, r) => sum + r.qty * getEffectiveCogs(r),
+        0
+      ),
     };
   }, [rows]);
 
@@ -1976,22 +2225,85 @@ export function DirectIntakeWorkSurface() {
             />
           </div>
           <div className="space-y-1 min-w-0">
-            <Label className="text-xs text-muted-foreground">COGS</Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={selectedRow?.cogs ?? ""}
-              onChange={e => {
-                const val = Number(e.target.value);
+            <Label className="text-xs text-muted-foreground">COGS Mode</Label>
+            <Select
+              value={selectedRow?.cogsMode ?? "FIXED"}
+              onValueChange={value =>
                 handleUpdateSelectedRow({
-                  cogs: Number.isFinite(val) ? val : 0,
-                });
-              }}
+                  cogsMode: value as IntakeCogsMode,
+                })
+              }
               disabled={!selectedRowEditable}
-              className="h-9"
-            />
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FIXED">Fixed</SelectItem>
+                <SelectItem value="RANGE">Range</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {selectedRow?.cogsMode === "RANGE" ? (
+            <>
+              <div className="space-y-1 min-w-0">
+                <Label className="text-xs text-muted-foreground">
+                  COGS Min
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={selectedRow?.cogsMin ?? ""}
+                  onChange={e => {
+                    const val = Number(e.target.value);
+                    handleUpdateSelectedRow({
+                      cogsMin: Number.isFinite(val) ? val : 0,
+                    });
+                  }}
+                  disabled={!selectedRowEditable}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <Label className="text-xs text-muted-foreground">
+                  COGS Max
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={selectedRow?.cogsMax ?? ""}
+                  onChange={e => {
+                    const val = Number(e.target.value);
+                    handleUpdateSelectedRow({
+                      cogsMax: Number.isFinite(val) ? val : 0,
+                    });
+                  }}
+                  disabled={!selectedRowEditable}
+                  className="h-9"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="space-y-1 min-w-0">
+              <Label className="text-xs text-muted-foreground">COGS</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={selectedRow?.cogs ?? ""}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  handleUpdateSelectedRow({
+                    cogs: Number.isFinite(val) ? val : 0,
+                  });
+                }}
+                disabled={!selectedRowEditable}
+                className="h-9"
+              />
+            </div>
+          )}
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Location</Label>
             <Select

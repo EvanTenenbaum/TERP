@@ -79,6 +79,13 @@ describe("purchaseOrders helpers", () => {
       )
     ).toBe(true);
     expect(
+      shouldFallbackRecentProductsBySupplier(
+        new Error(
+          "Unknown column 'purchaseOrderItems.deletedAt' in 'where clause'"
+        )
+      )
+    ).toBe(true);
+    expect(
       shouldFallbackRecentProductsBySupplier(new Error("Connection lost"))
     ).toBe(false);
   });

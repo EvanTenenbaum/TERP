@@ -39,6 +39,7 @@ export function shouldFallbackRecentProductsBySupplier(error: unknown) {
     "cogsmode",
     "unitcostmin",
     "unitcostmax",
+    "deletedat",
   ]);
 }
 
@@ -852,7 +853,12 @@ export const purchaseOrdersRouter = router({
       return await db
         .select()
         .from(purchaseOrders)
-        .where(eq(purchaseOrders.supplierClientId, input.supplierClientId))
+        .where(
+          and(
+            eq(purchaseOrders.supplierClientId, input.supplierClientId),
+            isNull(purchaseOrders.deletedAt)
+          )
+        )
         .orderBy(desc(purchaseOrders.createdAt));
     }),
 
@@ -888,11 +894,7 @@ export const purchaseOrdersRouter = router({
           )
           .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
           .where(
-            and(
-              eq(purchaseOrders.supplierClientId, input.supplierClientId),
-              isNull(purchaseOrders.deletedAt),
-              isNull(purchaseOrderItems.deletedAt)
-            )
+            buildRecentSupplierProductsWhereClause(input.supplierClientId, true)
           )
           .orderBy(desc(purchaseOrders.orderDate), desc(purchaseOrderItems.id));
 
@@ -927,10 +929,9 @@ export const purchaseOrdersRouter = router({
           )
           .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
           .where(
-            and(
-              eq(purchaseOrders.supplierClientId, input.supplierClientId),
-              isNull(purchaseOrders.deletedAt),
-              isNull(purchaseOrderItems.deletedAt)
+            buildRecentSupplierProductsWhereClause(
+              input.supplierClientId,
+              false
             )
           )
           .orderBy(desc(purchaseOrders.orderDate), desc(purchaseOrderItems.id));
@@ -1266,6 +1267,22 @@ export function dedupeRecentSupplierProducts<
   }
 
   return recentProducts;
+}
+
+function buildRecentSupplierProductsWhereClause(
+  supplierClientId: number,
+  includeItemDeletedGuard: boolean
+) {
+  const conditions = [
+    eq(purchaseOrders.supplierClientId, supplierClientId),
+    isNull(purchaseOrders.deletedAt),
+  ];
+
+  if (includeItemDeletedGuard) {
+    conditions.push(isNull(purchaseOrderItems.deletedAt));
+  }
+
+  return and(...conditions);
 }
 
 async function findExactProductByName(

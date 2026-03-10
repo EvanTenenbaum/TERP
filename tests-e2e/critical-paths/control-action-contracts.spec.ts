@@ -67,10 +67,10 @@ const ACTION_CONTRACTS: ActionContract[] = [
   },
   {
     id: "inventory-product-intake",
-    route: "/inventory",
+    route: "/operations?tab=inventory",
     selector:
-      '[data-testid="new-batch-btn"], button:has-text("Product Intake"), button:has-text("Intake")',
-    expectedUrlPattern: /\/purchase-orders\?tab=receiving/,
+      '[data-testid="new-batch-btn"], button:has-text("Receiving"), button:has-text("Product Intake"), button:has-text("Intake")',
+    expectedUrlPattern: /\/operations\?tab=receiving/,
   },
   {
     id: "relationships-add-client",
