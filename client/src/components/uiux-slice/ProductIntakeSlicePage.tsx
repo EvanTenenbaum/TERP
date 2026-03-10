@@ -1268,7 +1268,7 @@ export function ProductIntakeSlicePage() {
       <div className="px-6 py-4 border-b">
         <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
           <Package className="h-6 w-6" />
-          Product Intake
+          Receiving
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Review to Receive with inline QA gating and correction actions.
@@ -1281,7 +1281,7 @@ export function ProductIntakeSlicePage() {
           onValueChange={value => setSelectedDraftId(value)}
         >
           <SelectTrigger className="w-[300px]">
-            <SelectValue placeholder="Select Product Intake" />
+            <SelectValue placeholder="Select receiving draft" />
           </SelectTrigger>
           <SelectContent>
             {drafts.map(draft => (
@@ -1712,7 +1712,7 @@ export function ProductIntakeSlicePage() {
                   className="p-8 text-center text-muted-foreground"
                   colSpan={12}
                 >
-                  Select a Product Intake draft.
+                  Select a receiving draft.
                 </td>
               </tr>
             )}

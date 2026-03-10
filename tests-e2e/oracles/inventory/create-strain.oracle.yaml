@@ -33,7 +33,7 @@ steps:
     wait_after: 500
 
   - action: wait
-    for: "[role='dialog']:has-text('New Product Intake'), [data-testid='batch-form'], form"
+    for: "[role='dialog']:has-text('New Receiving'), [role='dialog']:has-text('New Product Intake'), [data-testid='batch-form'], form"
     timeout: 5000
 
   - action: click

@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 
 const tabs = [
   { href: "/slice-v1-lab/purchase-orders", label: "Purchase Orders" },
-  { href: "/slice-v1-lab/product-intake", label: "Product Intake" },
+  { href: "/slice-v1-lab/product-intake", label: "Receiving" },
   { href: "/slice-v1-lab/inventory", label: "Inventory Browse" },
 ];
 
@@ -13,7 +13,9 @@ export function SliceV1WorkbenchLayout({ children }: PropsWithChildren) {
   return (
     <div
       className="min-h-screen bg-[#f5f5f2] text-slate-900"
-      style={{ fontFamily: '"IBM Plex Sans","SF Pro Text","Segoe UI",sans-serif' }}
+      style={{
+        fontFamily: '"IBM Plex Sans","SF Pro Text","Segoe UI",sans-serif',
+      }}
     >
       <header className="border-b border-slate-300 bg-[#efefe9] px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
@@ -22,7 +24,7 @@ export function SliceV1WorkbenchLayout({ children }: PropsWithChildren) {
               Calm Power Slice Lab
             </p>
             <p className="text-base font-semibold tracking-tight">
-              Purchase Order → Product Intake → Received
+              Purchase Order → Receiving → Received
             </p>
           </div>
           <nav className="flex items-center gap-2">

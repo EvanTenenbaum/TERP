@@ -531,6 +531,49 @@ describe("Inventory Router", () => {
         product: mockResult.product,
       });
     });
+
+    it("should pass range COGS intake through unchanged", async () => {
+      const mockResult = {
+        success: true,
+        batch: createMockBatch(),
+        vendor: createMockVendor(),
+        brand: createMockBrand(),
+        product: createMockProduct(),
+        lot: createMockLot(),
+      };
+
+      vi.mocked(processIntake).mockResolvedValue(mockResult);
+
+      const input = {
+        vendorName: "Evergreen Supply",
+        brandName: "Evergreen Farms",
+        productName: "Blue Dream",
+        category: "Flower",
+        subcategory: "Indoor",
+        grade: undefined,
+        strainId: null,
+        quantity: 10,
+        cogsMode: "RANGE" as const,
+        unitCogsMin: "8.50",
+        unitCogsMax: "11.25",
+        paymentTerms: "CONSIGNMENT" as const,
+        location: {
+          site: "SITE-1",
+          zone: undefined,
+          rack: undefined,
+          shelf: undefined,
+          bin: undefined,
+        },
+        metadata: undefined,
+      };
+
+      await caller.inventory.intake(input);
+
+      expect(processIntake).toHaveBeenCalledWith({
+        ...input,
+        actorId: mockUser.id,
+      });
+    });
   });
 
   describe("updateStatus", () => {

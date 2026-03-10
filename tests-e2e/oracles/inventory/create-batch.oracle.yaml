@@ -31,7 +31,7 @@ steps:
     wait_after: 1000
 
   - action: wait
-    for: "[data-testid='batch-form'], [role='dialog']:has-text('New Product Intake'), form, .intake-form"
+    for: "[data-testid='batch-form'], [role='dialog']:has-text('New Receiving'), [role='dialog']:has-text('New Product Intake'), form, .intake-form"
     timeout: 5000
 
   - action: type
