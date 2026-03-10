@@ -4,7 +4,8 @@ import {
   getBaseCogs, 
   applyClientAdjustment,
   getMarginCategory,
-  calculateDueDate
+  calculateDueDate,
+  resolveBatchCogs,
 } from '../cogsCalculator';
 
 describe('COGS Calculator', () => {
@@ -61,6 +62,63 @@ describe('COGS Calculator', () => {
       
       expect(result.unitCogs).toBe(15.00);
       expect(result.cogsSource).toBe('MIDPOINT');
+      expect(result.effectiveCogsBasis).toBe('MID');
+    });
+
+    it('should honor LOW basis for RANGE mode batch', () => {
+      const input = {
+        batch: {
+          id: 1,
+          cogsMode: 'RANGE' as const,
+          unitCogs: null,
+          unitCogsMin: '10.00',
+          unitCogsMax: '20.00',
+        },
+        client: {
+          id: 1,
+          cogsAdjustmentType: 'NONE' as const,
+          cogsAdjustmentValue: '0',
+        },
+        context: {
+          quantity: 1,
+          salePrice: 25.00,
+        },
+        rangeBasis: 'LOW' as const,
+      };
+
+      const result = calculateCogs(input);
+
+      expect(result.unitCogs).toBe(10.00);
+      expect(result.cogsSource).toBe('LOW');
+      expect(result.effectiveCogsBasis).toBe('LOW');
+    });
+
+    it('should honor HIGH basis for RANGE mode batch', () => {
+      const input = {
+        batch: {
+          id: 1,
+          cogsMode: 'RANGE' as const,
+          unitCogs: null,
+          unitCogsMin: '10.00',
+          unitCogsMax: '20.00',
+        },
+        client: {
+          id: 1,
+          cogsAdjustmentType: 'NONE' as const,
+          cogsAdjustmentValue: '0',
+        },
+        context: {
+          quantity: 1,
+          salePrice: 25.00,
+        },
+        rangeBasis: 'HIGH' as const,
+      };
+
+      const result = calculateCogs(input);
+
+      expect(result.unitCogs).toBe(20.00);
+      expect(result.cogsSource).toBe('HIGH');
+      expect(result.effectiveCogsBasis).toBe('HIGH');
     });
 
     it('should apply client percentage adjustment to RANGE mode batch', () => {
@@ -170,6 +228,46 @@ describe('COGS Calculator', () => {
     });
   });
 
+  describe('resolveBatchCogs', () => {
+    it('should preserve manual override and vendor range metadata for RANGE batches', () => {
+      const result = resolveBatchCogs(
+        {
+          id: 1,
+          cogsMode: 'RANGE',
+          unitCogs: null,
+          unitCogsMin: '10.00',
+          unitCogsMax: '20.00',
+        },
+        { rangeBasis: 'HIGH', manualCogs: 8.5 }
+      );
+
+      expect(result.unitCogs).toBe(8.5);
+      expect(result.effectiveCogsBasis).toBe('MANUAL');
+      expect(result.originalRangeMin).toBe(10);
+      expect(result.originalRangeMax).toBe(20);
+      expect(result.isBelowVendorRange).toBe(true);
+    });
+
+    it('should not mark manual override below range for FIXED batches', () => {
+      const result = resolveBatchCogs(
+        {
+          id: 2,
+          cogsMode: 'FIXED',
+          unitCogs: '14.00',
+          unitCogsMin: null,
+          unitCogsMax: null,
+        },
+        { manualCogs: 12.25 }
+      );
+
+      expect(result.unitCogs).toBe(12.25);
+      expect(result.effectiveCogsBasis).toBe('MANUAL');
+      expect(result.originalRangeMin).toBeNull();
+      expect(result.originalRangeMax).toBeNull();
+      expect(result.isBelowVendorRange).toBe(false);
+    });
+  });
+
   describe('getBaseCogs', () => {
     it('should return COGS for FIXED mode', () => {
       const batch = {
@@ -195,6 +293,18 @@ describe('COGS Calculator', () => {
       const result = getBaseCogs(batch);
       
       expect(result).toBe(20.00);
+    });
+
+    it('should return low or high for RANGE mode when requested', () => {
+      const batch = {
+        cogsMode: 'RANGE' as const,
+        unitCogs: null,
+        unitCogsMin: '10.00',
+        unitCogsMax: '30.00',
+      };
+
+      expect(getBaseCogs(batch, 'LOW')).toBe(10.00);
+      expect(getBaseCogs(batch, 'HIGH')).toBe(30.00);
     });
   });
 
@@ -275,4 +385,3 @@ describe('COGS Calculator', () => {
     });
   });
 });
-

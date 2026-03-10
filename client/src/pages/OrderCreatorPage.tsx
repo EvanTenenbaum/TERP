@@ -112,6 +112,12 @@ interface InventoryItemForOrder {
   productId?: number; // WSQA-002: Product ID for flexible lot selection
   name: string;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogs?: number;
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogs?: number;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice?: number;
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
@@ -133,6 +139,14 @@ interface DraftLineItemPayload {
   quantity: number | string;
   cogsPerUnit: number | string;
   originalCogsPerUnit: number | string;
+  cogsMode?: "FIXED" | "RANGE" | null;
+  unitCogsMin?: number | string | null;
+  unitCogsMax?: number | string | null;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL" | null;
+  originalRangeMin?: number | string | null;
+  originalRangeMax?: number | string | null;
+  isBelowVendorRange?: boolean | null;
+  belowRangeReason?: string | null;
   isCogsOverridden: boolean;
   cogsOverrideReason?: string | null;
   marginPercent: number | string;
@@ -189,6 +203,20 @@ const buildOrderFingerprint = (snapshot: OrderDraftSnapshot): string =>
         item.originalCogsPerUnit,
         4
       ),
+      cogsMode: item.cogsMode ?? null,
+      unitCogsMin: normalizeFingerprintNumber(item.unitCogsMin ?? null, 4),
+      unitCogsMax: normalizeFingerprintNumber(item.unitCogsMax ?? null, 4),
+      effectiveCogsBasis: item.effectiveCogsBasis ?? null,
+      originalRangeMin: normalizeFingerprintNumber(
+        item.originalRangeMin ?? null,
+        4
+      ),
+      originalRangeMax: normalizeFingerprintNumber(
+        item.originalRangeMax ?? null,
+        4
+      ),
+      isBelowVendorRange: item.isBelowVendorRange ?? false,
+      belowRangeReason: item.belowRangeReason ?? null,
       isCogsOverridden: item.isCogsOverridden,
       cogsOverrideReason: item.cogsOverrideReason ?? null,
       marginPercent: normalizeFingerprintNumber(item.marginPercent, 4),
@@ -232,6 +260,26 @@ const mapDraftLineItemsToEditorState = (
     quantity: Number(item.quantity),
     cogsPerUnit: Number(item.cogsPerUnit),
     originalCogsPerUnit: Number(item.originalCogsPerUnit),
+    cogsMode: item.cogsMode ?? undefined,
+    unitCogsMin:
+      item.unitCogsMin !== null && item.unitCogsMin !== undefined
+        ? Number(item.unitCogsMin)
+        : null,
+    unitCogsMax:
+      item.unitCogsMax !== null && item.unitCogsMax !== undefined
+        ? Number(item.unitCogsMax)
+        : null,
+    effectiveCogsBasis: item.effectiveCogsBasis ?? undefined,
+    originalRangeMin:
+      item.originalRangeMin !== null && item.originalRangeMin !== undefined
+        ? Number(item.originalRangeMin)
+        : null,
+    originalRangeMax:
+      item.originalRangeMax !== null && item.originalRangeMax !== undefined
+        ? Number(item.originalRangeMax)
+        : null,
+    isBelowVendorRange: Boolean(item.isBelowVendorRange),
+    belowRangeReason: item.belowRangeReason ?? undefined,
     isCogsOverridden: item.isCogsOverridden,
     cogsOverrideReason: item.cogsOverrideReason ?? undefined,
     marginPercent: Number(item.marginPercent),
@@ -732,6 +780,95 @@ export default function OrderCreatorPageV2() {
     [closeCustomerDrawer, refetchClientDetails]
   );
 
+  const refreshProfilePricingInOrder = useCallback(async () => {
+    const refreshedInventory = await inventoryQuery.refetch();
+    const latestInventory =
+      (refreshedInventory.data as InventoryItemForOrder[] | undefined) ??
+      (inventory as InventoryItemForOrder[] | undefined) ??
+      [];
+
+    if (latestInventory.length === 0) {
+      return;
+    }
+
+    setItems(currentItems =>
+      currentItems.map(item => {
+        if (item.marginSource === "MANUAL" || item.isMarginOverridden) {
+          return item;
+        }
+
+        const profilePricing = latestInventory.find(
+          inv => inv.id === item.batchId
+        );
+        if (!profilePricing) {
+          return item;
+        }
+
+        const shouldRefreshCogsState =
+          !item.isCogsOverridden &&
+          item.effectiveCogsBasis !== "MANUAL" &&
+          (!item.effectiveCogsBasis ||
+            item.effectiveCogsBasis === profilePricing.effectiveCogsBasis);
+        const cogsPerUnit = shouldRefreshCogsState
+          ? profilePricing.effectiveCogs ?? item.cogsPerUnit
+          : item.cogsPerUnit;
+        const retailPrice =
+          profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
+        const marginPercent =
+          cogsPerUnit > 0
+            ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100
+            : 0;
+        const recalculated = calculateLineItem(
+          item.batchId,
+          item.quantity,
+          cogsPerUnit,
+          marginPercent
+        );
+
+        return {
+          ...item,
+          ...recalculated,
+          cogsPerUnit,
+          originalCogsPerUnit: shouldRefreshCogsState
+            ? cogsPerUnit
+            : item.originalCogsPerUnit,
+          cogsMode: shouldRefreshCogsState
+            ? profilePricing.cogsMode ?? item.cogsMode
+            : item.cogsMode,
+          unitCogsMin: shouldRefreshCogsState
+            ? profilePricing.unitCogsMin ?? item.unitCogsMin ?? null
+            : item.unitCogsMin ?? null,
+          unitCogsMax: shouldRefreshCogsState
+            ? profilePricing.unitCogsMax ?? item.unitCogsMax ?? null
+            : item.unitCogsMax ?? null,
+          effectiveCogsBasis: shouldRefreshCogsState
+            ? profilePricing.effectiveCogsBasis ?? item.effectiveCogsBasis
+            : item.effectiveCogsBasis,
+          originalRangeMin: shouldRefreshCogsState
+            ? profilePricing.unitCogsMin ?? item.originalRangeMin ?? null
+            : item.originalRangeMin ?? null,
+          originalRangeMax: shouldRefreshCogsState
+            ? profilePricing.unitCogsMax ?? item.originalRangeMax ?? null
+            : item.originalRangeMax ?? null,
+          isBelowVendorRange:
+            typeof item.originalRangeMin === "number"
+              ? cogsPerUnit < item.originalRangeMin
+              : false,
+          marginPercent,
+          marginSource: "CUSTOMER_PROFILE",
+          isMarginOverridden: false,
+        };
+      })
+    );
+  }, [inventory, inventoryQuery]);
+
+  const handlePricingProfileApplied = useCallback(() => {
+    void (async () => {
+      await refreshProfilePricingInOrder();
+      await refetchClientDetails();
+      closeCustomerDrawer();
+    })();
+  }, [closeCustomerDrawer, refreshProfilePricingInOrder, refetchClientDetails]);
   // Calculations
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
 
@@ -746,6 +883,12 @@ export default function OrderCreatorPageV2() {
         productDisplayName: item.productDisplayName,
         quantity: item.quantity,
         cogsPerUnit: item.cogsPerUnit,
+        originalCogsPerUnit: item.originalCogsPerUnit,
+        effectiveCogsBasis: item.effectiveCogsBasis,
+        originalRangeMin: item.originalRangeMin,
+        originalRangeMax: item.originalRangeMax,
+        isBelowVendorRange: item.isBelowVendorRange ?? false,
+        belowRangeReason: item.belowRangeReason,
         isCogsOverridden: item.isCogsOverridden,
         cogsOverrideReason: item.cogsOverrideReason,
         marginPercent: item.marginPercent,
@@ -1040,7 +1183,8 @@ export default function OrderCreatorPageV2() {
 
     return validItems.map(item => {
       // Calculate margin percent from basePrice and retailPrice
-      const cogsPerUnit = item.basePrice || 0;
+      const cogsPerUnit =
+        item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
       const retailPrice = item.retailPrice || item.basePrice || 0;
       const marginPercent =
         cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
@@ -1063,12 +1207,23 @@ export default function OrderCreatorPageV2() {
       return {
         ...calculated,
         productId: item.productId, // WSQA-002: Include productId for flexible lot selection
+        cogsMode: item.cogsMode,
+        unitCogsMin: item.unitCogsMin ?? null,
+        unitCogsMax: item.unitCogsMax ?? null,
+        effectiveCogsBasis:
+          item.effectiveCogsBasis ??
+          (item.cogsMode === "RANGE" ? "MID" : "MANUAL"),
+        originalRangeMin: item.unitCogsMin ?? null,
+        originalRangeMax: item.unitCogsMax ?? null,
+        isBelowVendorRange:
+          typeof item.unitCogsMin === "number" ? cogsPerUnit < item.unitCogsMin : false,
         marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
         lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
         productDisplayName: item.name || "Unknown Product",
         originalCogsPerUnit: cogsPerUnit,
+        belowRangeReason: undefined,
         isCogsOverridden: false,
         isMarginOverridden: false,
         marginSource: "CUSTOMER_PROFILE" as const,
@@ -1751,9 +1906,7 @@ export default function OrderCreatorPageV2() {
                   {customerDrawerSection === "sales-pricing" ? (
                     <PricingConfigTab
                       clientId={clientId}
-                      onProfileApplied={() => {
-                        void refetchClientDetails();
-                      }}
+                      onProfileApplied={handlePricingProfileApplied}
                     />
                   ) : null}
                 </div>

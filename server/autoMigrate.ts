@@ -112,9 +112,44 @@ const FINGERPRINT_CANARIES = [
         AND COLUMN_NAME = 'unitCostMax'
     )`,
   },
+  {
+    key: "range_pricing_channel_settings.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'range_pricing_channel_settings'
+    )`,
+  },
+  {
+    key: "range_pricing_channel_settings.channel.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'range_pricing_channel_settings'
+        AND COLUMN_NAME = 'channel'
+    )`,
+  },
+  {
+    key: "range_pricing_channel_settings.default_basis.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'range_pricing_channel_settings'
+        AND COLUMN_NAME = 'default_basis'
+    )`,
+  },
+  {
+    key: "order_line_items.effective_cogs_basis.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'order_line_items'
+        AND COLUMN_NAME = 'effective_cogs_basis'
+    )`,
+  },
 ] as const;
 
-const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
+export const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
 
 async function runSchemaFingerprintCheck(
   dbConn: NonNullable<Awaited<ReturnType<typeof getDb>>>,
@@ -2652,6 +2687,124 @@ export async function runAutoMigrations() {
           { error: errMsg, fullError: error },
           "order_item_bags.deleted_at migration failed"
         );
+      }
+    }
+
+    try {
+      await db.execute(sql`
+        CREATE TABLE range_pricing_channel_settings (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          deleted_at TIMESTAMP NULL,
+          channel ENUM('SALES_SHEET', 'LIVE_SHOPPING', 'VIP_SHOPPING') NOT NULL UNIQUE,
+          default_basis ENUM('LOW', 'MID', 'HIGH', 'MANUAL') NOT NULL DEFAULT 'MID',
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.info("  ✅ Created range_pricing_channel_settings table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  range_pricing_channel_settings table already exists"
+        );
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "range_pricing_channel_settings creation failed"
+        );
+      }
+    }
+
+    try {
+      await db.execute(sql`
+        ALTER TABLE range_pricing_channel_settings
+        CHANGE COLUMN defaultBasis default_basis ENUM('LOW', 'MID', 'HIGH', 'MANUAL') NOT NULL DEFAULT 'MID'
+      `);
+      console.info(
+        "  ✅ Renamed range_pricing_channel_settings.defaultBasis to default_basis"
+      );
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (
+        errMsg.includes("Unknown column") ||
+        errMsg.includes("doesn't exist")
+      ) {
+        console.info(
+          "  ℹ️  range_pricing_channel_settings.defaultBasis rename not needed"
+        );
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "range_pricing_channel_settings.defaultBasis rename failed"
+        );
+      }
+    }
+
+    for (const channel of ["SALES_SHEET", "LIVE_SHOPPING", "VIP_SHOPPING"]) {
+      try {
+        await db.execute(sql`
+          INSERT INTO range_pricing_channel_settings (channel, default_basis)
+          VALUES (${channel}, 'MID')
+        `);
+        console.info(`  ✅ Seeded range_pricing_channel_settings for ${channel}`);
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate entry")) {
+          console.info(
+            `  ℹ️  range_pricing_channel_settings already seeded for ${channel}`
+          );
+        } else {
+          logger.error(
+            { error: errMsg, channel, fullError: error },
+            "range_pricing_channel_settings seed failed"
+          );
+        }
+      }
+    }
+
+    const orderLineItemColumns = [
+      {
+        name: "effective_cogs_basis",
+        ddl:
+          "ALTER TABLE order_line_items ADD COLUMN effective_cogs_basis ENUM('LOW', 'MID', 'HIGH', 'MANUAL') NOT NULL DEFAULT 'MANUAL'",
+      },
+      {
+        name: "original_range_min",
+        ddl:
+          "ALTER TABLE order_line_items ADD COLUMN original_range_min DECIMAL(15,4) NULL",
+      },
+      {
+        name: "original_range_max",
+        ddl:
+          "ALTER TABLE order_line_items ADD COLUMN original_range_max DECIMAL(15,4) NULL",
+      },
+      {
+        name: "is_below_vendor_range",
+        ddl:
+          "ALTER TABLE order_line_items ADD COLUMN is_below_vendor_range BOOLEAN NOT NULL DEFAULT FALSE",
+      },
+      {
+        name: "below_range_reason",
+        ddl:
+          "ALTER TABLE order_line_items ADD COLUMN below_range_reason TEXT NULL",
+      },
+    ] as const;
+
+    for (const column of orderLineItemColumns) {
+      try {
+        await db.execute(sql.raw(column.ddl));
+        console.info(`  ✅ Added order_line_items.${column.name}`);
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.info(`  ℹ️  order_line_items.${column.name} already exists`);
+        } else {
+          logger.error(
+            { error: errMsg, column: column.name, fullError: error },
+            "order_line_items column migration failed"
+          );
+        }
       }
     }
 

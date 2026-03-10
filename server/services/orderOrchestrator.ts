@@ -73,7 +73,14 @@ export interface OrderItem {
   isSample: boolean;
   unitCogs: number;
   cogsMode: "FIXED" | "RANGE";
-  cogsSource: "FIXED" | "MIDPOINT" | "CLIENT_ADJUSTMENT" | "RULE" | "MANUAL";
+  cogsSource:
+    | "FIXED"
+    | "LOW"
+    | "MIDPOINT"
+    | "HIGH"
+    | "CLIENT_ADJUSTMENT"
+    | "RULE"
+    | "MANUAL";
   appliedRule?: string;
   unitMargin: number;
   marginPercent: number;

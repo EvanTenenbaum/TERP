@@ -197,6 +197,13 @@
       "when": 1735826400000,
       "tag": "0044_add_admin_impersonation_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1773173200000,
+      "tag": "0062_restore_range_cogs_native_flow",
+      "breakpoints": true
     }
   ]
 }

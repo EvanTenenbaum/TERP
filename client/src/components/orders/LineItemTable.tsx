@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LineItemRow } from "./LineItemRow";
+import type { EffectiveCogsBasis } from "./COGSInput";
 import {
   BatchSelectionDialog,
   type BatchAllocation,
@@ -32,6 +33,7 @@ import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import type { PowersheetBulkActionContract } from "@/types/powersheet";
+import { toast } from "sonner";
 
 export interface LineItem {
   id?: number;
@@ -42,6 +44,14 @@ export interface LineItem {
   quantity: number;
   cogsPerUnit: number;
   originalCogsPerUnit: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogsBasis?: EffectiveCogsBasis;
+  originalRangeMin?: number | null;
+  originalRangeMax?: number | null;
+  isBelowVendorRange?: boolean;
+  belowRangeReason?: string;
   isCogsOverridden: boolean;
   cogsOverrideReason?: string;
   marginPercent: number;
@@ -87,6 +97,7 @@ export function LineItemTable({
   );
   const [bulkMarginPercent, setBulkMarginPercent] = useState("");
   const [bulkCogsPerUnit, setBulkCogsPerUnit] = useState("");
+  const [bulkCogsReason, setBulkCogsReason] = useState("");
   const tableRef = useRef<HTMLDivElement | null>(null);
 
   const rowSelectionIds = useMemo(
@@ -244,6 +255,7 @@ export function LineItemTable({
           batchId: allocation.batchId,
           cogsPerUnit: allocation.unitCost,
           originalCogsPerUnit: allocation.unitCost,
+          effectiveCogsBasis: "MANUAL",
           isCogsOverridden: false,
         };
         onChange(newItems);
@@ -264,6 +276,7 @@ export function LineItemTable({
             batchId: allocation.batchId,
             cogsPerUnit: allocation.unitCost,
             originalCogsPerUnit: allocation.unitCost,
+            effectiveCogsBasis: "MANUAL" as const,
             isCogsOverridden: false,
           };
         });
@@ -311,6 +324,17 @@ export function LineItemTable({
       return;
     }
 
+    const selectedItems = selectedIndexes.map(index => items[index]);
+    const requiresBelowRangeReason = selectedItems.some(
+      item =>
+        typeof item.originalRangeMin === "number" && nextCogs < item.originalRangeMin
+    );
+
+    if (requiresBelowRangeReason && !bulkCogsReason.trim()) {
+      toast.error("A reason is required when bulk COGS goes below vendor range.");
+      return;
+    }
+
     bulkActions.applyToSelected(item => {
       const updated = calculateLineItem(
         item.batchId,
@@ -322,12 +346,23 @@ export function LineItemTable({
         ...item,
         ...updated,
         cogsPerUnit: nextCogs,
+        effectiveCogsBasis: "MANUAL",
+        isBelowVendorRange:
+          typeof item.originalRangeMin === "number"
+            ? nextCogs < item.originalRangeMin
+            : false,
         isCogsOverridden: nextCogs !== item.originalCogsPerUnit,
+        belowRangeReason:
+          typeof item.originalRangeMin === "number" && nextCogs < item.originalRangeMin
+            ? bulkCogsReason.trim()
+            : undefined,
         cogsOverrideReason:
-          nextCogs !== item.originalCogsPerUnit ? "Bulk override" : undefined,
+          nextCogs !== item.originalCogsPerUnit
+            ? bulkCogsReason.trim() || "Bulk override"
+            : undefined,
       };
     });
-  }, [bulkActions, bulkCogsPerUnit]);
+  }, [bulkActions, bulkCogsPerUnit, bulkCogsReason, items, selectedIndexes]);
 
   return (
     <div className={isCompact ? "space-y-2" : "space-y-3"}>
@@ -407,6 +442,12 @@ export function LineItemTable({
                 placeholder="COGS"
                 className="h-8 w-24 text-right"
                 inputMode="decimal"
+              />
+              <Input
+                value={bulkCogsReason}
+                onChange={event => setBulkCogsReason(event.target.value)}
+                placeholder="COGS reason"
+                className="h-8 w-40"
               />
               <Button size="sm" variant="outline" onClick={handleBulkApplyCogs}>
                 Apply COGS

@@ -61,6 +61,11 @@ interface SalesSheetItem {
   category?: string;
   quantity: number;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  effectiveCogs?: number;
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice: number;
   priceOverride?: number;
 }
@@ -79,6 +84,16 @@ interface SortableItemProps {
   onRemove: (itemId: number) => void;
   onPriceOverride: (itemId: number, price: number | null) => void;
 }
+
+const INTERNAL_BASIS_LABELS: Record<
+  NonNullable<SalesSheetItem["effectiveCogsBasis"]>,
+  string
+> = {
+  LOW: "Low",
+  MID: "Mid",
+  HIGH: "High",
+  MANUAL: "Manual",
+};
 
 function SortableItem({
   item,
@@ -99,6 +114,14 @@ function SortableItem({
     item.priceOverride?.toString() || ""
   );
 
+  const showInternalRangeContext =
+    item.cogsMode === "RANGE" &&
+    typeof item.unitCogsMin === "number" &&
+    typeof item.unitCogsMax === "number" &&
+    typeof item.effectiveCogs === "number";
+  const internalRangeMin = showInternalRangeContext ? item.unitCogsMin : null;
+  const internalRangeMax = showInternalRangeContext ? item.unitCogsMax : null;
+  const internalEffectiveCogs = showInternalRangeContext ? item.effectiveCogs : null;
   const displayPrice = item.priceOverride ?? item.retailPrice;
   const hasOverride = item.priceOverride !== undefined;
 
@@ -153,10 +176,30 @@ function SortableItem({
         </div>
 
         <div className="mt-2 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {item.quantity.toFixed(2)} units × ${displayPrice.toFixed(2)} = $
-            {(displayPrice * item.quantity).toFixed(2)}
-          </span>
+          <div className="text-muted-foreground">
+            <div>
+              {item.quantity.toFixed(2)} units × ${displayPrice.toFixed(2)} = $
+              {(displayPrice * item.quantity).toFixed(2)}
+            </div>
+            {showInternalRangeContext && (
+              <div
+                className="mt-1 flex flex-wrap items-center gap-2 text-xs"
+                data-export-hidden="true"
+              >
+                <Badge variant="secondary" className="text-[10px] uppercase">
+                  Internal
+                </Badge>
+                <span>
+                  {INTERNAL_BASIS_LABELS[item.effectiveCogsBasis || "MID"]} basis
+                </span>
+                <span>
+                  Vendor COGS ${internalRangeMin?.toFixed(2)} to $
+                  {internalRangeMax?.toFixed(2)}
+                </span>
+                <span>Effective ${internalEffectiveCogs?.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
 
           {isEditing ? (
             <div className="flex items-center gap-2">
@@ -388,6 +431,9 @@ export function SalesSheetPreview({
       const canvas = await html2canvas(element, {
         scale: 2,
         backgroundColor: "#ffffff",
+        ignoreElements: current =>
+          current instanceof HTMLElement &&
+          current.dataset.exportHidden === "true",
       });
 
       const link = document.createElement("a");

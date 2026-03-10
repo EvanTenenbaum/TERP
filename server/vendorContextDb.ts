@@ -21,7 +21,11 @@ import {
   sales,
   brands,
   paymentHistory,
+  orders,
+  orderLineItems,
+  orderLineItemAllocations,
 } from "../drizzle/schema";
+import { resolveBatchCogs, type CogsRangeBasis } from "./cogsCalculator";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -57,7 +61,15 @@ export interface SupplyProduct {
   batchId: number;
   quantitySupplied: number;
   unitCogs: number;
+  cogsMode: "FIXED" | "RANGE";
+  unitCogsMin: number | null;
+  unitCogsMax: number | null;
+  effectiveCogsBasis: CogsRangeBasis;
   totalCogs: number;
+  belowRangeSaleCount: number;
+  belowRangeUnitsSold: number;
+  latestBelowRangeReason: string | null;
+  latestBelowRangeAt: string | null;
 }
 
 /**
@@ -125,7 +137,22 @@ export interface ActiveInventoryEntry {
   unitsAvailable: number;
   daysOld: number;
   unitCogs: number;
+  cogsMode: "FIXED" | "RANGE";
+  unitCogsMin: number | null;
+  unitCogsMax: number | null;
+  effectiveCogsBasis: CogsRangeBasis;
   batchStatus: string;
+  belowRangeSaleCount: number;
+  belowRangeUnitsSold: number;
+  latestBelowRangeReason: string | null;
+  latestBelowRangeAt: string | null;
+}
+
+interface BelowRangeSaleSummary {
+  belowRangeSaleCount: number;
+  belowRangeUnitsSold: number;
+  latestBelowRangeReason: string | null;
+  latestBelowRangeAt: string | null;
 }
 
 /**
@@ -202,11 +229,17 @@ export async function getVendorContext(
   }
 
   // 2. Get supply history (lots with batches)
+  const belowRangeSaleSummaryByBatch = await getBelowRangeSaleSummaryByBatch(
+    db,
+    clientId
+  );
+
   const supplyHistory = await getSupplyHistory(
     db,
     clientId,
     effectiveStartDate,
-    effectiveEndDate
+    effectiveEndDate,
+    belowRangeSaleSummaryByBatch
   );
 
   // 3. Calculate product performance metrics
@@ -222,7 +255,7 @@ export async function getVendorContext(
 
   // 5. Get active inventory if requested
   const activeInventory = includeActiveInventory
-    ? await getActiveInventory(db, clientId)
+    ? await getActiveInventory(db, clientId, belowRangeSaleSummaryByBatch)
     : undefined;
 
   // 6. Get payment history if requested
@@ -330,7 +363,8 @@ async function getSupplyHistory(
   db: Awaited<ReturnType<typeof getDb>>,
   clientId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  belowRangeSaleSummaryByBatch: Map<number, BelowRangeSaleSummary>
 ): Promise<SupplyHistoryEntry[]> {
   if (!db) return [];
 
@@ -366,6 +400,7 @@ async function getSupplyHistory(
         onHandQty: batches.onHandQty,
         unitCogs: batches.unitCogs,
         unitCogsMin: batches.unitCogsMin,
+        unitCogsMax: batches.unitCogsMax,
         cogsMode: batches.cogsMode,
       })
       .from(batches)
@@ -375,12 +410,18 @@ async function getSupplyHistory(
       );
 
     const supplyProducts: SupplyProduct[] = batchesData.map(b => {
-      // Calculate COGS based on mode
-      const unitCogs =
-        b.cogsMode === "FIXED"
-          ? parseFloat(b.unitCogs || "0")
-          : parseFloat(b.unitCogsMin || "0");
+      const resolvedCogs = resolveBatchCogs(
+        {
+          id: b.batchId,
+          cogsMode: b.cogsMode,
+          unitCogs: b.unitCogs,
+          unitCogsMin: b.unitCogsMin,
+          unitCogsMax: b.unitCogsMax,
+        },
+        { rangeBasis: "MID" }
+      );
       const qty = parseFloat(b.onHandQty || "0");
+      const belowRangeSummary = belowRangeSaleSummaryByBatch.get(b.batchId);
 
       return {
         productId: b.productId,
@@ -389,8 +430,16 @@ async function getSupplyHistory(
         batchCode: b.batchCode,
         batchId: b.batchId,
         quantitySupplied: qty,
-        unitCogs,
-        totalCogs: unitCogs * qty,
+        unitCogs: resolvedCogs.unitCogs,
+        cogsMode: b.cogsMode,
+        unitCogsMin: resolvedCogs.originalRangeMin,
+        unitCogsMax: resolvedCogs.originalRangeMax,
+        effectiveCogsBasis: resolvedCogs.effectiveCogsBasis,
+        totalCogs: resolvedCogs.unitCogs * qty,
+        belowRangeSaleCount: belowRangeSummary?.belowRangeSaleCount ?? 0,
+        belowRangeUnitsSold: belowRangeSummary?.belowRangeUnitsSold ?? 0,
+        latestBelowRangeReason: belowRangeSummary?.latestBelowRangeReason ?? null,
+        latestBelowRangeAt: belowRangeSummary?.latestBelowRangeAt ?? null,
       };
     });
 
@@ -577,7 +626,8 @@ function calculateAggregateMetrics(
  */
 async function getActiveInventory(
   db: Awaited<ReturnType<typeof getDb>>,
-  clientId: number
+  clientId: number,
+  belowRangeSaleSummaryByBatch: Map<number, BelowRangeSaleSummary>
 ): Promise<ActiveInventoryEntry[]> {
   if (!db) return [];
 
@@ -595,6 +645,7 @@ async function getActiveInventory(
       createdAt: batches.createdAt,
       unitCogs: batches.unitCogs,
       unitCogsMin: batches.unitCogsMin,
+      unitCogsMax: batches.unitCogsMax,
       cogsMode: batches.cogsMode,
       batchStatus: batches.batchStatus,
     })
@@ -617,14 +668,21 @@ async function getActiveInventory(
     const quarantine = parseFloat(inv.quarantineQty || "0");
     const available = onHand - reserved - quarantine;
 
-    const unitCogs =
-      inv.cogsMode === "FIXED"
-        ? parseFloat(inv.unitCogs || "0")
-        : parseFloat(inv.unitCogsMin || "0");
+    const resolvedCogs = resolveBatchCogs(
+      {
+        id: inv.batchId,
+        cogsMode: inv.cogsMode,
+        unitCogs: inv.unitCogs,
+        unitCogsMin: inv.unitCogsMin,
+        unitCogsMax: inv.unitCogsMax,
+      },
+      { rangeBasis: "MID" }
+    );
 
     const daysOld = Math.floor(
       (Date.now() - new Date(inv.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     );
+    const belowRangeSummary = belowRangeSaleSummaryByBatch.get(inv.batchId);
 
     return {
       batchId: inv.batchId,
@@ -635,10 +693,123 @@ async function getActiveInventory(
       brandName: inv.brandName,
       unitsAvailable: available,
       daysOld,
-      unitCogs,
+      unitCogs: resolvedCogs.unitCogs,
+      cogsMode: inv.cogsMode,
+      unitCogsMin: resolvedCogs.originalRangeMin,
+      unitCogsMax: resolvedCogs.originalRangeMax,
+      effectiveCogsBasis: resolvedCogs.effectiveCogsBasis,
       batchStatus: inv.batchStatus,
+      belowRangeSaleCount: belowRangeSummary?.belowRangeSaleCount ?? 0,
+      belowRangeUnitsSold: belowRangeSummary?.belowRangeUnitsSold ?? 0,
+      latestBelowRangeReason: belowRangeSummary?.latestBelowRangeReason ?? null,
+      latestBelowRangeAt: belowRangeSummary?.latestBelowRangeAt ?? null,
     };
   });
+}
+
+async function getBelowRangeSaleSummaryByBatch(
+  db: Awaited<ReturnType<typeof getDb>>,
+  clientId: number
+): Promise<Map<number, BelowRangeSaleSummary>> {
+  if (!db) return new Map();
+
+  const allocationRows = await db
+    .select({
+      batchId: orderLineItemAllocations.batchId,
+      belowRangeSaleCount: sql<number>`COUNT(*)`,
+      belowRangeUnitsSold: sql<number>`COALESCE(SUM(CAST(${orderLineItemAllocations.quantityAllocated} AS DECIMAL(15,2))), 0)`,
+      latestBelowRangeReason: sql<string | null>`SUBSTRING_INDEX(GROUP_CONCAT(${orderLineItems.belowRangeReason} ORDER BY ${orders.updatedAt} DESC SEPARATOR '||'), '||', 1)`,
+      latestBelowRangeAt: sql<string | null>`MAX(${orders.updatedAt})`,
+    })
+    .from(orderLineItemAllocations)
+    .innerJoin(
+      orderLineItems,
+      eq(orderLineItemAllocations.orderLineItemId, orderLineItems.id)
+    )
+    .innerJoin(orders, eq(orderLineItems.orderId, orders.id))
+    .innerJoin(batches, eq(orderLineItemAllocations.batchId, batches.id))
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .where(
+      and(
+        eq(lots.supplierClientId, clientId),
+        eq(orderLineItems.isBelowVendorRange, true),
+        eq(orders.orderType, "SALE"),
+        eq(orders.isDraft, false),
+        sql`${orders.deletedAt} IS NULL`,
+        sql`${batches.deletedAt} IS NULL`,
+        sql`${lots.deletedAt} IS NULL`,
+        sql`(${orders.saleStatus} IS NULL OR ${orders.saleStatus} <> 'CANCELLED')`
+      )
+    )
+    .groupBy(orderLineItemAllocations.batchId);
+
+  const unallocatedRows = await db
+    .select({
+      batchId: orderLineItems.batchId,
+      belowRangeSaleCount: sql<number>`COUNT(*)`,
+      belowRangeUnitsSold: sql<number>`COALESCE(SUM(CAST(${orderLineItems.quantity} AS DECIMAL(15,2))), 0)`,
+      latestBelowRangeReason: sql<string | null>`SUBSTRING_INDEX(GROUP_CONCAT(${orderLineItems.belowRangeReason} ORDER BY ${orders.updatedAt} DESC SEPARATOR '||'), '||', 1)`,
+      latestBelowRangeAt: sql<string | null>`MAX(${orders.updatedAt})`,
+    })
+    .from(orderLineItems)
+    .innerJoin(orders, eq(orderLineItems.orderId, orders.id))
+    .innerJoin(batches, eq(orderLineItems.batchId, batches.id))
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .where(
+      and(
+        eq(lots.supplierClientId, clientId),
+        eq(orderLineItems.isBelowVendorRange, true),
+        eq(orders.orderType, "SALE"),
+        eq(orders.isDraft, false),
+        sql`${orders.deletedAt} IS NULL`,
+        sql`${batches.deletedAt} IS NULL`,
+        sql`${lots.deletedAt} IS NULL`,
+        sql`(${orders.saleStatus} IS NULL OR ${orders.saleStatus} <> 'CANCELLED')`,
+        sql`NOT EXISTS (
+          SELECT 1
+          FROM order_line_item_allocations allocation
+          WHERE allocation.order_line_item_id = ${orderLineItems.id}
+        )`
+      )
+    )
+    .groupBy(orderLineItems.batchId);
+
+  const summaryByBatch = new Map<number, BelowRangeSaleSummary>();
+
+  for (const row of [...allocationRows, ...unallocatedRows]) {
+    const existing = summaryByBatch.get(row.batchId);
+    const nextSummary: BelowRangeSaleSummary = {
+      belowRangeSaleCount: Number(row.belowRangeSaleCount) || 0,
+      belowRangeUnitsSold: Number(row.belowRangeUnitsSold) || 0,
+      latestBelowRangeReason: row.latestBelowRangeReason || null,
+      latestBelowRangeAt: row.latestBelowRangeAt || null,
+    };
+
+    if (!existing) {
+      summaryByBatch.set(row.batchId, nextSummary);
+      continue;
+    }
+
+    const existingAt = existing.latestBelowRangeAt || "";
+    const nextAt = nextSummary.latestBelowRangeAt || "";
+
+    summaryByBatch.set(row.batchId, {
+      belowRangeSaleCount:
+        existing.belowRangeSaleCount + nextSummary.belowRangeSaleCount,
+      belowRangeUnitsSold:
+        existing.belowRangeUnitsSold + nextSummary.belowRangeUnitsSold,
+      latestBelowRangeReason:
+        nextAt >= existingAt
+          ? nextSummary.latestBelowRangeReason
+          : existing.latestBelowRangeReason,
+      latestBelowRangeAt:
+        nextAt >= existingAt
+          ? nextSummary.latestBelowRangeAt
+          : existing.latestBelowRangeAt,
+    });
+  }
+
+  return summaryByBatch;
 }
 
 /**
