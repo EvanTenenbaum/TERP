@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -104,7 +105,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
     const entityRoutes: Record<string, string> = {
       order: `/orders/${item.referenceId}`,
       invoice: `/accounting/invoices/${item.referenceId}`,
-      client: `/clients/${item.referenceId}`,
+      client: buildRelationshipProfilePath(Number(item.referenceId)),
       batch: `/inventory?batchId=${item.referenceId}`,
       inventory_batch: `/inventory?batchId=${item.referenceId}`,
       calendar_event: `/calendar?eventId=${item.referenceId}`,
@@ -181,14 +182,16 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
               {item.sourceType.replace("_", " ")}
             </Badge>
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+              {formatDistanceToNow(new Date(item.createdAt), {
+                addSuffix: true,
+              })}
             </span>
           </div>
         </div>
 
         {/* Actions */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
             <Button
               variant="ghost"
               size="icon"
@@ -203,7 +206,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
           <DropdownMenuContent align="end">
             {item.status !== "completed" && (
               <DropdownMenuItem
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   handleMarkCompleted();
                 }}
@@ -214,7 +217,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
             )}
             {!item.isArchived && (
               <DropdownMenuItem
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   handleArchive();
                 }}
@@ -224,7 +227,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 handleDelete();
               }}

@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchBadge } from "@/components/needs/MatchBadge";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { Lightbulb, ArrowRight, Loader2, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -132,7 +133,11 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
             <div
               key={`opp-${opp.clientId}`}
               className="flex items-start justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
-              onClick={() => setLocation(`/clients/${opp.clientId}?tab=needs`)}
+              onClick={() =>
+                setLocation(
+                  buildRelationshipProfilePath(opp.clientId, "sales-pricing")
+                )
+              }
             >
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">

@@ -1,18 +1,43 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams, useSearch } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
+import { toast } from "sonner";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Activity,
+  ArrowRightLeft,
+  CircleDollarSign,
+  Edit,
+  Receipt,
+  ShieldAlert,
+} from "lucide-react";
+import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
+import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
+import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
+import { SupplierProfileSection } from "@/components/clients/SupplierProfileSection";
+import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
+import { CommentWidget } from "@/components/comments/CommentWidget";
+import { BackButton } from "@/components/common/BackButton";
+import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
+import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
+import {
+  LinearWorkspacePanel,
+  LinearWorkspaceShell,
+} from "@/components/layout/LinearWorkspaceShell";
+import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
+import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
+import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
+import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -21,1458 +46,1615 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
-import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
-import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
-import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
-import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
-import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
-import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
-import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
-import { SupplierProfileSection } from "@/components/clients/SupplierProfileSection";
-import { CommentWidget } from "@/components/comments/CommentWidget";
-import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
-import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
-import { CustomerWishlistCard } from "@/components/clients/CustomerWishlistCard";
-import { BackButton } from "@/components/common/BackButton";
-import { AuditIcon } from "@/components/audit";
 import { PageSkeleton } from "@/components/ui/skeleton-loaders";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
-import { useOptimisticLocking } from "@/hooks/useOptimisticLocking";
 import {
-  Edit,
-  DollarSign,
-  TrendingUp,
-  AlertCircle,
-  Calendar,
-  Search,
-  Plus,
-  CheckCircle,
-  Settings,
-  BookOpen,
-  ChevronRight,
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  buildRelationshipProfilePath,
+  resolveRelationshipProfileSection,
+  type RelationshipProfileSection,
+} from "@/lib/relationshipProfile";
+import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+import type { RelationshipProfileMoneyData } from "@/types/relationshipProfile";
 
-// TER-626: Reduced to 2 primary tabs; old deep-link tab params map to these
-const TABBABLE_SECTIONS = new Set([
-  "overview",
-  "history",
-  // Legacy tab names kept for backward-compat deep links
-  "supplier",
-  "transactions",
-  "payments",
-  "pricing",
-  "needs",
-  "communications",
-  "calendar",
-  "notes",
-  "live-catalog",
-]);
+const PROFILE_TABS: Array<{
+  value: RelationshipProfileSection;
+  label: string;
+}> = [
+  { value: "overview", label: "Overview" },
+  { value: "sales-pricing", label: "Sales & Pricing" },
+  { value: "money", label: "Money" },
+  { value: "supply-inventory", label: "Supply & Inventory" },
+  { value: "activity", label: "Activity" },
+];
 
-// TER-626: Old tab names redirect to one of the 2 new tabs
-const LEGACY_TAB_MAP: Record<string, string> = {
-  supplier: "overview",
-  pricing: "overview",
-  needs: "overview",
-  communications: "overview",
-  calendar: "overview",
-  notes: "overview",
-  "live-catalog": "overview",
-  transactions: "history",
-  payments: "history",
+const formatMoney = (value: number | null | undefined) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value ?? 0);
+
+const formatDate = (value: string | null | undefined) => {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleString();
 };
 
-function getInitialClientTab(search: string): string {
-  const tabParam = new URLSearchParams(search).get("tab");
-  if (!tabParam) return "overview";
-  if (LEGACY_TAB_MAP[tabParam]) return LEGACY_TAB_MAP[tabParam];
-  if (TABBABLE_SECTIONS.has(tabParam)) return tabParam;
-  return "overview";
+const sourcePathForLedgerEntry = (
+  entry: RelationshipProfileMoneyData["ledgerTimeline"][number]
+) => {
+  switch (entry.sourceType) {
+    case "ORDER":
+      return `/orders?id=${entry.sourceId}`;
+    case "PAYMENT":
+      return `/accounting/payments?id=${entry.sourceId}`;
+    case "PURCHASE_ORDER":
+      return `/purchase-orders?id=${entry.sourceId}`;
+    default:
+      return null;
+  }
+};
+
+function MetricCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <Card className="border-border/70">
+      <CardContent className="p-4">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-1 text-xl font-semibold">{value}</p>
+        {hint ? (
+          <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
 }
 
-// TER-289: Typed interfaces to replace `any` in transaction/activity callbacks
-interface ClientTransaction {
-  id: number;
-  transactionNumber?: string | null;
-  transactionType: string;
-  transactionDate?: string | Date | null;
-  amount?: string | number | null;
-  paymentAmount?: string | number | null;
-  paymentStatus?: string | null;
-  paymentDate?: string | Date | null;
-  notes?: string | null;
+function EmptyCard({ message }: { message: string }) {
+  return (
+    <Card>
+      <CardContent className="py-10 text-sm text-muted-foreground">
+        {message}
+      </CardContent>
+    </Card>
+  );
 }
-
-interface ClientActivity {
-  id: number;
-  activityType: string;
-  description?: string | null;
-  createdAt?: string | Date | null;
-  userName?: string | null;
-}
-
-type TransactionType =
-  | "INVOICE"
-  | "PAYMENT"
-  | "QUOTE"
-  | "ORDER"
-  | "REFUND"
-  | "CREDIT";
 
 export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
   const search = useSearch();
   const [, setLocation] = useLocation();
-  const clientId = parseInt(params.id || "0", 10);
-  const [activeTab, setActiveTab] = useState(() => getInitialClientTab(search));
+  const clientId = Number(params.id);
+  const [activeSection, setActiveSection] =
+    useState<RelationshipProfileSection>(() =>
+      resolveRelationshipProfileSection(search)
+    );
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<ClientTransaction | null>(null);
-  const [transactionSearch, setTransactionSearch] = useState("");
-  const [paymentSearch, setPaymentSearch] = useState("");
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
-  const [newTag, setNewTag] = useState("");
-  const [showTagInput, setShowTagInput] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    RelationshipProfileMoneyData["transactionHistory"][number] | null
+  >(null);
+  const [selectedLedgerEntry, setSelectedLedgerEntry] = useState<
+    RelationshipProfileMoneyData["ledgerTimeline"][number] | null
+  >(null);
+  const [selectedPayment, setSelectedPayment] = useState<
+    RelationshipProfileMoneyData["paymentHistory"][number] | null
+  >(null);
+  const [moneyAction, setMoneyAction] = useState<"receive" | "pay" | null>(
+    null
+  );
+  const [transactionForm, setTransactionForm] = useState({
+    transactionDate: "",
+    amount: "",
+    paymentStatus: "PENDING",
+    paymentDate: "",
+    paymentAmount: "",
+    notes: "",
+  });
+  const [adjustmentForm, setAdjustmentForm] = useState({
+    amount: "",
+    description: "",
+    effectiveDate: new Date().toISOString().slice(0, 10),
+  });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    paymentTerms: "",
+    wishlist: "",
+    tags: "",
+    isBuyer: false,
+    isSeller: false,
+    isBrand: false,
+    isReferee: false,
+    isContractor: false,
+  });
 
-  useEffect(() => {
-    const nextTab = getInitialClientTab(search);
-    setActiveTab(currentTab => (currentTab === nextTab ? currentTab : nextTab));
-  }, [search]);
-
-  // Credit visibility settings
+  const utils = trpc.useUtils();
   const { shouldShowCreditWidgetInProfile } = useCreditVisibility();
 
-  // BUG-090 fix: Get utils for cache invalidation
-  const utils = trpc.useUtils();
+  useEffect(() => {
+    const nextSection = resolveRelationshipProfileSection(search);
+    setActiveSection(current =>
+      current === nextSection ? current : nextSection
+    );
 
-  // ST-026: Optimistic locking for concurrent edit detection
-  const { handleMutationError, ConflictDialogComponent } = useOptimisticLocking(
+    const paramsSearch = new URLSearchParams(search);
+    if (
+      clientId > 0 &&
+      paramsSearch.get("tab") &&
+      !paramsSearch.get("section")
+    ) {
+      setLocation(buildRelationshipProfilePath(clientId, nextSection));
+    }
+  }, [clientId, search, setLocation]);
+
+  const shellQuery = trpc.relationshipProfile.getShell.useQuery(
+    { clientId },
+    { enabled: Number.isInteger(clientId) && clientId > 0 }
+  );
+  const salesQuery = trpc.relationshipProfile.getSalesPricing.useQuery(
+    { clientId },
     {
-      entityType: "Client",
-      onRefresh: () => refetchClient(),
-      onDiscard: () => setEditDialogOpen(false),
+      enabled:
+        Number.isInteger(clientId) &&
+        clientId > 0 &&
+        activeSection === "sales-pricing",
     }
   );
+  const moneyQuery = trpc.relationshipProfile.getMoney.useQuery(
+    { clientId },
+    {
+      enabled:
+        Number.isInteger(clientId) && clientId > 0 && activeSection === "money",
+    }
+  );
+  const supplyQuery = trpc.relationshipProfile.getSupplyInventory.useQuery(
+    { clientId },
+    {
+      enabled:
+        Number.isInteger(clientId) &&
+        clientId > 0 &&
+        activeSection === "supply-inventory",
+    }
+  );
+  const activityQuery = trpc.relationshipProfile.getActivity.useQuery(
+    { clientId },
+    {
+      enabled:
+        Number.isInteger(clientId) &&
+        clientId > 0 &&
+        activeSection === "activity",
+    }
+  );
+  const noteIdQuery = trpc.clients.notes.getNoteId.useQuery(
+    { clientId },
+    { enabled: Number.isInteger(clientId) && clientId > 0 }
+  );
 
-  // Fetch client data
-  const {
-    data: client,
-    isLoading: clientLoading,
-    isError,
-    refetch: refetchClient,
-  } = trpc.clients.getById.useQuery({
-    clientId,
-  });
+  useEffect(() => {
+    const shell = shellQuery.data;
+    if (!shell) return;
 
-  // Fetch transactions
-  const {
-    data: transactions,
-    isLoading: transactionsLoading,
-    refetch: refetchTransactions,
-  } = trpc.clients.transactions.list.useQuery({
-    clientId,
-    search: transactionSearch || undefined,
-  });
+    setEditForm({
+      name: shell.name,
+      email: shell.email ?? "",
+      phone: shell.phone ?? "",
+      address: shell.address ?? "",
+      paymentTerms: shell.paymentTermsDays
+        ? String(shell.paymentTermsDays)
+        : "",
+      wishlist: shell.wishlist ?? "",
+      tags: shell.tags.join(", "),
+      isBuyer: shell.roles.includes("Customer"),
+      isSeller: shell.roles.includes("Supplier"),
+      isBrand: shell.roles.includes("Brand"),
+      isReferee: shell.roles.includes("Referee"),
+      isContractor: shell.roles.includes("Contractor"),
+    });
+  }, [shellQuery.data]);
 
-  // Fetch activity log
-  const { data: activities } = trpc.clients.activity.list.useQuery({
-    clientId,
-  });
+  useEffect(() => {
+    if (!selectedTransaction) return;
+    setTransactionForm({
+      transactionDate: selectedTransaction.transactionDate
+        ? new Date(selectedTransaction.transactionDate)
+            .toISOString()
+            .slice(0, 10)
+        : "",
+      amount: String(selectedTransaction.amount ?? ""),
+      paymentStatus: selectedTransaction.paymentStatus ?? "PENDING",
+      paymentDate: selectedTransaction.paymentDate
+        ? new Date(selectedTransaction.paymentDate).toISOString().slice(0, 10)
+        : "",
+      paymentAmount: String(selectedTransaction.paymentAmount ?? ""),
+      notes: selectedTransaction.notes ?? "",
+    });
+  }, [selectedTransaction]);
 
-  // Fetch client note ID
-  const { data: noteId } = trpc.clients.notes.getNoteId.useQuery({
-    clientId,
-  });
-
-  // Mutations
-  // BUG-090 fix: Add proper cache invalidation and refetch on success
-  // ST-026: Add optimistic locking error handling
   const updateClientMutation = trpc.clients.update.useMutation({
-    onSuccess: () => {
-      // Invalidate all client-related caches to ensure fresh data
-      utils.clients.getById.invalidate({ clientId });
-      utils.clients.list.invalidate();
-      // Refetch the current client to show updated data
-      refetchClient();
+    onSuccess: async () => {
+      await Promise.all([
+        utils.relationshipProfile.getShell.invalidate({ clientId }),
+        utils.clients.getById.invalidate({ clientId }),
+        utils.clients.list.invalidate(),
+      ]);
+      toast.success("Profile updated");
       setEditDialogOpen(false);
     },
     onError: error => {
-      // ST-026: Handle concurrent edit conflicts
-      if (!handleMutationError(error)) {
-        // If it's not an optimistic lock error, show generic error
-        console.error("Error updating client:", error);
-      }
+      toast.error(error.message);
     },
   });
-  const createTransactionMutation =
-    trpc.clients.transactions.create.useMutation({
-      onSuccess: () => {
-        refetchTransactions();
-        setTransactionDialogOpen(false);
+
+  const updateTransactionMutation =
+    trpc.clients.transactions.update.useMutation({
+      onSuccess: async () => {
+        await Promise.all([
+          utils.relationshipProfile.getMoney.invalidate({ clientId }),
+          utils.relationshipProfile.getShell.invalidate({ clientId }),
+        ]);
+        toast.success("Transaction updated");
+        setSelectedTransaction(null);
+      },
+      onError: error => {
+        toast.error(error.message);
       },
     });
-  const recordPaymentMutation =
-    trpc.clients.transactions.recordPayment.useMutation();
-  const addTagMutation = trpc.clients.tags.add.useMutation({
-    onSuccess: () => {
-      refetchClient();
-      setNewTag("");
-      setShowTagInput(false);
-    },
-  });
 
-  // TER-626: Tab validation — only "overview" and "history" are valid tabs now
-  useEffect(() => {
-    if (activeTab !== "overview" && activeTab !== "history") {
-      setActiveTab("overview");
-    }
-  }, [activeTab]);
+  const addLedgerAdjustmentMutation =
+    trpc.clientLedger.addLedgerAdjustment.useMutation({
+      onSuccess: async () => {
+        await Promise.all([
+          utils.relationshipProfile.getMoney.invalidate({ clientId }),
+          utils.relationshipProfile.getShell.invalidate({ clientId }),
+        ]);
+        toast.success(
+          moneyAction === "receive"
+            ? "Money received was added to the ledger"
+            : "Money paid was added to the ledger"
+        );
+        setMoneyAction(null);
+        setAdjustmentForm({
+          amount: "",
+          description: "",
+          effectiveDate: new Date().toISOString().slice(0, 10),
+        });
+      },
+      onError: error => {
+        toast.error(error.message);
+      },
+    });
 
-  if (clientLoading) {
+  const handleSectionChange = (section: RelationshipProfileSection) => {
+    setActiveSection(section);
+    setLocation(buildRelationshipProfilePath(clientId, section));
+  };
+
+  const shell = shellQuery.data;
+  const money = moneyQuery.data;
+  const moneySummary = money?.summary ?? shell?.financials.moneySummary;
+  const isCustomer = shell?.roles.includes("Customer") ?? false;
+  const isSupplier = shell?.roles.includes("Supplier") ?? false;
+
+  const commandStrip = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+        <Edit className="mr-2 h-4 w-4" />
+        Edit Profile
+      </Button>
+      <Button variant="outline" onClick={() => setMoneyAction("receive")}>
+        <CircleDollarSign className="mr-2 h-4 w-4" />
+        Receive Money
+      </Button>
+      <Button variant="outline" onClick={() => setMoneyAction("pay")}>
+        <ArrowRightLeft className="mr-2 h-4 w-4" />
+        Pay Money
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setLocation(`/clients/${clientId}/ledger`)}
+      >
+        <Receipt className="mr-2 h-4 w-4" />
+        Ledger
+      </Button>
+    </div>
+  );
+
+  const meta = shell
+    ? [
+        {
+          label:
+            moneySummary?.mode === "supplier"
+              ? "Payable Due"
+              : moneySummary?.mode === "hybrid"
+                ? "Net Position"
+                : "Receivable",
+          value: formatMoney(
+            moneySummary?.mode === "supplier"
+              ? moneySummary.payable.amountDue
+              : moneySummary?.mode === "hybrid"
+                ? moneySummary.netPosition
+                : shell.financials.balance.computedBalance
+          ),
+        },
+        {
+          label:
+            moneySummary?.mode === "supplier" ? "Paid Out" : "Credit Limit",
+          value: formatMoney(
+            moneySummary?.mode === "supplier"
+              ? moneySummary.payable.amountPaid
+              : shell.financials.creditLimit
+          ),
+        },
+        {
+          label: "Open Work",
+          value: `${shell.openArtifacts.orderDrafts + shell.openArtifacts.salesSheetDrafts} drafts`,
+        },
+        {
+          label: "Last Touch",
+          value: formatDate(shell.lastTouchAt),
+        },
+      ]
+    : [];
+
+  const inspectorOpen = Boolean(
+    selectedTransaction || selectedLedgerEntry || selectedPayment || moneyAction
+  );
+
+  if (shellQuery.isLoading) {
     return <PageSkeleton variant="dashboard" />;
   }
 
-  if (isError || !client) {
+  if (!shell) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <div className="text-lg font-medium">Client not found</div>
-          <p className="text-sm text-muted-foreground mt-2">
-            The client you are looking for does not exist or could not be
-            loaded.
-          </p>
-        </div>
+      <div className="space-y-4 p-4 md:p-6">
+        <BackButton />
+        <EmptyCard message="This relationship profile could not be loaded." />
       </div>
     );
   }
 
-  // Get client type badges
-  const getClientTypeBadges = () => {
-    const badges: {
-      label: string;
-      variant: "default" | "secondary" | "outline";
-    }[] = [];
-    if (client.isBuyer) badges.push({ label: "Buyer", variant: "default" });
-    if (client.isSeller)
-      badges.push({ label: "Supplier", variant: "secondary" });
-    if (client.isBrand) badges.push({ label: "Brand", variant: "outline" });
-    if (client.isReferee)
-      badges.push({ label: "Referee", variant: "secondary" });
-    if (client.isContractor)
-      badges.push({ label: "Contractor", variant: "outline" });
-    return badges;
-  };
-
-  // Format currency
-  const formatCurrency = (value: string | number) => {
-    const num = typeof value === "string" ? parseFloat(value) : value;
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(num);
-  };
-
-  // Format percentage
-  const formatPercentage = (value: string | number) => {
-    const num = typeof value === "string" ? parseFloat(value) : value;
-    return `${num.toFixed(2)}%`;
-  };
-
-  // Format date
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Get payment status badge
-  const getPaymentStatusBadge = (status: string) => {
-    const variants: Record<
-      string,
-      "default" | "secondary" | "destructive" | "outline"
-    > = {
-      PAID: "default",
-      PENDING: "secondary",
-      OVERDUE: "destructive",
-      PARTIAL: "outline",
-    };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
-  };
-
-  // Get transaction type badge
-  const getTransactionTypeBadge = (type: string) => {
-    const variants: Record<
-      string,
-      "default" | "secondary" | "destructive" | "outline"
-    > = {
-      INVOICE: "default",
-      PAYMENT: "default",
-      QUOTE: "secondary",
-      ORDER: "outline",
-      REFUND: "destructive",
-      CREDIT: "outline",
-    };
-    return <Badge variant={variants[type] || "outline"}>{type}</Badge>;
-  };
-
-  // Filter paid transactions for payment history
-  const paidTransactions =
-    transactions?.filter(
-      (txn: ClientTransaction) =>
-        txn.paymentStatus === "PAID" && txn.paymentDate
-    ) || [];
-
-  // Filter by payment search
-  const filteredPayments = paidTransactions.filter((txn: ClientTransaction) => {
-    if (!paymentSearch) return true;
-    return (
-      txn.transactionNumber
-        ?.toLowerCase()
-        .includes(paymentSearch.toLowerCase()) ||
-      txn.transactionType?.toLowerCase().includes(paymentSearch.toLowerCase())
-    );
-  });
-
-  // Handle record payment
-  const handleRecordPayment = async (
-    transactionId: number,
-    paymentAmount: number,
-    paymentDate: Date
-  ) => {
-    await recordPaymentMutation.mutateAsync({
-      transactionId,
-      paymentAmount,
-      paymentDate,
-    });
-    refetchTransactions();
-    setPaymentDialogOpen(false);
-    setSelectedTransaction(null);
-  };
-
-  const handleAddTag = async () => {
-    const tag = newTag.trim();
-    if (!tag) return;
-    await addTagMutation.mutateAsync({ clientId, tag });
-  };
-
   return (
-    <PageErrorBoundary pageName="ClientProfile">
-      <div className="space-y-6">
-        {/* Breadcrumb and Header */}
-        <BackButton label="Back to Clients" to="/clients" />
+    <div className="space-y-4 px-4 py-4 md:px-6">
+      <BackButton />
 
-        {/* Client Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-3xl" data-testid="client-id">
-                    {client.teriCode}
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    {getClientTypeBadges().map(badge => (
-                      <Badge key={badge.label} variant={badge.variant}>
-                        {badge.label}
-                      </Badge>
-                    ))}
+      <LinearWorkspaceShell
+        title={shell.name}
+        description="Unified customer and supplier workspace with money, pricing, inventory, and activity in one place."
+        section="Relationships"
+        activeTab={activeSection}
+        tabs={PROFILE_TABS}
+        onTabChange={handleSectionChange}
+        meta={meta}
+        commandStrip={commandStrip}
+      >
+        <LinearWorkspacePanel value="overview">
+          <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Identity</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium">Contact</p>
+                    <p>{shell.email || "No email on file"}</p>
+                    <p>{shell.phone || "No phone on file"}</p>
+                    <p>{shell.address || "No address on file"}</p>
                   </div>
-                </div>
-                <CardDescription className="text-base">
-                  {client.name}
-                </CardDescription>
-                {client.email && (
-                  <p className="text-sm text-muted-foreground">
-                    {client.email}
-                  </p>
-                )}
-                {client.phone && (
-                  <p className="text-sm text-muted-foreground">
-                    {client.phone}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {client.vipPortalEnabled && (
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      setLocation(`/clients/${clientId}/vip-portal-config`)
-                    }
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    VIP Portal Config
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setLocation(`/clients/${clientId}/ledger`)}
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  View Ledger
-                </Button>
-                <Button onClick={() => setEditDialogOpen(true)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Client
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(client.totalSpent || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Profit
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(client.totalProfit || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Avg Profit Margin
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatPercentage(client.avgProfitMargin || 0)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Amount Owed</CardTitle>
-              <div className="flex items-center gap-1">
-                <AuditIcon
-                  type="client"
-                  entityId={clientId}
-                  fieldName="totalOwed"
-                />
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-2xl font-bold ${parseFloat(client.totalOwed as string) > 0 ? "text-destructive" : ""}`}
-                data-testid="total-owed"
-              >
-                {formatCurrency(client.totalOwed || 0)}
-              </div>
-              {client.oldestDebtDays && client.oldestDebtDays > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Oldest: {client.oldestDebtDays} days
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* TER-626: Tabbed Content — reduced to 2 tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
-            <TabsList className="inline-flex w-full min-w-max md:w-auto h-auto gap-1">
-              <TabsTrigger
-                value="overview"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                data-testid="transactions-tab"
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-              >
-                History
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* TER-626: Overview Tab — combined key info + collapsible sections */}
-          <TabsContent value="overview" className="space-y-4">
-            {/* Credit Status Card (only for buyers with visibility enabled) */}
-            {client.isBuyer && shouldShowCreditWidgetInProfile && (
-              <CreditStatusCard
-                clientId={clientId}
-                clientName={client.name}
-                showOverrideButton={true}
-                showRecalculateButton={true}
-              />
-            )}
-
-            {/* Purchase Patterns Widget (only for buyers) */}
-            {client.isBuyer && <PurchasePatternsWidget clientId={clientId} />}
-
-            {/* VIP Portal Settings (only for buyers) */}
-            {client.isBuyer && (
-              <VIPPortalSettings
-                clientId={clientId}
-                clientName={client.name}
-                vipPortalEnabled={client.vipPortalEnabled || false}
-                vipPortalLastLogin={client.vipPortalLastLogin}
-              />
-            )}
-
-            {/* Customer Wishlist (WS-015) - only for buyers */}
-            {client.isBuyer && (
-              <CustomerWishlistCard
-                clientId={clientId}
-                wishlist={client.wishlist || ""}
-                version={client.version}
-                onRefresh={refetchClient}
-              />
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      TERI Code
-                    </Label>
-                    <p className="text-base">{client.teriCode}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Name
-                    </Label>
-                    <p className="text-base">{client.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Email
-                    </Label>
-                    <p className="text-base">{client.email || "-"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Phone
-                    </Label>
-                    <p className="text-base">{client.phone || "-"}</p>
-                  </div>
-                  <div className="col-span-2" data-testid="tags-section">
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Address
-                    </Label>
-                    <p className="text-base">{client.address || "-"}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Tags
-                    </Label>
-                    <div
-                      className="flex flex-wrap gap-2 mt-1"
-                      data-testid="tags-list"
-                    >
-                      {client.tags &&
-                      Array.isArray(client.tags) &&
-                      client.tags.length > 0 ? (
-                        (client.tags as string[]).map(tag => (
-                          <Badge key={tag} variant="outline">
-                            {tag}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground">No tags</span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {showTagInput ? (
-                        <>
-                          <Input
-                            data-testid="tag-input"
-                            value={newTag}
-                            onChange={e => setNewTag(e.target.value)}
-                            placeholder="Enter tag"
-                            className="w-48"
-                          />
-                          <Button
-                            size="sm"
-                            data-testid="save-tag-btn"
-                            onClick={handleAddTag}
-                            disabled={
-                              addTagMutation.isPending || !newTag.trim()
-                            }
-                          >
-                            {addTagMutation.isPending
-                              ? "Saving..."
-                              : "Save Tag"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setShowTagInput(false);
-                              setNewTag("");
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          data-testid="add-tag-btn"
-                          onClick={() => setShowTagInput(true)}
-                        >
-                          Add Tag
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {activities && activities.length > 0 ? (
                   <div className="space-y-3">
-                    {activities.slice(0, 5).map((activity: ClientActivity) => (
+                    <div>
+                      <p className="text-sm font-medium">Roles</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {shell.roles.map(role => (
+                          <Badge key={role} variant="secondary">
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium">Referrer</p>
+                      <p className="mt-1 text-muted-foreground">
+                        {shell.referrer?.name || "No referrer assigned"}
+                      </p>
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-medium">Tags</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {shell.tags.length ? (
+                          shell.tags.map(tag => (
+                            <Badge key={tag} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground">
+                            No tags yet
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Signals</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {shell.alerts.length ? (
+                    shell.alerts.map(alert => (
                       <div
-                        key={activity.id}
-                        className="flex items-start gap-3 text-sm"
+                        key={alert.label}
+                        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2"
                       >
-                        <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {activity.activityType.replace(/_/g, " ")}
-                          </p>
-                          <p className="text-muted-foreground">
-                            by {activity.userName || "Unknown"} •{" "}
-                            {activity.createdAt
-                              ? formatDate(activity.createdAt)
-                              : "-"}
-                          </p>
+                        <div className="flex items-start gap-2">
+                          <ShieldAlert className="mt-0.5 h-4 w-4 text-amber-700" />
+                          <div>
+                            <p className="text-sm font-medium text-amber-950">
+                              {alert.label}
+                            </p>
+                            <p className="text-xs text-amber-900/75">
+                              {alert.detail}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No active risk flags on this profile.
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <MetricCard
+                      label="VIP Portal"
+                      value={shell.vipPortalEnabled ? "Enabled" : "Disabled"}
+                    />
+                    <MetricCard
+                      label="Last Login"
+                      value={
+                        shell.vipPortalLastLogin
+                          ? formatDate(shell.vipPortalLastLogin)
+                          : "Never"
+                      }
+                    />
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Lifetime Value"
+                value={formatMoney(shell.financials.lifetimeValue)}
+              />
+              <MetricCard
+                label="Profit"
+                value={formatMoney(shell.financials.profitability)}
+              />
+              <MetricCard
+                label="Average Margin"
+                value={`${shell.financials.averageMarginPercent.toFixed(1)}%`}
+              />
+              <MetricCard
+                label="Open Quotes"
+                value={String(shell.openArtifacts.openQuotes)}
+              />
+            </div>
+
+            {shell.wishlist ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Wishlist & Notes</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {shell.wishlist}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {isCustomer ? (
+              <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                <VIPPortalSettings
+                  clientId={clientId}
+                  clientName={shell.name}
+                  vipPortalEnabled={shell.vipPortalEnabled}
+                  vipPortalLastLogin={shell.vipPortalLastLogin}
+                />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Live Catalog & Interest Intake
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <LiveCatalogConfig clientId={clientId} />
+                  </CardContent>
+                </Card>
+              </div>
+            ) : null}
+
+            {isSupplier ? (
+              <SupplierProfileSection
+                clientId={clientId}
+                clientName={shell.name}
+              />
+            ) : null}
+          </div>
+        </LinearWorkspacePanel>
+
+        <LinearWorkspacePanel value="sales-pricing">
+          <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Commercial Feed</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {salesQuery.data?.mergedArtifacts?.length ? (
+                      salesQuery.data.mergedArtifacts.map(item => (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between gap-3 rounded-xl border border-border/70 p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {item.label}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {item.sublabel}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right text-xs text-muted-foreground">
+                            <p>{formatMoney(item.amount)}</p>
+                            <p>{formatDate(item.updatedAt)}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No sales sheets or order drafts are attached to this
+                        profile yet.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Wishlist Snapshot
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {salesQuery.data?.wishlist ? (
+                      <div className="rounded-xl bg-muted/40 p-3 text-sm text-muted-foreground">
+                        {salesQuery.data.wishlist}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No wishlist notes are recorded yet.
+                      </p>
+                    )}
+                    {salesQuery.data?.needs?.length ? (
+                      <div className="rounded-xl border border-border/70 p-3 text-sm">
+                        <p className="font-medium">
+                          {salesQuery.data.needs.length} active need
+                          {salesQuery.data.needs.length === 1 ? "" : "s"}
+                        </p>
+                        <p className="mt-1 text-muted-foreground">
+                          Use the needs workspace below to create, match, and
+                          convert demand without leaving the profile.
+                        </p>
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-4">
+                <PricingConfigTab
+                  clientId={clientId}
+                  onProfileApplied={() => {
+                    void Promise.all([
+                      utils.relationshipProfile.getSalesPricing.invalidate({
+                        clientId,
+                      }),
+                      utils.relationshipProfile.getShell.invalidate({
+                        clientId,
+                      }),
+                    ]);
+                  }}
+                />
+                <Button
+                  className="w-full"
+                  onClick={() =>
+                    setLocation(
+                      buildSalesWorkspacePath("create-order", { clientId })
+                    )
+                  }
+                >
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  Start Sales Order
+                </Button>
+              </div>
+            </div>
+
+            {isCustomer ? <ClientNeedsTab clientId={clientId} /> : null}
+          </div>
+        </LinearWorkspacePanel>
+
+        <LinearWorkspacePanel value="money">
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {moneySummary?.mode === "supplier" ? (
+                <>
+                  <MetricCard
+                    label="Payable Due"
+                    value={formatMoney(moneySummary.payable.amountDue)}
+                  />
+                  <MetricCard
+                    label="Paid Out"
+                    value={formatMoney(moneySummary.payable.amountPaid)}
+                  />
+                  <MetricCard
+                    label="Open Payables"
+                    value={String(moneySummary.payable.openPayableCount)}
+                  />
+                </>
+              ) : moneySummary?.mode === "hybrid" ? (
+                <>
+                  <MetricCard
+                    label="Receivable"
+                    value={formatMoney(moneySummary.receivable.computedBalance)}
+                  />
+                  <MetricCard
+                    label="Payable Due"
+                    value={formatMoney(moneySummary.payable.amountDue)}
+                  />
+                  <MetricCard
+                    label="Net Position"
+                    value={formatMoney(moneySummary.netPosition)}
+                  />
+                </>
+              ) : (
+                <>
+                  <MetricCard
+                    label="Receivable"
+                    value={formatMoney(
+                      money?.balance.computedBalance ??
+                        shell.financials.balance.computedBalance
+                    )}
+                  />
+                  <MetricCard
+                    label="Stored Balance"
+                    value={formatMoney(
+                      money?.balance.storedBalance ??
+                        shell.financials.balance.storedBalance
+                    )}
+                    hint={`Variance ${formatMoney(
+                      money?.balance.discrepancy ??
+                        shell.financials.balance.discrepancy
+                    )}`}
+                  />
+                  <MetricCard
+                    label="Credit Limit"
+                    value={formatMoney(
+                      money?.credit?.creditLimit ?? shell.financials.creditLimit
+                    )}
+                  />
+                </>
+              )}
+              <MetricCard
+                label="Ledger Net"
+                value={formatMoney(money?.ledgerTotals.netBalance)}
+              />
+            </div>
+
+            {shouldShowCreditWidgetInProfile && isCustomer ? (
+              <CreditStatusCard clientId={clientId} clientName={shell.name} />
+            ) : null}
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Transaction History</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Click a row to edit supported transactions.
+                </p>
+              </CardHeader>
+              <CardContent>
+                {money?.transactionHistory.length ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {money.transactionHistory.map(transaction => (
+                        <TableRow
+                          key={transaction.id}
+                          className="cursor-pointer"
+                          onClick={() => setSelectedTransaction(transaction)}
+                        >
+                          <TableCell>{transaction.transactionType}</TableCell>
+                          <TableCell>
+                            {transaction.transactionNumber ||
+                              `#${transaction.id}`}
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(transaction.transactionDate)}
+                          </TableCell>
+                          <TableCell>
+                            {transaction.paymentStatus || "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatMoney(transaction.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 ) : (
-                  <p className="text-muted-foreground text-center py-4">
-                    No activity yet
+                  <p className="text-sm text-muted-foreground">
+                    No editable transaction history is stored on this profile.
                   </p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Comments */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Comments</CardTitle>
-                <CardDescription>
-                  Team notes and discussions about this client
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CommentWidget
-                  commentableType="client"
-                  commentableId={clientId}
-                />
-              </CardContent>
-            </Card>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Payment History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {money?.paymentHistory.length ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Payment</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {money.paymentHistory.map(payment => (
+                          <TableRow
+                            key={payment.id}
+                            className="cursor-pointer"
+                            onClick={() => setSelectedPayment(payment)}
+                          >
+                            <TableCell>{payment.paymentNumber}</TableCell>
+                            <TableCell>
+                              {formatDate(payment.paymentDate)}
+                            </TableCell>
+                            <TableCell>{payment.paymentMethod}</TableCell>
+                            <TableCell className="text-right">
+                              {formatMoney(payment.amount)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No payments are linked to this relationship yet.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* TER-626: Collapsible sections absorbed into Overview */}
-            {client.isSeller && (
-              <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-                <CollapsibleTrigger asChild>
-                  <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                    <CardHeader className="py-3">
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                        <CardTitle className="text-base">
-                          Supplier Profile
-                        </CardTitle>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Ledger Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {money?.ledgerTimeline.length ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Entry</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Net</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {money.ledgerTimeline.map(entry => (
+                          <TableRow
+                            key={entry.id}
+                            className="cursor-pointer"
+                            onClick={() => setSelectedLedgerEntry(entry)}
+                          >
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{entry.label}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {entry.transactionType}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{formatDate(entry.date)}</TableCell>
+                            <TableCell className="text-right">
+                              {entry.netEffect > 0 ? "+" : ""}
+                              {formatMoney(entry.netEffect)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No ledger activity has been generated yet.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </LinearWorkspacePanel>
+
+        <LinearWorkspacePanel value="supply-inventory">
+          <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">System Inventory</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {supplyQuery.data?.systemInventory.length ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>SKU</TableHead>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">On Hand</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {supplyQuery.data.systemInventory.map(item => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.sku}</TableCell>
+                            <TableCell>{item.productName}</TableCell>
+                            <TableCell>{item.status}</TableCell>
+                            <TableCell className="text-right">
+                              {item.onHandQty.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No inventory is visible right now.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Customer Needs</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {supplyQuery.data?.buyerNeeds.length ? (
+                    supplyQuery.data.buyerNeeds.map(need => (
+                      <div
+                        key={need.id}
+                        className="rounded-xl border border-border/70 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium">{need.label}</p>
+                          <Badge variant="outline">{need.priority}</Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {need.status} · Updated {formatDate(need.updatedAt)}
+                        </p>
                       </div>
-                    </CardHeader>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No active needs are attached to this customer.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {shell.roles.includes("Supplier") && supplyQuery.data?.supplier ? (
+              <div className="space-y-4">
+                {supplyQuery.data.supplier.contextError ? (
+                  <Card className="border-amber-300 bg-amber-50">
+                    <CardContent className="py-4 text-sm text-amber-950">
+                      Supplier context metrics could not be loaded:{" "}
+                      {supplyQuery.data.supplier.contextError}
+                    </CardContent>
                   </Card>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2">
-                  <SupplierProfileSection
-                    clientId={clientId}
-                    clientName={client.name}
+                ) : null}
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <MetricCard
+                    label="Lots Received"
+                    value={String(
+                      supplyQuery.data.supplier.context?.aggregateMetrics
+                        .totalLotsReceived ?? 0
+                    )}
                   />
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+                  <MetricCard
+                    label="Units Supplied"
+                    value={String(
+                      supplyQuery.data.supplier.context?.aggregateMetrics
+                        .totalUnitsSupplied ?? 0
+                    )}
+                  />
+                  <MetricCard
+                    label="Units Sold"
+                    value={String(
+                      supplyQuery.data.supplier.context?.aggregateMetrics
+                        .totalUnitsSold ?? 0
+                    )}
+                  />
+                  <MetricCard
+                    label="Revenue"
+                    value={formatMoney(
+                      supplyQuery.data.supplier.context?.aggregateMetrics
+                        .totalRevenue
+                    )}
+                  />
+                </div>
 
-            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-              <CollapsibleTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                  <CardHeader className="py-3">
-                    <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Card>
+                    <CardHeader>
                       <CardTitle className="text-base">
-                        Pricing Config
+                        Supplier Batches
                       </CardTitle>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <PricingConfigTab clientId={clientId} />
-              </CollapsibleContent>
-            </Collapsible>
+                    </CardHeader>
+                    <CardContent>
+                      {supplyQuery.data.supplier.batches.length ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>SKU</TableHead>
+                              <TableHead>Product</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right">
+                                On Hand
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {supplyQuery.data.supplier.batches.map(batch => (
+                              <TableRow key={batch.id}>
+                                <TableCell>{batch.sku}</TableCell>
+                                <TableCell>{batch.productName}</TableCell>
+                                <TableCell>{batch.status}</TableCell>
+                                <TableCell className="text-right">
+                                  {batch.onHandQty.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No active supplier batches were found.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-              <CollapsibleTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                  <CardHeader className="py-3">
-                    <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                  <Card>
+                    <CardHeader>
                       <CardTitle className="text-base">
-                        Needs & Wishlist
+                        Purchase Orders
                       </CardTitle>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-4">
-                <ClientNeedsTab clientId={clientId} />
-              </CollapsibleContent>
-            </Collapsible>
+                    </CardHeader>
+                    <CardContent>
+                      {supplyQuery.data.supplier.purchaseOrders.length ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>PO</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead className="text-right">
+                                Total
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {supplyQuery.data.supplier.purchaseOrders.map(
+                              po => (
+                                <TableRow key={po.id}>
+                                  <TableCell>{po.poNumber}</TableCell>
+                                  <TableCell>{po.status}</TableCell>
+                                  <TableCell>
+                                    {formatDate(po.orderDate)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatMoney(po.total)}
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            )}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No purchase orders are linked to this supplier.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </LinearWorkspacePanel>
 
-            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-              <CollapsibleTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                  <CardHeader className="py-3">
-                    <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                      <CardTitle className="text-base">
-                        Communications
-                      </CardTitle>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <CommunicationTimeline
-                  clientId={clientId}
-                  onAddClick={() => setCommunicationModalOpen(true)}
-                />
-              </CollapsibleContent>
-            </Collapsible>
+        <LinearWorkspacePanel value="activity">
+          <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+              <CommunicationTimeline
+                clientId={clientId}
+                onAddClick={() => setCommunicationModalOpen(true)}
+              />
 
-            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-              <CollapsibleTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                  <CardHeader className="py-3">
-                    <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                      <CardTitle className="text-base">Calendar</CardTitle>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {activityQuery.data?.activity.length ? (
+                    activityQuery.data.activity.map(item => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-border/70 p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium">
+                            {item.activityType.replace(/_/g, " ")}
+                          </p>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {item.userName || "System"} ·{" "}
+                          {formatDate(item.createdAt)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No activity has been logged yet.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+              <div className="space-y-4">
                 <ClientCalendarTab clientId={clientId} />
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-              <CollapsibleTrigger asChild>
-                <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                  <CardHeader className="py-3">
-                    <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                      <CardTitle className="text-base">Notes</CardTitle>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
                 <Card>
-                  <CardContent className="pt-4">
-                    <div className="h-[400px]">
-                      <FreeformNoteWidget noteId={noteId || undefined} />
-                    </div>
+                  <CardHeader>
+                    <CardTitle className="text-base">Comments</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CommentWidget
+                      commentableType="client"
+                      commentableId={clientId}
+                    />
                   </CardContent>
                 </Card>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {client.isBuyer && (
-              <Collapsible className="[&[data-state=open]>div>svg]:rotate-90">
-                <CollapsibleTrigger asChild>
-                  <Card className="cursor-pointer hover:bg-muted/30 transition-colors">
-                    <CardHeader className="py-3">
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                        <CardTitle className="text-base">
-                          Live Catalog
-                        </CardTitle>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2">
-                  <LiveCatalogConfig clientId={clientId} />
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-          </TabsContent>
-
-          {/* TER-626: History Tab — transactions + payments combined */}
-          <TabsContent value="history" className="space-y-4">
-            {/* Transactions Section */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Transaction History</CardTitle>
-                      <CardDescription>
-                        All transactions (invoices, quotes, orders, etc.)
-                      </CardDescription>
-                    </div>
-                    <Button
-                      data-testid="add-transaction-btn"
-                      onClick={() => setTransactionDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Transaction
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent
-                  className="space-y-4"
-                  data-testid="transactions-list"
-                >
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search transactions..."
-                      value={transactionSearch}
-                      onChange={e => setTransactionSearch(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-
-                  {/* Transactions Table */}
-                  {transactionsLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Loading transactions...
-                    </div>
-                  ) : !transactions || transactions.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-lg font-medium">
-                        No transactions found
-                      </p>
-                      <p className="text-sm mt-2">
-                        Add a transaction to get started
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Transaction #</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead>Payment Status</TableHead>
-                            <TableHead>Notes</TableHead>
-                            <TableHead>Audit</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {transactions.map((txn: ClientTransaction) => (
-                            <TableRow
-                              key={txn.id}
-                              data-testid={`transaction-row-${txn.id}`}
-                              data-status={txn.paymentStatus}
-                            >
-                              <TableCell className="font-medium">
-                                {txn.transactionNumber || "-"}
-                              </TableCell>
-                              <TableCell>
-                                {getTransactionTypeBadge(txn.transactionType)}
-                              </TableCell>
-                              <TableCell>
-                                {txn.transactionDate
-                                  ? formatDate(txn.transactionDate)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                {txn.amount !== null && txn.amount !== undefined
-                                  ? formatCurrency(txn.amount)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>
-                                {getPaymentStatusBadge(
-                                  txn.paymentStatus || "PENDING"
-                                )}
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate">
-                                {txn.notes || "-"}
-                              </TableCell>
-                              <TableCell>
-                                <AuditIcon
-                                  entityType="transaction"
-                                  entityId={txn.id}
-                                  size="sm"
-                                />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {txn.paymentStatus !== "PAID" && (
-                                  <Button
-                                    data-testid="record-payment-btn"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedTransaction(txn);
-                                      setPaymentDialogOpen(true);
-                                    }}
-                                  >
-                                    Record Payment
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Payments Section */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <div>
-                    <CardTitle>Payment History</CardTitle>
-                    <CardDescription>
-                      All completed payments for this client
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search payments..."
-                      value={paymentSearch}
-                      onChange={e => setPaymentSearch(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-
-                  {/* Payments Table */}
-                  {transactionsLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Loading payments...
-                    </div>
-                  ) : filteredPayments.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-lg font-medium">No payments found</p>
-                      <p className="text-sm mt-2">
-                        Payments will appear here once transactions are marked
-                        as paid
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Transaction #</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Transaction Date</TableHead>
-                            <TableHead>Payment Date</TableHead>
-                            <TableHead className="text-right">
-                              Amount Paid
-                            </TableHead>
-                            <TableHead className="text-right">
-                              Transaction Amount
-                            </TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredPayments.map((txn: ClientTransaction) => (
-                            <TableRow key={txn.id}>
-                              <TableCell className="font-medium">
-                                {txn.transactionNumber || "-"}
-                              </TableCell>
-                              <TableCell>
-                                {getTransactionTypeBadge(txn.transactionType)}
-                              </TableCell>
-                              <TableCell>
-                                {txn.transactionDate
-                                  ? formatDate(txn.transactionDate)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {txn.paymentDate
-                                  ? formatDate(txn.paymentDate)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="text-right font-medium text-green-600">
-                                {(txn.paymentAmount ?? txn.amount) !== null &&
-                                (txn.paymentAmount ?? txn.amount) !== undefined
-                                  ? formatCurrency(
-                                      txn.paymentAmount ?? txn.amount ?? 0
-                                    )
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {txn.amount !== null && txn.amount !== undefined
-                                  ? formatCurrency(txn.amount)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                  <span className="text-green-600 font-medium">
-                                    Paid
-                                  </span>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Add Communication Modal */}
-        <AddCommunicationModal
-          clientId={clientId}
-          open={communicationModalOpen}
-          onOpenChange={setCommunicationModalOpen}
-          onSuccess={() => {
-            // Refetch communications will happen automatically via tRPC
-          }}
-        />
-
-        {/* Record Payment Dialog */}
-        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-          <DialogContent data-testid="payment-form">
-            <DialogHeader>
-              <DialogTitle>Record Payment</DialogTitle>
-              <DialogDescription>
-                Record a payment for transaction{" "}
-                {selectedTransaction?.transactionNumber}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const paymentAmount = parseFloat(
-                  formData.get("paymentAmount") as string
-                );
-                const paymentDate = new Date(
-                  formData.get("paymentDate") as string
-                );
-                if (!selectedTransaction) return;
-                handleRecordPayment(
-                  selectedTransaction.id,
-                  paymentAmount,
-                  paymentDate
-                );
-              }}
-            >
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="paymentAmount">Payment Amount</Label>
-                  <Input
-                    id="paymentAmount"
-                    name="paymentAmount"
-                    type="number"
-                    step="0.01"
-                    defaultValue={selectedTransaction?.amount || ""}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="paymentDate">Payment Date</Label>
-                  <Input
-                    id="paymentDate"
-                    name="paymentDate"
-                    type="date"
-                    defaultValue={new Date().toISOString().split("T")[0]}
-                    required
-                  />
-                </div>
               </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setPaymentDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" data-testid="submit-payment-btn">
-                  Record Payment
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
 
-        {/* Edit Client Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="w-full sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Client</DialogTitle>
-              <DialogDescription>
-                Update client information for {client.teriCode}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
+              <FreeformNoteWidget noteId={noteIdQuery.data || undefined} />
+            </div>
+          </div>
+        </LinearWorkspacePanel>
+      </LinearWorkspaceShell>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Relationship Profile</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <Label htmlFor="profile-name">Name</Label>
+              <Input
+                id="profile-name"
+                value={editForm.name}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="profile-email">Email</Label>
+              <Input
+                id="profile-email"
+                value={editForm.email}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="profile-phone">Phone</Label>
+              <Input
+                id="profile-phone"
+                value={editForm.phone}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="profile-payment-terms">
+                Payment Terms (days)
+              </Label>
+              <Input
+                id="profile-payment-terms"
+                value={editForm.paymentTerms}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    paymentTerms: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <Label htmlFor="profile-address">Address</Label>
+              <Textarea
+                id="profile-address"
+                value={editForm.address}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    address: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <Label htmlFor="profile-tags">Tags</Label>
+              <Input
+                id="profile-tags"
+                value={editForm.tags}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    tags: event.target.value,
+                  }))
+                }
+                placeholder="Comma-separated tags"
+              />
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <Label htmlFor="profile-wishlist">Wishlist / Notes</Label>
+              <Textarea
+                id="profile-wishlist"
+                value={editForm.wishlist}
+                onChange={event =>
+                  setEditForm(current => ({
+                    ...current,
+                    wishlist: event.target.value,
+                  }))
+                }
+                rows={4}
+              />
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <Label>Roles</Label>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                {[
+                  ["isBuyer", "Customer"],
+                  ["isSeller", "Supplier"],
+                  ["isBrand", "Brand"],
+                  ["isReferee", "Referee"],
+                  ["isContractor", "Contractor"],
+                ].map(([key, label]) => (
+                  <Button
+                    key={key}
+                    type="button"
+                    variant={
+                      editForm[key as keyof typeof editForm]
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={() =>
+                      setEditForm(current => ({
+                        ...current,
+                        [key]: !current[key as keyof typeof current],
+                      }))
+                    }
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
                 updateClientMutation.mutate({
-                  clientId: client.id,
-                  version: client.version, // ST-026: Include version for optimistic locking
-                  name: formData.get("name") as string,
-                  email: (formData.get("email") as string) || undefined,
-                  phone: (formData.get("phone") as string) || undefined,
-                  address: (formData.get("address") as string) || undefined,
-                  isBuyer: formData.get("isBuyer") === "on",
-                  isSeller: formData.get("isSeller") === "on",
-                  isBrand: formData.get("isBrand") === "on",
-                  isReferee: formData.get("isReferee") === "on",
-                  isContractor: formData.get("isContractor") === "on",
-                });
-              }}
+                  clientId,
+                  name: editForm.name.trim(),
+                  email: editForm.email.trim() || undefined,
+                  phone: editForm.phone.trim() || undefined,
+                  address: editForm.address.trim() || undefined,
+                  paymentTerms: editForm.paymentTerms
+                    ? Number(editForm.paymentTerms)
+                    : undefined,
+                  wishlist: editForm.wishlist.trim() || undefined,
+                  tags: editForm.tags
+                    .split(",")
+                    .map(tag => tag.trim())
+                    .filter(Boolean),
+                  isBuyer: editForm.isBuyer,
+                  isSeller: editForm.isSeller,
+                  isBrand: editForm.isBrand,
+                  isReferee: editForm.isReferee,
+                  isContractor: editForm.isContractor,
+                })
+              }
+              disabled={updateClientMutation.isPending}
             >
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Client Name *</Label>
-                  <Input
-                    id="edit-name"
-                    name="name"
-                    defaultValue={client.name}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input
-                    id="edit-email"
-                    name="email"
-                    type="email"
-                    defaultValue={client.email || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-phone">Phone</Label>
-                  <Input
-                    id="edit-phone"
-                    name="phone"
-                    defaultValue={client.phone || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-address">Address</Label>
-                  <Textarea
-                    id="edit-address"
-                    name="address"
-                    defaultValue={client.address || ""}
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Client Types</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="edit-isBuyer"
-                        name="isBuyer"
-                        checked={client.isBuyer || false}
-                      />
-                      <Label
-                        htmlFor="edit-isBuyer"
-                        className="font-normal cursor-pointer"
-                      >
-                        Buyer
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="edit-isSeller"
-                        name="isSeller"
-                        checked={client.isSeller || false}
-                      />
-                      <Label
-                        htmlFor="edit-isSeller"
-                        className="font-normal cursor-pointer"
-                      >
-                        Supplier
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="edit-isBrand"
-                        name="isBrand"
-                        checked={client.isBrand || false}
-                      />
-                      <Label
-                        htmlFor="edit-isBrand"
-                        className="font-normal cursor-pointer"
-                      >
-                        Brand
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="edit-isReferee"
-                        name="isReferee"
-                        checked={client.isReferee || false}
-                      />
-                      <Label
-                        htmlFor="edit-isReferee"
-                        className="font-normal cursor-pointer"
-                      >
-                        Referee
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="edit-isContractor"
-                        name="isContractor"
-                        checked={client.isContractor || false}
-                      />
-                      <Label
-                        htmlFor="edit-isContractor"
-                        className="font-normal cursor-pointer"
-                      >
-                        Contractor
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={updateClientMutation.isPending}>
-                  {updateClientMutation.isPending
-                    ? "Saving..."
-                    : "Save Changes"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+              {updateClientMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Add Transaction Dialog */}
-        <Dialog
-          open={transactionDialogOpen}
-          onOpenChange={setTransactionDialogOpen}
-        >
-          <DialogContent
-            className="w-full sm:max-w-2xl"
-            data-testid="transaction-form"
-          >
-            <DialogHeader>
-              <DialogTitle>Add Transaction</DialogTitle>
-              <DialogDescription>
-                Create a new transaction for {client.teriCode}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                createTransactionMutation.mutate({
-                  clientId: client.id,
-                  transactionType: formData.get(
-                    "transactionType"
-                  ) as TransactionType,
-                  transactionNumber:
-                    (formData.get("transactionNumber") as string) || undefined,
-                  transactionDate: new Date(
-                    formData.get("transactionDate") as string
-                  ),
-                  amount: Number(formData.get("amount") as string),
-                  paymentStatus:
-                    (formData.get("paymentStatus") as
-                      | "PENDING"
-                      | "PAID"
-                      | "PARTIAL"
-                      | "OVERDUE") || "PENDING",
-                  notes: (formData.get("notes") as string) || undefined,
-                });
-              }}
+      <AddCommunicationModal
+        clientId={clientId}
+        open={communicationModalOpen}
+        onOpenChange={setCommunicationModalOpen}
+        onSuccess={() => {
+          void Promise.all([
+            activityQuery.refetch(),
+            utils.relationshipProfile.getActivity.invalidate({ clientId }),
+            utils.relationshipProfile.getShell.invalidate({ clientId }),
+          ]);
+        }}
+      />
+
+      <InspectorPanel
+        isOpen={inspectorOpen}
+        onClose={() => {
+          setSelectedTransaction(null);
+          setSelectedLedgerEntry(null);
+          setSelectedPayment(null);
+          setMoneyAction(null);
+        }}
+        title={
+          moneyAction
+            ? moneyAction === "receive"
+              ? "Receive Money"
+              : "Pay Money"
+            : selectedTransaction
+              ? `Edit ${selectedTransaction.transactionType}`
+              : selectedPayment
+                ? selectedPayment.paymentNumber ||
+                  `Payment #${selectedPayment.id}`
+                : selectedLedgerEntry?.label || "Ledger Entry"
+        }
+        subtitle={
+          moneyAction
+            ? "Quick ledger adjustment from the profile"
+            : selectedTransaction
+              ? "Editable legacy client transaction"
+              : selectedPayment
+                ? "Payment detail with source link"
+                : "Read-only source-linked ledger entry"
+        }
+        width={460}
+      >
+        {selectedTransaction ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="transaction-date">Transaction Date</Label>
+              <Input
+                id="transaction-date"
+                type="date"
+                value={transactionForm.transactionDate}
+                onChange={event =>
+                  setTransactionForm(current => ({
+                    ...current,
+                    transactionDate: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="transaction-amount">Amount</Label>
+              <Input
+                id="transaction-amount"
+                type="number"
+                value={transactionForm.amount}
+                onChange={event =>
+                  setTransactionForm(current => ({
+                    ...current,
+                    amount: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="transaction-status">Payment Status</Label>
+              <Input
+                id="transaction-status"
+                value={transactionForm.paymentStatus}
+                onChange={event =>
+                  setTransactionForm(current => ({
+                    ...current,
+                    paymentStatus: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="payment-date">Payment Date</Label>
+                <Input
+                  id="payment-date"
+                  type="date"
+                  value={transactionForm.paymentDate}
+                  onChange={event =>
+                    setTransactionForm(current => ({
+                      ...current,
+                      paymentDate: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-amount">Payment Amount</Label>
+                <Input
+                  id="payment-amount"
+                  type="number"
+                  value={transactionForm.paymentAmount}
+                  onChange={event =>
+                    setTransactionForm(current => ({
+                      ...current,
+                      paymentAmount: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="transaction-notes">Notes</Label>
+              <Textarea
+                id="transaction-notes"
+                value={transactionForm.notes}
+                onChange={event =>
+                  setTransactionForm(current => ({
+                    ...current,
+                    notes: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() =>
+                updateTransactionMutation.mutate({
+                  transactionId: selectedTransaction.id,
+                  transactionDate: transactionForm.transactionDate
+                    ? new Date(transactionForm.transactionDate)
+                    : undefined,
+                  amount: transactionForm.amount
+                    ? Number(transactionForm.amount)
+                    : undefined,
+                  paymentStatus: transactionForm.paymentStatus as
+                    | "PAID"
+                    | "PENDING"
+                    | "OVERDUE"
+                    | "PARTIAL",
+                  paymentDate: transactionForm.paymentDate
+                    ? new Date(transactionForm.paymentDate)
+                    : undefined,
+                  paymentAmount: transactionForm.paymentAmount
+                    ? Number(transactionForm.paymentAmount)
+                    : undefined,
+                  notes: transactionForm.notes.trim() || undefined,
+                })
+              }
+              disabled={updateTransactionMutation.isPending}
             >
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="transactionType">Transaction Type *</Label>
-                  <Select name="transactionType" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INVOICE">Invoice</SelectItem>
-                      <SelectItem value="PAYMENT">Payment</SelectItem>
-                      <SelectItem value="QUOTE">Quote</SelectItem>
-                      <SelectItem value="ORDER">Order</SelectItem>
-                      <SelectItem value="REFUND">Refund</SelectItem>
-                      <SelectItem value="CREDIT">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="transactionNumber">Transaction Number</Label>
-                  <Input
-                    id="transactionNumber"
-                    name="transactionNumber"
-                    placeholder="e.g., INV-001"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="transactionDate">Transaction Date *</Label>
-                  <Input
-                    id="transactionDate"
-                    name="transactionDate"
-                    type="date"
-                    defaultValue={new Date().toISOString().split("T")[0]}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
-                  <Input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="paymentStatus">Payment Status</Label>
-                  <Select name="paymentStatus" defaultValue="PENDING">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="PAID">Paid</SelectItem>
-                      <SelectItem value="OVERDUE">Overdue</SelectItem>
-                      <SelectItem value="PARTIAL">Partial</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    name="notes"
-                    placeholder="Additional notes..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setTransactionDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  data-testid="save-transaction-btn"
-                  disabled={createTransactionMutation.isPending}
-                >
-                  {createTransactionMutation.isPending
-                    ? "Creating..."
-                    : "Create Transaction"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+              {updateTransactionMutation.isPending
+                ? "Saving..."
+                : "Save Transaction"}
+            </Button>
+          </div>
+        ) : null}
 
-        {/* ST-026: Conflict dialog for concurrent edit detection */}
-        {ConflictDialogComponent}
-      </div>
-    </PageErrorBoundary>
+        {selectedLedgerEntry ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm">
+                <p className="font-medium">{selectedLedgerEntry.label}</p>
+                <p className="text-muted-foreground">
+                  {selectedLedgerEntry.transactionType}
+                </p>
+                <p>Date: {formatDate(selectedLedgerEntry.date)}</p>
+                <p>Created by: {selectedLedgerEntry.actorName || "System"}</p>
+                <p>Net effect: {formatMoney(selectedLedgerEntry.netEffect)}</p>
+                {selectedLedgerEntry.description ? (
+                  <p className="text-muted-foreground">
+                    {selectedLedgerEntry.description}
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+            {sourcePathForLedgerEntry(selectedLedgerEntry) ? (
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => {
+                  const path = sourcePathForLedgerEntry(selectedLedgerEntry);
+                  if (path) {
+                    setLocation(path);
+                  }
+                }}
+              >
+                Open Source Record
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {selectedPayment ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm">
+                <p className="font-medium">
+                  {selectedPayment.paymentNumber ||
+                    `Payment #${selectedPayment.id}`}
+                </p>
+                <p className="text-muted-foreground">
+                  {selectedPayment.paymentType}
+                </p>
+                <p>Date: {formatDate(selectedPayment.paymentDate)}</p>
+                <p>Method: {selectedPayment.paymentMethod || "-"}</p>
+                <p>Reference: {selectedPayment.referenceNumber || "-"}</p>
+                <p>Amount: {formatMoney(selectedPayment.amount)}</p>
+                <p>Created by: {selectedPayment.createdByName || "System"}</p>
+                {selectedPayment.notes ? (
+                  <p className="text-muted-foreground">
+                    {selectedPayment.notes}
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() =>
+                setLocation(`/accounting/payments?id=${selectedPayment.id}`)
+              }
+            >
+              Open Payment Record
+            </Button>
+          </div>
+        ) : null}
+
+        {moneyAction ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-muted-foreground">
+                <p>
+                  {moneyAction === "receive"
+                    ? "Use a credit entry to reduce what this relationship owes."
+                    : "Use a debit entry to reduce what you owe this relationship."}
+                </p>
+              </CardContent>
+            </Card>
+            <div className="space-y-2">
+              <Label htmlFor="adjustment-amount">Amount</Label>
+              <Input
+                id="adjustment-amount"
+                type="number"
+                value={adjustmentForm.amount}
+                onChange={event =>
+                  setAdjustmentForm(current => ({
+                    ...current,
+                    amount: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adjustment-date">Effective Date</Label>
+              <Input
+                id="adjustment-date"
+                type="date"
+                value={adjustmentForm.effectiveDate}
+                onChange={event =>
+                  setAdjustmentForm(current => ({
+                    ...current,
+                    effectiveDate: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adjustment-description">Description</Label>
+              <Textarea
+                id="adjustment-description"
+                value={adjustmentForm.description}
+                onChange={event =>
+                  setAdjustmentForm(current => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() =>
+                addLedgerAdjustmentMutation.mutate({
+                  clientId,
+                  transactionType:
+                    moneyAction === "receive" ? "CREDIT" : "DEBIT",
+                  amount: Number(adjustmentForm.amount),
+                  description: adjustmentForm.description.trim(),
+                  effectiveDate: new Date(adjustmentForm.effectiveDate),
+                })
+              }
+              disabled={addLedgerAdjustmentMutation.isPending}
+            >
+              {addLedgerAdjustmentMutation.isPending
+                ? "Saving..."
+                : moneyAction === "receive"
+                  ? "Record Money Received"
+                  : "Record Money Paid"}
+            </Button>
+          </div>
+        ) : null}
+      </InspectorPanel>
+    </div>
   );
 }

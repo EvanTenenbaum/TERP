@@ -181,6 +181,8 @@ export const searchRouter = router({
               phone: clients.phone,
               teriCode: clients.teriCode,
               address: clients.address,
+              isBuyer: clients.isBuyer,
+              isSeller: clients.isSeller,
               createdAt: clients.createdAt,
             })
             .from(clients)
@@ -204,11 +206,22 @@ export const searchRouter = router({
               type: "customer" as const,
               title: c.name || "Unknown",
               description: c.email || c.teriCode || undefined,
-              url: `/clients/${c.id}`,
+              url:
+                c.isSeller && !c.isBuyer
+                  ? `/clients/${c.id}?section=supply-inventory`
+                  : `/clients/${c.id}?section=overview`,
               metadata: {
                 email: c.email,
                 phone: c.phone,
                 teriCode: c.teriCode,
+                isBuyer: c.isBuyer,
+                isSeller: c.isSeller,
+                relationshipLabel:
+                  c.isSeller && !c.isBuyer
+                    ? "Supplier"
+                    : c.isBuyer && c.isSeller
+                      ? "Customer + Supplier"
+                      : "Customer",
               },
               relevance: calculateRelevance(
                 query,

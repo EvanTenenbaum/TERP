@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -441,7 +442,12 @@ export default function MatchmakingServicePage({
                     key={need.id}
                     className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                     onClick={() =>
-                      setLocation(`/clients/${need.clientId}?tab=needs`)
+                      setLocation(
+                        buildRelationshipProfilePath(
+                          need.clientId,
+                          "sales-pricing"
+                        )
+                      )
                     }
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -678,7 +684,12 @@ export default function MatchmakingServicePage({
                   className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                   onClick={() => {
                     setBuyersModalOpen(false);
-                    setLocation(`/clients/${buyer.clientId}?tab=needs`);
+                    setLocation(
+                      buildRelationshipProfilePath(
+                        buyer.clientId,
+                        "sales-pricing"
+                      )
+                    );
                   }}
                 >
                   <div className="flex items-center justify-between mb-1">

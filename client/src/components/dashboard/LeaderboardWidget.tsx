@@ -27,9 +27,14 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 // Types
-type MetricOption = "master_score" | "ytd_revenue" | "order_frequency" | "on_time_payment_rate";
+type MetricOption =
+  | "master_score"
+  | "ytd_revenue"
+  | "order_frequency"
+  | "on_time_payment_rate";
 type ModeOption = "top" | "bottom";
 type ClientType = "ALL" | "CUSTOMER" | "SUPPLIER";
 
@@ -53,12 +58,21 @@ const RankIcon = React.memo(function RankIcon({ rank }: { rank: number }) {
   if (rank === 1) return <Trophy className="h-4 w-4 text-yellow-500" />;
   if (rank === 2) return <Medal className="h-4 w-4 text-gray-400" />;
   if (rank === 3) return <Award className="h-4 w-4 text-amber-600" />;
-  return <span className="w-4 text-center text-xs text-muted-foreground">{rank}</span>;
+  return (
+    <span className="w-4 text-center text-xs text-muted-foreground">
+      {rank}
+    </span>
+  );
 });
 
-const TrendIcon = React.memo(function TrendIcon({ trend }: { trend: "up" | "down" | "stable" }) {
+const TrendIcon = React.memo(function TrendIcon({
+  trend,
+}: {
+  trend: "up" | "down" | "stable";
+}) {
   if (trend === "up") return <TrendingUp className="h-3 w-3 text-green-500" />;
-  if (trend === "down") return <TrendingDown className="h-3 w-3 text-red-500" />;
+  if (trend === "down")
+    return <TrendingDown className="h-3 w-3 text-red-500" />;
   return <Minus className="h-3 w-3 text-muted-foreground" />;
 });
 
@@ -83,7 +97,7 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
 
   const handleClientClick = useCallback(
     (clientId: number) => {
-      navigate(`/clients/${clientId}`);
+      navigate(buildRelationshipProfilePath(clientId));
     },
     [navigate]
   );
@@ -116,13 +130,20 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
             {mode === "top" ? "Top Performers" : "Needs Attention"}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Select value={metric} onValueChange={(v) => setMetric(v as MetricOption)}>
+            <Select
+              value={metric}
+              onValueChange={v => setMetric(v as MetricOption)}
+            >
               <SelectTrigger className="h-7 w-[130px] text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {METRIC_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {METRIC_OPTIONS.map(opt => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="text-xs"
+                  >
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -146,7 +167,9 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
             {Array.from({ length: limit }).map((_, i) => (
               <Skeleton
                 // eslint-disable-next-line react/no-array-index-key
-                key={`leaderboard-skeleton-${i}`} className="h-10 w-full" />
+                key={`leaderboard-skeleton-${i}`}
+                className="h-10 w-full"
+              />
             ))}
           </div>
         )}
@@ -163,7 +186,7 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
         {!isLoading && !error && data && (
           <>
             <div className="space-y-1">
-              {data.entries.map((entry) => (
+              {data.entries.map(entry => (
                 <div
                   key={entry.clientId}
                   className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"

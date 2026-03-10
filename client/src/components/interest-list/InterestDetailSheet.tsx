@@ -4,6 +4,7 @@
  */
 
 import { useLocation } from "wouter";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -184,7 +185,9 @@ export function InterestDetailSheet({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setLocation(`/clients/${item.clientId}`)}
+              onClick={() =>
+                setLocation(buildRelationshipProfilePath(item.clientId))
+              }
             >
               <User className="h-4 w-4 mr-2" />
               View Client Profile
