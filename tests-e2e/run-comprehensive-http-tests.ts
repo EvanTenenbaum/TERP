@@ -373,7 +373,7 @@ async function main() {
     { path: "/clients", name: "Clients" },
     { path: "/inventory", name: "Inventory" },
     { path: "/accounting", name: "Accounting" },
-    { path: "/pick-pack", name: "Pick-Pack" },
+    { path: "/operations?tab=shipping", name: "Shipping" },
     { path: "/admin/settings", name: "Admin Settings" },
   ];
 

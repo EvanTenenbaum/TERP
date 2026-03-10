@@ -94,7 +94,7 @@ export default function SearchResultsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search quotes, customers, products..."
+                placeholder="Search quotes, relationships, products..."
                 className="pl-10 w-full"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -124,7 +124,8 @@ export default function SearchResultsPage() {
           {!searchQuery.trim() && !isLoading && (
             <div className="text-center py-12 text-muted-foreground">
               <p>
-                Enter a search query to find quotes, customers, and products.
+                Enter a search query to find quotes, relationships, and
+                products.
               </p>
             </div>
           )}
@@ -188,13 +189,13 @@ export default function SearchResultsPage() {
                 </div>
               )}
 
-              {/* Customers Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
+              {/* Relationships Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.customers.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="h-5 w-5" />
                     <h2 className="text-xl font-semibold">
-                      Customers ({results.customers.length})
+                      Relationships ({results.customers.length})
                     </h2>
                   </div>
                   <div className="space-y-2">
@@ -215,7 +216,16 @@ export default function SearchResultsPage() {
                                   <h3 className="font-medium">
                                     {customer.title}
                                   </h3>
-                                  <Badge variant="outline">Customer</Badge>
+                                  <Badge variant="outline">
+                                    {String(
+                                      (
+                                        customer.metadata as Record<
+                                          string,
+                                          unknown
+                                        >
+                                      )?.relationshipLabel || "Customer"
+                                    )}
+                                  </Badge>
                                 </div>
                                 {customer.description && (
                                   <p className="text-sm text-muted-foreground">

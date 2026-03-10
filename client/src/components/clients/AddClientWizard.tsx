@@ -49,6 +49,43 @@ interface AddClientWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (clientId: number) => void;
+  defaultRoles?: Partial<
+    Pick<
+      AddClientWizardFormData,
+      "isBuyer" | "isSeller" | "isBrand" | "isReferee" | "isContractor"
+    >
+  >;
+}
+
+interface AddClientWizardFormData {
+  teriCode: string;
+  name: string;
+  companyName: string;
+  email: string;
+  phone: string;
+  secondaryPhone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  businessType:
+    | ""
+    | "RETAIL"
+    | "WHOLESALE"
+    | "DISPENSARY"
+    | "DELIVERY"
+    | "MANUFACTURER"
+    | "DISTRIBUTOR"
+    | "OTHER";
+  preferredContact: "" | "EMAIL" | "PHONE" | "TEXT" | "ANY";
+  paymentTerms: number;
+  notes: string;
+  isBuyer: boolean;
+  isSeller: boolean;
+  isBrand: boolean;
+  isReferee: boolean;
+  isContractor: boolean;
+  tags: string[];
 }
 
 // Step names for the wizard
@@ -61,42 +98,43 @@ const STEP_NAMES = {
 
 const TOTAL_STEPS = 4;
 
+function buildInitialFormData(
+  defaultRoles?: AddClientWizardProps["defaultRoles"]
+): AddClientWizardFormData {
+  return {
+    teriCode: "",
+    name: "",
+    companyName: "",
+    email: "",
+    phone: "",
+    secondaryPhone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    businessType: "",
+    preferredContact: "",
+    paymentTerms: 30,
+    notes: "",
+    isBuyer: defaultRoles?.isBuyer ?? false,
+    isSeller: defaultRoles?.isSeller ?? false,
+    isBrand: defaultRoles?.isBrand ?? false,
+    isReferee: defaultRoles?.isReferee ?? false,
+    isContractor: defaultRoles?.isContractor ?? false,
+    tags: [],
+  };
+}
+
 export function AddClientWizard({
   open,
   onOpenChange,
   onSuccess,
+  defaultRoles,
 }: AddClientWizardProps) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    teriCode: "",
-    name: "",
-    companyName: "", // FEAT-001: Added company name field
-    email: "",
-    phone: "",
-    secondaryPhone: "", // FEAT-001: Added secondary phone
-    address: "",
-    city: "", // FEAT-001: Added city
-    state: "", // FEAT-001: Added state
-    zipCode: "", // FEAT-001: Added zip code
-    businessType: "" as
-      | ""
-      | "RETAIL"
-      | "WHOLESALE"
-      | "DISPENSARY"
-      | "DELIVERY"
-      | "MANUFACTURER"
-      | "DISTRIBUTOR"
-      | "OTHER", // FEAT-001: Business type
-    preferredContact: "" as "" | "EMAIL" | "PHONE" | "TEXT" | "ANY", // FEAT-001: Preferred contact method
-    paymentTerms: 30, // FEAT-001: Payment terms in days
-    notes: "", // FEAT-001: Added notes field
-    isBuyer: false,
-    isSeller: false,
-    isBrand: false,
-    isReferee: false,
-    isContractor: false,
-    tags: [] as string[],
-  });
+  const [formData, setFormData] = useState<AddClientWizardFormData>(() =>
+    buildInitialFormData(defaultRoles)
+  );
   const [newTag, setNewTag] = useState("");
   const [deleteTagConfirm, setDeleteTagConfirm] = useState<string | null>(null);
 
@@ -205,28 +243,7 @@ export function AddClientWizard({
 
   const resetForm = () => {
     setStep(1);
-    setFormData({
-      teriCode: "",
-      name: "",
-      companyName: "",
-      email: "",
-      phone: "",
-      secondaryPhone: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      businessType: "",
-      preferredContact: "",
-      paymentTerms: 30,
-      notes: "",
-      isBuyer: false,
-      isSeller: false,
-      isBrand: false,
-      isReferee: false,
-      isContractor: false,
-      tags: [],
-    });
+    setFormData(buildInitialFormData(defaultRoles));
     setNewTag("");
   };
 

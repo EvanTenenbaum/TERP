@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -225,7 +226,9 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    window.location.href = `/clients/${match.clientId}`;
+                    window.location.href = buildRelationshipProfilePath(
+                      match.clientId
+                    );
                   }}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />

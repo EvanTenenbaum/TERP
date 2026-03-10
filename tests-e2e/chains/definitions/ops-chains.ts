@@ -804,31 +804,36 @@ export const OPS_CHAINS: TestChain[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // ops.view-pick-pack — Pick & Pack fulfillment
+  // ops.view-pick-pack — Shipping fulfillment
   // ---------------------------------------------------------------------------
   {
     chain_id: "ops.view-pick-pack",
-    description: "View the Pick & Pack page for order fulfillment workflow",
-    tags: ["route:/pick-pack", "persona:ops", "occasional", "read"],
+    description: "View the Shipping page for order fulfillment workflow",
+    tags: [
+      "route:/operations?tab=shipping",
+      "persona:ops",
+      "occasional",
+      "read",
+    ],
     phases: [
       {
         phase_id: "load-pick-pack",
-        description: "Navigate to pick and pack page",
+        description: "Navigate to shipping page",
         steps: [
           {
             action: "navigate",
-            path: "/pick-pack",
-            wait_for: "text=Pick, text=Pack, text=Fulfillment, main",
+            path: "/operations?tab=shipping",
+            wait_for: "text=Shipping, text=Fulfillment, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
           { action: "assert", visible: "main" },
         ],
-        expected_ui: { url_contains: "pick" },
+        expected_ui: { url_contains: "shipping" },
         screenshot: "ops-pick-pack-loaded",
       },
       {
         phase_id: "verify-pick-pack-content",
-        description: "Verify pick pack workflow displays",
+        description: "Verify shipping workflow displays",
         steps: [
           {
             action: "assert",

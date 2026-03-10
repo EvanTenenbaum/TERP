@@ -14,6 +14,8 @@
 
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
+import { AddClientWizard } from "@/components/clients/AddClientWizard";
+import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 
@@ -29,13 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -65,6 +60,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 // ============================================================================
 // TYPES
@@ -94,12 +90,6 @@ interface Vendor {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const VENDOR_STATUS_FILTERS = [
-  { value: "all", label: "All Suppliers" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-];
 
 // ============================================================================
 // HELPERS
@@ -135,7 +125,7 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
   badges.push({ label: "Supplier", className: "bg-green-100 text-green-800" });
 
   if (vendor.isBuyer)
-    badges.push({ label: "Buyer", className: "bg-blue-100 text-blue-800" });
+    badges.push({ label: "Customer", className: "bg-blue-100 text-blue-800" });
   if (vendor.isBrand)
     badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
 
@@ -329,11 +319,11 @@ function VendorInspectorContent({
 
 export function VendorsWorkSurface() {
   const [, setLocation] = useLocation();
+  const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(0);
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -483,13 +473,12 @@ export function VendorsWorkSurface() {
   };
 
   const handleAddVendor = useCallback(() => {
-    // TER-290: Navigate to client creation with seller type pre-selected
-    setLocation("/clients/new?type=seller");
-  }, [setLocation]);
+    setIsAddSupplierOpen(true);
+  }, []);
 
   const handleNavigate = useCallback(
     (vendorId: number) => {
-      setLocation(`/clients/${vendorId}`);
+      setLocation(buildRelationshipProfilePath(vendorId));
     },
     [setLocation]
   );
@@ -563,24 +552,6 @@ export function VendorsWorkSurface() {
               className="pl-10"
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={v => {
-              setStatusFilter(v);
-              setPage(0);
-            }}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {VENDOR_STATUS_FILTERS.map(filter => (
-                <SelectItem key={filter.value} value={filter.value}>
-                  {filter.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Button variant="outline" size="icon" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -625,7 +596,7 @@ export function VendorsWorkSurface() {
                 <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No suppliers found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search || statusFilter !== "all"
+                  {search
                     ? "Try adjusting your filters"
                     : "Add your first supplier"}
                 </p>
@@ -704,7 +675,17 @@ export function VendorsWorkSurface() {
                         {vendor.orderCount || 0}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleNavigate(vendor.id);
+                          }}
+                          aria-label={`Open ${vendor.name}`}
+                        >
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -749,16 +730,36 @@ export function VendorsWorkSurface() {
         <InspectorPanel
           isOpen={inspector.isOpen}
           onClose={inspector.close}
-          title={selectedVendor?.name || "Supplier Details"}
+          title={selectedVendor?.name || "Supplier Profile"}
           subtitle={selectedVendor?.teriCode ?? undefined}
         >
-          <VendorInspectorContent
-            vendor={selectedVendor}
-            onNavigate={handleNavigate}
-            onViewPurchaseOrders={handleViewPurchaseOrders}
-          />
+          {selectedVendor ? (
+            <ProfileQuickPanel
+              clientId={selectedVendor.id}
+              initialSection="supply-inventory"
+            />
+          ) : (
+            <VendorInspectorContent
+              vendor={selectedVendor}
+              onNavigate={handleNavigate}
+              onViewPurchaseOrders={handleViewPurchaseOrders}
+            />
+          )}
         </InspectorPanel>
       </div>
+
+      {isAddSupplierOpen ? (
+        <AddClientWizard
+          open={isAddSupplierOpen}
+          onOpenChange={setIsAddSupplierOpen}
+          defaultRoles={{ isSeller: true }}
+          onSuccess={clientId => {
+            setLocation(
+              buildRelationshipProfilePath(clientId, "supply-inventory")
+            );
+          }}
+        />
+      ) : null}
     </div>
   );
 }

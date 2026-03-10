@@ -6,6 +6,7 @@
 
 import { useState, memo } from "react";
 import { useLocation } from "wouter";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -102,7 +103,11 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
                   <TableRow
                     key={client.customerId}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => setLocation(`/clients/${client.customerId}`)}
+                    onClick={() =>
+                      setLocation(
+                        buildRelationshipProfilePath(client.customerId)
+                      )
+                    }
                   >
                     <TableCell className="text-muted-foreground">
                       {index + 1}

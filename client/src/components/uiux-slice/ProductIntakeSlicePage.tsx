@@ -743,7 +743,7 @@ export function ProductIntakeSlicePage() {
         });
         refreshDrafts(latestDraft.id);
         setActivityReloadToken(token => token + 1);
-        toast.success("Product Intake received.");
+        toast.success("Receiving completed.");
         recordFrictionEvent({
           event: "flow_complete",
           workflow: "GF-002",
@@ -808,7 +808,7 @@ export function ProductIntakeSlicePage() {
           locationId: line.locationId ?? undefined,
           notes: line.notes,
         })),
-        receivingNotes: `Product Intake ${latestDraft.id} (${latestDraft.idempotencyKey})`,
+        receivingNotes: `Receiving ${latestDraft.id} (${latestDraft.idempotencyKey})`,
       });
 
       const nextLines = latestDraft.lines.map((line, index) => ({
@@ -829,7 +829,7 @@ export function ProductIntakeSlicePage() {
 
       refreshDrafts(latestDraft.id);
       setActivityReloadToken(token => token + 1);
-      toast.success("Product Intake received.");
+      toast.success("Receiving completed.");
       recordFrictionEvent({
         event: "flow_complete",
         workflow: "GF-002",

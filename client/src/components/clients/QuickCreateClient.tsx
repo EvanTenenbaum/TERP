@@ -36,6 +36,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { UserPlus, Search, Check, ExternalLink, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -122,7 +123,9 @@ export function QuickCreateClient({
               variant="link"
               size="sm"
               className="h-auto p-0 text-primary"
-              onClick={() => setLocation(`/clients/${result.client.id}`)}
+              onClick={() =>
+                setLocation(buildRelationshipProfilePath(result.client.id))
+              }
             >
               <ExternalLink className="h-3 w-3 mr-1" />
               View

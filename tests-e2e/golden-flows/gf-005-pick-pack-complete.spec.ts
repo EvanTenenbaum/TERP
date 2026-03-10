@@ -29,6 +29,8 @@ type PickPackOrderDetails = {
 };
 
 test.describe("GF-005: Pick & Pack Completion", () => {
+  const SHIPPING_ROUTE = "/operations?tab=shipping";
+
   test.describe.configure({ tag: "@tier1" });
 
   let createdOrderId: number | null = null;
@@ -107,18 +109,18 @@ test.describe("GF-005: Pick & Pack Completion", () => {
     );
     expect(readyList.some(item => item.orderId === order.id)).toBe(true);
 
-    await page.goto("/pick-pack", { waitUntil: "networkidle" });
+    await page.goto(SHIPPING_ROUTE, { waitUntil: "networkidle" });
     const header = page
       .locator('[data-testid="pick-pack-header"]')
-      .or(page.getByText(/pick\s*&\s*pack/i).first());
+      .or(page.getByText(/shipping/i).first());
     await expect(header.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("warehouse role can access pick-pack surface without server crash", async ({
+  test("warehouse role can access shipping surface without server crash", async ({
     page,
   }) => {
     await loginAsWarehouseStaff(page);
-    await page.goto("/pick-pack", { waitUntil: "networkidle" });
+    await page.goto(SHIPPING_ROUTE, { waitUntil: "networkidle" });
 
     const surfaceOrAccessState = page
       .locator('[data-testid="order-queue"]')

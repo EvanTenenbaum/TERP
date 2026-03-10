@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { Target, AlertTriangle, TrendingUp, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -153,7 +154,12 @@ export const MatchmakingOpportunitiesWidget = memo(
                         key={`${match.clientId}-${match.type}-${match.confidence}-${match.strain || "any"}`}
                         className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
-                          setLocation(`/clients/${match.clientId}?tab=needs`)
+                          setLocation(
+                            buildRelationshipProfilePath(
+                              match.clientId,
+                              "sales-pricing"
+                            )
+                          )
                         }
                       >
                         <div className="flex items-start justify-between mb-1">
@@ -199,7 +205,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                         key={`${prediction.clientId}-${prediction.strain || prediction.category || "regular"}-${prediction.daysUntilPredictedOrder}`}
                         className="border border-destructive/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
-                          setLocation(`/clients/${prediction.clientId}`)
+                          setLocation(
+                            buildRelationshipProfilePath(prediction.clientId)
+                          )
                         }
                       >
                         <div className="flex items-start justify-between mb-1">
@@ -240,7 +248,12 @@ export const MatchmakingOpportunitiesWidget = memo(
                         key={`${need.clientId}-${need.strain || "any"}-${need.priority || "none"}-${need.confidence}`}
                         className="border border-orange-300/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
-                          setLocation(`/clients/${need.clientId}?tab=needs`)
+                          setLocation(
+                            buildRelationshipProfilePath(
+                              need.clientId,
+                              "sales-pricing"
+                            )
+                          )
                         }
                       >
                         <div className="flex items-start justify-between mb-1">

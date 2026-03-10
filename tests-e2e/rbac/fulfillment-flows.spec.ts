@@ -297,18 +297,18 @@ test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
     });
   });
 
-  test.describe("Pick & Pack Access", () => {
+  test.describe("Shipping Access", () => {
     test.beforeEach(async ({ page }) => {
       await loginAsWarehouseStaff(page);
     });
 
-    test("should access pick & pack page or see appropriate restriction", async ({
+    test("should access shipping page or see appropriate restriction", async ({
       page,
     }) => {
-      await page.goto("/pick-pack");
+      await page.goto("/operations?tab=shipping");
       await page.waitForLoadState("networkidle");
 
-      // Note: Pick & Pack uses adminProcedure which may restrict access
+      // Note: Shipping uses adminProcedure which may restrict access
       // This test documents actual behavior
 
       // STRICT: Should either have access OR see restriction (not crash)
