@@ -81,6 +81,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -864,40 +865,37 @@ export function ClientsWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <Users className="h-6 w-6" />
-            Clients
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage clients, track transactions, and monitor debt
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Total:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.total}
+      <PageHeader
+        title="Clients"
+        description="Manage clients, track transactions, and monitor debt"
+        divider
+        className="px-6 py-4"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex gap-4">
+              <span>
+                Total:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.total}
+                </span>
               </span>
-            </span>
-            <span>
-              With Debt:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.withDebt}
+              <span>
+                With Debt:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.withDebt}
+                </span>
               </span>
-            </span>
-            <span>
-              LTV:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalValue)}
+              <span>
+                LTV:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(stats.totalValue)}
+                </span>
               </span>
-            </span>
-          </div>
-        </div>
-      </div>
+            </div>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-muted/30">

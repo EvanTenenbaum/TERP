@@ -1,4 +1,9 @@
-import type { Locator, Page, APIResponse } from "@playwright/test";
+import {
+  expect,
+  type Locator,
+  type Page,
+  type APIResponse,
+} from "@playwright/test";
 
 interface TrpcResponse<T> {
   result: {
@@ -109,6 +114,8 @@ export const fillAgGridTextCell = async (
   value: string
 ): Promise<void> => {
   const cell = getAgGridCell(page, rowIndex, columnId).first();
+  // TER-277: Wait for cell to be visible before interacting (AG Grid virtual rendering)
+  await expect(cell).toBeVisible({ timeout: 10_000 });
   await cell.scrollIntoViewIfNeeded();
   await cell.click();
   await page.keyboard.press("Enter");

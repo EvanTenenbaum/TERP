@@ -195,9 +195,13 @@ export const poReceivingRouter = router({
             const receivedQty = parseFloat(item.receivedQuantity);
             const newQty = currentQty + receivedQty;
 
+            // TXSAFE-03: Use SQL-level atomic increment to prevent race conditions
+            // even if FOR UPDATE lock is bypassed or transaction isolation is weakened.
             await tx
               .update(batches)
-              .set({ onHandQty: newQty.toString() })
+              .set({
+                onHandQty: sql`CAST(COALESCE(${batches.onHandQty}, '0') + ${receivedQty} AS CHAR)`,
+              })
               .where(eq(batches.id, batchId));
 
             // Record inventory movement
@@ -239,9 +243,12 @@ export const poReceivingRouter = router({
               });
             }
 
+            // TXSAFE-03: Use SQL-level atomic increment for quantityReceived
             await tx
               .update(purchaseOrderItems)
-              .set({ quantityReceived: newReceived.toString() })
+              .set({
+                quantityReceived: sql`CAST(COALESCE(${purchaseOrderItems.quantityReceived}, '0') + ${parseFloat(item.receivedQuantity)} AS CHAR)`,
+              })
               .where(eq(purchaseOrderItems.id, item.poItemId));
           }
         }
@@ -704,9 +711,12 @@ export const poReceivingRouter = router({
             });
           }
 
+          // TXSAFE-03: Use SQL-level atomic increment for quantityReceived
           await tx
             .update(purchaseOrderItems)
-            .set({ quantityReceived: newReceived.toString() })
+            .set({
+              quantityReceived: sql`CAST(COALESCE(${purchaseOrderItems.quantityReceived}, '0') + ${item.quantity} AS CHAR)`,
+            })
             .where(eq(purchaseOrderItems.id, item.poItemId));
 
           // Record inventory movement

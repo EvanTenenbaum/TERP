@@ -95,6 +95,7 @@ import {
   Download,
   ArrowUpDown,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
 // TYPES
@@ -1209,40 +1210,37 @@ export function OrdersWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <ShoppingCart className="h-6 w-6" />
-            Sales
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage sales and drafts
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Drafts:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.drafts}
+      <PageHeader
+        title="Sales"
+        description="Manage sales and drafts"
+        divider
+        className="px-6 py-4"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex gap-4">
+              <span>
+                Drafts:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.drafts}
+                </span>
               </span>
-            </span>
-            <span>
-              Ready for Packing:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.pending}
+              <span>
+                Ready for Packing:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.pending}
+                </span>
               </span>
-            </span>
-            <span>
-              Shipped:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.shipped}
+              <span>
+                Shipped:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.shipped}
+                </span>
               </span>
-            </span>
-          </div>
-        </div>
-      </div>
+            </div>
+          </>
+        }
+      />
 
       {/* Tabs & Filters */}
       <div className="px-6 py-3 border-b bg-muted/30">
@@ -1308,7 +1306,9 @@ export function OrdersWorkSurface() {
                 Refresh
               </Button>
               <Button
-                onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
+                onClick={() =>
+                  setLocation(buildSalesWorkspacePath("create-order"))
+                }
                 data-testid="new-order-button"
               >
                 <Plus className="h-4 w-4 mr-2" />

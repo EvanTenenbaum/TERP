@@ -71,8 +71,7 @@ export default function WorkflowQueuePage() {
     isLoading: statusesLoading,
     error: statusesError,
     refetch: refetchStatuses,
-  } =
-    trpc.workflowQueue.listStatuses.useQuery();
+  } = trpc.workflowQueue.listStatuses.useQuery();
 
   // Fetch batches grouped by status
   const {
@@ -95,7 +94,7 @@ export default function WorkflowQueuePage() {
 
   // Add batches to queue mutation
   const addBatchesMutation = trpc.workflowQueue.addBatchesToQueue.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`Added ${data.added} batch(es) to workflow queue`);
       setIsAddDialogOpen(false);
       setSelectedBatchIds(new Set());
@@ -103,7 +102,7 @@ export default function WorkflowQueuePage() {
       setBatchSearch("");
       refetchQueues();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to add batches: ${error.message}`);
     },
   });
@@ -219,7 +218,10 @@ export default function WorkflowQueuePage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div
+        className="flex-1 overflow-hidden"
+        data-testid="workflow-queue-content"
+      >
         {viewMode === "board" && (
           <WorkflowBoard statuses={statuses || []} queues={queues || {}} />
         )}
@@ -236,7 +238,8 @@ export default function WorkflowQueuePage() {
           <DialogHeader>
             <DialogTitle>Add Batches to Workflow Queue</DialogTitle>
             <DialogDescription>
-              Select batches to add to the workflow queue and choose their initial status
+              Select batches to add to the workflow queue and choose their
+              initial status
             </DialogDescription>
           </DialogHeader>
 
@@ -246,13 +249,13 @@ export default function WorkflowQueuePage() {
               <Label htmlFor="status-select">Initial Workflow Status *</Label>
               <Select
                 value={selectedStatusId?.toString() || ""}
-                onValueChange={(value) => setSelectedStatusId(parseInt(value))}
+                onValueChange={value => setSelectedStatusId(parseInt(value))}
               >
                 <SelectTrigger id="status-select">
                   <SelectValue placeholder="Select workflow status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses?.map((status) => (
+                  {statuses?.map(status => (
                     <SelectItem key={status.id} value={status.id.toString()}>
                       {status.name}
                     </SelectItem>
@@ -267,7 +270,7 @@ export default function WorkflowQueuePage() {
               <Input
                 id="batch-search"
                 value={batchSearch}
-                onChange={(e) => setBatchSearch(e.target.value)}
+                onChange={e => setBatchSearch(e.target.value)}
                 placeholder="Search by SKU or product name..."
               />
             </div>
@@ -292,7 +295,7 @@ export default function WorkflowQueuePage() {
                   />
                 ) : batchesNotInQueue && batchesNotInQueue.length > 0 ? (
                   <div className="divide-y">
-                    {batchesNotInQueue.map((batch) => (
+                    {batchesNotInQueue.map(batch => (
                       <div
                         key={batch.id}
                         className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer"
@@ -344,9 +347,15 @@ export default function WorkflowQueuePage() {
             </Button>
             <Button
               onClick={handleAddToQueue}
-              disabled={selectedBatchIds.size === 0 || !selectedStatusId || addBatchesMutation.isPending}
+              disabled={
+                selectedBatchIds.size === 0 ||
+                !selectedStatusId ||
+                addBatchesMutation.isPending
+              }
             >
-              {addBatchesMutation.isPending ? "Adding..." : `Add ${selectedBatchIds.size} Batch(es)`}
+              {addBatchesMutation.isPending
+                ? "Adding..."
+                : `Add ${selectedBatchIds.size} Batch(es)`}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -92,7 +92,10 @@ import {
   CalendarClock,
   AlertTriangle,
   Receipt,
+  Plus,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
 // TYPES
@@ -500,6 +503,12 @@ export function InvoicesWorkSurface() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showVoidDialog, setShowVoidDialog] = useState(false);
   const [showAging, setShowAging] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    customerId: 0,
+    dueDate: "",
+    notes: "",
+  });
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
@@ -655,6 +664,21 @@ export function InvoicesWorkSurface() {
     },
   });
 
+  const createInvoiceMutation = trpc.accounting.invoices.create.useMutation({
+    onMutate: () => setSaving("Creating invoice..."),
+    onSuccess: () => {
+      toasts.success("Invoice created");
+      setSaved();
+      utils.accounting.invoices.list.invalidate();
+      setShowCreateDialog(false);
+      setCreateForm({ customerId: 0, dueDate: "", notes: "" });
+    },
+    onError: err => {
+      toasts.error(err.message || "Failed to create invoice");
+      setError(err.message);
+    },
+  });
+
   const downloadPdfMutation = trpc.invoices.downloadPdf.useMutation({
     onSuccess: result => {
       const link = document.createElement("a");
@@ -776,40 +800,37 @@ export function InvoicesWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-3 px-4 py-4 border-b bg-background md:px-6 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <Receipt className="h-6 w-6" />
-            Invoices
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage customer invoices and accounts receivable
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 md:gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex flex-wrap gap-3 md:gap-4">
-            <span>
-              Total Billed:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalBilled)}
+      <PageHeader
+        title="Invoices"
+        description="Manage customer invoices and accounts receivable"
+        divider
+        className="px-4 py-4 md:px-6"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex flex-wrap gap-3 md:gap-4">
+              <span>
+                Total Billed:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(stats.totalBilled)}
+                </span>
               </span>
-            </span>
-            <span>
-              Due:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalDue)}
+              <span>
+                Due:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(stats.totalDue)}
+                </span>
               </span>
-            </span>
-            {stats.overdueCount > 0 && (
-              <span className="text-red-600">
-                Overdue:{" "}
-                <span className="font-semibold">{stats.overdueCount}</span>
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+              {stats.overdueCount > 0 && (
+                <span className="text-red-600">
+                  Overdue:{" "}
+                  <span className="font-semibold">{stats.overdueCount}</span>
+                </span>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="px-4 py-3 border-b bg-muted/30 md:px-6">
@@ -849,6 +870,14 @@ export function InvoicesWorkSurface() {
             </Select>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="default"
+              onClick={() => setShowCreateDialog(true)}
+              data-testid="create-invoice-button"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Invoice
+            </Button>
             <Button
               variant="outline"
               onClick={() => setShowAging(!showAging)}
@@ -1060,6 +1089,106 @@ export function InvoicesWorkSurface() {
           }}
         />
       )}
+
+      {/* Create Invoice Dialog — TER-644 */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent data-testid="create-invoice-dialog">
+          <DialogHeader>
+            <DialogTitle>Create Invoice</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="invoice-client">Client</Label>
+              <Select
+                value={
+                  createForm.customerId ? String(createForm.customerId) : ""
+                }
+                onValueChange={v =>
+                  setCreateForm(f => ({ ...f, customerId: Number(v) }))
+                }
+              >
+                <SelectTrigger
+                  id="invoice-client"
+                  data-testid="invoice-client-select"
+                >
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name ?? `Client #${c.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invoice-due-date">Due Date</Label>
+              <input
+                id="invoice-due-date"
+                type="date"
+                name="dueDate"
+                aria-label="Due date"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={createForm.dueDate}
+                onChange={e =>
+                  setCreateForm(f => ({ ...f, dueDate: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invoice-notes">Notes</Label>
+              <input
+                id="invoice-notes"
+                type="text"
+                name="notes"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                placeholder="Optional notes"
+                value={createForm.notes}
+                onChange={e =>
+                  setCreateForm(f => ({ ...f, notes: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              data-testid="create-invoice-submit"
+              disabled={
+                !createForm.customerId ||
+                !createForm.dueDate ||
+                createInvoiceMutation.isPending
+              }
+              onClick={() => {
+                if (!createForm.customerId || !createForm.dueDate) return;
+                const today = new Date();
+                const due = new Date(createForm.dueDate);
+                const invoiceNumber = `INV-${Date.now()}`;
+                createInvoiceMutation.mutate({
+                  invoiceNumber,
+                  customerId: createForm.customerId,
+                  invoiceDate: today,
+                  dueDate: due,
+                  subtotal: "0.00",
+                  totalAmount: "0.00",
+                  notes: createForm.notes || undefined,
+                  lineItems: [],
+                });
+              }}
+            >
+              {createInvoiceMutation.isPending
+                ? "Creating..."
+                : "Create Invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Void Dialog */}
       <Dialog open={showVoidDialog} onOpenChange={setShowVoidDialog}>

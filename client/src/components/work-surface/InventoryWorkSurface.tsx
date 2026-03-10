@@ -121,6 +121,7 @@ import {
   ArrowDown,
   Download,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getBrandLabel, getMixedBrandLabel } from "@/lib/nomenclature";
@@ -1764,68 +1765,67 @@ export function InventoryWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-4 px-6 py-4 border-b bg-background md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <Package className="h-6 w-6" />
-            Inventory
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage batches and stock levels
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 md:items-end">
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            {SaveStateIndicator}
-            <div
-              className="inline-flex items-center rounded-md border bg-muted/30 p-1"
-              role="group"
-              aria-label="Inventory view mode"
-            >
-              <Button
-                size="sm"
-                variant={inventoryViewMode === "table" ? "secondary" : "ghost"}
-                aria-pressed={inventoryViewMode === "table"}
-                data-testid="inventory-view-table"
-                onClick={() => setInventoryViewMode("table")}
+      <PageHeader
+        title="Inventory"
+        description="Manage batches and stock levels"
+        divider
+        className="flex-col items-start gap-4 px-6 py-4 md:flex-row md:items-start"
+        actions={
+          <div className="flex flex-col gap-3 md:items-end">
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {SaveStateIndicator}
+              <div
+                className="inline-flex items-center rounded-md border bg-muted/30 p-1"
+                role="group"
+                aria-label="Inventory view mode"
               >
-                Table
-              </Button>
-              <Button
-                size="sm"
-                variant={
-                  inventoryViewMode === "gallery" ? "secondary" : "ghost"
-                }
-                aria-pressed={inventoryViewMode === "gallery"}
-                data-testid="inventory-view-gallery"
-                onClick={() => {
-                  if (selectedBatchIds.size > 0) {
-                    selection.clear();
+                <Button
+                  size="sm"
+                  variant={
+                    inventoryViewMode === "table" ? "secondary" : "ghost"
                   }
-                  setInventoryViewMode("gallery");
-                }}
-              >
-                Gallery
-              </Button>
+                  aria-pressed={inventoryViewMode === "table"}
+                  data-testid="inventory-view-table"
+                  onClick={() => setInventoryViewMode("table")}
+                >
+                  Table
+                </Button>
+                <Button
+                  size="sm"
+                  variant={
+                    inventoryViewMode === "gallery" ? "secondary" : "ghost"
+                  }
+                  aria-pressed={inventoryViewMode === "gallery"}
+                  data-testid="inventory-view-gallery"
+                  onClick={() => {
+                    if (selectedBatchIds.size > 0) {
+                      selection.clear();
+                    }
+                    setInventoryViewMode("gallery");
+                  }}
+                >
+                  Gallery
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {inventorySummaryStats.map(item => (
+                <div
+                  key={item.label}
+                  className="min-w-[120px] rounded-md border bg-muted/25 px-3 py-2"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-foreground sm:text-base">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {inventorySummaryStats.map(item => (
-              <div
-                key={item.label}
-                className="min-w-[120px] rounded-md border bg-muted/25 px-3 py-2"
-              >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  {item.label}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-foreground sm:text-base">
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col gap-3 px-6 py-3 border-b bg-muted/30">
