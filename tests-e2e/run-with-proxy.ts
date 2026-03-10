@@ -313,8 +313,8 @@ async function main() {
     return "Search input found";
   });
 
-  // Test 13: Pick-Pack page
-  await runTest("NAV-006: Pick-Pack page loads", async page => {
+  // Test 13: Shipping page
+  await runTest("NAV-006: Shipping page loads", async page => {
     await page.goto(`${BASE_URL}/login`, { timeout: 30000 });
     await page.fill(
       'input[name="username"], input[type="email"], input[name="email"]',
@@ -324,12 +324,15 @@ async function main() {
     await page.click('button[type="submit"]');
     await page.waitForTimeout(5000);
 
-    await page.goto(`${BASE_URL}/pick-pack`, { timeout: 30000 });
+    await page.goto(`${BASE_URL}/operations?tab=shipping`, {
+      timeout: 30000,
+    });
     await page.waitForTimeout(3000);
     const url = page.url();
-    // May redirect or show page
-    const hasContent = await page.$("h1, h2, main, .pick-pack");
-    return `Pick-Pack URL: ${url}, has content: ${!!hasContent}`;
+    const hasContent = await page.$(
+      "h1, h2, main, [data-testid='pick-pack-header']"
+    );
+    return `Shipping URL: ${url}, has content: ${!!hasContent}`;
   });
 
   // Test 14: Admin Settings page

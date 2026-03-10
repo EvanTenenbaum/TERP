@@ -102,10 +102,10 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       expect(paletteVisible || searchFocused).toBeTruthy();
     });
 
-    test("Cmd+K should focus search input on pick-pack page", async ({
+    test("Cmd+K should focus search input on shipping page", async ({
       page,
     }) => {
-      await page.goto("/pick-pack");
+      await page.goto("/operations?tab=shipping");
       await page.waitForLoadState("networkidle");
 
       const isMac = process.platform === "darwin";
@@ -306,7 +306,7 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
         "/inventory",
         "/clients",
         "/accounting/invoices",
-        "/pick-pack",
+        "/operations?tab=shipping",
       ];
 
       for (const pagePath of pages) {

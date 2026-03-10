@@ -94,22 +94,24 @@ test.describe("Order Creation Flow", () => {
 });
 
 test.describe("Order Fulfillment Flow", () => {
+  const SHIPPING_ROUTE = "/operations?tab=shipping";
+
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
-  test("should navigate to pick-pack page", async ({ page }) => {
-    await page.goto("/pick-pack");
+  test("should navigate to shipping page", async ({ page }) => {
+    await page.goto(SHIPPING_ROUTE);
 
     await expect(
       page.locator(
-        'h1:has-text("Pick"), h1:has-text("Pack"), [data-testid="pick-pack-page"]'
+        'h1:has-text("Shipping"), [data-testid="pick-pack-header"], [data-testid="pick-pack-page"]'
       )
     ).toBeVisible({ timeout: 10000 });
   });
 
   test("should display orders ready for fulfillment", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Look for orders list
@@ -123,7 +125,7 @@ test.describe("Order Fulfillment Flow", () => {
   });
 
   test("should start picking process", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -147,7 +149,7 @@ test.describe("Order Fulfillment Flow", () => {
   });
 
   test("should mark items as picked", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -164,7 +166,12 @@ test.describe("Order Fulfillment Flow", () => {
         'input[type="checkbox"], [data-testid="pick-item"]'
       );
 
-      if (await itemCheckbox.first().isVisible().catch(() => false)) {
+      if (
+        await itemCheckbox
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
         await itemCheckbox.first().check();
         await expect(itemCheckbox.first()).toBeChecked();
       }
@@ -172,7 +179,7 @@ test.describe("Order Fulfillment Flow", () => {
   });
 
   test("should complete packing process", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -205,9 +212,7 @@ test.describe("Payment Flow", () => {
     await page.goto("/accounting/invoices");
 
     await expect(
-      page.locator(
-        'h1:has-text("Invoice"), [data-testid="invoices-page"]'
-      )
+      page.locator('h1:has-text("Invoice"), [data-testid="invoices-page"]')
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -273,9 +278,7 @@ test.describe("Payment Flow", () => {
 
         // Should show payment form
         await expect(
-          page.locator(
-            '[data-testid="payment-form"], form, [role="dialog"]'
-          )
+          page.locator('[data-testid="payment-form"], form, [role="dialog"]')
         ).toBeVisible({ timeout: 5000 });
       }
     }

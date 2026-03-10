@@ -814,7 +814,7 @@ function isRowLikeSelector(rawSelector: string): boolean {
     /tbody\s+tr/.test(normalized) ||
     /table\s+tbody\s+tr/.test(normalized) ||
     /data-(?!testid)[a-z0-9_-]*id/.test(normalized) ||
-    /\b(order|invoice|batch|client|pick-pack)\b/.test(normalized)
+    /\b(order|invoice|batch|client|pick-pack|shipping)\b/.test(normalized)
   );
 }
 

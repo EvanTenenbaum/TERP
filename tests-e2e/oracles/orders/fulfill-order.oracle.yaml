@@ -9,7 +9,7 @@ tags:
   - tier1
   - orders
   - fulfillment
-  - pick-pack
+  - shipping
   - mutation
 timeout: 60000
 
@@ -40,7 +40,7 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/pick-pack"
+    path: "/operations?tab=shipping"
     wait_for: "[data-testid='order-queue'], [data-testid='order-queue-row']"
 
   - action: wait
