@@ -78,6 +78,10 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { trackLegacyRouteRedirect } from "@/lib/navigation/routeUsageTelemetry";
 import {
+  buildOperationsWorkspacePath,
+  normalizeOperationsTab,
+} from "@/lib/workspaceRoutes";
+import {
   useLocation,
   Redirect,
   useSearch,
@@ -175,8 +179,12 @@ const RedirectToProcurementSpreadsheet: FC = () => {
   params.set("tab", "receiving");
   params.set("mode", "spreadsheet");
 
-  const query = params.toString();
-  const destination = `/purchase-orders${query ? `?${query}` : ""}`;
+  const destination = buildOperationsWorkspacePath(
+    "receiving",
+    Object.fromEntries(
+      Array.from(params.entries()).filter(([key]) => key !== "tab")
+    )
+  );
 
   useTrackLegacyRedirect({
     from: "/spreadsheet-view",
@@ -188,18 +196,63 @@ const RedirectToProcurementSpreadsheet: FC = () => {
   return <Redirect to={destination} />;
 };
 
+const RedirectInventoryToOperations: FC = () => {
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const destination = buildOperationsWorkspacePath(
+    normalizeOperationsTab(params.get("tab")) ?? "inventory",
+    Object.fromEntries(
+      Array.from(params.entries()).filter(([key]) => key !== "tab")
+    )
+  );
+
+  useTrackLegacyRedirect({
+    from: "/inventory",
+    to: destination,
+    tab: normalizeOperationsTab(params.get("tab")) ?? "inventory",
+    search: search || undefined,
+  });
+
+  return <Redirect to={destination} />;
+};
+
+const RedirectToOperationsTab = (from: string, tab: string) => {
+  const RedirectComponent: FC = () => {
+    const search = useSearch();
+    const params = new URLSearchParams(search);
+    const destination = buildOperationsWorkspacePath(
+      tab,
+      Object.fromEntries(
+        Array.from(params.entries()).filter(([key]) => key !== "tab")
+      )
+    );
+
+    useTrackLegacyRedirect({
+      from,
+      to: destination,
+      tab: normalizeOperationsTab(tab) ?? undefined,
+      search: search || undefined,
+    });
+
+    return <Redirect to={destination} />;
+  };
+
+  return RedirectComponent;
+};
+
 const RedirectInventoryDetailToWorkspace: FC<AnyRouteProps> = props => {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const inventoryId = props.params.id;
 
-  params.set("tab", "inventory");
   if (inventoryId) {
     params.set("batchId", inventoryId);
   }
-
-  const query = params.toString();
-  const destination = `/inventory${query ? `?${query}` : ""}`;
+  params.delete("tab");
+  const destination = buildOperationsWorkspacePath(
+    "inventory",
+    Object.fromEntries(params.entries())
+  );
 
   useTrackLegacyRedirect({
     from: "/inventory/:id",
@@ -317,8 +370,12 @@ function Router() {
                   component={withErrorBoundary(DemandSupplyWorkspacePage)}
                 />
                 <Route
-                  path="/inventory"
+                  path="/operations"
                   component={withErrorBoundary(InventoryWorkspacePage)}
+                />
+                <Route
+                  path="/inventory"
+                  component={withErrorBoundary(RedirectInventoryToOperations)}
                 />
                 <Route
                   path="/inventory/:id"
@@ -469,11 +526,7 @@ function Router() {
                 />
                 <Route
                   path="/pick-pack"
-                  component={RedirectWithTab(
-                    "/pick-pack",
-                    "/sales",
-                    "pick-pack"
-                  )}
+                  component={RedirectToOperationsTab("/pick-pack", "shipping")}
                 />
                 <Route
                   path="/photography"
@@ -646,17 +699,12 @@ function Router() {
                 {/* RT-05/RT-06: Route compatibility aliases to procurement workspace tab */}
                 <Route
                   path="/receiving"
-                  component={RedirectWithTab(
-                    "/receiving",
-                    "/purchase-orders",
-                    "receiving"
-                  )}
+                  component={RedirectToOperationsTab("/receiving", "receiving")}
                 />
                 <Route
                   path="/direct-intake"
-                  component={RedirectWithTab(
+                  component={RedirectToOperationsTab(
                     "/direct-intake",
-                    "/purchase-orders",
                     "receiving"
                   )}
                 />

@@ -85,6 +85,43 @@ describe("productIntakeDrafts", () => {
     expect(received?.lines[0]?.batchId).toBe(777);
   });
 
+  it("preserves range COGS details on intake draft lines", () => {
+    const draft = createProductIntakeDraftFromPO({
+      poId: 1002,
+      poNumber: "PO-1002",
+      vendorId: 15,
+      vendorName: "Golden Supplier",
+      warehouseId: 3,
+      warehouseName: "Main Warehouse",
+      lines: [
+        {
+          id: "line-range",
+          poItemId: 5002,
+          productId: 302,
+          productName: "Rainbow Belts",
+          category: "Flower",
+          quantityOrdered: 20,
+          quantityReceived: 0,
+          intakeQty: 12,
+          cogsMode: "RANGE",
+          unitCost: 20,
+          unitCostMin: 18,
+          unitCostMax: 22,
+        },
+      ],
+    });
+
+    upsertProductIntakeDraft(draft, 8);
+
+    const saved = getProductIntakeDraft(draft.id, 8);
+    expect(saved?.lines[0]).toMatchObject({
+      cogsMode: "RANGE",
+      unitCost: 20,
+      unitCostMin: 18,
+      unitCostMax: 22,
+    });
+  });
+
   it("marks draft as voided", () => {
     const draft = buildDraft();
     upsertProductIntakeDraft(draft, 8);
@@ -113,6 +150,8 @@ describe("productIntakeDrafts", () => {
 
     expect(listProductIntakeDrafts(1)).toHaveLength(1);
     expect(listProductIntakeDrafts(2)).toHaveLength(1);
-    expect(listProductIntakeDrafts(1)[0]?.id).not.toBe(listProductIntakeDrafts(2)[0]?.id);
+    expect(listProductIntakeDrafts(1)[0]?.id).not.toBe(
+      listProductIntakeDrafts(2)[0]?.id
+    );
   });
 });

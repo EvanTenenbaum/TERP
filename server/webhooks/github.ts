@@ -45,12 +45,15 @@ function verifyGitHubSignature(
 
   const hmac = crypto.createHmac("sha256", secret);
   const digest = "sha256=" + hmac.update(payload).digest("hex");
+  const signatureBuffer = Buffer.from(signature);
+  const digestBuffer = Buffer.from(digest);
+
+  if (signatureBuffer.length !== digestBuffer.length) {
+    return false;
+  }
 
   // Constant-time comparison to prevent timing attacks
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(digest)
-  );
+  return crypto.timingSafeEqual(signatureBuffer, digestBuffer);
 }
 
 /**
@@ -61,10 +64,15 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     logger.info("[WEBHOOK] Received webhook request");
     // Get webhook secret from environment
     // Note: GitHub Secrets can't start with "github", so we use WEBHOOK_SECRET
-    const webhookSecret = process.env.WEBHOOK_SECRET || process.env.GITHUB_WEBHOOK_SECRET;
+    const webhookSecret =
+      process.env.WEBHOOK_SECRET || process.env.GITHUB_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      logger.error("WEBHOOK_SECRET not configured");
-      return res.status(500).json({ error: "Webhook secret not configured" });
+      logger.warn(
+        "[WEBHOOK] WEBHOOK_SECRET not configured; skipping GitHub webhook processing"
+      );
+      return res
+        .status(202)
+        .json({ message: "Webhook ignored; secret not configured" });
     }
 
     // Get signature from header
@@ -97,7 +105,9 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       return res.status(200).json({ message: "Not TERP repository" });
     }
 
-    logger.info("[WEBHOOK] Passed all validation checks, extracting commit info");
+    logger.info(
+      "[WEBHOOK] Passed all validation checks, extracting commit info"
+    );
     // Extract commit information
     const { head_commit, pusher } = pushPayload;
     if (!head_commit) {
@@ -125,10 +135,14 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     });
 
     // Extract insertId from MySQL result (returns [ResultSetHeader, FieldPacket[]])
-    const insertId = Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0;
+    const insertId = Array.isArray(result)
+      ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+      : 0;
 
     logger.info("[WEBHOOK] Deployment record inserted successfully");
-    logger.info(`Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`);
+    logger.info(
+      `Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`
+    );
 
     // Trigger background job to poll DigitalOcean API
     // Schedule polling to start after 30 seconds (give DO time to start the build)
@@ -157,14 +171,19 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
  * Schedule background polling for DigitalOcean deployment status
  * Uses setTimeout for simple polling - in production, use a job queue
  */
-function scheduleDeploymentPolling(commitSha: string, deploymentId: number): void {
+function scheduleDeploymentPolling(
+  commitSha: string,
+  deploymentId: number
+): void {
   const POLL_INTERVAL_MS = 30000; // 30 seconds
   const MAX_POLLS = 20; // Max 10 minutes of polling
   let pollCount = 0;
 
   const poll = async () => {
     pollCount++;
-    logger.info(`[WEBHOOK] Polling deployment status (attempt ${pollCount}/${MAX_POLLS})`);
+    logger.info(
+      `[WEBHOOK] Polling deployment status (attempt ${pollCount}/${MAX_POLLS})`
+    );
 
     try {
       const db = await getDb();
@@ -186,7 +205,9 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
       }
 
       if (deployment.status === "success" || deployment.status === "failed") {
-        logger.info(`[WEBHOOK] Deployment ${commitSha.substring(0, 7)} completed with status: ${deployment.status}`);
+        logger.info(
+          `[WEBHOOK] Deployment ${commitSha.substring(0, 7)} completed with status: ${deployment.status}`
+        );
         return; // Stop polling
       }
 
@@ -194,7 +215,9 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
       if (pollCount < MAX_POLLS) {
         setTimeout(poll, POLL_INTERVAL_MS);
       } else {
-        logger.warn(`[WEBHOOK] Max polls reached for deployment ${commitSha.substring(0, 7)}`);
+        logger.warn(
+          `[WEBHOOK] Max polls reached for deployment ${commitSha.substring(0, 7)}`
+        );
         // Mark as unknown status
         await db
           .update(deployments)
@@ -202,7 +225,10 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
           .where(eq(deployments.id, deploymentId));
       }
     } catch (error) {
-      logger.error({ msg: "[WEBHOOK] Error polling deployment status", error: error instanceof Error ? error.message : String(error) });
+      logger.error({
+        msg: "[WEBHOOK] Error polling deployment status",
+        error: error instanceof Error ? error.message : String(error),
+      });
       // Continue polling on error
       if (pollCount < MAX_POLLS) {
         setTimeout(poll, POLL_INTERVAL_MS);
@@ -212,5 +238,7 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
 
   // Start polling after initial delay
   setTimeout(poll, POLL_INTERVAL_MS);
-  logger.info(`[WEBHOOK] Scheduled deployment polling for ${commitSha.substring(0, 7)}`);
+  logger.info(
+    `[WEBHOOK] Scheduled deployment polling for ${commitSha.substring(0, 7)}`
+  );
 }

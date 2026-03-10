@@ -52,19 +52,19 @@ export const RELATIONSHIPS_WORKSPACE = {
 } as const satisfies WorkspaceConfig<"clients" | "suppliers">;
 
 export const INVENTORY_WORKSPACE = {
-  title: "Inventory",
-  homePath: "/inventory",
+  title: "Operations",
+  homePath: "/operations",
   description:
-    "Manage operational inventory, pick & pack, intake, photography, and samples in one place.",
+    "Manage inventory, receiving, shipping, photography, and samples in one operational workspace.",
   tabs: [
-    { value: "inventory", label: "Operations" },
-    { value: "pick-pack", label: "Pick & Pack" },
-    { value: "intake", label: "Intake" },
+    { value: "inventory", label: "Inventory" },
+    { value: "receiving", label: "Receiving" },
+    { value: "shipping", label: "Shipping" },
     { value: "photography", label: "Photography" },
     { value: "samples", label: "Samples" },
   ],
 } as const satisfies WorkspaceConfig<
-  "inventory" | "pick-pack" | "intake" | "photography" | "samples"
+  "inventory" | "receiving" | "shipping" | "photography" | "samples"
 >;
 
 export const CREDITS_WORKSPACE = {
@@ -82,15 +82,30 @@ export const ACCOUNTING_WORKSPACE = {
   title: "Accounting",
   homePath: "/accounting",
   description:
-    "Manage financials including receivables, payables, and the general ledger in one workspace.",
+    "Manage invoices, bills, payments, banking, and the ledger in one workspace.",
   tabs: [
     { value: "dashboard", label: "Dashboard" },
-    { value: "receivables", label: "Receivables" },
-    { value: "payables", label: "Payables" },
-    { value: "ledger", label: "Ledger" },
+    { value: "invoices", label: "Invoices" },
+    { value: "bills", label: "Bills" },
+    { value: "payments", label: "Payments" },
+    { value: "general-ledger", label: "General Ledger" },
+    { value: "chart-of-accounts", label: "Chart of Accounts" },
+    { value: "expenses", label: "Expenses" },
+    { value: "bank-accounts", label: "Bank Accounts" },
+    { value: "bank-transactions", label: "Bank Transactions" },
+    { value: "fiscal-periods", label: "Fiscal Periods" },
   ],
 } as const satisfies WorkspaceConfig<
-  "dashboard" | "receivables" | "payables" | "ledger"
+  | "dashboard"
+  | "invoices"
+  | "bills"
+  | "payments"
+  | "general-ledger"
+  | "chart-of-accounts"
+  | "expenses"
+  | "bank-accounts"
+  | "bank-transactions"
+  | "fiscal-periods"
 >;
 
 export const CALENDAR_WORKSPACE = {

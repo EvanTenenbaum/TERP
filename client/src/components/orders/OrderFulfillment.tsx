@@ -188,7 +188,7 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
           {currentStep === "fulfill" && (
             <Button onClick={() => setActiveDialog("fulfill")}>
               <Package className="h-4 w-4 mr-2" />
-              Pick & Pack
+              Prepare Shipment
             </Button>
           )}
           {currentStep === "ship" && (
@@ -435,7 +435,7 @@ function FulfillOrderDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Pick & Pack Order</DialogTitle>
+          <DialogTitle>Prepare Shipment</DialogTitle>
           <DialogDescription>
             Enter the picked quantities for each item.
           </DialogDescription>

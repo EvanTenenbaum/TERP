@@ -16,7 +16,12 @@ import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import * as productsDb from "../productsDb";
 import { getDb } from "../db";
-import { purchaseOrders } from "../../drizzle/schema";
+import {
+  clients,
+  products,
+  purchaseOrderItems,
+  purchaseOrders,
+} from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 const mockUser = {
@@ -58,6 +63,24 @@ const seedPurchaseOrder = async ({
     createdAt: new Date("2026-02-01"),
     updatedAt: new Date("2026-02-01"),
     deletedAt,
+  });
+};
+
+const seedSupplierClient = async ({
+  id,
+  name,
+}: {
+  id: number;
+  name: string;
+}) => {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(clients).values({
+    id,
+    teriCode: `SUP-${id}`,
+    name,
+    isSeller: true,
   });
 };
 
@@ -259,5 +282,85 @@ describe("Purchase Orders Router", () => {
       .from(purchaseOrders)
       .where(eq(purchaseOrders.id, activePoId));
     expect(restoredPo?.deletedAt).toBeNull();
+  });
+
+  it("creates PO lines from typed product names and defaults payment terms to consignment", async () => {
+    const supplierClientId = 93001;
+    await seedSupplierClient({
+      id: supplierClientId,
+      name: "Redwood Supply",
+    });
+
+    const result = await caller.purchaseOrders.create({
+      supplierClientId,
+      orderDate: "2026-03-10",
+      items: [
+        {
+          productName: "Moonlight Runtz",
+          category: "Flower",
+          quantityOrdered: 12,
+          cogsMode: "FIXED",
+          unitCost: 87.5,
+        },
+      ],
+    });
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const createdPo = (await db.select().from(purchaseOrders)).find(
+      po => po.id === result.id
+    );
+    expect(createdPo?.paymentTerms).toBe("CONSIGNMENT");
+
+    const createdItem = (await db.select().from(purchaseOrderItems)).find(
+      item => item.purchaseOrderId === result.id
+    );
+    expect(createdItem?.productId).toBeGreaterThan(0);
+    expect(createdItem?.cogsMode).toBe("FIXED");
+    expect(Number(createdItem?.unitCost)).toBe(87.5);
+
+    const createdProduct = (await db.select().from(products)).find(
+      product => product.id === (createdItem?.productId ?? -1)
+    );
+    expect(createdProduct?.nameCanonical).toBe("Moonlight Runtz");
+    expect(createdProduct?.supplierClientId).toBe(supplierClientId);
+  });
+
+  it("persists range COGS on PO items for receiving", async () => {
+    const supplierClientId = 93002;
+    await seedSupplierClient({
+      id: supplierClientId,
+      name: "Peak Range Farms",
+    });
+
+    const result = await caller.purchaseOrders.create({
+      supplierClientId,
+      orderDate: "2026-03-10",
+      paymentTerms: "NET_15",
+      items: [
+        {
+          productName: "Range Resin",
+          category: "Concentrates",
+          quantityOrdered: 5,
+          cogsMode: "RANGE",
+          unitCostMin: 42,
+          unitCostMax: 58,
+        },
+      ],
+    });
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const createdItem = (await db.select().from(purchaseOrderItems)).find(
+      item => item.purchaseOrderId === result.id
+    );
+
+    expect(createdItem?.cogsMode).toBe("RANGE");
+    expect(Number(createdItem?.unitCostMin)).toBe(42);
+    expect(Number(createdItem?.unitCostMax)).toBe(58);
+    expect(Number(createdItem?.unitCost)).toBe(50);
+    expect(Number(createdItem?.totalCost)).toBe(250);
   });
 });

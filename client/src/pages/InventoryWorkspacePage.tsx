@@ -5,17 +5,22 @@ import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
 import {
+  normalizeOperationsTab,
+  type OperationsTab,
+} from "@/lib/workspaceRoutes";
+import {
   LinearWorkspacePanel,
   LinearWorkspaceShell,
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
 import { PageLoading } from "@/components/ui/loading-state";
 
-const IntakeReceipts = lazy(() => import("@/pages/IntakeReceipts"));
+const ReceivingPage = lazy(() => import("@/pages/IntakeReceipts"));
 const PhotographyPage = lazy(() => import("@/pages/PhotographyPage"));
 const SampleManagement = lazy(() => import("@/pages/SampleManagement"));
 
 type InventoryTab = (typeof INVENTORY_WORKSPACE.tabs)[number]["value"];
+type InventoryQueryTab = OperationsTab | "intake" | "pick-pack";
 
 const INVENTORY_TABS_CONFIG = [
   ...INVENTORY_WORKSPACE.tabs,
@@ -26,10 +31,12 @@ const INVENTORY_TABS = INVENTORY_TABS_CONFIG.map(
 ) as readonly InventoryTab[];
 
 export default function InventoryWorkspacePage() {
-  const { activeTab, setActiveTab } = useQueryTabState<InventoryTab>({
-    defaultTab: "inventory",
-    validTabs: INVENTORY_TABS,
-  });
+  const { activeTab: requestedTab, setActiveTab } =
+    useQueryTabState<InventoryQueryTab>({
+      defaultTab: "inventory",
+      validTabs: [...INVENTORY_TABS, "intake", "pick-pack"],
+    });
+  const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
   useWorkspaceHomeTelemetry("inventory", activeTab);
 
   return (
@@ -45,12 +52,12 @@ export default function InventoryWorkspacePage() {
       <LinearWorkspacePanel value="inventory">
         <InventoryWorkSurface />
       </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="pick-pack">
+      <LinearWorkspacePanel value="shipping">
         <PickPackWorkSurface />
       </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="intake">
-        <Suspense fallback={<PageLoading message="Loading intake..." />}>
-          <IntakeReceipts />
+      <LinearWorkspacePanel value="receiving">
+        <Suspense fallback={<PageLoading message="Loading receiving..." />}>
+          <ReceivingPage />
         </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="photography">

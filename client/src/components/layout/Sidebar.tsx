@@ -23,6 +23,7 @@ import {
   navigationItems,
   type NavigationGroupKey,
 } from "@/config/navigation";
+import { normalizeOperationsTab } from "@/lib/workspaceRoutes";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useNavigationState } from "@/hooks/useNavigationState";
 import { trpc } from "@/lib/trpc";
@@ -44,12 +45,28 @@ function normalizeNavRoute(path: string) {
     pathname = "/sales";
   }
   if (pathname === "/pick-pack") {
-    pathname = "/sales";
-    params.set("tab", "pick-pack");
+    pathname = "/operations";
+    params.set("tab", "shipping");
   }
   if (pathname === "/direct-intake" || pathname === "/receiving") {
-    pathname = "/purchase-orders";
+    pathname = "/operations";
     params.set("tab", "receiving");
+  }
+  if (pathname === "/inventory") {
+    pathname = "/operations";
+  }
+  if (pathname === "/sales" && params.get("tab") === "pick-pack") {
+    pathname = "/operations";
+    params.set("tab", "shipping");
+  }
+  if (pathname === "/purchase-orders" && params.get("tab") === "receiving") {
+    pathname = "/operations";
+  }
+  if (pathname === "/operations") {
+    const normalizedTab = normalizeOperationsTab(params.get("tab"));
+    if (normalizedTab) {
+      params.set("tab", normalizedTab);
+    }
   }
 
   return {

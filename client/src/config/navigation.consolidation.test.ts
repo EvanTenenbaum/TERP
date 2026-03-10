@@ -20,7 +20,7 @@ describe("consolidated navigation IA", () => {
     expect(paths).toContain("/sales");
     expect(paths).toContain("/relationships");
     expect(paths).toContain("/demand-supply");
-    expect(paths).toContain("/inventory");
+    expect(paths).toContain("/operations");
     expect(paths).toContain("/credits");
     expect(paths).toContain("/notifications");
     expect(paths).toContain("/settings/cogs");
@@ -52,8 +52,8 @@ describe("consolidated navigation IA", () => {
     expect(sidebarPaths).toContain("/relationships");
     expect(sidebarPaths).toContain("/demand-supply");
 
-    // Buy group: Inventory, Purchase Orders
-    expect(sidebarPaths).toContain("/inventory");
+    // Operations group: Operations, Purchase Orders
+    expect(sidebarPaths).toContain("/operations");
     expect(sidebarPaths).toContain("/purchase-orders");
 
     // Finance group: Accounting, Credits, Reports
@@ -69,8 +69,9 @@ describe("consolidated navigation IA", () => {
 
   // TER-597: Absorbed items are hidden from sidebar but present in full list
   it("keeps absorbed items in navigationItems for Command Palette continuity", () => {
-    // Sales absorbed items
-    expect(paths).toContain("/sales?tab=pick-pack");
+    // Operations absorbed items
+    expect(paths).toContain("/operations?tab=shipping");
+    expect(paths).toContain("/operations?tab=receiving");
     expect(paths).toContain("/sales-sheets");
     expect(paths).toContain("/live-shopping");
 
@@ -91,6 +92,8 @@ describe("consolidated navigation IA", () => {
     // Absorbed items must NOT be sidebar-visible
     expect(sidebarHiddenPaths).toContain("/sales-sheets");
     expect(sidebarHiddenPaths).toContain("/live-shopping");
+    expect(sidebarHiddenPaths).toContain("/operations?tab=shipping");
+    expect(sidebarHiddenPaths).toContain("/operations?tab=receiving");
     expect(sidebarHiddenPaths).toContain("/photography");
     expect(sidebarHiddenPaths).toContain("/samples");
     expect(sidebarHiddenPaths).toContain("/users");
@@ -105,7 +108,7 @@ describe("consolidated navigation IA", () => {
 
     // Sidebar-visible items must be present
     expect(groupedPaths).toContain("/sales");
-    expect(groupedPaths).toContain("/inventory");
+    expect(groupedPaths).toContain("/operations");
     expect(groupedPaths).toContain("/accounting");
 
     // Absorbed items must NOT appear in sidebar groups

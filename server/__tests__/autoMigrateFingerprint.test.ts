@@ -18,7 +18,7 @@ describe("checkSchemaFingerprint", () => {
   const mockedGetDb = vi.mocked(getDb);
   const mockExecute = vi.fn();
   // Keep in sync with FINGERPRINT_CANARIES in server/autoMigrate.ts
-  const canaryCount = 8;
+  const canaryCount = 11;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,21 +47,14 @@ describe("checkSchemaFingerprint", () => {
 
   it("returns incomplete with named missing canary checks", async () => {
     mockExecute.mockResolvedValueOnce([[{ result: 1 }]]); // warmup
-    // Third canary (products.nameCanonical.column) fails.
-    mockExecute
-      .mockResolvedValueOnce([[{ passed: 1 }]])
-      .mockResolvedValueOnce([[{ passed: 1 }]])
-      .mockResolvedValueOnce([[{ passed: 0 }]])
-      .mockResolvedValueOnce([[{ passed: 1 }]])
-      .mockResolvedValueOnce([[{ passed: 1 }]])
-      .mockResolvedValueOnce([[{ passed: 1 }]])
-      .mockResolvedValueOnce([[{ passed: 1 }]])
-      .mockResolvedValueOnce([[{ passed: 1 }]]);
+    for (let i = 0; i < canaryCount; i++) {
+      mockExecute.mockResolvedValueOnce([[{ passed: i === 2 ? 0 : 1 }]]);
+    }
 
     const result = await checkSchemaFingerprint({ retries: 1 });
 
     expect(result.complete).toBe(false);
-    expect(result.count).toBe(7);
+    expect(result.count).toBe(10);
     expect(result.attempts).toBe(1);
     expect(result.missingChecks).toEqual(["products.nameCanonical.column"]);
     expect(result.checks).toHaveLength(canaryCount);

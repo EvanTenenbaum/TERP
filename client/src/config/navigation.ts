@@ -77,7 +77,7 @@ export const navigationGroups: Array<{
   label: string;
 }> = [
   { key: "sales", label: "Sell" },
-  { key: "inventory", label: "Buy" },
+  { key: "inventory", label: "Operations" },
   { key: "finance", label: "Finance" },
   { key: "admin", label: "Admin" },
 ];
@@ -109,15 +109,13 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: true,
   },
 
-  // Absorbed into Sales workspace tabs — hidden from sidebar, visible in Command Palette
-  // NAV-002: Pick & Pack absorbed as Sales tab
-  // TERP-0005: Moved from Sales to Inventory group; now absorbed back under Sales workspace
+  // Absorbed into Operations workspace — hidden from sidebar, visible in Command Palette
   {
-    name: "Pick & Pack",
-    path: "/sales?tab=pick-pack",
+    name: "Shipping",
+    path: "/operations?tab=shipping",
     icon: PackageOpen,
-    group: "sales",
-    ariaLabel: "Order fulfillment and packing workflow",
+    group: "inventory",
+    ariaLabel: "Order fulfillment, packing, and shipping workflow",
     sidebarVisible: false,
   },
   {
@@ -147,11 +145,10 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: false,
   },
 
-  // ─── Buy group (2 sidebar items) ───────────────────────────────────────────
+  // ─── Operations group (2 sidebar items) ────────────────────────────────────
   {
-    // MEET-053: User-friendly terminology - "Inventory" instead of "Batches"
     name: INVENTORY_WORKSPACE.title,
-    path: "/inventory",
+    path: "/operations",
     icon: PackageCheck,
     group: "inventory",
     ariaLabel: INVENTORY_WORKSPACE.description,
@@ -183,21 +180,21 @@ export const navigationItems: NavigationItem[] = [
     group: "inventory",
     sidebarVisible: false,
   },
-  // TERP-0005: Intake absorbed as Purchase Orders receiving tab
+  // TERP-0005: Receiving absorbed into Operations workspace
   {
-    name: "Intake",
-    path: "/purchase-orders?tab=receiving",
+    name: "Receiving",
+    path: "/operations?tab=receiving",
     icon: Download,
     group: "inventory",
-    ariaLabel: "Intake inventory into the system",
+    ariaLabel: "Receive inventory into the system",
     sidebarVisible: false,
   },
   {
     name: "Spreadsheet View",
-    path: "/purchase-orders?tab=receiving&mode=spreadsheet",
+    path: "/operations?tab=receiving&mode=spreadsheet",
     icon: Table,
     group: "inventory",
-    ariaLabel: "Spreadsheet view for inventory and clients",
+    ariaLabel: "Spreadsheet view for receiving and inventory operations",
     featureFlag: "spreadsheet-view",
     sidebarVisible: false,
   },
@@ -370,10 +367,10 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
     ariaLabel: "Create a new sales order",
   },
   {
-    name: "Record Intake",
-    path: "/purchase-orders?tab=receiving",
+    name: "Record Receiving",
+    path: "/operations?tab=receiving",
     icon: Download,
-    ariaLabel: "Record a product intake",
+    ariaLabel: "Record product receiving",
   },
   {
     name: "Clients",
@@ -394,10 +391,10 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
     ariaLabel: "Open invoices",
   },
   {
-    name: "Inventory",
-    path: "/inventory",
+    name: "Operations",
+    path: "/operations",
     icon: PackageCheck,
-    ariaLabel: "Open inventory workspace",
+    ariaLabel: "Open operations workspace",
   },
   {
     name: SALES_WORKSPACE.title,
@@ -410,7 +407,7 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
 export const defaultQuickLinkPaths: readonly string[] = [
   "/",
   "/sales?tab=create-order",
-  "/purchase-orders?tab=receiving",
+  "/operations?tab=receiving",
   "/clients",
 ];
 

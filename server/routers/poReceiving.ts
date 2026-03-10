@@ -110,7 +110,7 @@ export const poReceivingRouter = router({
           po.paymentTerms as (typeof validPaymentTerms)[number]
         )
           ? (po.paymentTerms as (typeof validPaymentTerms)[number])
-          : "NET_30";
+          : "CONSIGNMENT";
         // TER-97: po.vendorId is now nullable; fall back to supplierClientId (same clients.id space)
         const receivingVendorId = po.vendorId ?? po.supplierClientId;
         if (!receivingVendorId) {
@@ -154,7 +154,7 @@ export const poReceivingRouter = router({
               sampleQty: "0",
               unitCogs: item.newBatchData.costPerUnit?.toString() || "0",
               cogsMode: "FIXED",
-              paymentTerms: "NET_30",
+              paymentTerms: "CONSIGNMENT",
               batchStatus: "AWAITING_INTAKE",
             });
             batchId = newBatch.insertId;
@@ -319,7 +319,10 @@ export const poReceivingRouter = router({
           productId: purchaseOrderItems.productId,
           quantityOrdered: purchaseOrderItems.quantityOrdered,
           quantityReceived: purchaseOrderItems.quantityReceived,
+          cogsMode: purchaseOrderItems.cogsMode,
           unitCost: purchaseOrderItems.unitCost,
+          unitCostMin: purchaseOrderItems.unitCostMin,
+          unitCostMax: purchaseOrderItems.unitCostMax,
           remainingQuantity: sql<string>`
             CAST(${purchaseOrderItems.quantityOrdered} AS DECIMAL(15,4)) - 
             COALESCE(CAST(${purchaseOrderItems.quantityReceived} AS DECIMAL(15,4)), 0)
@@ -397,7 +400,10 @@ export const poReceivingRouter = router({
             productId: purchaseOrderItems.productId,
             quantityOrdered: purchaseOrderItems.quantityOrdered,
             quantityReceived: purchaseOrderItems.quantityReceived,
+            cogsMode: purchaseOrderItems.cogsMode,
             unitCost: purchaseOrderItems.unitCost,
+            unitCostMin: purchaseOrderItems.unitCostMin,
+            unitCostMax: purchaseOrderItems.unitCostMax,
             totalCost: purchaseOrderItems.totalCost,
             productName: products.nameCanonical,
             category: products.category,
@@ -606,7 +612,11 @@ export const poReceivingRouter = router({
             holdQty: "0",
             defectiveQty: "0",
             unitCogs: poItem.unitCost,
-            cogsMode: "FIXED",
+            unitCogsMin:
+              poItem.cogsMode === "RANGE" ? poItem.unitCostMin : null,
+            unitCogsMax:
+              poItem.cogsMode === "RANGE" ? poItem.unitCostMax : null,
+            cogsMode: poItem.cogsMode,
             paymentTerms: ([
               "COD",
               "NET_7",
@@ -616,7 +626,7 @@ export const poReceivingRouter = router({
               "PARTIAL",
             ].includes(po.paymentTerms ?? "")
               ? po.paymentTerms
-              : "NET_30") as
+              : "CONSIGNMENT") as
               | "COD"
               | "NET_7"
               | "NET_15"
