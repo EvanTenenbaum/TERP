@@ -520,7 +520,7 @@ export function PurchaseOrdersSlicePage() {
       ? "/slice-v1-lab/product-intake"
       : route.startsWith("/slice-v1")
         ? "/slice-v1/product-intake"
-        : "/product-intake";
+        : "/operations?tab=receiving";
 
     upsertProductIntakeDraft(draft, preferenceUserId);
     setPickerOpen(false);
@@ -573,7 +573,7 @@ export function PurchaseOrdersSlicePage() {
 
   const contextLine = selectedPo
     ? `${selectedPo.poNumber} · ${getSupplierName(selectedPo)} · ${selectedPo.purchaseOrderStatus} · ${selectedPo.items?.length ?? 0} lines · $${Number(selectedPo.total ?? 0).toFixed(2)}`
-    : "Select a Purchase Order row to inspect detail context and create Product Intake.";
+    : "Select a purchase order row to inspect detail context and start receiving.";
 
   return (
     <div className="h-full flex flex-col">
@@ -582,7 +582,7 @@ export function PurchaseOrdersSlicePage() {
           Purchase Orders
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Purchase Order to Product Intake routing surface.
+          Purchase Order to Receiving routing surface.
         </p>
       </div>
 
@@ -668,7 +668,7 @@ export function PurchaseOrdersSlicePage() {
           disabled={!activePoForIntake}
         >
           <ClipboardPlus className="h-4 w-4 mr-1" />
-          Create Product Intake
+          Start Receiving
         </Button>
 
         <Button
@@ -810,11 +810,11 @@ export function PurchaseOrdersSlicePage() {
         <DrawerContent className="w-[760px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>
-              Create Product Intake
+              Start Receiving
               {activePoForIntake ? ` from ${activePoForIntake.poNumber}` : ""}
             </DrawerTitle>
             <DrawerDescription className="sr-only">
-              Select PO lines and quantities to start a Product Intake draft.
+              Select PO lines and quantities to start a receiving draft.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto">

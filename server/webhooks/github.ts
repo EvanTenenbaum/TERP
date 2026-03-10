@@ -31,6 +31,43 @@ interface GitHubPushPayload {
   };
 }
 
+function getWebhookPayload(
+  req: Request
+): { rawPayload: string; parsedPayload: GitHubPushPayload | null } | null {
+  if (Buffer.isBuffer(req.body)) {
+    const rawPayload = req.body.toString("utf8");
+    try {
+      return {
+        rawPayload,
+        parsedPayload: JSON.parse(rawPayload) as GitHubPushPayload,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof req.body === "string") {
+    try {
+      return {
+        rawPayload: req.body,
+        parsedPayload: JSON.parse(req.body) as GitHubPushPayload,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  const parsedPayload =
+    req.body && typeof req.body === "object"
+      ? (req.body as GitHubPushPayload)
+      : null;
+
+  return {
+    rawPayload: JSON.stringify(parsedPayload ?? {}),
+    parsedPayload,
+  };
+}
+
 /**
  * Verify GitHub webhook signature using HMAC-SHA256
  */
@@ -80,10 +117,21 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     const event = req.headers["x-github-event"] as string;
     const deliveryId = req.headers["x-github-delivery"] as string;
 
-    // Verify signature
+    const webhookPayload = getWebhookPayload(req);
+    if (!webhookPayload) {
+      logger.error("[WEBHOOK] Invalid JSON payload");
+      return res.status(400).json({ error: "Invalid JSON payload" });
+    }
+
+    // Verify signature against the raw request body GitHub sent.
     logger.info("[WEBHOOK] Verifying signature");
-    const payload = JSON.stringify(req.body);
-    if (!verifyGitHubSignature(payload, signature, webhookSecret)) {
+    if (
+      !verifyGitHubSignature(
+        webhookPayload.rawPayload,
+        signature,
+        webhookSecret
+      )
+    ) {
       logger.error("Invalid GitHub webhook signature");
       return res.status(403).json({ error: "Invalid signature" });
     }
@@ -93,7 +141,10 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       return res.status(200).json({ message: "Event type not supported" });
     }
 
-    const pushPayload = req.body as GitHubPushPayload;
+    const pushPayload = webhookPayload.parsedPayload;
+    if (!pushPayload) {
+      return res.status(400).json({ error: "Invalid webhook payload" });
+    }
 
     // Only process pushes to main branch
     if (pushPayload.ref !== "refs/heads/main") {

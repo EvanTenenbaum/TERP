@@ -1,5 +1,5 @@
 /**
- * E2E Tests: Pick & Pack Workflow (WS-003)
+ * E2E Tests: Shipping Workflow (WS-003)
  *
  * Tests the critical fulfillment workflow for packing orders.
  */
@@ -7,25 +7,24 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Pick & Pack Workflow (WS-003)", () => {
+const SHIPPING_ROUTE = "/operations?tab=shipping";
+
+test.describe("Shipping Workflow (WS-003)", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
-  test("should navigate to pick and pack page", async ({ page }) => {
-    // Navigate to pick and pack
-    await page.goto("/pick-pack");
+  test("should navigate to shipping page", async ({ page }) => {
+    await page.goto(SHIPPING_ROUTE);
 
     // Verify page loaded
     await expect(
-      page.locator(
-        'h1:has-text("Pick"), h1:has-text("Pack"), [data-testid="pick-pack-page"]'
-      )
+      page.locator('h1:has-text("Shipping"), [data-testid="pick-pack-page"]')
     ).toBeVisible({ timeout: 10000 });
   });
 
   test("should display order queue", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Look for order queue/list
@@ -37,7 +36,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 
   test("should filter orders by status", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Look for status filter
@@ -63,7 +62,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 
   test("should open order details for packing", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order in queue
@@ -84,7 +83,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 
   test("should display order items for picking", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -110,7 +109,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 
   test("should allow packing items into bags", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -135,7 +134,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 
   test("should show bag management interface", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -166,7 +165,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 
   test("should mark order as ready when fully packed", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -191,13 +190,13 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 });
 
-test.describe("Pick & Pack - Printing", () => {
+test.describe("Shipping - Printing", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
   test("should have print packing slip option", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Click on first order
@@ -221,7 +220,7 @@ test.describe("Pick & Pack - Printing", () => {
   });
 });
 
-test.describe("Pick & Pack - Mobile Responsive", () => {
+test.describe("Shipping - Mobile Responsive", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
   test.beforeEach(async ({ page }) => {
@@ -229,7 +228,7 @@ test.describe("Pick & Pack - Mobile Responsive", () => {
   });
 
   test("should be usable on mobile viewport", async ({ page }) => {
-    await page.goto("/pick-pack");
+    await page.goto(SHIPPING_ROUTE);
     await page.waitForLoadState("networkidle");
 
     // Page should be visible and not have horizontal scroll

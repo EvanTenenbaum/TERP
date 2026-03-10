@@ -491,6 +491,7 @@ function buildSelectorCandidates(
     if (/batch-form|intake-form/i.test(dataTestId)) {
       candidates.add("[role='dialog']");
       candidates.add("[role='dialog']:has-text('New Product Intake')");
+      candidates.add("[role='dialog']:has-text('New Receiving')");
     }
 
     if (/search/i.test(dataTestId)) {
