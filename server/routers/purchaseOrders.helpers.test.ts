@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  dedupeRecentSupplierProducts,
   normalizePurchaseOrderPaymentTerms,
+  shouldFallbackRecentProductsBySupplier,
   summarizePurchaseOrderItemCost,
 } from "./purchaseOrders";
 
@@ -24,5 +26,60 @@ describe("purchaseOrders helpers", () => {
       unitCostMin: 18,
       unitCostMax: 22,
     });
+  });
+
+  it("deduplicates recent supplier products by product id and name fallback", () => {
+    expect(
+      dedupeRecentSupplierProducts(
+        [
+          {
+            productId: 11,
+            productName: "Blue Dream",
+          },
+          {
+            productId: 11,
+            productName: "Blue Dream",
+          },
+          {
+            productId: null,
+            productName: "Mystery Lot",
+          },
+          {
+            productId: null,
+            productName: "mystery lot",
+          },
+        ],
+        8
+      )
+    ).toEqual([
+      {
+        productId: 11,
+        productName: "Blue Dream",
+      },
+      {
+        productId: null,
+        productName: "Mystery Lot",
+      },
+    ]);
+  });
+
+  it("falls back to legacy supplier history only for range-cogs schema drift", () => {
+    expect(
+      shouldFallbackRecentProductsBySupplier(
+        new Error(
+          "Unknown column 'purchaseOrderItems.cogsMode' in 'field list'"
+        )
+      )
+    ).toBe(true);
+    expect(
+      shouldFallbackRecentProductsBySupplier(
+        new Error(
+          "Unknown column 'purchaseOrderItems.unitCostMax' in 'field list'"
+        )
+      )
+    ).toBe(true);
+    expect(
+      shouldFallbackRecentProductsBySupplier(new Error("Connection lost"))
+    ).toBe(false);
   });
 });

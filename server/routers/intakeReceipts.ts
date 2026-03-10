@@ -25,6 +25,7 @@ import {
 import { eq, desc, sql, and, or, gte, lte, like } from "drizzle-orm";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { logger } from "../_core/logger";
+import { isSchemaDriftError } from "../_core/dbErrors";
 import { sendNotification } from "../services/notificationService";
 import { withTransaction } from "../dbTransaction";
 import crypto from "crypto";
@@ -77,6 +78,17 @@ const listReceiptsSchema = z.object({
   endDate: z.string().optional(),
   search: z.string().optional(),
 });
+
+export function shouldFallbackListReceiptsSchemaDrift(error: unknown) {
+  return isSchemaDriftError(error, [
+    "intake_receipts",
+    "intake_receipt_items",
+    "receipt_number",
+    "farmer_verified_at",
+    "stacker_verified_at",
+    "finalized_at",
+  ]);
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -373,24 +385,37 @@ export const intakeReceiptsRouter = router({
       const query =
         conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-      const receipts = await query
-        .orderBy(desc(intakeReceipts.createdAt))
-        .limit(limit)
-        .offset(offset);
+      try {
+        const receipts = await query
+          .orderBy(desc(intakeReceipts.createdAt))
+          .limit(limit)
+          .offset(offset);
 
-      // Get total count
-      const countQuery =
-        conditions.length > 0
-          ? db
-              .select({ count: sql<number>`COUNT(*)` })
-              .from(intakeReceipts)
-              .where(and(...conditions))
-          : db.select({ count: sql<number>`COUNT(*)` }).from(intakeReceipts);
+        // Get total count
+        const countQuery =
+          conditions.length > 0
+            ? db
+                .select({ count: sql<number>`COUNT(*)` })
+                .from(intakeReceipts)
+                .where(and(...conditions))
+            : db.select({ count: sql<number>`COUNT(*)` }).from(intakeReceipts);
 
-      const [countResult] = await countQuery;
-      const total = countResult?.count ?? receipts.length;
+        const [countResult] = await countQuery;
+        const total = countResult?.count ?? receipts.length;
 
-      return createSafeUnifiedResponse(receipts, total, limit, offset);
+        return createSafeUnifiedResponse(receipts, total, limit, offset);
+      } catch (error) {
+        if (!shouldFallbackListReceiptsSchemaDrift(error)) {
+          throw error;
+        }
+
+        logger.warn(
+          { error },
+          "[IntakeReceipts] Falling back to empty receipt list because the production schema is behind the receiving UI"
+        );
+
+        return createSafeUnifiedResponse([], 0, limit, offset);
+      }
     }),
 
   /**
