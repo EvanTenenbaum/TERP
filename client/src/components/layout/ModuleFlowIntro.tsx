@@ -103,7 +103,7 @@ const MODULE_FLOW_INTROS: ModuleFlowIntroConfig[] = [
           "Update existing batches or add a new batch when inventory arrives.",
       },
     ],
-    routePrefixes: ["/inventory"],
+    routePrefixes: ["/inventory", "/operations"],
   },
   {
     key: "accounting",

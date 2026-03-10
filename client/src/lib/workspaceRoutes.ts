@@ -1,4 +1,10 @@
 type WorkspaceParamValue = string | number | boolean | null | undefined;
+export type OperationsTab =
+  | "inventory"
+  | "receiving"
+  | "shipping"
+  | "photography"
+  | "samples";
 
 function buildWorkspacePath(
   basePath: string,
@@ -27,6 +33,32 @@ export function buildSalesWorkspacePath(
   params?: Record<string, WorkspaceParamValue>
 ) {
   return buildWorkspacePath("/sales", tab, params);
+}
+
+export function normalizeOperationsTab(
+  tab?: string | null
+): OperationsTab | undefined {
+  switch (tab) {
+    case "inventory":
+    case "receiving":
+    case "shipping":
+    case "photography":
+    case "samples":
+      return tab;
+    case "intake":
+      return "receiving";
+    case "pick-pack":
+      return "shipping";
+    default:
+      return undefined;
+  }
+}
+
+export function buildOperationsWorkspacePath(
+  tab?: string | null,
+  params?: Record<string, WorkspaceParamValue>
+) {
+  return buildWorkspacePath("/operations", normalizeOperationsTab(tab), params);
 }
 
 export function buildProcurementWorkspacePath(

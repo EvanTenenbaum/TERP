@@ -13,7 +13,7 @@ import { HelpCircle, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
 import { buildNavigationAccessModel } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import {
-  buildProcurementWorkspacePath,
+  buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
 } from "@/lib/workspaceRoutes";
 
@@ -83,11 +83,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     {
       id: "record-receipt",
-      label: "Record Intake",
+      label: "Record Receiving",
       icon: ReceiptText,
       shortcut: "R",
       action: () => {
-        setLocation(buildProcurementWorkspacePath("receiving"));
+        setLocation(buildOperationsWorkspacePath("receiving"));
         onOpenChange(false);
       },
     },

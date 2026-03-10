@@ -346,7 +346,10 @@ export const purchaseOrderItems = mysqlTable(
     }).default("0"),
 
     // Pricing
+    cogsMode: cogsModeEnum.notNull().default("FIXED"),
     unitCost: decimal("unitCost", { precision: 15, scale: 4 }).notNull(),
+    unitCostMin: decimal("unitCostMin", { precision: 15, scale: 4 }),
+    unitCostMax: decimal("unitCostMax", { precision: 15, scale: 4 }),
     totalCost: decimal("totalCost", { precision: 15, scale: 4 }).notNull(),
 
     // Item-specific notes

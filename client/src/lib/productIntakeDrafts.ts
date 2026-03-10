@@ -13,7 +13,10 @@ export interface ProductIntakeDraftLine {
   quantityOrdered: number;
   quantityReceived: number;
   intakeQty: number;
+  cogsMode?: "FIXED" | "RANGE";
   unitCost: number;
+  unitCostMin?: number;
+  unitCostMax?: number;
   grade?: string;
   locationId?: number | null;
   locationName?: string;

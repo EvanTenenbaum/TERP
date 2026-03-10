@@ -321,10 +321,10 @@ describe("InventoryWorkSurface", () => {
     });
   });
 
-  it("renders the Product Intake button", async () => {
+  it("renders the Receive Inventory button", async () => {
     render(<InventoryWorkSurface />);
     expect(
-      screen.getByRole("button", { name: /product intake/i })
+      screen.getByRole("button", { name: /receive inventory/i })
     ).toBeInTheDocument();
   });
 

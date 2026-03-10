@@ -100,11 +100,11 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Clients Surface")).toBeInTheDocument();
   });
 
-  it("renders Inventory workspace with inventory default content", () => {
+  it("renders Operations workspace with inventory default content", () => {
     mockActiveTab = "inventory";
     render(<InventoryWorkspacePage />);
     expect(
-      screen.getByRole("heading", { name: "Inventory" })
+      screen.getByRole("heading", { name: "Operations" })
     ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
     expect(

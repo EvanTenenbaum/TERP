@@ -108,7 +108,7 @@ export const SupplierProfileSection = React.memo(
       DRAFT: "Draft",
       SENT: "Sent",
       CONFIRMED: "Confirmed",
-      RECEIVING: "Intaking",
+      RECEIVING: "Receiving",
       RECEIVED: "Received",
       CANCELLED: "Cancelled",
     };

@@ -282,10 +282,10 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle>Pick & Pack Queue</CardTitle>
+          <CardTitle>Shipping Queue</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Real-time order fulfillment queue. Uses existing pick/pack
-            procedures.
+            Real-time order fulfillment queue. Uses the existing shipping
+            workflow.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -363,7 +363,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         {/* BUG-091 FIX: Add proper loading/error/empty state handling */}
         {error && (
           <div className="mb-3 p-4 text-sm text-destructive bg-destructive/10 rounded-md">
-            <p className="font-medium">Unable to load pick/pack queue</p>
+            <p className="font-medium">Unable to load shipping queue</p>
             <p className="text-muted-foreground mt-1">
               {error.message || "Please try again or contact support."}
             </p>
@@ -383,7 +383,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
               <p className="mt-2 text-sm text-muted-foreground">
-                Loading pick/pack queue...
+                Loading shipping queue...
               </p>
             </div>
           </div>
@@ -393,7 +393,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
             <div className="text-center">
               <Package className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
               <p className="mt-2 text-sm text-muted-foreground">
-                No orders in the pick/pack queue
+                No orders in the shipping queue
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Orders will appear here when they need to be fulfilled
