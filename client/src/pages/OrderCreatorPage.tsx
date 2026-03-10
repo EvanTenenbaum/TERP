@@ -41,7 +41,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import {
@@ -78,9 +77,10 @@ import { CreditLimitBanner } from "@/components/orders/CreditLimitBanner";
 import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
-import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
+import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
@@ -117,7 +117,7 @@ interface InventoryItemForOrder {
   quantity?: number; // Available stock quantity
 }
 
-type CustomerDrawerSection = "credit" | "pricing";
+type CustomerDrawerSection = "money" | "sales-pricing";
 
 const orderValidationSchema = z.object({
   clientId: z.number().positive("Select a client"),
@@ -277,7 +277,7 @@ export default function OrderCreatorPageV2() {
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
   const [customerDrawerSection, setCustomerDrawerSection] =
-    useState<CustomerDrawerSection>("credit");
+    useState<CustomerDrawerSection>("money");
   const customerDrawerOriginRef = useRef<HTMLElement | null>(null);
 
   // CHAOS-007: Unsaved changes warning
@@ -402,8 +402,17 @@ export default function OrderCreatorPageV2() {
     }
 
     const drawerSection = searchParams.get("customerDrawer");
-    if (drawerSection === "credit" || drawerSection === "pricing") {
-      setCustomerDrawerSection(drawerSection);
+    if (
+      drawerSection === "credit" ||
+      drawerSection === "pricing" ||
+      drawerSection === "money" ||
+      drawerSection === "sales-pricing"
+    ) {
+      setCustomerDrawerSection(
+        drawerSection === "credit" || drawerSection === "money"
+          ? "money"
+          : "sales-pricing"
+      );
       setCustomerDrawerOpen(true);
     }
   }, [clientId, searchParams]);
@@ -722,63 +731,6 @@ export default function OrderCreatorPageV2() {
     },
     [closeCustomerDrawer, refetchClientDetails]
   );
-
-  const refreshProfilePricingInOrder = useCallback(async () => {
-    const refreshedInventory = await inventoryQuery.refetch();
-    const latestInventory =
-      (refreshedInventory.data as InventoryItemForOrder[] | undefined) ??
-      (inventory as InventoryItemForOrder[] | undefined) ??
-      [];
-
-    if (latestInventory.length === 0) {
-      return;
-    }
-
-    setItems(currentItems =>
-      currentItems.map(item => {
-        if (item.marginSource === "MANUAL" || item.isMarginOverridden) {
-          return item;
-        }
-
-        const profilePricing = latestInventory.find(
-          inv => inv.id === item.batchId
-        );
-        if (!profilePricing) {
-          return item;
-        }
-
-        const cogsPerUnit = item.cogsPerUnit;
-        const retailPrice =
-          profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
-        const marginPercent =
-          cogsPerUnit > 0
-            ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100
-            : 0;
-        const recalculated = calculateLineItem(
-          item.batchId,
-          item.quantity,
-          cogsPerUnit,
-          marginPercent
-        );
-
-        return {
-          ...item,
-          ...recalculated,
-          marginPercent,
-          marginSource: "CUSTOMER_PROFILE",
-          isMarginOverridden: false,
-        };
-      })
-    );
-  }, [inventory, inventoryQuery]);
-
-  const handlePricingProfileApplied = useCallback(() => {
-    void (async () => {
-      await refreshProfilePricingInOrder();
-      await refetchClientDetails();
-      closeCustomerDrawer();
-    })();
-  }, [closeCustomerDrawer, refreshProfilePricingInOrder, refetchClientDetails]);
 
   // Calculations
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
@@ -1506,7 +1458,7 @@ export default function OrderCreatorPageV2() {
                           size="sm"
                           className="justify-start"
                           onClick={event =>
-                            openCustomerDrawer("credit", event.currentTarget)
+                            openCustomerDrawer("money", event.currentTarget)
                           }
                         >
                           Credit Limit
@@ -1517,7 +1469,10 @@ export default function OrderCreatorPageV2() {
                           size="sm"
                           className="justify-start"
                           onClick={event =>
-                            openCustomerDrawer("pricing", event.currentTarget)
+                            openCustomerDrawer(
+                              "sales-pricing",
+                              event.currentTarget
+                            )
                           }
                           disabled={!canEditPricing}
                         >
@@ -1773,50 +1728,42 @@ export default function OrderCreatorPageV2() {
         >
           <DrawerContent className="w-[760px] sm:max-w-none">
             <DrawerHeader>
-              <DrawerTitle>Customer Controls</DrawerTitle>
+              <DrawerTitle>Relationship Profile</DrawerTitle>
               <DrawerDescription>
-                Credit and pricing configuration uses a shared right-drawer
-                contract. Successful saves return focus to the source control.
+                Shared profile drawer for money, pricing, and open relationship
+                context. Successful closes return focus to the source control.
               </DrawerDescription>
             </DrawerHeader>
-            <div className="px-4 pb-4 overflow-y-auto">
-              <Tabs
-                value={customerDrawerSection}
-                onValueChange={value =>
-                  setCustomerDrawerSection(value as CustomerDrawerSection)
-                }
-                className="space-y-4"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="credit">Credit Limit</TabsTrigger>
-                  <TabsTrigger value="pricing" disabled={!canEditPricing}>
-                    Pricing Profile
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="credit" className="space-y-4">
-                  {clientId ? (
+            <div className="overflow-y-auto px-4 pb-4">
+              {clientId ? (
+                <div className="space-y-4">
+                  <ProfileQuickPanel
+                    clientId={clientId}
+                    initialSection={customerDrawerSection}
+                    onClose={closeCustomerDrawer}
+                  />
+                  {customerDrawerSection === "money" ? (
                     <CreditLimitWidget
                       clientId={clientId}
-                      showAdjustControls={true}
                       defaultExpanded={true}
                     />
                   ) : null}
-                </TabsContent>
-                <TabsContent value="pricing" className="space-y-4">
-                  {clientId && canEditPricing ? (
+                  {customerDrawerSection === "sales-pricing" ? (
                     <PricingConfigTab
                       clientId={clientId}
-                      onProfileApplied={handlePricingProfileApplied}
+                      onProfileApplied={() => {
+                        void refetchClientDetails();
+                      }}
                     />
-                  ) : (
-                    <Card>
-                      <CardContent className="py-8 text-sm text-muted-foreground">
-                        You do not have permission to edit pricing profiles.
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  ) : null}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-sm text-muted-foreground">
+                    Select a customer to open profile controls.
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </DrawerContent>
         </Drawer>

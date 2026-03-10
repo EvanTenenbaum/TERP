@@ -12,6 +12,7 @@ import {
   Target,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 /**
  * Potential Buyers Widget
@@ -166,7 +167,12 @@ export function PotentialBuyersWidget({
                 key={`match-${match.clientId}-${match.needId || idx}`}
                 className="p-3 hover:bg-accent cursor-pointer transition-colors"
                 onClick={() =>
-                  setLocation(`/clients/${match.clientId}?tab=needs`)
+                  setLocation(
+                    buildRelationshipProfilePath(
+                      match.clientId,
+                      "sales-pricing"
+                    )
+                  )
                 }
               >
                 <div className="flex items-start justify-between mb-2">
@@ -218,9 +224,12 @@ export function PotentialBuyersWidget({
               <Card
                 key={`buyer-${buyer.sourceData?.client?.id || idx}`}
                 className="p-3 hover:bg-accent cursor-pointer transition-colors"
-                onClick={() =>
-                  setLocation(`/clients/${buyer.sourceData?.client?.id}`)
-                }
+                onClick={() => {
+                  const targetId = buyer.sourceData?.client?.id;
+                  if (targetId) {
+                    setLocation(buildRelationshipProfilePath(targetId));
+                  }
+                }}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
@@ -277,7 +286,11 @@ export function PotentialBuyersWidget({
                       ? "border-destructive/30"
                       : ""
                   }`}
-                  onClick={() => setLocation(`/clients/${prediction.clientId}`)}
+                  onClick={() =>
+                    setLocation(
+                      buildRelationshipProfilePath(prediction.clientId)
+                    )
+                  }
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">

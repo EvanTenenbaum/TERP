@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 // Label used in form fields - import available if needed
 import { Badge } from "@/components/ui/badge";
 import { AddClientWizard } from "@/components/clients/AddClientWizard"; // TERP-0003
+import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import {
   Table,
   TableBody,
@@ -82,6 +83,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -139,7 +141,7 @@ const CLIENT_TYPE_FILTERS: {
   label: string;
 }[] = [
   { value: "all", label: "All Types" },
-  { value: "buyer", label: "Buyers" },
+  { value: "buyer", label: "Customers" },
   { value: "seller", label: "Suppliers" },
   { value: "brand", label: "Brands" },
   { value: "referee", label: "Referees" },
@@ -178,7 +180,7 @@ const formatDate = (dateString: string | null | undefined): string => {
 function ClientTypeBadges({ client }: { client: Client }) {
   const badges: { label: string; className: string }[] = [];
   if (client.isBuyer)
-    badges.push({ label: "Buyer", className: "bg-blue-100 text-blue-800" });
+    badges.push({ label: "Customer", className: "bg-blue-100 text-blue-800" });
   if (client.isSeller)
     badges.push({
       label: "Supplier",
@@ -1037,7 +1039,9 @@ export function ClientsWorkSurface() {
                         setSelectedIndex(index);
                         inspector.open();
                       }}
-                      onDoubleClick={() => setLocation(`/clients/${client.id}`)}
+                      onDoubleClick={() =>
+                        setLocation(buildRelationshipProfilePath(client.id))
+                      }
                     >
                       <TableCell className="font-medium">
                         {client.name}
@@ -1071,7 +1075,9 @@ export function ClientsWorkSurface() {
                           onClick={e => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setLocation(`/clients/${client.id}`);
+                            setLocation(
+                              buildRelationshipProfilePath(client.id)
+                            );
                           }}
                           aria-label={`Open ${client.name}`}
                         >
@@ -1119,15 +1125,19 @@ export function ClientsWorkSurface() {
         <InspectorPanel
           isOpen={inspector.isOpen}
           onClose={inspector.close}
-          title={selectedClient?.name || "Client Details"}
+          title={selectedClient?.name || "Relationship Profile"}
           subtitle={selectedClient?.email ?? undefined}
         >
-          <ClientInspectorContent
-            client={selectedClient}
-            onUpdate={handleUpdateClient}
-            onNavigate={id => setLocation(`/clients/${id}`)}
-            onArchive={handleArchive}
-          />
+          {selectedClient ? (
+            <ProfileQuickPanel clientId={selectedClient.id} />
+          ) : (
+            <ClientInspectorContent
+              client={selectedClient}
+              onUpdate={handleUpdateClient}
+              onNavigate={id => setLocation(buildRelationshipProfilePath(id))}
+              onArchive={handleArchive}
+            />
+          )}
         </InspectorPanel>
       </div>
 
@@ -1167,7 +1177,7 @@ export function ClientsWorkSurface() {
         onSuccess={clientId => {
           refetch();
           toast.success("Client created successfully");
-          setLocation(`/clients/${clientId}`);
+          setLocation(buildRelationshipProfilePath(clientId));
         }}
       />
 

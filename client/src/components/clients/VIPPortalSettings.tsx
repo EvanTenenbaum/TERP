@@ -88,6 +88,7 @@ export function VIPPortalSettings({
         setEmail("");
         setPassword("");
         utils.clients.getById.invalidate({ clientId });
+        utils.relationshipProfile.getShell.invalidate({ clientId });
       },
       onError: error => {
         toast.error(error.message || "Failed to enable VIP Portal");
@@ -101,6 +102,7 @@ export function VIPPortalSettings({
         toast.success("VIP Portal disabled");
         setDisableDialogOpen(false);
         utils.clients.getById.invalidate({ clientId });
+        utils.relationshipProfile.getShell.invalidate({ clientId });
       },
       onError: error => {
         toast.error(error.message || "Failed to disable VIP Portal");

@@ -10,6 +10,7 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import {
   Card,
   CardContent,
@@ -171,7 +172,9 @@ export function ReferrerLookup({ onSelectClient }: ReferrerLookupProps) {
                             if (onSelectClient) {
                               onSelectClient(client.id);
                             } else {
-                              setLocation(`/clients/${client.id}`);
+                              setLocation(
+                                buildRelationshipProfilePath(client.id)
+                              );
                             }
                           }}
                         >
@@ -333,7 +336,13 @@ export function ReferralStatsCard() {
                 <div
                   key={referrer.referrerId}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                  onClick={() => setLocation(`/clients/${referrer.referrerId}`)}
+                  onClick={() => {
+                    if (referrer.referrerId) {
+                      setLocation(
+                        buildRelationshipProfilePath(referrer.referrerId)
+                      );
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
@@ -418,7 +427,9 @@ export function ReferralTreeView({ clientId }: ReferralTreeViewProps) {
                   variant="ghost"
                   size="sm"
                   className="h-auto py-1 px-2"
-                  onClick={() => setLocation(`/clients/${referrer.id}`)}
+                  onClick={() =>
+                    setLocation(buildRelationshipProfilePath(referrer.id))
+                  }
                 >
                   <User className="h-4 w-4 mr-2" />
                   {referrer.name} ({referrer.teriCode})
@@ -441,7 +452,9 @@ export function ReferralTreeView({ clientId }: ReferralTreeViewProps) {
                 key={referral.id}
                 variant="outline"
                 className="justify-start h-auto py-2"
-                onClick={() => setLocation(`/clients/${referral.id}`)}
+                onClick={() =>
+                  setLocation(buildRelationshipProfilePath(referral.id))
+                }
               >
                 <User className="h-4 w-4 mr-2" />
                 <span className="truncate">{referral.name}</span>

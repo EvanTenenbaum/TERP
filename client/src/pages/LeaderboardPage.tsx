@@ -39,6 +39,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { ExportButton, WeightCustomizer } from "@/components/leaderboard";
 
 // Types
@@ -206,7 +207,7 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
 
   const handleClientClick = useCallback(
     (clientId: number) => {
-      navigate(`/clients/${clientId}`);
+      navigate(buildRelationshipProfilePath(clientId));
     },
     [navigate]
   );

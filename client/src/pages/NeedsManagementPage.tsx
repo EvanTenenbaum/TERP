@@ -31,6 +31,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 // UX-012: Import centralized date formatting utility
 import { formatDate } from "@/lib/utils";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 /**
  * Needs Management Page
@@ -75,10 +76,11 @@ interface OpportunityItem {
   potentialRevenue?: string | number;
 }
 
-const formatCurrencyValue = (value: string | number | undefined): string | null => {
+const formatCurrencyValue = (
+  value: string | number | undefined
+): string | null => {
   if (value === undefined || value === null) return null;
-  const parsed =
-    typeof value === "number" ? value : Number.parseFloat(value);
+  const parsed = typeof value === "number" ? value : Number.parseFloat(value);
   if (Number.isNaN(parsed)) return null;
   return parsed.toFixed(2);
 };
@@ -116,9 +118,9 @@ export default function NeedsManagementPage({
       limit: 10,
     });
 
-  const needs = ((needsData?.data ?? []) as unknown) as NeedItem[];
-  const opportunities =
-    ((opportunitiesData?.data ?? []) as unknown) as OpportunityItem[];
+  const needs = (needsData?.data ?? []) as unknown as NeedItem[];
+  const opportunities = (opportunitiesData?.data ??
+    []) as unknown as OpportunityItem[];
 
   // Filter needs based on search and priority
   const filteredNeeds = needs.filter(need => {
@@ -251,9 +253,7 @@ export default function NeedsManagementPage({
             <Select
               value={priorityFilter || "all"}
               onValueChange={v =>
-                setPriorityFilter(
-                  v === "all" ? undefined : (v as NeedPriority)
-                )
+                setPriorityFilter(v === "all" ? undefined : (v as NeedPriority))
               }
             >
               <SelectTrigger className="w-[180px]">
@@ -307,7 +307,12 @@ export default function NeedsManagementPage({
                   key={need.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() =>
-                    setLocation(`/clients/${need.clientId}?tab=needs`)
+                    setLocation(
+                      buildRelationshipProfilePath(
+                        need.clientId,
+                        "sales-pricing"
+                      )
+                    )
                   }
                 >
                   <CardHeader>
@@ -397,7 +402,12 @@ export default function NeedsManagementPage({
                   key={`${opp.id ?? "opp"}-${opp.clientId}-${opp.needDescription}`}
                   className="hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() =>
-                    setLocation(`/clients/${opp.clientId}?tab=needs`)
+                    setLocation(
+                      buildRelationshipProfilePath(
+                        opp.clientId,
+                        "sales-pricing"
+                      )
+                    )
                   }
                 >
                   <CardHeader>

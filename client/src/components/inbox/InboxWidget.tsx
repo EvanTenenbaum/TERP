@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Inbox, ArrowRight, CheckCheck } from "lucide-react";
 import { useLocation } from "wouter";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { formatDistanceToNow } from "date-fns";
 
 export function InboxWidget() {
@@ -48,7 +49,7 @@ export function InboxWidget() {
       const referenceId = item.referenceId;
 
       if (referenceType === "client" && referenceId) {
-        setLocation(`/clients/${referenceId}`);
+        setLocation(buildRelationshipProfilePath(referenceId));
       } else if (referenceType === "inventory_batch" && referenceId) {
         setLocation(`/inventory`);
       } else if (referenceType === "dashboard" && referenceId) {

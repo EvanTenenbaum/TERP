@@ -27,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import {
   Users,
   Mail,
@@ -152,7 +153,9 @@ export function SuggestedBuyers({
               <div
                 key={buyer.clientId}
                 className="flex items-center justify-between p-2 border rounded hover:bg-accent cursor-pointer"
-                onClick={() => setLocation(`/clients/${buyer.clientId}`)}
+                onClick={() =>
+                  setLocation(buildRelationshipProfilePath(buyer.clientId))
+                }
               >
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
@@ -323,7 +326,9 @@ export function SuggestedBuyers({
                             size="icon"
                             onClick={e => {
                               e.stopPropagation();
-                              setLocation(`/clients/${buyer.clientId}`);
+                              setLocation(
+                                buildRelationshipProfilePath(buyer.clientId)
+                              );
                             }}
                           >
                             <ExternalLink className="h-4 w-4" />

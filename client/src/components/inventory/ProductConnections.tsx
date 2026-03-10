@@ -12,6 +12,7 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import {
   Card,
   CardContent,
@@ -283,7 +284,11 @@ export function ProductConnections({
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() =>
-                                  setLocation(`/clients/${connection.clientId}`)
+                                  setLocation(
+                                    buildRelationshipProfilePath(
+                                      connection.clientId
+                                    )
+                                  )
                                 }
                               >
                                 <ExternalLink className="h-4 w-4 mr-2" />
