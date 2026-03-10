@@ -95,6 +95,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
 // TYPES
@@ -799,40 +800,37 @@ export function InvoicesWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-3 px-4 py-4 border-b bg-background md:px-6 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <Receipt className="h-6 w-6" />
-            Invoices
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage customer invoices and accounts receivable
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 md:gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex flex-wrap gap-3 md:gap-4">
-            <span>
-              Total Billed:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalBilled)}
+      <PageHeader
+        title="Invoices"
+        description="Manage customer invoices and accounts receivable"
+        divider
+        className="px-4 py-4 md:px-6"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex flex-wrap gap-3 md:gap-4">
+              <span>
+                Total Billed:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(stats.totalBilled)}
+                </span>
               </span>
-            </span>
-            <span>
-              Due:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalDue)}
+              <span>
+                Due:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(stats.totalDue)}
+                </span>
               </span>
-            </span>
-            {stats.overdueCount > 0 && (
-              <span className="text-red-600">
-                Overdue:{" "}
-                <span className="font-semibold">{stats.overdueCount}</span>
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+              {stats.overdueCount > 0 && (
+                <span className="text-red-600">
+                  Overdue:{" "}
+                  <span className="font-semibold">{stats.overdueCount}</span>
+                </span>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="px-4 py-3 border-b bg-muted/30 md:px-6">
