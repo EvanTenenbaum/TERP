@@ -66,6 +66,7 @@ import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
+import { resolveBulkCogsUpdates } from "@/components/work-surface/purchaseOrderBulkCogs";
 import {
   InspectorPanel,
   InspectorSection,
@@ -606,7 +607,10 @@ export function PurchaseOrdersWorkSurface() {
   const [selectedPOId, setSelectedPOId] = useState<number | null>(null);
   const [formData, setFormData] = useState<POFormData>(createEmptyForm());
   const [bulkQuantityOrdered, setBulkQuantityOrdered] = useState("");
+  const [bulkCogsMode, setBulkCogsMode] = useState<PoCogsMode>("FIXED");
   const [bulkUnitCost, setBulkUnitCost] = useState("");
+  const [bulkUnitCostMin, setBulkUnitCostMin] = useState("");
+  const [bulkUnitCostMax, setBulkUnitCostMax] = useState("");
   const [supplierValidationError, setSupplierValidationError] = useState<
     string | null
   >(null);
@@ -1494,11 +1498,8 @@ export function PurchaseOrdersWorkSurface() {
     [resolveTypedProduct, validatePoDraftRow]
   );
 
-  const applyBulkFieldToSelectedRows = useCallback(
-    (
-      field: keyof Pick<LineItem, "quantityOrdered" | "unitCost">,
-      value: string
-    ) => {
+  const applyBulkUpdatesToSelectedRows = useCallback(
+    (updates: Partial<LineItem>) => {
       if (selectedPoDraftRowSet.size === 0) {
         return;
       }
@@ -1506,7 +1507,7 @@ export function PurchaseOrdersWorkSurface() {
         ...prev,
         items: prev.items.map(item =>
           selectedPoDraftRowSet.has(item.tempId)
-            ? { ...item, [field]: value }
+            ? { ...item, ...updates }
             : item
         ),
       }));
@@ -1520,17 +1521,30 @@ export function PurchaseOrdersWorkSurface() {
       toast.error("Bulk quantity must be greater than 0");
       return;
     }
-    applyBulkFieldToSelectedRows("quantityOrdered", String(parsed));
-  }, [applyBulkFieldToSelectedRows, bulkQuantityOrdered]);
+    applyBulkUpdatesToSelectedRows({ quantityOrdered: String(parsed) });
+  }, [applyBulkUpdatesToSelectedRows, bulkQuantityOrdered]);
 
-  const handleApplyBulkUnitCost = useCallback(() => {
-    const parsed = Number(bulkUnitCost);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      toast.error("Bulk unit cost cannot be negative");
+  const handleApplyBulkCost = useCallback(() => {
+    const result = resolveBulkCogsUpdates({
+      cogsMode: bulkCogsMode,
+      unitCost: bulkUnitCost,
+      unitCostMin: bulkUnitCostMin,
+      unitCostMax: bulkUnitCostMax,
+    });
+
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
-    applyBulkFieldToSelectedRows("unitCost", String(parsed));
-  }, [applyBulkFieldToSelectedRows, bulkUnitCost]);
+
+    applyBulkUpdatesToSelectedRows(result.updates);
+  }, [
+    applyBulkUpdatesToSelectedRows,
+    bulkCogsMode,
+    bulkUnitCost,
+    bulkUnitCostMax,
+    bulkUnitCostMin,
+  ]);
 
   const handleDraftFieldKeyDown = useCallback(
     (
@@ -2098,19 +2112,58 @@ export function PurchaseOrdersWorkSurface() {
                       >
                         Apply Qty
                       </Button>
-                      <Input
-                        value={bulkUnitCost}
-                        onChange={event => setBulkUnitCost(event.target.value)}
-                        placeholder="Unit Cost"
-                        className="h-8 w-24 text-right"
-                        inputMode="decimal"
-                      />
+                      <Select
+                        value={bulkCogsMode}
+                        onValueChange={value =>
+                          setBulkCogsMode(value as PoCogsMode)
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-36">
+                          <SelectValue placeholder="COGS Mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="FIXED">Fixed COGS</SelectItem>
+                          <SelectItem value="RANGE">Range COGS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {bulkCogsMode === "FIXED" ? (
+                        <Input
+                          value={bulkUnitCost}
+                          onChange={event =>
+                            setBulkUnitCost(event.target.value)
+                          }
+                          placeholder="Unit Cost"
+                          className="h-8 w-24 text-right"
+                          inputMode="decimal"
+                        />
+                      ) : (
+                        <>
+                          <Input
+                            value={bulkUnitCostMin}
+                            onChange={event =>
+                              setBulkUnitCostMin(event.target.value)
+                            }
+                            placeholder="Min"
+                            className="h-8 w-20 text-right"
+                            inputMode="decimal"
+                          />
+                          <Input
+                            value={bulkUnitCostMax}
+                            onChange={event =>
+                              setBulkUnitCostMax(event.target.value)
+                            }
+                            placeholder="Max"
+                            className="h-8 w-20 text-right"
+                            inputMode="decimal"
+                          />
+                        </>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={handleApplyBulkUnitCost}
+                        onClick={handleApplyBulkCost}
                       >
-                        Apply Cost
+                        Apply COGS
                       </Button>
                     </div>
                   </div>
@@ -2349,8 +2402,19 @@ export function PurchaseOrdersWorkSurface() {
                                           unitCost:
                                             nextMode === "FIXED"
                                               ? existing.unitCost ||
-                                                existing.unitCostMin
-                                              : existing.unitCost,
+                                                existing.unitCostMin ||
+                                                existing.unitCostMax
+                                              : "",
+                                          unitCostMin:
+                                            nextMode === "RANGE"
+                                              ? existing.unitCostMin ||
+                                                existing.unitCost
+                                              : "",
+                                          unitCostMax:
+                                            nextMode === "RANGE"
+                                              ? existing.unitCostMax ||
+                                                existing.unitCost
+                                              : "",
                                         }
                                       : existing
                                   ),

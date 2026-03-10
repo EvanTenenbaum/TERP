@@ -21,14 +21,11 @@ const WORK_SURFACE_ROUTES = [
   { path: "/inventory", name: "Inventory" },
   { path: "/clients", name: "Clients" },
   { path: "/accounting/invoices", name: "Invoices" },
-  { path: "/pick-pack", name: "Pick & Pack" },
+  { path: "/operations?tab=shipping", name: "Shipping" },
   { path: "/quotes", name: "Quotes" },
 ];
 
-const openWorkSurface = async (
-  page: Page,
-  path: string
-): Promise<void> => {
+const openWorkSurface = async (page: Page, path: string): Promise<void> => {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(250);
@@ -41,7 +38,9 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
 
   for (const route of WORK_SURFACE_ROUTES) {
     test.describe(`${route.name} Work Surface`, () => {
-      test(`should support arrow key navigation on ${route.path}`, async ({ page }) => {
+      test(`should support arrow key navigation on ${route.path}`, async ({
+        page,
+      }) => {
         await openWorkSurface(page, route.path);
 
         const focusBefore = await page.evaluate(() =>
@@ -69,7 +68,9 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
         expect(focusAfter).toBe("focused");
       });
 
-      test(`should open inspector with Enter on ${route.path}`, async ({ page }) => {
+      test(`should open inspector with Enter on ${route.path}`, async ({
+        page,
+      }) => {
         const jsErrors: string[] = [];
         page.on("pageerror", error => jsErrors.push(error.message));
 
@@ -134,7 +135,9 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
         }
       });
 
-      test(`should focus search with Cmd+K on ${route.path}`, async ({ page }) => {
+      test(`should focus search with Cmd+K on ${route.path}`, async ({
+        page,
+      }) => {
         await openWorkSurface(page, route.path);
 
         const isMac = process.platform === "darwin";
@@ -161,7 +164,9 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
   }
 
   test.describe("Cross-Surface Consistency", () => {
-    test("all surfaces should have consistent header pattern", async ({ page }) => {
+    test("all surfaces should have consistent header pattern", async ({
+      page,
+    }) => {
       for (const route of WORK_SURFACE_ROUTES) {
         await openWorkSurface(page, route.path);
 
@@ -173,12 +178,16 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
       }
     });
 
-    test("all surfaces should have save state indicator area", async ({ page }) => {
+    test("all surfaces should have save state indicator area", async ({
+      page,
+    }) => {
       for (const route of WORK_SURFACE_ROUTES) {
         await openWorkSurface(page, route.path);
 
         // Save state area should exist (may or may not be visible)
-        const saveState = page.locator('[data-testid="save-state"], .save-indicator, :text("Saved"), :text("Saving")');
+        const saveState = page.locator(
+          '[data-testid="save-state"], .save-indicator, :text("Saved"), :text("Saving")'
+        );
         const hasArea = await saveState.count().catch(() => 0);
         expect(hasArea).toBeGreaterThan(0);
       }
@@ -196,7 +205,9 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
       await page.waitForTimeout(500);
 
       // Check if focus is in inspector region
-      const inspector = page.locator('[data-testid="inspector-panel"], [role="complementary"]');
+      const inspector = page.locator(
+        '[data-testid="inspector-panel"], [role="complementary"]'
+      );
       if (await inspector.isVisible().catch(() => false)) {
         // Tab should stay within inspector
         await page.keyboard.press("Tab");
