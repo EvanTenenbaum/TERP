@@ -4,18 +4,30 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { TodoListCard } from "@/components/todos/TodoListCard";
 import { TodoListForm } from "@/components/todos/TodoListForm";
+import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useLocation } from "wouter";
-import { EmptyState, ErrorState, emptyStateConfigs } from "@/components/ui/empty-state";
+import {
+  EmptyState,
+  ErrorState,
+  emptyStateConfigs,
+} from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 
 export function TodoListsPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [deleteListId, setDeleteListId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
 
   // Handle paginated response - extract items array or use empty array as fallback
-  const { data: listsData, isLoading, error, isError, refetch } = trpc.todoLists.getMyLists.useQuery();
+  const {
+    data: listsData,
+    isLoading,
+    error,
+    isError,
+    refetch,
+  } = trpc.todoLists.getMyLists.useQuery();
   const lists = Array.isArray(listsData) ? listsData : (listsData?.items ?? []);
 
   const utils = trpc.useContext();
@@ -50,10 +62,19 @@ export function TodoListsPage() {
             Organize your tasks with lists
           </p>
         </div>
-        <Button onClick={() => setIsCreateFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New List
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsCreateFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New List
+          </Button>
+          <Button
+            onClick={() => setIsQuickAddOpen(true)}
+            data-testid="create-todo"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Todo
+          </Button>
+        </div>
       </div>
 
       {/* Lists Grid */}
@@ -62,7 +83,9 @@ export function TodoListsPage() {
       ) : isError ? (
         <ErrorState
           title="Failed to load todo lists"
-          description={error?.message || "An error occurred while loading your todo lists."}
+          description={
+            error?.message || "An error occurred while loading your todo lists."
+          }
           onRetry={() => refetch()}
         />
       ) : lists.length === 0 ? (
@@ -86,16 +109,26 @@ export function TodoListsPage() {
         </div>
       )}
 
-      {/* Create Form */}
+      {/* Create List Form */}
       <TodoListForm
         isOpen={isCreateFormOpen}
         onClose={() => setIsCreateFormOpen(false)}
       />
 
+      {/* Quick Add Task Modal */}
+      <QuickAddTaskModal
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onCreated={createdListId => {
+          setIsQuickAddOpen(false);
+          setLocation(`/todos/${createdListId}`);
+        }}
+      />
+
       {/* Delete List Confirmation Dialog */}
       <ConfirmDialog
         open={!!deleteListId}
-        onOpenChange={(open) => !open && setDeleteListId(null)}
+        onOpenChange={open => !open && setDeleteListId(null)}
         title="Delete Todo List"
         description="Are you sure you want to delete this list? All tasks will be deleted."
         confirmLabel="Delete"

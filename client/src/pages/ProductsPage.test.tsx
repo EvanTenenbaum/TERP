@@ -1,7 +1,6 @@
 /**
  * ProductsPage tests
- * QA-049: Integration tests for Products page data display
- * WS-PROD-001: Updated for ProductsWorkSurface
+ * TER-642: Updated for Strains management UI at /products
  * @vitest-environment jsdom
  */
 
@@ -11,110 +10,69 @@ import { render, screen } from "@testing-library/react";
 import ProductsPage from "./ProductsPage";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
-// Mock data for products
-const mockProducts = [
+const mockStrains = [
   {
     id: 1,
-    nameCanonical: "Blue Dream",
-    category: "Flower",
-    subcategory: "Sativa",
-    brandId: 1,
-    brandName: "Brand A",
-    strainId: 1,
-    strainName: "Blue Dream",
-    uomSellable: "G",
+    name: "Blue Dream",
+    category: "hybrid",
     description: "A great hybrid strain",
+    standardizedName: "Blue Dream",
+    aliases: null,
+    openthcId: null,
+    openthcStub: null,
+    parentStrainId: null,
+    baseStrainName: null,
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     id: 2,
-    nameCanonical: "OG Kush",
-    category: "Flower",
-    subcategory: "Indica",
-    brandId: 2,
-    brandName: "Brand B",
-    strainId: 2,
-    strainName: "OG Kush",
-    uomSellable: "G",
+    name: "OG Kush",
+    category: "indica",
     description: null,
+    standardizedName: "OG Kush",
+    aliases: null,
+    openthcId: null,
+    openthcStub: null,
+    parentStrainId: null,
+    baseStrainName: null,
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
 ];
 
-const mockBrands = [
-  { id: 1, name: "Brand A" },
-  { id: 2, name: "Brand B" },
-];
-
-const mockStrains = [
-  { id: 1, name: "Blue Dream", category: "Sativa" },
-  { id: 2, name: "OG Kush", category: "Indica" },
-];
-
-const mockCategories = ["Flower", "Concentrate", "Edible"];
-
-// Mock functions
 const listQueryMock = vi.fn();
-const getBrandsMock = vi.fn();
-const getStrainsMock = vi.fn();
-const getCategoriesMock = vi.fn();
-const createMock = vi.fn();
-const updateMock = vi.fn();
-const deleteMock = vi.fn();
-const restoreMock = vi.fn();
+const createMutationMock = vi.fn();
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    productCatalogue: {
+    strains: {
       list: {
         useQuery: (...args: unknown[]) => listQueryMock(...args),
       },
-      getBrands: {
-        useQuery: () => getBrandsMock(),
-      },
-      getStrains: {
-        useQuery: () => getStrainsMock(),
-      },
-      getCategories: {
-        useQuery: () => getCategoriesMock(),
-      },
       create: {
-        useMutation: () => createMock(),
-      },
-      update: {
-        useMutation: () => updateMock(),
-      },
-      delete: {
-        useMutation: () => deleteMock(),
-      },
-      restore: {
-        useMutation: () => restoreMock(),
+        useMutation: (...args: unknown[]) => createMutationMock(...args),
       },
     },
-    settings: {
-      categories: {
-        list: { useQuery: () => ({ data: [], isLoading: false }) },
-      },
-      subcategories: {
-        list: { useQuery: () => ({ data: [], isLoading: false }) },
-      },
-    },
-    useContext: () => ({
-      productCatalogue: {
+    useUtils: () => ({
+      strains: {
         list: { invalidate: vi.fn() },
-        getCategories: { invalidate: vi.fn() },
       },
     }),
   },
 }));
 
-// Mock wouter
 vi.mock("wouter", () => ({
   useLocation: () => ["/products", vi.fn()],
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 const renderWithProviders = (ui: React.ReactElement) => {
@@ -123,14 +81,15 @@ const renderWithProviders = (ui: React.ReactElement) => {
 
 describe("ProductsPage", () => {
   beforeEach(() => {
-    // Reset all mocks
     vi.clearAllMocks();
 
-    // Default mock implementations
     listQueryMock.mockReturnValue({
       data: {
-        items: mockProducts,
-        pagination: { total: mockProducts.length, limit: 500, offset: 0 },
+        items: mockStrains,
+        total: mockStrains.length,
+        hasMore: false,
+        limit: 500,
+        offset: 0,
       },
       isLoading: false,
       isError: false,
@@ -138,37 +97,7 @@ describe("ProductsPage", () => {
       refetch: vi.fn(),
     });
 
-    getBrandsMock.mockReturnValue({
-      data: mockBrands,
-    });
-
-    getStrainsMock.mockReturnValue({
-      data: mockStrains,
-    });
-
-    getCategoriesMock.mockReturnValue({
-      data: mockCategories,
-    });
-
-    createMock.mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    updateMock.mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    deleteMock.mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    restoreMock.mockReturnValue({
+    createMutationMock.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
       isPending: false,
@@ -189,42 +118,51 @@ describe("ProductsPage", () => {
         refetch: vi.fn(),
       });
 
-      // Should render without throwing
       const { container } = renderWithProviders(<ProductsPage />);
       expect(container).toBeTruthy();
     });
   });
 
   describe("Data Display", () => {
-    it("renders product rows when data is ready", () => {
+    it("renders strain rows when data is ready", () => {
       renderWithProviders(<ProductsPage />);
 
-      // Use getAllByText since product name appears in multiple places
       expect(screen.getAllByText("Blue Dream").length).toBeGreaterThan(0);
       expect(screen.getAllByText("OG Kush").length).toBeGreaterThan(0);
     });
 
-    it("displays product category correctly", () => {
+    it("displays page heading with Products and Strains text", () => {
       renderWithProviders(<ProductsPage />);
 
-      const flowerCells = screen.getAllByText("Flower");
-      expect(flowerCells.length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Products/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Strains/i).length).toBeGreaterThan(0);
     });
 
-    it("displays brand names correctly", () => {
+    it("displays strain category correctly", () => {
       renderWithProviders(<ProductsPage />);
 
-      expect(screen.getByText("Brand A")).toBeInTheDocument();
-      expect(screen.getByText("Brand B")).toBeInTheDocument();
+      expect(screen.getByText("Hybrid")).toBeInTheDocument();
+      expect(screen.getByText("Indica")).toBeInTheDocument();
+    });
+
+    it("has a Create Strain button", () => {
+      renderWithProviders(<ProductsPage />);
+
+      expect(
+        screen.getByRole("button", { name: /Create Strain/i })
+      ).toBeInTheDocument();
     });
   });
 
   describe("Empty State", () => {
-    it("shows empty state message when no products exist", () => {
+    it("shows empty state message when no strains exist", () => {
       listQueryMock.mockReturnValue({
         data: {
           items: [],
-          pagination: { total: 0, limit: 500, offset: 0 },
+          total: 0,
+          hasMore: false,
+          limit: 500,
+          offset: 0,
         },
         isLoading: false,
         isError: false,
@@ -234,8 +172,7 @@ describe("ProductsPage", () => {
 
       renderWithProviders(<ProductsPage />);
 
-      // ProductsWorkSurface shows "No products found" in empty state
-      expect(screen.getByText(/No products found/i)).toBeInTheDocument();
+      expect(screen.getByText(/No strains found/i)).toBeInTheDocument();
     });
   });
 
@@ -245,13 +182,13 @@ describe("ProductsPage", () => {
         data: undefined,
         isLoading: false,
         isError: true,
-        error: { message: "Failed to fetch products" },
+        error: { message: "Failed to fetch strains" },
         refetch: vi.fn(),
       });
 
       renderWithProviders(<ProductsPage />);
 
-      expect(screen.getByText(/Error Loading Products/i)).toBeInTheDocument();
+      expect(screen.getByText(/Error Loading Strains/i)).toBeInTheDocument();
     });
   });
 });

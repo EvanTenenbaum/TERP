@@ -35,6 +35,7 @@ function createMockDbChain(resolveValue: unknown) {
 
 describe("ST-050: Error Propagation in ordersDb", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
   });
 
@@ -136,24 +137,28 @@ describe("ST-050: Error Propagation in ordersDb", () => {
 
   describe("getAllOrders - JSON parsing errors", () => {
     it("should throw error when any order has corrupted JSON", async () => {
-      // For getAllOrders, the chain ends with .offset()
+      // getAllOrders calls db.select({orders, clients}).from().leftJoin().where().orderBy().limit().offset()
+      // All chain methods return `this`, offset() resolves to the rows
+      const resolvedRows = [
+        {
+          orders: {
+            id: 1,
+            orderNumber: "O-1",
+            items: '{"invalid": json}', // Invalid JSON
+            subtotal: "50",
+          },
+          clients: { id: 1, name: "Test Client" },
+        },
+      ];
+
       const mockDb = {
         select: vi.fn().mockReturnThis(),
         from: vi.fn().mockReturnThis(),
         leftJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
-        offset: vi.fn().mockResolvedValue([
-          {
-            orders: {
-              id: 1,
-              orderNumber: "O-1",
-              items: '{"invalid": json}', // Invalid JSON
-              subtotal: "50",
-            },
-            clients: { id: 1, name: "Test Client" },
-          },
-        ]),
+        offset: vi.fn().mockResolvedValue(resolvedRows),
       };
 
       vi.mocked(getDb).mockResolvedValue(

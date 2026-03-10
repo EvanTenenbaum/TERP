@@ -91,6 +91,7 @@ import {
   Building,
   Download,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -210,13 +211,14 @@ const PAYMENT_TERMS_OPTIONS = [
   { value: "COD", label: "COD" },
 ];
 
+// TER-670: Updated to WCAG 2.2 AA-compliant color combinations (-900 text on -100 bg).
 const PO_STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
-  SENT: "bg-blue-100 text-blue-800",
-  CONFIRMED: "bg-green-100 text-green-800",
-  RECEIVING: "bg-yellow-100 text-yellow-800",
-  RECEIVED: "bg-purple-100 text-purple-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  SENT: "bg-blue-100 text-blue-900",
+  CONFIRMED: "bg-green-100 text-green-900",
+  RECEIVING: "bg-yellow-100 text-yellow-900",
+  RECEIVED: "bg-purple-100 text-purple-900",
+  CANCELLED: "bg-red-100 text-red-900",
 };
 
 const PO_STATUSES = [
@@ -1360,40 +1362,37 @@ export function PurchaseOrdersWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <ShoppingCart className="h-6 w-6" />
-            Purchase Orders
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage supplier purchase orders
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Total:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.total}
+      <PageHeader
+        title="Purchase Orders"
+        description="Manage supplier purchase orders"
+        divider
+        className="px-6 py-4"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex gap-4">
+              <span>
+                Total:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.total}
+                </span>
               </span>
-            </span>
-            <span>
-              Pending:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.pending}
+              <span>
+                Pending:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.pending}
+                </span>
               </span>
-            </span>
-            <span>
-              Value:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalValue)}
+              <span>
+                Value:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(stats.totalValue)}
+                </span>
               </span>
-            </span>
-          </div>
-        </div>
-      </div>
+            </div>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-muted/30">

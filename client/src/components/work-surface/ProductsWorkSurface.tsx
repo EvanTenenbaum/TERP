@@ -72,6 +72,7 @@ import {
   Beaker,
   Box,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getBrandLabel, getMixedBrandLabel } from "@/lib/nomenclature";
@@ -803,40 +804,37 @@ export function ProductsWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <Package className="h-6 w-6" />
-            Product Catalogue
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your unified product catalogue for sales workflow
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Total:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.total}
+      <PageHeader
+        title="Product Catalogue"
+        description="Manage your unified product catalogue for sales workflow"
+        divider
+        className="px-6 py-4"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex gap-4">
+              <span>
+                Total:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.total}
+                </span>
               </span>
-            </span>
-            <span>
-              Active:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.active}
+              <span>
+                Active:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.active}
+                </span>
               </span>
-            </span>
-            <span>
-              Categories:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.categories}
+              <span>
+                Categories:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.categories}
+                </span>
               </span>
-            </span>
-          </div>
-        </div>
-      </div>
+            </div>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="px-6 py-3 border-b bg-muted/30">

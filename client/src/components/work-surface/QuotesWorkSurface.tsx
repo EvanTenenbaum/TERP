@@ -82,6 +82,7 @@ import {
   Copy,
   Trash2,
 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
 // TYPES
@@ -598,40 +599,37 @@ export function QuotesWorkSurface() {
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-            <FileText className="h-6 w-6" />
-            Sales Quotes
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage quotes and convert them to orders
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {SaveStateIndicator}
-          <div className="text-sm text-muted-foreground flex gap-4">
-            <span>
-              Unsent:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.draft}
+      <PageHeader
+        title="Sales Quotes"
+        description="Manage quotes and convert them to orders"
+        divider
+        className="px-6 py-4"
+        actions={
+          <>
+            {SaveStateIndicator}
+            <div className="text-sm text-muted-foreground flex gap-4">
+              <span>
+                Unsent:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.draft}
+                </span>
               </span>
-            </span>
-            <span>
-              Sent:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.sent}
+              <span>
+                Sent:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.sent}
+                </span>
               </span>
-            </span>
-            <span>
-              Converted:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.converted}
+              <span>
+                Converted:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.converted}
+                </span>
               </span>
-            </span>
-          </div>
-        </div>
-      </div>
+            </div>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="px-6 py-3 border-b bg-muted/30">
@@ -660,7 +658,9 @@ export function QuotesWorkSurface() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}>
+          <Button
+            onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
+          >
             <Plus className="h-4 w-4 mr-2" />
             New Quote
           </Button>

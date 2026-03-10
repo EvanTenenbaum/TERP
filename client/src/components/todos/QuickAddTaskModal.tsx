@@ -23,9 +23,14 @@ import { Zap } from "lucide-react";
 interface QuickAddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: (listId: number) => void;
 }
 
-export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
+export function QuickAddTaskModal({
+  isOpen,
+  onClose,
+  onCreated,
+}: QuickAddTaskModalProps) {
   const [title, setTitle] = useState("");
   const [listId, setListId] = useState<string>("");
 
@@ -44,10 +49,14 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
   // Create task mutation
   const createTask = trpc.todoTasks.create.useMutation({
     onSuccess: () => {
-      toast.success("Task created!");
+      toast.success("Todo created!");
       utils.todoTasks.invalidate();
       utils.todoLists.invalidate();
+      const selectedListId = Number(listId);
       handleClose();
+      if (onCreated && selectedListId) {
+        onCreated(selectedListId);
+      }
     },
     onError: error => {
       toast.error(`Failed to create task: ${error.message}`);
@@ -114,11 +123,13 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
             <Label htmlFor="quick-task-title">Task Title</Label>
             <Input
               id="quick-task-title"
+              name="title"
               data-quick-add-title
-              placeholder="What needs to be done?"
+              placeholder="Task title"
               value={title}
               onChange={e => setTitle(e.target.value)}
               autoComplete="off"
+              aria-label="Task title"
             />
           </div>
 

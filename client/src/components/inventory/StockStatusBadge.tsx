@@ -16,6 +16,10 @@ interface StockStatusBadgeProps {
   showIcon?: boolean;
 }
 
+/**
+ * TER-670: Updated to WCAG 2.2 AA-compliant color combinations.
+ * -700 text on -100 backgrounds fails 4.5:1 for orange and red; using -900.
+ */
 const statusConfig: Record<
   StockStatus,
   {
@@ -26,22 +30,22 @@ const statusConfig: Record<
 > = {
   CRITICAL: {
     label: "Critical",
-    className: "bg-red-100 text-red-700 border-red-200",
+    className: "bg-red-100 text-red-900 border-red-400",
     icon: AlertCircle,
   },
   LOW: {
     label: "Low Stock",
-    className: "bg-orange-100 text-orange-700 border-orange-200",
+    className: "bg-orange-100 text-orange-900 border-orange-400",
     icon: AlertTriangle,
   },
   OPTIMAL: {
     label: "Optimal",
-    className: "bg-green-100 text-green-700 border-green-200",
+    className: "bg-green-100 text-green-900 border-green-400",
     icon: CheckCircle,
   },
   OUT_OF_STOCK: {
     label: "Out of Stock",
-    className: "bg-gray-100 text-gray-700 border-gray-200",
+    className: "bg-gray-100 text-gray-800 border-gray-400",
     icon: XCircle,
   },
 };

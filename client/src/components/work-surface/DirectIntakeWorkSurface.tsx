@@ -1868,9 +1868,12 @@ export function DirectIntakeWorkSurface() {
         </div>
       </div>
 
+      {/* TER-667: Added overflow-hidden on the container; each field uses min-w-0
+          so long values (especially the Location SelectTrigger) truncate instead
+          of overflowing the viewport on narrow mobile screens. */}
       <div className="border-b border-border/70 bg-background px-3 py-3 md:px-4">
-        <div className="grid gap-2 md:grid-cols-5">
-          <div className="space-y-1">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 overflow-hidden">
+          <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Supplier</Label>
             <Input
               list="direct-intake-top-vendors"
@@ -1911,7 +1914,7 @@ export function DirectIntakeWorkSurface() {
               ))}
             </datalist>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">
               Product / Strain
             </Label>
@@ -1955,7 +1958,7 @@ export function DirectIntakeWorkSurface() {
               ))}
             </datalist>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Qty</Label>
             <Input
               type="number"
@@ -1972,7 +1975,7 @@ export function DirectIntakeWorkSurface() {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">COGS</Label>
             <Input
               type="number"
@@ -1989,7 +1992,7 @@ export function DirectIntakeWorkSurface() {
               className="h-9"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Location</Label>
             <Select
               value={selectedRow?.site ?? ""}
@@ -2004,8 +2007,11 @@ export function DirectIntakeWorkSurface() {
               }}
               disabled={!selectedRowEditable}
             >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Select location" />
+              <SelectTrigger className="h-9 truncate">
+                <SelectValue
+                  placeholder="Select location"
+                  className="truncate"
+                />
               </SelectTrigger>
               <SelectContent>
                 {locations.map(l => (
