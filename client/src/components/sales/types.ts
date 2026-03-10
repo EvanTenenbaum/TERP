@@ -14,6 +14,12 @@ export interface PricedInventoryItem {
   strainId?: number;
   strainFamily?: string;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogs?: number;
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogs?: number;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice: number;
   quantity: number;
   grade?: string;

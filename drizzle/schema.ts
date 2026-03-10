@@ -125,6 +125,27 @@ export const batchStatusEnum = mysqlEnum("batchStatus", [
 export const cogsModeEnum = mysqlEnum("cogsMode", ["FIXED", "RANGE"]);
 
 /**
+ * Range COGS basis enum
+ * Defines which point of a vendor COGS range should be used as the effective cost
+ */
+export const cogsRangeBasisValues = [
+  "LOW",
+  "MID",
+  "HIGH",
+  "MANUAL",
+] as const;
+
+/**
+ * Pricing channel enum
+ * Defines which customer-facing surface is requesting a default range basis
+ */
+export const pricingChannelValues = [
+  "SALES_SHEET",
+  "LIVE_SHOPPING",
+  "VIP_SHOPPING",
+] as const;
+
+/**
  * Payment Terms Enum
  * Defines payment terms for vendor transactions
  */
@@ -4575,6 +4596,24 @@ export const orderLineItems = mysqlTable(
       precision: 15, // SCHEMA-012: standardized to decimal(15,4)
       scale: 4,
     }).notNull(),
+    effectiveCogsBasis: mysqlEnum(
+      "effective_cogs_basis",
+      cogsRangeBasisValues
+    )
+      .notNull()
+      .default("MANUAL"),
+    originalRangeMin: decimal("original_range_min", {
+      precision: 15,
+      scale: 4,
+    }),
+    originalRangeMax: decimal("original_range_max", {
+      precision: 15,
+      scale: 4,
+    }),
+    isBelowVendorRange: boolean("is_below_vendor_range")
+      .notNull()
+      .default(false),
+    belowRangeReason: text("below_range_reason"),
     isCogsOverridden: boolean("is_cogs_overridden").notNull().default(false),
     cogsOverrideReason: text("cogs_override_reason"),
     marginPercent: decimal("margin_percent", {
@@ -4633,6 +4672,28 @@ export type OrderLineItemAllocation =
   typeof orderLineItemAllocations.$inferSelect;
 export type InsertOrderLineItemAllocation =
   typeof orderLineItemAllocations.$inferInsert;
+
+export const rangePricingChannelSettings = mysqlTable(
+  "range_pricing_channel_settings",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    deletedAt: timestamp("deleted_at"),
+    channel: mysqlEnum("channel", pricingChannelValues).notNull().unique(),
+    defaultBasis: mysqlEnum("default_basis", cogsRangeBasisValues)
+      .notNull()
+      .default("MID"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    channelIdx: uniqueIndex("uq_range_pricing_channel").on(table.channel),
+  })
+);
+
+export type RangePricingChannelSetting =
+  typeof rangePricingChannelSettings.$inferSelect;
+export type InsertRangePricingChannelSetting =
+  typeof rangePricingChannelSettings.$inferInsert;
 
 // Order Audit Log (v2.0 Sales Order Enhancements)
 export const orderAuditLog = mysqlTable(

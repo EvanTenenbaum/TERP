@@ -418,7 +418,20 @@ export function InventoryBrowser({
                         </Badge>
                       </TableCell>
                       <TableCell>{availableUnits}</TableCell>
-                      <TableCell>${item.basePrice.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>${item.basePrice.toFixed(2)}</span>
+                          {item.cogsMode === "RANGE" &&
+                            typeof item.unitCogsMin === "number" &&
+                            typeof item.unitCogsMax === "number" && (
+                              <span className="text-xs text-muted-foreground">
+                                {item.effectiveCogsBasis || "MID"} of $
+                                {item.unitCogsMin.toFixed(2)} to $
+                                {item.unitCogsMax.toFixed(2)}
+                              </span>
+                            )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-semibold">
                         ${item.retailPrice.toFixed(2)}
                       </TableCell>

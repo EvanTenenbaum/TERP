@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { checkSchemaFingerprint } from "../autoMigrate";
+import {
+  checkSchemaFingerprint,
+  FINGERPRINT_CANARY_COUNT,
+} from "../autoMigrate";
 import { getDb } from "../db";
 
 vi.mock("../db", () => ({
@@ -17,8 +20,7 @@ vi.mock("../_core/logger", () => ({
 describe("checkSchemaFingerprint", () => {
   const mockedGetDb = vi.mocked(getDb);
   const mockExecute = vi.fn();
-  // Keep in sync with FINGERPRINT_CANARIES in server/autoMigrate.ts
-  const canaryCount = 11;
+  const canaryCount = FINGERPRINT_CANARY_COUNT;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -54,7 +56,7 @@ describe("checkSchemaFingerprint", () => {
     const result = await checkSchemaFingerprint({ retries: 1 });
 
     expect(result.complete).toBe(false);
-    expect(result.count).toBe(10);
+    expect(result.count).toBe(canaryCount - 1);
     expect(result.attempts).toBe(1);
     expect(result.missingChecks).toEqual(["products.nameCanonical.column"]);
     expect(result.checks).toHaveLength(canaryCount);

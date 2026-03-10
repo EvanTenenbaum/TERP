@@ -13,6 +13,13 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import { pricingService } from "../services/pricingService";
 
+const rangePricingBasisSchema = z.enum(["LOW", "MID", "HIGH"]);
+const pricingChannelSchema = z.enum([
+  "SALES_SHEET",
+  "LIVE_SHOPPING",
+  "VIP_SHOPPING",
+]);
+
 export const pricingDefaultsRouter = router({
   /**
    * Get all default margins
@@ -53,7 +60,7 @@ export const pricingDefaultsRouter = router({
    * Create or update default margin
    */
   upsert: protectedProcedure
-    .use(requirePermission("pricing:read"))
+    .use(requirePermission("pricing:update"))
     .input(
       z.object({
         productCategory: z.string(),
@@ -94,5 +101,31 @@ export const pricingDefaultsRouter = router({
         input.clientId,
         input.productCategory
       );
+    }),
+
+  getRangePricingDefaults: protectedProcedure
+    .use(requirePermission("pricing:read"))
+    .query(async () => {
+      return await pricingService.getRangePricingDefaults();
+    }),
+
+  setRangePricingDefault: protectedProcedure
+    .use(requirePermission("pricing:update"))
+    .input(
+      z.object({
+        channel: pricingChannelSchema,
+        defaultBasis: rangePricingBasisSchema,
+      })
+    )
+    .mutation(async ({ input }) => {
+      await pricingService.setRangePricingDefault(
+        input.channel,
+        input.defaultBasis
+      );
+
+      return {
+        success: true,
+        ...input,
+      };
     }),
 });

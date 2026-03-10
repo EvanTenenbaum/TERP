@@ -6,6 +6,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { COGSInput } from "./COGSInput";
+import type { EffectiveCogsBasis } from "./COGSInput";
 import { MarginInput } from "./MarginInput";
 import {
   Tooltip,
@@ -25,6 +26,14 @@ interface LineItem {
   quantity: number;
   cogsPerUnit: number;
   originalCogsPerUnit: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogsBasis?: EffectiveCogsBasis;
+  originalRangeMin?: number | null;
+  originalRangeMax?: number | null;
+  isBelowVendorRange?: boolean;
+  belowRangeReason?: string;
   isCogsOverridden: boolean;
   cogsOverrideReason?: string;
   marginPercent: number;
@@ -126,22 +135,27 @@ export const LineItemRow = memo(function LineItemRow({
   };
 
   // Handle COGS change
-  const handleCOGSChange = (
-    newCOGS: number,
-    isOverridden: boolean,
-    reason?: string
-  ) => {
+  const handleCOGSChange = (next: {
+    newValue: number;
+    isOverridden: boolean;
+    reason?: string;
+    effectiveBasis: EffectiveCogsBasis;
+    isBelowVendorRange: boolean;
+  }) => {
     const updated = calculateLineItem(
       item.batchId,
       item.quantity,
-      newCOGS,
+      next.newValue,
       item.marginPercent
     );
     onUpdate({
       ...updated,
-      cogsPerUnit: newCOGS,
-      isCogsOverridden: isOverridden,
-      cogsOverrideReason: reason,
+      cogsPerUnit: next.newValue,
+      isCogsOverridden: next.isOverridden,
+      cogsOverrideReason: next.reason,
+      effectiveCogsBasis: next.effectiveBasis,
+      isBelowVendorRange: next.isBelowVendorRange,
+      belowRangeReason: next.reason,
     });
   };
 
@@ -200,6 +214,14 @@ export const LineItemRow = memo(function LineItemRow({
           <span className="text-xs text-muted-foreground">
             ID: {item.batchId}
           </span>
+          {item.cogsMode === "RANGE" &&
+            typeof item.originalRangeMin === "number" &&
+            typeof item.originalRangeMax === "number" && (
+              <span className="text-xs text-muted-foreground">
+                Vendor range ${item.originalRangeMin.toFixed(2)} to $
+                {item.originalRangeMax.toFixed(2)}
+              </span>
+            )}
           {item.isSample && (
             <Badge variant="secondary" className="w-fit mt-1">
               Sample
@@ -250,7 +272,12 @@ export const LineItemRow = memo(function LineItemRow({
           value={item.cogsPerUnit}
           originalValue={item.originalCogsPerUnit}
           isOverridden={item.isCogsOverridden}
-          reason={item.cogsOverrideReason}
+          reason={item.belowRangeReason || item.cogsOverrideReason}
+          cogsMode={item.cogsMode}
+          rangeMin={item.originalRangeMin}
+          rangeMax={item.originalRangeMax}
+          effectiveBasis={item.effectiveCogsBasis}
+          isBelowVendorRange={item.isBelowVendorRange}
           onChange={handleCOGSChange}
         />
       </TableCell>

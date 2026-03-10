@@ -500,6 +500,12 @@ export default function SalesSheetCreatorPage() {
                             quantity: item.quantity,
                             category: item.category,
                             vendor: item.vendor,
+                            cogsMode: item.cogsMode,
+                            unitCogs: item.unitCogs,
+                            unitCogsMin: item.unitCogsMin,
+                            unitCogsMax: item.unitCogsMax,
+                            effectiveCogs: item.effectiveCogs,
+                            effectiveCogsBasis: item.effectiveCogsBasis,
                           })),
                         })
                       );
