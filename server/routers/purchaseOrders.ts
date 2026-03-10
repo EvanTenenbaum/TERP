@@ -20,6 +20,7 @@ import { createSafeUnifiedResponse } from "../_core/pagination";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as productsDb from "../productsDb";
 import { logger } from "../_core/logger";
+import { isSchemaDriftError } from "../_core/dbErrors";
 import { TRPCError } from "@trpc/server";
 
 const PO_COGS_MODES = ["FIXED", "RANGE"] as const;
@@ -31,6 +32,15 @@ const _PO_PAYMENT_TERMS = [
   "CONSIGNMENT",
   "PARTIAL",
 ] as const;
+
+export function shouldFallbackRecentProductsBySupplier(error: unknown) {
+  return isSchemaDriftError(error, [
+    "purchaseorderitems",
+    "cogsmode",
+    "unitcostmin",
+    "unitcostmax",
+  ]);
+}
 
 const purchaseOrderItemInputSchema = z
   .object({
@@ -857,48 +867,84 @@ export const purchaseOrdersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const rows = await db
-        .select({
-          productId: purchaseOrderItems.productId,
-          productName: products.nameCanonical,
-          category: products.category,
-          subcategory: products.subcategory,
-          cogsMode: purchaseOrderItems.cogsMode,
-          unitCost: purchaseOrderItems.unitCost,
-          unitCostMin: purchaseOrderItems.unitCostMin,
-          unitCostMax: purchaseOrderItems.unitCostMax,
-          poNumber: purchaseOrders.poNumber,
-          orderDate: purchaseOrders.orderDate,
-        })
-        .from(purchaseOrderItems)
-        .innerJoin(
-          purchaseOrders,
-          eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id)
-        )
-        .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
-        .where(
-          and(
-            eq(purchaseOrders.supplierClientId, input.supplierClientId),
-            isNull(purchaseOrders.deletedAt),
-            isNull(purchaseOrderItems.deletedAt)
+      try {
+        const rows = await db
+          .select({
+            productId: purchaseOrderItems.productId,
+            productName: products.nameCanonical,
+            category: products.category,
+            subcategory: products.subcategory,
+            cogsMode: purchaseOrderItems.cogsMode,
+            unitCost: purchaseOrderItems.unitCost,
+            unitCostMin: purchaseOrderItems.unitCostMin,
+            unitCostMax: purchaseOrderItems.unitCostMax,
+            poNumber: purchaseOrders.poNumber,
+            orderDate: purchaseOrders.orderDate,
+          })
+          .from(purchaseOrderItems)
+          .innerJoin(
+            purchaseOrders,
+            eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id)
           )
-        )
-        .orderBy(desc(purchaseOrders.orderDate), desc(purchaseOrderItems.id));
+          .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+          .where(
+            and(
+              eq(purchaseOrders.supplierClientId, input.supplierClientId),
+              isNull(purchaseOrders.deletedAt),
+              isNull(purchaseOrderItems.deletedAt)
+            )
+          )
+          .orderBy(desc(purchaseOrders.orderDate), desc(purchaseOrderItems.id));
 
-      const seen = new Set<number>();
-      const recentProducts = [];
-      for (const row of rows) {
-        if (seen.has(row.productId)) {
-          continue;
+        return dedupeRecentSupplierProducts(rows, input.limit);
+      } catch (error) {
+        if (!shouldFallbackRecentProductsBySupplier(error)) {
+          throw error;
         }
-        seen.add(row.productId);
-        recentProducts.push(row);
-        if (recentProducts.length >= input.limit) {
-          break;
-        }
+
+        logger.warn(
+          {
+            supplierClientId: input.supplierClientId,
+            error,
+          },
+          "[PurchaseOrders] Falling back to legacy supplier history query"
+        );
+
+        const legacyRows = await db
+          .select({
+            productId: purchaseOrderItems.productId,
+            productName: products.nameCanonical,
+            category: products.category,
+            subcategory: products.subcategory,
+            unitCost: purchaseOrderItems.unitCost,
+            poNumber: purchaseOrders.poNumber,
+            orderDate: purchaseOrders.orderDate,
+          })
+          .from(purchaseOrderItems)
+          .innerJoin(
+            purchaseOrders,
+            eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id)
+          )
+          .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+          .where(
+            and(
+              eq(purchaseOrders.supplierClientId, input.supplierClientId),
+              isNull(purchaseOrders.deletedAt),
+              isNull(purchaseOrderItems.deletedAt)
+            )
+          )
+          .orderBy(desc(purchaseOrders.orderDate), desc(purchaseOrderItems.id));
+
+        return dedupeRecentSupplierProducts(
+          legacyRows.map(row => ({
+            ...row,
+            cogsMode: "FIXED" as const,
+            unitCostMin: null,
+            unitCostMax: null,
+          })),
+          input.limit
+        );
       }
-
-      return recentProducts;
     }),
 
   // Get PO history for a vendor (DEPRECATED - use getBySupplier instead)
@@ -1191,6 +1237,35 @@ export function summarizePurchaseOrderItemCost(input: {
     unitCostMin: undefined,
     unitCostMax: undefined,
   };
+}
+
+export function dedupeRecentSupplierProducts<
+  T extends {
+    productId: number | null;
+    productName: string | null;
+  },
+>(rows: T[], limit: number): T[] {
+  const seen = new Set<string>();
+  const recentProducts: T[] = [];
+
+  for (const row of rows) {
+    const dedupeKey = row.productId
+      ? `id:${row.productId}`
+      : `name:${(row.productName ?? "").trim().toLowerCase()}`;
+
+    if (!dedupeKey || seen.has(dedupeKey)) {
+      continue;
+    }
+
+    seen.add(dedupeKey);
+    recentProducts.push(row);
+
+    if (recentProducts.length >= limit) {
+      break;
+    }
+  }
+
+  return recentProducts;
 }
 
 async function findExactProductByName(

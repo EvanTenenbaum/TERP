@@ -5,7 +5,12 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  adminProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { getDb } from "../db";
 import {
   organizationSettings,
@@ -16,6 +21,28 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, isNull, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
+import { isSchemaDriftError } from "../_core/dbErrors";
+
+export function shouldFallbackDisplaySettingsUserPrefs(error: unknown) {
+  return isSchemaDriftError(error, [
+    "user_preferences",
+    "show_cogs_in_orders",
+    "show_margin_in_orders",
+    "show_grade_field",
+    "hide_expected_delivery",
+    "default_warehouse_id",
+  ]);
+}
+
+export function shouldFallbackLegacyDisplaySettingsUserPrefs(error: unknown) {
+  return isSchemaDriftError(error, [
+    "user_preferences",
+    "show_cogs_in_orders",
+    "show_margin_in_orders",
+    "default_warehouse_id",
+  ]);
+}
 
 // ============================================================================
 // Organization Settings Sub-Router
@@ -24,9 +51,16 @@ const orgSettingsRouter = router({
   // Get all organization settings
   list: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
-    const settings = await db.select().from(organizationSettings).where(eq(organizationSettings.isActive, true));
+    const settings = await db
+      .select()
+      .from(organizationSettings)
+      .where(eq(organizationSettings.isActive, true));
 
     // Convert to key-value map for easier consumption
     const settingsMap: Record<string, unknown> = {};
@@ -42,7 +76,11 @@ const orgSettingsRouter = router({
     .input(z.object({ key: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [setting] = await db
         .select()
@@ -55,14 +93,20 @@ const orgSettingsRouter = router({
 
   // Update a setting (admin only)
   update: adminProcedure
-    .input(z.object({
-      key: z.string(),
-      value: z.unknown(),
-      description: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        key: z.string(),
+        value: z.unknown(),
+        description: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [existing] = await db
         .select()
@@ -83,9 +127,14 @@ const orgSettingsRouter = router({
           settingKey: input.key,
           settingValue: JSON.stringify(input.value),
           description: input.description,
-          settingType: typeof input.value === "boolean" ? "BOOLEAN" :
-                       typeof input.value === "number" ? "NUMBER" :
-                       typeof input.value === "object" ? "JSON" : "STRING",
+          settingType:
+            typeof input.value === "boolean"
+              ? "BOOLEAN"
+              : typeof input.value === "number"
+                ? "NUMBER"
+                : typeof input.value === "object"
+                  ? "JSON"
+                  : "STRING",
         });
       }
 
@@ -94,15 +143,23 @@ const orgSettingsRouter = router({
 
   // Bulk update settings
   bulkUpdate: adminProcedure
-    .input(z.object({
-      settings: z.array(z.object({
-        key: z.string(),
-        value: z.unknown(),
-      })),
-    }))
+    .input(
+      z.object({
+        settings: z.array(
+          z.object({
+            key: z.string(),
+            value: z.unknown(),
+          })
+        ),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (const setting of input.settings) {
         const [existing] = await db
@@ -120,9 +177,14 @@ const orgSettingsRouter = router({
           await db.insert(organizationSettings).values({
             settingKey: setting.key,
             settingValue: JSON.stringify(setting.value),
-            settingType: typeof setting.value === "boolean" ? "BOOLEAN" :
-                         typeof setting.value === "number" ? "NUMBER" :
-                         typeof setting.value === "object" ? "JSON" : "STRING",
+            settingType:
+              typeof setting.value === "boolean"
+                ? "BOOLEAN"
+                : typeof setting.value === "number"
+                  ? "NUMBER"
+                  : typeof setting.value === "object"
+                    ? "JSON"
+                    : "STRING",
           });
         }
       }
@@ -139,7 +201,11 @@ const userPrefsRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
     const userId = getAuthenticatedUserId(ctx);
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
     const [prefs] = await db
       .select()
@@ -165,18 +231,24 @@ const userPrefsRouter = router({
 
   // Update current user's preferences
   update: protectedProcedure
-    .input(z.object({
-      defaultWarehouseId: z.number().nullable().optional(),
-      defaultLocationId: z.number().nullable().optional(),
-      showCogsInOrders: z.boolean().optional(),
-      showMarginInOrders: z.boolean().optional(),
-      showGradeField: z.boolean().optional(),
-      hideExpectedDelivery: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        defaultWarehouseId: z.number().nullable().optional(),
+        defaultLocationId: z.number().nullable().optional(),
+        showCogsInOrders: z.boolean().optional(),
+        showMarginInOrders: z.boolean().optional(),
+        showGradeField: z.boolean().optional(),
+        hideExpectedDelivery: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [existing] = await db
         .select()
@@ -205,18 +277,30 @@ const userPrefsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Validate warehouse exists
       if (input.warehouseId) {
         const [warehouse] = await db
           .select()
           .from(locations)
-          .where(and(eq(locations.id, input.warehouseId), isNull(locations.deletedAt)))
+          .where(
+            and(
+              eq(locations.id, input.warehouseId),
+              isNull(locations.deletedAt)
+            )
+          )
           .limit(1);
 
         if (!warehouse) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Warehouse not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Warehouse not found",
+          });
         }
       }
 
@@ -249,7 +333,11 @@ const unitTypesRouter = router({
   // List all unit types
   list: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
     const units = await db
       .select()
@@ -265,7 +353,11 @@ const unitTypesRouter = router({
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [unit] = await db
         .select()
@@ -278,18 +370,24 @@ const unitTypesRouter = router({
 
   // Create unit type (admin only)
   create: adminProcedure
-    .input(z.object({
-      code: z.string().min(1).max(20),
-      name: z.string().min(1).max(100),
-      description: z.string().optional(),
-      category: z.enum(["WEIGHT", "COUNT", "VOLUME", "PACKAGED"]),
-      conversionFactor: z.number().optional(),
-      baseUnitCode: z.string().optional(),
-      sortOrder: z.number().optional(),
-    }))
+    .input(
+      z.object({
+        code: z.string().min(1).max(20),
+        name: z.string().min(1).max(100),
+        description: z.string().optional(),
+        category: z.enum(["WEIGHT", "COUNT", "VOLUME", "PACKAGED"]),
+        conversionFactor: z.number().optional(),
+        baseUnitCode: z.string().optional(),
+        sortOrder: z.number().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db.insert(unitTypes).values({
         code: input.code.toUpperCase(),
@@ -306,19 +404,25 @@ const unitTypesRouter = router({
 
   // Update unit type (admin only)
   update: adminProcedure
-    .input(z.object({
-      id: z.number(),
-      name: z.string().optional(),
-      description: z.string().optional(),
-      category: z.enum(["WEIGHT", "COUNT", "VOLUME", "PACKAGED"]).optional(),
-      conversionFactor: z.number().optional(),
-      baseUnitCode: z.string().nullable().optional(),
-      sortOrder: z.number().optional(),
-      isActive: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        category: z.enum(["WEIGHT", "COUNT", "VOLUME", "PACKAGED"]).optional(),
+        conversionFactor: z.number().optional(),
+        baseUnitCode: z.string().nullable().optional(),
+        sortOrder: z.number().optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const { id, conversionFactor, ...updates } = input;
       const finalUpdates: Record<string, unknown> = { ...updates };
@@ -326,10 +430,7 @@ const unitTypesRouter = router({
         finalUpdates.conversionFactor = conversionFactor.toString();
       }
 
-      await db
-        .update(unitTypes)
-        .set(finalUpdates)
-        .where(eq(unitTypes.id, id));
+      await db.update(unitTypes).set(finalUpdates).where(eq(unitTypes.id, id));
 
       return { success: true };
     }),
@@ -339,7 +440,11 @@ const unitTypesRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(unitTypes)
@@ -356,12 +461,22 @@ const unitTypesRouter = router({
 const financeStatusesRouter = router({
   // List statuses by entity type
   list: protectedProcedure
-    .input(z.object({
-      entityType: z.enum(["INVOICE", "ORDER", "PAYMENT", "BILL", "CREDIT"]).optional()
-    }).optional())
+    .input(
+      z
+        .object({
+          entityType: z
+            .enum(["INVOICE", "ORDER", "PAYMENT", "BILL", "CREDIT"])
+            .optional(),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       let query = db
         .select()
@@ -380,14 +495,20 @@ const financeStatusesRouter = router({
           );
       }
 
-      const statuses = await query.orderBy(asc(customFinanceStatuses.sortOrder));
+      const statuses = await query.orderBy(
+        asc(customFinanceStatuses.sortOrder)
+      );
       return statuses;
     }),
 
   // Get statuses grouped by entity type
   listGrouped: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
     const statuses = await db
       .select()
@@ -409,19 +530,28 @@ const financeStatusesRouter = router({
 
   // Create custom status (admin only)
   create: adminProcedure
-    .input(z.object({
-      entityType: z.enum(["INVOICE", "ORDER", "PAYMENT", "BILL", "CREDIT"]),
-      statusCode: z.string().min(1).max(50),
-      statusLabel: z.string().min(1).max(100),
-      description: z.string().optional(),
-      color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      sortOrder: z.number().optional(),
-      isDefault: z.boolean().optional(),
-      isTerminal: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        entityType: z.enum(["INVOICE", "ORDER", "PAYMENT", "BILL", "CREDIT"]),
+        statusCode: z.string().min(1).max(50),
+        statusLabel: z.string().min(1).max(100),
+        description: z.string().optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        sortOrder: z.number().optional(),
+        isDefault: z.boolean().optional(),
+        isTerminal: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // If setting as default, clear other defaults for this entity type
       if (input.isDefault) {
@@ -447,19 +577,28 @@ const financeStatusesRouter = router({
 
   // Update custom status (admin only)
   update: adminProcedure
-    .input(z.object({
-      id: z.number(),
-      statusLabel: z.string().optional(),
-      description: z.string().optional(),
-      color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      sortOrder: z.number().optional(),
-      isDefault: z.boolean().optional(),
-      isTerminal: z.boolean().optional(),
-      isActive: z.boolean().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        statusLabel: z.string().optional(),
+        description: z.string().optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        sortOrder: z.number().optional(),
+        isDefault: z.boolean().optional(),
+        isTerminal: z.boolean().optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get the current status to know its entity type
       const [current] = await db
@@ -494,7 +633,11 @@ const financeStatusesRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(customFinanceStatuses)
@@ -515,7 +658,11 @@ const teamSettingsRouter = router({
    */
   getTeamSettings: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
     // Get settings marked as team-wide
     const teamSettings = await db
@@ -531,7 +678,9 @@ const teamSettingsRouter = router({
     const settingsMap: Record<string, unknown> = {};
     for (const setting of teamSettings) {
       try {
-        settingsMap[setting.settingKey] = JSON.parse(setting.settingValue as string);
+        settingsMap[setting.settingKey] = JSON.parse(
+          setting.settingValue as string
+        );
       } catch {
         settingsMap[setting.settingKey] = setting.settingValue;
       }
@@ -545,15 +694,21 @@ const teamSettingsRouter = router({
    * This will affect all team members
    */
   updateTeamSetting: adminProcedure
-    .input(z.object({
-      key: z.string(),
-      value: z.unknown(),
-      description: z.string().optional(),
-      syncToMembers: z.boolean().default(true), // Whether to sync to existing team members
-    }))
+    .input(
+      z.object({
+        key: z.string(),
+        value: z.unknown(),
+        description: z.string().optional(),
+        syncToMembers: z.boolean().default(true), // Whether to sync to existing team members
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Update or create the team setting
       const [existing] = await db
@@ -576,9 +731,14 @@ const teamSettingsRouter = router({
           settingKey: input.key,
           settingValue: JSON.stringify(input.value),
           description: input.description,
-          settingType: typeof input.value === "boolean" ? "BOOLEAN" :
-                       typeof input.value === "number" ? "NUMBER" :
-                       typeof input.value === "object" ? "JSON" : "STRING",
+          settingType:
+            typeof input.value === "boolean"
+              ? "BOOLEAN"
+              : typeof input.value === "number"
+                ? "NUMBER"
+                : typeof input.value === "object"
+                  ? "JSON"
+                  : "STRING",
           scope: "TEAM",
         });
       }
@@ -587,19 +747,17 @@ const teamSettingsRouter = router({
       if (input.syncToMembers) {
         // Map team settings to user preferences fields
         const preferenceMapping: Record<string, string> = {
-          "team_show_cogs_in_orders": "showCogsInOrders",
-          "team_show_margin_in_orders": "showMarginInOrders",
-          "team_show_grade_field": "showGradeField",
-          "team_hide_expected_delivery": "hideExpectedDelivery",
-          "team_default_warehouse_id": "defaultWarehouseId",
+          team_show_cogs_in_orders: "showCogsInOrders",
+          team_show_margin_in_orders: "showMarginInOrders",
+          team_show_grade_field: "showGradeField",
+          team_hide_expected_delivery: "hideExpectedDelivery",
+          team_default_warehouse_id: "defaultWarehouseId",
         };
 
         const prefField = preferenceMapping[input.key];
         if (prefField) {
           // Update all existing user preferences to match team setting
-          await db
-            .update(userPreferences)
-            .set({ [prefField]: input.value });
+          await db.update(userPreferences).set({ [prefField]: input.value });
         }
       }
 
@@ -614,7 +772,11 @@ const teamSettingsRouter = router({
     .input(z.object({ userId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get all team settings
       const teamSettings = await db
@@ -630,18 +792,20 @@ const teamSettingsRouter = router({
       // Map team settings to user preferences
       const userPrefUpdates: Record<string, unknown> = {};
       const preferenceMapping: Record<string, string> = {
-        "team_show_cogs_in_orders": "showCogsInOrders",
-        "team_show_margin_in_orders": "showMarginInOrders",
-        "team_show_grade_field": "showGradeField",
-        "team_hide_expected_delivery": "hideExpectedDelivery",
-        "team_default_warehouse_id": "defaultWarehouseId",
+        team_show_cogs_in_orders: "showCogsInOrders",
+        team_show_margin_in_orders: "showMarginInOrders",
+        team_show_grade_field: "showGradeField",
+        team_hide_expected_delivery: "hideExpectedDelivery",
+        team_default_warehouse_id: "defaultWarehouseId",
       };
 
       for (const setting of teamSettings) {
         const prefField = preferenceMapping[setting.settingKey];
         if (prefField) {
           try {
-            userPrefUpdates[prefField] = JSON.parse(setting.settingValue as string);
+            userPrefUpdates[prefField] = JSON.parse(
+              setting.settingValue as string
+            );
           } catch {
             userPrefUpdates[prefField] = setting.settingValue;
           }
@@ -676,15 +840,39 @@ const teamSettingsRouter = router({
   getSettingsClassification: protectedProcedure.query(async () => {
     return {
       teamSettings: [
-        { key: "team_show_cogs_in_orders", label: "Show COGS in Orders", type: "boolean" },
-        { key: "team_show_margin_in_orders", label: "Show Margin in Orders", type: "boolean" },
-        { key: "team_show_grade_field", label: "Show Grade Field", type: "boolean" },
-        { key: "team_hide_expected_delivery", label: "Hide Expected Delivery", type: "boolean" },
-        { key: "team_default_warehouse_id", label: "Default Warehouse", type: "number" },
+        {
+          key: "team_show_cogs_in_orders",
+          label: "Show COGS in Orders",
+          type: "boolean",
+        },
+        {
+          key: "team_show_margin_in_orders",
+          label: "Show Margin in Orders",
+          type: "boolean",
+        },
+        {
+          key: "team_show_grade_field",
+          label: "Show Grade Field",
+          type: "boolean",
+        },
+        {
+          key: "team_hide_expected_delivery",
+          label: "Hide Expected Delivery",
+          type: "boolean",
+        },
+        {
+          key: "team_default_warehouse_id",
+          label: "Default Warehouse",
+          type: "number",
+        },
       ],
       userSettings: [
         { key: "theme", label: "Theme Preference", type: "string" },
-        { key: "notifications_enabled", label: "Enable Notifications", type: "boolean" },
+        {
+          key: "notifications_enabled",
+          label: "Enable Notifications",
+          type: "boolean",
+        },
         { key: "dashboard_layout", label: "Dashboard Layout", type: "json" },
       ],
     };
@@ -705,45 +893,133 @@ export const organizationSettingsRouter = router({
   getDisplaySettings: protectedProcedure.query(async ({ ctx }) => {
     const userId = getAuthenticatedUserId(ctx);
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
-    // Get org settings
-    const orgSettings = await db.select().from(organizationSettings);
+    // Keep the projection narrow so older production schemas do not fail on
+    // newly-added metadata columns that the UI does not need here.
+    const orgSettings = await db
+      .select({
+        settingKey: organizationSettings.settingKey,
+        settingValue: organizationSettings.settingValue,
+      })
+      .from(organizationSettings);
     const settingsMap: Record<string, unknown> = {};
     for (const setting of orgSettings) {
       try {
-        settingsMap[setting.settingKey] = JSON.parse(setting.settingValue as string);
+        settingsMap[setting.settingKey] = JSON.parse(
+          setting.settingValue as string
+        );
       } catch {
         settingsMap[setting.settingKey] = setting.settingValue;
       }
     }
 
-    // Get user preferences
-    const [userPrefs] = await db
-      .select()
-      .from(userPreferences)
-      .where(eq(userPreferences.userId, userId))
-      .limit(1);
-
-    return {
-      organization: settingsMap,
-      user: userPrefs || {
-        showCogsInOrders: true,
-        showMarginInOrders: true,
-        showGradeField: settingsMap.grade_field_enabled !== false,
-        hideExpectedDelivery: settingsMap.expected_delivery_enabled === false,
-        defaultWarehouseId: null,
-      },
-      // Computed display settings (combining org and user)
-      display: {
-        showGradeField: settingsMap.grade_field_enabled !== false && (userPrefs?.showGradeField ?? true),
-        gradeFieldRequired: settingsMap.grade_field_required === true,
-        showExpectedDelivery: settingsMap.expected_delivery_enabled !== false && !(userPrefs?.hideExpectedDelivery ?? false),
-        showCogsInOrders: userPrefs?.showCogsInOrders ?? true,
-        showMarginInOrders: userPrefs?.showMarginInOrders ?? true,
-        cogsDisplayMode: settingsMap.cogs_display_mode || "VISIBLE",
-        packagedUnitEnabled: settingsMap.packaged_unit_enabled !== false,
-      },
+    type DisplayUserPrefs = {
+      defaultWarehouseId: number | null;
+      showCogsInOrders: boolean;
+      showMarginInOrders: boolean;
+      showGradeField: boolean;
+      hideExpectedDelivery: boolean;
     };
+
+    let userPrefs: DisplayUserPrefs | null = null;
+
+    try {
+      const [fullPrefs] = await db
+        .select({
+          defaultWarehouseId: userPreferences.defaultWarehouseId,
+          showCogsInOrders: userPreferences.showCogsInOrders,
+          showMarginInOrders: userPreferences.showMarginInOrders,
+          showGradeField: userPreferences.showGradeField,
+          hideExpectedDelivery: userPreferences.hideExpectedDelivery,
+        })
+        .from(userPreferences)
+        .where(eq(userPreferences.userId, userId))
+        .limit(1);
+
+      userPrefs = fullPrefs ?? null;
+    } catch (error) {
+      if (!shouldFallbackDisplaySettingsUserPrefs(error)) {
+        throw error;
+      }
+
+      logger.warn(
+        { error, userId },
+        "organizationSettings.getDisplaySettings falling back to legacy/default user preferences"
+      );
+
+      try {
+        const [legacyPrefs] = await db
+          .select({
+            defaultWarehouseId: userPreferences.defaultWarehouseId,
+            showCogsInOrders: userPreferences.showCogsInOrders,
+            showMarginInOrders: userPreferences.showMarginInOrders,
+          })
+          .from(userPreferences)
+          .where(eq(userPreferences.userId, userId))
+          .limit(1);
+
+        userPrefs = legacyPrefs
+          ? {
+              ...legacyPrefs,
+              showGradeField: true,
+              hideExpectedDelivery: false,
+            }
+          : null;
+      } catch (legacyError) {
+        if (!shouldFallbackLegacyDisplaySettingsUserPrefs(legacyError)) {
+          throw legacyError;
+        }
+
+        logger.warn(
+          { error: legacyError, userId },
+          "organizationSettings.getDisplaySettings falling back to default-only user preferences"
+        );
+        userPrefs = null;
+      }
+    }
+
+    return buildDisplaySettingsPayload(settingsMap, userPrefs);
   }),
 });
+
+export function buildDisplaySettingsPayload(
+  settingsMap: Record<string, unknown>,
+  userPrefs: {
+    defaultWarehouseId: number | null;
+    showCogsInOrders: boolean;
+    showMarginInOrders: boolean;
+    showGradeField: boolean;
+    hideExpectedDelivery: boolean;
+  } | null
+) {
+  const resolvedUserPrefs = userPrefs || {
+    showCogsInOrders: true,
+    showMarginInOrders: true,
+    showGradeField: settingsMap.grade_field_enabled !== false,
+    hideExpectedDelivery: settingsMap.expected_delivery_enabled === false,
+    defaultWarehouseId: null,
+  };
+
+  return {
+    organization: settingsMap,
+    user: resolvedUserPrefs,
+    display: {
+      showGradeField:
+        settingsMap.grade_field_enabled !== false &&
+        resolvedUserPrefs.showGradeField,
+      gradeFieldRequired: settingsMap.grade_field_required === true,
+      showExpectedDelivery:
+        settingsMap.expected_delivery_enabled !== false &&
+        !resolvedUserPrefs.hideExpectedDelivery,
+      showCogsInOrders: resolvedUserPrefs.showCogsInOrders,
+      showMarginInOrders: resolvedUserPrefs.showMarginInOrders,
+      cogsDisplayMode: settingsMap.cogs_display_mode || "VISIBLE",
+      packagedUnitEnabled: settingsMap.packaged_unit_enabled !== false,
+    },
+  };
+}
