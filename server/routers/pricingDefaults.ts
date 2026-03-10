@@ -60,7 +60,7 @@ export const pricingDefaultsRouter = router({
    * Create or update default margin
    */
   upsert: protectedProcedure
-    .use(requirePermission("pricing:read"))
+    .use(requirePermission("pricing:update"))
     .input(
       z.object({
         productCategory: z.string(),
