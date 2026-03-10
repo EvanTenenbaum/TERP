@@ -20,6 +20,11 @@ import {
 } from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
+import {
+  resolveBatchCogs,
+  type CogsRangeBasis,
+} from "./cogsCalculator";
+import { pricingService } from "./services/pricingService";
 
 // ============================================================================
 // TYPES
@@ -33,6 +38,12 @@ export interface PricedInventoryItem {
   category?: string;
   subcategory?: string;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogs?: number;
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogs?: number;
+  effectiveCogsBasis?: CogsRangeBasis;
   retailPrice: number;
   quantity: number;
   grade?: string;
@@ -107,7 +118,10 @@ export async function getInventoryWithPricing(
       batchProductId: number;
       batchStatus: string;
       batchGrade: string | null;
+      batchCogsMode: "FIXED" | "RANGE";
       batchUnitCogs: string | null;
+      batchUnitCogsMin: string | null;
+      batchUnitCogsMax: string | null;
       batchOnHandQty: string;
       productId: number | null;
       productName: string | null;
@@ -115,6 +129,9 @@ export async function getInventoryWithPricing(
       productSubcategory: string | null;
       supplierName: string | null;
     }>;
+
+    const rangeBasis =
+      await pricingService.getRangePricingDefaultForChannel("SALES_SHEET");
 
     try {
       // INV-CONSISTENCY-002: Show all inventory with qty > 0, regardless of status
@@ -126,7 +143,10 @@ export async function getInventoryWithPricing(
           batchProductId: batches.productId,
           batchStatus: batches.batchStatus,
           batchGrade: batches.grade,
+          batchCogsMode: batches.cogsMode,
           batchUnitCogs: batches.unitCogs,
+          batchUnitCogsMin: batches.unitCogsMin,
+          batchUnitCogsMax: batches.unitCogsMax,
           batchOnHandQty: batches.onHandQty,
           productId: products.id,
           productName: products.nameCanonical,
@@ -164,7 +184,10 @@ export async function getInventoryWithPricing(
           batchProductId: batches.productId,
           batchStatus: batches.batchStatus,
           batchGrade: batches.grade,
+          batchCogsMode: batches.cogsMode,
           batchUnitCogs: batches.unitCogs,
+          batchUnitCogsMin: batches.unitCogsMin,
+          batchUnitCogsMax: batches.unitCogsMax,
           batchOnHandQty: batches.onHandQty,
           productId: products.id,
           productName: products.nameCanonical,
@@ -228,18 +251,41 @@ export async function getInventoryWithPricing(
     // SCHEMA-015: Updated to use supplier instead of vendor, removed strain fields
     const inventoryItems = inventoryWithDetails
       .filter(row => row.batchId !== null && row.batchId !== undefined)
-      .map(row => ({
-        id: row.batchId,
-        productId: row.productId || row.batchProductId || undefined, // WSQA-002: Include productId for flexible lot selection
-        name: row.productName || row.batchSku || `Batch #${row.batchId}`,
-        category: row.productCategory || undefined,
-        subcategory: row.productSubcategory || undefined,
-        basePrice: parseNumber(row.batchUnitCogs, 0),
-        quantity: parseNumber(row.batchOnHandQty, 0),
-        grade: row.batchGrade || undefined,
-        vendor: row.supplierName || undefined, // Keep 'vendor' key name for backward compatibility
-        status: row.batchStatus || undefined,
-      }));
+      .map(row => {
+        const resolvedCogs = resolveBatchCogs(
+          {
+            id: row.batchId,
+            cogsMode: row.batchCogsMode,
+            unitCogs: row.batchUnitCogs,
+            unitCogsMin: row.batchUnitCogsMin,
+            unitCogsMax: row.batchUnitCogsMax,
+          },
+          { rangeBasis }
+        );
+
+        return {
+          id: row.batchId,
+          productId: row.productId || row.batchProductId || undefined,
+          name: row.productName || row.batchSku || `Batch #${row.batchId}`,
+          category: row.productCategory || undefined,
+          subcategory: row.productSubcategory || undefined,
+          basePrice: resolvedCogs.unitCogs,
+          cogsMode: row.batchCogsMode,
+          unitCogs: parseNumber(row.batchUnitCogs, 0),
+          unitCogsMin: row.batchUnitCogsMin
+            ? parseNumber(row.batchUnitCogsMin, 0)
+            : null,
+          unitCogsMax: row.batchUnitCogsMax
+            ? parseNumber(row.batchUnitCogsMax, 0)
+            : null,
+          effectiveCogs: resolvedCogs.unitCogs,
+          effectiveCogsBasis: resolvedCogs.effectiveCogsBasis,
+          quantity: parseNumber(row.batchOnHandQty, 0),
+          grade: row.batchGrade || undefined,
+          vendor: row.supplierName || undefined,
+          status: row.batchStatus || undefined,
+        };
+      });
 
     // Calculate retail prices using pricing engine with error handling
     try {

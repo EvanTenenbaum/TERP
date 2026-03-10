@@ -1,3 +1,4 @@
+import { trpc } from "@/lib/trpc";
 import {
   Card,
   CardContent,
@@ -6,198 +7,117 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Info, Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Info } from "lucide-react";
+import { toast } from "sonner";
+
+const CHANNEL_LABELS = {
+  SALES_SHEET: "Sales Sheet",
+  LIVE_SHOPPING: "Live Shopping",
+  VIP_SHOPPING: "VIP Shopping",
+} as const;
+
+const BASIS_LABELS = {
+  LOW: "Low end of range",
+  MID: "Middle of range",
+  HIGH: "High end of range",
+} as const;
 
 export function CogsGlobalSettings() {
+  const utils = trpc.useUtils();
+  const { data, isLoading } =
+    trpc.pricingDefaults.getRangePricingDefaults.useQuery();
+
+  const mutation = trpc.pricingDefaults.setRangePricingDefault.useMutation({
+    onSuccess: async () => {
+      await utils.pricingDefaults.getRangePricingDefaults.invalidate();
+      toast.success("Range pricing default updated");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
   return (
     <div className="space-y-6">
-      {/* Default COGS Behavior */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Default COGS Behavior</CardTitle>
+          <CardTitle className="text-lg">Range-Based COGS Defaults</CardTitle>
           <CardDescription>
-            Configure how COGS is calculated for batches
+            Choose which vendor range value becomes the default effective COGS on
+            each customer-facing channel.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              <strong>FIXED mode:</strong> Uses the exact COGS value from the
-              batch.
-              <br />
-              <strong>RANGE mode:</strong> Uses the midpoint between min and max
-              COGS by default.
+              Staff views keep the full vendor range visible. Customer-facing
+              outputs only publish the selected sell price for the active
+              channel.
             </AlertDescription>
           </Alert>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Auto-calculate COGS</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically calculate COGS based on batch mode
-                </p>
+            {(data ?? []).map(setting => (
+              <div
+                key={setting.channel}
+                className="flex flex-col gap-2 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="space-y-1">
+                  <div className="font-medium">
+                    {CHANNEL_LABELS[setting.channel]}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Default effective basis:{" "}
+                    <Badge variant="outline">
+                      {BASIS_LABELS[setting.defaultBasis]}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="w-full md:w-56">
+                  <Label className="sr-only">
+                    {CHANNEL_LABELS[setting.channel]} default
+                  </Label>
+                  <Select
+                    value={setting.defaultBasis}
+                    onValueChange={value =>
+                      mutation.mutate({
+                        channel: setting.channel,
+                        defaultBasis: value as "LOW" | "MID" | "HIGH",
+                      })
+                    }
+                    disabled={mutation.isPending}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">Low</SelectItem>
+                      <SelectItem value="MID">Mid</SelectItem>
+                      <SelectItem value="HIGH">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Switch defaultChecked />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Allow manual COGS adjustment</Label>
-                <p className="text-sm text-muted-foreground">
-                  Let users override COGS on individual items
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Show COGS to all users</Label>
-                <p className="text-sm text-muted-foreground">
-                  Display COGS and margin information to all users
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Consignment Defaults */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Consignment Defaults</CardTitle>
-          <CardDescription>
-            Default COGS estimation for consignment deals
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Default consignment COGS percentage</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                defaultValue="60"
-                className="max-w-[120px]"
-              />
-              <span className="text-sm text-muted-foreground">
-                % of sale price
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Used to estimate COGS for consignment items until supplier invoice
-              is received
+          {isLoading && (
+            <p className="text-sm text-muted-foreground">
+              Loading channel defaults...
             </p>
-          </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Margin Thresholds */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Margin Thresholds</CardTitle>
-          <CardDescription>
-            Configure color-coded margin categories
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Excellent (Green)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  defaultValue="70"
-                  className="max-w-[100px]"
-                />
-                <span className="text-sm text-muted-foreground">%+</span>
-                <Badge className="bg-green-100 text-green-700 border-green-300">
-                  70%+
-                </Badge>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Good (Light Green)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  defaultValue="50"
-                  className="max-w-[100px]"
-                />
-                <span className="text-sm text-muted-foreground">%+</span>
-                <Badge className="bg-green-50 text-green-600 border-green-200">
-                  50%+
-                </Badge>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Fair (Yellow)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  defaultValue="30"
-                  className="max-w-[100px]"
-                />
-                <span className="text-sm text-muted-foreground">%+</span>
-                <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                  30%+
-                </Badge>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Low (Orange)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  defaultValue="15"
-                  className="max-w-[100px]"
-                />
-                <span className="text-sm text-muted-foreground">%+</span>
-                <Badge className="bg-orange-50 text-orange-700 border-orange-200">
-                  15%+
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Margins below the lowest threshold will be shown in red
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button size="lg">
-          <Save className="h-4 w-4 mr-2" />
-          Save Settings
-        </Button>
-      </div>
     </div>
   );
 }

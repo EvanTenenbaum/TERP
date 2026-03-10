@@ -55,9 +55,22 @@ export interface OrderItem {
 
   // COGS
   unitCogs: number;
+  originalCogsPerUnit?: number;
   cogsMode: "FIXED" | "RANGE";
-  cogsSource: "FIXED" | "MIDPOINT" | "CLIENT_ADJUSTMENT" | "RULE" | "MANUAL";
+  cogsSource:
+    | "FIXED"
+    | "LOW"
+    | "MIDPOINT"
+    | "HIGH"
+    | "CLIENT_ADJUSTMENT"
+    | "RULE"
+    | "MANUAL";
   appliedRule?: string;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
+  originalRangeMin?: number | null;
+  originalRangeMax?: number | null;
+  isBelowVendorRange?: boolean;
+  belowRangeReason?: string;
 
   // Profit
   unitMargin: number;
@@ -102,6 +115,64 @@ export interface CreateOrderInput {
 
   notes?: string;
   actorId: number;
+}
+
+async function syncOrderLineItemsForOrder(
+  tx: DbTransaction,
+  orderId: number,
+  items: OrderItem[]
+): Promise<void> {
+  const existingLineItems = await tx
+    .select({ id: orderLineItems.id })
+    .from(orderLineItems)
+    .where(eq(orderLineItems.orderId, orderId));
+
+  const existingLineItemIds = existingLineItems.map(item => item.id);
+  if (existingLineItemIds.length > 0) {
+    await tx
+      .delete(orderLineItemAllocations)
+      .where(safeInArray(orderLineItemAllocations.orderLineItemId, existingLineItemIds));
+
+    await tx.delete(orderLineItems).where(eq(orderLineItems.orderId, orderId));
+  }
+
+  if (items.length === 0) {
+    return;
+  }
+
+  await tx.insert(orderLineItems).values(
+    items.map(item => ({
+      orderId,
+      batchId: item.batchId,
+      productDisplayName: item.displayName,
+      quantity: item.quantity.toString(),
+      cogsPerUnit: item.unitCogs.toFixed(4),
+      originalCogsPerUnit: (item.originalCogsPerUnit ?? item.unitCogs).toFixed(4),
+      effectiveCogsBasis: item.effectiveCogsBasis ?? "MANUAL",
+      originalRangeMin:
+        item.originalRangeMin !== null && item.originalRangeMin !== undefined
+          ? item.originalRangeMin.toFixed(4)
+          : null,
+      originalRangeMax:
+        item.originalRangeMax !== null && item.originalRangeMax !== undefined
+          ? item.originalRangeMax.toFixed(4)
+          : null,
+      isBelowVendorRange: item.isBelowVendorRange ?? false,
+      belowRangeReason: item.isBelowVendorRange ? item.belowRangeReason : null,
+      isCogsOverridden: item.overrideCogs !== undefined,
+      cogsOverrideReason: item.overrideCogs !== undefined ? "Legacy order path override" : null,
+      marginPercent: item.marginPercent.toFixed(2),
+      marginDollar: item.unitMargin.toFixed(2),
+      isMarginOverridden: item.overridePrice !== undefined,
+      marginSource:
+        item.overridePrice !== undefined || item.overrideCogs !== undefined
+          ? ("MANUAL" as const)
+          : ("DEFAULT" as const),
+      unitPrice: item.unitPrice.toFixed(2),
+      lineTotal: item.lineTotal.toFixed(2),
+      isSample: item.isSample,
+    }))
+  );
 }
 
 export interface ConvertQuoteToSaleInput {
@@ -236,6 +307,27 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       }
 
       // Calculate COGS (unless overridden)
+      const defaultCogsResult = calculateCogs({
+        batch: {
+          id: batch.id,
+          cogsMode: batch.cogsMode,
+          unitCogs: batch.unitCogs,
+          unitCogsMin: batch.unitCogsMin,
+          unitCogsMax: batch.unitCogsMax,
+        },
+        client: {
+          id: client.id,
+          cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
+          cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
+        },
+        context: {
+          quantity: item.quantity,
+          salePrice: item.overridePrice || item.unitPrice,
+          paymentTerms: input.paymentTerms,
+        },
+        rangeBasis: "MID",
+      });
+
       let cogsResult;
       if (item.overrideCogs !== undefined) {
         // Manual override
@@ -244,33 +336,22 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         const marginPercent =
           finalPrice > 0 ? (unitMargin / finalPrice) * 100 : 0;
 
-        cogsResult = {
-          unitCogs: item.overrideCogs,
-          cogsSource: "MANUAL" as const,
-          unitMargin,
-          marginPercent,
-        };
+          cogsResult = {
+            unitCogs: item.overrideCogs,
+            cogsSource: "MANUAL" as const,
+            unitMargin,
+            marginPercent,
+            effectiveCogsBasis: "MANUAL" as const,
+            originalRangeMin: defaultCogsResult.originalRangeMin,
+            originalRangeMax: defaultCogsResult.originalRangeMax,
+            isBelowVendorRange:
+              defaultCogsResult.originalRangeMin !== null
+                ? item.overrideCogs < defaultCogsResult.originalRangeMin
+                : false,
+          };
       } else {
         // Calculate using COGS calculator
-        cogsResult = calculateCogs({
-          batch: {
-            id: batch.id,
-            cogsMode: batch.cogsMode,
-            unitCogs: batch.unitCogs,
-            unitCogsMin: batch.unitCogsMin,
-            unitCogsMax: batch.unitCogsMax,
-          },
-          client: {
-            id: client.id,
-            cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
-            cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
-          },
-          context: {
-            quantity: item.quantity,
-            salePrice: item.overridePrice || item.unitPrice,
-            paymentTerms: input.paymentTerms,
-          },
-        });
+        cogsResult = defaultCogsResult;
       }
 
       const finalPrice = item.overridePrice || item.unitPrice;
@@ -286,9 +367,17 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         unitPrice: finalPrice,
         isSample: item.isSample,
         unitCogs: cogsResult.unitCogs,
+        originalCogsPerUnit: defaultCogsResult.unitCogs,
         cogsMode: batch.cogsMode,
         cogsSource: cogsResult.cogsSource,
         appliedRule: cogsResult.appliedRule,
+        effectiveCogsBasis: cogsResult.effectiveCogsBasis,
+        originalRangeMin: cogsResult.originalRangeMin,
+        originalRangeMax: cogsResult.originalRangeMax,
+        isBelowVendorRange: cogsResult.isBelowVendorRange,
+        belowRangeReason: cogsResult.isBelowVendorRange
+          ? "Legacy order path override below vendor range"
+          : undefined,
         unitMargin: cogsResult.unitMargin,
         marginPercent: cogsResult.marginPercent,
         lineTotal,
@@ -440,6 +529,8 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     if (!order) {
       throw new Error("Failed to create order");
     }
+
+    await syncOrderLineItemsForOrder(tx, order.id, processedItems);
 
     return normalizeOrderRecord(order) as Order;
   });
@@ -1066,6 +1157,12 @@ export async function convertQuoteToSale(
       .limit(1)
       .then(rows => rows[0]);
 
+    if (!sale) {
+      throw new Error("Failed to create sale order");
+    }
+
+    await syncOrderLineItemsForOrder(tx, sale.id, quoteItems);
+
     // 6. Reserve inventory with row-level locking to prevent race conditions
     // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
     // This is the standard ERP pattern: reserve on confirm, deduct on ship.
@@ -1140,10 +1237,6 @@ export async function convertQuoteToSale(
     // Cash payments and credit exposure updates also happen at fulfillment time.
 
     // 8. Return the sale
-    if (!sale) {
-      throw new Error("Failed to create sale order");
-    }
-
     return sale;
   });
 }
@@ -1354,6 +1447,15 @@ export async function confirmDraftOrder(input: {
       })
       .where(eq(orders.id, input.orderId));
 
+    const [existingLineItemCount] = await tx
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(orderLineItems)
+      .where(eq(orderLineItems.orderId, input.orderId));
+
+    if (Number(existingLineItemCount?.count || 0) === 0) {
+      await syncOrderLineItemsForOrder(tx, input.orderId, draftItems);
+    }
+
     // 7. Reserve inventory
     // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
     // This is the standard ERP pattern: reserve on confirm, deduct on ship.
@@ -1506,6 +1608,26 @@ export async function updateDraftOrder(input: {
           throw new Error(`Batch ${item.batchId} not found`);
         }
 
+        const defaultCogsResult = calculateCogs({
+          batch: {
+            id: batch.id,
+            cogsMode: batch.cogsMode,
+            unitCogs: batch.unitCogs,
+            unitCogsMin: batch.unitCogsMin,
+            unitCogsMax: batch.unitCogsMax,
+          },
+          client: {
+            id: client.id,
+            cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
+            cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
+          },
+          context: {
+            quantity: item.quantity,
+            salePrice: item.overridePrice || item.unitPrice,
+          },
+          rangeBasis: "MID",
+        });
+
         // Calculate COGS (unless overridden)
         let cogsResult;
         if (item.overrideCogs !== undefined) {
@@ -1519,26 +1641,16 @@ export async function updateDraftOrder(input: {
             cogsSource: "MANUAL" as const,
             unitMargin,
             marginPercent,
+            effectiveCogsBasis: "MANUAL" as const,
+            originalRangeMin: defaultCogsResult.originalRangeMin,
+            originalRangeMax: defaultCogsResult.originalRangeMax,
+            isBelowVendorRange:
+              defaultCogsResult.originalRangeMin !== null
+                ? item.overrideCogs < defaultCogsResult.originalRangeMin
+                : false,
           };
         } else {
-          cogsResult = calculateCogs({
-            batch: {
-              id: batch.id,
-              cogsMode: batch.cogsMode,
-              unitCogs: batch.unitCogs,
-              unitCogsMin: batch.unitCogsMin,
-              unitCogsMax: batch.unitCogsMax,
-            },
-            client: {
-              id: client.id,
-              cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
-              cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
-            },
-            context: {
-              quantity: item.quantity,
-              salePrice: item.overridePrice || item.unitPrice,
-            },
-          });
+          cogsResult = defaultCogsResult;
         }
 
         const finalPrice = item.overridePrice || item.unitPrice;
@@ -1554,9 +1666,17 @@ export async function updateDraftOrder(input: {
           unitPrice: finalPrice,
           isSample: item.isSample,
           unitCogs: cogsResult.unitCogs,
+          originalCogsPerUnit: defaultCogsResult.unitCogs,
           cogsMode: batch.cogsMode,
           cogsSource: cogsResult.cogsSource,
           appliedRule: cogsResult.appliedRule,
+          effectiveCogsBasis: cogsResult.effectiveCogsBasis,
+          originalRangeMin: cogsResult.originalRangeMin,
+          originalRangeMax: cogsResult.originalRangeMax,
+          isBelowVendorRange: cogsResult.isBelowVendorRange,
+          belowRangeReason: cogsResult.isBelowVendorRange
+            ? "Legacy draft path override below vendor range"
+            : undefined,
           unitMargin: cogsResult.unitMargin,
           marginPercent: cogsResult.marginPercent,
           lineTotal,
@@ -1596,6 +1716,8 @@ export async function updateDraftOrder(input: {
           notes: input.notes || draft.notes,
         })
         .where(eq(orders.id, input.orderId));
+
+      await syncOrderLineItemsForOrder(tx, input.orderId, processedItems);
     } else {
       // Just update notes and validUntil
       const updateData: Record<string, unknown> = {};

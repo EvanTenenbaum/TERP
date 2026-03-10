@@ -23,11 +23,15 @@ import {
   lots,
   clients,
   users,
+  orders,
+  orderLineItems,
+  orderLineItemAllocations,
   InsertVendorPayable,
   VendorPayable,
 } from "../../drizzle/schema";
 import { logger } from "../_core/logger";
 import { sendBulkNotification } from "./notificationService";
+import { safeNotInArray } from "../lib/sqlSafety";
 
 // ============================================================================
 // Types
@@ -308,19 +312,83 @@ export async function updatePayableOnSale(
     return;
   }
 
-  // Calculate new amounts
-  const currentUnitsSold = parseFloat(payable.unitsSold || "0");
-  const cogsPerUnit = parseFloat(payable.cogsPerUnit || "0");
-  const newUnitsSold = currentUnitsSold + quantitySold;
-  const newTotalAmount = newUnitsSold * cogsPerUnit;
+  const allocationRows = await db
+    .select({
+      orderLineItemId: orderLineItemAllocations.orderLineItemId,
+      quantityAllocated: orderLineItemAllocations.quantityAllocated,
+      unitCost: orderLineItemAllocations.unitCost,
+    })
+    .from(orderLineItemAllocations)
+    .innerJoin(
+      orderLineItems,
+      eq(orderLineItemAllocations.orderLineItemId, orderLineItems.id)
+    )
+    .innerJoin(orders, eq(orderLineItems.orderId, orders.id))
+    .where(
+      and(
+        eq(orderLineItemAllocations.batchId, batchId),
+        eq(orders.orderType, "SALE"),
+        eq(orders.isDraft, false),
+        sql`${orders.deletedAt} IS NULL`,
+        sql`${orders.shippedAt} IS NOT NULL`,
+        sql`(${orders.saleStatus} IS NULL OR ${orders.saleStatus} <> 'CANCELLED')`
+      )
+    );
+
+  const allocationLineItemIds = Array.from(
+    new Set(allocationRows.map(row => row.orderLineItemId))
+  );
+
+  const unallocatedRows = await db
+    .select({
+      quantity: orderLineItems.quantity,
+      unitCost: orderLineItems.cogsPerUnit,
+    })
+    .from(orderLineItems)
+    .innerJoin(orders, eq(orderLineItems.orderId, orders.id))
+    .where(
+      and(
+        eq(orderLineItems.batchId, batchId),
+        safeNotInArray(orderLineItems.id, allocationLineItemIds),
+        eq(orders.orderType, "SALE"),
+        eq(orders.isDraft, false),
+        sql`${orders.deletedAt} IS NULL`,
+        sql`${orders.shippedAt} IS NOT NULL`,
+        sql`(${orders.saleStatus} IS NULL OR ${orders.saleStatus} <> 'CANCELLED')`
+      )
+    );
+
+  const realizedUnitsSold =
+    allocationRows.reduce(
+      (sum, row) => sum + parseFloat(row.quantityAllocated || "0"),
+      0
+    ) +
+    unallocatedRows.reduce((sum, row) => sum + parseFloat(row.quantity || "0"), 0);
+
+  const realizedTotalAmount =
+    allocationRows.reduce(
+      (sum, row) =>
+        sum +
+        parseFloat(row.quantityAllocated || "0") * parseFloat(row.unitCost || "0"),
+      0
+    ) +
+    unallocatedRows.reduce(
+      (sum, row) =>
+        sum + parseFloat(row.quantity || "0") * parseFloat(row.unitCost || "0"),
+      0
+    );
+
+  const weightedCogsPerUnit =
+    realizedUnitsSold > 0 ? realizedTotalAmount / realizedUnitsSold : 0;
   const currentAmountPaid = parseFloat(payable.amountPaid || "0");
-  const newAmountDue = newTotalAmount - currentAmountPaid;
+  const newAmountDue = realizedTotalAmount - currentAmountPaid;
 
   await db
     .update(vendorPayables)
     .set({
-      unitsSold: newUnitsSold.toFixed(2),
-      totalAmount: newTotalAmount.toFixed(2),
+      unitsSold: realizedUnitsSold.toFixed(2),
+      cogsPerUnit: weightedCogsPerUnit.toFixed(2),
+      totalAmount: realizedTotalAmount.toFixed(2),
       amountDue: newAmountDue.toFixed(2),
     })
     .where(eq(vendorPayables.id, payable.id));
@@ -329,8 +397,8 @@ export async function updatePayableOnSale(
     msg: "[Payables] Updated payable on sale",
     payableId: payable.id,
     quantitySold,
-    newUnitsSold,
-    newTotalAmount,
+    realizedUnitsSold,
+    realizedTotalAmount,
   });
 }
 

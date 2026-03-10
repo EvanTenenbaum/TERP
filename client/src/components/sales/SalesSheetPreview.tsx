@@ -61,6 +61,10 @@ interface SalesSheetItem {
   category?: string;
   quantity: number;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice: number;
   priceOverride?: number;
 }
@@ -153,10 +157,12 @@ function SortableItem({
         </div>
 
         <div className="mt-2 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {item.quantity.toFixed(2)} units × ${displayPrice.toFixed(2)} = $
-            {(displayPrice * item.quantity).toFixed(2)}
-          </span>
+          <div className="text-muted-foreground">
+            <div>
+              {item.quantity.toFixed(2)} units × ${displayPrice.toFixed(2)} = $
+              {(displayPrice * item.quantity).toFixed(2)}
+            </div>
+          </div>
 
           {isEditing ? (
             <div className="flex items-center gap-2">
