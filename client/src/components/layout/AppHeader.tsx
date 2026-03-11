@@ -119,20 +119,6 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
             <Command className="h-3.5 w-3.5 mr-1.5" />K
           </Button>
 
-          <Button
-            variant={isCompact ? "secondary" : "ghost"}
-            className="hidden md:flex h-8 rounded-full border border-border/70 bg-background px-2.5 text-[11px] font-medium text-muted-foreground"
-            onClick={toggleDensity}
-            title={
-              isCompact
-                ? "Switch to comfortable row spacing"
-                : "Switch to compact row spacing"
-            }
-            data-testid="density-toggle-button"
-          >
-            {isCompact ? "Comfortable" : "Compact"}
-          </Button>
-
           <NotificationBell className="hidden sm:flex relative" />
 
           {/* Theme Toggle */}
