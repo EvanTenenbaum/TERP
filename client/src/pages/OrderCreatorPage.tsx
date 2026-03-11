@@ -352,10 +352,23 @@ export default function OrderCreatorPageV2() {
     null
   );
   const { hasAnyPermission } = usePermissions();
-  const canEditPricing = hasAnyPermission([
+  const canViewPricingContext = hasAnyPermission([
+    "orders:view_pricing",
+    "pricing:read",
+    "pricing:access",
+    "pricing:rules:read",
+    "pricing:profiles:read",
+    "pricing:defaults:view",
+  ]);
+  const canManagePricing = hasAnyPermission([
     "pricing:manage",
     "pricing:update",
     "pricing:create",
+    "pricing:profiles:update",
+    "pricing:profiles:create",
+    "pricing:rules:update",
+    "pricing:rules:create",
+    "pricing:defaults:edit",
   ]);
 
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
@@ -810,7 +823,7 @@ export default function OrderCreatorPageV2() {
           (!item.effectiveCogsBasis ||
             item.effectiveCogsBasis === profilePricing.effectiveCogsBasis);
         const cogsPerUnit = shouldRefreshCogsState
-          ? profilePricing.effectiveCogs ?? item.cogsPerUnit
+          ? (profilePricing.effectiveCogs ?? item.cogsPerUnit)
           : item.cogsPerUnit;
         const retailPrice =
           profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
@@ -833,23 +846,23 @@ export default function OrderCreatorPageV2() {
             ? cogsPerUnit
             : item.originalCogsPerUnit,
           cogsMode: shouldRefreshCogsState
-            ? profilePricing.cogsMode ?? item.cogsMode
+            ? (profilePricing.cogsMode ?? item.cogsMode)
             : item.cogsMode,
           unitCogsMin: shouldRefreshCogsState
-            ? profilePricing.unitCogsMin ?? item.unitCogsMin ?? null
-            : item.unitCogsMin ?? null,
+            ? (profilePricing.unitCogsMin ?? item.unitCogsMin ?? null)
+            : (item.unitCogsMin ?? null),
           unitCogsMax: shouldRefreshCogsState
-            ? profilePricing.unitCogsMax ?? item.unitCogsMax ?? null
-            : item.unitCogsMax ?? null,
+            ? (profilePricing.unitCogsMax ?? item.unitCogsMax ?? null)
+            : (item.unitCogsMax ?? null),
           effectiveCogsBasis: shouldRefreshCogsState
-            ? profilePricing.effectiveCogsBasis ?? item.effectiveCogsBasis
+            ? (profilePricing.effectiveCogsBasis ?? item.effectiveCogsBasis)
             : item.effectiveCogsBasis,
           originalRangeMin: shouldRefreshCogsState
-            ? profilePricing.unitCogsMin ?? item.originalRangeMin ?? null
-            : item.originalRangeMin ?? null,
+            ? (profilePricing.unitCogsMin ?? item.originalRangeMin ?? null)
+            : (item.originalRangeMin ?? null),
           originalRangeMax: shouldRefreshCogsState
-            ? profilePricing.unitCogsMax ?? item.originalRangeMax ?? null
-            : item.originalRangeMax ?? null,
+            ? (profilePricing.unitCogsMax ?? item.originalRangeMax ?? null)
+            : (item.originalRangeMax ?? null),
           isBelowVendorRange:
             typeof item.originalRangeMin === "number"
               ? cogsPerUnit < item.originalRangeMin
@@ -1216,7 +1229,9 @@ export default function OrderCreatorPageV2() {
         originalRangeMin: item.unitCogsMin ?? null,
         originalRangeMax: item.unitCogsMax ?? null,
         isBelowVendorRange:
-          typeof item.unitCogsMin === "number" ? cogsPerUnit < item.unitCogsMin : false,
+          typeof item.unitCogsMin === "number"
+            ? cogsPerUnit < item.unitCogsMin
+            : false,
         marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
@@ -1629,14 +1644,14 @@ export default function OrderCreatorPageV2() {
                               event.currentTarget
                             )
                           }
-                          disabled={!canEditPricing}
+                          disabled={!canViewPricingContext}
                         >
                           Pricing Profile
                         </Button>
                       </div>
-                      {!canEditPricing ? (
+                      {!canViewPricingContext ? (
                         <p className="text-[11px] text-muted-foreground">
-                          Pricing edits require pricing permissions.
+                          Pricing context requires pricing access.
                         </p>
                       ) : null}
                     </CardContent>
@@ -1904,10 +1919,20 @@ export default function OrderCreatorPageV2() {
                     />
                   ) : null}
                   {customerDrawerSection === "sales-pricing" ? (
-                    <PricingConfigTab
-                      clientId={clientId}
-                      onProfileApplied={handlePricingProfileApplied}
-                    />
+                    canManagePricing ? (
+                      <PricingConfigTab
+                        clientId={clientId}
+                        onProfileApplied={handlePricingProfileApplied}
+                      />
+                    ) : (
+                      <Card>
+                        <CardContent className="py-4 text-sm text-muted-foreground">
+                          Pricing rules can be reviewed here, but changing the
+                          relationship pricing profile requires pricing edit
+                          permissions.
+                        </CardContent>
+                      </Card>
+                    )
                   ) : null}
                 </div>
               ) : (
