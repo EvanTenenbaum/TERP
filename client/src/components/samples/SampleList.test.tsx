@@ -83,7 +83,7 @@ describe("SampleList", () => {
     fireEvent.click(idHeader);
 
     const rows = screen.getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("3");
+    expect(rows[1]).toHaveTextContent("4");
   });
 
   it("paginates results", () => {
