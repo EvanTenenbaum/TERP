@@ -13,7 +13,9 @@ const STORAGE_PREFIX = "terp-navigation-state";
 const PATHS_KEY_SEPARATOR = "\u001f";
 const ALL_GROUPS: NavigationGroupKey[] = [
   "sales",
-  "inventory",
+  "buy",
+  "operations",
+  "relationships",
   "finance",
   "admin",
 ];

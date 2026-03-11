@@ -47,14 +47,14 @@ describe("consolidated navigation IA", () => {
   it("has correct sidebar-visible items per group", () => {
     const sidebarPaths = sidebarItems.map(item => item.path);
 
-    // Sell group: Sales, Relationships, Demand & Supply
+    // Sell group: Sales, Demand & Supply
     expect(sidebarPaths).toContain("/sales");
-    expect(sidebarPaths).toContain("/relationships");
     expect(sidebarPaths).toContain("/demand-supply");
 
-    // Operations group: Inventory, Purchase Orders
-    expect(sidebarPaths).toContain("/inventory");
+    // Buy, Operations, and Relationships groups
     expect(sidebarPaths).toContain("/purchase-orders");
+    expect(sidebarPaths).toContain("/inventory");
+    expect(sidebarPaths).toContain("/relationships");
 
     // Finance group: Accounting, Credits, Reports
     expect(sidebarPaths).toContain("/accounting");
@@ -121,12 +121,18 @@ describe("consolidated navigation IA", () => {
 
   it("has the correct group assignments for sidebar items", () => {
     const sellItems = sidebarItems.filter(i => i.group === "sales");
-    const buyItems = sidebarItems.filter(i => i.group === "inventory");
+    const buyItems = sidebarItems.filter(i => i.group === "buy");
+    const operationsItems = sidebarItems.filter(i => i.group === "operations");
+    const relationshipItems = sidebarItems.filter(
+      i => i.group === "relationships"
+    );
     const financeItems = sidebarItems.filter(i => i.group === "finance");
     const adminItems = sidebarItems.filter(i => i.group === "admin");
 
-    expect(sellItems).toHaveLength(3);
-    expect(buyItems).toHaveLength(2);
+    expect(sellItems).toHaveLength(2);
+    expect(buyItems).toHaveLength(1);
+    expect(operationsItems).toHaveLength(1);
+    expect(relationshipItems).toHaveLength(1);
     expect(financeItems).toHaveLength(3);
     expect(adminItems).toHaveLength(3);
   });
