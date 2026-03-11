@@ -39,6 +39,7 @@ export function mapToFulfillmentDisplayStatus(
     case "PENDING":
     case "READY_FOR_PACKING":
       return "PENDING";
+    case "READY":
     case "PACKED":
       return "READY";
     case "SHIPPED":
