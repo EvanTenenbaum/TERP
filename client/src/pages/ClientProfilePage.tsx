@@ -456,8 +456,8 @@ export default function ClientProfilePage() {
                     <p>Code name: {shell.name}</p>
                     <p>Signal code: {shell.teriCode || "Not assigned yet"}</p>
                     <p>
-                      Username / email:{" "}
-                      {shell.email || "No username or email on file"}
+                      Email-formatted handle:{" "}
+                      {shell.email || "No email-formatted handle on file"}
                     </p>
                     <p>
                       Signal / ID / phone:{" "}
@@ -1207,7 +1207,7 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="profile-email">Username / Email</Label>
+              <Label htmlFor="profile-email">Email-formatted Handle</Label>
               <Input
                 id="profile-email"
                 type="email"

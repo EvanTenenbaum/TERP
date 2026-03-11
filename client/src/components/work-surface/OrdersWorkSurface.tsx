@@ -244,15 +244,16 @@ const extractItems = <T,>(data: unknown): T[] => {
   return [];
 };
 
-const buildConfirmedQueryInput = (
+export const buildConfirmedQueryInput = (
   fulfillmentStatus?: string
 ): {
+  orderType: "SALE";
   isDraft: boolean;
   fulfillmentStatus?: string;
 } =>
   fulfillmentStatus && fulfillmentStatus !== "ALL"
-    ? { isDraft: false, fulfillmentStatus }
-    : { isDraft: false };
+    ? { orderType: "SALE", isDraft: false, fulfillmentStatus }
+    : { orderType: "SALE", isDraft: false };
 
 const normalizeStatus = (status?: string | null): string =>
   String(status ?? "").toUpperCase();

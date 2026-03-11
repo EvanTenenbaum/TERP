@@ -110,7 +110,14 @@ describe("AppSidebar navigation", () => {
     const groupLabels = screen.getAllByTestId("nav-group-label");
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
-    expect(labelTexts).toEqual(["Sell", "Operations", "Finance", "Admin"]);
+    expect(labelTexts).toEqual([
+      "Sell",
+      "Buy",
+      "Operations",
+      "Relationships",
+      "Finance",
+      "Admin",
+    ]);
   });
 
   it("renders sidebar-visible navigation items only", () => {

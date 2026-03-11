@@ -40,7 +40,13 @@ import {
   SALES_WORKSPACE,
 } from "@/config/workspaces";
 
-export type NavigationGroupKey = "sales" | "inventory" | "finance" | "admin";
+export type NavigationGroupKey =
+  | "sales"
+  | "buy"
+  | "operations"
+  | "relationships"
+  | "finance"
+  | "admin";
 
 export interface NavigationItem {
   name: string;
@@ -77,27 +83,21 @@ export const navigationGroups: Array<{
   label: string;
 }> = [
   { key: "sales", label: "Sell" },
-  { key: "inventory", label: "Operations" },
+  { key: "buy", label: "Buy" },
+  { key: "operations", label: "Operations" },
+  { key: "relationships", label: "Relationships" },
   { key: "finance", label: "Finance" },
   { key: "admin", label: "Admin" },
 ];
 
 export const navigationItems: NavigationItem[] = [
-  // ─── Sell group (3 sidebar items) ──────────────────────────────────────────
+  // ─── Sell group (2 sidebar items) ──────────────────────────────────────────
   {
     name: SALES_WORKSPACE.title,
     path: "/sales",
     icon: ShoppingCart,
     group: "sales",
     ariaLabel: SALES_WORKSPACE.description,
-    sidebarVisible: true,
-  },
-  {
-    name: RELATIONSHIPS_WORKSPACE.title,
-    path: "/relationships",
-    icon: Users,
-    group: "sales",
-    ariaLabel: RELATIONSHIPS_WORKSPACE.description,
     sidebarVisible: true,
   },
   {
@@ -114,7 +114,7 @@ export const navigationItems: NavigationItem[] = [
     name: "Shipping",
     path: "/inventory?tab=shipping",
     icon: PackageOpen,
-    group: "inventory",
+    group: "operations",
     ariaLabel: "Order fulfillment, packing, and shipping workflow",
     sidebarVisible: false,
   },
@@ -145,21 +145,23 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: false,
   },
 
-  // ─── Operations group (2 sidebar items) ────────────────────────────────────
-  {
-    name: "Inventory",
-    path: "/inventory",
-    icon: PackageCheck,
-    group: "inventory",
-    ariaLabel: INVENTORY_WORKSPACE.description,
-    sidebarVisible: true,
-  },
+  // ─── Buy group (1 sidebar item) ────────────────────────────────────────────
   {
     name: "Purchase Orders",
     path: "/purchase-orders",
     icon: Truck,
     ariaLabel: "Purchase order queue",
-    group: "inventory",
+    group: "buy",
+    sidebarVisible: true,
+  },
+
+  // ─── Operations group (1 sidebar item) ────────────────────────────────────
+  {
+    name: "Inventory",
+    path: "/inventory",
+    icon: PackageCheck,
+    group: "operations",
+    ariaLabel: INVENTORY_WORKSPACE.description,
     sidebarVisible: true,
   },
 
@@ -169,7 +171,7 @@ export const navigationItems: NavigationItem[] = [
     name: "Photography",
     path: "/photography",
     icon: Camera,
-    group: "inventory",
+    group: "operations",
     ariaLabel: "Product photography queue and workflow management",
     sidebarVisible: false,
   },
@@ -177,7 +179,7 @@ export const navigationItems: NavigationItem[] = [
     name: "Samples",
     path: "/samples",
     icon: Beaker,
-    group: "inventory",
+    group: "operations",
     sidebarVisible: false,
   },
   // TERP-0005: Receiving absorbed into Operations workspace
@@ -185,7 +187,7 @@ export const navigationItems: NavigationItem[] = [
     name: "Receiving",
     path: "/inventory?tab=receiving",
     icon: Download,
-    group: "inventory",
+    group: "operations",
     ariaLabel: "Receive inventory into the system",
     sidebarVisible: false,
   },
@@ -193,10 +195,20 @@ export const navigationItems: NavigationItem[] = [
     name: "Spreadsheet View",
     path: "/inventory?tab=receiving&mode=spreadsheet",
     icon: Table,
-    group: "inventory",
+    group: "operations",
     ariaLabel: "Spreadsheet view for receiving and inventory operations",
     featureFlag: "spreadsheet-view",
     sidebarVisible: false,
+  },
+
+  // ─── Relationships group (1 sidebar item) ─────────────────────────────────
+  {
+    name: RELATIONSHIPS_WORKSPACE.title,
+    path: "/relationships",
+    icon: Users,
+    group: "relationships",
+    ariaLabel: RELATIONSHIPS_WORKSPACE.description,
+    sidebarVisible: true,
   },
 
   // ─── Finance group (3 sidebar items) ───────────────────────────────────────

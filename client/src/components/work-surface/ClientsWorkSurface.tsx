@@ -99,7 +99,7 @@ const clientSchema = z.object({
   email: z
     .string()
     .email(
-      "Field: Username / email. Rule: must be a valid email format. Fix: enter an address like name@company.com."
+      "Field: Email-formatted handle. Rule: must be a valid email format. Fix: enter an address like name@company.com."
     )
     .optional()
     .or(z.literal("")),
@@ -311,7 +311,7 @@ function ClientInspectorContent({
               )}
             </InspectorField>
 
-            <InspectorField label="Username / Email">
+            <InspectorField label="Email-formatted Handle">
               <Input
                 type="email"
                 value={editForm.email}
@@ -371,7 +371,7 @@ function ClientInspectorContent({
             </InspectorField>
 
             {client.email && (
-              <InspectorField label="Username / Email">
+              <InspectorField label="Email-formatted Handle">
                 <a
                   href={`mailto:${client.email}`}
                   className="flex items-center gap-2 text-blue-600 hover:underline"

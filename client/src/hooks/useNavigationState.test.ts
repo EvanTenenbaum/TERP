@@ -39,7 +39,9 @@ describe("useNavigationState", () => {
       const { result } = renderHook(() => useNavigationState());
 
       expect(result.current.isGroupCollapsed("sales")).toBe(false);
-      expect(result.current.isGroupCollapsed("inventory")).toBe(false);
+      expect(result.current.isGroupCollapsed("buy")).toBe(false);
+      expect(result.current.isGroupCollapsed("operations")).toBe(false);
+      expect(result.current.isGroupCollapsed("relationships")).toBe(false);
       expect(result.current.isGroupCollapsed("finance")).toBe(false);
       expect(result.current.isGroupCollapsed("admin")).toBe(false);
     });
@@ -66,7 +68,9 @@ describe("useNavigationState", () => {
       });
 
       expect(result.current.isGroupCollapsed("sales")).toBe(true);
-      expect(result.current.isGroupCollapsed("inventory")).toBe(true);
+      expect(result.current.isGroupCollapsed("buy")).toBe(true);
+      expect(result.current.isGroupCollapsed("operations")).toBe(true);
+      expect(result.current.isGroupCollapsed("relationships")).toBe(true);
       expect(result.current.isGroupCollapsed("finance")).toBe(true);
       expect(result.current.isGroupCollapsed("admin")).toBe(true);
 
@@ -75,7 +79,9 @@ describe("useNavigationState", () => {
       });
 
       expect(result.current.isGroupCollapsed("sales")).toBe(false);
-      expect(result.current.isGroupCollapsed("inventory")).toBe(false);
+      expect(result.current.isGroupCollapsed("buy")).toBe(false);
+      expect(result.current.isGroupCollapsed("operations")).toBe(false);
+      expect(result.current.isGroupCollapsed("relationships")).toBe(false);
       expect(result.current.isGroupCollapsed("finance")).toBe(false);
       expect(result.current.isGroupCollapsed("admin")).toBe(false);
     });
