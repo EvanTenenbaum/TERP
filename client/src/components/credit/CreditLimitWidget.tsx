@@ -133,9 +133,10 @@ export function CreditLimitWidget({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Credit Limit</CardTitle>
+          <CardTitle>Credit Capacity</CardTitle>
           <CardDescription>
-            Calculate credit limit based on financial data
+            Calculate client capacity from payment history, revenue, and
+            exposure signals
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -146,7 +147,7 @@ export function CreditLimitWidget({
           >
             {calculateMutation.isPending
               ? "Calculating..."
-              : "Calculate Credit Limit"}
+              : "Calculate Capacity"}
           </Button>
         </CardContent>
       </Card>
@@ -300,7 +301,7 @@ export function CreditLimitWidget({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <CardTitle className="text-base sm:text-lg">
-                  Credit Limit
+                  Credit Capacity
                 </CardTitle>
                 {getModeBadge(data.mode || "LEARNING")}
                 {getTrendBadge(data.trend || "STABLE")}
@@ -326,7 +327,7 @@ export function CreditLimitWidget({
           {/* Compact Summary (Always Visible) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Limit</div>
+              <div className="text-xs text-muted-foreground">Capacity</div>
               <div className="text-lg sm:text-xl font-bold">
                 ${(creditLimit / 1000).toFixed(0)}k
               </div>
@@ -359,7 +360,7 @@ export function CreditLimitWidget({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 p-3 bg-muted/50 rounded-lg text-sm">
               <div>
                 <div className="text-xs text-muted-foreground">
-                  Credit Limit
+                  Capacity Limit
                 </div>
                 <div className="font-semibold">
                   {formatCurrency(creditLimit)}
@@ -372,7 +373,7 @@ export function CreditLimitWidget({
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Available</div>
+                <div className="text-xs text-muted-foreground">Headroom</div>
                 <div className="font-semibold text-green-600">
                   {formatCurrency(creditLimit - currentExposure)}
                 </div>
@@ -392,7 +393,9 @@ export function CreditLimitWidget({
             {/* Signal Breakdown */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Signal Breakdown</div>
+                <div className="text-sm font-medium">
+                  Capacity Signal Breakdown
+                </div>
                 {showAdjustControls && (
                   <Dialog>
                     <DialogTrigger asChild>
@@ -407,10 +410,12 @@ export function CreditLimitWidget({
                     </DialogTrigger>
                     <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Adjust Credit Signal Weights</DialogTitle>
+                        <DialogTitle>
+                          Adjust Capacity Signal Weights
+                        </DialogTitle>
                         <DialogDescription>
-                          Customize how each signal contributes to the credit
-                          limit. Weights must sum to 100%.
+                          Customize how each signal contributes to recommended
+                          client capacity. Weights must sum to 100%.
                         </DialogDescription>
                       </DialogHeader>
 
@@ -534,7 +539,7 @@ export function CreditLimitWidget({
                     Learning Mode
                   </div>
                   <div className="text-yellow-800 dark:text-yellow-200 mt-0.5">
-                    Limited history. Limit is conservative. Readiness:{" "}
+                    Limited history. Capacity is conservative. Readiness:{" "}
                     {Number(data.dataReadiness || 0).toFixed(0)}%
                   </div>
                 </div>
@@ -548,7 +553,9 @@ export function CreditLimitWidget({
               className="w-full"
               size="sm"
             >
-              {calculateMutation.isPending ? "Recalculating..." : "Recalculate"}
+              {calculateMutation.isPending
+                ? "Recalculating..."
+                : "Recalculate Capacity"}
             </Button>
           </CollapsibleContent>
         </CardContent>

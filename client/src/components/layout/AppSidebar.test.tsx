@@ -74,7 +74,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
       [
         "/",
         "/sales?tab=create-order",
-        "/operations?tab=receiving",
+        "/inventory?tab=receiving",
         "/clients",
       ].includes(path),
     togglePin: mockTogglePin,
@@ -82,7 +82,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
     pinnedPaths: [
       "/",
       "/sales?tab=create-order",
-      "/operations?tab=receiving",
+      "/inventory?tab=receiving",
       "/clients",
     ],
   }),

@@ -67,6 +67,7 @@ import {
   OrderCOGSDetails,
   type OrderCOGSLineItem,
 } from "@/components/orders/OrderCOGSDetails";
+import { ProcessReturnModal } from "@/components/orders/ProcessReturnModal";
 import { GLEntriesViewer } from "@/components/accounting/GLEntriesViewer";
 import {
   InspectorPanel,
@@ -137,6 +138,14 @@ interface Order {
 interface ClientSummary {
   id: number;
   name?: string | null;
+}
+
+interface OrderReturnEntry {
+  id: number;
+  returnReason: string;
+  notes?: string | null;
+  processedByName?: string | null;
+  processedAt?: string | null;
 }
 
 type FulfillmentStatusValue = Exclude<
@@ -314,8 +323,10 @@ interface OrderInspectorProps {
   order: Order | null;
   clientName: string;
   cogsLineItems: OrderCOGSLineItem[];
+  returnHistory: OrderReturnEntry[];
   shippingEnabled: boolean;
   canManageShipping: boolean;
+  canProcessReturns: boolean;
   canAccessAccounting: boolean;
   onEdit: (orderId: number) => void;
   onMakePayment: (orderId: number) => void;
@@ -325,7 +336,7 @@ interface OrderInspectorProps {
   onShip: (orderId: number) => void;
   onGenerateInvoice?: (orderId: number) => void;
   generatingInvoice?: boolean;
-  onMarkReturned?: (orderId: number) => void;
+  onProcessReturn?: (orderId: number) => void;
   onProcessRestock?: (orderId: number) => void;
   onReturnToVendor?: (orderId: number) => void;
 }
@@ -334,8 +345,10 @@ function OrderInspectorContent({
   order,
   clientName,
   cogsLineItems,
+  returnHistory,
   shippingEnabled,
   canManageShipping,
+  canProcessReturns,
   canAccessAccounting,
   onEdit,
   onMakePayment,
@@ -345,7 +358,7 @@ function OrderInspectorContent({
   onShip,
   onGenerateInvoice,
   generatingInvoice = false,
-  onMarkReturned,
+  onProcessReturn,
   onProcessRestock,
   onReturnToVendor,
 }: OrderInspectorProps) {
@@ -456,6 +469,35 @@ function OrderInspectorContent({
         />
       </InspectorSection>
 
+      <InspectorSection title="Return History" defaultOpen>
+        {returnHistory.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No returns have been processed from this order yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {returnHistory.map(entry => (
+              <div key={entry.id} className="rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium">{entry.returnReason}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(entry.processedAt)}
+                  </p>
+                </div>
+                {entry.notes && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {entry.notes}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Processed by {entry.processedByName || "Unknown"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </InspectorSection>
+
       <InspectorSection title="Quick Actions">
         <div className="space-y-2">
           {order.isDraft ? (
@@ -563,15 +605,15 @@ function OrderInspectorContent({
               {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
               {(order.fulfillmentStatus === "SHIPPED" ||
                 order.fulfillmentStatus === "DELIVERED") &&
-                onMarkReturned &&
-                canManageShipping && (
+                onProcessReturn &&
+                canProcessReturns && (
                   <Button
                     variant="outline"
                     className="w-full justify-start text-orange-600 hover:text-orange-700"
-                    onClick={() => onMarkReturned(order.id)}
+                    onClick={() => onProcessReturn(order.id)}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Mark as Returned
+                    Process Return
                   </Button>
                 )}
               {/* WSQA-003: Processing paths for RETURNED orders */}
@@ -631,6 +673,11 @@ export function OrdersWorkSurface() {
     "orders:fulfill",
     "orders:manage",
   ]);
+  const canProcessReturns = hasAnyPermission([
+    "returns:create",
+    "returns:process",
+    "orders:update",
+  ]);
   const canAccessAccounting = hasAnyPermission([
     "accounting:access",
     "accounting:read",
@@ -675,8 +722,7 @@ export function OrdersWorkSurface() {
   const [shipTrackingNumber, setShipTrackingNumber] = useState("");
   const [shipCarrier, setShipCarrier] = useState("");
   const [shipNotes, setShipNotes] = useState("");
-  // WSQA-003: Return processing dialogs
-  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [showProcessReturnDialog, setShowProcessReturnDialog] = useState(false);
   const [showRestockDialog, setShowRestockDialog] = useState(false);
   const [showVendorReturnDialog, setShowVendorReturnDialog] = useState(false);
   const [returnReason, setReturnReason] = useState("");
@@ -857,7 +903,7 @@ export function OrdersWorkSurface() {
   }, [activeTab, draftOrders, confirmedOrders, search, getClientName, sortKey]);
 
   // Selected order
-  const selectedOrder = useMemo(
+  const selectedOrderSummary = useMemo(
     () =>
       (displayOrders as Order[]).find(o => o.id === selectedOrderId) || null,
     [displayOrders, selectedOrderId]
@@ -866,6 +912,66 @@ export function OrdersWorkSurface() {
   const { data: orderDetails } = trpc.orders.getOrderWithLineItems.useQuery(
     { orderId: selectedOrderId ?? 0 },
     { enabled: selectedOrderId !== null }
+  );
+  const { data: orderReturns = [], refetch: refetchOrderReturns } =
+    trpc.orders.getOrderReturns.useQuery(
+      { orderId: selectedOrderId ?? 0 },
+      { enabled: selectedOrderId !== null }
+    );
+
+  const selectedOrder: Order | null = useMemo(() => {
+    if (!selectedOrderSummary) return null;
+    if (
+      !orderDetails?.order ||
+      orderDetails.order.id !== selectedOrderSummary.id
+    ) {
+      return selectedOrderSummary;
+    }
+
+    const detailOrder = orderDetails.order;
+
+    return {
+      ...selectedOrderSummary,
+      invoiceId: detailOrder.invoiceId ?? selectedOrderSummary.invoiceId,
+      version: detailOrder.version ?? selectedOrderSummary.version,
+      total: detailOrder.total ?? selectedOrderSummary.total,
+      createdAt:
+        typeof detailOrder.createdAt === "string"
+          ? detailOrder.createdAt
+          : (detailOrder.createdAt?.toISOString() ??
+            selectedOrderSummary.createdAt),
+      confirmedAt:
+        typeof detailOrder.confirmedAt === "string"
+          ? detailOrder.confirmedAt
+          : (detailOrder.confirmedAt?.toISOString() ??
+            selectedOrderSummary.confirmedAt),
+      saleStatus: detailOrder.saleStatus ?? selectedOrderSummary.saleStatus,
+      fulfillmentStatus: (detailOrder.fulfillmentStatus ??
+        selectedOrderSummary.fulfillmentStatus) as Order["fulfillmentStatus"],
+      lineItems: (orderDetails.lineItems ?? []).map(item => ({
+        id: item.id,
+        productName:
+          item.productDisplayName ?? item.batchSku ?? `Batch ${item.batchId}`,
+        quantity: Number.parseFloat(item.quantity ?? "0") || 0,
+        unitPrice: item.unitPrice ?? "0",
+        totalPrice: item.lineTotal ?? "0",
+      })),
+    };
+  }, [orderDetails, selectedOrderSummary]);
+
+  const normalizedOrderReturns = useMemo<OrderReturnEntry[]>(
+    () =>
+      orderReturns.map(entry => ({
+        id: entry.id,
+        returnReason: entry.returnReason,
+        notes: entry.notes,
+        processedByName: entry.processedByName,
+        processedAt:
+          entry.processedAt instanceof Date
+            ? entry.processedAt.toISOString()
+            : (entry.processedAt ?? null),
+      })),
+    [orderReturns]
   );
 
   const { data: vendorReturnOptions } =
@@ -900,6 +1006,19 @@ export function OrdersWorkSurface() {
           typeof item.lineTotal === "string"
       );
   }, [orderDetails?.lineItems]);
+
+  const returnableItems = useMemo(
+    () =>
+      (orderDetails?.lineItems ?? [])
+        .map(item => ({
+          batchId: item.batchId,
+          displayName:
+            item.productDisplayName ?? item.batchSku ?? `Batch ${item.batchId}`,
+          quantity: Number.parseFloat(item.quantity ?? "0") || 0,
+        }))
+        .filter(item => item.batchId > 0 && item.quantity > 0),
+    [orderDetails?.lineItems]
+  );
 
   // Statistics
   const stats = useMemo(
@@ -1001,28 +1120,6 @@ export function OrdersWorkSurface() {
     onError: err => {
       if (!handleConflictError(err)) {
         toast.error(err.message || "Failed to ship order");
-        setError(err.message);
-      }
-    },
-  });
-
-  // WSQA-003: Return processing mutations
-  const markAsReturnedMutation = trpc.orders.markAsReturned.useMutation({
-    onMutate: () => setSaving("Marking as returned..."),
-    onSuccess: () => {
-      if (selectedOrderId) {
-        patchConfirmedOrderStatus(selectedOrderId, "RETURNED");
-      }
-      notifyStatusFilterExit(selectedOrder, "RETURNED");
-      toast.success("Order marked as returned");
-      setSaved();
-      void refetchConfirmed();
-      setShowReturnDialog(false);
-      setReturnReason("");
-    },
-    onError: err => {
-      if (!handleConflictError(err)) {
-        toast.error(err.message || "Failed to mark order as returned");
         setError(err.message);
       }
     },
@@ -1151,10 +1248,8 @@ export function OrdersWorkSurface() {
       else if (showConfirmFulfillmentDialog)
         setShowConfirmFulfillmentDialog(false);
       else if (showShipDialog) setShowShipDialog(false);
-      else if (showReturnDialog) {
-        setShowReturnDialog(false);
-        setReturnReason("");
-      } else if (showRestockDialog) setShowRestockDialog(false);
+      else if (showProcessReturnDialog) setShowProcessReturnDialog(false);
+      else if (showRestockDialog) setShowRestockDialog(false);
       else if (showVendorReturnDialog) {
         setShowVendorReturnDialog(false);
         setReturnReason("");
@@ -1187,10 +1282,9 @@ export function OrdersWorkSurface() {
   const handleGenerateInvoice = (orderId: number) => {
     generateInvoiceMutation.mutate({ orderId });
   };
-  // WSQA-003: Return processing handlers
-  const handleMarkReturned = (orderId: number) => {
+  const handleProcessReturn = (orderId: number) => {
     setSelectedOrderId(orderId);
-    setShowReturnDialog(true);
+    setShowProcessReturnDialog(true);
   };
   const handleProcessRestock = (orderId: number) => {
     setSelectedOrderId(orderId);
@@ -1431,8 +1525,10 @@ export function OrdersWorkSurface() {
               selectedOrder ? getClientName(selectedOrder.clientId) : ""
             }
             cogsLineItems={cogsLineItems}
+            returnHistory={normalizedOrderReturns}
             shippingEnabled={shippingEnabled}
             canManageShipping={canManageShipping}
+            canProcessReturns={canProcessReturns}
             canAccessAccounting={canAccessAccounting}
             onEdit={handleEdit}
             onMakePayment={handleMakePayment}
@@ -1442,7 +1538,7 @@ export function OrdersWorkSurface() {
             onShip={handleShip}
             onGenerateInvoice={handleGenerateInvoice}
             generatingInvoice={generateInvoiceMutation.isPending}
-            onMarkReturned={handleMarkReturned}
+            onProcessReturn={handleProcessReturn}
             onProcessRestock={handleProcessRestock}
             onReturnToVendor={handleReturnToVendor}
           />
@@ -1611,55 +1707,17 @@ export function OrdersWorkSurface() {
         </DialogContent>
       </Dialog>
 
-      {/* WSQA-003: Mark as Returned Dialog */}
-      <Dialog
-        open={showReturnDialog}
-        onOpenChange={open => {
-          setShowReturnDialog(open);
-          if (!open) setReturnReason("");
+      <ProcessReturnModal
+        orderId={selectedOrderId ?? 0}
+        orderItems={returnableItems}
+        open={showProcessReturnDialog}
+        onClose={() => setShowProcessReturnDialog(false)}
+        onSuccess={() => {
+          setSaved();
+          void refetchConfirmed();
+          void refetchOrderReturns();
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mark Order as Returned</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>Please provide a reason for the return:</p>
-            <Input
-              placeholder="Return reason..."
-              value={returnReason}
-              onChange={e => setReturnReason(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowReturnDialog(false);
-                setReturnReason("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() =>
-                selectedOrderId &&
-                markAsReturnedMutation.mutate({
-                  orderId: selectedOrderId,
-                  returnReason,
-                })
-              }
-              disabled={
-                markAsReturnedMutation.isPending || !returnReason.trim()
-              }
-            >
-              {markAsReturnedMutation.isPending
-                ? "Processing..."
-                : "Mark as Returned"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      />
 
       {/* WSQA-003: Restock Confirmation Dialog */}
       <Dialog open={showRestockDialog} onOpenChange={setShowRestockDialog}>

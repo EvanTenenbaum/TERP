@@ -40,24 +40,15 @@ test.describe("Shipping Workflow (WS-003)", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for status filter
-    const statusFilter = page.locator(
-      'select[name="status"], [data-testid="status-filter"], button:has-text("Confirmed")'
-    );
+    const statusFilter = page.locator('[data-testid="status-filter"]');
 
     if (await statusFilter.isVisible().catch(() => false)) {
-      if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
-        await statusFilter.selectOption("CONFIRMED");
-      } else {
-        await page.locator('button:has-text("Confirmed")').click();
-      }
+      await statusFilter.click();
+      await page.getByRole("option", { name: "Partial" }).click();
 
       await page.waitForLoadState("networkidle");
 
-      // Verify filter applied
-      const url = page.url();
-      const hasFilterInUrl =
-        url.includes("status") || url.includes("CONFIRMED");
-      expect(hasFilterInUrl || true).toBeTruthy(); // Soft check
+      await expect(page.getByTestId("pick-pack-reset-filters")).toBeEnabled();
     }
   });
 
@@ -67,7 +58,7 @@ test.describe("Shipping Workflow (WS-003)", () => {
 
     // Click on first order in queue
     const firstOrder = page
-      .locator("table tbody tr, [data-testid='order-item'], .order-row")
+      .locator("[data-testid='order-queue-row'], table tbody tr, .order-row")
       .first();
 
     if (await firstOrder.isVisible().catch(() => false)) {
@@ -88,7 +79,7 @@ test.describe("Shipping Workflow (WS-003)", () => {
 
     // Click on first order
     const firstOrder = page
-      .locator("table tbody tr, [data-testid='order-item']")
+      .locator("[data-testid='order-queue-row'], table tbody tr")
       .first();
 
     if (await firstOrder.isVisible().catch(() => false)) {
@@ -114,7 +105,7 @@ test.describe("Shipping Workflow (WS-003)", () => {
 
     // Click on first order
     const firstOrder = page
-      .locator("table tbody tr, [data-testid='order-item']")
+      .locator("[data-testid='order-queue-row'], table tbody tr")
       .first();
 
     if (await firstOrder.isVisible().catch(() => false)) {
@@ -139,7 +130,7 @@ test.describe("Shipping Workflow (WS-003)", () => {
 
     // Click on first order
     const firstOrder = page
-      .locator("table tbody tr, [data-testid='order-item']")
+      .locator("[data-testid='order-queue-row'], table tbody tr")
       .first();
 
     if (await firstOrder.isVisible().catch(() => false)) {
@@ -170,7 +161,7 @@ test.describe("Shipping Workflow (WS-003)", () => {
 
     // Click on first order
     const firstOrder = page
-      .locator("table tbody tr, [data-testid='order-item']")
+      .locator("[data-testid='order-queue-row'], table tbody tr")
       .first();
 
     if (await firstOrder.isVisible().catch(() => false)) {
@@ -179,7 +170,7 @@ test.describe("Shipping Workflow (WS-003)", () => {
 
       // Look for "Mark Ready" or similar action
       const markReadyButton = page.locator(
-        'button:has-text("Mark Ready"), button:has-text("Complete"), button:has-text("Ready for Pickup"), [data-testid="mark-ready"]'
+        'button:has-text("Mark Ready for Shipping"), button:has-text("Mark Ready"), button:has-text("Complete"), [data-testid="mark-ready"]'
       );
 
       if (await markReadyButton.isVisible().catch(() => false)) {
@@ -201,7 +192,7 @@ test.describe("Shipping - Printing", () => {
 
     // Click on first order
     const firstOrder = page
-      .locator("table tbody tr, [data-testid='order-item']")
+      .locator("[data-testid='order-queue-row'], table tbody tr")
       .first();
 
     if (await firstOrder.isVisible().catch(() => false)) {

@@ -58,7 +58,7 @@ export function buildOperationsWorkspacePath(
   tab?: string | null,
   params?: Record<string, WorkspaceParamValue>
 ) {
-  return buildWorkspacePath("/operations", normalizeOperationsTab(tab), params);
+  return buildWorkspacePath("/inventory", normalizeOperationsTab(tab), params);
 }
 
 export function buildProcurementWorkspacePath(

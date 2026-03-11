@@ -185,6 +185,20 @@ export const LineItemRow = memo(function LineItemRow({
   // Warning badges
   const hasLowMargin = item.marginPercent < 5;
   const hasNegativeMargin = item.marginPercent < 0;
+  const pricingSourceLabel =
+    item.marginSource === "CUSTOMER_PROFILE"
+      ? "Price from pricing profile"
+      : item.marginSource === "DEFAULT"
+        ? "Price from shared default"
+        : "Price manually overridden";
+  const cogsSourceLabel =
+    item.isCogsOverridden || item.effectiveCogsBasis === "MANUAL"
+      ? item.isCogsOverridden
+        ? "Manual cost entry"
+        : "Weighted lot allocation cost"
+      : item.effectiveCogsBasis
+        ? `Using ${item.effectiveCogsBasis.toLowerCase()} supplier range`
+        : "Using saved supplier cost";
 
   return (
     <TableRow
@@ -222,6 +236,12 @@ export const LineItemRow = memo(function LineItemRow({
                 {item.originalRangeMax.toFixed(2)}
               </span>
             )}
+          <span className="text-xs text-muted-foreground">
+            {pricingSourceLabel}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {cogsSourceLabel}
+          </span>
           {item.isSample && (
             <Badge variant="secondary" className="w-fit mt-1">
               Sample

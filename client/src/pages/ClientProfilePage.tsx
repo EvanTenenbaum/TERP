@@ -452,10 +452,18 @@ export default function ClientProfilePage() {
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 text-sm">
-                    <p className="font-medium">Contact</p>
-                    <p>{shell.email || "No email on file"}</p>
-                    <p>{shell.phone || "No phone on file"}</p>
-                    <p>{shell.address || "No address on file"}</p>
+                    <p className="font-medium">Core Handles</p>
+                    <p>Code name: {shell.name}</p>
+                    <p>Signal code: {shell.teriCode || "Not assigned yet"}</p>
+                    <p>
+                      Username / email:{" "}
+                      {shell.email || "No username or email on file"}
+                    </p>
+                    <p>
+                      Signal / ID / phone:{" "}
+                      {shell.phone || "No signal, ID, or phone on file"}
+                    </p>
+                    <p>Address: {shell.address || "No address on file"}</p>
                   </div>
                   <div className="space-y-3">
                     <div>
@@ -1186,7 +1194,7 @@ export default function ClientProfilePage() {
           </DialogHeader>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3">
-              <Label htmlFor="profile-name">Name</Label>
+              <Label htmlFor="profile-name">Code Name</Label>
               <Input
                 id="profile-name"
                 value={editForm.name}
@@ -1199,9 +1207,10 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="profile-email">Email</Label>
+              <Label htmlFor="profile-email">Username / Email</Label>
               <Input
                 id="profile-email"
+                type="email"
                 value={editForm.email}
                 onChange={event =>
                   setEditForm(current => ({
@@ -1212,7 +1221,7 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="profile-phone">Phone</Label>
+              <Label htmlFor="profile-phone">Signal / ID / Phone</Label>
               <Input
                 id="profile-phone"
                 value={editForm.phone}
@@ -1240,7 +1249,7 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3 md:col-span-2">
-              <Label htmlFor="profile-address">Address</Label>
+              <Label htmlFor="profile-address">Address / Shipping Notes</Label>
               <Textarea
                 id="profile-address"
                 value={editForm.address}

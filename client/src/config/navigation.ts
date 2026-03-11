@@ -112,7 +112,7 @@ export const navigationItems: NavigationItem[] = [
   // Absorbed into Operations workspace — hidden from sidebar, visible in Command Palette
   {
     name: "Shipping",
-    path: "/operations?tab=shipping",
+    path: "/inventory?tab=shipping",
     icon: PackageOpen,
     group: "inventory",
     ariaLabel: "Order fulfillment, packing, and shipping workflow",
@@ -147,8 +147,8 @@ export const navigationItems: NavigationItem[] = [
 
   // ─── Operations group (2 sidebar items) ────────────────────────────────────
   {
-    name: INVENTORY_WORKSPACE.title,
-    path: "/operations",
+    name: "Inventory",
+    path: "/inventory",
     icon: PackageCheck,
     group: "inventory",
     ariaLabel: INVENTORY_WORKSPACE.description,
@@ -183,7 +183,7 @@ export const navigationItems: NavigationItem[] = [
   // TERP-0005: Receiving absorbed into Operations workspace
   {
     name: "Receiving",
-    path: "/operations?tab=receiving",
+    path: "/inventory?tab=receiving",
     icon: Download,
     group: "inventory",
     ariaLabel: "Receive inventory into the system",
@@ -191,7 +191,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: "Spreadsheet View",
-    path: "/operations?tab=receiving&mode=spreadsheet",
+    path: "/inventory?tab=receiving&mode=spreadsheet",
     icon: Table,
     group: "inventory",
     ariaLabel: "Spreadsheet view for receiving and inventory operations",
@@ -368,7 +368,7 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
   },
   {
     name: "Record Receiving",
-    path: "/operations?tab=receiving",
+    path: "/inventory?tab=receiving",
     icon: Download,
     ariaLabel: "Record product receiving",
   },
@@ -391,10 +391,10 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
     ariaLabel: "Open invoices",
   },
   {
-    name: "Operations",
-    path: "/operations",
+    name: "Inventory",
+    path: "/inventory",
     icon: PackageCheck,
-    ariaLabel: "Open operations workspace",
+    ariaLabel: "Open inventory workspace",
   },
   {
     name: SALES_WORKSPACE.title,
@@ -407,7 +407,7 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
 export const defaultQuickLinkPaths: readonly string[] = [
   "/",
   "/sales?tab=create-order",
-  "/operations?tab=receiving",
+  "/inventory?tab=receiving",
   "/clients",
 ];
 

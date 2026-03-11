@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../db";
+import { calculateRetailPrice, getClientPricingRules } from "../pricingEngine";
 import { pricingService } from "./pricingService";
 
 vi.mock("../db", () => ({
   getDb: vi.fn(),
+}));
+
+vi.mock("../pricingEngine", () => ({
+  calculateRetailPrice: vi.fn(),
+  getClientPricingRules: vi.fn(),
 }));
 
 type MockQueryChain = {
@@ -28,9 +34,46 @@ function createSelectChain(result: unknown): MockQueryChain {
 
 describe("pricingService range pricing defaults", () => {
   const mockedGetDb = vi.mocked(getDb);
+  const mockedGetClientPricingRules = vi.mocked(getClientPricingRules);
+  const mockedCalculateRetailPrice = vi.mocked(calculateRetailPrice);
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("uses pricing profile rules when a base price is provided", async () => {
+    const selectChain = createSelectChain([
+      { id: 15, pricingProfileId: 42, customPricingRules: null },
+    ]);
+
+    mockedGetDb.mockResolvedValue({
+      select: vi.fn(() => selectChain),
+    } as never);
+    mockedGetClientPricingRules.mockResolvedValue([
+      { id: 91, name: "Flower markup" } as never,
+    ]);
+    mockedCalculateRetailPrice.mockResolvedValue({
+      id: 0,
+      name: "FLOWER",
+      category: "FLOWER",
+      basePrice: 10,
+      retailPrice: 15,
+      appliedRules: [],
+      priceMarkup: 50,
+    });
+
+    const result = await pricingService.getMarginWithFallback(15, "FLOWER", {
+      basePrice: 10,
+    });
+
+    expect(mockedGetClientPricingRules).toHaveBeenCalledWith(15);
+    expect(mockedCalculateRetailPrice).toHaveBeenCalledOnce();
+    expect(result).toEqual({
+      marginPercent: 50,
+      source: "CUSTOMER_PROFILE",
+      customerId: 15,
+      productCategory: "FLOWER",
+    });
   });
 
   it("fills missing channels with MID defaults", async () => {

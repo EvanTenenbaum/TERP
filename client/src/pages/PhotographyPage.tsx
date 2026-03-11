@@ -264,7 +264,8 @@ export default function PhotographyPage() {
           <div>
             <h1 className="text-2xl font-bold">Photography Queue</h1>
             <p className="text-muted-foreground">
-              Manage product photography workflow
+              Work the next batch, upload shots fast, and fall back to file
+              upload when camera access fails.
             </p>
           </div>
         </div>
@@ -275,7 +276,7 @@ export default function PhotographyPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending
+              Queued
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -287,7 +288,7 @@ export default function PhotographyPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              In Progress
+              Ready to Review
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -299,7 +300,7 @@ export default function PhotographyPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed Today
+              Shot Today
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -311,7 +312,7 @@ export default function PhotographyPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Queue
+              Total Batches
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -341,10 +342,10 @@ export default function PhotographyPage() {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="all">All batches</SelectItem>
+                  <SelectItem value="PENDING">Queued</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Ready to Review</SelectItem>
+                  <SelectItem value="COMPLETED">Shot</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -361,12 +362,12 @@ export default function PhotographyPage() {
                     disabled={markComplete.isPending}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Mark Selected Complete
+                    Mark Selected Shot
                   </Button>
                 </>
               )}
               <Button variant="outline" size="sm" onClick={selectAll}>
-                Select All In Progress
+                Select All Ready to Review
               </Button>
             </div>
           </div>
@@ -453,7 +454,7 @@ export default function PhotographyPage() {
                             }
                           >
                             <Upload className="h-4 w-4 mr-1" />
-                            Upload Photos
+                            Open Shoot Desk
                           </Button>
                           {item.status === "IN_PROGRESS" && (
                             <Button
@@ -463,7 +464,7 @@ export default function PhotographyPage() {
                               disabled={markComplete.isPending}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              Done
+                              Mark Shot
                             </Button>
                           )}
                         </>

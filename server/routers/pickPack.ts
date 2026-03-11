@@ -13,8 +13,12 @@ import { router, adminProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 
-// Pick & Pack status enum for validation
-const pickPackStatusSchema = z.enum(["PENDING", "PICKING", "PACKED", "READY"]);
+const pickPackDisplayStatusSchema = z.enum([
+  "PENDING",
+  "PARTIAL",
+  "READY",
+  "SHIPPED",
+]);
 
 type PickPackOrderItem = {
   id?: number;
@@ -52,6 +56,60 @@ function normalizeOrderItems(rawItems: unknown): PickPackOrderItem[] {
   return [];
 }
 
+const shippedFulfillmentStatuses = new Set([
+  "SHIPPED",
+  "DELIVERED",
+  "RETURNED",
+  "RESTOCKED",
+  "RETURNED_TO_VENDOR",
+]);
+
+function normalizeStatus(value: string | null | undefined): string | null {
+  return value?.toUpperCase() ?? null;
+}
+
+export function mapPickPackDisplayStatus(
+  rawPickPackStatus: string | null | undefined,
+  rawFulfillmentStatus: string | null | undefined
+): z.infer<typeof pickPackDisplayStatusSchema> {
+  const pickPackStatus = normalizeStatus(rawPickPackStatus);
+  const fulfillmentStatus = normalizeStatus(rawFulfillmentStatus);
+
+  if (fulfillmentStatus && shippedFulfillmentStatuses.has(fulfillmentStatus)) {
+    return "SHIPPED";
+  }
+  if (pickPackStatus === "READY") {
+    return "READY";
+  }
+  if (pickPackStatus === "PICKING" || pickPackStatus === "PACKED") {
+    return "PARTIAL";
+  }
+  return "PENDING";
+}
+
+function buildStatusCondition(
+  status: z.infer<typeof pickPackDisplayStatusSchema>,
+  orders: {
+    pickPackStatus: unknown;
+    fulfillmentStatus: unknown;
+  },
+  sql: typeof import("drizzle-orm").sql
+) {
+  if (status === "PENDING") {
+    return sql`(${orders.pickPackStatus} = 'PENDING' OR ${orders.pickPackStatus} IS NULL) AND (${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR'))`;
+  }
+
+  if (status === "PARTIAL") {
+    return sql`${orders.pickPackStatus} IN ('PICKING', 'PACKED') AND (${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR'))`;
+  }
+
+  if (status === "READY") {
+    return sql`${orders.pickPackStatus} = 'READY' AND (${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR'))`;
+  }
+
+  return sql`${orders.fulfillmentStatus} IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR')`;
+}
+
 export const pickPackRouter = router({
   /**
    * Get the real-time pick list (orders ready for picking)
@@ -61,7 +119,7 @@ export const pickPackRouter = router({
       z.object({
         filters: z
           .object({
-            status: pickPackStatusSchema.optional(),
+            status: pickPackDisplayStatusSchema.optional(),
             customerId: z.number().optional(),
             dateFrom: z.string().optional(),
             dateTo: z.string().optional(),
@@ -92,11 +150,13 @@ export const pickPackRouter = router({
       ];
 
       if (input.filters?.status) {
-        conditions.push(eq(orders.pickPackStatus, input.filters.status));
-      } else {
-        // Default: show all non-shipped orders
         conditions.push(
-          sql`${orders.pickPackStatus} != 'READY' OR ${orders.pickPackStatus} IS NULL`
+          buildStatusCondition(input.filters.status, orders, sql)
+        );
+      } else {
+        // Default: show the active queue, including ready orders.
+        conditions.push(
+          sql`${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR')`
         );
       }
 
@@ -211,7 +271,10 @@ export const pickPackRouter = router({
           itemCount,
           packedCount: stats.packedItemCount,
           bagCount: stats.bagCount,
-          pickPackStatus: order.pickPackStatus || "PENDING",
+          pickPackStatus: mapPickPackDisplayStatus(
+            order.pickPackStatus,
+            order.fulfillmentStatus
+          ),
           fulfillmentStatus: order.fulfillmentStatus,
           createdAt: order.createdAt,
           confirmedAt: order.confirmedAt,
@@ -343,7 +406,10 @@ export const pickPackRouter = router({
           orderNumber: order.orderNumber,
           clientId: order.clientId,
           clientName: order.clientName,
-          pickPackStatus: order.pickPackStatus || "PENDING",
+          pickPackStatus: mapPickPackDisplayStatus(
+            order.pickPackStatus,
+            order.fulfillmentStatus
+          ),
           fulfillmentStatus: order.fulfillmentStatus,
           total: order.total,
           notes: order.notes,
@@ -457,9 +523,8 @@ export const pickPackRouter = router({
             (err.message.includes("ER_DUP_ENTRY") ||
               err.message.toLowerCase().includes("duplicate entry") ||
               (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
-              String(
-                (err as unknown as { errno?: number }).errno ?? ""
-              ) === "1062");
+              String((err as unknown as { errno?: number }).errno ?? "") ===
+                "1062");
 
           if (isKnownDuplicate) {
             logger.warn(
@@ -643,7 +708,7 @@ export const pickPackRouter = router({
 
       // Wrap bag creation + item packing + status update in a transaction
       // so partial failures don't leave orphaned orderItemBags rows
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async tx => {
         // Create bag
         const [newBag] = await tx.insert(orderBags).values({
           orderId: input.orderId,
@@ -668,9 +733,8 @@ export const pickPackRouter = router({
               (err.message.includes("ER_DUP_ENTRY") ||
                 err.message.toLowerCase().includes("duplicate entry") ||
                 (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
-                String(
-                  (err as unknown as { errno?: number }).errno ?? ""
-                ) === "1062");
+                String((err as unknown as { errno?: number }).errno ?? "") ===
+                  "1062");
 
             if (isKnownDuplicate) {
               logger.warn(
@@ -786,7 +850,7 @@ export const pickPackRouter = router({
     .input(
       z.object({
         orderId: z.number(),
-        status: pickPackStatusSchema,
+        status: z.enum(["PENDING", "PICKING", "PACKED", "READY"]),
       })
     )
     .mutation(async ({ input, ctx: _ctx }) => {
@@ -820,7 +884,7 @@ export const pickPackRouter = router({
       });
 
     const { orders } = await import("../../drizzle/schema");
-    const { eq, and, isNull, sql } = await import("drizzle-orm");
+    const { eq, and, isNull } = await import("drizzle-orm");
 
     const conditions = [
       eq(orders.orderType, "SALE"),
@@ -828,39 +892,34 @@ export const pickPackRouter = router({
       isNull(orders.deletedAt),
     ];
 
-    // Get counts by status
-    const stats = await db
+    const orderStatuses = await db
       .select({
-        status: orders.pickPackStatus,
-        count: sql<number>`COUNT(*)`,
+        pickPackStatus: orders.pickPackStatus,
+        fulfillmentStatus: orders.fulfillmentStatus,
       })
       .from(orders)
-      .where(and(...conditions))
-      .groupBy(orders.pickPackStatus);
+      .where(and(...conditions));
 
     const statusCounts = {
       PENDING: 0,
-      PICKING: 0,
-      PACKED: 0,
+      PARTIAL: 0,
       READY: 0,
+      SHIPPED: 0,
     };
 
-    for (const stat of stats) {
-      if (stat.status && stat.status in statusCounts) {
-        statusCounts[stat.status as keyof typeof statusCounts] = Number(
-          stat.count
-        );
-      } else {
-        // NULL status counts as PENDING
-        statusCounts.PENDING += Number(stat.count);
-      }
+    for (const order of orderStatuses) {
+      const displayStatus = mapPickPackDisplayStatus(
+        order.pickPackStatus,
+        order.fulfillmentStatus
+      );
+      statusCounts[displayStatus] += 1;
     }
 
     return {
       pending: statusCounts.PENDING,
-      picking: statusCounts.PICKING,
-      packed: statusCounts.PACKED,
+      partial: statusCounts.PARTIAL,
       ready: statusCounts.READY,
+      shipped: statusCounts.SHIPPED,
       total: Object.values(statusCounts).reduce((a, b) => a + b, 0),
     };
   }),

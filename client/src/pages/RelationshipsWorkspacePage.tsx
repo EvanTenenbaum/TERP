@@ -24,7 +24,7 @@ export default function RelationshipsWorkspacePage() {
     <LinearWorkspaceShell
       title={RELATIONSHIPS_WORKSPACE.title}
       description={RELATIONSHIPS_WORKSPACE.description}
-      section="Sell"
+      section="Relationships"
       activeTab={activeTab}
       tabs={RELATIONSHIPS_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}

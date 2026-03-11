@@ -1,26 +1,9 @@
-/**
- * Sprint 4 Track B - 4.B.10: WS-011 - Quick Customer Creation
- *
- * Fast customer creation flow:
- * - Minimal required fields (name, email/phone)
- * - Auto-fill from previous entries
- * - Inline creation in order forms
- * - Quick success toast with link to full profile
- */
-
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -30,88 +13,51 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { toast } from "sonner";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
-import { UserPlus, Search, Check, ExternalLink, Loader2 } from "lucide-react";
+import { UserPlus, Check, ExternalLink, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface QuickCreateClientProps {
   onSuccess?: (client: { id: number; name: string; teriCode: string }) => void;
   triggerButton?: React.ReactNode;
   defaultReferrerId?: number;
-  inline?: boolean; // If true, render inline instead of dialog
+  inline?: boolean;
+  hideTrigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
 }
 
-/**
- * QuickCreateClient - Fast customer creation with minimal fields
- */
 export function QuickCreateClient({
   onSuccess,
   triggerButton,
   defaultReferrerId,
   inline = false,
+  hideTrigger = false,
+  open: controlledOpen,
+  onOpenChange,
+  title = "Quick Add Relationship",
+  description = "Capture the code name and a reachable handle now. Fill the rest of the profile in later.",
+  submitLabel = "Create Relationship",
 }: QuickCreateClientProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [businessType, setBusinessType] = useState<
-    | ""
-    | "RETAIL"
-    | "WHOLESALE"
-    | "DISPENSARY"
-    | "DELIVERY"
-    | "MANUFACTURER"
-    | "DISTRIBUTOR"
-    | "OTHER"
-  >("");
-  const [preferredContact, setPreferredContact] = useState<
-    "" | "EMAIL" | "PHONE" | "TEXT" | "ANY"
-  >("");
   const [isBuyer, setIsBuyer] = useState(true);
   const [isSeller, setIsSeller] = useState(false);
   const [referrerId, setReferrerId] = useState<number | undefined>(
     defaultReferrerId
   );
-  const [referrerSearch, setReferrerSearch] = useState("");
-  const [showReferrerPopover, setShowReferrerPopover] = useState(false);
-  const [showAutoFill, setShowAutoFill] = useState(false);
 
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
 
-  // Auto-fill suggestions
-  const { data: nameSuggestions } =
-    trpc.client360.getAutoFillSuggestions.useQuery(
-      { query: name, field: "name" },
-      { enabled: name.length >= 2 && showAutoFill }
-    );
-
-  const { data: emailSuggestions } =
-    trpc.client360.getAutoFillSuggestions.useQuery(
-      { query: email, field: "email" },
-      { enabled: email.length >= 3 && showAutoFill }
-    );
-
-  const { data: phoneSuggestions } =
-    trpc.client360.getAutoFillSuggestions.useQuery(
-      { query: phone, field: "phone" },
-      { enabled: phone.length >= 3 && showAutoFill }
-    );
-
-  // Referrer search
-  const { data: referrerResults } = trpc.clients.list.useQuery(
-    { search: referrerSearch, limit: 5 },
-    { enabled: referrerSearch.length >= 2 }
-  );
-
-  // Quick create mutation
-  // BUG-071 FIX: Enhanced error handling with detailed messages
   const quickCreateMutation = trpc.client360.quickCreate.useMutation({
     onSuccess: result => {
       if (result.success && result.client) {
@@ -181,44 +127,40 @@ export function QuickCreateClient({
     setName("");
     setEmail("");
     setPhone("");
-    setBusinessType("");
-    setPreferredContact("");
     setIsBuyer(true);
     setIsSeller(false);
     setReferrerId(defaultReferrerId);
-    setReferrerSearch("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // BUG-071 FIX: Enhanced validation with user feedback
     if (!name.trim()) {
-      toast.error("Name is required", {
-        description: "Please provide a name for the client",
+      toast.error("Code name is required", {
+        description: "Please provide the relationship code name before saving.",
       });
       return;
     }
 
     if (!email.trim() && !phone.trim()) {
-      toast.error("Contact information required", {
-        description: "Please provide either an email address or phone number",
+      toast.error("Reachable handle required", {
+        description:
+          "Add either a username/email or a signal, ID, or phone contact.",
       });
       return;
     }
 
-    // Validate email format if provided
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error("Invalid email format", {
-        description: "Please provide a valid email address",
+      toast.error("Username / email must be a valid email", {
+        description:
+          "This field still saves into the email slot, so it needs an email-formatted handle.",
       });
       return;
     }
 
-    // Validate at least one client type is selected
     if (!isBuyer && !isSeller) {
-      toast.error("Client type required", {
-        description: "Please select if this client is a buyer, seller, or both",
+      toast.error("Relationship type required", {
+        description: "Mark this record as a buyer, supplier, or both.",
       });
       return;
     }
@@ -227,8 +169,6 @@ export function QuickCreateClient({
       name: name.trim(),
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
-      businessType: businessType || undefined,
-      preferredContact: preferredContact || undefined,
       isBuyer,
       isSeller,
       referredByClientId: referrerId,
@@ -236,281 +176,73 @@ export function QuickCreateClient({
   };
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Name */}
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="quick-name">
-          Name <span className="text-destructive">*</span>
+          Code Name <span className="text-destructive">*</span>
         </Label>
-        <div className="relative">
-          <Input
-            id="quick-name"
-            placeholder="Full name"
-            value={name}
-            onChange={e => {
-              setName(e.target.value);
-              setShowAutoFill(true);
-            }}
-            onFocus={() => setShowAutoFill(true)}
-            required
-            autoComplete="off"
-          />
-          {/* Auto-fill suggestions */}
-          {showAutoFill &&
-            nameSuggestions?.suggestions &&
-            nameSuggestions.suggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {nameSuggestions.suggestions.map((s, _idx) => (
-                  <button
-                    key={`name-suggestion-${s.value}-${s.clientName}`}
-                    type="button"
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                    onClick={() => {
-                      setName(s.value || "");
-                      setShowAutoFill(false);
-                    }}
-                  >
-                    <span className="font-medium">{s.value}</span>
-                    <span className="text-muted-foreground ml-2">
-                      ({s.clientName})
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-        </div>
+        <Input
+          id="quick-name"
+          placeholder="What the team calls this relationship"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          required
+        />
       </div>
 
-      {/* Email */}
       <div className="space-y-2">
-        <Label htmlFor="quick-email">Email</Label>
-        <div className="relative">
-          <Input
-            id="quick-email"
-            type="email"
-            placeholder="email@example.com"
-            value={email}
-            onChange={e => {
-              setEmail(e.target.value);
-              setShowAutoFill(true);
-            }}
-            onFocus={() => setShowAutoFill(true)}
-            autoComplete="off"
-          />
-          {showAutoFill &&
-            emailSuggestions?.suggestions &&
-            emailSuggestions.suggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {emailSuggestions.suggestions.map((s, _idx) => (
-                  <button
-                    key={`email-suggestion-${s.value}`}
-                    type="button"
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                    onClick={() => {
-                      setEmail(s.value || "");
-                      setShowAutoFill(false);
-                    }}
-                  >
-                    <span className="font-medium">{s.value}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-        </div>
-      </div>
-
-      {/* Phone */}
-      <div className="space-y-2">
-        <Label htmlFor="quick-phone">Phone</Label>
-        <div className="relative">
-          <Input
-            id="quick-phone"
-            type="tel"
-            placeholder="+1 (555) 123-4567"
-            value={phone}
-            onChange={e => {
-              setPhone(e.target.value);
-              setShowAutoFill(true);
-            }}
-            onFocus={() => setShowAutoFill(true)}
-            autoComplete="off"
-          />
-          {showAutoFill &&
-            phoneSuggestions?.suggestions &&
-            phoneSuggestions.suggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {phoneSuggestions.suggestions.map((s, _idx) => (
-                  <button
-                    key={`phone-suggestion-${s.value}`}
-                    type="button"
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                    onClick={() => {
-                      setPhone(s.value || "");
-                      setShowAutoFill(false);
-                    }}
-                  >
-                    <span className="font-medium">{s.value}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-        </div>
+        <Label htmlFor="quick-email">Username / Email</Label>
+        <Input
+          id="quick-email"
+          type="email"
+          placeholder="name@domain.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
         <p className="text-xs text-muted-foreground">
-          At least email or phone is required
+          Use this when the reachable username is already an email-formatted
+          handle.
         </p>
       </div>
 
-      {/* Business Information */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="quick-businessType">Business Type</Label>
-          <Select
-            value={businessType}
-            onValueChange={value =>
-              setBusinessType(value as typeof businessType)
-            }
-          >
-            <SelectTrigger id="quick-businessType">
-              <SelectValue placeholder="Select type (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="RETAIL">Retail</SelectItem>
-              <SelectItem value="WHOLESALE">Wholesale</SelectItem>
-              <SelectItem value="DISPENSARY">Dispensary</SelectItem>
-              <SelectItem value="DELIVERY">Delivery</SelectItem>
-              <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
-              <SelectItem value="DISTRIBUTOR">Distributor</SelectItem>
-              <SelectItem value="OTHER">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="quick-preferredContact">Preferred Contact</Label>
-          <Select
-            value={preferredContact}
-            onValueChange={value =>
-              setPreferredContact(value as typeof preferredContact)
-            }
-          >
-            <SelectTrigger id="quick-preferredContact">
-              <SelectValue placeholder="Select method (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="EMAIL">Email</SelectItem>
-              <SelectItem value="PHONE">Phone</SelectItem>
-              <SelectItem value="TEXT">Text</SelectItem>
-              <SelectItem value="ANY">Any</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Client Types */}
-      <div className="flex gap-4">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="quick-buyer"
-            checked={isBuyer}
-            onCheckedChange={checked => setIsBuyer(!!checked)}
-          />
-          <Label htmlFor="quick-buyer" className="text-sm cursor-pointer">
-            Buyer
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="quick-seller"
-            checked={isSeller}
-            onCheckedChange={checked => setIsSeller(!!checked)}
-          />
-          <Label htmlFor="quick-seller" className="text-sm cursor-pointer">
-            Supplier
-          </Label>
-        </div>
-      </div>
-
-      {/* Referrer (optional) */}
       <div className="space-y-2">
-        <Label>Referred By (optional)</Label>
-        <Popover
-          open={showReferrerPopover}
-          onOpenChange={setShowReferrerPopover}
-        >
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-start font-normal"
-              type="button"
-            >
-              {referrerId &&
-              referrerResults?.items?.find(
-                (r: { id: number; name: string }) => r.id === referrerId
-              ) ? (
-                <span>
-                  {
-                    referrerResults.items.find(
-                      (r: { id: number; name: string }) => r.id === referrerId
-                    )?.name
-                  }
-                </span>
-              ) : (
-                <span className="text-muted-foreground">
-                  Select referrer...
-                </span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-2">
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search clients..."
-                  value={referrerSearch}
-                  onChange={e => setReferrerSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                {referrerResults?.items?.map(client => (
-                  <button
-                    key={client.id}
-                    type="button"
-                    className="w-full px-2 py-1.5 text-left text-sm hover:bg-accent rounded"
-                    onClick={() => {
-                      setReferrerId(client.id);
-                      setShowReferrerPopover(false);
-                    }}
-                  >
-                    {client.name} ({client.teriCode})
-                  </button>
-                ))}
-                {referrerSearch.length >= 2 &&
-                  (!referrerResults?.items ||
-                    referrerResults.items.length === 0) && (
-                    <p className="px-2 py-1.5 text-sm text-muted-foreground">
-                      No clients found
-                    </p>
-                  )}
-              </div>
-              {referrerId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full"
-                  type="button"
-                  onClick={() => {
-                    setReferrerId(undefined);
-                    setShowReferrerPopover(false);
-                  }}
-                >
-                  Clear selection
-                </Button>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
+        <Label htmlFor="quick-phone">Signal / ID / Phone</Label>
+        <Input
+          id="quick-phone"
+          type="tel"
+          placeholder="@signalhandle or +1 (555) 123-4567"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Add at least one reachable handle before creating the profile.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Relationship Type</Label>
+        <div className="flex flex-wrap gap-4 rounded-lg border border-border/70 px-3 py-3">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="quick-buyer"
+              checked={isBuyer}
+              onCheckedChange={checked => setIsBuyer(!!checked)}
+            />
+            <Label htmlFor="quick-buyer" className="text-sm cursor-pointer">
+              Buyer
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="quick-seller"
+              checked={isSeller}
+              onCheckedChange={checked => setIsSeller(!!checked)}
+            />
+            <Label htmlFor="quick-seller" className="text-sm cursor-pointer">
+              Supplier
+            </Label>
+          </div>
+        </div>
       </div>
 
       {!inline && (
@@ -534,7 +266,7 @@ export function QuickCreateClient({
             ) : (
               <>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Create Client
+                {submitLabel}
               </>
             )}
           </Button>
@@ -555,7 +287,7 @@ export function QuickCreateClient({
           ) : (
             <>
               <UserPlus className="h-4 w-4 mr-2" />
-              Create Client
+              {submitLabel}
             </>
           )}
         </Button>
@@ -569,24 +301,20 @@ export function QuickCreateClient({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {triggerButton || (
-          <Button variant="outline" size="sm">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Quick Add Client
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent
-        className="sm:max-w-md"
-        onClick={() => setShowAutoFill(false)}
-      >
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          {triggerButton || (
+            <Button variant="outline" size="sm">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Quick Add Relationship
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Quick Add Client</DialogTitle>
-          <DialogDescription>
-            Create a new client with minimal information. You can add more
-            details later.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         {formContent}
       </DialogContent>
