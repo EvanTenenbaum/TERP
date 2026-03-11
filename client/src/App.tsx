@@ -580,7 +580,7 @@ function Router() {
                   component={RedirectWithTab(
                     "/credit-settings",
                     "/credits",
-                    "settings"
+                    "capacity"
                   )}
                 />
                 {/* NAV-017: Credits management page */}
@@ -589,7 +589,7 @@ function Router() {
                   component={RedirectWithTab(
                     "/credits/manage",
                     "/credits",
-                    "credits"
+                    "adjustments"
                   )}
                 />
                 <Route
