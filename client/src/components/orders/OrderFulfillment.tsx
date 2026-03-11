@@ -39,6 +39,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import {
+  getFulfillmentDisplayLabel,
+  mapToFulfillmentDisplayStatus,
+} from "@/lib/fulfillmentDisplay";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -108,16 +112,21 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
   // Status badge helper
   const getStatusBadge = () => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      READY_FOR_PACKING: {
-        label: "Ready for Packing",
+      PENDING: {
+        label: "Pending",
         className: "bg-yellow-100 text-yellow-800",
       },
-      PACKED: { label: "Packed", className: "bg-blue-100 text-blue-800" },
+      READY: { label: "Ready", className: "bg-blue-100 text-blue-800" },
       SHIPPED: { label: "Shipped", className: "bg-green-100 text-green-800" },
     };
 
+    const displayStatus =
+      mapToFulfillmentDisplayStatus(currentFulfillmentStatus) ?? "PENDING";
     const config =
-      statusConfig[currentFulfillmentStatus || "READY_FOR_PACKING"];
+      statusConfig[displayStatus] ?? {
+        label: getFulfillmentDisplayLabel(currentFulfillmentStatus),
+        className: "bg-gray-100 text-gray-800",
+      };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 

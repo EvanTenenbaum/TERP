@@ -7,7 +7,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { OrderStatusActions } from "./OrderStatusActions";
 
 describe("OrderStatusActions", () => {
-  it("shows ready-for-packing transitions without the legacy pending label", async () => {
+  it("shows simplified shipping labels for ready-for-packing transitions", async () => {
     render(
       <OrderStatusActions
         currentStatus="READY_FOR_PACKING"
@@ -20,10 +20,11 @@ describe("OrderStatusActions", () => {
       screen.getByRole("button", { name: /change status/i })
     );
 
-    expect(await screen.findByText("Packed")).toBeInTheDocument();
+    expect(await screen.findByText("Ready")).toBeInTheDocument();
     expect(await screen.findByText("Shipped")).toBeInTheDocument();
     expect(await screen.findByText("Cancelled")).toBeInTheDocument();
     expect(screen.queryByText("Pending")).not.toBeInTheDocument();
     expect(screen.queryByText("Ready for Packing")).not.toBeInTheDocument();
+    expect(screen.queryByText("Packed")).not.toBeInTheDocument();
   });
 });

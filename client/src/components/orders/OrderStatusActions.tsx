@@ -38,6 +38,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
 import type { FulfillmentStatus } from "./OrderStatusBadge";
 
 type LegacyFulfillmentStatus = FulfillmentStatus | "PENDING";
@@ -63,8 +64,8 @@ const ORDER_STATUS_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStatus[]> =
 const STATUS_LABELS: Record<FulfillmentStatus, string> = {
   DRAFT: "Draft",
   CONFIRMED: "Confirmed",
-  READY_FOR_PACKING: "Ready for Packing",
-  PACKED: "Packed",
+  READY_FOR_PACKING: "Pending",
+  PACKED: "Ready",
   SHIPPED: "Shipped",
   DELIVERED: "Delivered",
   RETURNED: "Returned",
@@ -281,7 +282,9 @@ export function OrderStatusActions({
                   )}
                 >
                   {STATUS_ICONS[status]}
-                  <span>{STATUS_LABELS[status]}</span>
+                  <span>
+                    {STATUS_LABELS[status] ?? getFulfillmentDisplayLabel(status)}
+                  </span>
                 </DropdownMenuItem>
               </React.Fragment>
             );
