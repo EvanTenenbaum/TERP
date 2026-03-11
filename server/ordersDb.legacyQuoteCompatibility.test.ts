@@ -126,8 +126,12 @@ describe("ordersDb legacy quote compatibility", () => {
     expect(saleInsert).toEqual(
       expect.objectContaining({
         orderType: "SALE",
+        isDraft: false,
+        fulfillmentStatus: "READY_FOR_PACKING",
+        saleStatus: "PENDING",
         subtotal: "25",
         total: "25",
+        confirmedAt: expect.any(Date),
       })
     );
 
