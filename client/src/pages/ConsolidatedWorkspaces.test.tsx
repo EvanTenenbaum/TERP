@@ -15,6 +15,15 @@ import CreditsWorkspacePage from "./CreditsWorkspacePage";
 let mockActiveTab = "matchmaking";
 const mockSetActiveTab = vi.fn();
 const mockSetLocation = vi.fn();
+const mockCreditsSummary = {
+  totalCreditsRemaining: 1250,
+  totalCreditsUsed: 800,
+  creditCount: 3,
+  expiringWithin30Days: {
+    count: 1,
+    totalAmount: 250,
+  },
+};
 
 vi.mock("@/hooks/useQueryTabState", () => ({
   useQueryTabState: () => ({
@@ -25,6 +34,19 @@ vi.mock("@/hooks/useQueryTabState", () => ({
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/inventory", mockSetLocation],
+}));
+
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    credits: {
+      getSummary: {
+        useQuery: () => ({
+          data: mockCreditsSummary,
+          isLoading: false,
+        }),
+      },
+    },
+  },
 }));
 
 vi.mock("@/pages/NeedsManagementPage", () => ({
@@ -132,8 +154,25 @@ describe("Consolidated workspace pages", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders Client Credit workspace with dashboard-first content", () => {
+    mockActiveTab = "dashboard";
+    render(<CreditsWorkspacePage />);
+    expect(
+      screen.getByRole("heading", { name: "Client Credit" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Client Credit Dashboard" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Review Issued Adjustments" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Open Capacity Settings" }).length
+    ).toBeGreaterThan(0);
+  });
+
   it("renders Client Credit workspace with settings content", () => {
-    mockActiveTab = "settings";
+    mockActiveTab = "capacity";
     render(<CreditsWorkspacePage />);
     expect(
       screen.getByRole("heading", { name: "Client Credit" })

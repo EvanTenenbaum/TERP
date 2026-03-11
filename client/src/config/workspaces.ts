@@ -74,10 +74,13 @@ export const CREDITS_WORKSPACE = {
   description:
     "Separate issued credit adjustments from client credit capacity settings in one finance workspace.",
   tabs: [
-    { value: "credits", label: "Issued Credits" },
-    { value: "settings", label: "Capacity Settings" },
+    { value: "dashboard", label: "Dashboard" },
+    { value: "adjustments", label: "Issued Adjustments" },
+    { value: "capacity", label: "Capacity Settings" },
   ],
-} as const satisfies WorkspaceConfig<"credits" | "settings">;
+} as const satisfies WorkspaceConfig<
+  "dashboard" | "adjustments" | "capacity"
+>;
 
 export const ACCOUNTING_WORKSPACE = {
   title: "Accounting",

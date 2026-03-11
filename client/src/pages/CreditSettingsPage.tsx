@@ -323,12 +323,12 @@ export default function CreditSettingsPage({
             <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-medium text-blue-900 dark:text-blue-100">
-                Capacity settings are not issued credits
+                Capacity settings are not issued adjustments
               </p>
               <p className="text-blue-800 dark:text-blue-200 mt-1">
                 Use this page to change client limits, score weights, and order
-                guardrails. Use the Issued Credits tab when you need to create
-                or apply a post-sale adjustment balance.
+                guardrails. Use the Issued Adjustments tab when you need to
+                create or apply a post-sale adjustment balance.
               </p>
             </div>
           </div>
