@@ -41,6 +41,7 @@ export type SampleStatus =
   | "VENDOR_CONFIRMED";
 
 export type SampleOperatorFilter = "ALL" | SampleStatus | "OUT" | "RETURN";
+export type SampleOperatorLane = "OUT" | "RETURN";
 
 export type SampleLocation =
   | "WAREHOUSE"
@@ -88,22 +89,9 @@ type SortKey =
 
 type SortDirection = "asc" | "desc";
 
-const statusLabels: Record<SampleStatus, string> = {
-  PENDING: "Pending",
-  FULFILLED: "Approved",
-  CANCELLED: "Cancelled",
-  RETURNED: "Returned",
-  RETURN_REQUESTED: "Return Requested",
-  RETURN_APPROVED: "Return Approved",
-  VENDOR_RETURN_REQUESTED: "Supplier Return Requested",
-  SHIPPED_TO_VENDOR: "Shipped to Supplier",
-  VENDOR_CONFIRMED: "Supplier Confirmed",
-};
-
 export function getSampleOperatorLane(
   status: SampleStatus
-): "OUT" | "RETURN" | "CANCELLED" {
-  if (status === "CANCELLED") return "CANCELLED";
+): SampleOperatorLane {
   if (
     [
       "RETURNED",
@@ -119,17 +107,19 @@ export function getSampleOperatorLane(
   return "OUT";
 }
 
+export function isOperatorVisibleSampleStatus(status: SampleStatus): boolean {
+  return status !== "CANCELLED";
+}
+
 function getOperatorStatusLabel(status: SampleStatus): string {
-  const lane = getSampleOperatorLane(status);
-  if (lane === "RETURN") return "Samples Return";
-  if (lane === "CANCELLED") return "Cancelled";
-  return "Samples Out";
+  return getSampleOperatorLane(status) === "RETURN"
+    ? "Samples Return"
+    : "Samples Out";
 }
 
 function getStatusVariant(
   status: SampleStatus
 ): "default" | "secondary" | "outline" | "destructive" {
-  if (status === "CANCELLED") return "outline";
   if (getSampleOperatorLane(status) === "RETURN") return "secondary";
   return "default";
 }
@@ -204,6 +194,10 @@ export const SampleList = React.memo(function SampleList({
   const filteredSamples = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
     return samples.filter(sample => {
+      if (!isOperatorVisibleSampleStatus(sample.status)) {
+        return false;
+      }
+
       const matchesStatus =
         statusFilter === "ALL"
           ? true
@@ -415,12 +409,6 @@ export const SampleList = React.memo(function SampleList({
                     <Badge variant={getStatusVariant(sample.status)}>
                       {getOperatorStatusLabel(sample.status)}
                     </Badge>
-                    {getOperatorStatusLabel(sample.status) !==
-                    statusLabels[sample.status] ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {statusLabels[sample.status]}
-                      </p>
-                    ) : null}
                   </TableCell>
                   <TableCell>{formatDate(sample.requestedDate)}</TableCell>
                   <TableCell>{formatDate(sample.dueDate ?? null)}</TableCell>

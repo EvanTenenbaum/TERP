@@ -40,6 +40,15 @@ const sampleItems: SampleRequestMock[] = [
     sampleRequestStatus: "FULFILLED",
     notes: null,
   },
+  {
+    id: 3,
+    clientId: 2,
+    requestedBy: 2,
+    requestDate: "2026-01-04T00:00:00.000Z",
+    products: [{ productId: 12, quantity: "1" }],
+    sampleRequestStatus: "CANCELLED",
+    notes: "Cancelled sample request",
+  },
 ];
 
 let capturedStatus: string | undefined;
@@ -61,11 +70,9 @@ vi.mock("@/components/samples/SampleList", () => ({
     ) {
       return "RETURN";
     }
-    if (status === "CANCELLED") {
-      return "CANCELLED";
-    }
     return "OUT";
   },
+  isOperatorVisibleSampleStatus: (status: string) => status !== "CANCELLED",
   SampleList: (props: {
     statusFilter: string;
     searchQuery: string;
