@@ -75,7 +75,14 @@ describe("DashboardLayout navigation", () => {
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
     // Labels come from navigation.ts navigationGroups
-    expect(labelTexts).toEqual(["Sell", "Operations", "Finance", "Admin"]);
+    expect(labelTexts).toEqual([
+      "Sell",
+      "Buy",
+      "Operations",
+      "Relationships",
+      "Finance",
+      "Admin",
+    ]);
   });
 
   it("navigates to Purchase Orders from the sidebar", () => {

@@ -151,7 +151,7 @@ export function QuickCreateClient({
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error("Username / email must be a valid email", {
+      toast.error("Email-formatted handle must be a valid email", {
         description:
           "This field still saves into the email slot, so it needs an email-formatted handle.",
       });
@@ -191,7 +191,7 @@ export function QuickCreateClient({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="quick-email">Username / Email</Label>
+        <Label htmlFor="quick-email">Email-formatted Handle</Label>
         <Input
           id="quick-email"
           type="email"

@@ -87,7 +87,7 @@ export function LinearWorkspaceShell<T extends string>({
                   </span>
                 </>
               ) : null}
-              Operations Workspace
+              Workspace
             </p>
             <div>
               <h1 className="linear-workspace-title">{title}</h1>

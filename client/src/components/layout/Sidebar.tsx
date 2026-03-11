@@ -101,7 +101,9 @@ function getDefaultOpenGroups(currentPath: string) {
 
   return {
     sales: activeGroup === "sales",
-    inventory: activeGroup === "inventory",
+    buy: activeGroup === "buy",
+    operations: activeGroup === "operations",
+    relationships: activeGroup === "relationships",
     finance: activeGroup === "finance",
     admin: activeGroup === "admin",
   } satisfies Record<NavigationGroupKey, boolean>;
