@@ -9,9 +9,14 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
+import { requireAnyPermission } from "../_core/permissionMiddleware";
 
 const pickPackDisplayStatusSchema = z.enum([
   "PENDING",
@@ -114,7 +119,15 @@ export const pickPackRouter = router({
   /**
    * Get the real-time pick list (orders ready for picking)
    */
-  getPickList: adminProcedure
+  getPickList: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "orders:read",
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         filters: z
@@ -286,7 +299,15 @@ export const pickPackRouter = router({
   /**
    * Get order details for picking/packing
    */
-  getOrderDetails: adminProcedure
+  getOrderDetails: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "orders:read",
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input, ctx: _ctx }) => {
       const db = await import("../db").then(m => m.getDb());
@@ -433,7 +454,14 @@ export const pickPackRouter = router({
   /**
    * Pack selected items into a bag
    */
-  packItems: adminProcedure
+  packItems: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -567,7 +595,14 @@ export const pickPackRouter = router({
   /**
    * Unpack items from a bag (requires confirmation)
    */
-  unpackItems: adminProcedure
+  unpackItems: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -658,7 +693,14 @@ export const pickPackRouter = router({
   /**
    * Mark all items in order as packed
    */
-  markAllPacked: adminProcedure
+  markAllPacked: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -778,7 +820,14 @@ export const pickPackRouter = router({
   /**
    * Mark order as ready for shipping
    */
-  markOrderReady: adminProcedure
+  markOrderReady: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(z.object({ orderId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await import("../db").then(m => m.getDb());
@@ -846,7 +895,14 @@ export const pickPackRouter = router({
   /**
    * Update order pick/pack status
    */
-  updateStatus: adminProcedure
+  updateStatus: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -875,54 +931,63 @@ export const pickPackRouter = router({
   /**
    * Get stats for the pick/pack dashboard
    */
-  getStats: adminProcedure.query(async ({ ctx: _ctx }) => {
-    const db = await import("../db").then(m => m.getDb());
-    if (!db)
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Database not available",
-      });
+  getStats: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "orders:read",
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
+    .query(async ({ ctx: _ctx }) => {
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-    const { orders } = await import("../../drizzle/schema");
-    const { eq, and, isNull } = await import("drizzle-orm");
+      const { orders } = await import("../../drizzle/schema");
+      const { eq, and, isNull } = await import("drizzle-orm");
 
-    const conditions = [
-      eq(orders.orderType, "SALE"),
-      eq(orders.isDraft, false),
-      isNull(orders.deletedAt),
-    ];
+      const conditions = [
+        eq(orders.orderType, "SALE"),
+        eq(orders.isDraft, false),
+        isNull(orders.deletedAt),
+      ];
 
-    const orderStatuses = await db
-      .select({
-        pickPackStatus: orders.pickPackStatus,
-        fulfillmentStatus: orders.fulfillmentStatus,
-      })
-      .from(orders)
-      .where(and(...conditions));
+      const orderStatuses = await db
+        .select({
+          pickPackStatus: orders.pickPackStatus,
+          fulfillmentStatus: orders.fulfillmentStatus,
+        })
+        .from(orders)
+        .where(and(...conditions));
 
-    const statusCounts = {
-      PENDING: 0,
-      PARTIAL: 0,
-      READY: 0,
-      SHIPPED: 0,
-    };
+      const statusCounts = {
+        PENDING: 0,
+        PARTIAL: 0,
+        READY: 0,
+        SHIPPED: 0,
+      };
 
-    for (const order of orderStatuses) {
-      const displayStatus = mapPickPackDisplayStatus(
-        order.pickPackStatus,
-        order.fulfillmentStatus
-      );
-      statusCounts[displayStatus] += 1;
-    }
+      for (const order of orderStatuses) {
+        const displayStatus = mapPickPackDisplayStatus(
+          order.pickPackStatus,
+          order.fulfillmentStatus
+        );
+        statusCounts[displayStatus] += 1;
+      }
 
-    return {
-      pending: statusCounts.PENDING,
-      partial: statusCounts.PARTIAL,
-      ready: statusCounts.READY,
-      shipped: statusCounts.SHIPPED,
-      total: Object.values(statusCounts).reduce((a, b) => a + b, 0),
-    };
-  }),
+      return {
+        pending: statusCounts.PENDING,
+        partial: statusCounts.PARTIAL,
+        ready: statusCounts.READY,
+        shipped: statusCounts.SHIPPED,
+        total: Object.values(statusCounts).reduce((a, b) => a + b, 0),
+      };
+    }),
 });
 
 export type PickPackRouter = typeof pickPackRouter;

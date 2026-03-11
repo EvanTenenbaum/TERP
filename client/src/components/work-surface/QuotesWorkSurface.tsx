@@ -94,7 +94,7 @@ interface Quote {
   id: number;
   orderNumber: string;
   clientId: number;
-  quoteStatus:
+  quoteStatus?:
     | "UNSENT"
     | "SENT"
     | "VIEWED"
@@ -178,16 +178,20 @@ const formatDate = (dateString: string | undefined): string => {
   }
 };
 
+const getEffectiveQuoteStatus = (quote: Pick<Quote, "quoteStatus">) =>
+  quote.quoteStatus ?? "UNSENT";
+
 // ============================================================================
 // STATUS BADGE
 // ============================================================================
 
-function QuoteStatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.UNSENT;
+function QuoteStatusBadge({ status }: { status?: string }) {
+  const effectiveStatus = status ?? "UNSENT";
+  const config = STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.UNSENT;
   return (
     <Badge variant="outline" className={cn("gap-1", config.color)}>
       {config.icon}
-      {status}
+      {effectiveStatus}
     </Badge>
   );
 }
@@ -225,6 +229,7 @@ function QuoteInspectorContent({
   }
 
   const items = quote.items || [];
+  const effectiveStatus = getEffectiveQuoteStatus(quote);
 
   return (
     <div className="space-y-6">
@@ -234,7 +239,7 @@ function QuoteInspectorContent({
             <p className="font-semibold text-lg">{quote.orderNumber}</p>
           </InspectorField>
           <InspectorField label="Status">
-            <QuoteStatusBadge status={quote.quoteStatus} />
+            <QuoteStatusBadge status={effectiveStatus} />
           </InspectorField>
         </div>
 
@@ -322,7 +327,7 @@ function QuoteInspectorContent({
 
       <InspectorSection title="Actions" defaultOpen>
         <div className="space-y-2">
-          {quote.quoteStatus === "UNSENT" && (
+          {effectiveStatus === "UNSENT" && (
             <>
               <Button
                 variant="outline"
@@ -342,9 +347,9 @@ function QuoteInspectorContent({
               </Button>
             </>
           )}
-          {(quote.quoteStatus === "UNSENT" ||
-            quote.quoteStatus === "SENT" ||
-            quote.quoteStatus === "VIEWED") && (
+          {(effectiveStatus === "UNSENT" ||
+            effectiveStatus === "SENT" ||
+            effectiveStatus === "VIEWED") && (
             <Button
               variant="default"
               className="w-full justify-start"
@@ -362,7 +367,7 @@ function QuoteInspectorContent({
             <Copy className="h-4 w-4 mr-2" />
             Duplicate Quote
           </Button>
-          {quote.quoteStatus === "UNSENT" && (
+          {effectiveStatus === "UNSENT" && (
             <Button
               variant="outline"
               className="w-full justify-start text-red-600 hover:text-red-700"
@@ -453,9 +458,10 @@ export function QuotesWorkSurface() {
   // Statistics
   const stats = useMemo(
     () => ({
-      draft: quotes.filter(q => q.quoteStatus === "UNSENT").length,
-      sent: quotes.filter(q => q.quoteStatus === "SENT").length,
-      converted: quotes.filter(q => q.quoteStatus === "CONVERTED").length,
+      draft: quotes.filter(q => getEffectiveQuoteStatus(q) === "UNSENT").length,
+      sent: quotes.filter(q => getEffectiveQuoteStatus(q) === "SENT").length,
+      converted: quotes.filter(q => getEffectiveQuoteStatus(q) === "CONVERTED")
+        .length,
       total: quotes.length,
     }),
     [quotes]

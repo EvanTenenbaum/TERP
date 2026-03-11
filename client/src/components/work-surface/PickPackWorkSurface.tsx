@@ -552,10 +552,15 @@ function OrderInspector({
 // ============================================================================
 
 export function PickPackWorkSurface() {
-  const { hasAnyPermission } = usePermissions();
+  const { hasAnyPermission, isLoading: permissionsLoading } = usePermissions();
+  const canAccessPickPack = hasAnyPermission([
+    "orders:read",
+    "pick-pack:manage",
+    "orders:fulfill",
+    "orders:update",
+  ]);
   const canManagePickPack = hasAnyPermission([
     "pick-pack:manage",
-    "orders:manage",
     "orders:fulfill",
     "orders:update",
   ]);
@@ -820,6 +825,27 @@ export function PickPackWorkSurface() {
     },
   });
 
+  const shipOrderMutation = trpc.orders.shipOrder.useMutation({
+    onMutate: () => setSaving(),
+    onSuccess: () => {
+      const orderNum = orderDetails?.order.orderNumber;
+      setSelectedOrderId(null);
+      setInspectorMode(null);
+      setInspectedItemId(null);
+      void refetchPickList();
+      void refetchStats();
+      setSaved();
+      toast.success("Order marked shipped");
+      notifyStatusFilterExit(orderNum, "SHIPPED");
+    },
+    onError: (error: { message: string }) => {
+      if (!handleConflictError(error)) {
+        setError(error.message || "Failed to mark shipped");
+        toast.error(`Failed to mark shipped: ${error.message}`);
+      }
+    },
+  });
+
   // Handlers
   const handleSelectOrder = useCallback(
     (orderId: number) => {
@@ -926,6 +952,14 @@ export function PickPackWorkSurface() {
       markReadyMutation.mutate({ orderId: selectedOrderId });
     }
   }, [canManagePickPack, selectedOrderId, markReadyMutation]);
+
+  const handleMarkShipped = useCallback(() => {
+    if (!canManagePickPack || !selectedOrderId) {
+      return;
+    }
+
+    shipOrderMutation.mutate({ id: selectedOrderId });
+  }, [canManagePickPack, selectedOrderId, shipOrderMutation]);
 
   const handleExportManifest = useCallback(() => {
     if (!orderDetails || pickPackManifestRows.length === 0) {
@@ -1130,6 +1164,13 @@ export function PickPackWorkSurface() {
     return null;
   }, [inspectorMode, inspectedItemId, orderDetails]);
 
+  const canShipSelectedOrder =
+    !!orderDetails &&
+    orderDetails.order.pickPackStatus === "READY" &&
+    !["SHIPPED", "DELIVERED", "RETURNED"].includes(
+      orderDetails.order.fulfillmentStatus ?? ""
+    );
+
   // Status counts
   const statusCounts = useMemo(
     () => ({
@@ -1140,6 +1181,18 @@ export function PickPackWorkSurface() {
     }),
     [stats]
   );
+
+  if (!permissionsLoading && !canAccessPickPack) {
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <Card className="max-w-md">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Shipping access requires order read or fulfillment permissions.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1443,30 +1496,52 @@ export function PickPackWorkSurface() {
                 Pack All to One Bag
               </Button>
               <div className="flex-1" />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleMarkReady}
-                disabled={
-                  orderDetails.summary.packedItems <
-                    orderDetails.summary.totalItems ||
-                  markReadyMutation.isPending ||
-                  !canManagePickPack
-                }
-                className="bg-green-600 hover:bg-green-700"
-                title={
-                  canManagePickPack
-                    ? undefined
-                    : "Shipping manage permissions required"
-                }
-              >
-                {markReadyMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Truck className="w-4 h-4 mr-2" />
-                )}
-                {readyCtaLabel}
-              </Button>
+              {canShipSelectedOrder ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleMarkShipped}
+                  disabled={shipOrderMutation.isPending || !canManagePickPack}
+                  className="bg-green-600 hover:bg-green-700"
+                  title={
+                    canManagePickPack
+                      ? undefined
+                      : "Shipping manage permissions required"
+                  }
+                >
+                  {shipOrderMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Truck className="w-4 h-4 mr-2" />
+                  )}
+                  Mark Shipped
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleMarkReady}
+                  disabled={
+                    orderDetails.summary.packedItems <
+                      orderDetails.summary.totalItems ||
+                    markReadyMutation.isPending ||
+                    !canManagePickPack
+                  }
+                  className="bg-green-600 hover:bg-green-700"
+                  title={
+                    canManagePickPack
+                      ? undefined
+                      : "Shipping manage permissions required"
+                  }
+                >
+                  {markReadyMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Truck className="w-4 h-4 mr-2" />
+                  )}
+                  {readyCtaLabel}
+                </Button>
+              )}
             </div>
 
             {/* Items List */}
