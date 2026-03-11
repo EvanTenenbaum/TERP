@@ -23,6 +23,11 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+import {
+  getFulfillmentDisplayLabel,
+  mapToFulfillmentDisplayStatus,
+  type FulfillmentDisplayStatus,
+} from "@/lib/fulfillmentDisplay";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -160,8 +165,8 @@ type FulfillmentStatusValue = Exclude<
 // WSQA-003: Added RETURNED, RESTOCKED, RETURNED_TO_VENDOR statuses
 const FULFILLMENT_STATUSES = [
   { value: "ALL", label: "All" },
-  { value: "READY_FOR_PACKING", label: "Ready for Packing" },
-  { value: "PACKED", label: "Packed" },
+  { value: "READY_FOR_PACKING", label: "Pending" },
+  { value: "PACKED", label: "Ready" },
   { value: "SHIPPED", label: "Shipped" },
   { value: "DELIVERED", label: "Delivered" },
   { value: "RETURNED", label: "Returned" },
@@ -190,9 +195,11 @@ const ORDER_SORT_OPTIONS: Array<{ value: OrdersSortKey; label: string }> = [
 ];
 
 // WSQA-003: Added return status icons
-const STATUS_ICONS: Record<string, ReactNode> = {
-  READY_FOR_PACKING: <Clock className="h-4 w-4" />,
-  PACKED: <CheckCircle2 className="h-4 w-4" />,
+const STATUS_ICONS: Record<FulfillmentDisplayStatus, ReactNode> = {
+  DRAFT: <FileText className="h-4 w-4" />,
+  CONFIRMED: <CheckCircle2 className="h-4 w-4" />,
+  PENDING: <Clock className="h-4 w-4" />,
+  READY: <CheckCircle2 className="h-4 w-4" />,
   SHIPPED: <Truck className="h-4 w-4" />,
   DELIVERED: <CheckCircle2 className="h-4 w-4" />,
   RETURNED: <RefreshCw className="h-4 w-4" />,
@@ -202,16 +209,17 @@ const STATUS_ICONS: Record<string, ReactNode> = {
 };
 
 // WSQA-003: Added return status colors
-const STATUS_COLORS: Record<string, string> = {
-  READY_FOR_PACKING: "bg-yellow-100 text-yellow-800",
-  PACKED: "bg-purple-100 text-purple-800",
+const STATUS_COLORS: Record<FulfillmentDisplayStatus, string> = {
+  DRAFT: "bg-gray-100 text-gray-800",
+  CONFIRMED: "bg-blue-100 text-blue-800",
+  PENDING: "bg-yellow-100 text-yellow-800",
+  READY: "bg-purple-100 text-purple-800",
   SHIPPED: "bg-indigo-100 text-indigo-800",
   DELIVERED: "bg-green-100 text-green-800",
   RETURNED: "bg-orange-100 text-orange-800",
   RESTOCKED: "bg-emerald-100 text-emerald-800",
   RETURNED_TO_VENDOR: "bg-amber-100 text-amber-800",
   CANCELLED: "bg-red-100 text-red-800",
-  DRAFT: "bg-gray-100 text-gray-800",
 };
 
 // ============================================================================
@@ -287,7 +295,11 @@ export function getStatusFilterExitMessage(params: {
     return null;
   }
 
-  return `${params.orderNumber} moved to ${normalizedTarget} and is now hidden by the ${normalizedFilter.toLowerCase()} filter. Switch to All to keep tracking it.`;
+  return `${params.orderNumber} moved to ${getFulfillmentDisplayLabel(
+    normalizedTarget
+  )} and is now hidden by the ${getFulfillmentDisplayLabel(
+    normalizedFilter
+  ).toLowerCase()} filter. Switch to All to keep tracking it.`;
 }
 
 // ============================================================================
@@ -301,16 +313,19 @@ function OrderStatusBadge({
   status?: string | null;
   isDraft?: boolean;
 }) {
-  const displayStatus = isDraft
-    ? "DRAFT"
-    : normalizeFulfillmentStatus(status) || "READY_FOR_PACKING";
+  const displayStatus = (
+    isDraft
+      ? "DRAFT"
+      : mapToFulfillmentDisplayStatus(normalizeFulfillmentStatus(status)) ||
+        "PENDING"
+  ) as FulfillmentDisplayStatus;
   return (
     <Badge
       variant="outline"
       className={cn("gap-1", STATUS_COLORS[displayStatus])}
     >
       {STATUS_ICONS[displayStatus]}
-      {displayStatus}
+      {getFulfillmentDisplayLabel(displayStatus)}
     </Badge>
   );
 }
@@ -1030,6 +1045,9 @@ export function OrdersWorkSurface() {
           normalizeFulfillmentStatus(o.fulfillmentStatus) ===
           "READY_FOR_PACKING"
       ).length,
+      ready: confirmedOrders.filter(
+        (o: Order) => normalizeFulfillmentStatus(o.fulfillmentStatus) === "PACKED"
+      ).length,
       shipped: confirmedOrders.filter(
         (o: Order) => o.fulfillmentStatus === "SHIPPED"
       ).length,
@@ -1321,9 +1339,15 @@ export function OrdersWorkSurface() {
                 </span>
               </span>
               <span>
-                Ready for Packing:{" "}
+                Pending:{" "}
                 <span className="font-semibold text-foreground">
                   {stats.pending}
+                </span>
+              </span>
+              <span>
+                Ready:{" "}
+                <span className="font-semibold text-foreground">
+                  {stats.ready}
                 </span>
               </span>
               <span>

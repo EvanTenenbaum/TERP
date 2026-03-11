@@ -1,5 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  getFulfillmentDisplayLabel,
+  mapToFulfillmentDisplayStatus,
+  type FulfillmentDisplayStatus,
+} from "@/lib/fulfillmentDisplay";
 
 /**
  * ARCH-003: All fulfillment statuses from the order state machine
@@ -27,7 +32,7 @@ interface OrderStatusBadgeProps {
  * backgrounds fails contrast for yellow, amber, blue, and cyan variants.
  */
 const STATUS_CONFIG: Record<
-  FulfillmentStatus,
+  FulfillmentDisplayStatus,
   { label: string; className: string }
 > = {
   DRAFT: {
@@ -38,12 +43,12 @@ const STATUS_CONFIG: Record<
     label: "Confirmed",
     className: "bg-blue-100 text-blue-900 border-blue-400",
   },
-  READY_FOR_PACKING: {
-    label: "Ready for Packing",
+  PENDING: {
+    label: "Pending",
     className: "bg-yellow-100 text-yellow-900 border-yellow-500",
   },
-  PACKED: {
-    label: "Packed",
+  READY: {
+    label: "Ready",
     className: "bg-purple-100 text-purple-900 border-purple-400",
   },
   SHIPPED: {
@@ -73,9 +78,11 @@ const STATUS_CONFIG: Record<
 };
 
 export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
-  const normalizedStatus = status === "PENDING" ? "READY_FOR_PACKING" : status;
-  const config = STATUS_CONFIG[normalizedStatus as FulfillmentStatus] || {
-    label: normalizedStatus,
+  const displayStatus =
+    mapToFulfillmentDisplayStatus(status) ??
+    mapToFulfillmentDisplayStatus(status === "PENDING" ? "READY_FOR_PACKING" : status);
+  const config = (displayStatus && STATUS_CONFIG[displayStatus]) || {
+    label: getFulfillmentDisplayLabel(status),
     className: "bg-gray-100 text-gray-800 border-gray-300",
   };
 

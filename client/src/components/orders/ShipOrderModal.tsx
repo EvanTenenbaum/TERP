@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
+import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
@@ -45,7 +46,9 @@ export function ShipOrderModal({
         newStatus,
         notes: notes || undefined,
       });
-      toast.success(`Order marked as ${newStatus.toLowerCase()}`);
+      toast.success(
+        `Order marked as ${getFulfillmentDisplayLabel(newStatus).toLowerCase()}`
+      );
       setNotes(""); // Reset notes
       onSuccess();
       onClose();
@@ -63,7 +66,7 @@ export function ShipOrderModal({
 
   const actionLabel =
     normalizedCurrentStatus === "READY_FOR_PACKING"
-      ? "Mark as Packed"
+      ? "Mark as Ready"
       : "Mark as Shipped";
   const warningText =
     normalizedCurrentStatus === "PACKED"
