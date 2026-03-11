@@ -1260,10 +1260,12 @@ export async function convertQuoteToSale(
     const saleNumber = `S-${Date.now()}`;
 
     // 5. Create sale order
+    const confirmedAt = new Date();
     await tx.insert(orders).values({
       orderNumber: saleNumber,
       orderType: "SALE",
       clientId: quote.clientId,
+      isDraft: false,
       items: JSON.stringify(quoteItems),
       subtotal: subtotal.toString(),
       tax: tax.toString(),
@@ -1276,6 +1278,8 @@ export async function convertQuoteToSale(
       cashPayment: input.cashPayment?.toString() || "0",
       dueDate: dueDate,
       saleStatus: "PENDING",
+      fulfillmentStatus: "READY_FOR_PACKING",
+      confirmedAt,
       notes: input.notes || quote.notes,
       createdBy: quote.createdBy,
       convertedFromOrderId: quote.id,
