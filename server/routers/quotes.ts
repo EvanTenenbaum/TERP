@@ -90,6 +90,10 @@ function addDays(date: Date, days: number): Date {
   return result;
 }
 
+function getLegacyCompatibleQuoteStatus(value: string | null | undefined) {
+  return value ?? "UNSENT";
+}
+
 // ============================================================================
 // QUOTES ROUTER
 // ============================================================================
@@ -111,7 +115,13 @@ export const quotesRouter = router({
       ];
 
       if (input.status) {
-        conditions.push(eq(orders.quoteStatus, input.status));
+        if (input.status === "UNSENT") {
+          conditions.push(
+            sql`(${orders.quoteStatus} = 'UNSENT' OR ${orders.quoteStatus} IS NULL)`
+          );
+        } else {
+          conditions.push(eq(orders.quoteStatus, input.status));
+        }
       }
 
       if (input.clientId) {
@@ -288,13 +298,7 @@ export const quotesRouter = router({
       const client = result.clients;
 
       // SM-001: Validate quote status transition using state machine
-      if (!quote.quoteStatus) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Quote has no status set. Cannot transition to SENT.",
-        });
-      }
-      const currentStatus = quote.quoteStatus;
+      const currentStatus = getLegacyCompatibleQuoteStatus(quote.quoteStatus);
       if (!isValidStatusTransition("quote", currentStatus, "SENT")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -473,13 +477,7 @@ export const quotesRouter = router({
       }
 
       // SM-001: Validate quote status transition using state machine
-      if (!quote.quoteStatus) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Quote has no status set. Cannot transition to CONVERTED.",
-        });
-      }
-      const currentStatus = quote.quoteStatus;
+      const currentStatus = getLegacyCompatibleQuoteStatus(quote.quoteStatus);
       if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -537,13 +535,7 @@ export const quotesRouter = router({
       }
 
       // SM-001: Validate quote status transition using state machine
-      if (!quote.quoteStatus) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Quote has no status set. Cannot transition to REJECTED.",
-        });
-      }
-      const currentStatus = quote.quoteStatus;
+      const currentStatus = getLegacyCompatibleQuoteStatus(quote.quoteStatus);
       if (!isValidStatusTransition("quote", currentStatus, "REJECTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",

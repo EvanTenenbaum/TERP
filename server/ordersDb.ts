@@ -3,7 +3,7 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, isNull, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, or, type SQL } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import {
@@ -131,7 +131,12 @@ async function syncOrderLineItemsForOrder(
   if (existingLineItemIds.length > 0) {
     await tx
       .delete(orderLineItemAllocations)
-      .where(safeInArray(orderLineItemAllocations.orderLineItemId, existingLineItemIds));
+      .where(
+        safeInArray(
+          orderLineItemAllocations.orderLineItemId,
+          existingLineItemIds
+        )
+      );
 
     await tx.delete(orderLineItems).where(eq(orderLineItems.orderId, orderId));
   }
@@ -147,7 +152,9 @@ async function syncOrderLineItemsForOrder(
       productDisplayName: item.displayName,
       quantity: item.quantity.toString(),
       cogsPerUnit: item.unitCogs.toFixed(4),
-      originalCogsPerUnit: (item.originalCogsPerUnit ?? item.unitCogs).toFixed(4),
+      originalCogsPerUnit: (item.originalCogsPerUnit ?? item.unitCogs).toFixed(
+        4
+      ),
       effectiveCogsBasis: item.effectiveCogsBasis ?? "MANUAL",
       originalRangeMin:
         item.originalRangeMin !== null && item.originalRangeMin !== undefined
@@ -160,7 +167,8 @@ async function syncOrderLineItemsForOrder(
       isBelowVendorRange: item.isBelowVendorRange ?? false,
       belowRangeReason: item.isBelowVendorRange ? item.belowRangeReason : null,
       isCogsOverridden: item.overrideCogs !== undefined,
-      cogsOverrideReason: item.overrideCogs !== undefined ? "Legacy order path override" : null,
+      cogsOverrideReason:
+        item.overrideCogs !== undefined ? "Legacy order path override" : null,
       marginPercent: item.marginPercent.toFixed(2),
       marginDollar: item.unitMargin.toFixed(2),
       isMarginOverridden: item.overridePrice !== undefined,
@@ -188,12 +196,20 @@ export interface ConvertQuoteToSaleInput {
   notes?: string;
 }
 
-function normalizeOrderRecord<T extends { fulfillmentStatus?: string | null }>(
-  order: T
-): T {
+function normalizeOrderRecord<
+  T extends {
+    fulfillmentStatus?: string | null;
+    orderType?: string | null;
+    quoteStatus?: string | null;
+  },
+>(order: T): T {
   return {
     ...order,
     fulfillmentStatus: normalizeFulfillmentStatus(order.fulfillmentStatus),
+    quoteStatus:
+      order.orderType === "QUOTE" && !order.quoteStatus
+        ? "UNSENT"
+        : order.quoteStatus,
   };
 }
 
@@ -336,19 +352,19 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         const marginPercent =
           finalPrice > 0 ? (unitMargin / finalPrice) * 100 : 0;
 
-          cogsResult = {
-            unitCogs: item.overrideCogs,
-            cogsSource: "MANUAL" as const,
-            unitMargin,
-            marginPercent,
-            effectiveCogsBasis: "MANUAL" as const,
-            originalRangeMin: defaultCogsResult.originalRangeMin,
-            originalRangeMax: defaultCogsResult.originalRangeMax,
-            isBelowVendorRange:
-              defaultCogsResult.originalRangeMin !== null
-                ? item.overrideCogs < defaultCogsResult.originalRangeMin
-                : false,
-          };
+        cogsResult = {
+          unitCogs: item.overrideCogs,
+          cogsSource: "MANUAL" as const,
+          unitMargin,
+          marginPercent,
+          effectiveCogsBasis: "MANUAL" as const,
+          originalRangeMin: defaultCogsResult.originalRangeMin,
+          originalRangeMax: defaultCogsResult.originalRangeMax,
+          isBelowVendorRange:
+            defaultCogsResult.originalRangeMin !== null
+              ? item.overrideCogs < defaultCogsResult.originalRangeMin
+              : false,
+        };
       } else {
         // Calculate using COGS calculator
         cogsResult = defaultCogsResult;
@@ -710,12 +726,22 @@ export async function getAllOrders(filters?: {
         normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
       )
     ) {
-      conditions.push(
-        eq(
-          orders.quoteStatus,
-          normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
-        )
-      );
+      if (normalizedQuoteStatus === "UNSENT") {
+        const unsentOrLegacyFilter = or(
+          eq(orders.quoteStatus, "UNSENT"),
+          isNull(orders.quoteStatus)
+        );
+        if (unsentOrLegacyFilter) {
+          conditions.push(unsentOrLegacyFilter);
+        }
+      } else {
+        conditions.push(
+          eq(
+            orders.quoteStatus,
+            normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
+          )
+        );
+      }
     }
   }
 
@@ -1093,12 +1119,7 @@ export async function convertQuoteToSale(
     }
 
     // SM-001: Validate quote status allows conversion
-    if (!quote.quoteStatus) {
-      throw new Error(
-        `Quote ${input.quoteId} has no status set. Cannot convert.`
-      );
-    }
-    const currentStatus = quote.quoteStatus;
+    const currentStatus = quote.quoteStatus ?? "UNSENT";
     if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
       throw new Error(
         `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +
