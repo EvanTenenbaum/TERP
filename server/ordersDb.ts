@@ -5,6 +5,7 @@
 
 import { eq, and, desc, sql, isNull, or, type SQL } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
+import { getCompatibleBatchSelect } from "./lib/batchColumnCompatibility";
 import { getDb } from "./db";
 import {
   orders,
@@ -388,11 +389,12 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     // 2. Process each item and calculate COGS
     // IMPORTANT: Lock batches with FOR UPDATE to prevent race conditions
     const processedItems: OrderItem[] = [];
+    const batchSelect = await getCompatibleBatchSelect();
 
     for (const item of input.items) {
       // Get batch details with row-level lock to prevent concurrent modifications
       const batch = await tx
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId))
         .limit(1)
@@ -586,7 +588,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         // Re-fetch with lock to ensure we have latest quantity
         // (though we already locked earlier, this ensures consistency)
         const lockedBatch = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(eq(batches.id, item.batchId))
           .limit(1)
@@ -1242,6 +1244,7 @@ export async function convertQuoteToSale(
 
     // 2. Parse quote items
     const quoteItems = parseStoredOrderItems(quote.items);
+    const batchSelect = await getCompatibleBatchSelect();
     const subtotal = quoteItems.reduce((sum, item) => sum + item.lineTotal, 0);
     const totalCogs = quoteItems.reduce((sum, item) => sum + item.lineCogs, 0);
     const totalMargin = subtotal - totalCogs;
@@ -1298,7 +1301,7 @@ export async function convertQuoteToSale(
     for (const item of quoteItems) {
       // Lock batch row to prevent concurrent modifications
       const batch = await tx
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId))
         .limit(1)
@@ -1518,8 +1521,9 @@ export async function confirmDraftOrder(input: {
     // INV-002: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
     // This ensures that if two confirmations happen simultaneously, one will wait for the other
     // BUG-115: Use safeInArray to prevent crash if batchIds is somehow empty
+    const batchSelect = await getCompatibleBatchSelect();
     const lockedBatches = await tx
-      .select()
+      .select(batchSelect)
       .from(batches)
       .where(safeInArray(batches.id, batchIds))
       .for("update");
@@ -1723,10 +1727,11 @@ export async function updateDraftOrder(input: {
       // Process each item and calculate COGS
       const processedItems: OrderItem[] = [];
 
+      const batchSelect = await getCompatibleBatchSelect();
       for (const item of input.items) {
         // Get batch details
         const batch = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(eq(batches.id, item.batchId))
           .limit(1)
@@ -2108,8 +2113,9 @@ export async function updateOrderStatus(input: {
           );
         }
 
+        const batchSelect = await getCompatibleBatchSelect();
         const [batch] = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(eq(batches.id, item.batchId));
         if (!batch) {
@@ -2523,10 +2529,11 @@ export async function processReturn(input: {
 
     // Restock inventory for each returned item
     const { inventoryMovements } = await import("../drizzle/schema");
+    const batchSelect = await getCompatibleBatchSelect();
     for (const item of items) {
       // Get current batch quantity
       const [batch] = await tx
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId));
       if (!batch) continue;
