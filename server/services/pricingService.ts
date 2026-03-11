@@ -2,7 +2,7 @@
  * Pricing Service
  * Handles customer-specific and default margin lookups with fallback logic
  * v2.0 Sales Order Enhancements
- * 
+ *
  * Note: Client-specific margins are now handled via pricingProfileId and customPricingRules
  * on the clients table, not a defaultMarginPercent column.
  */
@@ -14,16 +14,28 @@ import {
   rangePricingChannelSettings,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import type {
-  CogsRangeBasis,
-  PricingChannel,
-} from "../cogsCalculator";
+import {
+  calculateRetailPrice,
+  getClientPricingRules,
+  type InventoryItem,
+} from "../pricingEngine";
+import type { CogsRangeBasis, PricingChannel } from "../cogsCalculator";
 
 export interface MarginResult {
   marginPercent: number | null;
   source: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   customerId?: number;
   productCategory?: string;
+}
+
+export interface MarginLookupOptions {
+  basePrice?: number;
+  itemName?: string;
+  subcategory?: string;
+  strain?: string;
+  tags?: string[];
+  grade?: string;
+  vendor?: string;
 }
 
 export interface RangePricingChannelSettingResult {
@@ -48,19 +60,61 @@ export const pricingService = {
    */
   async getMarginWithFallback(
     customerId: number,
-    productCategory: string
+    productCategory: string,
+    options: MarginLookupOptions = {}
   ): Promise<MarginResult> {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    // Step 1: Try customer-specific margin from customPricingRules
+    // Step 1: Load customer once for both profile-aware and legacy fallback paths.
     const customer = await db
       .select()
       .from(clients)
       .where(eq(clients.id, customerId))
       .limit(1);
 
-    if (customer.length > 0 && customer[0].customPricingRules) {
+    const customerRecord = customer[0];
+
+    // Step 2: If we have a real cost basis, let pricing profiles/rules decide
+    // the price first so order save matches the profile-driven browser preview.
+    if (
+      customerRecord &&
+      Number.isFinite(options.basePrice) &&
+      (customerRecord.pricingProfileId || customerRecord.customPricingRules)
+    ) {
+      const basePrice = Number(options.basePrice);
+      const rules = await getClientPricingRules(customerId);
+
+      if (rules.length > 0) {
+        const pricedItem = await calculateRetailPrice(
+          {
+            id: 0,
+            name: options.itemName ?? productCategory,
+            category: productCategory,
+            subcategory: options.subcategory,
+            strain: options.strain,
+            tags: options.tags,
+            basePrice,
+            grade: options.grade,
+            vendor: options.vendor,
+          } satisfies InventoryItem,
+          rules
+        );
+
+        if (basePrice > 0) {
+          return {
+            marginPercent:
+              ((pricedItem.retailPrice - basePrice) / basePrice) * 100,
+            source: "CUSTOMER_PROFILE",
+            customerId,
+            productCategory,
+          };
+        }
+      }
+    }
+
+    // Step 3: Legacy client-level margin fallback from customPricingRules
+    if (customerRecord?.customPricingRules) {
       const rules = customer[0].customPricingRules as Record<string, number>;
       if (rules.defaultMarginPercent !== undefined) {
         return {
@@ -71,7 +125,7 @@ export const pricingService = {
       }
     }
 
-    // Step 2: Try default margin by exact category
+    // Step 4: Try default margin by exact category
     const defaultMargin = await db
       .select()
       .from(pricingDefaults)
@@ -86,7 +140,7 @@ export const pricingService = {
       };
     }
 
-    // Step 3: Fallback to "OTHER" category (used when product category is unknown)
+    // Step 5: Fallback to "OTHER" category (used when product category is unknown)
     if (productCategory !== "OTHER") {
       const otherMargin = await db
         .select()
@@ -103,7 +157,7 @@ export const pricingService = {
       }
     }
 
-    // Step 4: Fallback to "DEFAULT" category (global fallback)
+    // Step 6: Fallback to "DEFAULT" category (global fallback)
     if (productCategory !== "DEFAULT") {
       const globalDefault = await db
         .select()
@@ -120,7 +174,7 @@ export const pricingService = {
       }
     }
 
-    // Step 5: No margin found - manual input required
+    // Step 7: No margin found - manual input required
     return {
       marginPercent: null,
       source: "MANUAL",
@@ -187,8 +241,12 @@ export const pricingService = {
       .where(eq(clients.id, customerId))
       .limit(1);
 
-    const existingRules = (customer[0]?.customPricingRules as Record<string, unknown>) || {};
-    const updatedRules = { ...existingRules, defaultMarginPercent: marginPercent };
+    const existingRules =
+      (customer[0]?.customPricingRules as Record<string, unknown>) || {};
+    const updatedRules = {
+      ...existingRules,
+      defaultMarginPercent: marginPercent,
+    };
 
     await db
       .update(clients)

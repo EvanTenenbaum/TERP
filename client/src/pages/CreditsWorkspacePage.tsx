@@ -30,8 +30,14 @@ export default function CreditsWorkspacePage() {
       tabs={CREDITS_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
       meta={[
-        { label: "Risk", value: "A/R exposure and limits" },
-        { label: "Controls", value: "Credit policy settings" },
+        {
+          label: "Capacity",
+          value: "Client limits, exposure, and order guardrails",
+        },
+        {
+          label: "Adjustments",
+          value: "Issued credits that can be applied back to invoices",
+        },
       ]}
       commandStrip={
         <>
@@ -40,14 +46,14 @@ export default function CreditsWorkspacePage() {
             variant="outline"
             onClick={() => setActiveTab("credits")}
           >
-            Open Credits
+            Manage Issued Credits
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={() => setActiveTab("settings")}
           >
-            Open Settings
+            Open Capacity Settings
           </Button>
         </>
       }

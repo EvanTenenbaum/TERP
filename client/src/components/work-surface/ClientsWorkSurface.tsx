@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 // Label used in form fields - import available if needed
 import { Badge } from "@/components/ui/badge";
-import { AddClientWizard } from "@/components/clients/AddClientWizard"; // TERP-0003
+import { QuickCreateClient } from "@/components/clients/QuickCreateClient";
 import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import {
   Table,
@@ -99,7 +99,7 @@ const clientSchema = z.object({
   email: z
     .string()
     .email(
-      "Field: Email. Rule: must be a valid email format. Fix: enter an address like name@company.com."
+      "Field: Username / email. Rule: must be a valid email format. Fix: enter an address like name@company.com."
     )
     .optional()
     .or(z.literal("")),
@@ -289,10 +289,10 @@ function ClientInspectorContent({
 
   return (
     <div className="space-y-6">
-      <InspectorSection title="Contact Information" defaultOpen>
+      <InspectorSection title="Relationship Signals" defaultOpen>
         {editMode ? (
           <>
-            <InspectorField label="Name" required>
+            <InspectorField label="Code Name" required>
               <Input
                 value={editForm.name}
                 onChange={e => {
@@ -311,7 +311,7 @@ function ClientInspectorContent({
               )}
             </InspectorField>
 
-            <InspectorField label="Email">
+            <InspectorField label="Username / Email">
               <Input
                 type="email"
                 value={editForm.email}
@@ -332,7 +332,7 @@ function ClientInspectorContent({
               )}
             </InspectorField>
 
-            <InspectorField label="Phone">
+            <InspectorField label="Signal / ID / Phone">
               <Input
                 value={editForm.phone}
                 onChange={e =>
@@ -366,12 +366,12 @@ function ClientInspectorContent({
           </>
         ) : (
           <>
-            <InspectorField label="Name">
+            <InspectorField label="Code Name">
               <p className="font-semibold text-lg">{client.name}</p>
             </InspectorField>
 
             {client.email && (
-              <InspectorField label="Email">
+              <InspectorField label="Username / Email">
                 <a
                   href={`mailto:${client.email}`}
                   className="flex items-center gap-2 text-blue-600 hover:underline"
@@ -383,7 +383,7 @@ function ClientInspectorContent({
             )}
 
             {client.phone && (
-              <InspectorField label="Phone">
+              <InspectorField label="Signal / ID / Phone">
                 <a
                   href={`tel:${client.phone}`}
                   className="flex items-center gap-2 text-blue-600 hover:underline"
@@ -460,7 +460,7 @@ function ClientInspectorContent({
         )}
 
         {client.teriCode && (
-          <InspectorField label="TERI Code">
+          <InspectorField label="Signal Code">
             <Badge variant="outline">{client.teriCode}</Badge>
           </InspectorField>
         )}
@@ -937,7 +937,7 @@ export function ClientsWorkSurface() {
         </div>
         <Button onClick={() => setIsAddClientOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Client
+          Quick Add
         </Button>
       </div>
 
@@ -991,11 +991,11 @@ export function ClientsWorkSurface() {
                       onClick={() => handleSort("name")}
                     >
                       <span className="flex items-center">
-                        Name <SortIcon column="name" />
+                        Code Name <SortIcon column="name" />
                       </span>
                     </TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Contact</TableHead>
+                    <TableHead>Username / Signal / ID / Phone</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"
                       onClick={() => handleSort("lifetimeValue")}
@@ -1044,13 +1044,22 @@ export function ClientsWorkSurface() {
                       }
                     >
                       <TableCell className="font-medium">
-                        {client.name}
+                        <div className="space-y-1">
+                          <p>{client.name}</p>
+                          {client.teriCode ? (
+                            <p className="text-xs text-muted-foreground">
+                              {client.teriCode}
+                            </p>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <ClientTypeBadges client={client} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {client.email || client.phone || "-"}
+                        {[client.email, client.phone]
+                          .filter(Boolean)
+                          .join(" · ") || "-"}
                       </TableCell>
                       <TableCell className="text-right font-medium text-green-600">
                         {formatCurrency(client.lifetimeValue)}
@@ -1126,7 +1135,17 @@ export function ClientsWorkSurface() {
           isOpen={inspector.isOpen}
           onClose={inspector.close}
           title={selectedClient?.name || "Relationship Profile"}
-          subtitle={selectedClient?.email ?? undefined}
+          subtitle={
+            selectedClient
+              ? [
+                  selectedClient.teriCode,
+                  selectedClient.email,
+                  selectedClient.phone,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              : undefined
+          }
         >
           {selectedClient ? (
             <ProfileQuickPanel clientId={selectedClient.id} />
@@ -1170,14 +1189,17 @@ export function ClientsWorkSurface() {
         </DialogContent>
       </Dialog>
 
-      {/* TERP-0003: Add Client Wizard */}
-      <AddClientWizard
+      <QuickCreateClient
+        hideTrigger
         open={isAddClientOpen}
         onOpenChange={setIsAddClientOpen}
-        onSuccess={clientId => {
+        title="Quick Add Relationship"
+        description="Capture the code name and a reachable handle now. Use the full profile when you need address, pricing, or finance details."
+        submitLabel="Create Relationship"
+        onSuccess={client => {
           refetch();
-          toast.success("Client created successfully");
-          setLocation(buildRelationshipProfilePath(clientId));
+          toast.success(`Relationship created: ${client.teriCode}`);
+          setLocation(buildRelationshipProfilePath(client.id));
         }}
       />
 

@@ -11,7 +11,13 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -113,6 +119,7 @@ export function PhotographyModule({
   // eslint-disable-next-line no-undef
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -228,25 +235,19 @@ export function PhotographyModule({
   const simulateUpload = async (files: File[]) => {
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(prev =>
-        prev.map((p, idx) =>
-          idx === i ? { ...p, status: "uploading" } : p
-        )
+        prev.map((p, idx) => (idx === i ? { ...p, status: "uploading" } : p))
       );
 
       // Simulate progress
       for (let progress = 0; progress <= 100; progress += 20) {
         await new Promise(resolve => setTimeout(resolve, 100));
         setUploadProgress(prev =>
-          prev.map((p, idx) =>
-            idx === i ? { ...p, progress } : p
-          )
+          prev.map((p, idx) => (idx === i ? { ...p, progress } : p))
         );
       }
 
       setUploadProgress(prev =>
-        prev.map((p, idx) =>
-          idx === i ? { ...p, status: "complete" } : p
-        )
+        prev.map((p, idx) => (idx === i ? { ...p, status: "complete" } : p))
       );
     }
   };
@@ -257,6 +258,7 @@ export function PhotographyModule({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment", width: 1920, height: 1080 },
       });
+      setCameraError(null);
       setCameraStream(stream);
       setShowCameraDialog(true);
 
@@ -265,6 +267,9 @@ export function PhotographyModule({
         videoRef.current.srcObject = stream;
       }
     } catch (_error) {
+      setCameraError(
+        "Camera access was blocked or is unavailable on this device. Use Upload to keep the batch moving."
+      );
       toast.error("Could not access camera");
       console.error("Camera error:", _error);
     }
@@ -377,10 +382,7 @@ export function PhotographyModule({
 
       {/* Primary badge */}
       {photo.isPrimary && (
-        <Badge
-          className="absolute top-2 left-2 bg-primary"
-          variant="default"
-        >
+        <Badge className="absolute top-2 left-2 bg-primary" variant="default">
           <Star className="h-3 w-3 mr-1" />
           Primary
         </Badge>
@@ -425,9 +427,7 @@ export function PhotographyModule({
                 Set as Primary
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem
-              onClick={() => window.open(photo.url, "_blank")}
-            >
+            <DropdownMenuItem onClick={() => window.open(photo.url, "_blank")}>
               <Download className="h-4 w-4 mr-2" />
               Download
             </DropdownMenuItem>
@@ -500,6 +500,26 @@ export function PhotographyModule({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {cameraError ? (
+          <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-700" />
+              <div>
+                <p className="font-medium text-amber-900">Camera unavailable</p>
+                <p className="text-amber-800">{cameraError}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-amber-300 bg-white"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Use Upload Instead
+            </Button>
+          </div>
+        ) : null}
+
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -609,7 +629,10 @@ export function PhotographyModule({
                 </>
               ) : (
                 <>
-                  <Button variant="outline" onClick={() => setCapturedImage(null)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCapturedImage(null)}
+                  >
                     <RotateCw className="h-4 w-4 mr-2" />
                     Retake
                   </Button>

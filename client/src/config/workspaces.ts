@@ -44,7 +44,8 @@ export const DEMAND_SUPPLY_WORKSPACE = {
 export const RELATIONSHIPS_WORKSPACE = {
   title: "Relationships",
   homePath: "/relationships",
-  description: "Manage buyers and suppliers from one consolidated workspace.",
+  description:
+    "Manage buyers and suppliers from one lighter workspace without the full setup wizard.",
   tabs: [
     { value: "clients", label: "Clients" },
     { value: "suppliers", label: "Suppliers" },
@@ -52,10 +53,10 @@ export const RELATIONSHIPS_WORKSPACE = {
 } as const satisfies WorkspaceConfig<"clients" | "suppliers">;
 
 export const INVENTORY_WORKSPACE = {
-  title: "Operations",
-  homePath: "/operations",
+  title: "Inventory",
+  homePath: "/inventory",
   description:
-    "Manage inventory, receiving, shipping, photography, and samples in one operational workspace.",
+    "Manage inventory, receiving, shipping, photography, and samples from one primary operational workspace.",
   tabs: [
     { value: "inventory", label: "Inventory" },
     { value: "receiving", label: "Receiving" },
@@ -68,13 +69,13 @@ export const INVENTORY_WORKSPACE = {
 >;
 
 export const CREDITS_WORKSPACE = {
-  title: "Credits",
+  title: "Client Credit",
   homePath: "/credits",
   description:
-    "Handle credit operations and credit configuration in one place.",
+    "Separate issued credit adjustments from client credit capacity settings in one finance workspace.",
   tabs: [
-    { value: "credits", label: "Credits" },
-    { value: "settings", label: "Settings" },
+    { value: "credits", label: "Issued Credits" },
+    { value: "settings", label: "Capacity Settings" },
   ],
 } as const satisfies WorkspaceConfig<"credits" | "settings">;
 

@@ -59,18 +59,32 @@ export function MarginInput({
     return (value / cogsPerUnit) * 100;
   };
 
+  const sourceLabel =
+    source === "CUSTOMER_PROFILE"
+      ? "Pricing profile"
+      : source === "DEFAULT"
+        ? "Fallback default"
+        : "Manual";
+
+  const sourceDescription =
+    source === "CUSTOMER_PROFILE"
+      ? "This row is following the relationship pricing profile until you override it."
+      : source === "DEFAULT"
+        ? "No relationship pricing rule matched, so the shared default margin is being used."
+        : "This row is using a manual margin override.";
+
   const getSourceBadge = () => {
     switch (source) {
       case "CUSTOMER_PROFILE":
         return (
           <Badge variant="default" className="text-xs">
-            Profile
+            Pricing profile
           </Badge>
         );
       case "DEFAULT":
         return (
           <Badge variant="secondary" className="text-xs">
-            Default
+            Fallback default
           </Badge>
         );
       case "MANUAL":
@@ -178,7 +192,10 @@ export function MarginInput({
           <div>
             <h4 className="font-semibold mb-2">Edit Margin</h4>
             <p className="text-sm text-muted-foreground">
-              Source: {source.replace("_", " ").toLowerCase()}
+              Source: {sourceLabel}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {sourceDescription}
             </p>
           </div>
 

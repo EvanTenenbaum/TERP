@@ -48,6 +48,24 @@ let getAllMock = vi.fn();
 let refetchMock = vi.fn();
 
 vi.mock("@/components/samples/SampleList", () => ({
+  getSampleOperatorLane: (status: string) => {
+    if (
+      [
+        "RETURNED",
+        "RETURN_REQUESTED",
+        "RETURN_APPROVED",
+        "VENDOR_RETURN_REQUESTED",
+        "SHIPPED_TO_VENDOR",
+        "VENDOR_CONFIRMED",
+      ].includes(status)
+    ) {
+      return "RETURN";
+    }
+    if (status === "CANCELLED") {
+      return "CANCELLED";
+    }
+    return "OUT";
+  },
   SampleList: (props: {
     statusFilter: string;
     searchQuery: string;
@@ -241,7 +259,7 @@ describe("SampleManagement", () => {
       render(<SampleManagement />);
 
       expect(screen.getByText(/All 2/i)).toBeInTheDocument();
-      expect(screen.getByText(/Pending 1/i)).toBeInTheDocument();
+      expect(screen.getByText(/Samples Out 2/i)).toBeInTheDocument();
     });
   });
 
@@ -249,19 +267,19 @@ describe("SampleManagement", () => {
     it("updates status filter when tab clicked", async () => {
       render(<SampleManagement />);
 
-      const pendingTab = screen.getByRole("tab", { name: /pending/i });
-      fireEvent.click(pendingTab);
+      const outTab = screen.getByRole("tab", { name: /samples out/i });
+      fireEvent.click(outTab);
 
-      await waitFor(() => expect(capturedStatus).toBe("PENDING"));
+      await waitFor(() => expect(capturedStatus).toBe("OUT"));
     });
 
-    it("updates status filter to Approved when clicked", async () => {
+    it("updates status filter to Samples Return when clicked", async () => {
       render(<SampleManagement />);
 
-      const approvedTab = screen.getByRole("tab", { name: /approved/i });
-      fireEvent.click(approvedTab);
+      const returnTab = screen.getByRole("tab", { name: /samples return/i });
+      fireEvent.click(returnTab);
 
-      await waitFor(() => expect(capturedStatus).toBe("FULFILLED"));
+      await waitFor(() => expect(capturedStatus).toBe("RETURN"));
     });
   });
 

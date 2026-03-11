@@ -100,11 +100,11 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Clients Surface")).toBeInTheDocument();
   });
 
-  it("renders Operations workspace with inventory default content", () => {
+  it("renders Inventory workspace with inventory default content", () => {
     mockActiveTab = "inventory";
     render(<InventoryWorkspacePage />);
     expect(
-      screen.getByRole("heading", { name: "Operations" })
+      screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
     expect(
@@ -132,11 +132,11 @@ describe("Consolidated workspace pages", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders Credits workspace with settings content", () => {
+  it("renders Client Credit workspace with settings content", () => {
     mockActiveTab = "settings";
     render(<CreditsWorkspacePage />);
     expect(
-      screen.getByRole("heading", { name: "Credits" })
+      screen.getByRole("heading", { name: "Client Credit" })
     ).toBeInTheDocument();
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
   });

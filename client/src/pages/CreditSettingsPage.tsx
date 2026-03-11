@@ -308,21 +308,42 @@ export default function CreditSettingsPage({
       )}
 
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Credit Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">
+          Credit Capacity Settings
+        </h1>
         <p className="text-muted-foreground mt-2">
-          Configure credit calculation weights and visibility settings
+          Configure how client credit capacity is calculated, displayed, and
+          enforced during ordering.
         </p>
       </div>
+
+      <Card className="border-blue-200 bg-blue-50/70">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-blue-900 dark:text-blue-100">
+                Capacity settings are not issued credits
+              </p>
+              <p className="text-blue-800 dark:text-blue-200 mt-1">
+                Use this page to change client limits, score weights, and order
+                guardrails. Use the Issued Credits tab when you need to create
+                or apply a post-sale adjustment balance.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="weights" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="weights" className="flex items-center gap-2">
             <Sliders className="h-4 w-4" />
-            Signal Weights
+            Capacity Model
           </TabsTrigger>
           <TabsTrigger value="visibility" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
-            Visibility & Enforcement
+            Visibility & Guardrails
           </TabsTrigger>
         </TabsList>
 
@@ -334,12 +355,12 @@ export default function CreditSettingsPage({
                 <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
                   <p className="font-medium text-blue-900 dark:text-blue-100">
-                    How Credit Weights Work
+                    How the capacity model works
                   </p>
                   <p className="text-blue-800 dark:text-blue-200 mt-1">
                     Each signal is scored 0-100. The score is multiplied by its
-                    weight to calculate contribution to the credit health score.
-                    All weights must sum to 100%.
+                    weight to determine how much it influences recommended
+                    client capacity. All weights must sum to 100%.
                   </p>
                 </div>
               </div>
@@ -348,9 +369,10 @@ export default function CreditSettingsPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Signal Weights</CardTitle>
+              <CardTitle>Capacity Signal Weights</CardTitle>
               <CardDescription>
-                Adjust the importance of each financial signal
+                Adjust how much each financial signal influences recommended
+                client capacity.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -460,18 +482,19 @@ export default function CreditSettingsPage({
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Eye className="h-5 w-5" />
-                  <CardTitle>Visibility Settings</CardTitle>
+                  <CardTitle>Capacity Visibility</CardTitle>
                 </div>
                 <CardDescription>
-                  Control which credit information is displayed
+                  Control where capacity status is shown across relationships,
+                  profiles, and orders.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Credit in Client List</Label>
+                    <Label>Capacity in Client List</Label>
                     <p className="text-xs text-muted-foreground">
-                      Show credit indicator in clients table
+                      Show capacity status in the relationships table
                     </p>
                   </div>
                   <Switch
@@ -484,9 +507,9 @@ export default function CreditSettingsPage({
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Credit Banner in Orders</Label>
+                    <Label>Capacity Banner in Orders</Label>
                     <p className="text-xs text-muted-foreground">
-                      Show credit status when creating orders
+                      Show exposure and available headroom while building orders
                     </p>
                   </div>
                   <Switch
@@ -499,9 +522,9 @@ export default function CreditSettingsPage({
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Credit Widget in Profile</Label>
+                    <Label>Capacity Widget in Profile</Label>
                     <p className="text-xs text-muted-foreground">
-                      Show credit card on client profiles
+                      Show the capacity card on client profiles
                     </p>
                   </div>
                   <Switch
@@ -514,9 +537,9 @@ export default function CreditSettingsPage({
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Signal Breakdown</Label>
+                    <Label>Capacity Signal Breakdown</Label>
                     <p className="text-xs text-muted-foreground">
-                      Show calculation details
+                      Show how the recommended capacity was calculated
                     </p>
                   </div>
                   <Switch
@@ -529,9 +552,9 @@ export default function CreditSettingsPage({
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Audit Log</Label>
+                    <Label>Capacity Audit Log</Label>
                     <p className="text-xs text-muted-foreground">
-                      Show credit change history
+                      Show capacity calculation and override history
                     </p>
                   </div>
                   <Switch
@@ -549,15 +572,16 @@ export default function CreditSettingsPage({
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  <CardTitle>Enforcement Settings</CardTitle>
+                  <CardTitle>Order Guardrails</CardTitle>
                 </div>
                 <CardDescription>
-                  Configure credit limit enforcement during orders
+                  Control what happens when an order pushes a client near or
+                  beyond approved capacity.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
-                  <Label>Enforcement Mode</Label>
+                  <Label>Capacity Enforcement Mode</Label>
                   <Select
                     value={visibility.creditEnforcementMode}
                     onValueChange={(v: EnforcementMode) =>
@@ -605,18 +629,18 @@ export default function CreditSettingsPage({
                   </Select>
                   <p className="text-xs text-muted-foreground">
                     {visibility.creditEnforcementMode === "WARNING" &&
-                      "Orders exceeding credit show warning but can proceed."}
+                      "Orders exceeding approved capacity show a warning but can still proceed."}
                     {visibility.creditEnforcementMode === "SOFT_BLOCK" &&
-                      "Orders exceeding credit require a reason to proceed."}
+                      "Orders exceeding approved capacity require an override reason to proceed."}
                     {visibility.creditEnforcementMode === "HARD_BLOCK" &&
-                      "Orders exceeding credit are blocked completely."}
+                      "Orders exceeding approved capacity are blocked completely."}
                   </p>
                 </div>
 
                 <Separator />
 
                 <div className="space-y-4">
-                  <Label>Utilization Thresholds</Label>
+                  <Label>Capacity Utilization Thresholds</Label>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm flex items-center gap-2">
@@ -667,7 +691,9 @@ export default function CreditSettingsPage({
 
                 {/* Threshold Preview */}
                 <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <p className="text-sm font-medium">Threshold Preview</p>
+                  <p className="text-sm font-medium">
+                    Capacity Threshold Preview
+                  </p>
                   <div className="relative h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className="absolute left-0 top-0 h-full bg-green-500"

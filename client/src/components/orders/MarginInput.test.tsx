@@ -57,4 +57,26 @@ describe("MarginInput", () => {
     ).toBeGreaterThan(0);
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("explains when a row is following the pricing profile", () => {
+    render(
+      <MarginInput
+        marginPercent={20}
+        marginDollar={2}
+        cogsPerUnit={10}
+        source="CUSTOMER_PROFILE"
+        isOverridden={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText("20.0%"));
+
+    expect(screen.getByText("Source: Pricing profile")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "This row is following the relationship pricing profile until you override it."
+      )
+    ).toBeInTheDocument();
+  });
 });

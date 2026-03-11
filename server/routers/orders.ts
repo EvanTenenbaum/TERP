@@ -189,8 +189,7 @@ function resolveDraftLineItemCogs(
       : defaultCogs;
 
   const cogsPerUnit = selectedCogs.unitCogs;
-  const originalCogsPerUnit =
-    item.originalCogsPerUnit ?? defaultCogs.unitCogs;
+  const originalCogsPerUnit = item.originalCogsPerUnit ?? defaultCogs.unitCogs;
   const isBelowVendorRange =
     selectedCogs.originalRangeMin !== null &&
     cogsPerUnit < selectedCogs.originalRangeMin;
@@ -893,7 +892,10 @@ export const ordersRouter = router({
             const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              productCategory
+              productCategory,
+              {
+                basePrice: resolvedCogs.cogsPerUnit,
+              }
             );
 
             // If no margin found after all fallbacks, use 30% as last resort
@@ -1145,7 +1147,10 @@ export const ordersRouter = router({
             const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              productCategory
+              productCategory,
+              {
+                basePrice: resolvedCogs.cogsPerUnit,
+              }
             );
 
             // BUG-086 FIX: Use 30% fallback with warning instead of 0%
@@ -1535,15 +1540,15 @@ export const ordersRouter = router({
           : [];
       const batchMetadataById = new Map(
         batchMetadata.map(batch => [
-            batch.id,
-            {
-              productId: batch.productId,
-              batchSku: batch.batchSku,
-              cogsMode: batch.cogsMode,
-              unitCogsMin: batch.unitCogsMin,
-              unitCogsMax: batch.unitCogsMax,
-            },
-          ])
+          batch.id,
+          {
+            productId: batch.productId,
+            batchSku: batch.batchSku,
+            cogsMode: batch.cogsMode,
+            unitCogsMin: batch.unitCogsMin,
+            unitCogsMax: batch.unitCogsMax,
+          },
+        ])
       );
 
       return {
@@ -2758,7 +2763,8 @@ export const ordersRouter = router({
           }
 
           const allocationCogs =
-            lineItem.effectiveCogsBasis === "MANUAL" || lineItem.isCogsOverridden
+            lineItem.effectiveCogsBasis === "MANUAL" ||
+            lineItem.isCogsOverridden
               ? {
                   unitCogs: parseMoneyOrZero(lineItem.cogsPerUnit),
                   effectiveCogsBasis: "MANUAL" as const,
