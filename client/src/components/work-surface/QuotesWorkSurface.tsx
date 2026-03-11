@@ -110,9 +110,13 @@ interface Quote {
   notes?: string;
   items?: Array<{
     batchId?: number;
-    displayName: string;
+    displayName?: string;
+    originalName?: string;
+    productName?: string;
     quantity: number;
-    price: string;
+    price?: string | number;
+    unitPrice?: string | number;
+    lineTotal?: string | number;
   }>;
 }
 
@@ -163,6 +167,7 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
 
 const formatCurrency = (value: string | number): string => {
   const num = typeof value === "string" ? parseFloat(value) : value;
+  if (!Number.isFinite(num)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -180,6 +185,36 @@ const formatDate = (dateString: string | undefined): string => {
 
 const getEffectiveQuoteStatus = (quote: Pick<Quote, "quoteStatus">) =>
   quote.quoteStatus ?? "UNSENT";
+
+const getQuoteItemDisplayName = (item: NonNullable<Quote["items"]>[number]) =>
+  item.displayName || item.productName || item.originalName || "Product";
+
+const getQuoteItemUnitPrice = (item: NonNullable<Quote["items"]>[number]) => {
+  const value =
+    item.unitPrice !== undefined && item.unitPrice !== null
+      ? item.unitPrice
+      : item.price;
+  const numeric = typeof value === "string" ? parseFloat(value) : value;
+  return typeof numeric === "number" && Number.isFinite(numeric)
+    ? numeric
+    : null;
+};
+
+const getQuoteItemLineTotal = (item: NonNullable<Quote["items"]>[number]) => {
+  const lineTotal =
+    item.lineTotal !== undefined && item.lineTotal !== null
+      ? typeof item.lineTotal === "string"
+        ? parseFloat(item.lineTotal)
+        : item.lineTotal
+      : null;
+
+  if (typeof lineTotal === "number" && Number.isFinite(lineTotal)) {
+    return lineTotal;
+  }
+
+  const unitPrice = getQuoteItemUnitPrice(item);
+  return unitPrice !== null ? item.quantity * unitPrice : null;
+};
 
 // ============================================================================
 // STATUS BADGE
@@ -264,27 +299,36 @@ function QuoteInspectorContent({
           <p className="text-sm text-muted-foreground">No items</p>
         ) : (
           <div className="space-y-2">
-            {items.map(item => (
-              <div
-                key={`quote-item-${item.batchId ?? item.displayName}-${item.quantity}-${item.price}`}
-                className="p-3 border rounded-lg bg-muted/30"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{item.displayName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Qty: {item.quantity}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono">{formatCurrency(item.price)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(item.quantity * parseFloat(item.price))}
-                    </p>
+            {items.map(item => {
+              const unitPrice = getQuoteItemUnitPrice(item);
+              const lineTotal = getQuoteItemLineTotal(item);
+
+              return (
+                <div
+                  key={`quote-item-${item.batchId ?? getQuoteItemDisplayName(item)}-${item.quantity}-${unitPrice ?? "legacy"}`}
+                  className="p-3 border rounded-lg bg-muted/30"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">
+                        {getQuoteItemDisplayName(item)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Qty: {item.quantity}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono">
+                        {unitPrice !== null ? formatCurrency(unitPrice) : "—"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {lineTotal !== null ? formatCurrency(lineTotal) : "—"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </InspectorSection>

@@ -332,12 +332,17 @@ export const quotesRouter = router({
                 displayName?: string;
                 productName?: string;
                 quantity: number;
-                unitPrice: number;
+                unitPrice?: number | string | null;
+                price?: number | string | null;
+                lineTotal?: number | string | null;
               }) => ({
                 name: item.displayName || item.productName || "Product",
                 quantity: Number(item.quantity),
-                unitPrice: Number(item.unitPrice),
-                total: Number(item.quantity) * Number(item.unitPrice),
+                unitPrice: Number(item.unitPrice ?? item.price ?? 0),
+                total:
+                  Number(item.lineTotal ?? 0) ||
+                  Number(item.quantity) *
+                    Number(item.unitPrice ?? item.price ?? 0),
               })
             );
           } catch {
