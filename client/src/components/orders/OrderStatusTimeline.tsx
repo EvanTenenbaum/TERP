@@ -1,15 +1,14 @@
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { CheckCircle2, Circle } from "lucide-react";
+import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
 
 interface OrderStatusTimelineProps {
   orderId: number;
 }
 
 const formatFulfillmentStatus = (status: string | null | undefined) =>
-  status === "READY_FOR_PACKING" || status === "PENDING"
-    ? "Ready for Packing"
-    : status || "Unknown";
+  getFulfillmentDisplayLabel(status);
 
 export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
   const { data: history, isLoading } =

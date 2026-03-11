@@ -3,7 +3,7 @@
  * TER-212: Canonical state machine visualization for Quote and Sale workflows
  *
  * Quote lifecycle:  Unsent → Sent → Viewed → Converted (to Sale)
- * Sale lifecycle:   Pending → Partial/Paid (payment) + Pending → Packed → Shipped (fulfillment)
+ * Sale lifecycle:   Pending → Partial/Paid (payment) + Pending → Ready → Shipped (fulfillment)
  */
 
 import type { ReactNode } from "react";
@@ -109,10 +109,10 @@ const QUOTE_TERMINAL_STEPS: Record<string, StepConfig> = {
 const FULFILLMENT_STEPS: StepConfig[] = [
   {
     key: "READY_FOR_PACKING",
-    label: "Ready for Packing",
+    label: "Pending",
     icon: <Clock className="h-4 w-4" />,
   },
-  { key: "PACKED", label: "Packed", icon: <Package className="h-4 w-4" /> },
+  { key: "PACKED", label: "Ready", icon: <Package className="h-4 w-4" /> },
   { key: "SHIPPED", label: "Shipped", icon: <Truck className="h-4 w-4" /> },
 ];
 
