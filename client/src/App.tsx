@@ -196,7 +196,7 @@ const RedirectToProcurementSpreadsheet: FC = () => {
   return <Redirect to={destination} />;
 };
 
-const RedirectInventoryToOperations: FC = () => {
+const RedirectOperationsToInventory: FC = () => {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const destination = buildOperationsWorkspacePath(
@@ -207,7 +207,7 @@ const RedirectInventoryToOperations: FC = () => {
   );
 
   useTrackLegacyRedirect({
-    from: "/inventory",
+    from: "/operations",
     to: destination,
     tab: normalizeOperationsTab(params.get("tab")) ?? "inventory",
     search: search || undefined,
@@ -370,12 +370,12 @@ function Router() {
                   component={withErrorBoundary(DemandSupplyWorkspacePage)}
                 />
                 <Route
-                  path="/operations"
+                  path="/inventory"
                   component={withErrorBoundary(InventoryWorkspacePage)}
                 />
                 <Route
-                  path="/inventory"
-                  component={withErrorBoundary(RedirectInventoryToOperations)}
+                  path="/operations"
+                  component={withErrorBoundary(RedirectOperationsToInventory)}
                 />
                 <Route
                   path="/inventory/:id"

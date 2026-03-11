@@ -43,7 +43,7 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
       setError(null);
       onSuccess?.();
     },
-    onError: (err) => {
+    onError: err => {
       setError(err.message);
     },
   });
@@ -89,11 +89,11 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Override Credit Limit</DialogTitle>
+          <DialogTitle>Override Credit Capacity</DialogTitle>
           <DialogDescription>
-            {clientName 
-              ? `Set a manual credit limit for ${clientName}`
-              : "Set a manual credit limit for this client"}
+            {clientName
+              ? `Set a manual client capacity for ${clientName}`
+              : "Set a manual client capacity for this client"}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,24 +101,32 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
           <div className="space-y-4 py-4">
             {/* Current Calculated Limit */}
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Current Calculated Limit</p>
+              <p className="text-sm text-muted-foreground">
+                Current Calculated Capacity
+              </p>
               <p className="text-lg font-semibold">
-                ${currentLimit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                $
+                {currentLimit.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </div>
 
             {/* New Limit Input */}
             <div className="space-y-2">
-              <Label htmlFor="newLimit">New Credit Limit</Label>
+              <Label htmlFor="newLimit">New Capacity Limit</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  $
+                </span>
                 <Input
                   id="newLimit"
                   type="number"
                   step="0.01"
                   min="0"
                   value={newLimit}
-                  onChange={(e) => setNewLimit(e.target.value)}
+                  onChange={e => setNewLimit(e.target.value)}
                   className="pl-7"
                   placeholder="0.00"
                   required
@@ -134,7 +142,7 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
               <Textarea
                 id="reason"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={e => setReason(e.target.value)}
                 placeholder="Explain why you're overriding the calculated limit (min 10 characters)..."
                 rows={3}
                 required
@@ -149,10 +157,13 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
             <div className="flex gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
               <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-yellow-800 dark:text-yellow-200">
-                <p className="font-medium">Manual overrides persist until changed</p>
+                <p className="font-medium">
+                  Manual capacity overrides persist until changed
+                </p>
                 <p className="mt-0.5">
-                  The system will not auto-adjust this limit. You'll need to manually update it 
-                  or remove the override to return to calculated limits.
+                  The system will not auto-adjust this capacity. You&apos;ll
+                  need to manually update it or remove the override to return to
+                  calculated capacity.
                 </p>
               </div>
             </div>
@@ -174,8 +185,8 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={overrideMutation.isPending || reason.trim().length < 10}
             >
               {overrideMutation.isPending ? "Saving..." : "Save Override"}

@@ -84,18 +84,18 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
     return (
       <Card className={compact ? "p-3" : ""}>
         <CardHeader className={compact ? "p-0 pb-3" : ""}>
-          <CardTitle className="text-base">Credit Status</CardTitle>
+          <CardTitle className="text-base">Client Credit Capacity</CardTitle>
         </CardHeader>
         <CardContent className={compact ? "p-0" : ""}>
           <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
             <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                No Credit Limit Set
+                No Client Capacity Set
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                Calculate a credit limit based on this client's financial
-                history
+                Calculate client capacity from this client&apos;s payment
+                history and exposure
               </p>
             </div>
             <Button
@@ -103,7 +103,9 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
               onClick={handleRecalculate}
               disabled={calculateMutation.isPending}
             >
-              {calculateMutation.isPending ? "Calculating..." : "Calculate"}
+              {calculateMutation.isPending
+                ? "Calculating..."
+                : "Calculate Capacity"}
             </Button>
           </div>
         </CardContent>
@@ -155,7 +157,9 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
             className={`${compact ? "p-0 pb-3" : "pb-3"} flex flex-row items-center justify-between`}
           >
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Credit Status</CardTitle>
+              <CardTitle className="text-base">
+                Client Credit Capacity
+              </CardTitle>
               {isManualOverride && (
                 <Badge variant="outline" className="text-xs">
                   Manual Override
@@ -176,11 +180,11 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
           <CardContent className={compact ? "p-0" : ""}>
             {/* Always visible: Summary */}
             <div className="space-y-3">
-              {/* Available Credit - Primary Display */}
+              {/* Available Capacity - Primary Display */}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    Available Credit
+                    Available Capacity
                   </p>
                   <p
                     className={`text-2xl font-bold ${getStatusColor(utilizationPercent)}`}
@@ -207,8 +211,8 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatCurrency(currentExposure)} used</span>
-                  <span>{formatCurrency(creditLimit)} limit</span>
+                  <span>{formatCurrency(currentExposure)} in exposure</span>
+                  <span>{formatCurrency(creditLimit)} approved</span>
                 </div>
               </div>
 
@@ -221,7 +225,7 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                   onClick={() => setOverrideDialogOpen(true)}
                 >
                   <Edit2 className="h-3 w-3 mr-2" />
-                  Override Limit
+                  Override Capacity
                 </Button>
               )}
             </div>
@@ -264,7 +268,7 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                     />
                     {calculateMutation.isPending
                       ? "Calculating..."
-                      : "Recalculate"}
+                      : "Recalculate Capacity"}
                   </Button>
                 )}
                 {showOverrideButton && (
@@ -275,7 +279,7 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                     className="flex-1"
                   >
                     <Edit2 className="h-3 w-3 mr-2" />
-                    Override
+                    Override Capacity
                   </Button>
                 )}
                 {showHistoryButton && (
@@ -295,8 +299,9 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                       Learning Mode Active
                     </p>
                     <p className="text-yellow-800 dark:text-yellow-200 mt-0.5">
-                      Limited transaction history. Credit limit is conservative
-                      until more data is available. Data readiness:{" "}
+                      Limited transaction history. Credit capacity is
+                      conservative until more data is available. Capacity
+                      readiness:{" "}
                       {Number(creditData.dataReadiness || 0).toFixed(0)}%
                     </p>
                   </div>

@@ -100,4 +100,35 @@ describe("LineItemTable powersheet actions", () => {
     expect(nextItems[1].isCogsOverridden).toBe(false);
     expect(nextItems[1].cogsOverrideReason).toBeUndefined();
   });
+
+  it("shows pricing and cost provenance for each row", () => {
+    render(
+      <LineItemTable
+        clientId={123}
+        items={[
+          buildLineItem({
+            marginSource: "CUSTOMER_PROFILE",
+            cogsMode: "RANGE",
+            effectiveCogsBasis: "MID",
+            originalRangeMin: 9,
+            originalRangeMax: 11,
+          }),
+          buildLineItem({
+            batchId: 2002,
+            productId: 22,
+            marginSource: "MANUAL",
+            effectiveCogsBasis: "MANUAL",
+          }),
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Price from pricing profile")).toBeInTheDocument();
+    expect(screen.getByText("Using mid supplier range")).toBeInTheDocument();
+    expect(screen.getByText("Price manually overridden")).toBeInTheDocument();
+    expect(
+      screen.getByText("Weighted lot allocation cost")
+    ).toBeInTheDocument();
+  });
 });

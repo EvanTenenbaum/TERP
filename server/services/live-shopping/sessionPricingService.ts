@@ -1,9 +1,6 @@
 import { getDb } from "../../db";
 import { eq, and } from "drizzle-orm";
-import { 
-  products, 
-  batches 
-} from "../../../drizzle/schema";
+import { products, batches } from "../../../drizzle/schema";
 import { sessionPriceOverrides } from "../../../drizzle/schema-live-shopping";
 import { pricingService } from "../pricingService";
 import { financialMath } from "../../utils/financialMath";
@@ -58,7 +55,14 @@ export const sessionPricingService = {
       throw new Error(`Batch ID ${batchId} not found`);
     }
 
-    const { cost, cogsMode, unitCogsMin, unitCogsMax, productId, productCategory } = batchResult[0];
+    const {
+      cost,
+      cogsMode,
+      unitCogsMin,
+      unitCogsMax,
+      productId,
+      productCategory,
+    } = batchResult[0];
     const defaultBasis =
       await pricingService.getRangePricingDefaultForChannel("LIVE_SHOPPING");
     const resolvedCogs = resolveBatchCogs(
@@ -102,10 +106,13 @@ export const sessionPricingService = {
     // 3. Calculate based on Margin Logic
     // We treat null category as generic if missing
     const categoryToUse = productCategory || "UNCATEGORIZED";
-    
+
     const marginResult = await pricingService.getMarginWithFallback(
       clientId,
-      categoryToUse
+      categoryToUse,
+      {
+        basePrice: Number(costStr),
+      }
     );
 
     if (marginResult.marginPercent !== null) {
@@ -129,7 +136,7 @@ export const sessionPricingService = {
     }
 
     // 4. Fallback to Cost (Safety Net)
-    // If no margin rules exist, we default to cost to prevent error, 
+    // If no margin rules exist, we default to cost to prevent error,
     // but this should ideally be flagged in UI.
     return {
       finalPrice: financialMath.toFixed(costStr),
@@ -202,5 +209,5 @@ export const sessionPricingService = {
           eq(sessionPriceOverrides.productId, productId)
         )
       );
-  }
+  },
 };

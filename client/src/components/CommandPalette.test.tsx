@@ -45,10 +45,10 @@ describe("CommandPalette", () => {
     expect(screen.getByText("Spreadsheet View")).toBeInTheDocument();
   });
 
-  it("uses the renamed receiving action and operations navigation label", () => {
+  it("uses the renamed receiving action and inventory navigation label", () => {
     render(<CommandPalette open onOpenChange={() => {}} />);
 
     expect(screen.getByText("Record Receiving")).toBeInTheDocument();
-    expect(screen.getByText("Operations")).toBeInTheDocument();
+    expect(screen.getByText("Inventory")).toBeInTheDocument();
   });
 });

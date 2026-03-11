@@ -90,7 +90,7 @@ export function LineItemTable({
   onChange,
   onAddItem,
 }: LineItemTableProps) {
-  const { isCompact, toggleDensity } = useUiDensity();
+  const { isCompact } = useUiDensity();
   // WSQA-002: Batch selection dialog state
   const [lotSelection, setLotSelection] = useState<LotSelectionState | null>(
     null
@@ -327,11 +327,14 @@ export function LineItemTable({
     const selectedItems = selectedIndexes.map(index => items[index]);
     const requiresBelowRangeReason = selectedItems.some(
       item =>
-        typeof item.originalRangeMin === "number" && nextCogs < item.originalRangeMin
+        typeof item.originalRangeMin === "number" &&
+        nextCogs < item.originalRangeMin
     );
 
     if (requiresBelowRangeReason && !bulkCogsReason.trim()) {
-      toast.error("A reason is required when bulk COGS goes below vendor range.");
+      toast.error(
+        "A reason is required when bulk COGS goes below vendor range."
+      );
       return;
     }
 
@@ -353,7 +356,8 @@ export function LineItemTable({
             : false,
         isCogsOverridden: nextCogs !== item.originalCogsPerUnit,
         belowRangeReason:
-          typeof item.originalRangeMin === "number" && nextCogs < item.originalRangeMin
+          typeof item.originalRangeMin === "number" &&
+          nextCogs < item.originalRangeMin
             ? bulkCogsReason.trim()
             : undefined,
         cogsOverrideReason:
@@ -369,14 +373,6 @@ export function LineItemTable({
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Line Items</h3>
         <div className="flex gap-2">
-          <Button
-            variant={isCompact ? "secondary" : "outline"}
-            size="sm"
-            onClick={toggleDensity}
-            data-testid="line-item-density-toggle"
-          >
-            {isCompact ? "Comfortable" : "Compact"}
-          </Button>
           {items.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleClearAll}>
               <Trash2 className="h-4 w-4 mr-2" />

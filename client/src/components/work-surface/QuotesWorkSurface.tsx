@@ -62,9 +62,6 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 
-// TER-212: Workflow state machine visualization
-import { QuoteWorkflowTracker } from "@/components/orders/WorkflowStatusTracker";
-
 // Icons
 import {
   Search,
@@ -240,11 +237,6 @@ function QuoteInspectorContent({
             <QuoteStatusBadge status={quote.quoteStatus} />
           </InspectorField>
         </div>
-
-        {/* TER-212: Workflow state machine tracker */}
-        <InspectorField label="Workflow">
-          <QuoteWorkflowTracker status={quote.quoteStatus} />
-        </InspectorField>
 
         <InspectorField label="Client">
           <p className="font-medium">{clientName}</p>
