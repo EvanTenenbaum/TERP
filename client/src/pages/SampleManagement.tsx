@@ -9,6 +9,7 @@ import {
 import {
   SampleList,
   getSampleOperatorLane,
+  isOperatorVisibleSampleStatus,
   type SampleListItem,
   type SampleOperatorFilter,
   type SampleStatus,
@@ -258,36 +259,39 @@ export default function SampleManagement() {
       (Array.isArray(samplesData) ? samplesData : []) ||
       [];
 
-    return items.map(sample => {
-      const products = normalizeProducts(sample.products);
-      const productSummary = products
-        .map(
-          product =>
-            `Product #${product.productId} (${product.quantity || "1"})`
-        )
-        .join(", ");
+    return items
+      .map(sample => {
+        const status = normalizeStatus(sample.sampleRequestStatus);
+        const products = normalizeProducts(sample.products);
+        const productSummary = products
+          .map(
+            product =>
+              `Product #${product.productId} (${product.quantity || "1"})`
+          )
+          .join(", ");
 
-      return {
-        id: sample.id,
-        productSummary: productSummary || "No products listed",
-        clientName:
-          clientNameMap.get(sample.clientId) ?? `Client #${sample.clientId}`,
-        status: normalizeStatus(sample.sampleRequestStatus),
-        requestedDate:
-          typeof sample.requestDate === "string"
-            ? sample.requestDate
-            : format(sample.requestDate, "yyyy-MM-dd"),
-        dueDate: extractDueDate(sample.notes),
-        notes: sample.notes ?? null,
-        location: normalizeLocation(sample.location),
-        expirationDate: sample.expirationDate
-          ? typeof sample.expirationDate === "string"
-            ? sample.expirationDate
-            : format(sample.expirationDate, "yyyy-MM-dd")
-          : null,
-        vendorReturnTrackingNumber: sample.vendorReturnTrackingNumber ?? null,
-      };
-    });
+        return {
+          id: sample.id,
+          productSummary: productSummary || "No products listed",
+          clientName:
+            clientNameMap.get(sample.clientId) ?? `Client #${sample.clientId}`,
+          status,
+          requestedDate:
+            typeof sample.requestDate === "string"
+              ? sample.requestDate
+              : format(sample.requestDate, "yyyy-MM-dd"),
+          dueDate: extractDueDate(sample.notes),
+          notes: sample.notes ?? null,
+          location: normalizeLocation(sample.location),
+          expirationDate: sample.expirationDate
+            ? typeof sample.expirationDate === "string"
+              ? sample.expirationDate
+              : format(sample.expirationDate, "yyyy-MM-dd")
+            : null,
+          vendorReturnTrackingNumber: sample.vendorReturnTrackingNumber ?? null,
+        };
+      })
+      .filter(sample => isOperatorVisibleSampleStatus(sample.status));
   }, [clientNameMap, samplesData]);
 
   const statusCounts = useMemo(() => {
