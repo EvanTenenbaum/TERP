@@ -19,6 +19,7 @@ import { storagePut, isStorageConfigured } from "../storage";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 import { isSchemaDriftError } from "../_core/dbErrors";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
@@ -717,7 +718,8 @@ export const photographyRouter = router({
    * Get photography queue for the UI
    * Returns batches that need photos, are being photographed, or have been completed
    */
-  getQueue: adminProcedure
+  getQueue: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(
       z.object({
         status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]).optional(),
@@ -941,7 +943,8 @@ export const photographyRouter = router({
   /**
    * Mark a batch as photography complete
    */
-  markComplete: adminProcedure
+  markComplete: protectedProcedure
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         batchId: z.number(),
