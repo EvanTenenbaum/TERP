@@ -5,7 +5,7 @@
 
 import { eq, and, or, like, desc, asc, sql, isNull } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
-import { hasPhotographyCompleteFlagColumn } from "./lib/photographyCompleteCompatibility";
+import { getCompatibleBatchSelect } from "./lib/batchColumnCompatibility";
 import { getDb } from "./db";
 import { AppError } from "./_core/errors";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
@@ -49,52 +49,6 @@ const safeProductSelect = {
   createdAt: products.createdAt,
   updatedAt: products.updatedAt,
 };
-
-async function getCompatibleBatchSelect() {
-  const hasPhotographyFlag = await hasPhotographyCompleteFlagColumn();
-  const isPhotographyCompleteSelect = hasPhotographyFlag
-    ? batches.isPhotographyComplete
-    : sql<boolean>`CASE
-        WHEN ${batches.batchStatus} = 'PHOTOGRAPHY_COMPLETE' THEN true
-        ELSE false
-      END`.as("isPhotographyComplete");
-
-  return {
-    id: batches.id,
-    code: batches.code,
-    deletedAt: batches.deletedAt,
-    version: batches.version,
-    sku: batches.sku,
-    productId: batches.productId,
-    lotId: batches.lotId,
-    batchStatus: batches.batchStatus,
-    isPhotographyComplete: isPhotographyCompleteSelect,
-    statusId: batches.statusId,
-    grade: batches.grade,
-    isSample: batches.isSample,
-    sampleOnly: batches.sampleOnly,
-    sampleAvailable: batches.sampleAvailable,
-    cogsMode: batches.cogsMode,
-    unitCogs: batches.unitCogs,
-    unitCogsMin: batches.unitCogsMin,
-    unitCogsMax: batches.unitCogsMax,
-    paymentTerms: batches.paymentTerms,
-    ownershipType: batches.ownershipType,
-    amountPaid: batches.amountPaid,
-    metadata: batches.metadata,
-    photoSessionEventId: batches.photoSessionEventId,
-    onHandQty: batches.onHandQty,
-    sampleQty: batches.sampleQty,
-    reservedQty: batches.reservedQty,
-    quarantineQty: batches.quarantineQty,
-    holdQty: batches.holdQty,
-    defectiveQty: batches.defectiveQty,
-    publishEcom: batches.publishEcom,
-    publishB2b: batches.publishB2b,
-    createdAt: batches.createdAt,
-    updatedAt: batches.updatedAt,
-  };
-}
 
 // ============================================================================
 // VENDOR QUERIES (DEPRECATED - Use Supplier functions below)
@@ -724,9 +678,10 @@ export async function createBatch(batch: InsertBatch) {
 export async function getBatchById(id: number) {
   const db = await getDb();
   if (!db) return null;
+  const batchSelect = await getCompatibleBatchSelect();
 
   const result = await db
-    .select()
+    .select(batchSelect)
     .from(batches)
     .where(eq(batches.id, id))
     .limit(1);
@@ -736,9 +691,10 @@ export async function getBatchById(id: number) {
 export async function getBatchByCode(code: string) {
   const db = await getDb();
   if (!db) return null;
+  const batchSelect = await getCompatibleBatchSelect();
 
   const result = await db
-    .select()
+    .select(batchSelect)
     .from(batches)
     .where(eq(batches.code, code))
     .limit(1);
@@ -907,10 +863,11 @@ export async function getBatchesByIds(
 ): Promise<Map<number, typeof batches.$inferSelect>> {
   const db = await getDb();
   if (!db || batchIds.length === 0) return new Map();
+  const batchSelect = await getCompatibleBatchSelect();
 
   // Use IN clause for bulk fetch
   const result = await db
-    .select()
+    .select(batchSelect)
     .from(batches)
     .where(
       sql`${batches.id} IN (${sql.join(
