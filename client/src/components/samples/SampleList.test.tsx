@@ -29,8 +29,16 @@ const sampleData: SampleListItem[] = [
     productSummary: "Product Gamma",
     clientName: "Client C",
     status: "CANCELLED",
-    requestedDate: "2026-01-01T00:00:00.000Z",
+    requestedDate: "2026-01-04T00:00:00.000Z",
     dueDate: null,
+  },
+  {
+    id: 4,
+    productSummary: "Product Delta",
+    clientName: "Client D",
+    status: "RETURN_REQUESTED",
+    requestedDate: "2026-01-01T00:00:00.000Z",
+    dueDate: "2026-01-07",
   },
 ];
 
@@ -42,7 +50,10 @@ describe("SampleList", () => {
 
     expect(screen.getByText("Product Alpha")).toBeInTheDocument();
     expect(screen.getByText("Client B")).toBeInTheDocument();
-    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getAllByText("Samples Out")).toHaveLength(2);
+    expect(screen.getByText("Samples Return")).toBeInTheDocument();
+    expect(screen.queryByText("Approved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cancelled")).not.toBeInTheDocument();
   });
 
   it("filters by search query across product and client", () => {
@@ -86,10 +97,12 @@ describe("SampleList", () => {
     );
 
     expect(screen.getAllByRole("row")).toHaveLength(3); // header + 2 rows
+    expect(screen.queryByText("Product Delta")).not.toBeInTheDocument();
     expect(screen.queryByText("Product Gamma")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
 
-    expect(screen.getByText("Product Gamma")).toBeInTheDocument();
+    expect(screen.getByText("Product Delta")).toBeInTheDocument();
+    expect(screen.queryByText("Product Gamma")).not.toBeInTheDocument();
   });
 });
