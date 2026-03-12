@@ -11,11 +11,15 @@ import {
   roles,
   userPermissionOverrides,
   permissions,
-  rolePermissions,
 } from "../../drizzle/schema";
 import { eq, inArray, and } from "drizzle-orm";
 import { logger } from "../_core/logger";
-import { clearPermissionCache } from "../services/permissionService";
+import {
+  clearPermissionCache,
+  getUserPermissions,
+  getUserRoles,
+  isSuperAdmin,
+} from "../services/permissionService";
 
 /**
  * RBAC Users Router
@@ -656,87 +660,19 @@ export const rbacUsersRouter = router({
    */
   getMyPermissions: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       // Authentication is enforced by protectedProcedure
-      const userId = String(ctx.user.id);
-
-      // Check if user is Super Admin (check by role name since isSuperAdmin column doesn't exist)
-      const userRoleRecords = await db
-        .select({
-          roleId: userRoles.roleId,
-          roleName: roles.name,
-        })
-        .from(userRoles)
-        .innerJoin(roles, eq(userRoles.roleId, roles.id))
-        .where(eq(userRoles.userId, userId));
-
-      const isSuperAdmin = userRoleRecords.some(
-        r => r.roleName === "Super Admin"
-      );
-
-      // If Super Admin, return all permissions
-      if (isSuperAdmin) {
-        const allPermissions = await db
-          .select({ name: permissions.name })
-          .from(permissions);
-
-        return {
-          userId,
-          isSuperAdmin: true,
-          permissions: allPermissions.map(p => p.name),
-          roles: userRoleRecords.map(r => r.roleName),
-        };
-      }
-
-      // Get permissions from roles
-      const roleIds = userRoleRecords.map(r => r.roleId);
-      const rolePerms =
-        roleIds.length > 0
-          ? await db
-              .select({ permissionName: permissions.name })
-              .from(rolePermissions)
-              .innerJoin(
-                permissions,
-                eq(rolePermissions.permissionId, permissions.id)
-              )
-              .where(inArray(rolePermissions.roleId, roleIds))
-          : [];
-
-      // Get permission overrides
-      const overrides = await db
-        .select({
-          permissionName: permissions.name,
-          granted: userPermissionOverrides.granted,
-        })
-        .from(userPermissionOverrides)
-        .innerJoin(
-          permissions,
-          eq(userPermissionOverrides.permissionId, permissions.id)
-        )
-        .where(eq(userPermissionOverrides.userId, userId));
-
-      // Combine permissions
-      const permissionSet = new Set<string>();
-
-      // Add role permissions
-      rolePerms.forEach(p => permissionSet.add(p.permissionName));
-
-      // Apply overrides
-      overrides.forEach(override => {
-        if (override.granted) {
-          permissionSet.add(override.permissionName);
-        } else {
-          permissionSet.delete(override.permissionName);
-        }
-      });
+      const userId = ctx.user.openId || String(ctx.user.id);
+      const [superAdmin, permissionSet, assignedRoles] = await Promise.all([
+        isSuperAdmin(userId),
+        getUserPermissions(userId),
+        getUserRoles(userId),
+      ]);
 
       return {
         userId,
-        isSuperAdmin: false,
+        isSuperAdmin: superAdmin,
         permissions: Array.from(permissionSet),
-        roles: userRoleRecords.map(r => r.roleName),
+        roles: assignedRoles.map(role => role.name),
       };
     } catch (error) {
       logger.error({
