@@ -215,4 +215,26 @@ describe("batchInsertCompatibility", () => {
       ["amountPaid", "125.00"],
     ]);
   });
+
+  it("builds a usable batch snapshot without re-reading modern-only columns", async () => {
+    const { buildInsertedBatchSnapshot } = await import(
+      "./batchInsertCompatibility"
+    );
+
+    const batch = buildInsertedBatchSnapshot(535, {
+      ...buildPayload(),
+      ownershipType: "OFFICE_OWNED",
+      amountPaid: "125.00",
+    });
+
+    expect(batch).toMatchObject({
+      id: 535,
+      code: "BATCH-001",
+      sku: "SKU-001",
+      ownershipType: "OFFICE_OWNED",
+      amountPaid: "125.00",
+      batchStatus: "AWAITING_INTAKE",
+      onHandQty: "10",
+    });
+  });
 });
