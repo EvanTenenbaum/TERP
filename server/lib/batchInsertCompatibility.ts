@@ -1,4 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
+import type { Batch } from "../../drizzle/schema";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 
@@ -67,6 +68,49 @@ function buildBatchInsertRecord(payload: BatchInsertPayload): Record<string, unk
     publishB2b: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
+  };
+}
+
+export function buildInsertedBatchSnapshot(
+  id: number,
+  payload: BatchInsertPayload
+): Batch {
+  const now = new Date();
+
+  return {
+    id,
+    code: payload.code,
+    deletedAt: null,
+    version: 1,
+    sku: payload.sku,
+    productId: payload.productId,
+    lotId: payload.lotId,
+    batchStatus: payload.batchStatus as Batch["batchStatus"],
+    isPhotographyComplete: false,
+    statusId: null,
+    grade: payload.grade ?? null,
+    isSample: payload.isSample ?? 0,
+    sampleOnly: payload.sampleOnly ?? 0,
+    sampleAvailable: payload.sampleAvailable ?? 0,
+    cogsMode: payload.cogsMode as Batch["cogsMode"],
+    unitCogs: payload.unitCogs,
+    unitCogsMin: payload.unitCogsMin,
+    unitCogsMax: payload.unitCogsMax,
+    paymentTerms: payload.paymentTerms as Batch["paymentTerms"],
+    ownershipType: (payload.ownershipType ?? "CONSIGNED") as Batch["ownershipType"],
+    amountPaid: payload.amountPaid ?? "0",
+    metadata: payload.metadata,
+    photoSessionEventId: null,
+    onHandQty: payload.onHandQty,
+    sampleQty: payload.sampleQty,
+    reservedQty: payload.reservedQty,
+    quarantineQty: payload.quarantineQty,
+    holdQty: payload.holdQty,
+    defectiveQty: payload.defectiveQty,
+    publishEcom: 0,
+    publishB2b: 0,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
