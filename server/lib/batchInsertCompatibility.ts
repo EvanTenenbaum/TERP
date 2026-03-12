@@ -8,11 +8,17 @@ export interface BatchInsertPayload {
   productId: number;
   lotId: number;
   batchStatus: string;
+  grade?: string | null;
+  isSample?: number;
+  sampleOnly?: number;
+  sampleAvailable?: number;
   cogsMode: string;
   unitCogs: string | null;
   unitCogsMin: string | null;
   unitCogsMax: string | null;
   paymentTerms: string;
+  ownershipType?: string;
+  amountPaid?: string;
   metadata: string | null;
   onHandQty: string;
   sampleQty: string;
@@ -38,17 +44,17 @@ function buildBatchInsertRecord(payload: BatchInsertPayload): Record<string, unk
     batchStatus: payload.batchStatus,
     isPhotographyComplete: false,
     statusId: null,
-    grade: null,
-    isSample: 0,
-    sampleOnly: 0,
-    sampleAvailable: 0,
+    grade: payload.grade ?? null,
+    isSample: payload.isSample ?? 0,
+    sampleOnly: payload.sampleOnly ?? 0,
+    sampleAvailable: payload.sampleAvailable ?? 0,
     cogsMode: payload.cogsMode,
     unitCogs: payload.unitCogs,
     unitCogsMin: payload.unitCogsMin,
     unitCogsMax: payload.unitCogsMax,
     paymentTerms: payload.paymentTerms,
-    ownership_type: "CONSIGNED",
-    amountPaid: "0",
+    ownership_type: payload.ownershipType ?? "CONSIGNED",
+    amountPaid: payload.amountPaid ?? "0",
     metadata: payload.metadata,
     photo_session_event_id: null,
     onHandQty: payload.onHandQty,
@@ -83,11 +89,14 @@ async function detectBatchColumns(): Promise<Set<string>> {
       productId: 0,
       lotId: 0,
       batchStatus: "AWAITING_INTAKE",
+      grade: null,
       cogsMode: "FIXED",
       unitCogs: "0",
       unitCogsMin: null,
       unitCogsMax: null,
       paymentTerms: "CONSIGNMENT",
+      ownershipType: "CONSIGNED",
+      amountPaid: "0",
       metadata: null,
       onHandQty: "0",
       sampleQty: "0",
@@ -140,11 +149,14 @@ async function detectBatchColumns(): Promise<Set<string>> {
       productId: 0,
       lotId: 0,
       batchStatus: "AWAITING_INTAKE",
+      grade: null,
       cogsMode: "FIXED",
       unitCogs: "0",
       unitCogsMin: null,
       unitCogsMax: null,
       paymentTerms: "CONSIGNMENT",
+      ownershipType: "CONSIGNED",
+      amountPaid: "0",
       metadata: null,
       onHandQty: "0",
       sampleQty: "0",
