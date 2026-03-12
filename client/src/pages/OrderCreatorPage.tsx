@@ -248,6 +248,23 @@ const parseRouteEntityId = (value: string | null): number | null => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 };
 
+const calculateMarginPercentFromRetailPrice = (
+  cogsPerUnit: number,
+  retailPrice: number
+): number => {
+  if (
+    !Number.isFinite(cogsPerUnit) ||
+    !Number.isFinite(retailPrice) ||
+    retailPrice <= 0
+  ) {
+    return 0;
+  }
+
+  return (
+    Math.round(((retailPrice - cogsPerUnit) / retailPrice) * 100 * 100) / 100
+  );
+};
+
 const mapDraftLineItemsToEditorState = (
   lineItems: DraftLineItemPayload[]
 ): LineItem[] =>
@@ -827,10 +844,10 @@ export default function OrderCreatorPageV2() {
           : item.cogsPerUnit;
         const retailPrice =
           profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
-        const marginPercent =
-          cogsPerUnit > 0
-            ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100
-            : 0;
+        const marginPercent = calculateMarginPercentFromRetailPrice(
+          cogsPerUnit,
+          retailPrice
+        );
         const recalculated = calculateLineItem(
           item.batchId,
           item.quantity,
@@ -1199,8 +1216,10 @@ export default function OrderCreatorPageV2() {
       const cogsPerUnit =
         item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
       const retailPrice = item.retailPrice || item.basePrice || 0;
-      const marginPercent =
-        cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
+      const marginPercent = calculateMarginPercentFromRetailPrice(
+        cogsPerUnit,
+        retailPrice
+      );
 
       const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
       const quantity =

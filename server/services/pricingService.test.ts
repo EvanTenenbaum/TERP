@@ -41,7 +41,7 @@ describe("pricingService range pricing defaults", () => {
     vi.clearAllMocks();
   });
 
-  it("uses pricing profile rules when a base price is provided", async () => {
+  it("uses pricing profile rules with the full downstream pricing context", async () => {
     const selectChain = createSelectChain([
       { id: 15, pricingProfileId: 42, customPricingRules: null },
     ]);
@@ -64,12 +64,26 @@ describe("pricingService range pricing defaults", () => {
 
     const result = await pricingService.getMarginWithFallback(15, "FLOWER", {
       basePrice: 10,
+      itemName: "Blue Dream 14g",
+      subcategory: "Indoor Flower",
+      grade: "A",
+      vendor: "Redwood Supply",
     });
 
     expect(mockedGetClientPricingRules).toHaveBeenCalledWith(15);
-    expect(mockedCalculateRetailPrice).toHaveBeenCalledOnce();
+    expect(mockedCalculateRetailPrice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Blue Dream 14g",
+        category: "FLOWER",
+        subcategory: "Indoor Flower",
+        grade: "A",
+        vendor: "Redwood Supply",
+        basePrice: 10,
+      }),
+      expect.any(Array)
+    );
     expect(result).toEqual({
-      marginPercent: 50,
+      marginPercent: 33.33,
       source: "CUSTOMER_PROFILE",
       customerId: 15,
       productCategory: "FLOWER",

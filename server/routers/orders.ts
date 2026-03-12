@@ -148,6 +148,64 @@ const createOrderInputSchema = z.object({
 
 type DraftLineItemInput = z.infer<typeof lineItemInputSchema>;
 
+type DraftBatchPricingContext = Pick<
+  Batch,
+  "id" | "productId" | "cogsMode" | "unitCogs" | "unitCogsMin" | "unitCogsMax"
+> & {
+  batchGrade: string | null;
+  productCategory: string | null;
+  productName: string | null;
+  productSubcategory: string | null;
+  supplierName: string | null;
+};
+
+export function buildDraftPricingLookupOptions(
+  batchContext: Pick<
+    DraftBatchPricingContext,
+    "productName" | "productSubcategory" | "batchGrade" | "supplierName"
+  >
+) {
+  return {
+    itemName: batchContext.productName ?? undefined,
+    subcategory: batchContext.productSubcategory ?? undefined,
+    grade: batchContext.batchGrade ?? undefined,
+    vendor: batchContext.supplierName ?? undefined,
+  };
+}
+
+async function getDraftBatchPricingContext(
+  db: Exclude<Awaited<ReturnType<typeof getDb>>, null>,
+  batchId: number
+): Promise<DraftBatchPricingContext> {
+  const batchContext = await db
+    .select({
+      id: batches.id,
+      productId: batches.productId,
+      cogsMode: batches.cogsMode,
+      unitCogs: batches.unitCogs,
+      unitCogsMin: batches.unitCogsMin,
+      unitCogsMax: batches.unitCogsMax,
+      batchGrade: batches.grade,
+      productCategory: products.category,
+      productName: products.nameCanonical,
+      productSubcategory: products.subcategory,
+      supplierName: clients.name,
+    })
+    .from(batches)
+    .innerJoin(products, eq(batches.productId, products.id))
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
+    .where(eq(batches.id, batchId))
+    .limit(1)
+    .then(rows => rows[0]);
+
+  if (!batchContext) {
+    throw new Error(`Batch ${batchId} not found`);
+  }
+
+  return batchContext;
+}
+
 function resolveDraftLineItemCogs(
   batch: Pick<
     Batch,
@@ -845,28 +903,7 @@ export const ordersRouter = router({
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          // Get batch info for COGS
-          const batch = await db.query.batches.findFirst({
-            where: eq(batches.id, item.batchId),
-            columns: {
-              id: true,
-              productId: true,
-              cogsMode: true,
-              unitCogs: true,
-              unitCogsMin: true,
-              unitCogsMax: true,
-            },
-          });
-
-          if (!batch) {
-            throw new Error(`Batch ${item.batchId} not found`);
-          }
-
-          // Get product info for category lookup
-          const product = await db.query.products.findFirst({
-            where: eq(products.id, batch.productId),
-            columns: { category: true },
-          });
+          const batch = await getDraftBatchPricingContext(db, item.batchId);
 
           const resolvedCogs = resolveDraftLineItemCogs(batch, item);
           if (
@@ -888,13 +925,13 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
-            // Try to get margin using product category or fallback to "OTHER"
-            const productCategory = product?.category || "OTHER";
+            const productCategory = batch.productCategory || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
               productCategory,
               {
                 basePrice: resolvedCogs.cogsPerUnit,
+                ...buildDraftPricingLookupOptions(batch),
               }
             );
 
@@ -1100,29 +1137,7 @@ export const ordersRouter = router({
       // Calculate line item prices (same logic as createDraftEnhanced)
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          const batch = await db.query.batches.findFirst({
-            where: eq(batches.id, item.batchId),
-            columns: {
-              id: true,
-              productId: true,
-              cogsMode: true,
-              unitCogs: true,
-              unitCogsMin: true,
-              unitCogsMax: true,
-            },
-          });
-
-          if (!batch) {
-            throw new Error(`Batch ${item.batchId} not found`);
-          }
-
-          // BUG-086 FIX: Get product category like createDraftEnhanced does
-          const product = batch.productId
-            ? await db.query.products.findFirst({
-                where: eq(products.id, batch.productId),
-                columns: { category: true },
-              })
-            : null;
+          const batch = await getDraftBatchPricingContext(db, item.batchId);
 
           const resolvedCogs = resolveDraftLineItemCogs(batch, item);
           if (
@@ -1143,13 +1158,13 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
-            // BUG-086 FIX: Use actual product category, not hardcoded "OTHER"
-            const productCategory = product?.category || "OTHER";
+            const productCategory = batch.productCategory || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
               productCategory,
               {
                 basePrice: resolvedCogs.cogsPerUnit,
+                ...buildDraftPricingLookupOptions(batch),
               }
             );
 
