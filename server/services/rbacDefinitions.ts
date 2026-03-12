@@ -1557,7 +1557,7 @@ export const operationsManagerPermissions = [
 ];
 
 // Sales Manager: Full access to clients, orders, quotes, sales sheets
-// BUG-090: Added samples:access, samples:read for viewing samples (BLOCKED-001)
+// BUG-090: Added samples access plus create so sales can request samples end to end
 // BUG-090: Added accounting:reports:view for finance reports access (BLOCKED-003)
 // Note: Pick & Pack (BLOCKED-002) requires adminProcedure - by design for warehouse-only access
 export const salesManagerPermissions = [
@@ -1567,9 +1567,10 @@ export const salesManagerPermissions = [
   "dashboard:customize",
   "analytics:access",
   "analytics:view_reports",
-  // BLOCKED-001 fix: Allow viewing samples (needed for sales context)
+  // BLOCKED-001 fix: Allow sales to create and review sample requests
   "samples:access",
   "samples:read",
+  "samples:create",
   "samples:inventory:view",
   "clients:access",
   "clients:read",
