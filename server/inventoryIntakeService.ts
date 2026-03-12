@@ -32,7 +32,10 @@ import * as inventoryUtils from "./inventoryUtils";
 import { findOrCreate } from "./_core/dbUtils";
 import { logger } from "./_core/logger";
 import { withRetryableTransaction } from "./dbTransaction";
-import { insertBatchWithCompatibility } from "./lib/batchInsertCompatibility";
+import {
+  buildInsertedBatchSnapshot,
+  insertBatchWithCompatibility,
+} from "./lib/batchInsertCompatibility";
 // MEET-005, MEET-006: Import payables service for consigned inventory tracking
 import * as payablesService from "./services/payablesService";
 
@@ -261,49 +264,50 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         let batch: Batch | undefined;
         while (!batch) {
           try {
-            const batchId = await insertBatchWithCompatibility(tx, {
-                code: batchCode,
-                sku,
-                productId: product.id,
-                lotId: lot.id,
-                batchStatus: "AWAITING_INTAKE",
-                grade: input.grade ?? null,
-                isSample: 0,
-                sampleOnly: 0,
-                sampleAvailable: 0,
-                cogsMode: input.cogsMode,
-                unitCogs: input.unitCogs ?? null,
-                unitCogsMin: input.unitCogsMin ?? null,
-                unitCogsMax: input.unitCogsMax ?? null,
-                paymentTerms: input.paymentTerms,
-                ownershipType, // MEET-006
-                amountPaid: "0",
-                metadata: (() => {
-                  const metadata = input.metadata || {};
-                  if (input.mediaUrls && input.mediaUrls.length > 0) {
-                    metadata.mediaFiles = input.mediaUrls;
-                  }
-                  return Object.keys(metadata).length > 0
-                    ? inventoryUtils.stringifyMetadata(metadata)
-                    : null;
-                })(),
-                onHandQty: inventoryUtils.formatQty(input.quantity),
-                sampleQty: "0",
-                reservedQty: "0",
-                quarantineQty: "0",
-                holdQty: "0",
-                defectiveQty: "0",
-              });
+            const batchPayload = {
+              code: batchCode,
+              sku,
+              productId: product.id,
+              lotId: lot.id,
+              batchStatus: "AWAITING_INTAKE",
+              grade: input.grade ?? null,
+              isSample: 0,
+              sampleOnly: 0,
+              sampleAvailable: 0,
+              cogsMode: input.cogsMode,
+              unitCogs: input.unitCogs ?? null,
+              unitCogsMin: input.unitCogsMin ?? null,
+              unitCogsMax: input.unitCogsMax ?? null,
+              paymentTerms: input.paymentTerms,
+              ownershipType, // MEET-006
+              amountPaid: "0",
+              metadata: (() => {
+                const metadata = input.metadata || {};
+                if (input.mediaUrls && input.mediaUrls.length > 0) {
+                  metadata.mediaFiles = input.mediaUrls;
+                }
+                return Object.keys(metadata).length > 0
+                  ? inventoryUtils.stringifyMetadata(metadata)
+                  : null;
+              })(),
+              onHandQty: inventoryUtils.formatQty(input.quantity),
+              sampleQty: "0",
+              reservedQty: "0",
+              quarantineQty: "0",
+              holdQty: "0",
+              defectiveQty: "0",
+            } as const;
 
-            const [createdBatch] = await tx
-              .select()
-              .from(batches)
-              .where(eq(batches.id, batchId));
+            const batchId = await insertBatchWithCompatibility(tx, batchPayload);
 
-            if (!createdBatch) {
+            if (!batchId) {
               throw new Error("Failed to create batch");
             }
-            batch = createdBatch;
+
+            // Legacy staging does not expose the full modern batches schema.
+            // Build the newly created batch from the insert payload instead of
+            // immediately re-querying incompatible columns.
+            batch = buildInsertedBatchSnapshot(batchId, batchPayload);
           } catch (insertError) {
             if (!isDuplicateEntryError(insertError)) {
               throw insertError;

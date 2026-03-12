@@ -18,41 +18,14 @@ vi.mock("./sequenceDb", () => ({
   }),
 }));
 
-vi.mock("./lib/batchInsertCompatibility", async () => {
-  const { batches } = await import("../drizzle/schema");
+vi.mock("./lib/batchInsertCompatibility", async importOriginal => {
+  const actual = await importOriginal<
+    typeof import("./lib/batchInsertCompatibility")
+  >();
 
   return {
-    insertBatchWithCompatibility: vi.fn(async (tx, payload) => {
-      const [created] = await tx
-        .insert(batches)
-        .values({
-          code: payload.code,
-          sku: payload.sku,
-          productId: payload.productId,
-          lotId: payload.lotId,
-          batchStatus: payload.batchStatus,
-          grade: payload.grade ?? null,
-          cogsMode: payload.cogsMode,
-          unitCogs: payload.unitCogs,
-          unitCogsMin: payload.unitCogsMin,
-          unitCogsMax: payload.unitCogsMax,
-          paymentTerms: payload.paymentTerms,
-          ownershipType: payload.ownershipType ?? "CONSIGNED",
-          metadata: payload.metadata,
-          onHandQty: payload.onHandQty,
-          sampleQty: payload.sampleQty,
-          reservedQty: payload.reservedQty,
-          quarantineQty: payload.quarantineQty,
-          holdQty: payload.holdQty,
-          defectiveQty: payload.defectiveQty,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          deletedAt: null,
-        })
-        .$returningId();
-
-      return created.id;
-    }),
+    ...actual,
+    insertBatchWithCompatibility: vi.fn(async () => 300),
   };
 });
 
