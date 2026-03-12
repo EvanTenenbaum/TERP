@@ -4,21 +4,58 @@ import { isPickPackQueueEligible, mapPickPackDisplayStatus } from "./pickPack";
 
 describe("isPickPackQueueEligible", () => {
   it("allows only non-draft sales into the queue", () => {
-    expect(isPickPackQueueEligible({ orderType: "SALE", isDraft: false })).toBe(
-      true
-    );
-    expect(isPickPackQueueEligible({ orderType: "sale", isDraft: 0 })).toBe(
-      true
-    );
-    expect(isPickPackQueueEligible({ orderType: "QUOTE", isDraft: 1 })).toBe(
-      false
-    );
-    expect(isPickPackQueueEligible({ orderType: "SALE", isDraft: true })).toBe(
-      false
-    );
-    expect(isPickPackQueueEligible({ orderType: "SALE", isDraft: null })).toBe(
-      false
-    );
+    expect(
+      isPickPackQueueEligible({
+        orderType: "SALE",
+        isDraft: false,
+        orderNumber: "S-1773252046105",
+      })
+    ).toBe(true);
+    expect(
+      isPickPackQueueEligible({
+        orderType: "sale",
+        isDraft: 0,
+        orderNumber: "ORD-000399",
+      })
+    ).toBe(true);
+    expect(
+      isPickPackQueueEligible({
+        orderType: "QUOTE",
+        isDraft: 1,
+        orderNumber: "Q-1772732286605",
+      })
+    ).toBe(false);
+    expect(
+      isPickPackQueueEligible({
+        orderType: "SALE",
+        isDraft: true,
+        orderNumber: "D-1772572680223",
+      })
+    ).toBe(false);
+    expect(
+      isPickPackQueueEligible({
+        orderType: "SALE",
+        isDraft: null,
+        orderNumber: "O-1772576168494",
+      })
+    ).toBe(false);
+  });
+
+  it("rejects legacy draft or quote prefixes even when row flags drift", () => {
+    expect(
+      isPickPackQueueEligible({
+        orderType: "SALE",
+        isDraft: false,
+        orderNumber: "D-1772572680223",
+      })
+    ).toBe(false);
+    expect(
+      isPickPackQueueEligible({
+        orderType: "SALE",
+        isDraft: false,
+        orderNumber: "Q-1772732286605",
+      })
+    ).toBe(false);
   });
 });
 

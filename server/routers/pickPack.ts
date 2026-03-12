@@ -104,19 +104,30 @@ function normalizeDraftFlag(value: unknown): boolean | null {
   return null;
 }
 
+function hasExcludedQueuePrefix(value: unknown): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  return normalized.startsWith("D-") || normalized.startsWith("Q-");
+}
+
 export function isPickPackQueueEligible(input: {
   orderType: unknown;
   isDraft: unknown;
+  orderNumber?: unknown;
 }): boolean {
   return (
     normalizeOrderType(input.orderType) === "SALE" &&
-    normalizeDraftFlag(input.isDraft) === false
+    normalizeDraftFlag(input.isDraft) === false &&
+    !hasExcludedQueuePrefix(input.orderNumber)
   );
 }
 
 function assertPickPackQueueEligible(
   orderId: number,
-  input: { orderType: unknown; isDraft: unknown }
+  input: { orderType: unknown; isDraft: unknown; orderNumber?: unknown }
 ): void {
   if (!isPickPackQueueEligible(input)) {
     throw new TRPCError({
@@ -549,6 +560,7 @@ export const pickPackRouter = router({
       const [order] = await db
         .select({
           id: orders.id,
+          orderNumber: orders.orderNumber,
           orderType: orders.orderType,
           isDraft: orders.isDraft,
           pickPackStatus: orders.pickPackStatus,
@@ -803,6 +815,7 @@ export const pickPackRouter = router({
       const [order] = await db
         .select({
           id: orders.id,
+          orderNumber: orders.orderNumber,
           orderType: orders.orderType,
           isDraft: orders.isDraft,
           items: orders.items,
@@ -932,6 +945,7 @@ export const pickPackRouter = router({
       const [order] = await db
         .select({
           id: orders.id,
+          orderNumber: orders.orderNumber,
           orderType: orders.orderType,
           isDraft: orders.isDraft,
           items: orders.items,
@@ -1017,6 +1031,7 @@ export const pickPackRouter = router({
       const [order] = await db
         .select({
           id: orders.id,
+          orderNumber: orders.orderNumber,
           orderType: orders.orderType,
           isDraft: orders.isDraft,
         })
@@ -1069,6 +1084,7 @@ export const pickPackRouter = router({
 
       const orderStatuses = await db
         .select({
+          orderNumber: orders.orderNumber,
           orderType: orders.orderType,
           isDraft: orders.isDraft,
           pickPackStatus: orders.pickPackStatus,
