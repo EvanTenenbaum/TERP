@@ -7,7 +7,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MarginInput } from "./MarginInput";
 
 describe("MarginInput", () => {
-  it("uses dollar-first mode and converts dollar edits to percent", () => {
+  it("uses dollar-first mode and converts dollar edits to gross margin percent", () => {
     const onChange = vi.fn();
 
     render(
@@ -27,7 +27,29 @@ describe("MarginInput", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(onChange).toHaveBeenCalledWith(50, true);
+    expect(onChange).toHaveBeenCalledWith(33.33, true);
+  });
+
+  it("converts percent edits to the matching dollar margin", () => {
+    render(
+      <MarginInput
+        marginPercent={20}
+        marginDollar={2.5}
+        cogsPerUnit={10}
+        source="CUSTOMER_PROFILE"
+        isOverridden={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText("20.0%"));
+    fireEvent.click(screen.getByRole("radio", { name: "Percent" }));
+    fireEvent.change(screen.getByLabelText("Margin (%)"), {
+      target: { value: "50" },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: "Dollar" }));
+
+    expect(screen.getByLabelText("Margin ($)")).toHaveValue(10);
   });
 
   it("shows field/rule/fix validation guidance when value is invalid", () => {

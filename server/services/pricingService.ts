@@ -20,6 +20,7 @@ import {
   type InventoryItem,
 } from "../pricingEngine";
 import type { CogsRangeBasis, PricingChannel } from "../cogsCalculator";
+import { marginCalculationService } from "./marginCalculationService";
 
 export interface MarginResult {
   marginPercent: number | null;
@@ -103,8 +104,10 @@ export const pricingService = {
 
         if (basePrice > 0) {
           return {
-            marginPercent:
-              ((pricedItem.retailPrice - basePrice) / basePrice) * 100,
+            marginPercent: marginCalculationService.calculateMarginPercent(
+              basePrice,
+              pricedItem.retailPrice
+            ),
             source: "CUSTOMER_PROFILE",
             customerId,
             productCategory,

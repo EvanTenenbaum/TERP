@@ -52,11 +52,28 @@ export function MarginInput({
     );
   }, [inputMode, isEditing, marginDollar, marginPercent]);
 
+  const roundToTwoDecimals = (value: number): number =>
+    Math.round(value * 100) / 100;
+
   const marginPercentFromDollar = (value: number): number => {
+    const retailPrice = cogsPerUnit + value;
+    if (retailPrice <= 0) {
+      return 0;
+    }
+    return roundToTwoDecimals((value / retailPrice) * 100);
+  };
+
+  const marginDollarFromPercent = (value: number): number => {
     if (cogsPerUnit <= 0) {
       return 0;
     }
-    return (value / cogsPerUnit) * 100;
+
+    if (value >= 100) {
+      return 0;
+    }
+
+    const retailPrice = cogsPerUnit / (1 - value / 100);
+    return roundToTwoDecimals(retailPrice - cogsPerUnit);
   };
 
   const sourceLabel =
@@ -117,7 +134,11 @@ export function MarginInput({
     }
 
     if (inputMode === "percent" && parsed < -100) {
-      return "Field: Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target markup.";
+      return "Field: Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target margin.";
+    }
+
+    if (inputMode === "percent" && parsed >= 100) {
+      return "Field: Margin (%). Rule: must stay below 100%. Fix: use a value below 100 or switch to dollar mode.";
     }
 
     if (inputMode === "dollar" && cogsPerUnit <= 0 && parsed !== 0) {
@@ -210,7 +231,7 @@ export function MarginInput({
                 const numericValue = parseFloat(inputValue);
                 if (nextMode !== inputMode && Number.isFinite(numericValue)) {
                   if (nextMode === "dollar") {
-                    const dollarValue = (cogsPerUnit * numericValue) / 100;
+                    const dollarValue = marginDollarFromPercent(numericValue);
                     setInputValue(dollarValue.toFixed(2));
                   } else {
                     const percentValue = marginPercentFromDollar(numericValue);
