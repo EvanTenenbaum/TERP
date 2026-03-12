@@ -20,6 +20,7 @@ import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 import { isSchemaDriftError } from "../_core/dbErrors";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { hasPhotographyCompleteFlagColumn } from "../lib/photographyCompleteCompatibility";
 
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
@@ -1084,14 +1085,24 @@ export const photographyRouter = router({
           .where(eq(productImages.id, desiredPrimaryId));
       }
 
-      // TER-574: Set isPhotographyComplete flag instead of changing status
-      await db
-        .update(batches)
-        .set({
-          isPhotographyComplete: true,
-          updatedAt: new Date(),
-        })
-        .where(eq(batches.id, input.batchId));
+      const completionTimestamp = new Date();
+      if (await hasPhotographyCompleteFlagColumn()) {
+        await db
+          .update(batches)
+          .set({
+            isPhotographyComplete: true,
+            updatedAt: completionTimestamp,
+          })
+          .where(eq(batches.id, input.batchId));
+      } else {
+        await db
+          .update(batches)
+          .set({
+            batchStatus: "LIVE",
+            updatedAt: completionTimestamp,
+          })
+          .where(eq(batches.id, input.batchId));
+      }
 
       return { success: true };
     }),
@@ -1316,15 +1327,26 @@ export const photographyRouter = router({
       metadata.photographyCompletedBy = ctx.user?.id;
       metadata.photoCount = visiblePhotos.length;
 
-      // TER-574: Set isPhotographyComplete flag instead of changing status
-      await database
-        .update(batches)
-        .set({
-          isPhotographyComplete: true,
-          metadata: JSON.stringify(metadata),
-          updatedAt: new Date(),
-        })
-        .where(eq(batches.id, input.batchId));
+      const completionTimestamp = new Date();
+      if (await hasPhotographyCompleteFlagColumn()) {
+        await database
+          .update(batches)
+          .set({
+            isPhotographyComplete: true,
+            metadata: JSON.stringify(metadata),
+            updatedAt: completionTimestamp,
+          })
+          .where(eq(batches.id, input.batchId));
+      } else {
+        await database
+          .update(batches)
+          .set({
+            batchStatus: "LIVE",
+            metadata: JSON.stringify(metadata),
+            updatedAt: completionTimestamp,
+          })
+          .where(eq(batches.id, input.batchId));
+      }
 
       logger.info(
         { batchId: input.batchId, photoCount: visiblePhotos.length },

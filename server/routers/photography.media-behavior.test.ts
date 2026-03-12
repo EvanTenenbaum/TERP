@@ -18,10 +18,18 @@ const permissionMocks = vi.hoisted(() => ({
     .mockResolvedValue([{ id: 1, name: "Inventory Manager" }]),
   clearPermissionCache: vi.fn(),
 }));
+const compatibilityMocks = vi.hoisted(() => ({
+  hasPhotographyCompleteFlagColumn: vi.fn().mockResolvedValue(true),
+}));
 
 vi.mock("../services/permissionService", () => ({
   ...permissionMocks,
   default: permissionMocks,
+}));
+
+vi.mock("../lib/photographyCompleteCompatibility", () => ({
+  hasPhotographyCompleteFlagColumn:
+    compatibilityMocks.hasPhotographyCompleteFlagColumn,
 }));
 
 import { photographyRouter, isVisibleImageStatus } from "./photography";
@@ -108,6 +116,7 @@ describe("photographyRouter media behavior", () => {
     permissionMocks.hasAllPermissions.mockResolvedValue(true);
     permissionMocks.hasAnyPermission.mockResolvedValue(true);
     permissionMocks.isSuperAdmin.mockResolvedValue(false);
+    compatibilityMocks.hasPhotographyCompleteFlagColumn.mockResolvedValue(true);
   });
 
   it("treats only pending/approved/null statuses as visible", () => {
@@ -262,6 +271,56 @@ describe("photographyRouter media behavior", () => {
     expect(result).toEqual({ success: true });
     expect(updateSet).toHaveBeenCalledWith({
       isPhotographyComplete: true,
+      updatedAt: expect.any(Date),
+    });
+  });
+
+  it("falls back to LIVE status when the photography flag column is unavailable", async () => {
+    compatibilityMocks.hasPhotographyCompleteFlagColumn.mockResolvedValue(
+      false
+    );
+    mockSelectSequence([
+      [{ id: 300, productId: 12 }],
+      [],
+      [{ id: 9001, isPrimary: true, status: "APPROVED", sortOrder: 0 }],
+    ]);
+
+    const updateWhere = vi.fn().mockResolvedValue({ changes: 1 });
+    const updateSet = vi.fn(() => ({ where: updateWhere }));
+    vi.mocked(db.update).mockReturnValue({ set: updateSet } as never);
+
+    const result = await createUserCaller().markComplete({ batchId: 300 });
+
+    expect(result).toEqual({ success: true });
+    expect(updateSet).toHaveBeenCalledWith({
+      batchStatus: "LIVE",
+      updatedAt: expect.any(Date),
+    });
+  });
+
+  it("falls back to LIVE status when completing a session on the legacy schema", async () => {
+    compatibilityMocks.hasPhotographyCompleteFlagColumn.mockResolvedValue(
+      false
+    );
+    mockSelectSequence([
+      [{ id: 300, metadata: null }],
+      [{ id: 9001, isPrimary: true, status: "APPROVED", sortOrder: 0 }],
+    ]);
+
+    const updateWhere = vi.fn().mockResolvedValue({ changes: 1 });
+    const updateSet = vi.fn(() => ({ where: updateWhere }));
+    vi.mocked(db.update).mockReturnValue({ set: updateSet } as never);
+
+    const result = await createUserCaller().completeSession({ batchId: 300 });
+
+    expect(result).toEqual({
+      success: true,
+      batchId: 300,
+      photoCount: 1,
+    });
+    expect(updateSet).toHaveBeenCalledWith({
+      batchStatus: "LIVE",
+      metadata: expect.any(String),
       updatedAt: expect.any(Date),
     });
   });
