@@ -32,6 +32,7 @@ import * as inventoryUtils from "./inventoryUtils";
 import { findOrCreate } from "./_core/dbUtils";
 import { logger } from "./_core/logger";
 import { withRetryableTransaction } from "./dbTransaction";
+import { insertBatchWithCompatibility } from "./lib/batchInsertCompatibility";
 // MEET-005, MEET-006: Import payables service for consigned inventory tracking
 import * as payablesService from "./services/payablesService";
 
@@ -260,24 +261,23 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         let batch: Batch | undefined;
         while (!batch) {
           try {
-            const [batchCreated] = await tx
-              .insert(batches)
-              .values({
+            const batchId = await insertBatchWithCompatibility(tx, {
                 code: batchCode,
-                sku: sku,
+                sku,
                 productId: product.id,
                 lotId: lot.id,
                 batchStatus: "AWAITING_INTAKE",
-                grade: input.grade,
+                grade: input.grade ?? null,
                 isSample: 0,
                 sampleOnly: 0,
                 sampleAvailable: 0,
                 cogsMode: input.cogsMode,
-                unitCogs: input.unitCogs,
-                unitCogsMin: input.unitCogsMin,
-                unitCogsMax: input.unitCogsMax,
+                unitCogs: input.unitCogs ?? null,
+                unitCogsMin: input.unitCogsMin ?? null,
+                unitCogsMax: input.unitCogsMax ?? null,
                 paymentTerms: input.paymentTerms,
-                ownershipType: ownershipType, // MEET-006
+                ownershipType, // MEET-006
+                amountPaid: "0",
                 metadata: (() => {
                   const metadata = input.metadata || {};
                   if (input.mediaUrls && input.mediaUrls.length > 0) {
@@ -293,15 +293,12 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
                 quarantineQty: "0",
                 holdQty: "0",
                 defectiveQty: "0",
-                publishEcom: 0,
-                publishB2b: 0,
-              })
-              .$returningId();
+              });
 
             const [createdBatch] = await tx
               .select()
               .from(batches)
-              .where(eq(batches.id, batchCreated.id));
+              .where(eq(batches.id, batchId));
 
             if (!createdBatch) {
               throw new Error("Failed to create batch");

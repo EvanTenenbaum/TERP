@@ -22,11 +22,17 @@ const buildPayload = () => ({
   productId: 1,
   lotId: 2,
   batchStatus: "AWAITING_INTAKE",
+  grade: "A",
+  isSample: 0,
+  sampleOnly: 0,
+  sampleAvailable: 0,
   cogsMode: "FIXED",
   unitCogs: "25.0000",
   unitCogsMin: null,
   unitCogsMax: null,
   paymentTerms: "CONSIGNMENT",
+  ownershipType: "CONSIGNED",
+  amountPaid: "0",
   metadata: "{\"poNumber\":\"PO-1\"}",
   onHandQty: "10",
   sampleQty: "0",
@@ -56,9 +62,11 @@ describe("batchInsertCompatibility", () => {
         "productId",
         "lotId",
         "batchStatus",
+        "grade",
         "cogsMode",
         "unitCogs",
         "paymentTerms",
+        "ownership_type",
         "metadata",
         "onHandQty",
         "sampleQty",
@@ -77,6 +85,7 @@ describe("batchInsertCompatibility", () => {
     expect(columns).not.toContain("isPhotographyComplete");
     expect(columns).toContain("code");
     expect(columns).toContain("onHandQty");
+    expect(columns).toContain("ownership_type");
   });
 
   it("logs once when the staging schema is missing modern batch columns", async () => {
@@ -111,9 +120,11 @@ describe("batchInsertCompatibility", () => {
           { columnName: "productId" },
           { columnName: "lotId" },
           { columnName: "batchStatus" },
+          { columnName: "grade" },
           { columnName: "cogsMode" },
           { columnName: "unitCogs" },
           { columnName: "paymentTerms" },
+          { columnName: "ownership_type" },
           { columnName: "metadata" },
           { columnName: "onHandQty" },
           { columnName: "sampleQty" },
@@ -151,9 +162,11 @@ describe("batchInsertCompatibility", () => {
           { columnName: "productId" },
           { columnName: "lotId" },
           { columnName: "batchStatus" },
+          { columnName: "grade" },
           { columnName: "cogsMode" },
           { columnName: "unitCogs" },
           { columnName: "paymentTerms" },
+          { columnName: "ownership_type" },
           { columnName: "metadata" },
           { columnName: "onHandQty" },
           { columnName: "sampleQty" },
@@ -179,5 +192,27 @@ describe("batchInsertCompatibility", () => {
       77
     );
     expect(tx.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves intake-specific ownership and grade values when the schema supports them", async () => {
+    const { buildCompatibleBatchInsertEntries } = await import(
+      "./batchInsertCompatibility"
+    );
+
+    const entries = buildCompatibleBatchInsertEntries(
+      new Set(["grade", "ownership_type", "amountPaid"]),
+      {
+        ...buildPayload(),
+        grade: "Premium",
+        ownershipType: "OFFICE_OWNED",
+        amountPaid: "125.00",
+      }
+    );
+
+    expect(entries).toEqual([
+      ["grade", "Premium"],
+      ["ownership_type", "OFFICE_OWNED"],
+      ["amountPaid", "125.00"],
+    ]);
   });
 });
