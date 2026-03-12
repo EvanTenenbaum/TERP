@@ -39,9 +39,8 @@ describe("consolidated navigation IA", () => {
     expect(paths).not.toContain("/inbox");
   });
 
-  // TER-600: Validate the 11-item sidebar structure
-  it("has exactly 11 sidebar-visible items", () => {
-    expect(sidebarItems).toHaveLength(11);
+  it("has exactly 12 sidebar-visible items", () => {
+    expect(sidebarItems).toHaveLength(12);
   });
 
   it("has correct sidebar-visible items per group", () => {
@@ -131,7 +130,7 @@ describe("consolidated navigation IA", () => {
 
     expect(sellItems).toHaveLength(2);
     expect(buyItems).toHaveLength(1);
-    expect(operationsItems).toHaveLength(1);
+    expect(operationsItems).toHaveLength(2);
     expect(relationshipItems).toHaveLength(1);
     expect(financeItems).toHaveLength(3);
     expect(adminItems).toHaveLength(3);
