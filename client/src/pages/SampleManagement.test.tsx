@@ -53,8 +53,21 @@ const sampleItems: SampleRequestMock[] = [
 
 let capturedStatus: string | undefined;
 let capturedSearch: string | undefined;
+let capturedActionAvailability:
+  | {
+      onDelete: boolean;
+      onRequestReturn: boolean;
+      onApproveReturn: boolean;
+      onCompleteReturn: boolean;
+      onRequestVendorReturn: boolean;
+      onShipToVendor: boolean;
+      onConfirmVendorReturn: boolean;
+      onUpdateLocation: boolean;
+    }
+  | undefined;
 let getAllMock = vi.fn();
 let refetchMock = vi.fn();
+let hasPermissionMock = vi.fn();
 
 vi.mock("@/components/samples/SampleList", () => ({
   getSampleOperatorLane: (status: string) => {
@@ -78,9 +91,27 @@ vi.mock("@/components/samples/SampleList", () => ({
     searchQuery: string;
     samples: unknown[];
     isLoading: boolean;
+    onDelete?: unknown;
+    onRequestReturn?: unknown;
+    onApproveReturn?: unknown;
+    onCompleteReturn?: unknown;
+    onRequestVendorReturn?: unknown;
+    onShipToVendor?: unknown;
+    onConfirmVendorReturn?: unknown;
+    onUpdateLocation?: unknown;
   }) => {
     capturedStatus = props.statusFilter;
     capturedSearch = props.searchQuery;
+    capturedActionAvailability = {
+      onDelete: Boolean(props.onDelete),
+      onRequestReturn: Boolean(props.onRequestReturn),
+      onApproveReturn: Boolean(props.onApproveReturn),
+      onCompleteReturn: Boolean(props.onCompleteReturn),
+      onRequestVendorReturn: Boolean(props.onRequestVendorReturn),
+      onShipToVendor: Boolean(props.onShipToVendor),
+      onConfirmVendorReturn: Boolean(props.onConfirmVendorReturn),
+      onUpdateLocation: Boolean(props.onUpdateLocation),
+    };
     return (
       <div data-testid="sample-list-mock">
         <span data-testid="sample-count">
@@ -125,6 +156,18 @@ vi.mock("@/hooks/useAuth", () => ({
     isAuthenticated: true,
     refresh: vi.fn(),
     logout: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/usePermissions", () => ({
+  usePermissions: () => ({
+    hasPermission: hasPermissionMock,
+    hasAnyPermission: vi.fn(),
+    hasAllPermissions: vi.fn(),
+    isSuperAdmin: false,
+    permissions: [],
+    isLoading: false,
+    error: null,
   }),
 }));
 
@@ -229,7 +272,18 @@ describe("SampleManagement", () => {
   beforeEach(() => {
     capturedStatus = undefined;
     capturedSearch = undefined;
+    capturedActionAvailability = undefined;
     refetchMock = vi.fn();
+    hasPermissionMock = vi.fn((permission: string) =>
+      [
+        "samples:create",
+        "samples:delete",
+        "samples:return",
+        "samples:approve",
+        "samples:vendorReturn",
+        "samples:track",
+      ].includes(permission)
+    );
 
     // Default mock - samples with data
     getAllMock = vi.fn().mockReturnValue({
@@ -296,6 +350,16 @@ describe("SampleManagement", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /new sample/i }));
       expect(screen.getByTestId("sample-form")).toBeInTheDocument();
+    });
+
+    it("hides creation button when user lacks samples:create", () => {
+      hasPermissionMock = vi.fn(() => false);
+
+      render(<SampleManagement />);
+
+      expect(
+        screen.queryByRole("button", { name: /new sample/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -403,6 +467,27 @@ describe("SampleManagement", () => {
         }),
         expect.anything()
       );
+    });
+  });
+
+  describe("Permission Surfacing", () => {
+    it("does not expose dead-end sample actions when permissions are missing", () => {
+      hasPermissionMock = vi.fn(permission =>
+        permission === "samples:track"
+      );
+
+      render(<SampleManagement />);
+
+      expect(capturedActionAvailability).toEqual({
+        onDelete: false,
+        onRequestReturn: false,
+        onApproveReturn: false,
+        onCompleteReturn: false,
+        onRequestVendorReturn: false,
+        onShipToVendor: false,
+        onConfirmVendorReturn: false,
+        onUpdateLocation: true,
+      });
     });
   });
 
