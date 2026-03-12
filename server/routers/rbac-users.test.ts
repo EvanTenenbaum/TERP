@@ -40,6 +40,17 @@ const createCaller = async () => {
   });
 };
 
+const createCallerWithUser = async (user: typeof mockUser) => {
+  const ctx = await createContext({
+    req: { headers: {} as Record<string, string> },
+    res: {} as Record<string, unknown>,
+  });
+  return appRouter.createCaller({
+    ...ctx,
+    user,
+  });
+};
+
 describe("RBAC Users Router", () => {
   let caller: Awaited<ReturnType<typeof createCaller>>;
 
@@ -115,6 +126,73 @@ describe("RBAC Users Router", () => {
       // Assert
       expect(mockLimit).toHaveBeenCalledWith(25);
       expect(mockOffset).toHaveBeenCalledWith(50);
+    });
+  });
+
+  describe("getMyPermissions", () => {
+    it("should resolve superadmin permissions using the authenticated openId", async () => {
+      vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(true);
+      vi.mocked(permissionService.getUserPermissions).mockResolvedValue(
+        new Set(["orders:read", "pick-pack:manage"])
+      );
+      vi.mocked(permissionService.getUserRoles).mockResolvedValue([
+        {
+          id: 1,
+          name: "Super Admin",
+          description: "Full system access",
+        },
+      ]);
+
+      const result = await caller.rbacUsers.getMyPermissions();
+
+      expect(permissionService.isSuperAdmin).toHaveBeenCalledWith(
+        mockUser.openId
+      );
+      expect(permissionService.getUserPermissions).toHaveBeenCalledWith(
+        mockUser.openId
+      );
+      expect(permissionService.getUserRoles).toHaveBeenCalledWith(
+        mockUser.openId
+      );
+      expect(result).toEqual({
+        userId: mockUser.openId,
+        isSuperAdmin: true,
+        permissions: ["orders:read", "pick-pack:manage"],
+        roles: ["Super Admin"],
+      });
+    });
+
+    it("should fall back to the numeric user id when openId is absent", async () => {
+      const numericOnlyUser = {
+        ...mockUser,
+        id: 42,
+        openId: undefined as unknown as string,
+      };
+      const numericCaller = await createCallerWithUser(numericOnlyUser);
+
+      vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
+      vi.mocked(permissionService.getUserPermissions).mockResolvedValue(
+        new Set(["inventory:read"])
+      );
+      vi.mocked(permissionService.getUserRoles).mockResolvedValue([
+        {
+          id: 2,
+          name: "Inventory Manager",
+          description: "Inventory access",
+        },
+      ]);
+
+      const result = await numericCaller.rbacUsers.getMyPermissions();
+
+      expect(permissionService.isSuperAdmin).toHaveBeenCalledWith("42");
+      expect(permissionService.getUserPermissions).toHaveBeenCalledWith("42");
+      expect(permissionService.getUserRoles).toHaveBeenCalledWith("42");
+      expect(result).toEqual({
+        userId: "42",
+        isSuperAdmin: false,
+        permissions: ["inventory:read"],
+        roles: ["Inventory Manager"],
+      });
     });
   });
 
