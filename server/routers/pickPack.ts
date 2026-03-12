@@ -73,6 +73,59 @@ function normalizeStatus(value: string | null | undefined): string | null {
   return value?.toUpperCase() ?? null;
 }
 
+function normalizeOrderType(value: unknown): string | null {
+  return typeof value === "string" ? value.toUpperCase() : null;
+}
+
+function normalizeDraftFlag(value: unknown): boolean | null {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    if (value === 0) {
+      return false;
+    }
+    if (value === 1) {
+      return true;
+    }
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "0" || normalized === "false") {
+      return false;
+    }
+    if (normalized === "1" || normalized === "true") {
+      return true;
+    }
+  }
+
+  return null;
+}
+
+export function isPickPackQueueEligible(input: {
+  orderType: unknown;
+  isDraft: unknown;
+}): boolean {
+  return (
+    normalizeOrderType(input.orderType) === "SALE" &&
+    normalizeDraftFlag(input.isDraft) === false
+  );
+}
+
+function assertPickPackQueueEligible(
+  orderId: number,
+  input: { orderType: unknown; isDraft: unknown }
+): void {
+  if (!isPickPackQueueEligible(input)) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Order ${orderId} is not eligible for pick and pack`,
+    });
+  }
+}
+
 export function mapPickPackDisplayStatus(
   rawPickPackStatus: string | null | undefined,
   rawFulfillmentStatus: string | null | undefined
@@ -192,6 +245,8 @@ export const pickPackRouter = router({
         .select({
           orderId: orders.id,
           orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
           clientId: orders.clientId,
           clientName: clients.name,
           items: orders.items,
@@ -208,8 +263,12 @@ export const pickPackRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
+      const eligibleOrders = pickListOrders.filter(order =>
+        isPickPackQueueEligible(order)
+      );
+
       // Get bag counts for each order
-      const orderIds = pickListOrders.map(o => o.orderId);
+      const orderIds = eligibleOrders.map(o => o.orderId);
 
       const bagCounts: Record<
         number,
@@ -265,7 +324,7 @@ export const pickPackRouter = router({
       }
 
       // Format response
-      return pickListOrders.map(order => {
+      return eligibleOrders.map(order => {
         const items = normalizeOrderItems(order.items);
         const itemCount = items.reduce(
           (sum, item) => sum + (item.quantity || 1),
@@ -326,6 +385,8 @@ export const pickPackRouter = router({
         .select({
           id: orders.id,
           orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
           clientId: orders.clientId,
           clientName: clients.name,
           items: orders.items,
@@ -343,6 +404,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Get bags for this order
       const bags = await db
@@ -484,7 +547,12 @@ export const pickPackRouter = router({
 
       // Verify order exists
       const [order] = await db
-        .select({ id: orders.id, pickPackStatus: orders.pickPackStatus })
+        .select({
+          id: orders.id,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          pickPackStatus: orders.pickPackStatus,
+        })
         .from(orders)
         .where(eq(orders.id, input.orderId))
         .limit(1);
@@ -492,6 +560,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Generate bag identifier if not provided
       let bagIdentifier = input.bagIdentifier;
@@ -622,6 +692,23 @@ export const pickPackRouter = router({
         await import("../../drizzle/schema");
       const { eq, and, isNull, sql } = await import("drizzle-orm");
 
+      const [order] = await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+        })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      assertPickPackQueueEligible(order.id, order);
+
       // Get bag IDs for this order
       const orderBagIds = await db
         .select({ id: orderBags.id })
@@ -656,13 +743,6 @@ export const pickPackRouter = router({
         );
 
       // Log the unpack action with reason to audit log (WS-005)
-      // Get order number for better audit trail
-      const [order] = await db
-        .select({ orderNumber: orders.orderNumber })
-        .from(orders)
-        .where(eq(orders.id, input.orderId))
-        .limit(1);
-
       // TER-298: Use authenticated actor ID for audit attribution
       const actorId = getAuthenticatedUserId(ctx);
       await db.insert(auditLogs).values({
@@ -721,7 +801,12 @@ export const pickPackRouter = router({
 
       // Get order items
       const [order] = await db
-        .select({ id: orders.id, items: orders.items })
+        .select({
+          id: orders.id,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          items: orders.items,
+        })
         .from(orders)
         .where(eq(orders.id, input.orderId))
         .limit(1);
@@ -729,6 +814,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Prefer persisted line-item IDs where available.
       const lineItemRows = await db
@@ -843,7 +930,12 @@ export const pickPackRouter = router({
 
       // Get order with items
       const [order] = await db
-        .select({ id: orders.id, items: orders.items })
+        .select({
+          id: orders.id,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          items: orders.items,
+        })
         .from(orders)
         .where(eq(orders.id, input.orderId))
         .limit(1);
@@ -851,6 +943,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       const items = normalizeOrderItems(order.items);
       const totalItemCount = items.length;
@@ -920,6 +1014,22 @@ export const pickPackRouter = router({
       const { orders } = await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
 
+      const [order] = await db
+        .select({
+          id: orders.id,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+        })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      assertPickPackQueueEligible(order.id, order);
+
       await db
         .update(orders)
         .set({ pickPackStatus: input.status })
@@ -959,6 +1069,8 @@ export const pickPackRouter = router({
 
       const orderStatuses = await db
         .select({
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
           pickPackStatus: orders.pickPackStatus,
           fulfillmentStatus: orders.fulfillmentStatus,
         })
@@ -972,7 +1084,7 @@ export const pickPackRouter = router({
         SHIPPED: 0,
       };
 
-      for (const order of orderStatuses) {
+      for (const order of orderStatuses.filter(isPickPackQueueEligible)) {
         const displayStatus = mapPickPackDisplayStatus(
           order.pickPackStatus,
           order.fulfillmentStatus

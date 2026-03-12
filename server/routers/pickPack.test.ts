@@ -1,6 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import { mapPickPackDisplayStatus } from "./pickPack";
+import { isPickPackQueueEligible, mapPickPackDisplayStatus } from "./pickPack";
+
+describe("isPickPackQueueEligible", () => {
+  it("allows only non-draft sales into the queue", () => {
+    expect(isPickPackQueueEligible({ orderType: "SALE", isDraft: false })).toBe(
+      true
+    );
+    expect(isPickPackQueueEligible({ orderType: "sale", isDraft: 0 })).toBe(
+      true
+    );
+    expect(isPickPackQueueEligible({ orderType: "QUOTE", isDraft: 1 })).toBe(
+      false
+    );
+    expect(isPickPackQueueEligible({ orderType: "SALE", isDraft: true })).toBe(
+      false
+    );
+    expect(isPickPackQueueEligible({ orderType: "SALE", isDraft: null })).toBe(
+      false
+    );
+  });
+});
 
 describe("mapPickPackDisplayStatus", () => {
   it("defaults missing statuses to pending", () => {
