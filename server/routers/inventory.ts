@@ -141,6 +141,72 @@ function buildQuantityAdjustmentAuditReason(input: {
   return trimmedNotes || "Quantity adjusted";
 }
 
+type QuantityAdjustmentBatchField =
+  | "onHandQty"
+  | "reservedQty"
+  | "quarantineQty"
+  | "holdQty"
+  | "defectiveQty";
+
+type QuantityAdjustmentBatchSnapshot = {
+  id: number;
+  version: number;
+  batchStatus: string;
+  onHandQty: string | null;
+  sampleQty: string | null;
+  reservedQty: string | null;
+  quarantineQty: string | null;
+  holdQty: string | null;
+  defectiveQty: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
+
+async function readBatchAdjustmentSnapshot(
+  tx: Pick<Awaited<ReturnType<typeof getDb>>, "select">,
+  batchId: number
+): Promise<QuantityAdjustmentBatchSnapshot | null> {
+  const rows = await tx
+    .select({
+      id: batches.id,
+      version: batches.version,
+      batchStatus: batches.batchStatus,
+      onHandQty: batches.onHandQty,
+      sampleQty: batches.sampleQty,
+      reservedQty: batches.reservedQty,
+      quarantineQty: batches.quarantineQty,
+      holdQty: batches.holdQty,
+      defectiveQty: batches.defectiveQty,
+      createdAt: batches.createdAt,
+      updatedAt: batches.updatedAt,
+    })
+    .from(batches)
+    .where(eq(batches.id, batchId))
+    .for("update")
+    .limit(1);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return rows[0];
+}
+
+function buildAdjustedBatchSnapshot(
+  batch: QuantityAdjustmentBatchSnapshot,
+  field: QuantityAdjustmentBatchField,
+  value: string,
+  batchStatus = batch.batchStatus
+): QuantityAdjustmentBatchSnapshot {
+  return {
+    ...batch,
+    [field]: value,
+    batchStatus,
+    version: batch.version + 1,
+    updatedAt: new Date(),
+  };
+}
+
 const enhancedInventoryInputSchema = z
   .object({
     // Pagination
@@ -1349,16 +1415,11 @@ export const inventoryRouter = router({
       // TER-254: Wrap read-calculate-write in transaction with row-level lock
       const result = await db.transaction(async tx => {
         // Lock batch row before reading to prevent race conditions
-        const [batch] = await tx
-          .select()
-          .from(batches)
-          .where(eq(batches.id, input.id))
-          .for("update")
-          .limit(1);
+        const batch = await readBatchAdjustmentSnapshot(tx, input.id);
 
         if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
 
-        const currentQty = inventoryUtils.parseQty(batch[input.field]);
+        const currentQty = inventoryUtils.parseQty(batch[input.field] ?? "0");
         const newQty = currentQty + input.adjustment;
 
         // TERP-0018: Prevent negative inventory quantities
@@ -1375,6 +1436,7 @@ export const inventoryRouter = router({
           input.adjustment > 0
             ? `+${input.adjustment}`
             : input.adjustment.toString();
+        let nextBatchStatus = batch.batchStatus;
 
         // Update within the locked transaction
         await tx
@@ -1384,7 +1446,7 @@ export const inventoryRouter = router({
 
         // Quarantine-status synchronization within the same transaction
         if (input.field === "quarantineQty") {
-          const onHandQty = inventoryUtils.parseQty(batch.onHandQty);
+          const onHandQty = inventoryUtils.parseQty(batch.onHandQty ?? "0");
           const currentStatus = batch.batchStatus;
 
           if (
@@ -1398,6 +1460,7 @@ export const inventoryRouter = router({
               .update(batches)
               .set({ batchStatus: "QUARANTINED" })
               .where(eq(batches.id, input.id));
+            nextBatchStatus = "QUARANTINED";
           }
 
           if (
@@ -1409,6 +1472,7 @@ export const inventoryRouter = router({
               .update(batches)
               .set({ batchStatus: "LIVE" })
               .where(eq(batches.id, input.id));
+            nextBatchStatus = "LIVE";
           }
 
           // Record inventory movement for quarantine changes within transaction
@@ -1438,11 +1502,12 @@ export const inventoryRouter = router({
           });
         }
 
-        // Re-fetch updated batch within transaction
-        const [after] = await tx
-          .select()
-          .from(batches)
-          .where(eq(batches.id, input.id));
+        const after = buildAdjustedBatchSnapshot(
+          batch,
+          input.field,
+          newQtyStr,
+          nextBatchStatus
+        );
 
         return { before, after };
       });

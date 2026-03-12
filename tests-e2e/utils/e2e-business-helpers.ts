@@ -14,6 +14,7 @@ type InventoryListResponse = {
       totalQty?: string | number | null;
       onHandQty?: string | number | null;
       unitCogs?: string | number | null;
+      batchStatus?: string | null;
     };
   }>;
 };
@@ -39,6 +40,7 @@ export interface StockBatch {
   totalQty: number;
   onHandQty: number;
   unitCogs: number;
+  batchStatus: string;
 }
 
 export function toNumber(value: unknown): number {
@@ -113,16 +115,20 @@ export async function findBatchWithStock(page: Page): Promise<StockBatch> {
         totalQty: toNumber(batch.totalQty),
         onHandQty: toNumber(batch.onHandQty),
         unitCogs: toNumber(batch.unitCogs),
+        batchStatus: batch.batchStatus ?? "UNKNOWN",
       };
     })
     .find(
       (batch): batch is StockBatch =>
-        !!batch && batch.totalQty > 0 && batch.onHandQty > 0
+        !!batch &&
+        batch.batchStatus === "LIVE" &&
+        batch.totalQty > 0 &&
+        batch.onHandQty > 0
     );
 
   if (!match) {
     throw new Error(
-      "No inventory batch with available stock found. Seed inventory before running this flow."
+      "No LIVE inventory batch with available stock found. Seed sellable inventory before running this flow."
     );
   }
 
