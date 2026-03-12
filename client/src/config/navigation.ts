@@ -164,6 +164,15 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: INVENTORY_WORKSPACE.description,
     sidebarVisible: true,
   },
+  {
+    name: "Intake",
+    path: "/direct-intake",
+    icon: Download,
+    group: "operations",
+    ariaLabel:
+      "Create direct intake batches before verification and receiving follow-up",
+    sidebarVisible: true,
+  },
 
   // Absorbed into Inventory workspace tabs — hidden from sidebar, visible in Command Palette
   // NAV-003: Photography absorbed as Inventory tab
@@ -188,7 +197,7 @@ export const navigationItems: NavigationItem[] = [
     path: "/inventory?tab=receiving",
     icon: Download,
     group: "operations",
-    ariaLabel: "Receive inventory into the system",
+    ariaLabel: "Review intake receipts and receiving follow-up work",
     sidebarVisible: false,
   },
   {

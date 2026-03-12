@@ -44,6 +44,7 @@ import AdminSetupPage from "@/pages/AdminSetupPage";
 import VendorRedirect from "@/components/VendorRedirect";
 import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
+import DirectIntakePage from "@/pages/DirectIntakePage";
 import IntakeReceipts from "@/pages/IntakeReceipts"; // FEAT-008: Intake Verification System
 import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import Login from "@/pages/Login";
@@ -702,11 +703,12 @@ function Router() {
                   component={RedirectToOperationsTab("/receiving", "receiving")}
                 />
                 <Route
+                  path="/intake"
+                  component={RedirectWithSearch("/intake", "/direct-intake")}
+                />
+                <Route
                   path="/direct-intake"
-                  component={RedirectToOperationsTab(
-                    "/direct-intake",
-                    "receiving"
-                  )}
+                  component={withErrorBoundary(DirectIntakePage)}
                 />
                 <Route
                   path="/matchmaking"
