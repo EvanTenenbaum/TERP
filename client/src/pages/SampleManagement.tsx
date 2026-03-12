@@ -43,6 +43,7 @@ import {
 import { LoadingState } from "@/components/ui/loading-state";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { SampleRequest } from "../../../drizzle/schema";
 import { toast } from "sonner";
@@ -120,6 +121,13 @@ export default function SampleManagement() {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [selectedSampleLocation, setSelectedSampleLocation] =
     useState<SampleLocation | null>(null);
+  const { hasPermission } = usePermissions();
+  const canCreateSamples = hasPermission("samples:create");
+  const canDeleteSamples = hasPermission("samples:delete");
+  const canRequestSampleReturn = hasPermission("samples:return");
+  const canApproveSampleReturn = hasPermission("samples:approve");
+  const canManageVendorReturn = hasPermission("samples:vendorReturn");
+  const canTrackSamples = hasPermission("samples:track");
 
   const debouncedProductSearch = useDebounce(productSearch, 300);
 
@@ -710,7 +718,9 @@ export default function SampleManagement() {
             Track samples out and sample returns without the old status maze.
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
+        {canCreateSamples && (
+          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
+        )}
       </div>
 
       {/* Expiring Samples Widget */}
@@ -777,14 +787,24 @@ export default function SampleManagement() {
         statusFilter={statusFilter}
         searchQuery={searchQuery}
         isLoading={samplesLoading}
-        onDelete={handleDelete}
-        onRequestReturn={handleRequestReturn}
-        onApproveReturn={handleApproveReturn}
-        onCompleteReturn={handleCompleteReturn}
-        onRequestVendorReturn={handleRequestVendorReturn}
-        onShipToVendor={handleShipToVendor}
-        onConfirmVendorReturn={handleConfirmVendorReturn}
-        onUpdateLocation={handleUpdateLocation}
+        onDelete={canDeleteSamples ? handleDelete : undefined}
+        onRequestReturn={
+          canRequestSampleReturn ? handleRequestReturn : undefined
+        }
+        onApproveReturn={
+          canApproveSampleReturn ? handleApproveReturn : undefined
+        }
+        onCompleteReturn={
+          canRequestSampleReturn ? handleCompleteReturn : undefined
+        }
+        onRequestVendorReturn={
+          canManageVendorReturn ? handleRequestVendorReturn : undefined
+        }
+        onShipToVendor={canManageVendorReturn ? handleShipToVendor : undefined}
+        onConfirmVendorReturn={
+          canManageVendorReturn ? handleConfirmVendorReturn : undefined
+        }
+        onUpdateLocation={canTrackSamples ? handleUpdateLocation : undefined}
         pageSize={10}
       />
 
