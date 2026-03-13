@@ -4,7 +4,7 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Percent, DollarSign, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,11 @@ interface MarginInputProps {
   cogsPerUnit: number;
   source: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   isOverridden: boolean;
-  onChange: (newMarginPercent: number, isOverridden: boolean) => void;
+  onChange: (
+    newMarginPercent: number,
+    isOverridden: boolean,
+    unitPrice: number
+  ) => void;
 }
 
 export function MarginInput({
@@ -36,7 +40,14 @@ export function MarginInput({
 }: MarginInputProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputMode, setInputMode] = useState<"percent" | "dollar">("dollar");
-  const [inputValue, setInputValue] = useState(marginDollar.toFixed(2));
+  const formatInputValue = useCallback(
+    (mode: "percent" | "dollar"): string =>
+      mode === "dollar" ? marginDollar.toFixed(2) : marginPercent.toFixed(1),
+    [marginDollar, marginPercent]
+  );
+  const [inputValue, setInputValue] = useState(
+    formatInputValue("dollar")
+  );
   const [validationMessage, setValidationMessage] = useState<string | null>(
     null
   );
@@ -45,11 +56,7 @@ export function MarginInput({
     if (isEditing) {
       return;
     }
-    setInputValue(
-      inputMode === "dollar"
-        ? marginDollar.toFixed(2)
-        : marginPercent.toFixed(1)
-    );
+    setInputValue(formatInputValue(inputMode));
   }, [inputMode, isEditing, marginDollar, marginPercent]);
 
   const roundToTwoDecimals = (value: number): number =>
@@ -74,6 +81,17 @@ export function MarginInput({
 
     const retailPrice = cogsPerUnit / (1 - value / 100);
     return roundToTwoDecimals(retailPrice - cogsPerUnit);
+  };
+
+  const unitPriceFromDollar = (value: number): number =>
+    roundToTwoDecimals(cogsPerUnit + value);
+
+  const unitPriceFromPercent = (value: number): number => {
+    if (cogsPerUnit <= 0 || value >= 100) {
+      return roundToTwoDecimals(cogsPerUnit);
+    }
+
+    return roundToTwoDecimals(cogsPerUnit / (1 - value / 100));
   };
 
   const sourceLabel =
@@ -158,17 +176,17 @@ export function MarginInput({
     const value = parseFloat(inputValue);
     const marginPercentValue =
       inputMode === "dollar" ? marginPercentFromDollar(value) : value;
-    onChange(marginPercentValue, true);
+    const unitPriceValue =
+      inputMode === "dollar"
+        ? unitPriceFromDollar(value)
+        : unitPriceFromPercent(value);
+    onChange(marginPercentValue, true, unitPriceValue);
     setValidationMessage(null);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setInputValue(
-      inputMode === "dollar"
-        ? marginDollar.toFixed(2)
-        : marginPercent.toFixed(1)
-    );
+    setInputValue(formatInputValue(inputMode, marginDollar, marginPercent));
     setValidationMessage(null);
     setIsEditing(false);
   };
@@ -230,7 +248,16 @@ export function MarginInput({
                 const nextMode = value as "percent" | "dollar";
                 const numericValue = parseFloat(inputValue);
                 if (nextMode !== inputMode && Number.isFinite(numericValue)) {
-                  if (nextMode === "dollar") {
+                  const currentFormattedValue = formatInputValue(
+                    inputMode,
+                    marginDollar,
+                    marginPercent
+                  );
+                  if (inputValue === currentFormattedValue) {
+                    setInputValue(
+                      formatInputValue(nextMode, marginDollar, marginPercent)
+                    );
+                  } else if (nextMode === "dollar") {
                     const dollarValue = marginDollarFromPercent(numericValue);
                     setInputValue(dollarValue.toFixed(2));
                   } else {

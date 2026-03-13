@@ -120,7 +120,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: "Sales Sheets",
-    path: "/sales-sheets",
+    path: "/sales?tab=sales-sheets",
     icon: Layers,
     group: "sales",
     ariaLabel: "Create and share sales sheets with clients",
@@ -128,7 +128,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: "Live Shopping",
-    path: "/live-shopping",
+    path: "/sales?tab=live-shopping",
     icon: Video,
     group: "sales",
     ariaLabel: "Live shopping sessions with clients",
@@ -170,8 +170,8 @@ export const navigationItems: NavigationItem[] = [
     icon: Download,
     group: "operations",
     ariaLabel:
-      "Create direct intake batches before verification and receiving follow-up",
-    sidebarVisible: true,
+      "Legacy intake alias that now routes into the receiving queue",
+    sidebarVisible: false,
   },
 
   // Absorbed into Inventory workspace tabs — hidden from sidebar, visible in Command Palette
@@ -197,7 +197,7 @@ export const navigationItems: NavigationItem[] = [
     path: "/inventory?tab=receiving",
     icon: Download,
     group: "operations",
-    ariaLabel: "Review intake receipts and receiving follow-up work",
+    ariaLabel: "Review purchase orders waiting to be received",
     sidebarVisible: false,
   },
   {

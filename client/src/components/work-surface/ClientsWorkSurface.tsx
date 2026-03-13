@@ -99,7 +99,7 @@ const clientSchema = z.object({
   email: z
     .string()
     .email(
-      "Field: Email-formatted handle. Rule: must be a valid email format. Fix: enter an address like name@company.com."
+      "Field: Email handle. Rule: must be a valid email format. Fix: enter an address like name@company.com."
     )
     .optional()
     .or(z.literal("")),
@@ -311,7 +311,7 @@ function ClientInspectorContent({
               )}
             </InspectorField>
 
-            <InspectorField label="Email-formatted Handle">
+            <InspectorField label="Email Handle">
               <Input
                 type="email"
                 value={editForm.email}
@@ -332,7 +332,7 @@ function ClientInspectorContent({
               )}
             </InspectorField>
 
-            <InspectorField label="Signal / ID / Phone">
+            <InspectorField label="Phone or Messaging Handle">
               <Input
                 value={editForm.phone}
                 onChange={e =>
@@ -371,7 +371,7 @@ function ClientInspectorContent({
             </InspectorField>
 
             {client.email && (
-              <InspectorField label="Email-formatted Handle">
+              <InspectorField label="Email Handle">
                 <a
                   href={`mailto:${client.email}`}
                   className="flex items-center gap-2 text-blue-600 hover:underline"
@@ -383,7 +383,7 @@ function ClientInspectorContent({
             )}
 
             {client.phone && (
-              <InspectorField label="Signal / ID / Phone">
+              <InspectorField label="Phone or Messaging Handle">
                 <a
                   href={`tel:${client.phone}`}
                   className="flex items-center gap-2 text-blue-600 hover:underline"
@@ -995,7 +995,7 @@ export function ClientsWorkSurface() {
                       </span>
                     </TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Username / Signal / ID / Phone</TableHead>
+                    <TableHead>Reachable Handles</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"
                       onClick={() => handleSort("lifetimeValue")}

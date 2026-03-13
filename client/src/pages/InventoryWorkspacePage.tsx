@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
+import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -14,8 +15,11 @@ import {
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
 import { PageLoading } from "@/components/ui/loading-state";
+import { useSearch } from "wouter";
 
-const ReceivingPage = lazy(() => import("@/pages/IntakeReceipts"));
+const ReceivingPage = lazy(
+  () => import("@/components/uiux-slice/ProductIntakeSlicePage")
+);
 const PhotographyPage = lazy(() => import("@/pages/PhotographyPage"));
 const SampleManagement = lazy(() => import("@/pages/SampleManagement"));
 
@@ -31,12 +35,14 @@ const INVENTORY_TABS = INVENTORY_TABS_CONFIG.map(
 ) as readonly InventoryTab[];
 
 export default function InventoryWorkspacePage() {
+  const search = useSearch();
   const { activeTab: requestedTab, setActiveTab } =
     useQueryTabState<InventoryQueryTab>({
       defaultTab: "inventory",
       validTabs: [...INVENTORY_TABS, "intake", "pick-pack"],
     });
   const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
+  const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
 
   return (
@@ -56,9 +62,13 @@ export default function InventoryWorkspacePage() {
         <PickPackWorkSurface />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="receiving">
-        <Suspense fallback={<PageLoading message="Loading receiving..." />}>
-          <ReceivingPage />
-        </Suspense>
+        {receivingDraftId ? (
+          <Suspense fallback={<PageLoading message="Loading receiving..." />}>
+            <ReceivingPage />
+          </Suspense>
+        ) : (
+          <PurchaseOrdersSlicePage />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="photography">
         <Suspense fallback={<PageLoading message="Loading photography..." />}>

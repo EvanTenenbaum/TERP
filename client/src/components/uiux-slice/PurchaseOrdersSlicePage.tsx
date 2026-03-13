@@ -582,7 +582,7 @@ export function PurchaseOrdersSlicePage() {
           Purchase Orders
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Purchase Order to Receiving routing surface.
+          Review open purchase orders, place them, and start receiving from one queue.
         </p>
       </div>
 
@@ -606,7 +606,7 @@ export function PurchaseOrdersSlicePage() {
             <SelectItem value="DRAFT">Draft</SelectItem>
             <SelectItem value="SENT">Sent</SelectItem>
             <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="RECEIVING">Intaking</SelectItem>
+            <SelectItem value="RECEIVING">Receiving</SelectItem>
             <SelectItem value="RECEIVED">Received</SelectItem>
           </SelectContent>
         </Select>

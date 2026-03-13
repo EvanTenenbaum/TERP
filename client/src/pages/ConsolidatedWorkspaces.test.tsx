@@ -11,8 +11,10 @@ import RelationshipsWorkspacePage from "./RelationshipsWorkspacePage";
 import InventoryWorkspacePage from "./InventoryWorkspacePage";
 import SalesWorkspacePage from "./SalesWorkspacePage";
 import CreditsWorkspacePage from "./CreditsWorkspacePage";
+import ProcurementWorkspacePage from "./ProcurementWorkspacePage";
 
 let mockActiveTab = "matchmaking";
+let mockSearch = "";
 const mockSetActiveTab = vi.fn();
 const mockSetLocation = vi.fn();
 const mockCreditsSummary = {
@@ -34,6 +36,7 @@ vi.mock("@/hooks/useQueryTabState", () => ({
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/inventory", mockSetLocation],
+  useSearch: () => mockSearch,
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -76,6 +79,15 @@ vi.mock("@/components/work-surface/VendorsWorkSurface", () => ({
 vi.mock("@/components/work-surface/InventoryWorkSurface", () => ({
   default: () => <div>Inventory Surface</div>,
 }));
+vi.mock("@/components/uiux-slice/ProductIntakeSlicePage", () => ({
+  default: () => <div>Receiving Slice Surface</div>,
+}));
+vi.mock("@/components/uiux-slice/PurchaseOrdersSlicePage", () => ({
+  default: () => <div>Purchase Orders Slice Surface</div>,
+}));
+vi.mock("@/components/work-surface/PurchaseOrdersWorkSurface", () => ({
+  default: () => <div>Purchase Orders Surface</div>,
+}));
 vi.mock("@/components/work-surface/OrdersWorkSurface", () => ({
   default: () => <div>Orders Surface</div>,
 }));
@@ -86,6 +98,12 @@ vi.mock("@/pages/ReturnsPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
     <div>Returns {embedded ? "Embedded" : "Standalone"}</div>
   ),
+}));
+vi.mock("@/pages/SalesSheetCreatorPage", () => ({
+  default: () => <div>Sales Sheets Surface</div>,
+}));
+vi.mock("@/pages/LiveShoppingPage", () => ({
+  default: () => <div>Live Shopping Surface</div>,
 }));
 vi.mock("@/pages/CreditsPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
@@ -100,6 +118,7 @@ vi.mock("@/pages/CreditSettingsPage", () => ({
 
 describe("Consolidated workspace pages", () => {
   beforeEach(() => {
+    mockSearch = "";
     mockSetActiveTab.mockClear();
     mockSetLocation.mockClear();
   });
@@ -141,6 +160,27 @@ describe("Consolidated workspace pages", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders Inventory workspace with receiving queue content", () => {
+    mockActiveTab = "receiving";
+    render(<InventoryWorkspacePage />);
+    expect(
+      screen.getByRole("heading", { name: "Inventory" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Purchase Orders Slice Surface")).toBeInTheDocument();
+  });
+
+  it("renders Inventory workspace receiving editor when a draft is selected", async () => {
+    mockActiveTab = "receiving";
+    mockSearch = "?tab=receiving&draftId=draft-123";
+    render(<InventoryWorkspacePage />);
+    expect(
+      screen.getByRole("heading", { name: "Inventory" })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Receiving Slice Surface")
+    ).toBeInTheDocument();
+  });
+
   it("renders Sales workspace with quotes tab content", () => {
     mockActiveTab = "quotes";
     render(<SalesWorkspacePage />);
@@ -152,6 +192,20 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.queryByRole("button", { name: "New Order" })
     ).not.toBeInTheDocument();
+  });
+
+  it("renders Sales workspace with sales sheets tab content", () => {
+    mockActiveTab = "sales-sheets";
+    render(<SalesWorkspacePage />);
+    expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
+    expect(screen.getByText("Sales Sheets Surface")).toBeInTheDocument();
+  });
+
+  it("renders Sales workspace with live shopping tab content", () => {
+    mockActiveTab = "live-shopping";
+    render(<SalesWorkspacePage />);
+    expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
+    expect(screen.getByText("Live Shopping Surface")).toBeInTheDocument();
   });
 
   it("renders Client Credit workspace with dashboard-first content", () => {
@@ -178,5 +232,14 @@ describe("Consolidated workspace pages", () => {
       screen.getByRole("heading", { name: "Client Credit" })
     ).toBeInTheDocument();
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
+  });
+
+  it("renders Procurement workspace with purchase order queue content", () => {
+    mockActiveTab = "purchase-orders";
+    render(<ProcurementWorkspacePage />);
+    expect(
+      screen.getByRole("heading", { name: "Procurement" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Purchase Orders Surface")).toBeInTheDocument();
   });
 });

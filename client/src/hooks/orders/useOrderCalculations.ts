@@ -56,6 +56,24 @@ function round(value: number): number {
 }
 
 /**
+ * Calculate gross margin percent from an exact retail price.
+ */
+export function calculateMarginPercentFromRetailPrice(
+  cogsPerUnit: number,
+  retailPrice: number
+): number {
+  if (
+    !Number.isFinite(cogsPerUnit) ||
+    !Number.isFinite(retailPrice) ||
+    retailPrice <= 0
+  ) {
+    return 0;
+  }
+
+  return round(((retailPrice - cogsPerUnit) / retailPrice) * 100);
+}
+
+/**
  * Calculate line item with price and margin
  */
 export function calculateLineItem(
@@ -65,6 +83,34 @@ export function calculateLineItem(
   marginPercent: number
 ): LineItem {
   const unitPrice = round(calculatePriceFromMargin(cogsPerUnit, marginPercent));
+  const marginDollar = round(calculateMarginDollar(cogsPerUnit, unitPrice));
+  const lineTotal = round(quantity * unitPrice);
+
+  return {
+    batchId,
+    quantity,
+    cogsPerUnit,
+    marginPercent,
+    marginDollar,
+    unitPrice,
+    lineTotal,
+  };
+}
+
+/**
+ * Calculate a line item from an exact retail price while preserving cents.
+ */
+export function calculateLineItemFromRetailPrice(
+  batchId: number,
+  quantity: number,
+  cogsPerUnit: number,
+  retailPrice: number
+): LineItem {
+  const unitPrice = round(retailPrice);
+  const marginPercent = calculateMarginPercentFromRetailPrice(
+    cogsPerUnit,
+    retailPrice
+  );
   const marginDollar = round(calculateMarginDollar(cogsPerUnit, unitPrice));
   const lineTotal = round(quantity * unitPrice);
 
@@ -187,4 +233,3 @@ export function useOrderCalculations(
     calculateLineItem,
   };
 }
-

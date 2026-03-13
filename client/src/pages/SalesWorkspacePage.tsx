@@ -2,6 +2,8 @@ import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
+import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
+import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
@@ -55,6 +57,12 @@ export default function SalesWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
         <ReturnsPage embedded />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="sales-sheets">
+        <SalesSheetCreatorPage />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="live-shopping">
+        <LiveShoppingPage />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="create-order">
         <OrderCreatorPage />

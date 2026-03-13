@@ -50,6 +50,7 @@ import {
   getStoredFulfillmentStatus,
   normalizeFulfillmentStatus,
 } from "../lib/fulfillmentStatusCompatibility";
+import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import { resolveBatchCogs } from "../cogsCalculator";
 
 // ============================================================================
@@ -115,6 +116,7 @@ const lineItemInputSchema = z.object({
   belowRangeReason: z.string().optional(),
   marginPercent: z.number().optional(),
   marginDollar: z.number().optional(),
+  unitPrice: z.number().nonnegative().optional(),
   isCogsOverridden: z.boolean().default(false),
   cogsOverrideReason: z.string().optional(),
   isMarginOverridden: z.boolean().default(false),
@@ -612,15 +614,14 @@ export const ordersRouter = router({
         const batchIds = lineItems.map(
           (item: OrderLineItem) => item.batchId as number
         );
+        const batchSelect = await getCompatibleBatchSelect();
         const batchRecords = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(safeInArray(batches.id, batchIds))
           .for("update");
 
-        const batchMap = new Map<number, Batch>(
-          batchRecords.map((b: Batch) => [b.id, b])
-        );
+        const batchMap = new Map(batchRecords.map(batch => [batch.id, batch]));
 
         // Check each line item has sufficient inventory
         for (const item of lineItems) {
@@ -950,10 +951,20 @@ export const ordersRouter = router({
             }
           }
 
+          const providedUnitPrice =
+            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+              ? item.unitPrice
+              : null;
           const unitPrice =
+            providedUnitPrice ??
             marginCalculationService.calculatePriceFromMarginPercent(
               resolvedCogs.cogsPerUnit,
               marginPercent
+            );
+          const normalizedMarginPercent =
+            marginCalculationService.calculateMarginPercent(
+              resolvedCogs.cogsPerUnit,
+              unitPrice
             );
           const marginDollar = marginCalculationService.calculateMarginDollar(
             resolvedCogs.cogsPerUnit,
@@ -964,7 +975,7 @@ export const ordersRouter = router({
           return {
             ...item,
             ...resolvedCogs,
-            marginPercent,
+            marginPercent: normalizedMarginPercent,
             marginDollar,
             marginSource,
             unitPrice,
@@ -1182,10 +1193,20 @@ export const ordersRouter = router({
             }
           }
 
+          const providedUnitPrice =
+            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+              ? item.unitPrice
+              : null;
           const unitPrice =
+            providedUnitPrice ??
             marginCalculationService.calculatePriceFromMarginPercent(
               resolvedCogs.cogsPerUnit,
               marginPercent
+            );
+          const normalizedMarginPercent =
+            marginCalculationService.calculateMarginPercent(
+              resolvedCogs.cogsPerUnit,
+              unitPrice
             );
           const marginDollar = marginCalculationService.calculateMarginDollar(
             resolvedCogs.cogsPerUnit,
@@ -1196,7 +1217,7 @@ export const ordersRouter = router({
           return {
             ...item,
             ...resolvedCogs,
-            marginPercent,
+            marginPercent: normalizedMarginPercent,
             marginDollar,
             marginSource,
             unitPrice,
@@ -1987,8 +2008,9 @@ export const ordersRouter = router({
           }
 
           // INV-003: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
+          const batchSelect = await getCompatibleBatchSelect();
           const batchRecords = await tx
-            .select()
+            .select(batchSelect)
             .from(batches)
             .where(safeInArray(batches.id, batchIds))
             .for("update");
@@ -2202,8 +2224,9 @@ export const ordersRouter = router({
           if (allocatedQty <= 0) continue;
 
           // Lock the batch row for update
+          const batchSelect = await getCompatibleBatchSelect();
           const [batch] = await tx
-            .select()
+            .select(batchSelect)
             .from(batches)
             .where(eq(batches.id, allocation.batchId))
             .for("update")
@@ -2746,8 +2769,9 @@ export const ordersRouter = router({
 
         for (const alloc of input.allocations) {
           // Lock batch row to prevent concurrent allocation
+          const batchSelect = await getCompatibleBatchSelect();
           const [batch] = await tx
-            .select()
+            .select(batchSelect)
             .from(batches)
             .where(eq(batches.id, alloc.batchId))
             .for("update")

@@ -18,24 +18,22 @@ describe("batchColumnCompatibility", () => {
   });
 
   it("returns native batch columns when the full schema is available", async () => {
-    const execute = vi
-      .fn()
-      .mockResolvedValue([
-        [
-          { COLUMN_NAME: "deleted_at" },
-          { COLUMN_NAME: "version" },
-          { COLUMN_NAME: "isPhotographyComplete" },
-          { COLUMN_NAME: "paymentTerms" },
-          { COLUMN_NAME: "ownership_type" },
-          { COLUMN_NAME: "amountPaid" },
-          { COLUMN_NAME: "photo_session_event_id" },
-          { COLUMN_NAME: "quarantineQty" },
-          { COLUMN_NAME: "holdQty" },
-          { COLUMN_NAME: "defectiveQty" },
-          { COLUMN_NAME: "publishEcom" },
-          { COLUMN_NAME: "publishB2b" },
-        ],
-      ]);
+    const execute = vi.fn().mockResolvedValue([
+      [
+        { COLUMN_NAME: "deleted_at" },
+        { COLUMN_NAME: "version" },
+        { COLUMN_NAME: "isPhotographyComplete" },
+        { COLUMN_NAME: "paymentTerms" },
+        { COLUMN_NAME: "ownership_type" },
+        { COLUMN_NAME: "amountPaid" },
+        { COLUMN_NAME: "photo_session_event_id" },
+        { COLUMN_NAME: "quarantineQty" },
+        { COLUMN_NAME: "holdQty" },
+        { COLUMN_NAME: "defectiveQty" },
+        { COLUMN_NAME: "publishEcom" },
+        { COLUMN_NAME: "publishB2b" },
+      ],
+    ]);
 
     vi.mocked(getDb).mockResolvedValue({
       execute,
@@ -51,23 +49,21 @@ describe("batchColumnCompatibility", () => {
   });
 
   it("synthesizes safe defaults for missing optional batch columns", async () => {
-    const execute = vi
-      .fn()
-      .mockResolvedValue([
-        [
-          { COLUMN_NAME: "id" },
-          { COLUMN_NAME: "code" },
-          { COLUMN_NAME: "sku" },
-          { COLUMN_NAME: "productId" },
-          { COLUMN_NAME: "lotId" },
-          { COLUMN_NAME: "batchStatus" },
-          { COLUMN_NAME: "onHandQty" },
-          { COLUMN_NAME: "sampleQty" },
-          { COLUMN_NAME: "reservedQty" },
-          { COLUMN_NAME: "createdAt" },
-          { COLUMN_NAME: "updatedAt" },
-        ],
-      ]);
+    const execute = vi.fn().mockResolvedValue([
+      [
+        { COLUMN_NAME: "id" },
+        { COLUMN_NAME: "code" },
+        { COLUMN_NAME: "sku" },
+        { COLUMN_NAME: "productId" },
+        { COLUMN_NAME: "lotId" },
+        { COLUMN_NAME: "batchStatus" },
+        { COLUMN_NAME: "onHandQty" },
+        { COLUMN_NAME: "sampleQty" },
+        { COLUMN_NAME: "reservedQty" },
+        { COLUMN_NAME: "createdAt" },
+        { COLUMN_NAME: "updatedAt" },
+      ],
+    ]);
 
     vi.mocked(getDb).mockResolvedValue({
       execute,

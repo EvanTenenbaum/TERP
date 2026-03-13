@@ -321,11 +321,14 @@ describe("InventoryWorkSurface", () => {
     });
   });
 
-  it("renders the Receive Inventory button", async () => {
+  it("renders the receiving queue entry button", async () => {
     render(<InventoryWorkSurface />);
+    expect(screen.getByTestId("new-batch-btn")).toHaveTextContent(
+      /open receiving queue/i
+    );
     expect(
-      screen.getByRole("button", { name: /receive inventory/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /open receiving queue/i })
+    ).toHaveLength(2);
   });
 
   it("switches to gallery view from the shared display items set", async () => {
