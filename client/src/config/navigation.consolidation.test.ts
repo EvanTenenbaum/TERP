@@ -75,8 +75,8 @@ describe("consolidated navigation IA", () => {
     expect(paths).toContain("/sales?tab=live-shopping");
 
     // Inventory absorbed items
-    expect(paths).toContain("/photography");
-    expect(paths).toContain("/samples");
+    expect(paths).toContain("/inventory?tab=photography");
+    expect(paths).toContain("/inventory?tab=samples");
 
     // Admin absorbed items
     expect(paths).toContain("/users");
@@ -94,8 +94,8 @@ describe("consolidated navigation IA", () => {
     expect(sidebarHiddenPaths).toContain("/inventory?tab=shipping");
     expect(sidebarHiddenPaths).toContain("/inventory?tab=receiving");
     expect(sidebarHiddenPaths).toContain("/direct-intake");
-    expect(sidebarHiddenPaths).toContain("/photography");
-    expect(sidebarHiddenPaths).toContain("/samples");
+    expect(sidebarHiddenPaths).toContain("/inventory?tab=photography");
+    expect(sidebarHiddenPaths).toContain("/inventory?tab=samples");
     expect(sidebarHiddenPaths).toContain("/users");
     expect(sidebarHiddenPaths).toContain("/scheduling");
     expect(sidebarHiddenPaths).toContain("/time-clock");
@@ -113,7 +113,7 @@ describe("consolidated navigation IA", () => {
 
     // Absorbed items must NOT appear in sidebar groups
     expect(groupedPaths).not.toContain("/sales?tab=sales-sheets");
-    expect(groupedPaths).not.toContain("/photography");
+    expect(groupedPaths).not.toContain("/inventory?tab=photography");
     expect(groupedPaths).not.toContain("/users");
     expect(groupedPaths).not.toContain("/scheduling");
     expect(groupedPaths).not.toContain("/todos");

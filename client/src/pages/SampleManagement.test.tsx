@@ -322,6 +322,17 @@ describe("SampleManagement", () => {
       expect(screen.getByText(/All 2/i)).toBeInTheDocument();
       expect(screen.getByText(/Samples Out 2/i)).toBeInTheDocument();
     });
+
+    it("hides standalone page chrome when embedded in Inventory", () => {
+      render(<SampleManagement embedded />);
+
+      expect(
+        screen.queryByRole("heading", { name: /sample management/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /new sample/i })
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe("Tab Filtering", () => {

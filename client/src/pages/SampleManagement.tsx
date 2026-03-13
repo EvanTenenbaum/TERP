@@ -55,6 +55,10 @@ interface ClientOption {
   name: string | null;
 }
 
+interface SampleManagementProps {
+  embedded?: boolean;
+}
+
 function normalizeProducts(
   products: SampleRequest["products"] | null | undefined
 ): Array<{ productId: number; quantity: string }> {
@@ -105,7 +109,9 @@ function extractDueDate(notes?: string | null): string | null {
   return match ? match[1] : null;
 }
 
-export default function SampleManagement() {
+export default function SampleManagement({
+  embedded = false,
+}: SampleManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TabFilter>("ALL");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -589,22 +595,36 @@ export default function SampleManagement() {
   const combinedProductOptions =
     productOptions.length > 0 ? productOptions : fallbackProductOptions;
 
+  const renderPageHeader = (
+    description?: string,
+    { showCreateAction = false }: { showCreateAction?: boolean } = {}
+  ) =>
+    embedded ? null : (
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Filter className="h-4 w-4" />
+            Samples
+          </div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Beaker className="h-7 w-7 text-primary" />
+            Sample Management
+          </h1>
+          {description ? (
+            <p className="text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
+        {showCreateAction && canCreateSamples ? (
+          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
+        ) : null}
+      </div>
+    );
+
   // Loading state
   if (samplesLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Filter className="h-4 w-4" />
-              Samples
-            </div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Beaker className="h-7 w-7 text-primary" />
-              Sample Management
-            </h1>
-          </div>
-        </div>
+        {renderPageHeader()}
         <LoadingState message="Loading samples..." />
       </div>
     );
@@ -618,18 +638,7 @@ export default function SampleManagement() {
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Filter className="h-4 w-4" />
-              Samples
-            </div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Beaker className="h-7 w-7 text-primary" />
-              Sample Management
-            </h1>
-          </div>
-        </div>
+        {renderPageHeader()}
         <Card className="p-6" data-testid="samples-error">
           {isDbError ? (
             <DatabaseErrorState
@@ -657,22 +666,9 @@ export default function SampleManagement() {
   if (samples.length === 0 && !isSamplesError) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Filter className="h-4 w-4" />
-              Samples
-            </div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Beaker className="h-7 w-7 text-primary" />
-              Sample Management
-            </h1>
-            <p className="text-muted-foreground">
-              Track sample requests, approvals, and returns.
-            </p>
-          </div>
-          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
-        </div>
+        {renderPageHeader("Track sample requests, approvals, and returns.", {
+          showCreateAction: true,
+        })}
         <Card className="p-6" data-testid="samples-empty">
           <EmptyState
             {...emptyStateConfigs.samples}
@@ -704,24 +700,10 @@ export default function SampleManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Filter className="h-4 w-4" />
-            Samples
-          </div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Beaker className="h-7 w-7 text-primary" />
-            Sample Management
-          </h1>
-          <p className="text-muted-foreground">
-            Track samples out and sample returns without the old status maze.
-          </p>
-        </div>
-        {canCreateSamples && (
-          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
-        )}
-      </div>
+      {renderPageHeader(
+        "Track samples out and sample returns without the old status maze.",
+        { showCreateAction: true }
+      )}
 
       {/* Expiring Samples Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

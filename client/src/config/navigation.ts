@@ -178,7 +178,7 @@ export const navigationItems: NavigationItem[] = [
   // NAV-003: Photography absorbed as Inventory tab
   {
     name: "Photography",
-    path: "/photography",
+    path: "/inventory?tab=photography",
     icon: Camera,
     group: "operations",
     ariaLabel: "Product photography queue and workflow management",
@@ -186,7 +186,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: "Samples",
-    path: "/samples",
+    path: "/inventory?tab=samples",
     icon: Beaker,
     group: "operations",
     sidebarVisible: false,
