@@ -44,9 +44,19 @@ import GridColumnsPopover, {
   type GridColumnOption,
 } from "@/components/uiux-slice/GridColumnsPopover";
 import {
+  buildPurchaseOrderCategoryOptions,
+  getPurchaseOrderSubcategoryOptions,
+} from "@/components/work-surface/purchaseOrderCategoryOptions";
+import {
   createProductIntakeDraftFromPO,
   upsertProductIntakeDraft,
 } from "@/lib/productIntakeDrafts";
+import {
+  applySliceCategorySelection,
+  applySliceProductSelection,
+  buildSliceCreatePayloadItem,
+  type PurchaseOrdersSliceFormItem,
+} from "./purchaseOrdersSliceForm";
 import {
   clearGridPreference,
   loadGridPreference,
@@ -110,17 +120,16 @@ type VendorLike = {
   _clientId?: number | null;
 };
 
-type CreatePoItemForm = {
+type CreatePoItemForm = PurchaseOrdersSliceFormItem & {
   id: string;
-  productId: string;
-  quantityOrdered: string;
-  unitCost: string;
 };
 
 function createPoItemForm(): CreatePoItemForm {
   return {
     id: `po-line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     productId: "",
+    category: "",
+    subcategory: "",
     quantityOrdered: "",
     unitCost: "",
   };
@@ -251,6 +260,22 @@ export function PurchaseOrdersSlicePage() {
 
   const productsQuery = trpc.purchaseOrders.products.useQuery({ limit: 500 });
   const products = productsQuery.data?.items ?? [];
+  const { data: categoriesData } = trpc.settings.categories.list.useQuery();
+  const { data: subcategoriesData } =
+    trpc.settings.subcategories.list.useQuery();
+  const categoryOptions = useMemo(
+    () => buildPurchaseOrderCategoryOptions(categoriesData),
+    [categoriesData]
+  );
+  const getSubcategoryOptions = useCallback(
+    (categoryName: string) =>
+      getPurchaseOrderSubcategoryOptions(
+        categoryName,
+        categoriesData,
+        subcategoriesData
+      ),
+    [categoriesData, subcategoriesData]
+  );
 
   const selectedPoQuery = trpc.purchaseOrders.getByIdWithDetails.useQuery(
     { id: selectedPoId ?? -1 },
@@ -547,12 +572,8 @@ export function PurchaseOrdersSlicePage() {
     }
 
     const items = createForm.items
-      .filter(i => i.productId && i.quantityOrdered && i.unitCost)
-      .map(i => ({
-        productId: Number(i.productId),
-        quantityOrdered: Number(i.quantityOrdered),
-        unitCost: Number(i.unitCost),
-      }));
+      .map(buildSliceCreatePayloadItem)
+      .filter((item): item is NonNullable<typeof item> => !!item);
 
     if (items.length === 0) {
       toast.error("At least one line item is required.");
@@ -1028,18 +1049,32 @@ export function PurchaseOrdersSlicePage() {
               </div>
 
               <div className="space-y-2">
-                {createForm.items.map((line, index) => (
-                  <div
-                    key={line.id}
-                    className="grid grid-cols-[1.4fr_0.6fr_0.6fr_auto] gap-2"
-                  >
+                {createForm.items.map((line, index) => {
+                  const subcategoryOptions = getSubcategoryOptions(
+                    line.category
+                  );
+                  return (
+                    <div
+                      key={line.id}
+                      className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.55fr_0.7fr_auto] gap-2"
+                    >
                     <Select
                       value={line.productId}
                       onValueChange={value => {
+                        const selectedProduct = products.find(
+                          product => String(product.id) === value
+                        );
                         setCreateForm(prev => ({
                           ...prev,
                           items: prev.items.map((item, i) =>
-                            i === index ? { ...item, productId: value } : item
+                            i === index
+                              ? applySliceProductSelection(
+                                  item,
+                                  value,
+                                  selectedProduct,
+                                  getSubcategoryOptions
+                                )
+                              : item
                           ),
                         }));
                       }}
@@ -1054,6 +1089,70 @@ export function PurchaseOrdersSlicePage() {
                             value={String(product.id)}
                           >
                             {product.nameCanonical}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={line.category || undefined}
+                      onValueChange={value => {
+                        setCreateForm(prev => ({
+                          ...prev,
+                          items: prev.items.map((item, i) =>
+                            i === index
+                              ? applySliceCategorySelection(
+                                  item,
+                                  value,
+                                  getSubcategoryOptions
+                                )
+                              : item
+                          ),
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={line.subcategory || undefined}
+                      onValueChange={value => {
+                        setCreateForm(prev => ({
+                          ...prev,
+                          items: prev.items.map((item, i) =>
+                            i === index
+                              ? { ...item, subcategory: value }
+                              : item
+                          ),
+                        }));
+                      }}
+                      disabled={subcategoryOptions.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            subcategoryOptions.length > 0
+                              ? "Subcategory"
+                              : "No subcategories"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subcategoryOptions.map(subcategory => (
+                          <SelectItem
+                            key={`${line.category}-${subcategory}`}
+                            value={subcategory}
+                          >
+                            {subcategory}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1107,8 +1206,9 @@ export function PurchaseOrdersSlicePage() {
                     >
                       Remove
                     </Button>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
