@@ -202,10 +202,10 @@ export function InventoryBrowser({
     setQuickQuantities(prev => ({ ...prev, [itemId]: sanitized }));
   };
 
-  // Calculate markup percentage
-  const calculateMarkup = (basePrice: number, retailPrice: number) => {
-    if (basePrice === 0) return 0;
-    return ((retailPrice - basePrice) / basePrice) * 100;
+  // Show gross margin so the browser matches pricing profiles and order rows.
+  const calculateMargin = (basePrice: number, retailPrice: number) => {
+    if (retailPrice <= 0) return 0;
+    return ((retailPrice - basePrice) / retailPrice) * 100;
   };
 
   if (isLoading) {
@@ -277,7 +277,7 @@ export function InventoryBrowser({
                 <TableHead>Qty Available</TableHead>
                 <TableHead>Price/Unit</TableHead>
                 <TableHead>Client Price</TableHead>
-                <TableHead>Markup</TableHead>
+                <TableHead>Margin</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -292,7 +292,7 @@ export function InventoryBrowser({
                 </TableRow>
               ) : (
                 filteredInventory.map(item => {
-                  const markup = calculateMarkup(
+                  const margin = calculateMargin(
                     item.basePrice,
                     item.retailPrice
                   );
@@ -436,9 +436,9 @@ export function InventoryBrowser({
                         ${item.retailPrice.toFixed(2)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={markup > 0 ? "default" : "secondary"}>
-                          {markup > 0 ? "+" : ""}
-                          {markup.toFixed(1)}%
+                        <Badge variant={margin > 0 ? "default" : "secondary"}>
+                          {margin > 0 ? "+" : ""}
+                          {margin.toFixed(1)}%
                         </Badge>
                       </TableCell>
                     </TableRow>

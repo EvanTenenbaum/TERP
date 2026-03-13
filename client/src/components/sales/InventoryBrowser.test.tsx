@@ -47,4 +47,18 @@ describe("InventoryBrowser", () => {
     expect(firstAddedItem.id).toBe(101);
     expect(firstAddedItem.orderQuantity).toBe(2);
   });
+
+  it("shows gross margin so catalog pricing matches the order flow", () => {
+    render(
+      <InventoryBrowser
+        inventory={[inventoryItem]}
+        isLoading={false}
+        onAddItems={vi.fn()}
+        selectedItems={[]}
+      />
+    );
+
+    expect(screen.getByText("Margin")).toBeTruthy();
+    expect(screen.getByText("+33.3%")).toBeTruthy();
+  });
 });
