@@ -57,7 +57,7 @@ export function MarginInput({
       return;
     }
     setInputValue(formatInputValue(inputMode));
-  }, [inputMode, isEditing, marginDollar, marginPercent]);
+  }, [formatInputValue, inputMode, isEditing]);
 
   const roundToTwoDecimals = (value: number): number =>
     Math.round(value * 100) / 100;
@@ -186,7 +186,7 @@ export function MarginInput({
   };
 
   const handleCancel = () => {
-    setInputValue(formatInputValue(inputMode, marginDollar, marginPercent));
+    setInputValue(formatInputValue(inputMode));
     setValidationMessage(null);
     setIsEditing(false);
   };
@@ -248,15 +248,9 @@ export function MarginInput({
                 const nextMode = value as "percent" | "dollar";
                 const numericValue = parseFloat(inputValue);
                 if (nextMode !== inputMode && Number.isFinite(numericValue)) {
-                  const currentFormattedValue = formatInputValue(
-                    inputMode,
-                    marginDollar,
-                    marginPercent
-                  );
+                  const currentFormattedValue = formatInputValue(inputMode);
                   if (inputValue === currentFormattedValue) {
-                    setInputValue(
-                      formatInputValue(nextMode, marginDollar, marginPercent)
-                    );
+                    setInputValue(formatInputValue(nextMode));
                   } else if (nextMode === "dollar") {
                     const dollarValue = marginDollarFromPercent(numericValue);
                     setInputValue(dollarValue.toFixed(2));
