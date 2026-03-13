@@ -53,6 +53,7 @@ import {
   saveGridPreference,
   type GridViewMode,
 } from "@/lib/gridPreferences";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 
 const statusColor: Record<string, string> = {
@@ -473,13 +474,13 @@ export function PurchaseOrdersSlicePage() {
 
     const chosen = pickerLines.filter(l => l.selected && l.intakeQty > 0);
     if (chosen.length === 0) {
-      toast.error("Select at least one line with intake quantity.");
+      toast.error("Select at least one line with a receiving quantity.");
       return;
     }
 
     const invalid = chosen.find(line => line.intakeQty > line.remainingQty);
     if (invalid) {
-      toast.error("Intake quantity cannot exceed remaining quantity.");
+      toast.error("Receiving quantity cannot exceed the remaining quantity.");
       return;
     }
 
@@ -516,11 +517,11 @@ export function PurchaseOrdersSlicePage() {
       })),
     });
 
-    const intakeBasePath = route.startsWith("/slice-v1-lab")
+    const receivingDraftPath = route.startsWith("/slice-v1-lab")
       ? "/slice-v1-lab/product-intake"
       : route.startsWith("/slice-v1")
         ? "/slice-v1/product-intake"
-        : "/operations?tab=receiving";
+        : buildOperationsWorkspacePath("receiving", { draftId: draft.id });
 
     upsertProductIntakeDraft(draft, preferenceUserId);
     setPickerOpen(false);
@@ -532,7 +533,11 @@ export function PurchaseOrdersSlicePage() {
       stepCount: chosen.length + 1,
       elapsedMs: Date.now() - startedAt,
     });
-    navigate(`${intakeBasePath}?draftId=${encodeURIComponent(draft.id)}`);
+    navigate(
+      route.startsWith("/slice-v1")
+        ? `${receivingDraftPath}?draftId=${encodeURIComponent(draft.id)}`
+        : receivingDraftPath
+    );
   };
 
   const createPurchaseOrder = () => {
@@ -814,7 +819,7 @@ export function PurchaseOrdersSlicePage() {
               {activePoForIntake ? ` from ${activePoForIntake.poNumber}` : ""}
             </DrawerTitle>
             <DrawerDescription className="sr-only">
-              Select PO lines and quantities to start a receiving draft.
+              Select PO lines and quantities to begin receiving.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto">
@@ -825,7 +830,7 @@ export function PurchaseOrdersSlicePage() {
                   <th className="text-left p-2">Product</th>
                   <th className="text-right p-2">Remaining</th>
                   <th className="text-right p-2">Unit Cost</th>
-                  <th className="text-right p-2 w-44">Intake Qty</th>
+                  <th className="text-right p-2 w-44">Receive Qty</th>
                 </tr>
               </thead>
               <tbody>
@@ -886,7 +891,7 @@ export function PurchaseOrdersSlicePage() {
               <Button variant="outline" onClick={() => setPickerOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={createIntakeDraft}>Create Intake Draft</Button>
+              <Button onClick={createIntakeDraft}>Open Receiving Draft</Button>
             </div>
           </DrawerFooter>
         </DrawerContent>
