@@ -167,7 +167,7 @@ describe("AppSidebar navigation", () => {
     expect(purchaseOrdersLink).toHaveAttribute("aria-current", "page");
   });
 
-  it("highlights Operations for legacy receiving and shipping aliases", () => {
+  it("highlights Operations for legacy receiving, intake, and shipping aliases", () => {
     mockLocation = "/pick-pack";
     const { rerender } = render(
       <ThemeProvider>
@@ -181,6 +181,32 @@ describe("AppSidebar navigation", () => {
     expect(operationsLink).toHaveAttribute("aria-current", "page");
 
     mockLocation = "/receiving";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: /Manage inventory, receiving, shipping/i,
+      })
+    ).toHaveAttribute("aria-current", "page");
+
+    mockLocation = "/intake";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: /Manage inventory, receiving, shipping/i,
+      })
+    ).toHaveAttribute("aria-current", "page");
+
+    mockLocation = "/direct-intake";
     rerender(
       <ThemeProvider>
         <Sidebar open />

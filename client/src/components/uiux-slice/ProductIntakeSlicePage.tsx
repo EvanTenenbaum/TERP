@@ -187,7 +187,7 @@ export function ProductIntakeSlicePage() {
   const [transferLocationId, setTransferLocationId] = useState<string>("");
   const [transferQty, setTransferQty] = useState("0");
   const [transferReason, setTransferReason] = useState("");
-  const [voidReason, setVoidReason] = useState("Void intake");
+  const [voidReason, setVoidReason] = useState("Void receiving");
   const [bulkLocationId, setBulkLocationId] = useState<string>("");
   const [bulkGrade, setBulkGrade] = useState("");
 
@@ -597,7 +597,7 @@ export function ProductIntakeSlicePage() {
       return null;
     }
     if (latest.version !== draft.version) {
-      toast.error("This intake changed elsewhere. Reloaded latest version.");
+      toast.error("This receiving draft changed elsewhere. Reloaded latest version.");
       refreshDrafts(draft.id);
       return null;
     }
@@ -1000,7 +1000,7 @@ export function ProductIntakeSlicePage() {
       recordLabActivity(
         "CHANGE_LOCATION",
         transferQtyNum.toString(),
-        transferReason || `Change Location from Intake ${selectedDraft?.id}`,
+        transferReason || `Change Location from Receiving ${selectedDraft?.id}`,
         selectedLine.batchId ?? 0
       );
       setActivityReloadToken(token => token + 1);
@@ -1036,7 +1036,8 @@ export function ProductIntakeSlicePage() {
         toBin: destination.bin ?? undefined,
         quantity: transferQtyNum.toString(),
         notes:
-          transferReason || `Change Location from Intake ${selectedDraft?.id}`,
+          transferReason ||
+          `Change Location from Receiving ${selectedDraft?.id}`,
       });
 
       setActivityReloadToken(token => token + 1);
@@ -1072,13 +1073,13 @@ export function ProductIntakeSlicePage() {
       recordLabActivity(
         "VOID_INTAKE",
         "0",
-        voidReason || `Void intake ${selectedDraft.id}`,
+        voidReason || `Void receiving ${selectedDraft.id}`,
         0
       );
       refreshDrafts(selectedDraft.id);
       setActivityReloadToken(token => token + 1);
       setVoidOpen(false);
-      toast.success("Intake voided with reversal movements.");
+      toast.success("Receiving was voided with reversal movements.");
       recordFrictionEvent({
         event: "flow_complete",
         workflow: "GF-007",
@@ -1112,7 +1113,7 @@ export function ProductIntakeSlicePage() {
           candidates[0];
         await reverseMutation.mutateAsync({
           movementId: preferred.id,
-          reason: voidReason || `Void intake ${selectedDraft.id}`,
+          reason: voidReason || `Void receiving ${selectedDraft.id}`,
         });
       }
 
@@ -1120,7 +1121,7 @@ export function ProductIntakeSlicePage() {
       refreshDrafts(selectedDraft.id);
       setActivityReloadToken(token => token + 1);
       setVoidOpen(false);
-      toast.success("Intake voided with reversal movements.");
+      toast.success("Receiving was voided with reversal movements.");
       recordFrictionEvent({
         event: "flow_complete",
         workflow: "GF-007",
@@ -1209,8 +1210,8 @@ export function ProductIntakeSlicePage() {
 
     toast.success(
       usedLocalFallback
-        ? "Draft intake photos saved locally for this testing session."
-        : "Draft intake photos saved."
+        ? "Draft receiving photos saved locally for this testing session."
+        : "Draft receiving photos saved."
     );
   };
 
@@ -1239,7 +1240,7 @@ export function ProductIntakeSlicePage() {
 
   const intakeContext = selectedDraft
     ? `${selectedDraft.id} · ${selectedDraft.vendorName} · ${selectedDraft.warehouseName} · PO ${selectedDraft.poNumber} · ${summary.lines} lines · ${summary.units.toFixed(2)} units · $${summary.cost.toFixed(2)} · ${selectedDraft.status}`
-    : "Select an intake draft to continue.";
+    : "Select a receiving draft to continue.";
 
   const galleryImages = isLabRoute
     ? (selectedLine?.mediaUrls ?? []).map((media, index) => ({
@@ -1347,7 +1348,7 @@ export function ProductIntakeSlicePage() {
             validation.errorCount > 0
           }
         >
-          {receiveMutation.isPending ? "Intaking..." : "Receive"}
+          {receiveMutation.isPending ? "Receiving..." : "Receive"}
         </Button>
 
         <Button
@@ -1413,7 +1414,7 @@ export function ProductIntakeSlicePage() {
               onClick={() => setVoidOpen(true)}
             >
               <RotateCcw className="h-4 w-4 mr-1" />
-              Void Intake
+              Void Receiving
             </Button>
           </>
         )}
@@ -1723,9 +1724,9 @@ export function ProductIntakeSlicePage() {
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Review Intake</DialogTitle>
+            <DialogTitle>Review Receiving</DialogTitle>
             <DialogDescription className="sr-only">
-              Review totals and blocking errors before completing intake.
+              Review totals and blocking errors before completing receiving.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
@@ -1762,7 +1763,7 @@ export function ProductIntakeSlicePage() {
           <DrawerHeader>
             <DrawerTitle>Activity Log</DrawerTitle>
             <DrawerDescription className="sr-only">
-              Inventory and correction movement history for this intake.
+              Inventory and correction movement history for this receiving record.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-2">
@@ -1805,7 +1806,7 @@ export function ProductIntakeSlicePage() {
           <DrawerHeader>
             <DrawerTitle>Attachments</DrawerTitle>
             <DrawerDescription className="sr-only">
-              Upload and manage intake photo evidence for the selected line.
+              Upload and manage receiving photo evidence for the selected line.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-3">
@@ -1817,7 +1818,7 @@ export function ProductIntakeSlicePage() {
             {selectedLine && (
               <>
                 <div>
-                  <Label>Upload Intake Photos</Label>
+                  <Label>Upload Receiving Photos</Label>
                   <Input
                     type="file"
                     multiple
@@ -1971,9 +1972,9 @@ export function ProductIntakeSlicePage() {
       <Dialog open={voidOpen} onOpenChange={setVoidOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Void Intake</DialogTitle>
+            <DialogTitle>Void Receiving</DialogTitle>
             <DialogDescription className="sr-only">
-              Void this intake by creating reversal movements.
+              Void this receiving record by creating reversal movements.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1998,7 +1999,7 @@ export function ProductIntakeSlicePage() {
               onClick={submitVoid}
               disabled={reverseMutation.isPending}
             >
-              {reverseMutation.isPending ? "Voiding..." : "Void Intake"}
+              {reverseMutation.isPending ? "Voiding..." : "Void Receiving"}
             </Button>
           </DialogFooter>
         </DialogContent>
