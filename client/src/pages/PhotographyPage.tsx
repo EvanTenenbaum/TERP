@@ -55,6 +55,10 @@ interface SelectedBatch {
   addedAt?: Date | string | null;
 }
 
+interface PhotographyPageProps {
+  embedded?: boolean;
+}
+
 /**
  * Convert a File to base64 string (without the data URL prefix)
  */
@@ -75,7 +79,9 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-export default function PhotographyPage() {
+export default function PhotographyPage({
+  embedded = false,
+}: PhotographyPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -257,19 +263,21 @@ export default function PhotographyPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <BackButton />
-          <div>
-            <h1 className="text-2xl font-bold">Photography Queue</h1>
-            <p className="text-muted-foreground">
-              Work the next batch, upload shots fast, and fall back to file
-              upload when camera access fails.
-            </p>
+    <div className={embedded ? "space-y-6" : "container mx-auto p-6 space-y-6"}>
+      {!embedded ? (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <BackButton />
+            <div>
+              <h1 className="text-2xl font-bold">Photography Queue</h1>
+              <p className="text-muted-foreground">
+                Work the next batch, upload shots fast, and fall back to file
+                upload when camera access fails.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

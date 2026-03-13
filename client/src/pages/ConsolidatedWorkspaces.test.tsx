@@ -115,6 +115,16 @@ vi.mock("@/pages/CreditSettingsPage", () => ({
     <div>Credit Settings {embedded ? "Embedded" : "Standalone"}</div>
   ),
 }));
+vi.mock("@/pages/PhotographyPage", () => ({
+  default: ({ embedded }: { embedded?: boolean }) => (
+    <div>Photography {embedded ? "Embedded" : "Standalone"}</div>
+  ),
+}));
+vi.mock("@/pages/SampleManagement", () => ({
+  default: ({ embedded }: { embedded?: boolean }) => (
+    <div>Samples {embedded ? "Embedded" : "Standalone"}</div>
+  ),
+}));
 
 describe("Consolidated workspace pages", () => {
   beforeEach(() => {
@@ -179,6 +189,20 @@ describe("Consolidated workspace pages", () => {
     expect(
       await screen.findByText("Receiving Slice Surface")
     ).toBeInTheDocument();
+  });
+
+  it("renders Inventory workspace photography tab with embedded content", async () => {
+    mockActiveTab = "photography";
+    render(<InventoryWorkspacePage />);
+    expect(
+      await screen.findByText("Photography Embedded")
+    ).toBeInTheDocument();
+  });
+
+  it("renders Inventory workspace samples tab with embedded content", async () => {
+    mockActiveTab = "samples";
+    render(<InventoryWorkspacePage />);
+    expect(await screen.findByText("Samples Embedded")).toBeInTheDocument();
   });
 
   it("renders Sales workspace with quotes tab content", () => {

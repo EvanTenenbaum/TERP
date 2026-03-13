@@ -41,7 +41,6 @@ import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 import AdminSetupPage from "@/pages/AdminSetupPage";
 import VendorRedirect from "@/components/VendorRedirect";
-import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
 import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import Login from "@/pages/Login";
@@ -68,7 +67,6 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
-import PhotographyPage from "@/pages/PhotographyPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -532,7 +530,10 @@ function Router() {
                 />
                 <Route
                   path="/photography"
-                  component={withErrorBoundary(PhotographyPage)}
+                  component={RedirectToOperationsTab(
+                    "/photography",
+                    "photography"
+                  )}
                 />
                 <Route
                   path="/orders/create"
@@ -686,7 +687,7 @@ function Router() {
                 />
                 <Route
                   path="/samples"
-                  component={withErrorBoundary(SampleManagement)}
+                  component={RedirectToOperationsTab("/samples", "samples")}
                 />
                 <Route
                   path="/locations"

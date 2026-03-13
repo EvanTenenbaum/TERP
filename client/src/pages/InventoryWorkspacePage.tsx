@@ -72,12 +72,12 @@ export default function InventoryWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="photography">
         <Suspense fallback={<PageLoading message="Loading photography..." />}>
-          <PhotographyPage />
+          <PhotographyPage embedded />
         </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="samples">
         <Suspense fallback={<PageLoading message="Loading samples..." />}>
-          <SampleManagement />
+          <SampleManagement embedded />
         </Suspense>
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
