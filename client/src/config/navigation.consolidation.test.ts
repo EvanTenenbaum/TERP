@@ -39,8 +39,8 @@ describe("consolidated navigation IA", () => {
     expect(paths).not.toContain("/inbox");
   });
 
-  it("has exactly 12 sidebar-visible items", () => {
-    expect(sidebarItems).toHaveLength(12);
+  it("has exactly 11 sidebar-visible items", () => {
+    expect(sidebarItems).toHaveLength(11);
   });
 
   it("has correct sidebar-visible items per group", () => {
@@ -71,8 +71,8 @@ describe("consolidated navigation IA", () => {
     // Operations absorbed items
     expect(paths).toContain("/inventory?tab=shipping");
     expect(paths).toContain("/inventory?tab=receiving");
-    expect(paths).toContain("/sales-sheets");
-    expect(paths).toContain("/live-shopping");
+    expect(paths).toContain("/sales?tab=sales-sheets");
+    expect(paths).toContain("/sales?tab=live-shopping");
 
     // Inventory absorbed items
     expect(paths).toContain("/photography");
@@ -89,10 +89,11 @@ describe("consolidated navigation IA", () => {
     const sidebarHiddenPaths = hiddenItems.map(item => item.path);
 
     // Absorbed items must NOT be sidebar-visible
-    expect(sidebarHiddenPaths).toContain("/sales-sheets");
-    expect(sidebarHiddenPaths).toContain("/live-shopping");
+    expect(sidebarHiddenPaths).toContain("/sales?tab=sales-sheets");
+    expect(sidebarHiddenPaths).toContain("/sales?tab=live-shopping");
     expect(sidebarHiddenPaths).toContain("/inventory?tab=shipping");
     expect(sidebarHiddenPaths).toContain("/inventory?tab=receiving");
+    expect(sidebarHiddenPaths).toContain("/direct-intake");
     expect(sidebarHiddenPaths).toContain("/photography");
     expect(sidebarHiddenPaths).toContain("/samples");
     expect(sidebarHiddenPaths).toContain("/users");
@@ -111,7 +112,7 @@ describe("consolidated navigation IA", () => {
     expect(groupedPaths).toContain("/accounting");
 
     // Absorbed items must NOT appear in sidebar groups
-    expect(groupedPaths).not.toContain("/sales-sheets");
+    expect(groupedPaths).not.toContain("/sales?tab=sales-sheets");
     expect(groupedPaths).not.toContain("/photography");
     expect(groupedPaths).not.toContain("/users");
     expect(groupedPaths).not.toContain("/scheduling");
@@ -130,7 +131,7 @@ describe("consolidated navigation IA", () => {
 
     expect(sellItems).toHaveLength(2);
     expect(buyItems).toHaveLength(1);
-    expect(operationsItems).toHaveLength(2);
+    expect(operationsItems).toHaveLength(1);
     expect(relationshipItems).toHaveLength(1);
     expect(financeItems).toHaveLength(3);
     expect(adminItems).toHaveLength(3);

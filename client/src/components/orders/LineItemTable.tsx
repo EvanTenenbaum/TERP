@@ -29,7 +29,10 @@ import {
   BatchSelectionDialog,
   type BatchAllocation,
 } from "./BatchSelectionDialog";
-import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+import {
+  calculateLineItem,
+  calculateLineItemFromRetailPrice,
+} from "@/hooks/orders/useOrderCalculations";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import type { PowersheetBulkActionContract } from "@/types/powersheet";
@@ -241,11 +244,11 @@ export function LineItemTable({
       // If single batch selected, update the existing line item
       if (allocations.length === 1) {
         const allocation = allocations[0];
-        const updated = calculateLineItem(
+        const updated = calculateLineItemFromRetailPrice(
           allocation.batchId,
           allocation.quantity,
           allocation.unitCost,
-          currentItem.marginPercent
+          currentItem.unitPrice
         );
 
         const newItems = [...items];
@@ -262,11 +265,11 @@ export function LineItemTable({
       } else {
         // Multiple batches: replace current item with multiple line items
         const newLineItems = allocations.map(allocation => {
-          const updated = calculateLineItem(
+          const updated = calculateLineItemFromRetailPrice(
             allocation.batchId,
             allocation.quantity,
             allocation.unitCost,
-            currentItem.marginPercent
+            currentItem.unitPrice
           );
 
           return {
@@ -339,11 +342,11 @@ export function LineItemTable({
     }
 
     bulkActions.applyToSelected(item => {
-      const updated = calculateLineItem(
+      const updated = calculateLineItemFromRetailPrice(
         item.batchId,
         item.quantity,
         nextCogs,
-        item.marginPercent
+        item.unitPrice
       );
       return {
         ...item,

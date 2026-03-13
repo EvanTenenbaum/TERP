@@ -93,6 +93,7 @@ describe("LineItemTable powersheet actions", () => {
 
     const nextItems = onChange.mock.calls[0][0] as LineItem[];
     expect(nextItems[0].cogsPerUnit).toBe(14.5);
+    expect(nextItems[0].unitPrice).toBe(12.5);
     expect(nextItems[0].isCogsOverridden).toBe(true);
     expect(nextItems[0].cogsOverrideReason).toBe("Bulk override");
 

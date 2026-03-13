@@ -27,7 +27,8 @@ describe("MarginInput", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(onChange).toHaveBeenCalledWith(33.33, true);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]).toEqual([33.33, true, 15]);
   });
 
   it("converts percent edits to the matching dollar margin", () => {
@@ -50,6 +51,25 @@ describe("MarginInput", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Dollar" }));
 
     expect(screen.getByLabelText("Margin ($)")).toHaveValue(10);
+  });
+
+  it("preserves exact cents when toggling untouched profile-driven values", () => {
+    render(
+      <MarginInput
+        marginPercent={33.33}
+        marginDollar={380.66}
+        cogsPerUnit={761.32}
+        source="CUSTOMER_PROFILE"
+        isOverridden={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText("33.3%"));
+    fireEvent.click(screen.getByRole("radio", { name: "Percent" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Dollar" }));
+
+    expect(screen.getByLabelText("Margin ($)")).toHaveValue(380.66);
   });
 
   it("shows field/rule/fix validation guidance when value is invalid", () => {
@@ -100,5 +120,29 @@ describe("MarginInput", () => {
         "This row is following the relationship pricing profile until you override it."
       )
     ).toBeInTheDocument();
+  });
+
+  it("preserves the exact unit price when saving from dollar mode", () => {
+    const onChange = vi.fn();
+
+    render(
+      <MarginInput
+        marginPercent={33.33}
+        marginDollar={380.66}
+        cogsPerUnit={761.32}
+        source="CUSTOMER_PROFILE"
+        isOverridden={false}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByText("33.3%"));
+    fireEvent.change(screen.getByLabelText("Margin ($)"), {
+      target: { value: "380.66" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]).toEqual([33.33, true, 1141.98]);
   });
 });

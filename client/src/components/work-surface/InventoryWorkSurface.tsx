@@ -13,10 +13,12 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 
 // UI Components
@@ -63,7 +65,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
 import { FilterChips } from "@/components/inventory/FilterChips";
 import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
@@ -529,6 +530,7 @@ function BatchInspectorContent({
 // ============================================================================
 
 export function InventoryWorkSurface() {
+  const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pendingBulkDeleteRef = useRef<
     Array<{
@@ -544,7 +546,6 @@ export function InventoryWorkSurface() {
     useState<InventoryViewMode>("table");
   const [page, setPage] = useState(0);
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -1862,10 +1863,10 @@ export function InventoryWorkSurface() {
           {/* TER-220: Unified receiving entry point */}
           <Button
             data-testid="new-batch-btn"
-            onClick={() => setShowPurchaseModal(true)}
+            onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Receive Inventory
+            Open Receiving Queue
           </Button>
         </div>
 
@@ -2102,8 +2103,9 @@ export function InventoryWorkSurface() {
                 title="No inventory found"
                 description="Receive products to start managing stock, locations, and availability."
                 action={{
-                  label: "Open Receiving",
-                  onClick: () => setShowPurchaseModal(true),
+                  label: "Open Receiving Queue",
+                  onClick: () =>
+                    setLocation(buildOperationsWorkspacePath("receiving")),
                 }}
               />
             )
@@ -2737,15 +2739,6 @@ export function InventoryWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <PurchaseModal
-        open={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-        onSuccess={() => {
-          setSuccessMessage("Product intake created successfully.");
-          refreshInventory();
-        }}
-      />
 
       <SaveViewModal
         open={showSaveViewModal}

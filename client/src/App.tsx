@@ -29,7 +29,6 @@ import SalesWorkspacePage from "@/pages/SalesWorkspacePage";
 import ProcurementWorkspacePage from "@/pages/ProcurementWorkspacePage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
-import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 // Work Surface components - legacy pages removed, using WorkSurface directly
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
@@ -44,8 +43,6 @@ import AdminSetupPage from "@/pages/AdminSetupPage";
 import VendorRedirect from "@/components/VendorRedirect";
 import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
-import DirectIntakePage from "@/pages/DirectIntakePage";
-import IntakeReceipts from "@/pages/IntakeReceipts"; // FEAT-008: Intake Verification System
 import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -70,7 +67,6 @@ import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
 import PhotographyPage from "@/pages/PhotographyPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
@@ -507,14 +503,19 @@ function Router() {
                 />
                 <Route
                   path="/sales-sheets"
-                  component={withErrorBoundary(SalesSheetCreatorPage)}
+                  component={RedirectWithTab(
+                    "/sales-sheets",
+                    "/sales",
+                    "sales-sheets"
+                  )}
                 />
                 {/* TER-189: Redirect legacy singular route to plural */}
                 <Route
                   path="/sales-sheet"
-                  component={RedirectWithSearch(
+                  component={RedirectWithTab(
                     "/sales-sheet",
-                    "/sales-sheets"
+                    "/sales",
+                    "sales-sheets"
                   )}
                 />
                 <Route
@@ -647,10 +648,9 @@ function Router() {
                 />
                 <Route
                   path="/product-intake"
-                  component={RedirectWithTab(
+                  component={RedirectToOperationsTab(
                     "/product-intake",
-                    "/purchase-orders",
-                    "product-intake"
+                    "receiving"
                   )}
                 />
                 <Route
@@ -692,23 +692,27 @@ function Router() {
                   path="/locations"
                   component={withErrorBoundary(LocationsPage)}
                 />
-                {/* FEAT-008: Intake Verification System */}
                 <Route
                   path="/intake-receipts"
-                  component={withErrorBoundary(IntakeReceipts)}
+                  component={RedirectToOperationsTab(
+                    "/intake-receipts",
+                    "receiving"
+                  )}
                 />
-                {/* RT-05/RT-06: Route compatibility aliases to procurement workspace tab */}
                 <Route
                   path="/receiving"
                   component={RedirectToOperationsTab("/receiving", "receiving")}
                 />
                 <Route
                   path="/intake"
-                  component={RedirectWithSearch("/intake", "/direct-intake")}
+                  component={RedirectToOperationsTab("/intake", "receiving")}
                 />
                 <Route
                   path="/direct-intake"
-                  component={withErrorBoundary(DirectIntakePage)}
+                  component={RedirectToOperationsTab(
+                    "/direct-intake",
+                    "receiving"
+                  )}
                 />
                 <Route
                   path="/matchmaking"
@@ -720,7 +724,11 @@ function Router() {
                 />
                 <Route
                   path="/live-shopping"
-                  component={withErrorBoundary(LiveShoppingPage)}
+                  component={RedirectWithTab(
+                    "/live-shopping",
+                    "/sales",
+                    "live-shopping"
+                  )}
                 />
                 <Route
                   path="/spreadsheet-view"

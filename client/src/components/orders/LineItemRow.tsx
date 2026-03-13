@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 // import { useMarginLookup } from "@/hooks/orders/useMarginLookup";
-import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+import { calculateLineItemFromRetailPrice } from "@/hooks/orders/useOrderCalculations";
 import { parsePositiveInteger } from "@/lib/quantity";
 
 interface LineItem {
@@ -79,13 +79,15 @@ export const LineItemRow = memo(function LineItemRow({
       return;
     }
 
-    const updated = calculateLineItem(
-      item.batchId,
-      normalizedQty,
-      item.cogsPerUnit,
-      item.marginPercent
-    );
-    onUpdate(updated);
+    onUpdate({
+      ...item,
+      ...calculateLineItemFromRetailPrice(
+        item.batchId,
+        normalizedQty,
+        item.cogsPerUnit,
+        item.unitPrice
+      ),
+    });
   };
 
   const handleQuantityBlur = () => {
@@ -142,13 +144,14 @@ export const LineItemRow = memo(function LineItemRow({
     effectiveBasis: EffectiveCogsBasis;
     isBelowVendorRange: boolean;
   }) => {
-    const updated = calculateLineItem(
+    const updated = calculateLineItemFromRetailPrice(
       item.batchId,
       item.quantity,
       next.newValue,
-      item.marginPercent
+      item.unitPrice
     );
     onUpdate({
+      ...item,
       ...updated,
       cogsPerUnit: next.newValue,
       isCogsOverridden: next.isOverridden,
@@ -162,15 +165,17 @@ export const LineItemRow = memo(function LineItemRow({
   // Handle margin change
   const handleMarginChange = (
     newMarginPercent: number,
-    isOverridden: boolean
+    isOverridden: boolean,
+    unitPrice: number
   ) => {
-    const updated = calculateLineItem(
+    const updated = calculateLineItemFromRetailPrice(
       item.batchId,
       item.quantity,
       item.cogsPerUnit,
-      newMarginPercent
+      unitPrice
     );
     onUpdate({
+      ...item,
       ...updated,
       marginPercent: newMarginPercent,
       isMarginOverridden: isOverridden,

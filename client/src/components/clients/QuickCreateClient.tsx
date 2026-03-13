@@ -145,15 +145,15 @@ export function QuickCreateClient({
     if (!email.trim() && !phone.trim()) {
       toast.error("Reachable handle required", {
         description:
-          "Add either a username/email or a signal, ID, or phone contact.",
+          "Add either an email handle or a phone / messaging handle.",
       });
       return;
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error("Email-formatted handle must be a valid email", {
+      toast.error("Email handle must be a valid email", {
         description:
-          "This field still saves into the email slot, so it needs an email-formatted handle.",
+          "Use a valid email address in the email handle field.",
       });
       return;
     }
@@ -191,7 +191,7 @@ export function QuickCreateClient({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="quick-email">Email-formatted Handle</Label>
+        <Label htmlFor="quick-email">Email Handle</Label>
         <Input
           id="quick-email"
           type="email"
@@ -200,13 +200,12 @@ export function QuickCreateClient({
           onChange={e => setEmail(e.target.value)}
         />
         <p className="text-xs text-muted-foreground">
-          Use this when the reachable username is already an email-formatted
-          handle.
+          Use this when the best reachable contact is an email address.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="quick-phone">Signal / ID / Phone</Label>
+        <Label htmlFor="quick-phone">Phone or Messaging Handle</Label>
         <Input
           id="quick-phone"
           type="tel"
@@ -215,7 +214,7 @@ export function QuickCreateClient({
           onChange={e => setPhone(e.target.value)}
         />
         <p className="text-xs text-muted-foreground">
-          Add at least one reachable handle before creating the profile.
+          Add at least one reachable contact before creating the profile.
         </p>
       </div>
 

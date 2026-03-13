@@ -85,7 +85,7 @@ import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   useOrderCalculations,
-  calculateLineItem,
+  calculateLineItemFromRetailPrice,
 } from "@/hooks/orders/useOrderCalculations";
 import { useRetryableQuery } from "@/hooks/useRetryableQuery";
 import {
@@ -246,23 +246,6 @@ const parseRouteEntityId = (value: string | null): number | null => {
 
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-};
-
-const calculateMarginPercentFromRetailPrice = (
-  cogsPerUnit: number,
-  retailPrice: number
-): number => {
-  if (
-    !Number.isFinite(cogsPerUnit) ||
-    !Number.isFinite(retailPrice) ||
-    retailPrice <= 0
-  ) {
-    return 0;
-  }
-
-  return (
-    Math.round(((retailPrice - cogsPerUnit) / retailPrice) * 100 * 100) / 100
-  );
 };
 
 const mapDraftLineItemsToEditorState = (
@@ -844,20 +827,15 @@ export default function OrderCreatorPageV2() {
           : item.cogsPerUnit;
         const retailPrice =
           profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
-        const marginPercent = calculateMarginPercentFromRetailPrice(
-          cogsPerUnit,
-          retailPrice
-        );
-        const recalculated = calculateLineItem(
+        const recalculated = calculateLineItemFromRetailPrice(
           item.batchId,
           item.quantity,
           cogsPerUnit,
-          marginPercent
+          retailPrice
         );
 
         return {
           ...item,
-          ...recalculated,
           cogsPerUnit,
           originalCogsPerUnit: shouldRefreshCogsState
             ? cogsPerUnit
@@ -884,7 +862,10 @@ export default function OrderCreatorPageV2() {
             typeof item.originalRangeMin === "number"
               ? cogsPerUnit < item.originalRangeMin
               : false,
-          marginPercent,
+          marginPercent: recalculated.marginPercent ?? 0,
+          marginDollar: recalculated.marginDollar ?? 0,
+          unitPrice: recalculated.unitPrice ?? 0,
+          lineTotal: recalculated.lineTotal ?? 0,
           marginSource: "CUSTOMER_PROFILE",
           isMarginOverridden: false,
         };
@@ -922,6 +903,7 @@ export default function OrderCreatorPageV2() {
         isCogsOverridden: item.isCogsOverridden,
         cogsOverrideReason: item.cogsOverrideReason,
         marginPercent: item.marginPercent,
+        unitPrice: item.unitPrice,
         isMarginOverridden: item.isMarginOverridden,
         marginSource: item.marginSource,
         isSample: item.isSample,
@@ -1216,10 +1198,6 @@ export default function OrderCreatorPageV2() {
       const cogsPerUnit =
         item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
       const retailPrice = item.retailPrice || item.basePrice || 0;
-      const marginPercent = calculateMarginPercentFromRetailPrice(
-        cogsPerUnit,
-        retailPrice
-      );
 
       const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
       const quantity =
@@ -1228,12 +1206,12 @@ export default function OrderCreatorPageV2() {
           availableUnits
         ) ?? 1;
 
-      // Use calculateLineItem to ensure proper structure
-      const calculated = calculateLineItem(
+      // Preserve exact retail-price cents when profile pricing drives the row.
+      const calculated = calculateLineItemFromRetailPrice(
         item.id, // batchId - guaranteed to be defined after filter
         quantity,
         cogsPerUnit,
-        marginPercent
+        retailPrice
       );
 
       return {
@@ -1251,7 +1229,7 @@ export default function OrderCreatorPageV2() {
           typeof item.unitCogsMin === "number"
             ? cogsPerUnit < item.unitCogsMin
             : false,
-        marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
+        marginPercent: calculated.marginPercent || 0, // Ensure marginPercent is always a number
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
         lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
