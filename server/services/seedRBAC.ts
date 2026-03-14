@@ -53,27 +53,41 @@ export async function seedRBACDefaults() {
   }
 
   try {
-    // Check if RBAC is already seeded
-    const existingRoles = await db.select().from(roles).limit(1);
-    if (existingRoles.length > 0) {
-      logger.info("✅ RBAC already seeded, skipping...");
-      return;
+    const existingRoles = await db.select().from(roles);
+    const existingRoleNames = new Set(existingRoles.map(role => role.name));
+    const missingRoles = ROLES.filter(role => !existingRoleNames.has(role.name));
+
+    const existingPermissions = await db.select().from(permissions);
+    const existingPermissionNames = new Set(
+      existingPermissions.map(permission => permission.name)
+    );
+    const missingPermissions = PERMISSIONS.filter(
+      permission => !existingPermissionNames.has(permission.name)
+    );
+
+    if (missingPermissions.length > 0) {
+      logger.info(`📝 Inserting ${missingPermissions.length} missing permissions...`);
+      await db.insert(permissions).values(missingPermissions);
     }
 
-    // 1. Insert permissions
-    logger.info("📝 Inserting 255 permissions...");
-    await db.insert(permissions).values(PERMISSIONS);
+    if (missingRoles.length > 0) {
+      logger.info(`👥 Inserting ${missingRoles.length} missing roles...`);
+      await db.insert(roles).values(missingRoles);
+    }
+
     const allPermissions = await db.select().from(permissions);
-    logger.info(`✅ Inserted ${allPermissions.length} permissions`);
-
-    // 2. Insert roles
-    logger.info("👥 Inserting 10 roles...");
-    await db.insert(roles).values(ROLES);
     const allRoles = await db.select().from(roles);
-    logger.info(`✅ Inserted ${allRoles.length} roles`);
+    logger.info(
+      `✅ RBAC definitions available: ${allRoles.length} roles, ${allPermissions.length} permissions`
+    );
 
-    // 3. Create role-permission mappings
-    logger.info("🔗 Creating role-permission mappings...");
+    const existingMappings = await db.select().from(rolePermissions);
+    const existingMappingKeys = new Set(
+      existingMappings.map(mapping => `${mapping.roleId}:${mapping.permissionId}`)
+    );
+
+    // Create any missing role-permission mappings without duplicating existing ones.
+    logger.info("🔗 Reconciling role-permission mappings...");
 
     for (const mapping of ROLE_PERMISSION_MAPPINGS) {
       const role = allRoles.find(r => r.name === mapping.roleName);
@@ -87,18 +101,26 @@ export async function seedRBACDefaults() {
         allPermissions
       );
 
-      const rolePermissionRecords = permissionIds.map(permissionId => ({
-        roleId: role.id,
-        permissionId,
-      }));
+      const rolePermissionRecords = permissionIds
+        .filter(permissionId => !existingMappingKeys.has(`${role.id}:${permissionId}`))
+        .map(permissionId => ({
+          roleId: role.id,
+          permissionId,
+        }));
 
-      await db.insert(rolePermissions).values(rolePermissionRecords);
+      if (rolePermissionRecords.length > 0) {
+        await db.insert(rolePermissions).values(rolePermissionRecords);
+        for (const record of rolePermissionRecords) {
+          existingMappingKeys.add(`${record.roleId}:${record.permissionId}`);
+        }
+      }
+
       logger.info(
-        `✅ Mapped ${permissionIds.length} permissions to ${mapping.roleName}`
+        `✅ ${mapping.roleName}: ${permissionIds.length} required permissions, ${rolePermissionRecords.length} inserted`
       );
     }
 
-    logger.info("✅ RBAC defaults seeded successfully!");
+    logger.info("✅ RBAC defaults reconciled successfully!");
   } catch (error) {
     // Log the error but DON'T throw - RBAC seeding failure should not crash the server
     // This is critical for deployment health checks to succeed
