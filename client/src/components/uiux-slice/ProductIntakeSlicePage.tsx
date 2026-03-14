@@ -205,11 +205,6 @@ export function ProductIntakeSlicePage() {
       return;
     }
 
-    if (route.startsWith("/slice-v1")) {
-      navigate("/slice-v1/purchase-orders");
-      return;
-    }
-
     navigate(buildOperationsWorkspacePath("receiving"));
   }, [navigate, route]);
 
