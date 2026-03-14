@@ -496,6 +496,9 @@ export function InvoicesWorkSurface() {
   }, []);
   const [search, setSearch] = useState(() => savedViewState?.search ?? "");
   const [statusFilter, setStatusFilter] = useState(() => {
+    if (deepLink.statusFilter) {
+      return deepLink.statusFilter;
+    }
     const saved = savedViewState?.statusFilter;
     const validStatuses = INVOICE_STATUSES.map(s => s.value);
     if (saved && validStatuses.includes(saved)) {
@@ -520,6 +523,12 @@ export function InvoicesWorkSurface() {
   const pageSize = 50;
 
   // TER-507: Persist filter state to localStorage
+  useEffect(() => {
+    if (deepLink.statusFilter) {
+      setStatusFilter(deepLink.statusFilter);
+    }
+  }, [deepLink.statusFilter]);
+
   useEffect(() => {
     try {
       localStorage.setItem(

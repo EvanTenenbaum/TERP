@@ -258,9 +258,9 @@ export const LineItemRow = memo(function LineItemRow({
           </span>
           {profileAdjustmentPercent !== null && (
             <span className="text-xs text-muted-foreground">
-              Profile markup{" "}
+              Profile rule{" "}
               {profileAdjustmentPercent >= 0 ? "+" : ""}
-              {profileAdjustmentPercent.toFixed(1)}%
+              {profileAdjustmentPercent.toFixed(1)}% markup
             </span>
           )}
           <span className="text-xs text-muted-foreground">

@@ -127,7 +127,7 @@ describe("LineItemTable powersheet actions", () => {
 
     expect(screen.getByText("Price from profile rule")).toBeInTheDocument();
     expect(
-      screen.getByText("Profile markup +25.0%")
+      screen.getByText("Profile rule +25.0% markup")
     ).toBeInTheDocument();
     expect(screen.getByText("Using mid supplier range")).toBeInTheDocument();
     expect(screen.getByText("Price manually overridden")).toBeInTheDocument();

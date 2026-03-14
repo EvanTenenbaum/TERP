@@ -119,7 +119,7 @@ describe("MarginInput", () => {
     expect(screen.getByText("Source: Profile-priced")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "This row is currently priced from the relationship profile. The value shown here is the current gross margin for this row's exact cost and price, so it can differ from the profile rule adjustment."
+        "This row is currently priced from the relationship profile. The value shown here is the resulting gross margin for this row's exact cost and price. The profile rule result is shown separately on the row, and the two numbers can differ because markup and gross margin use different formulas."
       )
     ).toBeInTheDocument();
   });
