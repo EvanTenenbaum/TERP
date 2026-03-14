@@ -206,6 +206,7 @@ const PERMISSIONS = [
 
   // Pricing (12)
   { name: "pricing:access", description: "Can access pricing module", module: "pricing" },
+  { name: "pricing:read", description: "Can read pricing context and pricing module data", module: "pricing" },
   { name: "pricing:rules:read", description: "Can view pricing rules", module: "pricing" },
   { name: "pricing:rules:create", description: "Can create pricing rules", module: "pricing" },
   { name: "pricing:rules:update", description: "Can edit pricing rules", module: "pricing" },
