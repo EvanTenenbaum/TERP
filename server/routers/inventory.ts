@@ -34,6 +34,7 @@ import {
   deleteDemoMediaBlob,
   extractDemoMediaBlobIdFromUrl,
 } from "../demoMediaStorage";
+import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 
 // =============================================================================
 // SPRINT 4 TRACK A - Enhanced Inventory APIs
@@ -166,20 +167,9 @@ async function readBatchAdjustmentSnapshot(
   tx: Pick<Awaited<ReturnType<typeof getDb>>, "select">,
   batchId: number
 ): Promise<QuantityAdjustmentBatchSnapshot | null> {
+  const batchSelect = await getCompatibleBatchSelect();
   const rows = await tx
-    .select({
-      id: batches.id,
-      version: batches.version,
-      batchStatus: batches.batchStatus,
-      onHandQty: batches.onHandQty,
-      sampleQty: batches.sampleQty,
-      reservedQty: batches.reservedQty,
-      quarantineQty: batches.quarantineQty,
-      holdQty: batches.holdQty,
-      defectiveQty: batches.defectiveQty,
-      createdAt: batches.createdAt,
-      updatedAt: batches.updatedAt,
-    })
+    .select(batchSelect)
     .from(batches)
     .where(eq(batches.id, batchId))
     .for("update")
@@ -189,7 +179,20 @@ async function readBatchAdjustmentSnapshot(
     return null;
   }
 
-  return rows[0];
+  const row = rows[0];
+  return {
+    id: row.id,
+    version: row.version,
+    batchStatus: row.batchStatus,
+    onHandQty: row.onHandQty,
+    sampleQty: row.sampleQty,
+    reservedQty: row.reservedQty,
+    quarantineQty: row.quarantineQty,
+    holdQty: row.holdQty,
+    defectiveQty: row.defectiveQty,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 function buildAdjustedBatchSnapshot(
