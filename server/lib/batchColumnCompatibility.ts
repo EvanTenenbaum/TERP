@@ -4,50 +4,105 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { batches } from "../../drizzle/schema";
 
-let batchColumnsCache: Set<string> | null | undefined;
-let batchColumnsPromise: Promise<Set<string> | null> | undefined;
+const CONSERVATIVE_BATCH_COLUMNS = new Set([
+  "id",
+  "code",
+  "sku",
+  "productId",
+  "lotId",
+  "batchStatus",
+  "grade",
+  "onHandQty",
+  "sampleQty",
+  "reservedQty",
+  "createdAt",
+  "updatedAt",
+]);
 
-function hasColumn(columns: Set<string> | null, columnName: string): boolean {
-  return columns === null || columns.has(columnName);
+let batchColumnsCache: Set<string> | undefined;
+let batchColumnsPromise: Promise<Set<string>> | undefined;
+
+function hasColumn(columns: Set<string>, columnName: string): boolean {
+  return columns.has(columnName);
 }
 
-async function detectBatchColumns(): Promise<Set<string> | null> {
+function extractColumnNames(result: unknown): Set<string> {
+  const rows = Array.isArray(result)
+    ? Array.isArray(result[0])
+      ? result[0]
+      : result
+    : [];
+
+  return new Set(
+    rows
+      .map(row => {
+        if (typeof row !== "object" || row === null) {
+          return "";
+        }
+
+        if ("columnName" in row) {
+          return String((row as { columnName: unknown }).columnName ?? "");
+        }
+
+        if ("COLUMN_NAME" in row) {
+          return String((row as { COLUMN_NAME: unknown }).COLUMN_NAME ?? "");
+        }
+
+        if ("Field" in row) {
+          return String((row as { Field: unknown }).Field ?? "");
+        }
+
+        return "";
+      })
+      .filter(Boolean)
+  );
+}
+
+async function detectBatchColumns(): Promise<Set<string>> {
   const db = await getDb();
   if (!db) {
-    return null;
+    return new Set(CONSERVATIVE_BATCH_COLUMNS);
   }
 
   try {
-    const [rows] = await db.execute(
+    const infoSchemaResult = await db.execute(
       `SELECT COLUMN_NAME
        FROM information_schema.COLUMNS
        WHERE TABLE_SCHEMA = DATABASE()
          AND TABLE_NAME = 'batches'`
     );
 
-    if (!Array.isArray(rows)) {
-      return null;
+    const infoSchemaColumns = extractColumnNames(infoSchemaResult);
+    if (infoSchemaColumns.size > 0) {
+      return infoSchemaColumns;
     }
-
-    return new Set(
-      rows
-        .map(row =>
-          typeof row === "object" && row !== null && "COLUMN_NAME" in row
-            ? String(row.COLUMN_NAME)
-            : ""
-        )
-        .filter(Boolean)
-    );
   } catch (error) {
     logger.warn(
       { error },
-      "Failed to inspect batches schema; assuming modern batch columns"
+      "Failed to inspect batches schema via information_schema"
     );
-    return null;
   }
+
+  try {
+    const showColumnsResult = await db.execute("SHOW COLUMNS FROM batches");
+    const showColumns = extractColumnNames(showColumnsResult);
+    if (showColumns.size > 0) {
+      logger.info(
+        "Recovered batch schema using SHOW COLUMNS after information_schema lookup failed"
+      );
+      return showColumns;
+    }
+  } catch (error) {
+    logger.warn({ error }, "Failed to inspect batches schema via SHOW COLUMNS");
+  }
+
+  logger.warn(
+    "Falling back to a conservative legacy batch column set to avoid runtime schema crashes"
+  );
+  return new Set(CONSERVATIVE_BATCH_COLUMNS);
 }
 
-export async function getBatchColumnNames(): Promise<Set<string> | null> {
+export async function getBatchColumnNames(): Promise<Set<string>> {
   if (batchColumnsCache !== undefined) {
     return batchColumnsCache;
   }
