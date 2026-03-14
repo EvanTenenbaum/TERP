@@ -4,7 +4,7 @@ import { buildInboxEntityRoute } from "./InboxItem";
 
 describe("buildInboxEntityRoute", () => {
   it("routes core entities into canonical workspace paths", () => {
-    expect(buildInboxEntityRoute("order", 55)).toBe("/orders?id=55");
+    expect(buildInboxEntityRoute("order", 55)).toBe("/sales?tab=orders&id=55");
     expect(buildInboxEntityRoute("invoice", 91)).toBe(
       "/accounting?tab=invoices&id=91"
     );

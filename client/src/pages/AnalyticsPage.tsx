@@ -230,7 +230,7 @@ export default function AnalyticsPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Total Orders"
-              href="/orders"
+              href="/sales?tab=orders"
               value={(data?.totalOrders ?? 0).toLocaleString()}
               subtitle={`${data?.ordersThisPeriod ?? 0} this period`}
               icon={TrendingUp}

@@ -13,7 +13,7 @@ import {
   LinearWorkspaceShell,
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
-import { Redirect } from "wouter";
+import { Redirect, useSearch } from "wouter";
 
 type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
@@ -29,14 +29,22 @@ const SALES_TABS = SALES_TABS_CONFIG.map(
 ) as readonly SalesTab[];
 
 export default function SalesWorkspacePage() {
+  const search = useSearch();
   const { activeTab, setActiveTab } = useQueryTabState<SalesQueryTab>({
     defaultTab: "orders",
     validTabs: [...SALES_TABS, "pick-pack"],
   });
+  const redirectParams = Object.fromEntries(
+    Array.from(new URLSearchParams(search).entries()).filter(
+      ([key]) => key !== "tab"
+    )
+  );
   useWorkspaceHomeTelemetry("sales", activeTab);
 
   if (activeTab === "pick-pack") {
-    return <Redirect to={buildOperationsWorkspacePath("shipping")} />;
+    return (
+      <Redirect to={buildOperationsWorkspacePath("shipping", redirectParams)} />
+    );
   }
 
   return (
