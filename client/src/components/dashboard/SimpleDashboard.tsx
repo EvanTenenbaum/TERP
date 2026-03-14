@@ -11,6 +11,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import {
   ShoppingCart,
   FileText,
@@ -76,7 +77,7 @@ const TodaysOrdersCard = memo(function TodaysOrdersCard() {
               variant="ghost"
               size="sm"
               className="mt-2 h-7 text-xs px-0"
-              onClick={() => setLocation("/sales")}
+              onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
             >
               View orders <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
