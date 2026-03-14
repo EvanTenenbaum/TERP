@@ -263,6 +263,14 @@ export const buildConfirmedQueryInput = (
     ? { orderType: "SALE", isDraft: false, fulfillmentStatus }
     : { orderType: "SALE", isDraft: false };
 
+export const buildDraftQueryInput = (): {
+  orderType: "SALE";
+  isDraft: boolean;
+} => ({
+  orderType: "SALE",
+  isDraft: true,
+});
+
 const normalizeStatus = (status?: string | null): string =>
   String(status ?? "").toUpperCase();
 
@@ -282,6 +290,39 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
 const formatPaymentStatus = (status?: string | null): string => {
   const normalized = normalizeStatus(status);
   return normalized ? (PAYMENT_STATUS_LABELS[normalized] ?? normalized) : "-";
+};
+
+export const getDisplayOrderNumber = (
+  order: Pick<Order, "orderNumber" | "isDraft" | "orderType">
+): string => {
+  const raw = order.orderNumber?.trim();
+  if (!raw) {
+    return "";
+  }
+
+  const [prefix, ...suffixParts] = raw.split("-");
+  const suffix = suffixParts.join("-");
+  if (!suffix) {
+    return raw;
+  }
+
+  const normalizedPrefix = prefix.toUpperCase();
+
+  if (order.isDraft) {
+    return order.orderType === "QUOTE"
+      ? normalizedPrefix === "Q"
+        ? raw
+        : `Q-${suffix}`
+      : normalizedPrefix === "D"
+        ? raw
+        : `D-${suffix}`;
+  }
+
+  if (order.orderType === "SALE" && ["D", "O"].includes(normalizedPrefix)) {
+    return `S-${suffix}`;
+  }
+
+  return raw;
 };
 
 export function getStatusFilterExitMessage(params: {
@@ -399,7 +440,9 @@ function OrderInspectorContent({
       <InspectorSection title="Order Information" defaultOpen>
         <div className="grid grid-cols-2 gap-4">
           <InspectorField label="Order #">
-            <p className="font-semibold text-lg">{order.orderNumber}</p>
+            <p className="font-semibold text-lg">
+              {getDisplayOrderNumber(order) || order.orderNumber}
+            </p>
           </InspectorField>
           <InspectorField label="Status">
             <OrderStatusBadge
@@ -779,11 +822,12 @@ export function OrdersWorkSurface() {
     [clientsData]
   );
 
+  const draftQueryInput = useMemo(() => buildDraftQueryInput(), []);
   const {
     data: draftOrdersData,
     isLoading: loadingDrafts,
     refetch: refetchDrafts,
-  } = trpc.orders.getAll.useQuery({ isDraft: true });
+  } = trpc.orders.getAll.useQuery(draftQueryInput);
   const draftOrders = useMemo(
     () => extractItems<Order>(draftOrdersData),
     [draftOrdersData]
@@ -857,7 +901,8 @@ export function OrdersWorkSurface() {
         return;
       }
       const message = getStatusFilterExitMessage({
-        orderNumber: order.orderNumber || `Order #${order.id}`,
+        orderNumber:
+          getDisplayOrderNumber(order) || order.orderNumber || `Order #${order.id}`,
         fromFilter: statusFilter,
         toStatus: nextStatus,
       });
@@ -884,7 +929,8 @@ export function OrdersWorkSurface() {
     const filtered = !search
       ? [...orders]
       : orders.filter((order: Order) => {
-          const orderNumber = order.orderNumber || "";
+          const orderNumber =
+            getDisplayOrderNumber(order) || order.orderNumber || "";
           const clientName = getClientName(order.clientId);
           return (
             orderNumber.toLowerCase().includes(searchLower) ||
@@ -1507,7 +1553,7 @@ export function OrdersWorkSurface() {
                     }}
                   >
                     <TableCell className="font-medium">
-                      {order.orderNumber}
+                      {getDisplayOrderNumber(order) || order.orderNumber}
                     </TableCell>
                     <TableCell>{getClientName(order.clientId)}</TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -1539,7 +1585,11 @@ export function OrdersWorkSurface() {
         <InspectorPanel
           isOpen={inspector.isOpen}
           onClose={inspector.close}
-          title={selectedOrder?.orderNumber || "Order Details"}
+          title={
+            (selectedOrder && getDisplayOrderNumber(selectedOrder)) ||
+            selectedOrder?.orderNumber ||
+            "Order Details"
+          }
           subtitle={
             selectedOrder ? getClientName(selectedOrder.clientId) : undefined
           }

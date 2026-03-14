@@ -5,7 +5,7 @@ import {
 } from "@/components/layout/LinearWorkspaceShell";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
-import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
+import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { Redirect } from "wouter";
 
@@ -61,7 +61,7 @@ export default function ProcurementWorkspacePage() {
       ]}
     >
       <LinearWorkspacePanel value="purchase-orders">
-        <PurchaseOrdersWorkSurface />
+        <PurchaseOrdersSlicePage />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );
