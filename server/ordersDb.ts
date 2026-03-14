@@ -1256,6 +1256,8 @@ export async function convertQuoteToSale(
 
     // 3. Calculate due date
     const dueDate = calculateDueDate(input.paymentTerms);
+    const readyForPackingStatus =
+      await getStoredFulfillmentStatus("READY_FOR_PACKING");
 
     // 4. Generate sale number
     const saleNumber = `S-${Date.now()}`;
@@ -1279,7 +1281,7 @@ export async function convertQuoteToSale(
       cashPayment: input.cashPayment?.toString() || "0",
       dueDate,
       saleStatus: "PENDING",
-      fulfillmentStatus: "READY_FOR_PACKING",
+      fulfillmentStatus: readyForPackingStatus,
       confirmedAt,
       notes: input.notes || quote.notes || null,
       createdBy: quote.createdBy,

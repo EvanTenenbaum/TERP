@@ -3,6 +3,8 @@ import {
   buildConfirmedQueryInput,
   buildDraftQueryInput,
   getDisplayOrderNumber,
+  parseDeepLinkedOrderId,
+  resolveDeepLinkedOrderSelection,
 } from "./OrdersWorkSurface";
 
 describe("buildDraftQueryInput", () => {
@@ -60,5 +62,58 @@ describe("getDisplayOrderNumber", () => {
         orderType: "SALE",
       })
     ).toBe("S-1772572680223");
+  });
+});
+
+describe("parseDeepLinkedOrderId", () => {
+  it("parses an id query param from workspace deep links", () => {
+    expect(parseDeepLinkedOrderId("?tab=orders&id=618")).toBe(618);
+  });
+
+  it("falls back to orderId query params used by accounting handoffs", () => {
+    expect(parseDeepLinkedOrderId("?tab=payments&orderId=77")).toBe(77);
+  });
+
+  it("rejects invalid deep-link values", () => {
+    expect(parseDeepLinkedOrderId("?tab=orders&id=not-a-number")).toBeNull();
+    expect(parseDeepLinkedOrderId("?tab=orders&id=0")).toBeNull();
+  });
+});
+
+describe("resolveDeepLinkedOrderSelection", () => {
+  it("prefers confirmed orders when the deep link matches a confirmed sale", () => {
+    expect(
+      resolveDeepLinkedOrderSelection({
+        orderId: 618,
+        draftOrders: [{ id: 12 }],
+        confirmedOrders: [{ id: 618 }],
+      })
+    ).toEqual({
+      activeTab: "confirmed",
+      selectedOrderId: 618,
+    });
+  });
+
+  it("opens the draft tab when the deep link matches a draft order", () => {
+    expect(
+      resolveDeepLinkedOrderSelection({
+        orderId: 41,
+        draftOrders: [{ id: 41 }],
+        confirmedOrders: [{ id: 618 }],
+      })
+    ).toEqual({
+      activeTab: "draft",
+      selectedOrderId: 41,
+    });
+  });
+
+  it("returns null when the deep-linked order is not present", () => {
+    expect(
+      resolveDeepLinkedOrderSelection({
+        orderId: 999,
+        draftOrders: [{ id: 41 }],
+        confirmedOrders: [{ id: 618 }],
+      })
+    ).toBeNull();
   });
 });

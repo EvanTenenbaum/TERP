@@ -128,3 +128,8 @@ export function coerceOrderStatusHistoryFulfillmentStatus(
 ): OrderStatusHistoryFulfillmentStatusValue {
   return status as unknown as OrderStatusHistoryFulfillmentStatusValue;
 }
+
+export function resetFulfillmentStatusCompatibilityCacheForTests(): void {
+  readyStatusCache.clear();
+  readyStatusPromiseCache.clear();
+}
