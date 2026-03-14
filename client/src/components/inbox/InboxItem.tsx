@@ -72,11 +72,11 @@ export function buildInboxEntityRoute(
     case "calendar_event":
       return `/calendar?eventId=${referenceId}`;
     case "task":
-      return `/tasks/${referenceId}`;
+      return "/notifications";
     case "comment":
-      return `/comments/${referenceId}`;
+      return "/notifications";
     case "vendor_supply":
-      return `/vendor-supply/${referenceId}`;
+      return "/demand-supply?tab=vendor-supply";
     default:
       return null;
   }

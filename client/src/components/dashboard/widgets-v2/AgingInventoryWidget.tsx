@@ -237,7 +237,7 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setLocation("/inventory?minAge=14")}
+                onClick={() => navigateToFilteredInventory("AGING")}
                 className="text-orange-700 border-orange-300 hover:bg-orange-100"
               >
                 View All
