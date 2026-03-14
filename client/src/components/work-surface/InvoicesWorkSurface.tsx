@@ -20,6 +20,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
@@ -96,6 +97,7 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { parseInvoiceDeepLink } from "./invoiceDeepLink";
 
 // ============================================================================
 // TYPES
@@ -473,6 +475,11 @@ function InvoiceInspectorContent({
 // ============================================================================
 
 export function InvoicesWorkSurface() {
+  const routeSearch = useSearch();
+  const deepLink = useMemo(
+    () => parseInvoiceDeepLink(routeSearch),
+    [routeSearch]
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State — TER-507: Initialize from localStorage for filter persistence
@@ -569,6 +576,27 @@ export function InvoicesWorkSurface() {
     () => extractItems<Invoice>(invoicesResponse),
     [invoicesResponse]
   );
+  const { data: deepLinkedInvoice } =
+    trpc.accounting.invoices.getById.useQuery(
+      { id: deepLink.invoiceId ?? 0 },
+      { enabled: deepLink.invoiceId !== null }
+    );
+  const normalizedDeepLinkedInvoice = useMemo<Invoice | null>(() => {
+    if (!deepLinkedInvoice) {
+      return null;
+    }
+
+    return {
+      ...deepLinkedInvoice,
+      lineItems: deepLinkedInvoice.lineItems?.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: Number(item.quantity),
+        unitPrice: item.unitPrice,
+        amount: item.lineTotal,
+      })),
+    };
+  }, [deepLinkedInvoice]);
   const totalInvoices = invoicesResponse?.pagination?.total ?? 0;
 
   const { data: arAging } = trpc.accounting.invoices.getARAging.useQuery(
@@ -589,9 +617,15 @@ export function InvoicesWorkSurface() {
 
   // Filtered invoices
   const displayInvoices = useMemo(() => {
-    if (!search) return invoices;
+    const invoiceList =
+      normalizedDeepLinkedInvoice &&
+      !invoices.some(invoice => invoice.id === normalizedDeepLinkedInvoice.id)
+        ? [normalizedDeepLinkedInvoice, ...invoices]
+        : invoices;
+
+    if (!search) return invoiceList;
     const searchLower = search.toLowerCase();
-    return invoices.filter(invoice => {
+    return invoiceList.filter(invoice => {
       const invoiceNumber = invoice.invoiceNumber || "";
       const customerName = getCustomerName(invoice.customerId);
       return (
@@ -599,13 +633,50 @@ export function InvoicesWorkSurface() {
         customerName.toLowerCase().includes(searchLower)
       );
     });
-  }, [invoices, search, getCustomerName]);
+  }, [getCustomerName, invoices, normalizedDeepLinkedInvoice, search]);
+
+  useEffect(() => {
+    if (deepLink.invoiceId === null) {
+      return;
+    }
+
+    if (statusFilter !== "ALL") {
+      setStatusFilter("ALL");
+    }
+
+    if (search !== "") {
+      setSearch("");
+    }
+  }, [deepLink.invoiceId, search, statusFilter]);
 
   // Selected invoice
   const selectedInvoice = useMemo(
     () => displayInvoices.find(i => i.id === selectedInvoiceId) || null,
     [displayInvoices, selectedInvoiceId]
   );
+
+  useEffect(() => {
+    if (deepLink.invoiceId === null) {
+      return;
+    }
+
+    const nextIndex = displayInvoices.findIndex(
+      invoice => invoice.id === deepLink.invoiceId
+    );
+
+    if (nextIndex === -1) {
+      return;
+    }
+
+    setSelectedInvoiceId(current =>
+      current === deepLink.invoiceId ? current : deepLink.invoiceId
+    );
+    setSelectedIndex(current => (current === nextIndex ? current : nextIndex));
+
+    if (deepLink.openRecordPayment) {
+      setShowPaymentDialog(true);
+    }
+  }, [deepLink.invoiceId, deepLink.openRecordPayment, displayInvoices]);
 
   // Statistics
   const stats = useMemo(() => {

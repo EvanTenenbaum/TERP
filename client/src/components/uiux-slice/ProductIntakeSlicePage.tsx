@@ -75,6 +75,7 @@ import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getMixedBrandLabel } from "@/lib/nomenclature";
+import { resolveNextSelectedDraftId } from "./productIntakeSelection";
 
 const defaultColumns: GridColumnOption[] = [
   { id: "brand", label: "Brand/Farmer", visible: true },
@@ -220,14 +221,13 @@ export function ProductIntakeSlicePage() {
     (nextSelectedId?: string | null) => {
       const list = listProductIntakeDrafts(storageUserId);
       setDrafts(list);
-      if (nextSelectedId) {
-        const nextSelectedDraft = list.find(draft => draft.id === nextSelectedId);
-        setSelectedDraftId(nextSelectedDraft?.id ?? list[0]?.id ?? null);
-        return;
-      }
-      if (!selectedDraftId && list.length > 0) {
-        setSelectedDraftId(list[0].id);
-      }
+      setSelectedDraftId(
+        resolveNextSelectedDraftId({
+          drafts: list,
+          requestedDraftId: nextSelectedId,
+          currentSelectedDraftId: selectedDraftId,
+        })
+      );
     },
     [selectedDraftId, storageUserId]
   );
@@ -241,8 +241,8 @@ export function ProductIntakeSlicePage() {
     () =>
       selectedDraftId
         ? getProductIntakeDraft(selectedDraftId, storageUserId)
-        : (drafts[0] ?? null),
-    [drafts, selectedDraftId, storageUserId]
+        : null,
+    [selectedDraftId, storageUserId]
   );
 
   // Shared powersheet selection for draft lines (TER-284)

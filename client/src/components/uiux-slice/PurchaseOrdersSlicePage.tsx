@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useLocation,
+  useSearch,
   type RouteComponentProps as WouterRouteComponentProps,
 } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -60,6 +61,7 @@ import {
   buildSliceCreatePayloadItem,
   type PurchaseOrdersSliceFormItem,
 } from "./purchaseOrdersSliceForm";
+import { parsePurchaseOrderDeepLink } from "./purchaseOrdersDeepLink";
 import {
   clearGridPreference,
   loadGridPreference,
@@ -163,6 +165,7 @@ export function PurchaseOrdersSlicePage({
   mode = "procurement",
 }: PurchaseOrdersSlicePageProps) {
   const [route, navigate] = useLocation();
+  const routeSearch = useSearch();
   const { user } = useAuth();
   const userId = user?.id;
   const preferenceUserId = route.startsWith("/slice-v1-lab")
@@ -180,6 +183,10 @@ export function PurchaseOrdersSlicePage({
   const [pickerLines, setPickerLines] = useState<IntakePickerLine[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkPlacing, setBulkPlacing] = useState(false);
+  const deepLink = useMemo(
+    () => parsePurchaseOrderDeepLink(routeSearch),
+    [routeSearch]
+  );
 
   const [viewMode, setViewMode] = useState<GridViewMode>(() => {
     return (
@@ -212,6 +219,37 @@ export function PurchaseOrdersSlicePage({
     notes: "",
     items: [createPoItemForm()],
   });
+
+  useEffect(() => {
+    const poId = deepLink.poId;
+    if (poId === null) {
+      return;
+    }
+
+    setSelectedPoId(current =>
+      current === poId ? current : poId
+    );
+    setSelectedPoIds(current => {
+      if (current.size === 1 && current.has(poId)) {
+        return current;
+      }
+      return new Set([poId]);
+    });
+  }, [deepLink.poId]);
+
+  useEffect(() => {
+    if (deepLink.supplierClientId === null || deepLink.poId !== null) {
+      return;
+    }
+
+    const supplierClientId = String(deepLink.supplierClientId);
+    setCreateForm(prev =>
+      prev.supplierClientId === supplierClientId
+        ? prev
+        : { ...prev, supplierClientId }
+    );
+    setCreateOpen(true);
+  }, [deepLink.poId, deepLink.supplierClientId]);
 
   const posQuery = trpc.purchaseOrders.getAll.useQuery(undefined, {
     enabled: mode !== "receiving",
