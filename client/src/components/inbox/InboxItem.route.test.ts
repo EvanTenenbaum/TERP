@@ -15,6 +15,14 @@ describe("buildInboxEntityRoute", () => {
       "/accounting?tab=bills&id=16"
     );
     expect(buildInboxEntityRoute("batch", 478)).toBe("/inventory?batchId=478");
+    expect(buildInboxEntityRoute("calendar_event", 27)).toBe(
+      "/calendar?eventId=27"
+    );
+    expect(buildInboxEntityRoute("vendor_supply", 88)).toBe(
+      "/demand-supply?tab=vendor-supply"
+    );
+    expect(buildInboxEntityRoute("task", 5)).toBe("/notifications");
+    expect(buildInboxEntityRoute("comment", 19)).toBe("/notifications");
   });
 
   it("returns null for unsupported entities", () => {

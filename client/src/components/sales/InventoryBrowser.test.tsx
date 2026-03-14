@@ -62,7 +62,7 @@ describe("InventoryBrowser", () => {
 
     expect(screen.getByText("Gross Margin")).toBeTruthy();
     expect(screen.getByText("+33.3%")).toBeTruthy();
-    expect(screen.getByText("Profile adjustment +50.0%")).toBeTruthy();
+    expect(screen.getByText("Profile markup +50.0% markup")).toBeTruthy();
     expect(screen.getByTitle("Flower Markup (+50%)")).toBeTruthy();
   });
 });

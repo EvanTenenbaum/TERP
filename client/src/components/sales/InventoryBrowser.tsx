@@ -78,9 +78,9 @@ function isNonSellableStatus(status?: string): status is NonSellableStatus {
   return (NON_SELLABLE_STATUSES as readonly string[]).includes(status);
 }
 
-function formatProfileAdjustment(priceMarkup: number): string {
+function formatProfileMarkup(priceMarkup: number): string {
   const sign = priceMarkup >= 0 ? "+" : "";
-  return `${sign}${priceMarkup.toFixed(1)}%`;
+  return `${sign}${priceMarkup.toFixed(1)}% markup`;
 }
 
 // Extended inventory item type for internal use (includes orderQuantity when added)
@@ -447,8 +447,8 @@ export function InventoryBrowser({
                                 .map(rule => `${rule.ruleName} (${rule.adjustment})`)
                                 .join(", ")}
                             >
-                              Profile adjustment{" "}
-                              {formatProfileAdjustment(item.priceMarkup)}
+                              Profile markup{" "}
+                              {formatProfileMarkup(item.priceMarkup)}
                             </span>
                           )}
                         </div>

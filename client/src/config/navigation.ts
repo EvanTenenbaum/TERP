@@ -14,7 +14,6 @@ import {
   CreditCard,
   Coins,
   BarChart3,
-  Table,
   Video,
   Flag,
   Layers,
@@ -198,15 +197,6 @@ export const navigationItems: NavigationItem[] = [
     icon: Download,
     group: "operations",
     ariaLabel: "Review purchase orders waiting to be received",
-    sidebarVisible: false,
-  },
-  {
-    name: "Spreadsheet View",
-    path: "/inventory?tab=receiving&mode=spreadsheet",
-    icon: Table,
-    group: "operations",
-    ariaLabel: "Spreadsheet view for receiving and inventory operations",
-    featureFlag: "spreadsheet-view",
     sidebarVisible: false,
   },
 
