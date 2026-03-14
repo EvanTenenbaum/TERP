@@ -314,7 +314,7 @@ export const navigationItems: NavigationItem[] = [
   // QA-W2-008: Users absorbed into Settings workspace
   {
     name: "Users",
-    path: "/users",
+    path: "/settings?tab=users",
     icon: UserCog,
     group: "admin",
     sidebarVisible: false,
@@ -322,7 +322,7 @@ export const navigationItems: NavigationItem[] = [
   // TERP-0005: Locations absorbed into Settings workspace
   {
     name: "Locations",
-    path: "/locations",
+    path: "/settings?tab=locations",
     icon: MapPin,
     group: "admin",
     ariaLabel: "Manage warehouse and storage locations",
@@ -348,7 +348,7 @@ export const navigationItems: NavigationItem[] = [
   // FEAT-017: Feature Flags absorbed into Settings workspace
   {
     name: "Feature Flags",
-    path: "/settings/feature-flags",
+    path: "/settings?tab=feature-flags",
     icon: Flag,
     group: "admin",
     ariaLabel: "Manage feature flags and rollouts",
@@ -395,7 +395,7 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
   },
   {
     name: "Clients",
-    path: "/clients",
+    path: "/relationships?tab=clients",
     icon: Users,
     ariaLabel: "Open client workspace",
   },
@@ -429,7 +429,7 @@ export const defaultQuickLinkPaths: readonly string[] = [
   "/",
   "/sales?tab=create-order",
   "/inventory?tab=receiving",
-  "/clients",
+  "/relationships?tab=clients",
 ];
 
 export function buildQuickLinks(options?: {

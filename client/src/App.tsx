@@ -15,7 +15,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardHomePage from "./pages/DashboardHomePage";
-import UsersPage from "@/pages/UsersPage";
 import { AppShell } from "./components/layout/AppShell";
 import Settings from "@/pages/Settings";
 import AccountingWorkspacePage from "@/pages/AccountingWorkspacePage";
@@ -38,10 +37,8 @@ import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSli
 import SliceV1WorkbenchLayout from "@/components/uiux-slice/SliceV1WorkbenchLayout";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
-import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 import AdminSetupPage from "@/pages/AdminSetupPage";
 import VendorRedirect from "@/components/VendorRedirect";
-import LocationsPage from "@/pages/LocationsPage";
 import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -72,6 +69,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { trackLegacyRouteRedirect } from "@/lib/navigation/routeUsageTelemetry";
+import { resolveRelationshipsTab } from "@/lib/navigation/consolidation";
 import {
   buildOperationsWorkspacePath,
   normalizeOperationsTab,
@@ -226,6 +224,30 @@ const RedirectToOperationsTab = (from: string, tab: string) => {
       from,
       to: destination,
       tab: normalizeOperationsTab(tab) ?? undefined,
+      search: search || undefined,
+    });
+
+    return <Redirect to={destination} />;
+  };
+
+  return RedirectComponent;
+};
+
+const RedirectToRelationshipsWorkspace = (from: string) => {
+  const RedirectComponent: FC = () => {
+    const search = useSearch();
+    const params = new URLSearchParams(search);
+    const tab = resolveRelationshipsTab(search);
+
+    params.set("tab", tab);
+
+    const query = params.toString();
+    const destination = `/relationships${query ? `?${query}` : ""}`;
+
+    useTrackLegacyRedirect({
+      from,
+      to: destination,
+      tab,
       search: search || undefined,
     });
 
@@ -476,7 +498,9 @@ function Router() {
                 />
                 <Route
                   path="/clients"
-                  component={withErrorBoundary(RelationshipsWorkspacePage)}
+                  component={withErrorBoundary(
+                    RedirectToRelationshipsWorkspace("/clients")
+                  )}
                 />
                 <Route
                   path="/clients/:id"
@@ -490,7 +514,10 @@ function Router() {
                   path="/client-ledger"
                   component={withErrorBoundary(ClientLedgerWorkSurface)}
                 />
-                <Route path="/users" component={withErrorBoundary(UsersPage)} />
+                <Route
+                  path="/users"
+                  component={RedirectWithTab("/users", "/settings", "users")}
+                />
                 <Route
                   path="/pricing/rules"
                   component={withErrorBoundary(PricingRulesPage)}
@@ -568,7 +595,11 @@ function Router() {
                 />
                 <Route
                   path="/settings/feature-flags"
-                  component={withErrorBoundary(FeatureFlagsPage)}
+                  component={RedirectWithTab(
+                    "/settings/feature-flags",
+                    "/settings",
+                    "feature-flags"
+                  )}
                 />
                 <Route
                   path="/settings"
@@ -691,7 +722,11 @@ function Router() {
                 />
                 <Route
                   path="/locations"
-                  component={withErrorBoundary(LocationsPage)}
+                  component={RedirectWithTab(
+                    "/locations",
+                    "/settings",
+                    "locations"
+                  )}
                 />
                 <Route
                   path="/intake-receipts"
