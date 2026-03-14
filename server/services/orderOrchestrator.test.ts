@@ -11,10 +11,15 @@ import {
   type PaymentTerms,
   type SaleStatus,
 } from "./orderOrchestrator";
+import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 
 // Mock the database module
 vi.mock("../db", () => ({
   getDb: vi.fn(),
+}));
+
+vi.mock("../lib/batchColumnCompatibility", () => ({
+  getCompatibleBatchSelect: vi.fn(),
 }));
 
 // Mock the transaction utilities
@@ -205,6 +210,175 @@ describe("OrderOrchestrator", () => {
               : "PENDING";
         expect(status).toBe(expected);
       }
+    });
+  });
+
+  describe("legacy batch compatibility", () => {
+    it("uses the compatible batch select when verifying locked inventory", async () => {
+      const batchSelect = {
+        id: "compat-id",
+        sku: "compat-sku",
+      } as unknown as Awaited<ReturnType<typeof getCompatibleBatchSelect>>;
+      vi.mocked(getCompatibleBatchSelect).mockResolvedValue(batchSelect);
+
+      const selectChain = {
+        from: vi.fn(),
+        where: vi.fn(),
+        for: vi.fn(),
+      };
+      selectChain.from.mockReturnValue(selectChain);
+      selectChain.where.mockReturnValue(selectChain);
+      selectChain.for.mockResolvedValue([
+        {
+          id: 11,
+          onHandQty: "12",
+          sampleQty: "0",
+          reservedQty: "1",
+          quarantineQty: "0",
+          holdQty: "0",
+        },
+      ]);
+
+      const tx = {
+        select: vi.fn(() => selectChain),
+      };
+
+      const orchestrator =
+        new OrderOrchestrator() as unknown as {
+          verifyAndLockInventory: (
+            txArg: typeof tx,
+            items: Array<{
+              batchId: number;
+              displayName: string;
+              originalName: string;
+              quantity: number;
+              unitPrice: number;
+              isSample: boolean;
+              unitCogs: number;
+              cogsMode: "FIXED" | "RANGE";
+              cogsSource:
+                | "FIXED"
+                | "LOW"
+                | "MIDPOINT"
+                | "HIGH"
+                | "CLIENT_ADJUSTMENT"
+                | "RULE"
+                | "MANUAL";
+              unitMargin: number;
+              marginPercent: number;
+              lineTotal: number;
+              lineCogs: number;
+              lineMargin: number;
+            }>
+          ) => Promise<void>;
+        };
+
+      await orchestrator.verifyAndLockInventory(tx, [
+        {
+          batchId: 11,
+          displayName: "Legacy-safe batch",
+          originalName: "Legacy-safe batch",
+          quantity: 2,
+          unitPrice: 15,
+          isSample: false,
+          unitCogs: 10,
+          cogsMode: "FIXED",
+          cogsSource: "FIXED",
+          unitMargin: 5,
+          marginPercent: 33.33,
+          lineTotal: 30,
+          lineCogs: 20,
+          lineMargin: 10,
+        },
+      ]);
+
+      expect(getCompatibleBatchSelect).toHaveBeenCalledOnce();
+      expect(tx.select).toHaveBeenCalledWith(batchSelect);
+    });
+
+    it("uses the compatible batch select when processing priced order items", async () => {
+      const batchSelect = {
+        id: "compat-id",
+        sku: "compat-sku",
+      } as unknown as Awaited<ReturnType<typeof getCompatibleBatchSelect>>;
+      vi.mocked(getCompatibleBatchSelect).mockResolvedValue(batchSelect);
+
+      const selectChain = {
+        from: vi.fn(),
+        where: vi.fn(),
+        for: vi.fn(),
+        limit: vi.fn(),
+      };
+      selectChain.from.mockReturnValue(selectChain);
+      selectChain.where.mockReturnValue(selectChain);
+      selectChain.for.mockReturnValue(selectChain);
+      selectChain.limit.mockResolvedValue([
+        {
+          id: 22,
+          sku: "BATCH-22",
+          onHandQty: "12",
+          sampleQty: "0",
+          reservedQty: "0",
+          quarantineQty: "0",
+          holdQty: "0",
+          cogsMode: "FIXED",
+          unitCogs: "10",
+          unitCogsMin: null,
+          unitCogsMax: null,
+        },
+      ]);
+
+      const tx = {
+        select: vi.fn(() => selectChain),
+      };
+
+      const orchestrator =
+        new OrderOrchestrator() as unknown as {
+          processOrderItems: (
+            txArg: typeof tx,
+            items: Array<{
+              batchId: number;
+              displayName?: string;
+              quantity: number;
+              unitPrice: number;
+              isSample: boolean;
+              overridePrice?: number;
+              overrideCogs?: number;
+            }>,
+            client: {
+              id: number;
+              cogsAdjustmentType?: "NONE" | "PERCENTAGE" | "FIXED_AMOUNT" | null;
+              cogsAdjustmentValue?: string | null;
+            },
+            paymentTerms?: PaymentTerms,
+            verifyInventory?: boolean
+          ) => Promise<Array<{ batchId: number; originalName: string }>>;
+        };
+
+      const processed = await orchestrator.processOrderItems(
+        tx,
+        [
+          {
+            batchId: 22,
+            displayName: "Processed legacy batch",
+            quantity: 1,
+            unitPrice: 15,
+            isSample: false,
+          },
+        ],
+        {
+          id: 7,
+          cogsAdjustmentType: "NONE",
+          cogsAdjustmentValue: "0",
+        },
+        "NET_30",
+        true
+      );
+
+      expect(getCompatibleBatchSelect).toHaveBeenCalledOnce();
+      expect(tx.select).toHaveBeenCalledWith(batchSelect);
+      expect(processed[0]?.batchId).toBe(22);
+      expect(processed[0]?.originalName).toBe("BATCH-22");
     });
   });
 });

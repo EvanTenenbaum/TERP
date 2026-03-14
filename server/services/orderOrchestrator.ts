@@ -35,7 +35,7 @@ import {
 import { withTransaction, withRetryableTransaction } from "../dbTransaction";
 import { logger } from "../_core/logger";
 import { calculateCogs, calculateDueDate } from "../cogsCalculator";
-import { calculateAvailableQty } from "../inventoryUtils";
+import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import {
   canTransition,
   isTerminalStatus,
@@ -1028,11 +1028,12 @@ export class OrderOrchestrator {
     const processedItems: OrderItem[] = [];
 
     for (const item of items) {
+      const batchSelect = await getCompatibleBatchSelect();
       // Get batch with row-level lock
       const [batch] = await (
         tx as NonNullable<Awaited<ReturnType<typeof getDb>>>
       )
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId))
         .for("update")
@@ -1044,9 +1045,13 @@ export class OrderOrchestrator {
 
       // Verify inventory if required
       if (verifyInventory) {
+        const onHand = parseFloat(batch.onHandQty || "0");
+        const reserved = parseFloat(batch.reservedQty || "0");
+        const quarantine = parseFloat(batch.quarantineQty || "0");
+        const hold = parseFloat(batch.holdQty || "0");
         const availableQty = item.isSample
           ? parseFloat(batch.sampleQty || "0")
-          : calculateAvailableQty(batch);
+          : Math.max(0, onHand - reserved - quarantine - hold);
 
         if (availableQty < item.quantity) {
           const qtyType = item.isSample ? "sample" : "available";
@@ -1163,8 +1168,9 @@ export class OrderOrchestrator {
     items: OrderItem[]
   ): Promise<void> {
     const batchIds = items.map(item => item.batchId);
+    const batchSelect = await getCompatibleBatchSelect();
     const lockedBatches = await tx
-      .select()
+      .select(batchSelect)
       .from(batches)
       .where(inArray(batches.id, batchIds))
       .for("update");
@@ -1177,9 +1183,13 @@ export class OrderOrchestrator {
         throw new Error(`Batch ${item.batchId} not found`);
       }
 
+      const onHand = parseFloat(batch.onHandQty || "0");
+      const reserved = parseFloat(batch.reservedQty || "0");
+      const quarantine = parseFloat(batch.quarantineQty || "0");
+      const hold = parseFloat(batch.holdQty || "0");
       const availableQty = item.isSample
         ? parseFloat(batch.sampleQty || "0")
-        : calculateAvailableQty(batch);
+        : Math.max(0, onHand - reserved - quarantine - hold);
 
       if (availableQty < item.quantity) {
         throw new Error(

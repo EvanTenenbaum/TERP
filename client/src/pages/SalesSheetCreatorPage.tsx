@@ -43,7 +43,13 @@ import {
 
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
-export default function SalesSheetCreatorPage() {
+interface SalesSheetCreatorPageProps {
+  embedded?: boolean;
+}
+
+export default function SalesSheetCreatorPage({
+  embedded = false,
+}: SalesSheetCreatorPageProps) {
   const [, setLocation] = useLocation();
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<PricedInventoryItem[]>([]);
@@ -367,8 +373,10 @@ export default function SalesSheetCreatorPage() {
   }));
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6">
-      <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+    <div className={embedded ? "space-y-6" : "container mx-auto p-4 md:p-6 space-y-6"}>
+      {!embedded ? (
+        <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+      ) : null}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
