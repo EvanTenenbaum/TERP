@@ -49,6 +49,11 @@ export interface PricedInventoryItem extends InventoryItem {
   priceMarkup: number; // Percentage or dollar amount
 }
 
+interface ConfiguredPricingRuleReference {
+  ruleId: number;
+  priority: number;
+}
+
 // ============================================================================
 // PRICING RULES CRUD
 // ============================================================================
@@ -181,6 +186,44 @@ export async function getPricingProfileById(profileId: number) {
     )
     .limit(1);
   return result[0] || null;
+}
+
+export function hydrateConfiguredPricingRules(
+  rules: PricingRule[],
+  configuredRules: ConfiguredPricingRuleReference[]
+): PricingRule[] {
+  const configuredOrder = configuredRules
+    .filter(
+      rule =>
+        Number.isInteger(rule.ruleId) &&
+        rule.ruleId > 0 &&
+        Number.isFinite(rule.priority)
+    )
+    .map((rule, index) => ({
+      ruleId: rule.ruleId,
+      priority: rule.priority,
+      index,
+    }));
+
+  const configuredMetaById = new Map(
+    configuredOrder.map(rule => [rule.ruleId, rule])
+  );
+
+  return rules
+    .filter(rule => configuredMetaById.has(rule.id))
+    .map(rule => ({
+      ...rule,
+      priority: configuredMetaById.get(rule.id)?.priority ?? rule.priority,
+    }))
+    .sort((left, right) => {
+      const leftMeta = configuredMetaById.get(left.id);
+      const rightMeta = configuredMetaById.get(right.id);
+      const priorityDelta = (rightMeta?.priority ?? 0) - (leftMeta?.priority ?? 0);
+      if (priorityDelta !== 0) {
+        return priorityDelta;
+      }
+      return (leftMeta?.index ?? 0) - (rightMeta?.index ?? 0);
+    });
 }
 
 export async function createPricingProfile(data: {
@@ -443,10 +486,7 @@ export async function getClientPricingRules(
   if (client.pricingProfileId) {
     const profile = await getPricingProfileById(client.pricingProfileId);
     if (profile && profile.rules) {
-      const rulesArray = profile.rules as Array<{
-        ruleId: number;
-        priority: number;
-      }>;
+      const rulesArray = profile.rules as ConfiguredPricingRuleReference[];
       const ruleIds = rulesArray.map(r => r.ruleId);
 
       // BUG-040 FIX: Handle empty rules array - prevents invalid SQL "WHERE id IN ()"
@@ -470,17 +510,20 @@ export async function getClientPricingRules(
       const rules = await db
         .select()
         .from(pricingRules)
-        .where(inArray(pricingRules.id, validRuleIds));
-      return rules;
+        .where(
+          and(
+            inArray(pricingRules.id, validRuleIds),
+            eq(pricingRules.isActive, true),
+            isNull(pricingRules.deletedAt)
+          )
+        );
+      return hydrateConfiguredPricingRules(rules, rulesArray);
     }
   }
 
   // If client has custom pricing rules, use those
   if (client.customPricingRules) {
-    const customRules = client.customPricingRules as Array<{
-      ruleId: number;
-      priority: number;
-    }>;
+    const customRules = client.customPricingRules as ConfiguredPricingRuleReference[];
     const ruleIds = customRules.map(r => r.ruleId);
 
     // BUG-040 FIX: Handle empty custom rules array - prevents invalid SQL "WHERE id IN ()"
@@ -504,8 +547,14 @@ export async function getClientPricingRules(
     const rules = await db
       .select()
       .from(pricingRules)
-      .where(inArray(pricingRules.id, validRuleIds));
-    return rules;
+      .where(
+        and(
+          inArray(pricingRules.id, validRuleIds),
+          eq(pricingRules.isActive, true),
+          isNull(pricingRules.deletedAt)
+        )
+      );
+    return hydrateConfiguredPricingRules(rules, customRules);
   }
 
   // No pricing rules configured for this client - log for debugging

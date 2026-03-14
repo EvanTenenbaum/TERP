@@ -40,6 +40,7 @@ interface LineItem {
   marginDollar: number;
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  profilePriceAdjustmentPercent?: number | null;
   unitPrice: number;
   lineTotal: number;
   isSample: boolean;
@@ -197,12 +198,13 @@ export const LineItemRow = memo(function LineItemRow({
     item.effectiveCogsBasis !== "MANUAL" &&
     item.originalCogsPerUnit > 0;
   const profileAdjustmentPercent = showProfileAdjustment
-    ? ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
-      100
+    ? item.profilePriceAdjustmentPercent ??
+      ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
+        100
     : null;
   const pricingSourceLabel =
     item.marginSource === "CUSTOMER_PROFILE"
-      ? "Price from pricing profile"
+      ? "Price from profile rule"
       : item.marginSource === "DEFAULT"
         ? "Price from shared default"
         : "Price manually overridden";

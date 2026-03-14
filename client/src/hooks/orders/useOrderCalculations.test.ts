@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateLineItemFromRetailPrice,
   calculateMarginPercentFromRetailPrice,
+  calculateRetailPriceFromMarkupPercent,
 } from "./useOrderCalculations";
 
 describe("useOrderCalculations retail-price helpers", () => {
@@ -16,5 +17,9 @@ describe("useOrderCalculations retail-price helpers", () => {
 
   it("derives gross margin percent from retail price", () => {
     expect(calculateMarginPercentFromRetailPrice(761.32, 1141.98)).toBe(33.33);
+  });
+
+  it("rebuilds profile-priced retail from a markup percent over cost", () => {
+    expect(calculateRetailPriceFromMarkupPercent(80, 50)).toBe(120);
   });
 });

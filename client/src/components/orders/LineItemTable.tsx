@@ -32,6 +32,7 @@ import {
 import {
   calculateLineItem,
   calculateLineItemFromRetailPrice,
+  calculateRetailPriceFromMarkupPercent,
 } from "@/hooks/orders/useOrderCalculations";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import { useUiDensity } from "@/hooks/useUiDensity";
@@ -61,6 +62,7 @@ export interface LineItem {
   marginDollar: number;
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  profilePriceAdjustmentPercent?: number | null;
   unitPrice: number;
   lineTotal: number;
   isSample: boolean;
@@ -86,6 +88,26 @@ const getRowSelectionId = (item: LineItem, index: number): string =>
   item.id
     ? `line:${item.id}`
     : `line:${index}:${item.batchId}:${item.productId ?? "unknown"}`;
+
+const resolveProfilePriceAdjustmentPercent = (
+  item: LineItem
+): number | null => {
+  if (
+    typeof item.profilePriceAdjustmentPercent === "number" &&
+    Number.isFinite(item.profilePriceAdjustmentPercent)
+  ) {
+    return item.profilePriceAdjustmentPercent;
+  }
+
+  if (item.marginSource !== "CUSTOMER_PROFILE" || item.originalCogsPerUnit <= 0) {
+    return null;
+  }
+
+  return (
+    ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
+    100
+  );
+};
 
 export function LineItemTable({
   items,
@@ -244,11 +266,22 @@ export function LineItemTable({
       // If single batch selected, update the existing line item
       if (allocations.length === 1) {
         const allocation = allocations[0];
+        const profilePriceAdjustmentPercent =
+          resolveProfilePriceAdjustmentPercent(currentItem);
+        const nextUnitPrice =
+          currentItem.marginSource === "CUSTOMER_PROFILE" &&
+          !currentItem.isMarginOverridden &&
+          profilePriceAdjustmentPercent !== null
+            ? calculateRetailPriceFromMarkupPercent(
+                allocation.unitCost,
+                profilePriceAdjustmentPercent
+              )
+            : currentItem.unitPrice;
         const updated = calculateLineItemFromRetailPrice(
           allocation.batchId,
           allocation.quantity,
           allocation.unitCost,
-          currentItem.unitPrice
+          nextUnitPrice
         );
 
         const newItems = [...items];
@@ -260,16 +293,28 @@ export function LineItemTable({
           originalCogsPerUnit: allocation.unitCost,
           effectiveCogsBasis: "MANUAL",
           isCogsOverridden: false,
+          profilePriceAdjustmentPercent,
         };
         onChange(newItems);
       } else {
         // Multiple batches: replace current item with multiple line items
+        const profilePriceAdjustmentPercent =
+          resolveProfilePriceAdjustmentPercent(currentItem);
         const newLineItems = allocations.map(allocation => {
+          const nextUnitPrice =
+            currentItem.marginSource === "CUSTOMER_PROFILE" &&
+            !currentItem.isMarginOverridden &&
+            profilePriceAdjustmentPercent !== null
+              ? calculateRetailPriceFromMarkupPercent(
+                  allocation.unitCost,
+                  profilePriceAdjustmentPercent
+                )
+              : currentItem.unitPrice;
           const updated = calculateLineItemFromRetailPrice(
             allocation.batchId,
             allocation.quantity,
             allocation.unitCost,
-            currentItem.unitPrice
+            nextUnitPrice
           );
 
           return {
@@ -281,6 +326,7 @@ export function LineItemTable({
             originalCogsPerUnit: allocation.unitCost,
             effectiveCogsBasis: "MANUAL" as const,
             isCogsOverridden: false,
+            profilePriceAdjustmentPercent,
           };
         });
 
