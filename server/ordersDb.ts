@@ -6,6 +6,7 @@
 import { eq, and, desc, sql, isNull, or, type SQL } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getCompatibleBatchSelect } from "./lib/batchColumnCompatibility";
+import { insertOrderWithCompatibility } from "./lib/orderInsertCompatibility";
 import { getDb } from "./db";
 import {
   orders,
@@ -1261,7 +1262,7 @@ export async function convertQuoteToSale(
 
     // 5. Create sale order
     const confirmedAt = new Date();
-    await tx.insert(orders).values({
+    await insertOrderWithCompatibility(tx, {
       orderNumber: saleNumber,
       orderType: "SALE",
       clientId: quote.clientId,
@@ -1276,11 +1277,11 @@ export async function convertQuoteToSale(
       avgMarginPercent: avgMarginPercent.toString(),
       paymentTerms: input.paymentTerms,
       cashPayment: input.cashPayment?.toString() || "0",
-      dueDate: dueDate,
+      dueDate,
       saleStatus: "PENDING",
       fulfillmentStatus: "READY_FOR_PACKING",
       confirmedAt,
-      notes: input.notes || quote.notes,
+      notes: input.notes || quote.notes || null,
       createdBy: quote.createdBy,
       convertedFromOrderId: quote.id,
     });
