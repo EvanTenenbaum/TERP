@@ -154,6 +154,14 @@ export interface DraftInfo {
   createdAt: Date | null;
 }
 
+export interface SavedSheetInfo {
+  id: number;
+  clientId: number;
+  itemCount: number;
+  totalValue: string;
+  createdAt: Date | null;
+}
+
 export interface DraftState {
   currentDraftId: number | null;
   draftName: string;

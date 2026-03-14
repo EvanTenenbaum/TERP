@@ -120,6 +120,11 @@ interface InventoryItemForOrder {
   effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice?: number;
   priceMarkup?: number;
+  appliedRules?: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }>;
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
 }
@@ -155,6 +160,11 @@ interface DraftLineItemPayload {
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   profilePriceAdjustmentPercent?: number | string | null;
+  appliedRules?: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }> | null;
   unitPrice: number | string;
   lineTotal: number | string;
   isSample: boolean;
@@ -297,6 +307,7 @@ const mapDraftLineItemsToEditorState = (
       item.profilePriceAdjustmentPercent !== undefined
         ? Number(item.profilePriceAdjustmentPercent)
         : null,
+    appliedRules: item.appliedRules ?? [],
     unitPrice: Number(item.unitPrice),
     lineTotal: Number(item.lineTotal),
     isSample: item.isSample,
@@ -1255,6 +1266,7 @@ export default function OrderCreatorPageV2() {
         isMarginOverridden: false,
         marginSource: "CUSTOMER_PROFILE" as const,
         profilePriceAdjustmentPercent: item.priceMarkup ?? null,
+        appliedRules: item.appliedRules ?? [],
         isSample: false,
       };
     });

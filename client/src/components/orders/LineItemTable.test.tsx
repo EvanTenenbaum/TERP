@@ -19,6 +19,7 @@ const buildLineItem = (overrides: Partial<LineItem> = {}): LineItem => ({
   marginDollar: 2.5,
   isMarginOverridden: false,
   marginSource: "DEFAULT",
+  appliedRules: [],
   unitPrice: 12.5,
   lineTotal: 25,
   isSample: false,
@@ -113,6 +114,9 @@ describe("LineItemTable powersheet actions", () => {
             effectiveCogsBasis: "MID",
             originalRangeMin: 9,
             originalRangeMax: 11,
+            appliedRules: [
+              { ruleId: 1, ruleName: "Flower Markup", adjustment: "+25%" },
+            ],
           }),
           buildLineItem({
             batchId: 2002,
@@ -128,6 +132,9 @@ describe("LineItemTable powersheet actions", () => {
     expect(screen.getByText("Price from profile rule")).toBeInTheDocument();
     expect(
       screen.getByText("Profile rule +25.0% markup")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Applied: Flower Markup (+25%)")
     ).toBeInTheDocument();
     expect(screen.getByText("Using mid supplier range")).toBeInTheDocument();
     expect(screen.getByText("Price manually overridden")).toBeInTheDocument();
