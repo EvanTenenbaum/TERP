@@ -190,6 +190,16 @@ export const LineItemRow = memo(function LineItemRow({
   // Warning badges
   const hasLowMargin = item.marginPercent < 5;
   const hasNegativeMargin = item.marginPercent < 0;
+  const showProfileAdjustment =
+    item.marginSource === "CUSTOMER_PROFILE" &&
+    !item.isMarginOverridden &&
+    !item.isCogsOverridden &&
+    item.effectiveCogsBasis !== "MANUAL" &&
+    item.originalCogsPerUnit > 0;
+  const profileAdjustmentPercent = showProfileAdjustment
+    ? ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
+      100
+    : null;
   const pricingSourceLabel =
     item.marginSource === "CUSTOMER_PROFILE"
       ? "Price from pricing profile"
@@ -244,6 +254,13 @@ export const LineItemRow = memo(function LineItemRow({
           <span className="text-xs text-muted-foreground">
             {pricingSourceLabel}
           </span>
+          {profileAdjustmentPercent !== null && (
+            <span className="text-xs text-muted-foreground">
+              Profile price adjustment{" "}
+              {profileAdjustmentPercent >= 0 ? "+" : ""}
+              {profileAdjustmentPercent.toFixed(1)}%
+            </span>
+          )}
           <span className="text-xs text-muted-foreground">
             {cogsSourceLabel}
           </span>

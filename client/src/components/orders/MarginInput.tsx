@@ -103,10 +103,10 @@ export function MarginInput({
 
   const sourceDescription =
     source === "CUSTOMER_PROFILE"
-      ? "This row is following the relationship pricing profile until you override it."
+      ? "This row's price came from the relationship pricing profile. The value shown here is the current gross margin based on this row's cost and price."
       : source === "DEFAULT"
-        ? "No relationship pricing rule matched, so the shared default margin is being used."
-        : "This row is using a manual margin override.";
+        ? "No relationship pricing rule matched, so the shared default gross margin is being used."
+        : "This row is using a manual gross-margin override.";
 
   const getSourceBadge = () => {
     switch (source) {
@@ -141,7 +141,8 @@ export function MarginInput({
 
   const validateInput = (): string | null => {
     const trimmed = inputValue.trim();
-    const fieldLabel = inputMode === "percent" ? "Margin (%)" : "Margin ($)";
+    const fieldLabel =
+      inputMode === "percent" ? "Gross Margin (%)" : "Gross Margin ($)";
     if (!trimmed) {
       return `Field: ${fieldLabel}. Rule: value is required. Fix: enter a numeric value before saving.`;
     }
@@ -152,15 +153,15 @@ export function MarginInput({
     }
 
     if (inputMode === "percent" && parsed < -100) {
-      return "Field: Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target margin.";
+      return "Field: Gross Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target margin.";
     }
 
     if (inputMode === "percent" && parsed >= 100) {
-      return "Field: Margin (%). Rule: must stay below 100%. Fix: use a value below 100 or switch to dollar mode.";
+      return "Field: Gross Margin (%). Rule: must stay below 100%. Fix: use a value below 100 or switch to dollar mode.";
     }
 
     if (inputMode === "dollar" && cogsPerUnit <= 0 && parsed !== 0) {
-      return "Field: Margin ($). Rule: dollar mode requires a positive COGS baseline. Fix: update COGS first or set margin to 0.";
+      return "Field: Gross Margin ($). Rule: dollar mode requires a positive COGS baseline. Fix: update COGS first or set margin to 0.";
     }
 
     return null;
@@ -229,7 +230,7 @@ export function MarginInput({
           )}
 
           <div>
-            <h4 className="font-semibold mb-2">Edit Margin</h4>
+            <h4 className="font-semibold mb-2">Edit Gross Margin</h4>
             <p className="text-sm text-muted-foreground">
               Source: {sourceLabel}
             </p>
@@ -276,7 +277,7 @@ export function MarginInput({
 
           <div className="space-y-2">
             <Label htmlFor="margin-input">
-              Margin {inputMode === "percent" ? "(%)" : "($)"}
+              Gross Margin {inputMode === "percent" ? "(%)" : "($)"}
             </Label>
             <Input
               id="margin-input"
