@@ -61,7 +61,10 @@ export function useInventoryFilters() {
     const hasUrlParams =
       params.has("stockLevel") ||
       params.has("status") ||
-      params.has("category");
+      params.has("category") ||
+      params.has("stockStatus") ||
+      params.has("ageBracket") ||
+      params.has("batchId");
 
     // If URL params exist, use those (for deep linking)
     if (hasUrlParams) {
@@ -87,6 +90,29 @@ export function useInventoryFilters() {
       const category = params.get("category");
       if (category) {
         initialFilters.category = category;
+      }
+
+      const stockStatus = params.get("stockStatus");
+      if (
+        stockStatus &&
+        ["CRITICAL", "LOW", "OPTIMAL", "OUT_OF_STOCK"].includes(stockStatus)
+      ) {
+        initialFilters.stockStatus =
+          stockStatus as InventoryFilters["stockStatus"];
+      }
+
+      const ageBracket = params.get("ageBracket");
+      if (
+        ageBracket &&
+        ["FRESH", "MODERATE", "AGING", "CRITICAL"].includes(ageBracket)
+      ) {
+        initialFilters.ageBracket =
+          ageBracket as InventoryFilters["ageBracket"];
+      }
+
+      const batchId = params.get("batchId");
+      if (batchId?.trim()) {
+        initialFilters.batchId = batchId.trim();
       }
 
       return initialFilters;

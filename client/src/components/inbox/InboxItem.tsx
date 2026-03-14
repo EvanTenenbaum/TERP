@@ -51,6 +51,37 @@ const STATUS_COLORS = {
   completed: "bg-green-500",
 };
 
+export function buildInboxEntityRoute(
+  referenceType: string,
+  referenceId: number
+): string | null {
+  switch (referenceType) {
+    case "order":
+      return `/orders?id=${referenceId}`;
+    case "invoice":
+      return `/accounting?tab=invoices&id=${referenceId}`;
+    case "payment":
+      return `/accounting?tab=payments&id=${referenceId}`;
+    case "bill":
+      return `/accounting?tab=bills&id=${referenceId}`;
+    case "client":
+      return buildRelationshipProfilePath(referenceId);
+    case "batch":
+    case "inventory_batch":
+      return `/inventory?batchId=${referenceId}`;
+    case "calendar_event":
+      return `/calendar?eventId=${referenceId}`;
+    case "task":
+      return `/tasks/${referenceId}`;
+    case "comment":
+      return `/comments/${referenceId}`;
+    case "vendor_supply":
+      return `/vendor-supply/${referenceId}`;
+    default:
+      return null;
+  }
+}
+
 export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -102,21 +133,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
   };
 
   const navigateToEntity = () => {
-    const entityRoutes: Record<string, string> = {
-      order: `/orders/${item.referenceId}`,
-      invoice: `/accounting/invoices/${item.referenceId}`,
-      client: buildRelationshipProfilePath(Number(item.referenceId)),
-      batch: `/inventory?batchId=${item.referenceId}`,
-      inventory_batch: `/inventory?batchId=${item.referenceId}`,
-      calendar_event: `/calendar?eventId=${item.referenceId}`,
-      task: `/tasks/${item.referenceId}`,
-      comment: `/comments/${item.referenceId}`,
-      vendor_supply: `/vendor-supply/${item.referenceId}`,
-      bill: `/accounting/bills/${item.referenceId}`,
-      payment: `/accounting/payments/${item.referenceId}`,
-    };
-
-    const route = entityRoutes[item.referenceType];
+    const route = buildInboxEntityRoute(item.referenceType, item.referenceId);
     if (route) {
       setLocation(route);
     }

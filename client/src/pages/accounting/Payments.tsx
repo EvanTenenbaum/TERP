@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import type { Payment } from "../../../../drizzle/schema";
 
@@ -23,13 +24,68 @@ type PaymentSortField =
   | "paymentType"
   | "paymentNumber";
 
+type PaymentRouteContext = {
+  paymentId: number | null;
+  invoiceId: number | null;
+  orderId: string | null;
+  initialSearchQuery: string;
+};
+
+function parsePositiveInt(value: string | null): number | null {
+  if (!value) return null;
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function parsePaymentRouteContext(search: string): PaymentRouteContext {
+  const params = new URLSearchParams(search);
+  const paymentId = parsePositiveInt(params.get("id"));
+  const invoiceId = parsePositiveInt(params.get("invoiceId"));
+  const orderId = params.get("orderId")?.trim() || null;
+
+  return {
+    paymentId,
+    invoiceId,
+    orderId,
+    initialSearchQuery:
+      paymentId !== null
+        ? String(paymentId)
+        : orderId !== null
+          ? orderId
+          : "",
+  };
+}
+
+export function paymentMatchesSearch(payment: Payment, normalizedQuery: string) {
+  if (!normalizedQuery) return true;
+
+  return [
+    String(payment.id),
+    payment.paymentNumber,
+    payment.referenceNumber ?? "",
+    payment.invoiceId ? String(payment.invoiceId) : "",
+  ].some(value => value.toLowerCase().includes(normalizedQuery));
+}
+
 export default function Payments({ embedded }: { embedded?: boolean } = {}) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const routeSearch = useSearch();
+  const routeContext = useMemo(
+    () => parsePaymentRouteContext(routeSearch),
+    [routeSearch]
+  );
+  const [searchQuery, setSearchQuery] = useState(
+    routeContext.initialSearchQuery
+  );
   const [selectedType, setSelectedType] = useState<"ALL" | "RECEIVED" | "SENT">(
     "ALL"
   );
   const [sortField, setSortField] = useState<PaymentSortField>("paymentDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  useEffect(() => {
+    setSearchQuery(routeContext.initialSearchQuery);
+  }, [routeContext.initialSearchQuery]);
 
   // Fetch payments
   const { data: payments, isLoading } = trpc.accounting.payments.list.useQuery({
@@ -37,6 +93,7 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
       selectedType !== "ALL"
         ? (selectedType as "RECEIVED" | "SENT")
         : undefined,
+    invoiceId: routeContext.invoiceId ?? undefined,
   });
 
   // Filter payments - extract from paginated response { items: [], pagination: { total } }
@@ -44,12 +101,16 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
     // BUG-034: Extract payments array from standardized paginated response
     const paymentList = (payments?.items ?? []) as Payment[];
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    const routeFiltered =
+      routeContext.paymentId !== null
+        ? paymentList.filter((payment: Payment) => payment.id === routeContext.paymentId)
+        : paymentList;
 
     const searched = normalizedQuery
-      ? paymentList.filter((payment: Payment) =>
-          payment.paymentNumber.toLowerCase().includes(normalizedQuery)
+      ? routeFiltered.filter((payment: Payment) =>
+          paymentMatchesSearch(payment, normalizedQuery)
         )
-      : paymentList;
+      : routeFiltered;
 
     return [...searched].sort((a: Payment, b: Payment) => {
       let comparison = 0;
@@ -77,7 +138,13 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
 
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [payments, searchQuery, sortDirection, sortField]);
+  }, [
+    payments,
+    routeContext.paymentId,
+    searchQuery,
+    sortDirection,
+    sortField,
+  ]);
 
   // Calculate totals
   const totalPayments = filteredPayments.length;

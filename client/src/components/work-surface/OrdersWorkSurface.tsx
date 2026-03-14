@@ -148,6 +148,24 @@ export function canDownloadInvoice(
   return Boolean(canAccessAccounting && order?.invoiceId);
 }
 
+export function getMakePaymentRoute(
+  order: Pick<Order, "id" | "invoiceId"> | null
+): string | null {
+  if (!order?.invoiceId) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    tab: "invoices",
+    id: String(order.invoiceId),
+    orderId: String(order.id),
+    openRecordPayment: "true",
+    from: "sales",
+  });
+
+  return `/accounting?${params.toString()}`;
+}
+
 interface ClientSummary {
   id: number;
   name?: string | null;
@@ -706,7 +724,8 @@ function OrderInspectorContent({
 
               {!shippingEnabled &&
                 order.orderType === "SALE" &&
-                canAccessAccounting && (
+                canAccessAccounting &&
+                getMakePaymentRoute(order) && (
                   <Button
                     variant="default"
                     className="w-full justify-start"
@@ -1533,7 +1552,20 @@ export function OrdersWorkSurface() {
     setShowShipDialog(true);
   };
   const handleMakePayment = (orderId: number) => {
-    setLocation(`/accounting?tab=payments&orderId=${orderId}&from=sales`);
+    const sourceOrder =
+      (selectedOrder?.id === orderId ? selectedOrder : null) ??
+      confirmedOrders.find(order => order.id === orderId) ??
+      draftOrders.find(order => order.id === orderId) ??
+      null;
+
+    const destination = getMakePaymentRoute(sourceOrder);
+
+    if (!destination) {
+      toast.error("Generate an invoice before recording payment");
+      return;
+    }
+
+    setLocation(destination);
   };
   const handleGenerateInvoice = (orderId: number) => {
     generateInvoiceMutation.mutate({ orderId });

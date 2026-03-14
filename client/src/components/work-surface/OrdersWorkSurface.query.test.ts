@@ -3,6 +3,7 @@ import {
   buildConfirmedQueryInput,
   buildDraftQueryInput,
   canDownloadInvoice,
+  getMakePaymentRoute,
   getDisplayOrderNumber,
   parseDeepLinkedOrderId,
   resolveDeepLinkedOrderSelection,
@@ -125,5 +126,18 @@ describe("canDownloadInvoice", () => {
     expect(canDownloadInvoice({ invoiceId: null }, true)).toBe(false);
     expect(canDownloadInvoice({ invoiceId: 12 }, false)).toBe(false);
     expect(canDownloadInvoice(null, true)).toBe(false);
+  });
+});
+
+describe("getMakePaymentRoute", () => {
+  it("routes sales payment handoffs into the invoice workspace with record-payment intent", () => {
+    expect(getMakePaymentRoute({ id: 18, invoiceId: 91 })).toBe(
+      "/accounting?tab=invoices&id=91&orderId=18&openRecordPayment=true&from=sales"
+    );
+  });
+
+  it("suppresses dead-end payment routing when no invoice exists yet", () => {
+    expect(getMakePaymentRoute({ id: 18, invoiceId: null })).toBeNull();
+    expect(getMakePaymentRoute(null)).toBeNull();
   });
 });
