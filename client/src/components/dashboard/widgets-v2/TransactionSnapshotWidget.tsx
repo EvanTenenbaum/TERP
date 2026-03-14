@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { useLocation } from "wouter";
 
 export const TransactionSnapshotWidget = memo(
@@ -42,7 +43,7 @@ export const TransactionSnapshotWidget = memo(
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setLocation("/orders")}
+            onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
             className="text-xs"
           >
             View Orders <ArrowRight className="h-3 w-3 ml-1" />
@@ -67,7 +68,7 @@ export const TransactionSnapshotWidget = memo(
               <TableBody>
                 <TableRow
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => setLocation("/orders")}
+                  onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
                 >
                   <TableCell className="font-medium">Sales</TableCell>
                   <TableCell className="text-right font-mono">

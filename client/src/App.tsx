@@ -63,7 +63,6 @@ import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -544,11 +543,15 @@ function Router() {
                 />
                 <Route
                   path="/sales-portal"
-                  component={withErrorBoundary(UnifiedSalesPortalPage)}
+                  component={RedirectWithTab(
+                    "/sales-portal",
+                    "/sales",
+                    "live-shopping"
+                  )}
                 />
                 <Route
                   path="/orders"
-                  component={withErrorBoundary(SalesWorkspacePage)}
+                  component={RedirectWithTab("/orders", "/sales", "orders")}
                 />
                 <Route
                   path="/pick-pack"
@@ -686,10 +689,9 @@ function Router() {
                 />
                 <Route
                   path="/inventory-browse"
-                  component={RedirectWithTab(
+                  component={RedirectToOperationsTab(
                     "/inventory-browse",
-                    "/purchase-orders",
-                    "inventory-browse"
+                    "inventory"
                   )}
                 />
                 <Route

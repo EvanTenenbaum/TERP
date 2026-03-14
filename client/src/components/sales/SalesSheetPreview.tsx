@@ -122,7 +122,9 @@ function SortableItem({
     typeof item.effectiveCogs === "number";
   const internalRangeMin = showInternalRangeContext ? item.unitCogsMin : null;
   const internalRangeMax = showInternalRangeContext ? item.unitCogsMax : null;
-  const internalEffectiveCogs = showInternalRangeContext ? item.effectiveCogs : null;
+  const internalEffectiveCogs = showInternalRangeContext
+    ? item.effectiveCogs
+    : null;
   const displayPrice = item.priceOverride ?? item.retailPrice;
   const hasOverride = item.priceOverride !== undefined;
 
@@ -191,7 +193,8 @@ function SortableItem({
                   Internal
                 </Badge>
                 <span>
-                  {INTERNAL_BASIS_LABELS[item.effectiveCogsBasis || "MID"]} basis
+                  {INTERNAL_BASIS_LABELS[item.effectiveCogsBasis || "MID"]}{" "}
+                  basis
                 </span>
                 <span>
                   Vendor COGS ${internalRangeMin?.toFixed(2)} to $
@@ -367,7 +370,7 @@ export function SalesSheetPreview({
   const convertToOrderMutation = trpc.salesSheets.convertToOrder.useMutation({
     onSuccess: data => {
       toast.success("Converted to order successfully");
-      setLocation(`/orders?id=${data.orderId}`);
+      setLocation(buildSalesWorkspacePath("orders", { id: data.orderId }));
     },
     onError: error => {
       toast.error("Failed to convert to order: " + error.message);

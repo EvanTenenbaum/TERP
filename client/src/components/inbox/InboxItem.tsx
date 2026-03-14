@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -57,7 +58,7 @@ export function buildInboxEntityRoute(
 ): string | null {
   switch (referenceType) {
     case "order":
-      return `/orders?id=${referenceId}`;
+      return buildSalesWorkspacePath("orders", { id: referenceId });
     case "invoice":
       return `/accounting?tab=invoices&id=${referenceId}`;
     case "payment":

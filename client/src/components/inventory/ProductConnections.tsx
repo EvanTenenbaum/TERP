@@ -13,6 +13,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import {
   Card,
   CardContent,
@@ -300,7 +301,9 @@ export function ProductConnections({
                                     onCreateOrderClick(connection.clientId);
                                   } else {
                                     setLocation(
-                                      `/orders/new?clientId=${connection.clientId}`
+                                      buildSalesWorkspacePath("create-order", {
+                                        clientId: connection.clientId,
+                                      })
                                     );
                                   }
                                 }}
