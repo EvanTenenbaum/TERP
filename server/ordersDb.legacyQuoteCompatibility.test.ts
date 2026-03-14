@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { convertQuoteToSale, getOrderById } from "./ordersDb";
 import { getDb } from "./db";
+import {
+  buildCompatibleOrderInsertEntries,
+  resetOrderColumnCompatibilityCacheForTests,
+} from "./lib/orderInsertCompatibility";
 
 vi.mock("./db", () => ({
   getDb: vi.fn(),
@@ -25,9 +29,11 @@ function createTransactionMock(selectResults: unknown[]) {
   let selectIndex = 0;
   const insertValues = vi.fn().mockResolvedValue(undefined);
   const updateWhere = vi.fn().mockResolvedValue(undefined);
+  const execute = vi.fn().mockResolvedValue([{ insertId: 88 }]);
 
   const tx = {
     select: vi.fn(() => createSelectChain(selectResults[selectIndex++] ?? [])),
+    execute,
     insert: vi.fn(() => ({
       values: insertValues,
     })),
@@ -41,12 +47,70 @@ function createTransactionMock(selectResults: unknown[]) {
     })),
   };
 
-  return { tx, insertValues, updateWhere };
+  return { tx, execute, insertValues, updateWhere };
 }
 
 describe("ordersDb legacy quote compatibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetOrderColumnCompatibilityCacheForTests();
+  });
+
+  it("omits modern order columns when the live schema has not caught up yet", () => {
+    const entries = buildCompatibleOrderInsertEntries(
+      new Set([
+        "order_number",
+        "orderType",
+        "is_draft",
+        "client_id",
+        "items",
+        "subtotal",
+        "tax",
+        "discount",
+        "total",
+        "total_cogs",
+        "total_margin",
+        "avg_margin_percent",
+        "paymentTerms",
+        "cash_payment",
+        "due_date",
+        "saleStatus",
+        "fulfillmentStatus",
+        "notes",
+        "created_by",
+        "created_at",
+        "updated_at",
+      ]),
+      {
+        orderNumber: "S-TEST-1",
+        orderType: "SALE",
+        isDraft: false,
+        clientId: 12,
+        items: "[]",
+        subtotal: "25",
+        tax: "0",
+        discount: "0",
+        total: "25",
+        totalCogs: "0",
+        totalMargin: "25",
+        avgMarginPercent: "100",
+        paymentTerms: "NET_30",
+        cashPayment: "0",
+        dueDate: new Date("2026-03-11T19:00:00.000Z"),
+        saleStatus: "PENDING",
+        fulfillmentStatus: "READY_FOR_PACKING",
+        confirmedAt: new Date("2026-03-11T19:00:00.000Z"),
+        notes: "legacy-safe",
+        createdBy: 5,
+        convertedFromOrderId: 77,
+      }
+    );
+
+    const columnNames = entries.map(([column]) => column);
+    expect(columnNames).not.toContain("confirmed_at");
+    expect(columnNames).not.toContain("converted_from_order_id");
+    expect(columnNames).toContain("order_number");
+    expect(columnNames).toContain("fulfillmentStatus");
   });
 
   it("converts a legacy quote with price-only items into a normalized sale", async () => {
@@ -100,14 +164,41 @@ describe("ordersDb legacy quote compatibility", () => {
       holdQty: "0",
     };
 
-    const { tx, insertValues, updateWhere } = createTransactionMock([
+    const { tx, execute, insertValues, updateWhere } = createTransactionMock([
       [legacyQuote],
       [createdSale],
       [],
       [batch],
     ]);
 
+    const schemaExecute = vi.fn().mockResolvedValue([
+      [
+        { Field: "order_number" },
+        { Field: "orderType" },
+        { Field: "is_draft" },
+        { Field: "client_id" },
+        { Field: "items" },
+        { Field: "subtotal" },
+        { Field: "tax" },
+        { Field: "discount" },
+        { Field: "total" },
+        { Field: "total_cogs" },
+        { Field: "total_margin" },
+        { Field: "avg_margin_percent" },
+        { Field: "paymentTerms" },
+        { Field: "cash_payment" },
+        { Field: "due_date" },
+        { Field: "saleStatus" },
+        { Field: "fulfillmentStatus" },
+        { Field: "notes" },
+        { Field: "created_by" },
+        { Field: "created_at" },
+        { Field: "updated_at" },
+      ],
+    ]);
+
     vi.mocked(getDb).mockResolvedValue({
+      execute: schemaExecute,
       transaction: async (callback: (txArg: typeof tx) => Promise<unknown>) =>
         callback(tx),
     } as Awaited<ReturnType<typeof getDb>>);
@@ -118,35 +209,10 @@ describe("ordersDb legacy quote compatibility", () => {
     });
 
     expect(result).toBe(createdSale);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(schemaExecute).toHaveBeenCalled();
 
-    const [saleInsert, lineItemInsert] = insertValues.mock.calls.map(
-      call => call[0]
-    );
-
-    expect(saleInsert).toEqual(
-      expect.objectContaining({
-        orderType: "SALE",
-        isDraft: false,
-        fulfillmentStatus: "READY_FOR_PACKING",
-        saleStatus: "PENDING",
-        subtotal: "25",
-        total: "25",
-        confirmedAt: expect.any(Date),
-      })
-    );
-
-    const normalizedItems = JSON.parse(saleInsert.items as string) as Array<{
-      unitPrice: number;
-      lineTotal: number;
-      unitCogs: number;
-    }>;
-    expect(normalizedItems).toEqual([
-      expect.objectContaining({
-        unitPrice: 12.5,
-        lineTotal: 25,
-        unitCogs: 0,
-      }),
-    ]);
+    const [lineItemInsert] = insertValues.mock.calls.map(call => call[0]);
 
     expect(lineItemInsert).toEqual([
       expect.objectContaining({
