@@ -19,7 +19,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch as useRouteSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
@@ -158,6 +158,8 @@ type FulfillmentStatusValue = Exclude<
   Order["fulfillmentStatus"],
   null | undefined
 >;
+
+type OrderWorkspaceTab = "draft" | "confirmed";
 
 // ============================================================================
 // CONSTANTS
@@ -342,6 +344,43 @@ export function getStatusFilterExitMessage(params: {
   )} and is now hidden by the ${getFulfillmentDisplayLabel(
     normalizedFilter
   ).toLowerCase()} filter. Switch to All to keep tracking it.`;
+}
+
+export function parseDeepLinkedOrderId(search: string): number | null {
+  const params = new URLSearchParams(search);
+  const rawId = params.get("id") ?? params.get("orderId");
+  if (!rawId) {
+    return null;
+  }
+
+  const parsedId = Number(rawId);
+  return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
+}
+
+export function resolveDeepLinkedOrderSelection(params: {
+  orderId: number | null;
+  draftOrders: Array<Pick<Order, "id">>;
+  confirmedOrders: Array<Pick<Order, "id">>;
+}): { activeTab: OrderWorkspaceTab; selectedOrderId: number } | null {
+  if (params.orderId === null) {
+    return null;
+  }
+
+  if (params.confirmedOrders.some(order => order.id === params.orderId)) {
+    return {
+      activeTab: "confirmed",
+      selectedOrderId: params.orderId,
+    };
+  }
+
+  if (params.draftOrders.some(order => order.id === params.orderId)) {
+    return {
+      activeTab: "draft",
+      selectedOrderId: params.orderId,
+    };
+  }
+
+  return null;
 }
 
 // ============================================================================
@@ -771,9 +810,11 @@ function OrderInspectorContent({
 
 export function OrdersWorkSurface() {
   const [location, setLocation] = useLocation();
+  const routeSearch = useRouteSearch();
   const trpcUtils = trpc.useUtils();
   const { hasAnyPermission } = usePermissions();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const appliedOrderDeepLinkRef = useRef<number | null>(null);
 
   const salesBusinessMode = useMemo(
     () => resolveSalesBusinessMode(location),
@@ -900,6 +941,44 @@ export function OrdersWorkSurface() {
     () => extractItems<Order>(confirmedOrdersData),
     [confirmedOrdersData]
   );
+  const deepLinkedOrderId = useMemo(
+    () => parseDeepLinkedOrderId(routeSearch),
+    [routeSearch]
+  );
+
+  useEffect(() => {
+    if (deepLinkedOrderId === null) {
+      appliedOrderDeepLinkRef.current = null;
+      return;
+    }
+
+    if (appliedOrderDeepLinkRef.current === deepLinkedOrderId) {
+      return;
+    }
+
+    const nextSelection = resolveDeepLinkedOrderSelection({
+      orderId: deepLinkedOrderId,
+      draftOrders,
+      confirmedOrders,
+    });
+
+    if (!nextSelection) {
+      return;
+    }
+
+    appliedOrderDeepLinkRef.current = deepLinkedOrderId;
+    setActiveTab(nextSelection.activeTab);
+    setSelectedOrderId(nextSelection.selectedOrderId);
+    const targetOrders =
+      nextSelection.activeTab === "draft" ? draftOrders : confirmedOrders;
+    const nextIndex = targetOrders.findIndex(
+      order => order.id === nextSelection.selectedOrderId
+    );
+    if (nextIndex >= 0) {
+      setSelectedIndex(nextIndex);
+    }
+    inspector.open();
+  }, [deepLinkedOrderId, draftOrders, confirmedOrders, inspector]);
 
   const patchConfirmedOrderStatus = useCallback(
     (orderId: number, targetStatus: FulfillmentStatusValue) => {
