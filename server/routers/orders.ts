@@ -1763,6 +1763,7 @@ export const ordersRouter = router({
           "READY_FOR_PACKING",
           "PACKED",
           "SHIPPED",
+          "DELIVERED",
           "CANCELLED",
         ]),
         notes: z.string().optional(),

@@ -2038,7 +2038,12 @@ export function getValidSaleStatusTransitions(currentStatus: string): string[] {
 export async function updateOrderStatus(input: {
   orderId: number;
   // ORD-003: Added CANCELLED as valid status for order cancellation before shipping
-  newStatus: "READY_FOR_PACKING" | "PACKED" | "SHIPPED" | "CANCELLED";
+  newStatus:
+    | "READY_FOR_PACKING"
+    | "PACKED"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "CANCELLED";
   notes?: string;
   userId: number;
   expectedVersion?: number; // DATA-005: Optimistic locking support

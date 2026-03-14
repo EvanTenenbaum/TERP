@@ -72,6 +72,7 @@ import {
   OrderCOGSDetails,
   type OrderCOGSLineItem,
 } from "@/components/orders/OrderCOGSDetails";
+import { OrderStatusActions } from "@/components/orders";
 import { ProcessReturnModal } from "@/components/orders/ProcessReturnModal";
 import { GLEntriesViewer } from "@/components/accounting/GLEntriesViewer";
 import {
@@ -396,6 +397,22 @@ interface OrderInspectorProps {
   onProcessReturn?: (orderId: number) => void;
   onProcessRestock?: (orderId: number) => void;
   onReturnToVendor?: (orderId: number) => void;
+  isStatusUpdating?: boolean;
+  onStatusChange?: (
+    orderId: number,
+    newStatus:
+      | "DRAFT"
+      | "CONFIRMED"
+      | "READY_FOR_PACKING"
+      | "PACKED"
+      | "SHIPPED"
+      | "DELIVERED"
+      | "RETURNED"
+      | "RESTOCKED"
+      | "RETURNED_TO_VENDOR"
+      | "CANCELLED"
+      | "PENDING"
+  ) => void;
 }
 
 function OrderInspectorContent({
@@ -418,6 +435,8 @@ function OrderInspectorContent({
   onProcessReturn,
   onProcessRestock,
   onReturnToVendor,
+  isStatusUpdating = false,
+  onStatusChange,
 }: OrderInspectorProps) {
   if (!order) {
     return (
@@ -556,6 +575,40 @@ function OrderInspectorContent({
           </div>
         )}
       </InspectorSection>
+
+      {!order.isDraft && canManageShipping && (
+        <InspectorSection title="Status Actions" defaultOpen>
+          <OrderStatusActions
+            currentStatus={
+              (normalizeFulfillmentStatus(order.fulfillmentStatus) ??
+                "READY_FOR_PACKING") as Parameters<
+                typeof OrderStatusActions
+              >[0]["currentStatus"]
+            }
+            orderNumber={
+              getDisplayOrderNumber(order) ||
+              order.orderNumber ||
+              `Order #${order.id}`
+            }
+            isUpdating={isStatusUpdating}
+            onStatusChange={newStatus =>
+              onStatusChange?.(order.id, newStatus)
+            }
+            customHandlers={{
+              SHIPPED: () => onShip(order.id),
+              RETURNED: onProcessReturn
+                ? () => onProcessReturn(order.id)
+                : undefined,
+              RESTOCKED: onProcessRestock
+                ? () => onProcessRestock(order.id)
+                : undefined,
+              RETURNED_TO_VENDOR: onReturnToVendor
+                ? () => onReturnToVendor(order.id)
+                : undefined,
+            }}
+          />
+        </InspectorSection>
+      )}
 
       <InspectorSection title="Quick Actions">
         <div className="space-y-2">
@@ -1233,6 +1286,27 @@ export function OrdersWorkSurface() {
       },
     });
 
+  const updateOrderStatusMutation = trpc.orders.updateOrderStatus.useMutation({
+    onMutate: () => setSaving("Updating order status..."),
+    onSuccess: result => {
+      const nextStatus = result.newStatus as FulfillmentStatusValue;
+      if (selectedOrderId) {
+        patchConfirmedOrderStatus(selectedOrderId, nextStatus);
+      }
+      notifyStatusFilterExit(selectedOrder, nextStatus);
+      toast.success("Order status updated");
+      setSaved();
+      void refetchConfirmed();
+      inspector.close();
+    },
+    onError: err => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to update order status");
+        setError(err.message);
+      }
+    },
+  });
+
   const generateInvoiceMutation = trpc.invoices.generateFromOrder.useMutation({
     onMutate: () => setSaving("Generating invoice..."),
     onSuccess: invoice => {
@@ -1616,6 +1690,21 @@ export function OrdersWorkSurface() {
             onProcessReturn={handleProcessReturn}
             onProcessRestock={handleProcessRestock}
             onReturnToVendor={handleReturnToVendor}
+            isStatusUpdating={updateOrderStatusMutation.isPending}
+            onStatusChange={(orderId, newStatus) => {
+              if (
+                newStatus === "READY_FOR_PACKING" ||
+                newStatus === "PACKED" ||
+                newStatus === "SHIPPED" ||
+                newStatus === "DELIVERED" ||
+                newStatus === "CANCELLED"
+              ) {
+                updateOrderStatusMutation.mutate({
+                  orderId,
+                  newStatus,
+                });
+              }
+            }}
           />
         </InspectorPanel>
       </div>
