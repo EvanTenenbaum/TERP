@@ -596,10 +596,8 @@ export function PurchaseOrdersSlicePage({
     });
 
     const receivingDraftPath = route.startsWith("/slice-v1-lab")
-      ? "/slice-v1-lab/product-intake"
-      : route.startsWith("/slice-v1")
-        ? "/slice-v1/product-intake"
-        : buildOperationsWorkspacePath("receiving", { draftId: draft.id });
+      ? `/slice-v1-lab/product-intake?draftId=${encodeURIComponent(draft.id)}`
+      : buildOperationsWorkspacePath("receiving", { draftId: draft.id });
 
     upsertProductIntakeDraft(draft, preferenceUserId);
     setPickerOpen(false);
@@ -611,11 +609,7 @@ export function PurchaseOrdersSlicePage({
       stepCount: chosen.length + 1,
       elapsedMs: Date.now() - startedAt,
     });
-    navigate(
-      route.startsWith("/slice-v1")
-        ? `${receivingDraftPath}?draftId=${encodeURIComponent(draft.id)}`
-        : receivingDraftPath
-    );
+    navigate(receivingDraftPath);
   };
 
   const createPurchaseOrder = () => {

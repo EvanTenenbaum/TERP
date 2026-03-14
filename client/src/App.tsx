@@ -697,20 +697,29 @@ function Router() {
                   path="/slice-v1"
                   component={RedirectWithSearch(
                     "/slice-v1",
-                    "/slice-v1/purchase-orders"
+                    "/purchase-orders"
                   )}
                 />
                 <Route
                   path="/slice-v1/purchase-orders"
-                  component={withErrorBoundary(PurchaseOrdersSlicePage)}
+                  component={RedirectWithSearch(
+                    "/slice-v1/purchase-orders",
+                    "/purchase-orders"
+                  )}
                 />
                 <Route
                   path="/slice-v1/product-intake"
-                  component={withErrorBoundary(ProductIntakeSlicePage)}
+                  component={RedirectToOperationsTab(
+                    "/slice-v1/product-intake",
+                    "receiving"
+                  )}
                 />
                 <Route
                   path="/slice-v1/inventory"
-                  component={withErrorBoundary(InventoryBrowseSlicePage)}
+                  component={RedirectToOperationsTab(
+                    "/slice-v1/inventory",
+                    "inventory"
+                  )}
                 />
                 <Route
                   path="/returns"
