@@ -119,6 +119,7 @@ interface InventoryItemForOrder {
   effectiveCogs?: number;
   effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice?: number;
+  priceMarkup?: number;
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
 }
@@ -153,6 +154,7 @@ interface DraftLineItemPayload {
   marginDollar: number | string;
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  profilePriceAdjustmentPercent?: number | string | null;
   unitPrice: number | string;
   lineTotal: number | string;
   isSample: boolean;
@@ -223,6 +225,10 @@ const buildOrderFingerprint = (snapshot: OrderDraftSnapshot): string =>
       marginDollar: normalizeFingerprintNumber(item.marginDollar, 4),
       isMarginOverridden: item.isMarginOverridden,
       marginSource: item.marginSource,
+      profilePriceAdjustmentPercent: normalizeFingerprintNumber(
+        item.profilePriceAdjustmentPercent ?? null,
+        4
+      ),
       unitPrice: normalizeFingerprintNumber(item.unitPrice, 4),
       lineTotal: normalizeFingerprintNumber(item.lineTotal, 4),
       isSample: item.isSample,
@@ -286,6 +292,11 @@ const mapDraftLineItemsToEditorState = (
     marginDollar: Number(item.marginDollar),
     isMarginOverridden: item.isMarginOverridden,
     marginSource: item.marginSource,
+    profilePriceAdjustmentPercent:
+      item.profilePriceAdjustmentPercent !== null &&
+      item.profilePriceAdjustmentPercent !== undefined
+        ? Number(item.profilePriceAdjustmentPercent)
+        : null,
     unitPrice: Number(item.unitPrice),
     lineTotal: Number(item.lineTotal),
     isSample: item.isSample,
@@ -867,6 +878,10 @@ export default function OrderCreatorPageV2() {
           unitPrice: recalculated.unitPrice ?? 0,
           lineTotal: recalculated.lineTotal ?? 0,
           marginSource: "CUSTOMER_PROFILE",
+          profilePriceAdjustmentPercent:
+            profilePricing.priceMarkup ??
+            item.profilePriceAdjustmentPercent ??
+            null,
           isMarginOverridden: false,
         };
       })
@@ -1239,6 +1254,7 @@ export default function OrderCreatorPageV2() {
         isCogsOverridden: false,
         isMarginOverridden: false,
         marginSource: "CUSTOMER_PROFILE" as const,
+        profilePriceAdjustmentPercent: item.priceMarkup ?? null,
         isSample: false,
       };
     });

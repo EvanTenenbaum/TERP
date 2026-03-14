@@ -55,6 +55,17 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+export function calculateRetailPriceFromMarkupPercent(
+  cogsPerUnit: number,
+  markupPercent: number
+): number {
+  if (!Number.isFinite(cogsPerUnit) || !Number.isFinite(markupPercent)) {
+    return 0;
+  }
+
+  return round(Math.max(0, cogsPerUnit * (1 + markupPercent / 100)));
+}
+
 /**
  * Calculate gross margin percent from an exact retail price.
  */
