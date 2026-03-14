@@ -213,12 +213,24 @@ export function PurchaseOrdersSlicePage({
     items: [createPoItemForm()],
   });
 
-  const posQuery = trpc.purchaseOrders.getAll.useQuery({});
+  const posQuery = trpc.purchaseOrders.getAll.useQuery(undefined, {
+    enabled: mode !== "receiving",
+  });
+  const pendingReceivingQuery = trpc.poReceiving.getPendingReceiving.useQuery(
+    undefined,
+    {
+      enabled: mode === "receiving",
+    }
+  );
   const poItems = useMemo(() => {
+    if (mode === "receiving") {
+      return pendingReceivingQuery.data ?? [];
+    }
+
     const data = posQuery.data;
     if (Array.isArray(data)) return data;
     return data?.items ?? [];
-  }, [posQuery.data]);
+  }, [mode, pendingReceivingQuery.data, posQuery.data]);
 
   const suppliersQuery = trpc.clients.list.useQuery({
     clientTypes: ["seller"],
@@ -247,10 +259,12 @@ export function PurchaseOrdersSlicePage({
 
   const getSupplierName = useCallback(
     (po: {
+      supplierName?: string | null;
       supplierClientId?: number | null;
       vendorId?: number | null;
       supplier?: { name?: string | null } | null;
     }) => {
+      if (po.supplierName?.trim()) return po.supplierName.trim();
       if (po.supplier?.name?.trim()) return po.supplier.name.trim();
 
       const supplierByClient = suppliers.find(
@@ -376,6 +390,15 @@ export function PurchaseOrdersSlicePage({
 
   const selectedPo = selectedPoQuery.data;
 
+  const refetchPurchaseOrders = useCallback(async () => {
+    if (mode === "receiving") {
+      await pendingReceivingQuery.refetch();
+      return;
+    }
+
+    await posQuery.refetch();
+  }, [mode, pendingReceivingQuery, posQuery]);
+
   const activePoForIntake = useMemo(() => {
     if (selectedPo) return selectedPo;
     if (selectedPoIds.size !== 1) return null;
@@ -407,7 +430,7 @@ export function PurchaseOrdersSlicePage({
         notes: "",
         items: [createPoItemForm()],
       });
-      await posQuery.refetch();
+      await refetchPurchaseOrders();
     },
     onError: e => toast.error(e.message),
   });
@@ -425,7 +448,7 @@ export function PurchaseOrdersSlicePage({
     try {
       await submitPoMutation.mutateAsync({ id: poId });
       await confirmPoMutation.mutateAsync({ id: poId });
-      await Promise.all([posQuery.refetch(), selectedPoQuery.refetch()]);
+      await Promise.all([refetchPurchaseOrders(), selectedPoQuery.refetch()]);
       toast.success("Purchase Order placed");
       recordFrictionEvent({
         event: "flow_complete",
@@ -466,7 +489,7 @@ export function PurchaseOrdersSlicePage({
       }
     }
 
-    await posQuery.refetch();
+    await refetchPurchaseOrders();
     if (selectedPoId) await selectedPoQuery.refetch();
 
     toast.success(`Placed ${successCount} purchase order(s).`);
