@@ -59,7 +59,7 @@ export default function SalesWorkspacePage() {
         <ReturnsPage embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
-        <SalesSheetCreatorPage />
+        <SalesSheetCreatorPage embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="live-shopping">
         <LiveShoppingPage />
