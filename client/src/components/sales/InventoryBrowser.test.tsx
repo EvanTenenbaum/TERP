@@ -15,7 +15,9 @@ const inventoryItem: PricedInventoryItem = {
   retailPrice: 12,
   quantity: 12.5,
   priceMarkup: 50,
-  appliedRules: [],
+  appliedRules: [
+    { ruleId: 1, ruleName: "Flower Markup", adjustment: "+50%" },
+  ],
 };
 
 describe("InventoryBrowser", () => {
@@ -48,7 +50,7 @@ describe("InventoryBrowser", () => {
     expect(firstAddedItem.orderQuantity).toBe(2);
   });
 
-  it("shows gross margin so catalog pricing matches the order flow", () => {
+  it("shows gross margin separately from the pricing-profile adjustment", () => {
     render(
       <InventoryBrowser
         inventory={[inventoryItem]}
@@ -58,7 +60,9 @@ describe("InventoryBrowser", () => {
       />
     );
 
-    expect(screen.getByText("Margin")).toBeTruthy();
+    expect(screen.getByText("Gross Margin")).toBeTruthy();
     expect(screen.getByText("+33.3%")).toBeTruthy();
+    expect(screen.getByText("Profile adjustment +50.0%")).toBeTruthy();
+    expect(screen.getByTitle("Flower Markup (+50%)")).toBeTruthy();
   });
 });

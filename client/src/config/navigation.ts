@@ -549,15 +549,18 @@ export function buildNavigationAccessModel(options?: {
     flagsLoading: options?.flagsLoading,
   });
 
-  // TER-597: commandNavigationItems includes ALL navigation items (including
-  // sidebarVisible: false ones) so the Command Palette can navigate to any page.
+  // TER-597: commandNavigationItems includes absorbed navigation items
+  // (including sidebarVisible: false ones) so the Command Palette can
+  // navigate to the current canonical surfaces without surfacing legacy aliases.
   const allAccessibleItems = navigationItems.filter(item => {
     if (!item.featureFlag) return true;
     if (options?.flagsLoading) return false;
     return (options?.flags ?? {})[item.featureFlag] ?? false;
   });
 
-  const commandNavigationItems = allAccessibleItems;
+  const commandNavigationItems = allAccessibleItems.filter(
+    item => item.path !== "/direct-intake"
+  );
 
   const accessiblePaths = new Set(
     commandNavigationItems

@@ -22,7 +22,7 @@ describe("MarginInput", () => {
     );
 
     fireEvent.click(screen.getByText("20.0%"));
-    fireEvent.change(screen.getByLabelText("Margin ($)"), {
+    fireEvent.change(screen.getByLabelText("Gross Margin ($)"), {
       target: { value: "5" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -45,12 +45,12 @@ describe("MarginInput", () => {
 
     fireEvent.click(screen.getByText("20.0%"));
     fireEvent.click(screen.getByRole("radio", { name: "Percent" }));
-    fireEvent.change(screen.getByLabelText("Margin (%)"), {
+    fireEvent.change(screen.getByLabelText("Gross Margin (%)"), {
       target: { value: "50" },
     });
     fireEvent.click(screen.getByRole("radio", { name: "Dollar" }));
 
-    expect(screen.getByLabelText("Margin ($)")).toHaveValue(10);
+    expect(screen.getByLabelText("Gross Margin ($)")).toHaveValue(10);
   });
 
   it("preserves exact cents when toggling untouched profile-driven values", () => {
@@ -69,7 +69,7 @@ describe("MarginInput", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Percent" }));
     fireEvent.click(screen.getByRole("radio", { name: "Dollar" }));
 
-    expect(screen.getByLabelText("Margin ($)")).toHaveValue(380.66);
+    expect(screen.getByLabelText("Gross Margin ($)")).toHaveValue(380.66);
   });
 
   it("shows field/rule/fix validation guidance when value is invalid", () => {
@@ -87,14 +87,16 @@ describe("MarginInput", () => {
     );
 
     fireEvent.click(screen.getByText("20.0%"));
-    fireEvent.change(screen.getByLabelText("Margin ($)"), {
+    fireEvent.change(screen.getByLabelText("Gross Margin ($)"), {
       target: { value: "" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(screen.getByText("Cannot save margin")).toBeInTheDocument();
     expect(
-      screen.getAllByText(/Field: Margin \(\$\)\. Rule: value is required\./)
+      screen.getAllByText(
+        /Field: Gross Margin \(\$\)\. Rule: value is required\./
+      )
         .length
     ).toBeGreaterThan(0);
     expect(onChange).not.toHaveBeenCalled();
@@ -117,7 +119,7 @@ describe("MarginInput", () => {
     expect(screen.getByText("Source: Pricing profile")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "This row is following the relationship pricing profile until you override it."
+        "This row's price came from the relationship pricing profile. The value shown here is the current gross margin based on this row's cost and price."
       )
     ).toBeInTheDocument();
   });
@@ -137,7 +139,7 @@ describe("MarginInput", () => {
     );
 
     fireEvent.click(screen.getByText("33.3%"));
-    fireEvent.change(screen.getByLabelText("Margin ($)"), {
+    fireEvent.change(screen.getByLabelText("Gross Margin ($)"), {
       target: { value: "380.66" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

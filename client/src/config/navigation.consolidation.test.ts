@@ -4,7 +4,11 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { navigationItems, buildNavigationGroups } from "./navigation";
+import {
+  navigationItems,
+  buildNavigationAccessModel,
+  buildNavigationGroups,
+} from "./navigation";
 
 const paths = navigationItems.map(item => item.path);
 
@@ -104,6 +108,16 @@ describe("consolidated navigation IA", () => {
     expect(sidebarHiddenPaths).toContain("/scheduling");
     expect(sidebarHiddenPaths).toContain("/time-clock");
     expect(sidebarHiddenPaths).toContain("/todos");
+  });
+
+  it("keeps legacy intake aliases out of command navigation", () => {
+    const accessModel = buildNavigationAccessModel();
+    const commandPaths = accessModel.commandNavigationItems.map(
+      item => item.path
+    );
+
+    expect(commandPaths).toContain("/inventory?tab=receiving");
+    expect(commandPaths).not.toContain("/direct-intake");
   });
 
   it("buildNavigationGroups returns only sidebar-visible items", () => {

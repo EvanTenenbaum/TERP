@@ -54,6 +54,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 
 interface SalesSheetItem {
   id: number;
@@ -378,7 +379,11 @@ export function SalesSheetPreview({
     trpc.salesSheets.convertToLiveSession.useMutation({
       onSuccess: data => {
         toast.success("Live session started");
-        setLocation(`/live-shopping?session=${data.sessionId}`);
+        setLocation(
+          buildSalesWorkspacePath("live-shopping", {
+            session: data.sessionId,
+          })
+        );
       },
       onError: error => {
         toast.error("Failed to start live session: " + error.message);

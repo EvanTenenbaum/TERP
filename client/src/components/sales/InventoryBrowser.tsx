@@ -78,6 +78,11 @@ function isNonSellableStatus(status?: string): status is NonSellableStatus {
   return (NON_SELLABLE_STATUSES as readonly string[]).includes(status);
 }
 
+function formatProfileAdjustment(priceMarkup: number): string {
+  const sign = priceMarkup >= 0 ? "+" : "";
+  return `${sign}${priceMarkup.toFixed(1)}%`;
+}
+
 // Extended inventory item type for internal use (includes orderQuantity when added)
 interface InventoryItemWithQuantity extends PricedInventoryItem {
   orderQuantity?: number;
@@ -277,7 +282,7 @@ export function InventoryBrowser({
                 <TableHead>Qty Available</TableHead>
                 <TableHead>Price/Unit</TableHead>
                 <TableHead>Client Price</TableHead>
-                <TableHead>Margin</TableHead>
+                <TableHead>Gross Margin</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -433,7 +438,20 @@ export function InventoryBrowser({
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ${item.retailPrice.toFixed(2)}
+                        <div className="flex flex-col">
+                          <span>${item.retailPrice.toFixed(2)}</span>
+                          {item.appliedRules.length > 0 && (
+                            <span
+                              className="text-xs font-normal text-muted-foreground"
+                              title={item.appliedRules
+                                .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                .join(", ")}
+                            >
+                              Profile adjustment{" "}
+                              {formatProfileAdjustment(item.priceMarkup)}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={margin > 0 ? "default" : "secondary"}>

@@ -503,7 +503,7 @@ export function LineItemTable({
                   COGS/Unit
                 </TableHead>
                 <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
-                  Margin
+                  Gross Margin
                 </TableHead>
                 <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
                   Price/Unit
