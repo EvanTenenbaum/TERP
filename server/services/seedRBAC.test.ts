@@ -482,6 +482,32 @@ describe("RBAC Seeding", () => {
       expect(permissionNames).toContain("pricing:read");
     });
 
+    it("Customer Service should have pricing read permission for order creation", async () => {
+      const [customerServiceRole] = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, "Customer Service"))
+        .limit(1);
+
+      const customerServicePermissions = await db
+        .select({
+          permissionName: permissions.name,
+        })
+        .from(rolePermissions)
+        .innerJoin(
+          permissions,
+          eq(rolePermissions.permissionId, permissions.id)
+        )
+        .where(eq(rolePermissions.roleId, customerServiceRole.id));
+
+      const permissionNames = customerServicePermissions.map(
+        (p: Record<string, unknown>) => p.permissionName
+      );
+
+      expect(permissionNames).toContain("orders:create");
+      expect(permissionNames).toContain("pricing:read");
+    });
+
     it("Operations Manager should have inventory and orders permissions", async () => {
       const [opsManagerRole] = await db
         .select()

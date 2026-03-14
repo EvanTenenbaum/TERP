@@ -1915,6 +1915,7 @@ export const customerServicePermissions = [
   "inventory:read",
   "inventory:quantity:view",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "returns:access",
