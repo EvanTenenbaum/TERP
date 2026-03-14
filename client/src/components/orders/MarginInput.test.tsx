@@ -124,6 +124,28 @@ describe("MarginInput", () => {
     ).toBeInTheDocument();
   });
 
+  it("explains when a row is following fallback pricing context", () => {
+    render(
+      <MarginInput
+        marginPercent={20}
+        marginDollar={2}
+        cogsPerUnit={10}
+        source="DEFAULT"
+        isOverridden={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText("20.0%"));
+
+    expect(screen.getByText("Source: Fallback priced")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "No relationship pricing rule matched, so this row is following fallback pricing context from category or shared defaults."
+      )
+    ).toBeInTheDocument();
+  });
+
   it("preserves the exact unit price when saving from dollar mode", () => {
     const onChange = vi.fn();
 

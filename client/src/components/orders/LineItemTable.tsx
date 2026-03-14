@@ -39,6 +39,12 @@ import { useUiDensity } from "@/hooks/useUiDensity";
 import type { PowersheetBulkActionContract } from "@/types/powersheet";
 import { toast } from "sonner";
 
+interface AppliedPricingRule {
+  ruleId: number;
+  ruleName: string;
+  adjustment: string;
+}
+
 export interface LineItem {
   id?: number;
   batchId: number;
@@ -63,6 +69,7 @@ export interface LineItem {
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   profilePriceAdjustmentPercent?: number | null;
+  appliedRules?: AppliedPricingRule[];
   unitPrice: number;
   lineTotal: number;
   isSample: boolean;
