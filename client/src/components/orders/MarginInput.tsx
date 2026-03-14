@@ -98,14 +98,14 @@ export function MarginInput({
     source === "CUSTOMER_PROFILE"
       ? "Profile-priced"
       : source === "DEFAULT"
-        ? "Fallback default"
+        ? "Fallback priced"
         : "Manual";
 
   const sourceDescription =
     source === "CUSTOMER_PROFILE"
       ? "This row is currently priced from the relationship profile. The value shown here is the resulting gross margin for this row's exact cost and price. The profile rule result is shown separately on the row, and the two numbers can differ because markup and gross margin use different formulas."
       : source === "DEFAULT"
-        ? "No relationship pricing rule matched, so the shared default gross margin is being used."
+        ? "No relationship pricing rule matched, so this row is following fallback pricing context from category or shared defaults."
         : "This row is using a manual gross-margin override.";
 
   const getSourceBadge = () => {
@@ -119,7 +119,7 @@ export function MarginInput({
       case "DEFAULT":
         return (
           <Badge variant="secondary" className="text-xs">
-            Fallback default
+            Fallback priced
           </Badge>
         );
       case "MANUAL":

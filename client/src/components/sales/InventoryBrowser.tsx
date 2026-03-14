@@ -83,6 +83,20 @@ function formatProfileRuleMarkup(priceMarkup: number): string {
   return `${sign}${priceMarkup.toFixed(1)}% markup`;
 }
 
+function formatAppliedRulesSummary(
+  appliedRules: Array<{ ruleId: number; ruleName: string; adjustment: string }>
+): string | null {
+  if (appliedRules.length === 0) {
+    return null;
+  }
+
+  if (appliedRules.length === 1) {
+    return `${appliedRules[0].ruleName} (${appliedRules[0].adjustment})`;
+  }
+
+  return `${appliedRules[0].ruleName} (${appliedRules[0].adjustment}) +${appliedRules.length - 1} more`;
+}
+
 // Extended inventory item type for internal use (includes orderQuantity when added)
 interface InventoryItemWithQuantity extends PricedInventoryItem {
   orderQuantity?: number;
@@ -441,15 +455,26 @@ export function InventoryBrowser({
                         <div className="flex flex-col">
                           <span>${item.retailPrice.toFixed(2)}</span>
                           {item.appliedRules.length > 0 && (
-                            <span
-                              className="text-xs font-normal text-muted-foreground"
-                              title={item.appliedRules
-                                .map(rule => `${rule.ruleName} (${rule.adjustment})`)
-                                .join(", ")}
-                            >
-                              Profile rule{" "}
-                              {formatProfileRuleMarkup(item.priceMarkup)}
-                            </span>
+                            <>
+                              <span
+                                className="text-xs font-normal text-muted-foreground"
+                                title={item.appliedRules
+                                  .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                  .join(", ")}
+                              >
+                                Profile{" "}
+                                {item.appliedRules.length > 1 ? "rules net" : "rule"}{" "}
+                                {formatProfileRuleMarkup(item.priceMarkup)}
+                              </span>
+                              <span
+                                className="text-xs font-normal text-muted-foreground"
+                                title={item.appliedRules
+                                  .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                  .join(", ")}
+                              >
+                                Applied: {formatAppliedRulesSummary(item.appliedRules)}
+                              </span>
+                            </>
                           )}
                         </div>
                       </TableCell>

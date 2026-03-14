@@ -18,6 +18,12 @@ import {
 import { calculateLineItemFromRetailPrice } from "@/hooks/orders/useOrderCalculations";
 import { parsePositiveInteger } from "@/lib/quantity";
 
+interface AppliedPricingRule {
+  ruleId: number;
+  ruleName: string;
+  adjustment: string;
+}
+
 interface LineItem {
   id?: number;
   batchId: number;
@@ -41,6 +47,7 @@ interface LineItem {
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   profilePriceAdjustmentPercent?: number | null;
+  appliedRules?: AppliedPricingRule[];
   unitPrice: number;
   lineTotal: number;
   isSample: boolean;
@@ -216,6 +223,18 @@ export const LineItemRow = memo(function LineItemRow({
       : item.effectiveCogsBasis
         ? `Using ${item.effectiveCogsBasis.toLowerCase()} supplier range`
         : "Using saved supplier cost";
+  const appliedRuleSummary =
+    item.appliedRules && item.appliedRules.length > 0
+      ? item.appliedRules.length === 1
+        ? `${item.appliedRules[0].ruleName} (${item.appliedRules[0].adjustment})`
+        : `${item.appliedRules[0].ruleName} (${item.appliedRules[0].adjustment}) +${item.appliedRules.length - 1} more`
+      : null;
+  const appliedRuleTitle =
+    item.appliedRules && item.appliedRules.length > 0
+      ? item.appliedRules
+          .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+          .join(", ")
+      : undefined;
 
   return (
     <TableRow
@@ -257,10 +276,15 @@ export const LineItemRow = memo(function LineItemRow({
             {pricingSourceLabel}
           </span>
           {profileAdjustmentPercent !== null && (
-            <span className="text-xs text-muted-foreground">
-              Profile rule{" "}
+            <span className="text-xs text-muted-foreground" title={appliedRuleTitle}>
+              Profile {item.appliedRules && item.appliedRules.length > 1 ? "rules net" : "rule"}{" "}
               {profileAdjustmentPercent >= 0 ? "+" : ""}
               {profileAdjustmentPercent.toFixed(1)}% markup
+            </span>
+          )}
+          {appliedRuleSummary && (
+            <span className="text-xs text-muted-foreground" title={appliedRuleTitle}>
+              Applied: {appliedRuleSummary}
             </span>
           )}
           <span className="text-xs text-muted-foreground">

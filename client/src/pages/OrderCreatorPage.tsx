@@ -79,6 +79,7 @@ import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
+import { PricingContextPanel } from "@/components/pricing/PricingContextPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
@@ -120,9 +121,16 @@ interface InventoryItemForOrder {
   effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice?: number;
   priceMarkup?: number;
+  appliedRules?: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }>;
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
 }
+
+type LineItemMarginSource = "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
 
 type CustomerDrawerSection = "money" | "sales-pricing";
 
@@ -155,6 +163,11 @@ interface DraftLineItemPayload {
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   profilePriceAdjustmentPercent?: number | string | null;
+  appliedRules?: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }> | null;
   unitPrice: number | string;
   lineTotal: number | string;
   isSample: boolean;
@@ -169,6 +182,22 @@ interface OrderDraftSnapshot {
   showAdjustmentOnDocument: boolean;
   items: LineItem[];
 }
+
+export const resolveInventoryPricingContext = (
+  item: Pick<InventoryItemForOrder, "appliedRules" | "priceMarkup">
+): {
+  marginSource: LineItemMarginSource;
+  profilePriceAdjustmentPercent: number | null;
+} => {
+  const hasProfileRuleMatch = (item.appliedRules?.length ?? 0) > 0;
+
+  return {
+    marginSource: hasProfileRuleMatch ? "CUSTOMER_PROFILE" : "DEFAULT",
+    profilePriceAdjustmentPercent: hasProfileRuleMatch
+      ? (item.priceMarkup ?? null)
+      : null,
+  };
+};
 
 const normalizeFingerprintNumber = (
   value: number | null | undefined,
@@ -297,6 +326,7 @@ const mapDraftLineItemsToEditorState = (
       item.profilePriceAdjustmentPercent !== undefined
         ? Number(item.profilePriceAdjustmentPercent)
         : null,
+    appliedRules: item.appliedRules ?? [],
     unitPrice: Number(item.unitPrice),
     lineTotal: Number(item.lineTotal),
     isSample: item.isSample,
@@ -844,6 +874,7 @@ export default function OrderCreatorPageV2() {
           cogsPerUnit,
           retailPrice
         );
+        const pricingContext = resolveInventoryPricingContext(profilePricing);
 
         return {
           ...item,
@@ -877,11 +908,10 @@ export default function OrderCreatorPageV2() {
           marginDollar: recalculated.marginDollar ?? 0,
           unitPrice: recalculated.unitPrice ?? 0,
           lineTotal: recalculated.lineTotal ?? 0,
-          marginSource: "CUSTOMER_PROFILE",
+          marginSource: pricingContext.marginSource,
           profilePriceAdjustmentPercent:
-            profilePricing.priceMarkup ??
-            item.profilePriceAdjustmentPercent ??
-            null,
+            pricingContext.profilePriceAdjustmentPercent,
+          appliedRules: profilePricing.appliedRules ?? [],
           isMarginOverridden: false,
         };
       })
@@ -1228,6 +1258,7 @@ export default function OrderCreatorPageV2() {
         cogsPerUnit,
         retailPrice
       );
+      const pricingContext = resolveInventoryPricingContext(item);
 
       return {
         ...calculated,
@@ -1253,8 +1284,10 @@ export default function OrderCreatorPageV2() {
         belowRangeReason: undefined,
         isCogsOverridden: false,
         isMarginOverridden: false,
-        marginSource: "CUSTOMER_PROFILE" as const,
-        profilePriceAdjustmentPercent: item.priceMarkup ?? null,
+        marginSource: pricingContext.marginSource,
+        profilePriceAdjustmentPercent:
+          pricingContext.profilePriceAdjustmentPercent,
+        appliedRules: item.appliedRules ?? [],
         isSample: false,
       };
     });
@@ -1611,11 +1644,25 @@ export default function OrderCreatorPageV2() {
 
                 {/* Right Column: Totals & Preview (1/3) */}
                 <div className="space-y-4 lg:sticky lg:top-4 self-start">
-                  {/* Customer Context Snapshot */}
+                  {canViewPricingContext ? (
+                    <PricingContextPanel
+                      clientId={clientId}
+                      orderTotal={totals.total}
+                    />
+                  ) : (
+                    <Card>
+                      <CardContent className="py-6">
+                        <p className="text-center text-sm text-muted-foreground">
+                          Pricing context requires pricing access.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <Card>
                     <CardContent className="pt-4 space-y-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Customer Context
+                        Customer Actions
                       </p>
                       <div className="space-y-1.5">
                         <p className="text-sm font-semibold">
@@ -1662,11 +1709,6 @@ export default function OrderCreatorPageV2() {
                           Pricing Profile
                         </Button>
                       </div>
-                      {!canViewPricingContext ? (
-                        <p className="text-[11px] text-muted-foreground">
-                          Pricing context requires pricing access.
-                        </p>
-                      ) : null}
                     </CardContent>
                   </Card>
 

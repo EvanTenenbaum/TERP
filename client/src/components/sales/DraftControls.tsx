@@ -8,7 +8,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Save, FolderOpen, Check, Clock } from "lucide-react";
+import { Save, FolderOpen, Check, Clock, FileArchive } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface DraftControlsProps {
@@ -19,6 +19,7 @@ interface DraftControlsProps {
   currentDraftId: number | null;
   onSaveDraft: () => void;
   onLoadDraft: () => void;
+  onLoadSavedSheet?: () => void;
   isSaving: boolean;
   disabled: boolean;
 }
@@ -31,6 +32,7 @@ export const DraftControls = React.memo(function DraftControls({
   currentDraftId,
   onSaveDraft,
   onLoadDraft,
+  onLoadSavedSheet,
   isSaving,
   disabled,
 }: DraftControlsProps) {
@@ -84,6 +86,18 @@ export const DraftControls = React.memo(function DraftControls({
           <FolderOpen className="h-4 w-4 mr-1" />
           Load
         </Button>
+
+        {onLoadSavedSheet && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLoadSavedSheet}
+            disabled={disabled}
+          >
+            <FileArchive className="h-4 w-4 mr-1" />
+            Load Saved
+          </Button>
+        )}
 
         <Button
           variant="default"

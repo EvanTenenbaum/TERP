@@ -62,8 +62,34 @@ describe("InventoryBrowser", () => {
 
     expect(screen.getByText("Gross Margin")).toBeTruthy();
     expect(screen.getByText("+33.3%")).toBeTruthy();
-    const profileRule = screen.getByTitle("Flower Markup (+50%)");
+    const [profileRule] = screen.getAllByTitle("Flower Markup (+50%)");
     expect(profileRule).toHaveTextContent("Profile rule");
     expect(profileRule).toHaveTextContent("+50.0% markup");
+    expect(screen.getByText("Applied: Flower Markup (+50%)")).toBeInTheDocument();
+  });
+
+  it("shows when multiple pricing rules contributed to the net markup", () => {
+    render(
+      <InventoryBrowser
+        inventory={[
+          {
+            ...inventoryItem,
+            priceMarkup: 42.5,
+            appliedRules: [
+              { ruleId: 1, ruleName: "Flower Markup", adjustment: "+50%" },
+              { ruleId: 2, ruleName: "Aging Discount", adjustment: "-7.5%" },
+            ],
+          },
+        ]}
+        isLoading={false}
+        onAddItems={vi.fn()}
+        selectedItems={[]}
+      />
+    );
+
+    expect(screen.getByText("Profile rules net +42.5% markup")).toBeInTheDocument();
+    expect(
+      screen.getByText("Applied: Flower Markup (+50%) +1 more")
+    ).toBeInTheDocument();
   });
 });
