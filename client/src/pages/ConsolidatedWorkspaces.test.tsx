@@ -264,6 +264,6 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Procurement" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Purchase Orders Surface")).toBeInTheDocument();
+    expect(screen.getByText("Purchase Orders Slice Surface")).toBeInTheDocument();
   });
 });

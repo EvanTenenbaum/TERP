@@ -1008,7 +1008,10 @@ export const ordersRouter = router({
       });
 
       // Generate order number
-      const orderNumber = await ordersDb.generateOrderNumber(input.orderType);
+      const orderNumber = await ordersDb.generateOrderNumber(
+        input.orderType,
+        true
+      );
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
 
