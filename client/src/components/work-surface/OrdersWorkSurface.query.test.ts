@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildConfirmedQueryInput,
   buildDraftQueryInput,
+  canDownloadInvoice,
   getDisplayOrderNumber,
   parseDeepLinkedOrderId,
   resolveDeepLinkedOrderSelection,
@@ -115,5 +116,14 @@ describe("resolveDeepLinkedOrderSelection", () => {
         confirmedOrders: [{ id: 618 }],
       })
     ).toBeNull();
+  });
+});
+
+describe("canDownloadInvoice", () => {
+  it("allows invoice download only when accounting access and an invoice id are present", () => {
+    expect(canDownloadInvoice({ invoiceId: 12 }, true)).toBe(true);
+    expect(canDownloadInvoice({ invoiceId: null }, true)).toBe(false);
+    expect(canDownloadInvoice({ invoiceId: 12 }, false)).toBe(false);
+    expect(canDownloadInvoice(null, true)).toBe(false);
   });
 });

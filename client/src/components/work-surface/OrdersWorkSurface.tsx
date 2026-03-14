@@ -141,6 +141,13 @@ interface Order {
   }>;
 }
 
+export function canDownloadInvoice(
+  order: Pick<Order, "invoiceId"> | null,
+  canAccessAccounting: boolean
+): boolean {
+  return Boolean(canAccessAccounting && order?.invoiceId);
+}
+
 interface ClientSummary {
   id: number;
   name?: string | null;
@@ -433,6 +440,8 @@ interface OrderInspectorProps {
   onShip: (orderId: number) => void;
   onGenerateInvoice?: (orderId: number) => void;
   generatingInvoice?: boolean;
+  onDownloadInvoice?: (invoiceId: number) => void;
+  downloadingInvoice?: boolean;
   onProcessReturn?: (orderId: number) => void;
   onProcessRestock?: (orderId: number) => void;
   onReturnToVendor?: (orderId: number) => void;
@@ -471,6 +480,8 @@ function OrderInspectorContent({
   onShip,
   onGenerateInvoice,
   generatingInvoice = false,
+  onDownloadInvoice,
+  downloadingInvoice = false,
   onProcessReturn,
   onProcessRestock,
   onReturnToVendor,
@@ -492,6 +503,8 @@ function OrderInspectorContent({
     0
   );
   const fulfillmentStatus = normalizeFulfillmentStatus(order.fulfillmentStatus);
+  const invoiceId =
+    typeof order.invoiceId === "number" ? order.invoiceId : null;
 
   return (
     <div className="space-y-6">
@@ -792,10 +805,21 @@ function OrderInspectorContent({
                   )}
                 </>
               )}
-              <Button variant="outline" className="w-full justify-start">
-                <Download className="h-4 w-4 mr-2" />
-                Download Invoice
-              </Button>
+              {invoiceId !== null &&
+                canDownloadInvoice(order, canAccessAccounting) &&
+                onDownloadInvoice && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => onDownloadInvoice(invoiceId)}
+                    disabled={downloadingInvoice}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {downloadingInvoice
+                      ? "Preparing invoice..."
+                      : "Download Invoice"}
+                  </Button>
+                )}
             </>
           )}
         </div>
@@ -1404,6 +1428,20 @@ export function OrdersWorkSurface() {
     },
   });
 
+  const downloadInvoiceMutation = trpc.invoices.downloadPdf.useMutation({
+    onSuccess: result => {
+      const link = document.createElement("a");
+      link.href = `data:application/pdf;base64,${result.pdf}`;
+      link.download = result.fileName;
+      link.click();
+      toast.success("Invoice PDF downloaded");
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to download invoice");
+      setError(err.message);
+    },
+  });
+
   // Track version for optimistic locking when order is selected (UXS-705)
   useEffect(() => {
     if (selectedOrder && selectedOrder.version !== undefined) {
@@ -1499,6 +1537,9 @@ export function OrdersWorkSurface() {
   };
   const handleGenerateInvoice = (orderId: number) => {
     generateInvoiceMutation.mutate({ orderId });
+  };
+  const handleDownloadInvoice = (invoiceId: number) => {
+    downloadInvoiceMutation.mutate({ id: invoiceId });
   };
   const handleProcessReturn = (orderId: number) => {
     setSelectedOrderId(orderId);
@@ -1766,6 +1807,8 @@ export function OrdersWorkSurface() {
             onShip={handleShip}
             onGenerateInvoice={handleGenerateInvoice}
             generatingInvoice={generateInvoiceMutation.isPending}
+            onDownloadInvoice={handleDownloadInvoice}
+            downloadingInvoice={downloadInvoiceMutation.isPending}
             onProcessReturn={handleProcessReturn}
             onProcessRestock={handleProcessRestock}
             onReturnToVendor={handleReturnToVendor}
