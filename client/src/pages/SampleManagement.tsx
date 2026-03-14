@@ -700,6 +700,11 @@ export default function SampleManagement({
 
   return (
     <div className="space-y-6">
+      {embedded && canCreateSamples ? (
+        <div className="flex justify-end">
+          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
+        </div>
+      ) : null}
       {renderPageHeader(
         "Track samples out and sample returns without the old status maze.",
         { showCreateAction: true }

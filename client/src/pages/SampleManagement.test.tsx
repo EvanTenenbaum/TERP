@@ -323,15 +323,15 @@ describe("SampleManagement", () => {
       expect(screen.getByText(/Samples Out 2/i)).toBeInTheDocument();
     });
 
-    it("hides standalone page chrome when embedded in Inventory", () => {
+    it("hides standalone page chrome when embedded in Inventory but keeps the create action", () => {
       render(<SampleManagement embedded />);
 
       expect(
         screen.queryByRole("heading", { name: /sample management/i })
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByRole("button", { name: /new sample/i })
-      ).not.toBeInTheDocument();
+        screen.getByRole("button", { name: /new sample/i })
+      ).toBeInTheDocument();
     });
   });
 
