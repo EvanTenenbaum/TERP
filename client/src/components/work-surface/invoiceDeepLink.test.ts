@@ -7,6 +7,7 @@ describe("parseInvoiceDeepLink", () => {
     expect(parseInvoiceDeepLink("?tab=invoices&id=91")).toEqual({
       invoiceId: 91,
       openRecordPayment: false,
+      statusFilter: null,
     });
   });
 
@@ -18,6 +19,7 @@ describe("parseInvoiceDeepLink", () => {
     ).toEqual({
       invoiceId: 91,
       openRecordPayment: true,
+      statusFilter: null,
     });
   });
 
@@ -25,6 +27,15 @@ describe("parseInvoiceDeepLink", () => {
     expect(parseInvoiceDeepLink("?id=abc&openRecordPayment=true")).toEqual({
       invoiceId: null,
       openRecordPayment: true,
+      statusFilter: null,
+    });
+  });
+
+  it("hydrates invoice status filters from dashboard handoffs", () => {
+    expect(parseInvoiceDeepLink("?status=OVERDUE")).toEqual({
+      invoiceId: null,
+      openRecordPayment: false,
+      statusFilter: "OVERDUE",
     });
   });
 });

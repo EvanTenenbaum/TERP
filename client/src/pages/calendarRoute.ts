@@ -2,6 +2,11 @@ export interface CalendarRouteContext {
   eventId: number | null;
 }
 
+export interface CalendarDialogRouteState {
+  selectedEventId: number | null;
+  isEventDialogOpen: boolean;
+}
+
 export function parseCalendarRouteContext(
   search: string
 ): CalendarRouteContext {
@@ -12,5 +17,14 @@ export function parseCalendarRouteContext(
   return {
     eventId:
       Number.isInteger(eventId) && eventId > 0 ? eventId : null,
+  };
+}
+
+export function deriveCalendarDialogRouteState(
+  eventId: number | null
+): CalendarDialogRouteState {
+  return {
+    selectedEventId: eventId,
+    isEventDialogOpen: eventId !== null,
   };
 }

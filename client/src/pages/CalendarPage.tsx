@@ -28,7 +28,10 @@ import {
 } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Card } from "@/components/ui/card";
-import { parseCalendarRouteContext } from "@/pages/calendarRoute";
+import {
+  deriveCalendarDialogRouteState,
+  parseCalendarRouteContext,
+} from "@/pages/calendarRoute";
 
 /**
  * Calendar Page
@@ -179,15 +182,22 @@ export default function CalendarPage() {
   };
 
   useEffect(() => {
+    const routeDialogState = deriveCalendarDialogRouteState(routeEventId);
+
     if (!routeEventId) {
+      setSelectedDate(null);
+      setSelectedEventId(routeDialogState.selectedEventId);
+      setIsEventDialogOpen(routeDialogState.isEventDialogOpen);
       return;
     }
 
     setSelectedDate(null);
     setSelectedEventId(currentEventId =>
-      currentEventId === routeEventId ? currentEventId : routeEventId
+      currentEventId === routeDialogState.selectedEventId
+        ? currentEventId
+        : routeDialogState.selectedEventId
     );
-    setIsEventDialogOpen(true);
+    setIsEventDialogOpen(routeDialogState.isEventDialogOpen);
   }, [routeEventId]);
 
   // CRITICAL: Handle database errors gracefully (Wave 3 finding)

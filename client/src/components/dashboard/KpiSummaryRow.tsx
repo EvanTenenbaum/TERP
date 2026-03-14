@@ -84,7 +84,7 @@ export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiS
             : "neutral"
         }
         loading={loading}
-        href="/orders?status=active"
+        href="/sales?tab=orders"
       />
 
       <KpiCard
@@ -117,7 +117,7 @@ export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiS
         value={data ? formatNumber(data.lowStockCount) : "0"}
         icon={AlertTriangle}
         loading={loading}
-        href="/inventory?filter=low-stock"
+        href="/inventory?stockLevel=low_stock"
       />
     </div>
   );

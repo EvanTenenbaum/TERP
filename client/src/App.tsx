@@ -170,7 +170,6 @@ const RedirectToProcurementSpreadsheet: FC = () => {
   const params = new URLSearchParams(search);
 
   params.set("tab", "receiving");
-  params.set("mode", "spreadsheet");
 
   const destination = buildOperationsWorkspacePath(
     "receiving",

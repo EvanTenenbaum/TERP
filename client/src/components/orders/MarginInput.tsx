@@ -103,7 +103,7 @@ export function MarginInput({
 
   const sourceDescription =
     source === "CUSTOMER_PROFILE"
-      ? "This row is currently priced from the relationship profile. The value shown here is the current gross margin for this row's exact cost and price, so it can differ from the profile rule adjustment."
+      ? "This row is currently priced from the relationship profile. The value shown here is the resulting gross margin for this row's exact cost and price. The profile rule result is shown separately on the row, and the two numbers can differ because markup and gross margin use different formulas."
       : source === "DEFAULT"
         ? "No relationship pricing rule matched, so the shared default gross margin is being used."
         : "This row is using a manual gross-margin override.";

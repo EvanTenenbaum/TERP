@@ -39,7 +39,7 @@ import {
 import type { BillStatus } from "@/components/accounting/BillStatusActions";
 import { formatDate } from "@/lib/dateFormat";
 import { toast } from "sonner";
-import { parseBillRouteContext } from "./billRoute";
+import { findBillByRouteId, parseBillRouteContext } from "./billRoute";
 
 // Bill type definition
 type Bill = {
@@ -65,15 +65,18 @@ type BillSortField =
 export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   const routeSearch = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const routeContext = useMemo(
+    () => parseBillRouteContext(routeSearch),
+    [routeSearch]
+  );
+  const [selectedStatus, setSelectedStatus] = useState<string>(
+    () => routeContext.statusFilter ?? "ALL"
+  );
   const [sortField, setSortField] = useState<BillSortField>("billDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showAging, setShowAging] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
-  const routeBillId = useMemo(
-    () => parseBillRouteContext(routeSearch).billId,
-    [routeSearch]
-  );
+  const routeBillId = routeContext.billId;
 
   // Fetch bills
   const {
@@ -181,18 +184,14 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   };
 
   useEffect(() => {
-    if (!routeBillId) {
-      return;
-    }
-
-    const matchedBill = (bills?.items ?? []).find(
-      (bill: Bill) => bill.id === routeBillId
-    );
-
-    if (matchedBill) {
-      setSelectedBill(matchedBill);
-    }
+    setSelectedBill(findBillByRouteId(bills?.items ?? [], routeBillId));
   }, [bills, routeBillId]);
+
+  useEffect(() => {
+    if (routeContext.statusFilter) {
+      setSelectedStatus(routeContext.statusFilter);
+    }
+  }, [routeContext.statusFilter]);
 
   return (
     <div className="flex flex-col gap-6 p-6">

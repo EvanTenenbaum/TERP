@@ -1,6 +1,31 @@
 export interface InvoiceDeepLinkContext {
   invoiceId: number | null;
   openRecordPayment: boolean;
+  statusFilter: InvoiceStatusFilter | null;
+}
+
+type InvoiceStatusFilter =
+  | "DRAFT"
+  | "SENT"
+  | "VIEWED"
+  | "PARTIAL"
+  | "PAID"
+  | "OVERDUE"
+  | "VOID";
+
+function parseInvoiceStatusFilter(value: string | null): InvoiceStatusFilter | null {
+  switch (value) {
+    case "DRAFT":
+    case "SENT":
+    case "VIEWED":
+    case "PARTIAL":
+    case "PAID":
+    case "OVERDUE":
+    case "VOID":
+      return value;
+    default:
+      return null;
+  }
 }
 
 function parsePositiveInt(value: string | null): number | null {
@@ -18,5 +43,6 @@ export function parseInvoiceDeepLink(search: string): InvoiceDeepLinkContext {
   return {
     invoiceId: parsePositiveInt(params.get("id") ?? params.get("invoiceId")),
     openRecordPayment: params.get("openRecordPayment") === "true",
+    statusFilter: parseInvoiceStatusFilter(params.get("status")),
   };
 }
