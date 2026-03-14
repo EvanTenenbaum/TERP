@@ -79,4 +79,58 @@ describe("batchColumnCompatibility", () => {
     expect(select.amountPaid).not.toBe(batches.amountPaid);
     expect(select.photoSessionEventId).not.toBe(batches.photoSessionEventId);
   });
+
+  it("falls back to SHOW COLUMNS when information_schema is unavailable", async () => {
+    const execute = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("information_schema denied"))
+      .mockResolvedValueOnce([
+        [
+          { Field: "id" },
+          { Field: "code" },
+          { Field: "sku" },
+          { Field: "productId" },
+          { Field: "lotId" },
+          { Field: "batchStatus" },
+          { Field: "onHandQty" },
+          { Field: "sampleQty" },
+          { Field: "reservedQty" },
+          { Field: "createdAt" },
+          { Field: "updatedAt" },
+        ],
+      ]);
+
+    vi.mocked(getDb).mockResolvedValue({
+      execute,
+    } as Awaited<ReturnType<typeof getDb>>);
+
+    const select = await getCompatibleBatchSelect();
+
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(select.deletedAt).not.toBe(batches.deletedAt);
+    expect(select.isPhotographyComplete).not.toBe(
+      batches.isPhotographyComplete
+    );
+  });
+
+  it("uses a conservative legacy column set when schema detection fails entirely", async () => {
+    const execute = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("information_schema denied"))
+      .mockRejectedValueOnce(new Error("show columns denied"));
+
+    vi.mocked(getDb).mockResolvedValue({
+      execute,
+    } as Awaited<ReturnType<typeof getDb>>);
+
+    const select = await getCompatibleBatchSelect();
+
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(select.deletedAt).not.toBe(batches.deletedAt);
+    expect(select.version).not.toBe(batches.version);
+    expect(select.isPhotographyComplete).not.toBe(
+      batches.isPhotographyComplete
+    );
+    expect(select.paymentTerms).not.toBe(batches.paymentTerms);
+  });
 });
