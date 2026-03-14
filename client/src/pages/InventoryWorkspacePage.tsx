@@ -67,7 +67,7 @@ export default function InventoryWorkspacePage() {
             <ReceivingPage />
           </Suspense>
         ) : (
-          <PurchaseOrdersSlicePage />
+          <PurchaseOrdersSlicePage mode="receiving" />
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="photography">

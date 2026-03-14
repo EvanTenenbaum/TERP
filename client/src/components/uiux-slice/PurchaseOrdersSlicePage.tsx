@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import {
+  useLocation,
+  type RouteComponentProps as WouterRouteComponentProps,
+} from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -84,6 +87,18 @@ const defaultColumns: GridColumnOption[] = [
   { id: "total", label: "Total", visible: true },
 ];
 
+const RECEIVING_QUEUE_STATUSES = ["CONFIRMED", "RECEIVING"] as const;
+type PurchaseOrdersSliceMode = "procurement" | "receiving";
+type PurchaseOrdersSlicePageProps = {
+  mode?: PurchaseOrdersSliceMode;
+} & Partial<WouterRouteComponentProps<Record<string, string | undefined>>>;
+
+function canReceivePurchaseOrder(status?: string | null): boolean {
+  return RECEIVING_QUEUE_STATUSES.includes(
+    status as (typeof RECEIVING_QUEUE_STATUSES)[number]
+  );
+}
+
 type IntakePickerLine = {
   poItemId: number;
   productId: number;
@@ -144,7 +159,9 @@ function formatDateCell(value: unknown): string {
   return parsed.toLocaleDateString();
 }
 
-export function PurchaseOrdersSlicePage() {
+export function PurchaseOrdersSlicePage({
+  mode = "procurement",
+}: PurchaseOrdersSlicePageProps) {
   const [route, navigate] = useLocation();
   const { user } = useAuth();
   const userId = user?.id;
@@ -153,7 +170,9 @@ export function PurchaseOrdersSlicePage() {
     : userId;
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState(
+    mode === "receiving" ? "ACTIVE_QUEUE" : "ALL"
+  );
   const [selectedPoId, setSelectedPoId] = useState<number | null>(null);
   const [selectedPoIds, setSelectedPoIds] = useState<Set<number>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -344,7 +363,13 @@ export function PurchaseOrdersSlicePage() {
         (po.poNumber ?? "").toLowerCase().includes(term) ||
         supplierName.toLowerCase().includes(term);
       const matchesStatus =
-        statusFilter === "ALL" || po.purchaseOrderStatus === statusFilter;
+        statusFilter === "ALL"
+          ? true
+          : statusFilter === "ACTIVE_QUEUE"
+            ? RECEIVING_QUEUE_STATUSES.includes(
+                po.purchaseOrderStatus as (typeof RECEIVING_QUEUE_STATUSES)[number]
+              )
+            : po.purchaseOrderStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [getSupplierName, poItems, search, statusFilter]);
@@ -459,6 +484,11 @@ export function PurchaseOrdersSlicePage() {
         step: "open-intake-picker",
         note: "no-po-selected",
       });
+      return;
+    }
+
+    if (!canReceivePurchaseOrder(po.purchaseOrderStatus)) {
+      toast.error("Only confirmed or partially received POs can enter Receiving.");
       return;
     }
 
@@ -599,16 +629,24 @@ export function PurchaseOrdersSlicePage() {
 
   const contextLine = selectedPo
     ? `${selectedPo.poNumber} · ${getSupplierName(selectedPo)} · ${selectedPo.purchaseOrderStatus} · ${selectedPo.items?.length ?? 0} lines · $${Number(selectedPo.total ?? 0).toFixed(2)}`
-    : "Select a purchase order row to inspect detail context and start receiving.";
+    : mode === "receiving"
+      ? "Select a PO that is still awaiting receipt to inspect the delivery context and start receiving."
+      : "Select a purchase order row to inspect detail context and start receiving.";
+
+  const pageTitle = mode === "receiving" ? "Receiving" : "Purchase Orders";
+  const pageDescription =
+    mode === "receiving"
+      ? "Receive against purchase orders that are still waiting to be delivered, and continue partial receipts from one queue."
+      : "Review open purchase orders, place them, and start receiving from one queue.";
 
   return (
     <div className="h-full flex flex-col">
       <div className="px-6 py-4 border-b">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Purchase Orders
+          {pageTitle}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Review open purchase orders, place them, and start receiving from one queue.
+          {pageDescription}
         </p>
       </div>
 
@@ -628,12 +666,23 @@ export function PurchaseOrdersSlicePage() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Statuses</SelectItem>
-            <SelectItem value="DRAFT">Draft</SelectItem>
-            <SelectItem value="SENT">Sent</SelectItem>
-            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="RECEIVING">Receiving</SelectItem>
-            <SelectItem value="RECEIVED">Received</SelectItem>
+            {mode === "receiving" ? (
+              <>
+                <SelectItem value="ACTIVE_QUEUE">Awaiting Receipt</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="RECEIVING">Receiving</SelectItem>
+                <SelectItem value="RECEIVED">Received</SelectItem>
+              </>
+            ) : (
+              <>
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="DRAFT">Draft</SelectItem>
+                <SelectItem value="SENT">Sent</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="RECEIVING">Receiving</SelectItem>
+                <SelectItem value="RECEIVED">Received</SelectItem>
+              </>
+            )}
           </SelectContent>
         </Select>
 
@@ -659,39 +708,48 @@ export function PurchaseOrdersSlicePage() {
       </div>
 
       <div className="px-6 py-2 border-b flex items-center gap-2 flex-wrap text-sm">
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Create PO
-        </Button>
+        {mode !== "receiving" && (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Create PO
+          </Button>
+        )}
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => selectedPoId && placeOrder(selectedPoId)}
-          disabled={
-            !selectedPoId ||
-            submitPoMutation.isPending ||
-            confirmPoMutation.isPending
-          }
-        >
-          <Truck className="h-4 w-4 mr-1" />
-          Place Order
-        </Button>
+        {mode !== "receiving" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => selectedPoId && placeOrder(selectedPoId)}
+            disabled={
+              !selectedPoId ||
+              submitPoMutation.isPending ||
+              confirmPoMutation.isPending
+            }
+          >
+            <Truck className="h-4 w-4 mr-1" />
+            Place Order
+          </Button>
+        )}
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => void placeOrderBulk()}
-          disabled={bulkPlacing || selectableDraftIds.length === 0}
-        >
-          <ShoppingCart className="h-4 w-4 mr-1" />
-          Place Order (Bulk)
-        </Button>
+        {mode !== "receiving" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void placeOrderBulk()}
+            disabled={bulkPlacing || selectableDraftIds.length === 0}
+          >
+            <ShoppingCart className="h-4 w-4 mr-1" />
+            Place Order (Bulk)
+          </Button>
+        )}
 
         <Button
           size="sm"
           onClick={openIntakePicker}
-          disabled={!activePoForIntake}
+          disabled={
+            !activePoForIntake ||
+            !canReceivePurchaseOrder(activePoForIntake.purchaseOrderStatus)
+          }
         >
           <ClipboardPlus className="h-4 w-4 mr-1" />
           Start Receiving
