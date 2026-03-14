@@ -413,9 +413,17 @@ export default function SalesSheetCreatorPage({
   );
 
   return (
-    <div className={embedded ? "space-y-6" : "container mx-auto p-4 md:p-6 space-y-6"}>
+    <div
+      className={
+        embedded ? "space-y-6" : "container mx-auto p-4 md:p-6 space-y-6"
+      }
+    >
       {!embedded ? (
-        <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+        <BackButton
+          label="Back to Orders"
+          to={buildSalesWorkspacePath("orders")}
+          className="mb-4"
+        />
       ) : null}
       <Card>
         <CardHeader>

@@ -34,6 +34,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ReturnGLStatus } from "@/components/accounting/GLReversalStatus";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 
 type ReturnReason =
   | "DEFECTIVE"
@@ -214,7 +215,11 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
   return (
     <div className="p-4 md:p-8">
       {!embedded && (
-        <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+        <BackButton
+          label="Back to Orders"
+          to={buildSalesWorkspacePath("orders")}
+          className="mb-4"
+        />
       )}
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Returns Management</h1>

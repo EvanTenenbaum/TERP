@@ -58,7 +58,7 @@ vi.mock("@/lib/trpc", () => ({
 
 describe("buildInboxEntityRoute", () => {
   it.each([
-    ["order", 12, "/orders?id=12"],
+    ["order", 12, "/sales?tab=orders&id=12"],
     ["invoice", 21, "/accounting?tab=invoices&id=21"],
     ["payment", 34, "/accounting?tab=payments&id=34"],
     ["bill", 55, "/accounting?tab=bills&id=55"],

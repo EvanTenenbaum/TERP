@@ -89,7 +89,7 @@ const sourcePathForLedgerEntry = (
 ) => {
   switch (entry.sourceType) {
     case "ORDER":
-      return `/orders?id=${entry.sourceId}`;
+      return buildSalesWorkspacePath("orders", { id: entry.sourceId });
     case "PAYMENT":
       return `/accounting/payments?id=${entry.sourceId}`;
     case "PURCHASE_ORDER":
@@ -454,7 +454,9 @@ export default function ClientProfilePage() {
                   <div className="space-y-2 text-sm">
                     <p className="font-medium">Core Handles</p>
                     <p>Code name: {shell.name}</p>
-                    <p>Relationship code: {shell.teriCode || "Not assigned yet"}</p>
+                    <p>
+                      Relationship code: {shell.teriCode || "Not assigned yet"}
+                    </p>
                     <p>
                       Email handle: {shell.email || "No email handle on file"}
                     </p>
@@ -570,7 +572,9 @@ export default function ClientProfilePage() {
             {shell.wishlist ? (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Preferences & Notes</CardTitle>
+                  <CardTitle className="text-base">
+                    Preferences & Notes
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {shell.wishlist}
