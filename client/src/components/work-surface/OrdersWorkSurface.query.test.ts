@@ -131,7 +131,7 @@ describe("canDownloadInvoice", () => {
 });
 
 describe("canGenerateInvoice", () => {
-  it("requires accounting access before surfacing invoice generation", () => {
+  it("requires accounting create permission before surfacing invoice generation", () => {
     expect(
       canGenerateInvoice(
         {

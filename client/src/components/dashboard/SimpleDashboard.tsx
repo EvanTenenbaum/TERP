@@ -237,7 +237,7 @@ const PendingIntakeCard = memo(function PendingIntakeCard() {
               variant="ghost"
               size="sm"
               className="mt-2 h-7 text-xs px-0"
-              onClick={() => setLocation("/procurement")}
+              onClick={() => setLocation("/purchase-orders")}
             >
               View POs <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
