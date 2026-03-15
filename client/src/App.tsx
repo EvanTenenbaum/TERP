@@ -673,6 +673,13 @@ function Router() {
                   component={withErrorBoundary(ProcurementWorkspacePage)}
                 />
                 <Route
+                  path="/procurement"
+                  component={RedirectWithSearch(
+                    "/procurement",
+                    "/purchase-orders"
+                  )}
+                />
+                <Route
                   path="/purchase-orders/classic"
                   component={RedirectWithTab(
                     "/purchase-orders/classic",

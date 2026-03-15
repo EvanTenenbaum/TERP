@@ -90,4 +90,12 @@ describe("SimpleDashboard", () => {
       buildSalesWorkspacePath("orders")
     );
   });
+
+  it("routes the Pending Intake shortcut to the canonical purchase orders workspace", () => {
+    render(<SimpleDashboard />);
+
+    fireEvent.click(screen.getByRole("button", { name: /view pos/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/purchase-orders");
+  });
 });
