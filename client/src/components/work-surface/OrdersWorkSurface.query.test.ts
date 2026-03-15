@@ -3,6 +3,7 @@ import {
   buildConfirmedQueryInput,
   buildDraftQueryInput,
   canDownloadInvoice,
+  canGenerateInvoice,
   getMakePaymentRoute,
   getDisplayOrderNumber,
   parseDeepLinkedOrderId,
@@ -126,6 +127,75 @@ describe("canDownloadInvoice", () => {
     expect(canDownloadInvoice({ invoiceId: null }, true)).toBe(false);
     expect(canDownloadInvoice({ invoiceId: 12 }, false)).toBe(false);
     expect(canDownloadInvoice(null, true)).toBe(false);
+  });
+});
+
+describe("canGenerateInvoice", () => {
+  it("requires accounting access before surfacing invoice generation", () => {
+    expect(
+      canGenerateInvoice(
+        {
+          orderType: "SALE",
+          invoiceId: null,
+          fulfillmentStatus: "PACKED",
+        },
+        true
+      )
+    ).toBe(true);
+
+    expect(
+      canGenerateInvoice(
+        {
+          orderType: "SALE",
+          invoiceId: null,
+          fulfillmentStatus: "PACKED",
+        },
+        false
+      )
+    ).toBe(false);
+  });
+
+  it("blocks invoice generation when the order is not invoice-eligible", () => {
+    expect(
+      canGenerateInvoice(
+        {
+          orderType: "QUOTE",
+          invoiceId: null,
+          fulfillmentStatus: "PACKED",
+        },
+        true
+      )
+    ).toBe(false);
+    expect(
+      canGenerateInvoice(
+        {
+          orderType: "SALE",
+          invoiceId: 17,
+          fulfillmentStatus: "PACKED",
+        },
+        true
+      )
+    ).toBe(false);
+    expect(
+      canGenerateInvoice(
+        {
+          orderType: "SALE",
+          invoiceId: null,
+          fulfillmentStatus: "READY_FOR_PACKING",
+        },
+        true
+      )
+    ).toBe(true);
+    expect(
+      canGenerateInvoice(
+        {
+          orderType: "SALE",
+          invoiceId: null,
+          fulfillmentStatus: "DELIVERED",
+        },
+        true
+      )
+    ).toBe(false);
   });
 });
 
