@@ -156,10 +156,10 @@ export function canGenerateInvoice(
         fulfillmentStatus?: string | null;
       }
     | null,
-  canAccessAccounting: boolean
+  canCreateAccounting: boolean
 ): boolean {
   return Boolean(
-    canAccessAccounting &&
+    canCreateAccounting &&
       order?.orderType === "SALE" &&
       !order.invoiceId &&
       order.fulfillmentStatus &&
@@ -471,6 +471,7 @@ interface OrderInspectorProps {
   canManageShipping: boolean;
   canProcessReturns: boolean;
   canAccessAccounting: boolean;
+  canCreateAccounting: boolean;
   onEdit: (orderId: number) => void;
   onMakePayment: (orderId: number) => void;
   onConfirm: (orderId: number) => void;
@@ -511,6 +512,7 @@ function OrderInspectorContent({
   canManageShipping,
   canProcessReturns,
   canAccessAccounting,
+  canCreateAccounting,
   onEdit,
   onMakePayment,
   onConfirm,
@@ -794,7 +796,7 @@ function OrderInspectorContent({
                   invoiceId: order.invoiceId,
                   fulfillmentStatus,
                 },
-                canAccessAccounting
+                canCreateAccounting
               ) &&
                 onGenerateInvoice && (
                   <Button
@@ -900,9 +902,12 @@ export function OrdersWorkSurface() {
   const canAccessAccounting = hasAnyPermission([
     "accounting:access",
     "accounting:read",
-    "accounting:create",
     "accounting:transactions:read",
+  ]);
+  const canCreateAccounting = hasAnyPermission([
+    "accounting:create",
     "accounting:transactions:create",
+    "accounting:manage",
   ]);
 
   // State — Parse localStorage once and distribute
@@ -1854,6 +1859,7 @@ export function OrdersWorkSurface() {
             canManageShipping={canManageShipping}
             canProcessReturns={canProcessReturns}
             canAccessAccounting={canAccessAccounting}
+            canCreateAccounting={canCreateAccounting}
             onEdit={handleEdit}
             onMakePayment={handleMakePayment}
             onConfirm={handleConfirm}
