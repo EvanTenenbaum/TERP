@@ -148,6 +148,27 @@ export function canDownloadInvoice(
   return Boolean(canAccessAccounting && order?.invoiceId);
 }
 
+export function canGenerateInvoice(
+  order:
+    | {
+        orderType?: string | null;
+        invoiceId?: number | null;
+        fulfillmentStatus?: string | null;
+      }
+    | null,
+  canAccessAccounting: boolean
+): boolean {
+  return Boolean(
+    canAccessAccounting &&
+      order?.orderType === "SALE" &&
+      !order.invoiceId &&
+      order.fulfillmentStatus &&
+      ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(
+        order.fulfillmentStatus
+      )
+  );
+}
+
 export function getMakePaymentRoute(
   order: Pick<Order, "id" | "invoiceId"> | null
 ): string | null {
@@ -767,12 +788,14 @@ function OrderInspectorContent({
                     Ship Order
                   </Button>
                 )}
-              {order.orderType === "SALE" &&
-                !order.invoiceId &&
-                fulfillmentStatus &&
-                ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(
-                  fulfillmentStatus
-                ) &&
+              {canGenerateInvoice(
+                {
+                  orderType: order.orderType,
+                  invoiceId: order.invoiceId,
+                  fulfillmentStatus,
+                },
+                canAccessAccounting
+              ) &&
                 onGenerateInvoice && (
                   <Button
                     variant="default"
