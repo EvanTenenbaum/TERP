@@ -15,8 +15,11 @@ import ProcurementWorkspacePage from "./ProcurementWorkspacePage";
 
 let mockActiveTab = "matchmaking";
 let mockSearch = "";
+let mockPilotFlagEnabled = false;
+let mockPilotFlagLoading = false;
 const mockSetActiveTab = vi.fn();
 const mockSetLocation = vi.fn();
+const mockRefetchFlags = vi.fn();
 const mockCreditsSummary = {
   totalCreditsRemaining: 1250,
   totalCreditsUsed: 800,
@@ -37,6 +40,20 @@ vi.mock("@/hooks/useQueryTabState", () => ({
 vi.mock("wouter", () => ({
   useLocation: () => ["/inventory", mockSetLocation],
   useSearch: () => mockSearch,
+}));
+
+vi.mock("@/hooks/useFeatureFlag", () => ({
+  useFeatureFlag: () => ({
+    enabled: mockPilotFlagEnabled,
+    isLoading: mockPilotFlagLoading,
+    error: null,
+  }),
+  useFeatureFlags: () => ({
+    flags: mockPilotFlagEnabled ? { "spreadsheet-native-pilot": true } : {},
+    isLoading: mockPilotFlagLoading,
+    error: null,
+    refetch: mockRefetchFlags,
+  }),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -91,6 +108,12 @@ vi.mock("@/components/work-surface/PurchaseOrdersWorkSurface", () => ({
 vi.mock("@/components/work-surface/OrdersWorkSurface", () => ({
   default: () => <div>Orders Surface</div>,
 }));
+vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
+  default: () => <div>Orders Sheet Pilot</div>,
+}));
+vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
+  default: () => <div>Inventory Sheet Pilot</div>,
+}));
 vi.mock("@/components/work-surface/QuotesWorkSurface", () => ({
   default: () => <div>Quotes Surface</div>,
 }));
@@ -129,8 +152,11 @@ vi.mock("@/pages/SampleManagement", () => ({
 describe("Consolidated workspace pages", () => {
   beforeEach(() => {
     mockSearch = "";
+    mockPilotFlagEnabled = false;
+    mockPilotFlagLoading = false;
     mockSetActiveTab.mockClear();
     mockSetLocation.mockClear();
+    mockRefetchFlags.mockClear();
   });
 
   it("renders Demand & Supply workspace with embedded content", () => {
@@ -158,6 +184,7 @@ describe("Consolidated workspace pages", () => {
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /browse sku grid/i })
     ).not.toBeInTheDocument();
@@ -176,7 +203,9 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Purchase Orders Slice Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Purchase Orders Slice Surface")
+    ).toBeInTheDocument();
   });
 
   it("renders Inventory workspace receiving editor when a draft is selected", async () => {
@@ -194,9 +223,7 @@ describe("Consolidated workspace pages", () => {
   it("renders Inventory workspace photography tab with embedded content", async () => {
     mockActiveTab = "photography";
     render(<InventoryWorkspacePage />);
-    expect(
-      await screen.findByText("Photography Embedded")
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Photography Embedded")).toBeInTheDocument();
   });
 
   it("renders Inventory workspace samples tab with embedded content", async () => {
@@ -210,6 +237,7 @@ describe("Consolidated workspace pages", () => {
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
+    expect(screen.queryByText("Orders Sheet Pilot")).not.toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: "New Sales Order" })
     ).toBeInTheDocument();
@@ -264,6 +292,8 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Procurement" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Purchase Orders Slice Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Purchase Orders Slice Surface")
+    ).toBeInTheDocument();
   });
 });

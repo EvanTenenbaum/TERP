@@ -183,6 +183,15 @@ const DEFAULT_FLAGS = [
     systemEnabled: true,
     defaultEnabled: true, // BUG-070: Enable by default - feature is fully implemented
   },
+  {
+    key: "spreadsheet-native-pilot",
+    name: "Spreadsheet-Native Pilot",
+    description:
+      "Enable internal sheet-native pilot surfaces for the Orders and Inventory workbooks. Distinct from the legacy spreadsheet-view inventory feature.",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: false,
+  },
 
   // ========================================================================
   // ADMIN & USER UX FLAGS (SEC-010, UX-050-055)
