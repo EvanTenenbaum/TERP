@@ -120,7 +120,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
           />
         ) : (
           <div
-            style={{ minHeight }}
+            data-testid="spreadsheet-pilot-grid-shell"
+            style={{ height: minHeight, minHeight }}
             className="w-full overflow-hidden rounded-md"
           >
             <AgGridReact<Row>

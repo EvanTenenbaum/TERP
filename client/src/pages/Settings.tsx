@@ -18,7 +18,6 @@ import {
   X,
   Database,
   AlertTriangle,
-  Flag,
   Code2,
   Building,
 } from "lucide-react";
@@ -55,6 +54,8 @@ import {
 import { TagManagementSettings } from "@/components/settings/TagManagementSettings";
 import { useLocation, useSearch } from "wouter";
 import ProductsWorkSurface from "@/components/work-surface/ProductsWorkSurface";
+import { useAuth } from "@/_core/hooks/useAuth";
+import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 
 type SettingsGroupId =
   | "access-control"
@@ -83,6 +84,7 @@ interface SettingsSectionConfig {
   label: string;
   group: SettingsGroupId;
   requiresDevTools?: boolean;
+  requiresAdmin?: boolean;
 }
 
 const SETTINGS_GROUPS: Array<{
@@ -128,7 +130,12 @@ const SETTINGS_SECTIONS: SettingsSectionConfig[] = [
   { id: "tags", label: "Tags", group: "master-data" },
   { id: "organization", label: "Organization", group: "organization" },
   { id: "calendars", label: "Calendars", group: "organization" },
-  { id: "feature-flags", label: "Feature Flags", group: "developer" },
+  {
+    id: "feature-flags",
+    label: "Feature Flags",
+    group: "developer",
+    requiresAdmin: true,
+  },
   {
     id: "vip-impersonation",
     label: "VIP Access",
@@ -152,16 +159,20 @@ const LEGACY_SETTINGS_TAB_ALIASES: Partial<
 export default function Settings() {
   const [, setLocation] = useLocation();
   const search = useSearch();
+  const { user } = useAuth();
   // FEAT-018: Check if user has admin/dev access for development-only features
   const { isSuperAdmin, hasPermission } = usePermissions();
   const showDevTools = isSuperAdmin || hasPermission("admin:dev-tools");
+  const isAdminUser = user?.role === "admin";
 
   const visibleSections = useMemo(
     () =>
       SETTINGS_SECTIONS.filter(
-        section => !section.requiresDevTools || showDevTools
+        section =>
+          (!section.requiresDevTools || showDevTools) &&
+          (!section.requiresAdmin || isAdminUser)
       ),
-    [showDevTools]
+    [isAdminUser, showDevTools]
   );
 
   const searchParams = useMemo(() => new URLSearchParams(search), [search]);
@@ -393,28 +404,7 @@ export default function Settings() {
               value="feature-flags"
               className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Flag className="h-5 w-5" />
-                    Feature Flags
-                  </CardTitle>
-                  <CardDescription>
-                    Manage feature availability across the application
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Feature flags allow you to enable or disable features for
-                    specific users, roles, or the entire system.
-                  </p>
-                  <Button asChild>
-                    <a href="/settings/feature-flags">
-                      Open Feature Flags Manager
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
+              <FeatureFlagsPage embedded />
             </TabsContent>
 
             <TabsContent

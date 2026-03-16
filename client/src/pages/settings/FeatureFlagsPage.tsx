@@ -64,7 +64,13 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-export default function FeatureFlagsPage() {
+interface FeatureFlagsPageProps {
+  embedded?: boolean;
+}
+
+export default function FeatureFlagsPage({
+  embedded = false,
+}: FeatureFlagsPageProps) {
   const { toast } = useToast();
   const { isSuperAdmin, hasPermission } = usePermissions();
   const [selectedFlag, setSelectedFlag] = useState<number | null>(null);
@@ -194,7 +200,9 @@ export default function FeatureFlagsPage() {
   const selectedFlagData = flags?.find(f => f.id === selectedFlag);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div
+      className={embedded ? "space-y-6" : "container mx-auto py-6 space-y-6"}
+    >
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Feature Flags</h1>

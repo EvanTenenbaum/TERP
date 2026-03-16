@@ -8,10 +8,20 @@ import Settings from "./Settings";
 
 const mockSetLocation = vi.fn();
 let mockSearch = "";
+let mockUserRole: "admin" | "user" = "user";
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/settings", mockSetLocation],
   useSearch: () => mockSearch,
+}));
+
+vi.mock("@/_core/hooks/useAuth", () => ({
+  useAuth: () => ({
+    user:
+      mockUserRole === "admin"
+        ? { id: 1, role: "admin" }
+        : { id: 2, role: "user" },
+  }),
 }));
 
 vi.mock("@/hooks/usePermissions", () => ({
@@ -64,9 +74,16 @@ vi.mock("@/components/work-surface/ProductsWorkSurface", () => ({
   default: () => <div>Mock Product Metadata Section</div>,
 }));
 
+vi.mock("@/pages/settings/FeatureFlagsPage", () => ({
+  default: ({ embedded }: { embedded?: boolean }) => (
+    <div>Mock Feature Flags Manager {embedded ? "Embedded" : "Standalone"}</div>
+  ),
+}));
+
 describe("Settings", () => {
   beforeEach(() => {
     mockSearch = "";
+    mockUserRole = "user";
     mockSetLocation.mockReset();
   });
 
@@ -115,5 +132,24 @@ describe("Settings", () => {
     expect(
       screen.getByText("Mock Product Metadata Section")
     ).toBeInTheDocument();
+  });
+
+  it("renders the embedded feature flags manager for admin users", () => {
+    mockSearch = "?tab=feature-flags";
+    mockUserRole = "admin";
+
+    render(<Settings />);
+
+    expect(
+      screen.getByText("Mock Feature Flags Manager Embedded")
+    ).toBeInTheDocument();
+  });
+
+  it("hides the feature flags section for non-admin users", () => {
+    render(<Settings />);
+
+    expect(
+      screen.queryByRole("tab", { name: /feature flags/i })
+    ).not.toBeInTheDocument();
   });
 });
