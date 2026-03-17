@@ -1,0 +1,1170 @@
+[
+  {
+    "filename": "0000_next_texas_twister.sql",
+    "sourcePath": "drizzle/0000_next_texas_twister.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0000",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0000_next_texas_twister",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0000",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0001_add_workflow_queue_tables.sql",
+    "sourcePath": "drizzle/migrations/0001_add_workflow_queue_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0001",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0001_live_shopping.sql",
+    "sourcePath": "drizzle/migrations/0001_live_shopping.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0001",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0001_vip_portal_schema.sql",
+    "sourcePath": "drizzle/migrations/0001_vip_portal_schema.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0001",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0001_clumsy_adam_destine.sql",
+    "sourcePath": "drizzle/0001_clumsy_adam_destine.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0001",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0001_clumsy_adam_destine",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0001",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0002_add_deployments_table.sql",
+    "sourcePath": "drizzle/migrations/0002_add_deployments_table.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0002",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0002_dashboard_preferences.sql",
+    "sourcePath": "drizzle/migrations/0002_dashboard_preferences.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0002",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0002_many_kat_farrell.sql",
+    "sourcePath": "drizzle/0002_many_kat_farrell.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0002",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0002_many_kat_farrell",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0002",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0003_inventory_stability_improvements_mysql.sql",
+    "sourcePath": "drizzle/migrations/0003_inventory_stability_improvements_mysql.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0003",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0003_inventory_stability_improvements_production.sql",
+    "sourcePath": "drizzle/migrations/0003_inventory_stability_improvements_production.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0003",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0003_inventory_stability_improvements.sql",
+    "sourcePath": "drizzle/migrations/0003_inventory_stability_improvements.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0003",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0003_regular_red_hulk.sql",
+    "sourcePath": "drizzle/0003_regular_red_hulk.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0003",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0003_regular_red_hulk",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0003",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0004_add_todo_lists.sql",
+    "sourcePath": "drizzle/migrations/0004_add_todo_lists.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0004",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0004_abnormal_mephisto.sql",
+    "sourcePath": "drizzle/0004_abnormal_mephisto.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0004",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0004_abnormal_mephisto",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0004",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0005_add_comments_system.sql",
+    "sourcePath": "drizzle/migrations/0005_add_comments_system.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0005",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0005_faulty_ben_urich.sql",
+    "sourcePath": "drizzle/0005_faulty_ben_urich.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0005",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0005_faulty_ben_urich",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0005",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0006_add_inbox_system.sql",
+    "sourcePath": "drizzle/migrations/0006_add_inbox_system.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0006",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0006_chunky_penance.sql",
+    "sourcePath": "drizzle/0006_chunky_penance.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0006",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0006_chunky_penance",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0006",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0007_add_calendar_recurrence_index.sql",
+    "sourcePath": "drizzle/migrations/0007_add_calendar_recurrence_index.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0007",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0007_sparkling_phantom_reporter.sql",
+    "sourcePath": "drizzle/0007_sparkling_phantom_reporter.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0007",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0007_sparkling_phantom_reporter",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0007",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0008_fix_calendar_events_schema.sql",
+    "sourcePath": "drizzle/migrations/0008_fix_calendar_events_schema.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0008",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0008_premium_sauron.sql",
+    "sourcePath": "drizzle/0008_premium_sauron.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0008",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0008_premium_sauron",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0008",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0009_fix_calendar_recurrence_instances_schema.sql",
+    "sourcePath": "drizzle/migrations/0009_fix_calendar_recurrence_instances_schema.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0009",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0009_slow_silk_fever.sql",
+    "sourcePath": "drizzle/0009_slow_silk_fever.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0009",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0009_slow_silk_fever",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0009",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0010_add_missing_event_types.sql",
+    "sourcePath": "drizzle/migrations/0010_add_missing_event_types.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0010",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0010_left_night_thrasher.sql",
+    "sourcePath": "drizzle/0010_left_night_thrasher.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0010",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0010_left_night_thrasher",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0010",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0011_add_deleted_at_indexes.sql",
+    "sourcePath": "drizzle/migrations/0011_add_deleted_at_indexes.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0011",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0011_noisy_gabe_jones.sql",
+    "sourcePath": "drizzle/0011_noisy_gabe_jones.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0011",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0011_noisy_gabe_jones",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0011",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0012_add_deleted_at_to_ar_ap_tables.sql",
+    "sourcePath": "drizzle/migrations/0012_add_deleted_at_to_ar_ap_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0012",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0012_daffy_shotgun.sql",
+    "sourcePath": "drizzle/0012_daffy_shotgun.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0012",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0012_daffy_shotgun",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0012",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0013_add_pick_pack_tables.sql",
+    "sourcePath": "drizzle/migrations/0013_add_pick_pack_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0013",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0013_mute_bill_hollister.sql",
+    "sourcePath": "drizzle/0013_mute_bill_hollister.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0013",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0013_mute_bill_hollister",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0013",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0014_add_referral_credits.sql",
+    "sourcePath": "drizzle/migrations/0014_add_referral_credits.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0014",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0014_lying_guardian.sql",
+    "sourcePath": "drizzle/0014_lying_guardian.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0014",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0014_lying_guardian",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0014",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0015_add_receipts_table.sql",
+    "sourcePath": "drizzle/migrations/0015_add_receipts_table.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0015",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0015_brave_wraith.sql",
+    "sourcePath": "drizzle/0015_brave_wraith.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0015",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0015_brave_wraith",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0015",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0016_add_ws007_010_tables.sql",
+    "sourcePath": "drizzle/migrations/0016_add_ws007_010_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0016",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0016_oval_natasha_romanoff.sql",
+    "sourcePath": "drizzle/0016_oval_natasha_romanoff.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0016",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0016_oval_natasha_romanoff",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0016",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0017_add_ws011_014_tables.sql",
+    "sourcePath": "drizzle/migrations/0017_add_ws011_014_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0017",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0017_needy_whistler.sql",
+    "sourcePath": "drizzle/0017_needy_whistler.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0017",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0017_needy_whistler",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0017",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0018_add_wishlist_field.sql",
+    "sourcePath": "drizzle/migrations/0018_add_wishlist_field.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0018",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0018_magenta_changeling.sql",
+    "sourcePath": "drizzle/0018_magenta_changeling.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0018",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0018_magenta_changeling",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0018",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0019_fix_vip_portal_fk_constraint.sql",
+    "sourcePath": "drizzle/migrations/0019_fix_vip_portal_fk_constraint.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0019",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0019_slippery_dust.sql",
+    "sourcePath": "drizzle/0019_slippery_dust.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0019",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0019_slippery_dust",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0019",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0020_add_missing_client_columns.sql",
+    "sourcePath": "drizzle/migrations/0020_add_missing_client_columns.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0020",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0020_add_strain_type.sql",
+    "sourcePath": "drizzle/0020_add_strain_type.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0020",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0020_flimsy_makkari.sql",
+    "sourcePath": "drizzle/0020_flimsy_makkari.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0020",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0020_flimsy_makkari",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0020",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0021_add_feature_flags.sql",
+    "sourcePath": "drizzle/migrations/0021_add_feature_flags.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0021",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0021_rollback_feature_flags.sql",
+    "sourcePath": "drizzle/migrations/0021_rollback_feature_flags.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0021",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0021_add_product_name_fixed.sql",
+    "sourcePath": "drizzle/0021_add_product_name_fixed.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0021",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0021_add_product_name.sql",
+    "sourcePath": "drizzle/0021_add_product_name.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0021",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0021_giant_leech.sql",
+    "sourcePath": "drizzle/0021_giant_leech.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0021",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0021_giant_leech",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0021",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0022_add_admin_impersonation_tables.sql",
+    "sourcePath": "drizzle/migrations/0022_add_admin_impersonation_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0022",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0022_rollback_admin_impersonation_tables.sql",
+    "sourcePath": "drizzle/migrations/0022_rollback_admin_impersonation_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0022",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0022_create_order_line_items.sql",
+    "sourcePath": "drizzle/0022_create_order_line_items.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0022",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0022_create_rbac_tables.sql",
+    "sourcePath": "drizzle/0022_create_rbac_tables.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0022",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0022_create_rbac_tables",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0022",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0023_add_notifications_tables.sql",
+    "sourcePath": "drizzle/migrations/0023_add_notifications_tables.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0023",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0023_redundant_bulldozer.sql",
+    "sourcePath": "drizzle/0023_redundant_bulldozer.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0023",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0023_update_orders_table.sql",
+    "sourcePath": "drizzle/0023_update_orders_table.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0023",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0023_redundant_bulldozer",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0023",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0024_calendar_foundation.sql",
+    "sourcePath": "drizzle/migrations/0024_calendar_foundation.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0024",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0024_create_order_audit_log.sql",
+    "sourcePath": "drizzle/0024_create_order_audit_log.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0024",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0024_misty_rogue.sql",
+    "sourcePath": "drizzle/0024_misty_rogue.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0024",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0024_misty_rogue",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0024",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0025_add_performance_indexes.sql",
+    "sourcePath": "drizzle/migrations/0025_add_performance_indexes.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0025",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0025_create_pricing_defaults.sql",
+    "sourcePath": "drizzle/0025_create_pricing_defaults.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0025",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0025_needy_carnage.sql",
+    "sourcePath": "drizzle/0025_needy_carnage.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0025",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0025_needy_carnage",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0025",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0026_add_sales_sheet_sharing.sql",
+    "sourcePath": "drizzle/migrations/0026_add_sales_sheet_sharing.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0026",
+    "classification": "legacy-reference",
+    "rationale": "Nested migration duplicates a journaled prefix and should be treated as reference-only until reconciled."
+  },
+  {
+    "filename": "0026_first_salo.sql",
+    "sourcePath": "drizzle/0026_first_salo.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0026",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0026_recreate_dashboard_preferences.sql",
+    "sourcePath": "drizzle/0026_recreate_dashboard_preferences.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0026",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0026_first_salo",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0026",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0027_add_payables_and_ownership_tracking.sql",
+    "sourcePath": "drizzle/migrations/0027_add_payables_and_ownership_tracking.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0027",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0027_add_vendor_payment_terms.sql",
+    "sourcePath": "drizzle/0027_add_vendor_payment_terms.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0027",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0028_add_vendor_notes.sql",
+    "sourcePath": "drizzle/0028_add_vendor_notes.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0028",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0029_add_purchase_orders.sql",
+    "sourcePath": "drizzle/0029_add_purchase_orders.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0029",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0030_sprint3_pricing_engine.sql",
+    "sourcePath": "drizzle/migrations/0030_sprint3_pricing_engine.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0030",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0030_add_adjustment_reasons.sql",
+    "sourcePath": "drizzle/0030_add_adjustment_reasons.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0030",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0030_live_shopping_item_status.sql",
+    "sourcePath": "drizzle/0030_live_shopping_item_status.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0030",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0031_add_calendar_v32_columns.sql",
+    "sourcePath": "drizzle/0031_add_calendar_v32_columns.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0031",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0031_add_calendar_vendor_timezone.sql",
+    "sourcePath": "drizzle/0031_add_calendar_vendor_timezone.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0031",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0032_fix_meeting_history_cascade.sql",
+    "sourcePath": "drizzle/0032_fix_meeting_history_cascade.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0032",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0033_add_event_types.sql",
+    "sourcePath": "drizzle/0033_add_event_types.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0033",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0034_add_intake_event_to_orders.sql",
+    "sourcePath": "drizzle/0034_add_intake_event_to_orders.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0034",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0035_add_photo_event_to_batches.sql",
+    "sourcePath": "drizzle/0035_add_photo_event_to_batches.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0035",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0036_add_event_invitations.sql",
+    "sourcePath": "drizzle/0036_add_event_invitations.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0036",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0038_add_missing_indexes_mysql.sql",
+    "sourcePath": "drizzle/0038_add_missing_indexes_mysql.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0038",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0038_add_missing_indexes.sql",
+    "sourcePath": "drizzle/0038_add_missing_indexes.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0038",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0039_add_soft_delete_to_all_tables.sql",
+    "sourcePath": "drizzle/0039_add_soft_delete_to_all_tables.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0039",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0040_add_client360_features.sql",
+    "sourcePath": "drizzle/migrations/0040_add_client360_features.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0040",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0040_add_credit_visibility_settings.sql",
+    "sourcePath": "drizzle/0040_add_credit_visibility_settings.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0040",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0041_add_leaderboard_tables.sql",
+    "sourcePath": "drizzle/0041_add_leaderboard_tables.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0041",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0042_fix_clients_credit_fields.sql",
+    "sourcePath": "drizzle/0042_fix_clients_credit_fields.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0042",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0043_add_usp_columns.sql",
+    "sourcePath": "drizzle/0043_add_usp_columns.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0043",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0044_add_admin_impersonation_tables.sql",
+    "sourcePath": "drizzle/0044_add_admin_impersonation_tables.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0044",
+    "classification": "journaled",
+    "rationale": "Root drizzle migration prefix exists in Drizzle journal."
+  },
+  {
+    "filename": "0044_add_admin_impersonation_tables",
+    "sourcePath": "drizzle/meta/_journal.json",
+    "sourceStream": "journal",
+    "prefix": "0044",
+    "classification": "canonical",
+    "rationale": "Journal entry recorded by Drizzle metadata."
+  },
+  {
+    "filename": "0045_add_sales_sheet_drafts.sql",
+    "sourcePath": "drizzle/0045_add_sales_sheet_drafts.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0045",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0046_add_search_indexes.sql",
+    "sourcePath": "drizzle/0046_add_search_indexes.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0046",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0047_feat_009_015_implementation.sql",
+    "sourcePath": "drizzle/0047_feat_009_015_implementation.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0047",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0050_sprint5_gamification.sql",
+    "sourcePath": "drizzle/migrations/0050_sprint5_gamification.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0050",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0050_live_shopping_timeout.sql",
+    "sourcePath": "drizzle/0050_live_shopping_timeout.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0050",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0051_sprint5_trackd_transaction_features.sql",
+    "sourcePath": "drizzle/migrations/0051_sprint5_trackd_transaction_features.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0051",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0051_add_missing_foreign_keys.sql",
+    "sourcePath": "drizzle/0051_add_missing_foreign_keys.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0051",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0052_migrate_varchar_to_decimal_numeric_columns.sql",
+    "sourcePath": "drizzle/migrations/0052_migrate_varchar_to_decimal_numeric_columns.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0052",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0052_feat_002_tag_system_revamp.sql",
+    "sourcePath": "drizzle/0052_feat_002_tag_system_revamp.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0052",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0053_add_idempotency_key_to_credit_applications.sql",
+    "sourcePath": "drizzle/migrations/0053_add_idempotency_key_to_credit_applications.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0053",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0053_fix_dashboard_preferences_index.sql",
+    "sourcePath": "drizzle/0053_fix_dashboard_preferences_index.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0053",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0054_create_vip_tiers.sql",
+    "sourcePath": "drizzle/migrations/0054_create_vip_tiers.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0054",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0054_fix_long_constraint_names.sql",
+    "sourcePath": "drizzle/0054_fix_long_constraint_names.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0054",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0055_add_client_business_fields.sql",
+    "sourcePath": "drizzle/migrations/0055_add_client_business_fields.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0055",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0055_add_bills_fk_constraints.sql",
+    "sourcePath": "drizzle/0055_add_bills_fk_constraints.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0055",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0056_add_additional_packaged_units.sql",
+    "sourcePath": "drizzle/migrations/0056_add_additional_packaged_units.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0056",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0056_migrate_lots_supplier_client_id.sql",
+    "sourcePath": "drizzle/0056_migrate_lots_supplier_client_id.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0056",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0057_add_sms_enabled_to_notification_preferences.sql",
+    "sourcePath": "drizzle/migrations/0057_add_sms_enabled_to_notification_preferences.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0057",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0057_add_gl_entry_single_direction_constraint.sql",
+    "sourcePath": "drizzle/0057_add_gl_entry_single_direction_constraint.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0057",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0058_add_live_shopping_timeout_columns.sql",
+    "sourcePath": "drizzle/migrations/0058_add_live_shopping_timeout_columns.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0058",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0058_add_vendor_supply_soft_delete.sql",
+    "sourcePath": "drizzle/0058_add_vendor_supply_soft_delete.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0058",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0059_add_cron_leader_lock.sql",
+    "sourcePath": "drizzle/migrations/0059_add_cron_leader_lock.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0059",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0059_rename_order_fulfillment_ready_for_packing.sql",
+    "sourcePath": "drizzle/0059_rename_order_fulfillment_ready_for_packing.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0059",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0060_add_batch_quantity_check_constraints.sql",
+    "sourcePath": "drizzle/migrations/0060_add_batch_quantity_check_constraints.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0060",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0060_rename_quote_status_enum_values.sql",
+    "sourcePath": "drizzle/0060_rename_quote_status_enum_values.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0060",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  },
+  {
+    "filename": "0061_add_client_wants_soft_delete.sql",
+    "sourcePath": "drizzle/migrations/0061_add_client_wants_soft_delete.sql",
+    "sourceStream": "drizzle-migrations",
+    "prefix": "0061",
+    "classification": "outside-fork-scope",
+    "rationale": "Nested migration prefix is not journaled and must be explicitly classified before fork build work."
+  },
+  {
+    "filename": "0061_photography_complete_flag_migration.sql",
+    "sourcePath": "drizzle/0061_photography_complete_flag_migration.sql",
+    "sourceStream": "drizzle-root",
+    "prefix": "0061",
+    "classification": "unjournaled",
+    "rationale": "Root drizzle migration file has no matching journal prefix."
+  }
+]

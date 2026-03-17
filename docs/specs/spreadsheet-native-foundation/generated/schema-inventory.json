@@ -1,0 +1,2117 @@
+[
+  {
+    "tableName": "accounts",
+    "exportName": "accounts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "achievements",
+    "exportName": "achievements",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "admin_impersonation_actions",
+    "exportName": "adminImpersonationActions",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "admin_impersonation_sessions",
+    "exportName": "adminImpersonationSessions",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "alert_configurations",
+    "exportName": "alertConfigurations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "appointment_check_ins",
+    "exportName": "appointmentCheckIns",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "appointment_referrals",
+    "exportName": "appointmentReferrals",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "appointment_requests",
+    "exportName": "appointmentRequests",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "Scheduling remains an exception-owned surface."
+  },
+  {
+    "tableName": "appointment_status_history",
+    "exportName": "appointmentStatusHistory",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "appointment_types",
+    "exportName": "appointmentTypes",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "auditLogs",
+    "exportName": "auditLogs",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "bankAccounts",
+    "exportName": "bankAccounts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "bankTransactions",
+    "exportName": "bankTransactions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "batch_status_history",
+    "exportName": "batchStatusHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "batch_zone_assignments",
+    "exportName": "batchZoneAssignments",
+    "schemaFile": "schema-storage.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "batches",
+    "exportName": "batches",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Inventory pilot primary entity."
+  },
+  {
+    "tableName": "batchLocations",
+    "exportName": "batchLocations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "billLineItems",
+    "exportName": "billLineItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "bills",
+    "exportName": "bills",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "brands",
+    "exportName": "brands",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_availability",
+    "exportName": "calendarAvailability",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_blocked_dates",
+    "exportName": "calendarBlockedDates",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_event_attachments",
+    "exportName": "calendarEventAttachments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_event_history",
+    "exportName": "calendarEventHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_event_invitations",
+    "exportName": "calendarEventInvitations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_event_participants",
+    "exportName": "calendarEventParticipants",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_event_permissions",
+    "exportName": "calendarEventPermissions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_events",
+    "exportName": "calendarEvents",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "Calendar/scheduling remains an exception-owned surface."
+  },
+  {
+    "tableName": "calendar_invitation_history",
+    "exportName": "calendarInvitationHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_invitation_settings",
+    "exportName": "calendarInvitationSettings",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_recurrence_instances",
+    "exportName": "calendarRecurrenceInstances",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_recurrence_rules",
+    "exportName": "calendarRecurrenceRules",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_reminders",
+    "exportName": "calendarReminders",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_user_access",
+    "exportName": "calendarUserAccess",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendar_views",
+    "exportName": "calendarViews",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "calendars",
+    "exportName": "calendars",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "cash_location_transactions",
+    "exportName": "cashLocationTransactions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "cash_locations",
+    "exportName": "cashLocations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "categories",
+    "exportName": "categories",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_achievements",
+    "exportName": "clientAchievements",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_activity",
+    "exportName": "clientActivity",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_catalog_views",
+    "exportName": "clientCatalogViews",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_communications",
+    "exportName": "clientCommunications",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_credit_limits",
+    "exportName": "clientCreditLimits",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_crypto_wallets",
+    "exportName": "clientCryptoWallets",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_draft_interests",
+    "exportName": "clientDraftInterests",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_interest_list_items",
+    "exportName": "clientInterestListItems",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_interest_lists",
+    "exportName": "clientInterestLists",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_ledger_adjustments",
+    "exportName": "clientLedgerAdjustments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_meeting_history",
+    "exportName": "clientMeetingHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_needs",
+    "exportName": "clientNeeds",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_notes",
+    "exportName": "clientNotes",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_payment_terms_config",
+    "exportName": "clientPaymentTermsConfig",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_points_summary",
+    "exportName": "clientPointsSummary",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_price_alerts",
+    "exportName": "clientPriceAlerts",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_referral_codes",
+    "exportName": "clientReferralCodes",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_transaction_fees",
+    "exportName": "clientTransactionFees",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_transactions",
+    "exportName": "clientTransactions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_vip_status",
+    "exportName": "clientVipStatus",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_want_matches",
+    "exportName": "clientWantMatches",
+    "schemaFile": "schema-client360.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "client_wants",
+    "exportName": "clientWants",
+    "schemaFile": "schema-client360.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "clients",
+    "exportName": "clients",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Canonical party table for buyers and suppliers."
+  },
+  {
+    "tableName": "clientTags",
+    "exportName": "clientTags",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "cogs_rules",
+    "exportName": "cogsRules",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "cogsHistory",
+    "exportName": "cogsHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "comment_mentions",
+    "exportName": "commentMentions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "comments",
+    "exportName": "comments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "couch_tax_payouts",
+    "exportName": "couchTaxPayouts",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "credit_audit_log",
+    "exportName": "creditAuditLog",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "credit_override_requests",
+    "exportName": "creditOverrideRequests",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "credit_signal_history",
+    "exportName": "creditSignalHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "credit_system_settings",
+    "exportName": "creditSystemSettings",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "credit_visibility_settings",
+    "exportName": "creditVisibilitySettings",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "creditApplications",
+    "exportName": "creditApplications",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "credits",
+    "exportName": "credits",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "cron_leader_lock",
+    "exportName": "cronLeaderLock",
+    "schemaFile": "schema-cron.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "crypto_payments",
+    "exportName": "cryptoPayments",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "custom_finance_statuses",
+    "exportName": "customFinanceStatuses",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "dashboard_kpi_configs",
+    "exportName": "dashboardKpiConfigs",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "dashboard_widget_configs",
+    "exportName": "dashboardWidgetConfigs",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "dashboard_widget_layouts",
+    "exportName": "dashboardWidgetLayouts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "delivery_schedules",
+    "exportName": "deliverySchedules",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "demo_media_blobs",
+    "exportName": "demoMediaBlobs",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "Media blob storage is supporting infrastructure, not a pilot sheet core."
+  },
+  {
+    "tableName": "deployments",
+    "exportName": "deployments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "dispute_attachments",
+    "exportName": "disputeAttachments",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "dispute_notes",
+    "exportName": "disputeNotes",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "employee_shifts",
+    "exportName": "employeeShifts",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "employee_timesheets",
+    "exportName": "employeeTimesheets",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "expenseCategories",
+    "exportName": "expenseCategories",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "expenses",
+    "exportName": "expenses",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "feature_flag_audit_logs",
+    "exportName": "featureFlagAuditLogs",
+    "schemaFile": "schema-feature-flags.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "feature_flag_role_overrides",
+    "exportName": "featureFlagRoleOverrides",
+    "schemaFile": "schema-feature-flags.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "feature_flag_user_overrides",
+    "exportName": "featureFlagUserOverrides",
+    "schemaFile": "schema-feature-flags.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "feature_flags",
+    "exportName": "featureFlags",
+    "schemaFile": "schema-feature-flags.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "fiscalPeriods",
+    "exportName": "fiscalPeriods",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "freeform_notes",
+    "exportName": "freeformNotes",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "grades",
+    "exportName": "grades",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "idempotency_keys",
+    "exportName": "idempotencyKeys",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "inbox_items",
+    "exportName": "inboxItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "installment_plans",
+    "exportName": "installmentPlans",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "installments",
+    "exportName": "installments",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "intake_discrepancies",
+    "exportName": "intakeDiscrepancies",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "intake_receipt_items",
+    "exportName": "intakeReceiptItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "intake_receipts",
+    "exportName": "intakeReceipts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "intake_session_batches",
+    "exportName": "intakeSessionBatches",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "intake_sessions",
+    "exportName": "intakeSessions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "inventoryAlerts",
+    "exportName": "inventoryAlerts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Inventory pilot movement and audit core table."
+  },
+  {
+    "tableName": "inventoryViews",
+    "exportName": "inventoryViews",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Inventory pilot saved-view support table."
+  },
+  {
+    "tableName": "invoice_disputes",
+    "exportName": "invoiceDisputes",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "invoice_payments",
+    "exportName": "invoicePayments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "invoiceLineItems",
+    "exportName": "invoiceLineItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": "Accounting-owned output and billing surface adjacent to Orders."
+  },
+  {
+    "tableName": "leaderboard_default_weights",
+    "exportName": "leaderboardDefaultWeights",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "leaderboard_display_settings",
+    "exportName": "leaderboardDisplaySettings",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "leaderboard_metric_cache",
+    "exportName": "leaderboardMetricCache",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "leaderboard_rank_history",
+    "exportName": "leaderboardRankHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "leaderboard_weight_configs",
+    "exportName": "leaderboardWeightConfigs",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "ledgerEntries",
+    "exportName": "ledgerEntries",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "liveShoppingSessions",
+    "exportName": "liveShoppingSessions",
+    "schemaFile": "schema-live-shopping.ts",
+    "primaryDomainOwner": "live-shopping",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "Live shopping remains an exception-owned surface."
+  },
+  {
+    "tableName": "locations",
+    "exportName": "locations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": "Adjacent setup/transfer surface; not owned by first inventory sheet."
+  },
+  {
+    "tableName": "lots",
+    "exportName": "lots",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": ""
+  },
+  {
+    "tableName": "match_records",
+    "exportName": "matchRecords",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "note_activity",
+    "exportName": "noteActivity",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "note_comments",
+    "exportName": "noteComments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "notification_preferences",
+    "exportName": "notificationPreferences",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "notifications",
+    "exportName": "notifications",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "office_supply_items",
+    "exportName": "officeSupplyItems",
+    "schemaFile": "schema-client360.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "office_supply_needs",
+    "exportName": "officeSupplyNeeds",
+    "schemaFile": "schema-client360.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_audit_log",
+    "exportName": "orderAuditLog",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_bags",
+    "exportName": "orderBags",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_item_bags",
+    "exportName": "orderItemBags",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_line_item_allocations",
+    "exportName": "orderLineItemAllocations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_line_items",
+    "exportName": "orderLineItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Sales Orders pilot core child table."
+  },
+  {
+    "tableName": "order_price_adjustments",
+    "exportName": "orderPriceAdjustments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_service_charges",
+    "exportName": "orderServiceCharges",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_status_history",
+    "exportName": "orderStatusHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "order_transaction_fees",
+    "exportName": "orderTransactionFees",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "orders",
+    "exportName": "orders",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Sales Orders pilot core table."
+  },
+  {
+    "tableName": "organization_settings",
+    "exportName": "organizationSettings",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "overtime_rules",
+    "exportName": "overtimeRules",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "payable_notifications",
+    "exportName": "payableNotifications",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "paymentHistory",
+    "exportName": "paymentHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "paymentMethods",
+    "exportName": "paymentMethods",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "payments",
+    "exportName": "payments",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": "Accounting-owned payment surface adjacent to Orders."
+  },
+  {
+    "tableName": "permissions",
+    "exportName": "permissions",
+    "schemaFile": "schema-rbac.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "points_ledger",
+    "exportName": "pointsLedger",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "price_history",
+    "exportName": "priceHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "pricing_defaults",
+    "exportName": "pricingDefaults",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "pricing_profiles",
+    "exportName": "pricingProfiles",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "pricing_rules",
+    "exportName": "pricingRules",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "product_categories",
+    "exportName": "productCategories",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "product_category_assignments",
+    "exportName": "productCategoryAssignments",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "product_grades",
+    "exportName": "productGrades",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "product_images",
+    "exportName": "productImages",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "Photography review remains exception-owned even if lightweight media appears elsewhere."
+  },
+  {
+    "tableName": "productMedia",
+    "exportName": "productMedia",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "products",
+    "exportName": "products",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": ""
+  },
+  {
+    "tableName": "productSynonyms",
+    "exportName": "productSynonyms",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "productTags",
+    "exportName": "productTags",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "purchaseOrderItems",
+    "exportName": "purchaseOrderItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "purchaseOrders",
+    "exportName": "purchaseOrders",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "receipts",
+    "exportName": "receipts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "recurring_orders",
+    "exportName": "recurringOrders",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "referral_credits",
+    "exportName": "referralCredits",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "referral_settings",
+    "exportName": "referralGamificationSettings",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "referral_settings",
+    "exportName": "referralCreditSettings",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "referral_tracking",
+    "exportName": "referralTracking",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "returns",
+    "exportName": "returns",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": "Orders-adjacent handoff domain with separate ownership decisions."
+  },
+  {
+    "tableName": "reward_catalog",
+    "exportName": "rewardCatalog",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "reward_redemptions",
+    "exportName": "rewardRedemptions",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "role_permissions",
+    "exportName": "rolePermissions",
+    "schemaFile": "schema-rbac.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "roles",
+    "exportName": "roles",
+    "schemaFile": "schema-rbac.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "room_bookings",
+    "exportName": "roomBookings",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "rooms",
+    "exportName": "rooms",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "calendar",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "sales",
+    "exportName": "sales",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sales_sheet_drafts",
+    "exportName": "salesSheetDrafts",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sales_sheet_history",
+    "exportName": "salesSheetHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sales_sheet_templates",
+    "exportName": "salesSheetTemplates",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "salesSheetVersions",
+    "exportName": "salesSheetVersions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "sales",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sample_inventory_log",
+    "exportName": "sampleInventoryLog",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sampleAllocations",
+    "exportName": "sampleAllocations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sampleLocationHistory",
+    "exportName": "sampleLocationHistory",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sampleRequests",
+    "exportName": "sampleRequests",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "scratch_pad_notes",
+    "exportName": "scratchPadNotes",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sequences",
+    "exportName": "sequences",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "service_definitions",
+    "exportName": "serviceDefinitions",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "service_invoice_line_items",
+    "exportName": "serviceInvoiceLineItems",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "service_invoices",
+    "exportName": "serviceInvoices",
+    "schemaFile": "schema-sprint5-trackd.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "sessionCartItems",
+    "exportName": "sessionCartItems",
+    "schemaFile": "schema-live-shopping.ts",
+    "primaryDomainOwner": "live-shopping",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "Live shopping remains an exception-owned surface."
+  },
+  {
+    "tableName": "sessionPriceOverrides",
+    "exportName": "sessionPriceOverrides",
+    "schemaFile": "schema-live-shopping.ts",
+    "primaryDomainOwner": "live-shopping",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": ""
+  },
+  {
+    "tableName": "shift_audits",
+    "exportName": "shiftAudits",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "shift_templates",
+    "exportName": "shiftTemplates",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "site_inventory_counts",
+    "exportName": "siteInventoryCounts",
+    "schemaFile": "schema-storage.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "site_transfers",
+    "exportName": "siteTransfers",
+    "schemaFile": "schema-storage.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": "Storage transfer surface adjacent to Inventory."
+  },
+  {
+    "tableName": "sites",
+    "exportName": "sites",
+    "schemaFile": "schema-storage.ts",
+    "primaryDomainOwner": "operations",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "storage_zones",
+    "exportName": "storageZones",
+    "schemaFile": "schema-storage.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "strains",
+    "exportName": "strains",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "subcategories",
+    "exportName": "subcategories",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "supplier_profiles",
+    "exportName": "supplierProfiles",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "pilot-core",
+    "notes": "Canonical supplier extension for party-model future state."
+  },
+  {
+    "tableName": "tagGroupMembers",
+    "exportName": "tagGroupMembers",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "tagGroups",
+    "exportName": "tagGroups",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "tagHierarchy",
+    "exportName": "tagHierarchy",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "tags",
+    "exportName": "tags",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "time_entries",
+    "exportName": "timeEntries",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "time_off_requests",
+    "exportName": "timeOffRequests",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "timesheet_periods",
+    "exportName": "timesheetPeriods",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "todo_list_members",
+    "exportName": "todoListMembers",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "todo_lists",
+    "exportName": "todoLists",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "todo_task_activity",
+    "exportName": "todoTaskActivity",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "todo_tasks",
+    "exportName": "todoTasks",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "platform",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "ignore-v1",
+    "notes": ""
+  },
+  {
+    "tableName": "transactionLinks",
+    "exportName": "transactionLinks",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "transactions",
+    "exportName": "transactions",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "accounting",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "unit_types",
+    "exportName": "unitTypes",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "user_mentions",
+    "exportName": "userMentions",
+    "schemaFile": "schema-scheduling.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "user_permission_overrides",
+    "exportName": "userPermissionOverrides",
+    "schemaFile": "schema-rbac.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "user_preferences",
+    "exportName": "userPreferences",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "user_roles",
+    "exportName": "userRoles",
+    "schemaFile": "schema-rbac.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "userDashboardPreferences",
+    "exportName": "userDashboardPreferences",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "users",
+    "exportName": "users",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "variable_markup_rules",
+    "exportName": "variableMarkupRules",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vendor_harvest_reminders",
+    "exportName": "vendorHarvestReminders",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vendor_payables",
+    "exportName": "vendorPayables",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vendor_return_items",
+    "exportName": "vendorReturnItems",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vendor_returns",
+    "exportName": "vendorReturns",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vendor_supply",
+    "exportName": "vendorSupply",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vendorNotes",
+    "exportName": "vendorNotes",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "deprecated",
+    "forkRelevance": "adjacent",
+    "notes": "Legacy supplier note storage linked to vendors; requires alias decision before fork consumption."
+  },
+  {
+    "tableName": "vendors",
+    "exportName": "vendors",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "relationships",
+    "lifecycleStatus": "deprecated",
+    "forkRelevance": "adjacent",
+    "notes": "Canonical party-model conflict: still used in runtime, but fork should treat clients plus supplierProfiles as canonical."
+  },
+  {
+    "tableName": "vip_leaderboard_snapshots",
+    "exportName": "vipLeaderboardSnapshots",
+    "schemaFile": "schema-gamification.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vip_portal_auth",
+    "exportName": "vipPortalAuth",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "VIP portal remains an exception-owned surface."
+  },
+  {
+    "tableName": "vip_portal_auth",
+    "exportName": "vipPortalAuth",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "VIP portal remains an exception-owned surface."
+  },
+  {
+    "tableName": "vip_portal_configurations",
+    "exportName": "vipPortalConfigurations",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "VIP portal remains an exception-owned surface."
+  },
+  {
+    "tableName": "vip_portal_configurations",
+    "exportName": "vipPortalConfigurations",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "exception",
+    "forkRelevance": "exception-surface",
+    "notes": "VIP portal remains an exception-owned surface."
+  },
+  {
+    "tableName": "vip_tier_history",
+    "exportName": "vipTierHistory",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "vip_tiers",
+    "exportName": "vipTiers",
+    "schemaFile": "schema-vip-portal.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  },
+  {
+    "tableName": "workflow_statuses",
+    "exportName": "workflowStatuses",
+    "schemaFile": "schema.ts",
+    "primaryDomainOwner": "cross-product",
+    "lifecycleStatus": "canonical",
+    "forkRelevance": "adjacent",
+    "notes": ""
+  }
+]
