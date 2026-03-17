@@ -1,17 +1,25 @@
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
+import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
-import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
+import {
+  buildOperationsWorkspacePath,
+  buildSalesWorkspacePath,
+} from "@/lib/workspaceRoutes";
+import {
+  useSpreadsheetPilotAvailability,
+  useSpreadsheetSurfaceMode,
+} from "@/lib/spreadsheet-native";
 import {
   LinearWorkspacePanel,
   LinearWorkspaceShell,
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 
 type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
@@ -27,9 +35,17 @@ const SALES_TABS = SALES_TABS_CONFIG.map(
 ) as readonly SalesTab[];
 
 export default function SalesWorkspacePage() {
+  const [, setLocation] = useLocation();
   const { activeTab, setActiveTab } = useQueryTabState<SalesQueryTab>({
     defaultTab: "orders",
     validTabs: [...SALES_TABS, "pick-pack"],
+  });
+  const pilotSurfaceSupported = activeTab === "orders";
+  const { sheetPilotEnabled, availabilityReady } =
+    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
+  const { surfaceMode } = useSpreadsheetSurfaceMode({
+    enabled: sheetPilotEnabled,
+    ready: availabilityReady,
   });
   useWorkspaceHomeTelemetry("sales", activeTab);
 
@@ -48,7 +64,19 @@ export default function SalesWorkspacePage() {
       meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
     >
       <LinearWorkspacePanel value="orders">
-        <OrdersWorkSurface />
+        {surfaceMode === "sheet-native" ? (
+          <OrdersSheetPilotSurface
+            onOpenClassic={orderId =>
+              setLocation(
+                buildSalesWorkspacePath("orders", {
+                  orderId: orderId ?? undefined,
+                })
+              )
+            }
+          />
+        ) : (
+          <OrdersWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="quotes">
         <QuotesWorkSurface />

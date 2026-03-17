@@ -1,7 +1,6 @@
-import "dotenv/config";
-
 import * as fs from "fs";
 import * as path from "path";
+import { loadAuditEnv } from "../_lib/loadAuditEnv";
 import { checkSchemaFingerprint } from "../../server/autoMigrate";
 
 const DEFAULT_OUTPUT_PATH = path.join(
@@ -32,6 +31,7 @@ function parseOptionalChecks(args: string[]): Set<string> {
 }
 
 async function main(): Promise<void> {
+  const envResult = loadAuditEnv();
   const args = process.argv.slice(2);
   const strict = args.includes("--strict");
   // Keep strict behavior, but allow explicitly-configured optional checks for
@@ -45,8 +45,11 @@ async function main(): Promise<void> {
   const missingRequiredChecks = requiredChecks
     .filter(check => !check.passed)
     .map(check => check.key);
-  const requiredPassedChecks = requiredChecks.filter(check => check.passed).length;
-  const complete = requiredChecks.length > 0 && missingRequiredChecks.length === 0;
+  const requiredPassedChecks = requiredChecks.filter(
+    check => check.passed
+  ).length;
+  const complete =
+    requiredChecks.length > 0 && missingRequiredChecks.length === 0;
 
   const report = {
     checkedAt: new Date().toISOString(),
@@ -72,6 +75,9 @@ async function main(): Promise<void> {
   );
 
   console.info("Schema fingerprint report generated:");
+  console.info(
+    `- Audit env loaded from: ${envResult.loadedFrom.length > 0 ? envResult.loadedFrom.join(", ") : "none"}`
+  );
   console.info(`- Output: ${DEFAULT_OUTPUT_PATH}`);
   console.info(
     `- Result: ${report.requiredPassedChecks}/${report.requiredTotalChecks} required checks passed (${report.complete ? "complete" : "incomplete"})`

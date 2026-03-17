@@ -13,8 +13,11 @@ import SalesWorkspacePage from "./SalesWorkspacePage";
 import CreditsWorkspacePage from "./CreditsWorkspacePage";
 
 let mockActiveTab = "matchmaking";
+let mockPilotFlagEnabled = false;
+let mockPilotFlagLoading = false;
 const mockSetActiveTab = vi.fn();
 const mockSetLocation = vi.fn();
+const mockRefetchFlags = vi.fn();
 
 vi.mock("@/hooks/useQueryTabState", () => ({
   useQueryTabState: () => ({
@@ -23,8 +26,23 @@ vi.mock("@/hooks/useQueryTabState", () => ({
   }),
 }));
 
+vi.mock("@/hooks/useFeatureFlag", () => ({
+  useFeatureFlag: () => ({
+    enabled: mockPilotFlagEnabled,
+    isLoading: mockPilotFlagLoading,
+    error: null,
+  }),
+  useFeatureFlags: () => ({
+    flags: mockPilotFlagEnabled ? { "spreadsheet-native-pilot": true } : {},
+    isLoading: mockPilotFlagLoading,
+    error: null,
+    refetch: mockRefetchFlags,
+  }),
+}));
+
 vi.mock("wouter", () => ({
   useLocation: () => ["/inventory", mockSetLocation],
+  useSearch: () => "",
 }));
 
 vi.mock("@/pages/NeedsManagementPage", () => ({
@@ -80,6 +98,9 @@ describe("Consolidated workspace pages", () => {
   beforeEach(() => {
     mockSetActiveTab.mockClear();
     mockSetLocation.mockClear();
+    mockRefetchFlags.mockClear();
+    mockPilotFlagEnabled = false;
+    mockPilotFlagLoading = false;
   });
 
   it("renders Demand & Supply workspace with embedded content", () => {
