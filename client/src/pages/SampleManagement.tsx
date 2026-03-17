@@ -8,7 +8,10 @@ import {
 } from "@/components/samples/SampleForm";
 import {
   SampleList,
+  getSampleOperatorLane,
+  isOperatorVisibleSampleStatus,
   type SampleListItem,
+  type SampleOperatorFilter,
   type SampleStatus,
   type SampleLocation,
 } from "@/components/samples/SampleList";
@@ -40,15 +43,20 @@ import {
 import { LoadingState } from "@/components/ui/loading-state";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { SampleRequest } from "../../../drizzle/schema";
 import { toast } from "sonner";
 
-type TabFilter = "ALL" | SampleStatus;
+type TabFilter = Extract<SampleOperatorFilter, "ALL" | "OUT" | "RETURN">;
 
 interface ClientOption {
   id: number;
   name: string | null;
+}
+
+interface SampleManagementProps {
+  embedded?: boolean;
 }
 
 function normalizeProducts(
@@ -101,7 +109,9 @@ function extractDueDate(notes?: string | null): string | null {
   return match ? match[1] : null;
 }
 
-export default function SampleManagement() {
+export default function SampleManagement({
+  embedded = false,
+}: SampleManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TabFilter>("ALL");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -117,6 +127,13 @@ export default function SampleManagement() {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [selectedSampleLocation, setSelectedSampleLocation] =
     useState<SampleLocation | null>(null);
+  const { hasPermission } = usePermissions();
+  const canCreateSamples = hasPermission("samples:create");
+  const canDeleteSamples = hasPermission("samples:delete");
+  const canRequestSampleReturn = hasPermission("samples:return");
+  const canApproveSampleReturn = hasPermission("samples:approve");
+  const canManageVendorReturn = hasPermission("samples:vendorReturn");
+  const canTrackSamples = hasPermission("samples:track");
 
   const debouncedProductSearch = useDebounce(productSearch, 300);
 
@@ -256,55 +273,52 @@ export default function SampleManagement() {
       (Array.isArray(samplesData) ? samplesData : []) ||
       [];
 
-    return items.map(sample => {
-      const products = normalizeProducts(sample.products);
-      const productSummary = products
-        .map(
-          product =>
-            `Product #${product.productId} (${product.quantity || "1"})`
-        )
-        .join(", ");
+    return items
+      .map(sample => {
+        const status = normalizeStatus(sample.sampleRequestStatus);
+        const products = normalizeProducts(sample.products);
+        const productSummary = products
+          .map(
+            product =>
+              `Product #${product.productId} (${product.quantity || "1"})`
+          )
+          .join(", ");
 
-      return {
-        id: sample.id,
-        productSummary: productSummary || "No products listed",
-        clientName:
-          clientNameMap.get(sample.clientId) ?? `Client #${sample.clientId}`,
-        status: normalizeStatus(sample.sampleRequestStatus),
-        requestedDate:
-          typeof sample.requestDate === "string"
-            ? sample.requestDate
-            : format(sample.requestDate, "yyyy-MM-dd"),
-        dueDate: extractDueDate(sample.notes),
-        notes: sample.notes ?? null,
-        location: normalizeLocation(sample.location),
-        expirationDate: sample.expirationDate
-          ? typeof sample.expirationDate === "string"
-            ? sample.expirationDate
-            : format(sample.expirationDate, "yyyy-MM-dd")
-          : null,
-        vendorReturnTrackingNumber: sample.vendorReturnTrackingNumber ?? null,
-      };
-    });
+        return {
+          id: sample.id,
+          productSummary: productSummary || "No products listed",
+          clientName:
+            clientNameMap.get(sample.clientId) ?? `Client #${sample.clientId}`,
+          status,
+          requestedDate:
+            typeof sample.requestDate === "string"
+              ? sample.requestDate
+              : format(sample.requestDate, "yyyy-MM-dd"),
+          dueDate: extractDueDate(sample.notes),
+          notes: sample.notes ?? null,
+          location: normalizeLocation(sample.location),
+          expirationDate: sample.expirationDate
+            ? typeof sample.expirationDate === "string"
+              ? sample.expirationDate
+              : format(sample.expirationDate, "yyyy-MM-dd")
+            : null,
+          vendorReturnTrackingNumber: sample.vendorReturnTrackingNumber ?? null,
+        };
+      })
+      .filter(sample => isOperatorVisibleSampleStatus(sample.status));
   }, [clientNameMap, samplesData]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {
       ALL: samples.length,
-      PENDING: 0,
-      FULFILLED: 0,
-      CANCELLED: 0,
-      RETURNED: 0,
-      RETURN_REQUESTED: 0,
-      RETURN_APPROVED: 0,
-      VENDOR_RETURN_REQUESTED: 0,
-      SHIPPED_TO_VENDOR: 0,
-      VENDOR_CONFIRMED: 0,
+      OUT: 0,
+      RETURN: 0,
     };
 
     samples.forEach(sample => {
-      if (counts[sample.status] !== undefined) {
-        counts[sample.status] += 1;
+      const lane = getSampleOperatorLane(sample.status);
+      if (lane === "OUT" || lane === "RETURN") {
+        counts[lane] += 1;
       }
     });
 
@@ -581,22 +595,36 @@ export default function SampleManagement() {
   const combinedProductOptions =
     productOptions.length > 0 ? productOptions : fallbackProductOptions;
 
+  const renderPageHeader = (
+    description?: string,
+    { showCreateAction = false }: { showCreateAction?: boolean } = {}
+  ) =>
+    embedded ? null : (
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Filter className="h-4 w-4" />
+            Samples
+          </div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Beaker className="h-7 w-7 text-primary" />
+            Sample Management
+          </h1>
+          {description ? (
+            <p className="text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
+        {showCreateAction && canCreateSamples ? (
+          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
+        ) : null}
+      </div>
+    );
+
   // Loading state
   if (samplesLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Filter className="h-4 w-4" />
-              Samples
-            </div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Beaker className="h-7 w-7 text-primary" />
-              Sample Management
-            </h1>
-          </div>
-        </div>
+        {renderPageHeader()}
         <LoadingState message="Loading samples..." />
       </div>
     );
@@ -610,18 +638,7 @@ export default function SampleManagement() {
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Filter className="h-4 w-4" />
-              Samples
-            </div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Beaker className="h-7 w-7 text-primary" />
-              Sample Management
-            </h1>
-          </div>
-        </div>
+        {renderPageHeader()}
         <Card className="p-6" data-testid="samples-error">
           {isDbError ? (
             <DatabaseErrorState
@@ -649,22 +666,9 @@ export default function SampleManagement() {
   if (samples.length === 0 && !isSamplesError) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Filter className="h-4 w-4" />
-              Samples
-            </div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Beaker className="h-7 w-7 text-primary" />
-              Sample Management
-            </h1>
-            <p className="text-muted-foreground">
-              Track sample requests, approvals, and returns.
-            </p>
-          </div>
-          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
-        </div>
+        {renderPageHeader("Track sample requests, approvals, and returns.", {
+          showCreateAction: true,
+        })}
         <Card className="p-6" data-testid="samples-empty">
           <EmptyState
             {...emptyStateConfigs.samples}
@@ -696,22 +700,15 @@ export default function SampleManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Filter className="h-4 w-4" />
-            Samples
-          </div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Beaker className="h-7 w-7 text-primary" />
-            Sample Management
-          </h1>
-          <p className="text-muted-foreground">
-            Track sample requests, approvals, and returns.
-          </p>
+      {embedded && canCreateSamples ? (
+        <div className="flex justify-end">
+          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
-      </div>
+      ) : null}
+      {renderPageHeader(
+        "Track samples out and sample returns without the old status maze.",
+        { showCreateAction: true }
+      )}
 
       {/* Expiring Samples Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -720,7 +717,7 @@ export default function SampleManagement() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
                 <Input
-                  placeholder="Search samples..."
+                  placeholder="Search samples out or returns..."
                   value={searchQuery}
                   onChange={event => setSearchQuery(event.target.value)}
                 />
@@ -728,14 +725,11 @@ export default function SampleManagement() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                 <Badge variant="secondary">All {statusCounts.ALL}</Badge>
                 <Badge variant="secondary">
-                  Pending {statusCounts.PENDING}
+                  Samples Out {statusCounts.OUT}
                 </Badge>
-                <Badge variant="secondary">
-                  Approved {statusCounts.FULFILLED}
-                </Badge>
-                {statusCounts.RETURN_REQUESTED > 0 && (
+                {statusCounts.RETURN > 0 && (
                   <Badge variant="outline">
-                    Returns {statusCounts.RETURN_REQUESTED}
+                    Samples Return {statusCounts.RETURN}
                   </Badge>
                 )}
               </div>
@@ -754,14 +748,8 @@ export default function SampleManagement() {
       >
         {[
           { value: "ALL" as TabFilter, label: "All Samples" },
-          { value: "PENDING" as TabFilter, label: "Pending" },
-          { value: "FULFILLED" as TabFilter, label: "Approved" },
-          { value: "RETURN_REQUESTED" as TabFilter, label: "Return Requested" },
-          { value: "RETURNED" as TabFilter, label: "Returned" },
-          {
-            value: "VENDOR_RETURN_REQUESTED" as TabFilter,
-            label: "Supplier Returns",
-          },
+          { value: "OUT" as TabFilter, label: "Samples Out" },
+          { value: "RETURN" as TabFilter, label: "Samples Return" },
         ].map(tab => (
           <Button
             key={tab.value}
@@ -786,14 +774,24 @@ export default function SampleManagement() {
         statusFilter={statusFilter}
         searchQuery={searchQuery}
         isLoading={samplesLoading}
-        onDelete={handleDelete}
-        onRequestReturn={handleRequestReturn}
-        onApproveReturn={handleApproveReturn}
-        onCompleteReturn={handleCompleteReturn}
-        onRequestVendorReturn={handleRequestVendorReturn}
-        onShipToVendor={handleShipToVendor}
-        onConfirmVendorReturn={handleConfirmVendorReturn}
-        onUpdateLocation={handleUpdateLocation}
+        onDelete={canDeleteSamples ? handleDelete : undefined}
+        onRequestReturn={
+          canRequestSampleReturn ? handleRequestReturn : undefined
+        }
+        onApproveReturn={
+          canApproveSampleReturn ? handleApproveReturn : undefined
+        }
+        onCompleteReturn={
+          canRequestSampleReturn ? handleCompleteReturn : undefined
+        }
+        onRequestVendorReturn={
+          canManageVendorReturn ? handleRequestVendorReturn : undefined
+        }
+        onShipToVendor={canManageVendorReturn ? handleShipToVendor : undefined}
+        onConfirmVendorReturn={
+          canManageVendorReturn ? handleConfirmVendorReturn : undefined
+        }
+        onUpdateLocation={canTrackSamples ? handleUpdateLocation : undefined}
         pageSize={10}
       />
 

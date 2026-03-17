@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearch } from "wouter";
 import {
   Calendar,
   List,
@@ -27,6 +28,10 @@ import {
 } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Card } from "@/components/ui/card";
+import {
+  deriveCalendarDialogRouteState,
+  parseCalendarRouteContext,
+} from "@/pages/calendarRoute";
 
 /**
  * Calendar Page
@@ -39,6 +44,7 @@ type ViewType = "MONTH" | "WEEK" | "DAY" | "AGENDA";
 type TabType = "calendar" | "requests" | "timeoff";
 
 export default function CalendarPage() {
+  const routeSearch = useSearch();
   const [activeTab, setActiveTab] = useState<TabType>("calendar");
   const [currentView, setCurrentView] = useState<ViewType>("MONTH");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -49,6 +55,10 @@ export default function CalendarPage() {
     null
   );
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const routeEventId = useMemo(
+    () => parseCalendarRouteContext(routeSearch).eventId,
+    [routeSearch]
+  );
 
   // Get pending counts for badges
   const { data: pendingRequestCount } =
@@ -170,6 +180,25 @@ export default function CalendarPage() {
     setSelectedEventId(null);
     refetchEvents();
   };
+
+  useEffect(() => {
+    const routeDialogState = deriveCalendarDialogRouteState(routeEventId);
+
+    if (!routeEventId) {
+      setSelectedDate(null);
+      setSelectedEventId(routeDialogState.selectedEventId);
+      setIsEventDialogOpen(routeDialogState.isEventDialogOpen);
+      return;
+    }
+
+    setSelectedDate(null);
+    setSelectedEventId(currentEventId =>
+      currentEventId === routeDialogState.selectedEventId
+        ? currentEventId
+        : routeDialogState.selectedEventId
+    );
+    setIsEventDialogOpen(routeDialogState.isEventDialogOpen);
+  }, [routeEventId]);
 
   // CRITICAL: Handle database errors gracefully (Wave 3 finding)
   if (isEventsError && activeTab === "calendar") {

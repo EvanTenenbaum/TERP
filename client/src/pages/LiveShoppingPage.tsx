@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import StaffSessionConsole from "@/components/live-shopping/StaffSessionConsole";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { format } from "date-fns";
 import {
   Video,
@@ -80,10 +83,20 @@ const statusConfig: Record<
 
 export default function LiveShoppingPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const search = useSearch();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | "all">(
     "all"
   );
+  const selectedSessionParam = new URLSearchParams(search).get("session");
+  const parsedSelectedSessionId = selectedSessionParam
+    ? Number(selectedSessionParam)
+    : Number.NaN;
+  const selectedSessionId =
+    Number.isInteger(parsedSelectedSessionId) && parsedSelectedSessionId > 0
+      ? parsedSelectedSessionId
+      : null;
 
   // Form state for creating new session
   const [newSession, setNewSession] = useState({
@@ -150,6 +163,22 @@ export default function LiveShoppingPage() {
   };
 
   const sessions = sessionsData || [];
+
+  if (selectedSessionId) {
+    return (
+      <div className="space-y-4">
+        <div className="px-6 pt-6">
+          <Button
+            variant="outline"
+            onClick={() => setLocation(buildSalesWorkspacePath("live-shopping"))}
+          >
+            Back to Sessions
+          </Button>
+        </div>
+        <StaffSessionConsole sessionId={selectedSessionId} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -421,8 +450,13 @@ export default function LiveShoppingPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled
-                          title="Session detail view planned for post-MVP"
+                          onClick={() =>
+                            setLocation(
+                              buildSalesWorkspacePath("live-shopping", {
+                                session: session.id,
+                              })
+                            )
+                          }
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
                           View Details

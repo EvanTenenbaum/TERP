@@ -14,6 +14,12 @@ export interface PricedInventoryItem {
   strainId?: number;
   strainFamily?: string;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogs?: number;
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogs?: number;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice: number;
   quantity: number;
   grade?: string;
@@ -145,6 +151,14 @@ export interface DraftInfo {
   itemCount: number;
   totalValue: string;
   updatedAt: Date | null;
+  createdAt: Date | null;
+}
+
+export interface SavedSheetInfo {
+  id: number;
+  clientId: number;
+  itemCount: number;
+  totalValue: string;
   createdAt: Date | null;
 }
 

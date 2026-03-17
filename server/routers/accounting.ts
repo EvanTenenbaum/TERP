@@ -22,7 +22,6 @@ import {
   bills,
   payments,
   clients,
-  supplierProfiles,
 } from "../../drizzle/schema";
 import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -31,6 +30,7 @@ import {
   onPaymentReceived,
 } from "../services/notificationTriggers";
 import { postInvoiceGLEntries, postPaymentGLEntries } from "../accountingHooks";
+import { getVendorDisplayName, getVendorNameMap } from "../vendorDisplay";
 
 export const accountingRouter = router({
   // ============================================================================
@@ -144,21 +144,13 @@ export const accountingRouter = router({
         // Get outstanding payables
         const outstanding = await arApDb.getOutstandingPayables();
 
-        // Group bills by vendor
-        // Join through supplier_profiles→clients to resolve vendor names
         const byVendorResult = await db
           .select({
             vendorId: bills.vendorId,
-            vendorName: sql<string>`COALESCE(${clients.name}, CONCAT('Vendor #', ${bills.vendorId}))`,
             totalOwed: sql<number>`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`,
             billCount: sql<number>`COUNT(*)`,
           })
           .from(bills)
-          .leftJoin(
-            supplierProfiles,
-            eq(bills.vendorId, supplierProfiles.legacyVendorId)
-          )
-          .leftJoin(clients, eq(supplierProfiles.clientId, clients.id))
           .where(
             and(
               inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
@@ -166,8 +158,12 @@ export const accountingRouter = router({
               sql`${bills.deletedAt} IS NULL`
             )
           )
-          .groupBy(bills.vendorId, clients.name)
+          .groupBy(bills.vendorId)
           .orderBy(desc(sql`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`));
+
+        const vendorNameMap = await getVendorNameMap(
+          byVendorResult.map(vendor => vendor.vendorId)
+        );
 
         // Count bills by status
         const statusCounts = await db
@@ -190,7 +186,10 @@ export const accountingRouter = router({
           },
           byVendor: byVendorResult.map(v => ({
             vendorId: v.vendorId,
-            vendorName: v.vendorName || "Unknown Vendor",
+            vendorName: getVendorDisplayName(
+              v.vendorId,
+              vendorNameMap.get(v.vendorId)
+            ),
             totalOwed: Number(v.totalOwed || 0),
             billCount: Number(v.billCount || 0),
           })),
@@ -422,7 +421,6 @@ export const accountingRouter = router({
             id: bills.id,
             billNumber: bills.billNumber,
             vendorId: bills.vendorId,
-            vendorName: clients.name,
             billDate: bills.billDate,
             dueDate: bills.dueDate,
             totalAmount: bills.totalAmount,
@@ -430,7 +428,6 @@ export const accountingRouter = router({
             status: bills.status,
           })
           .from(bills)
-          .leftJoin(clients, eq(bills.vendorId, clients.id))
           .where(
             and(
               sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
@@ -441,6 +438,10 @@ export const accountingRouter = router({
           .orderBy(asc(bills.dueDate))
           .limit(input.limit)
           .offset(input.offset);
+
+        const overdueVendorNameMap = await getVendorNameMap(
+          overdueBills.map(bill => bill.vendorId)
+        );
 
         // Get total count
         const countResult = await db
@@ -462,6 +463,10 @@ export const accountingRouter = router({
           );
           return {
             ...bill,
+            vendorName: getVendorDisplayName(
+              bill.vendorId,
+              overdueVendorNameMap.get(bill.vendorId)
+            ),
             totalAmount: Number(bill.totalAmount),
             amountDue: Number(bill.amountDue),
             daysOverdue,
@@ -1002,10 +1007,20 @@ export const accountingRouter = router({
       )
       .query(async ({ input }) => {
         const result = await arApDb.getBills(input);
+        const billItems = result.bills || result;
+        const vendorNameMap = await getVendorNameMap(
+          billItems.map(bill => bill.vendorId)
+        );
+        const billsWithVendorNames = billItems.map(bill => ({
+          ...bill,
+          vendorName: getVendorDisplayName(
+            bill.vendorId,
+            vendorNameMap.get(bill.vendorId)
+          ),
+        }));
         // BUG-034: Standardized pagination response
-        const bills = result.bills || result;
         return createSafeUnifiedResponse(
-          bills,
+          billsWithVendorNames,
           result.total || -1,
           input.limit || 50,
           input.offset || 0

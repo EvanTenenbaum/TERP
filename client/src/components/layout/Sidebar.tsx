@@ -48,7 +48,12 @@ function normalizeNavRoute(path: string) {
     pathname = "/operations";
     params.set("tab", "shipping");
   }
-  if (pathname === "/direct-intake" || pathname === "/receiving") {
+  if (
+    pathname === "/receiving" ||
+    pathname === "/intake" ||
+    pathname === "/direct-intake" ||
+    pathname === "/product-intake"
+  ) {
     pathname = "/operations";
     params.set("tab", "receiving");
   }
@@ -101,7 +106,9 @@ function getDefaultOpenGroups(currentPath: string) {
 
   return {
     sales: activeGroup === "sales",
-    inventory: activeGroup === "inventory",
+    buy: activeGroup === "buy",
+    operations: activeGroup === "operations",
+    relationships: activeGroup === "relationships",
     finance: activeGroup === "finance",
     admin: activeGroup === "admin",
   } satisfies Record<NavigationGroupKey, boolean>;

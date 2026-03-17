@@ -14,7 +14,6 @@ import {
   CreditCard,
   Coins,
   BarChart3,
-  Table,
   Video,
   Flag,
   Layers,
@@ -40,7 +39,13 @@ import {
   SALES_WORKSPACE,
 } from "@/config/workspaces";
 
-export type NavigationGroupKey = "sales" | "inventory" | "finance" | "admin";
+export type NavigationGroupKey =
+  | "sales"
+  | "buy"
+  | "operations"
+  | "relationships"
+  | "finance"
+  | "admin";
 
 export interface NavigationItem {
   name: string;
@@ -77,27 +82,21 @@ export const navigationGroups: Array<{
   label: string;
 }> = [
   { key: "sales", label: "Sell" },
-  { key: "inventory", label: "Operations" },
+  { key: "buy", label: "Buy" },
+  { key: "operations", label: "Operations" },
+  { key: "relationships", label: "Relationships" },
   { key: "finance", label: "Finance" },
   { key: "admin", label: "Admin" },
 ];
 
 export const navigationItems: NavigationItem[] = [
-  // ─── Sell group (3 sidebar items) ──────────────────────────────────────────
+  // ─── Sell group (2 sidebar items) ──────────────────────────────────────────
   {
     name: SALES_WORKSPACE.title,
     path: "/sales",
     icon: ShoppingCart,
     group: "sales",
     ariaLabel: SALES_WORKSPACE.description,
-    sidebarVisible: true,
-  },
-  {
-    name: RELATIONSHIPS_WORKSPACE.title,
-    path: "/relationships",
-    icon: Users,
-    group: "sales",
-    ariaLabel: RELATIONSHIPS_WORKSPACE.description,
     sidebarVisible: true,
   },
   {
@@ -112,15 +111,15 @@ export const navigationItems: NavigationItem[] = [
   // Absorbed into Operations workspace — hidden from sidebar, visible in Command Palette
   {
     name: "Shipping",
-    path: "/operations?tab=shipping",
+    path: "/inventory?tab=shipping",
     icon: PackageOpen,
-    group: "inventory",
+    group: "operations",
     ariaLabel: "Order fulfillment, packing, and shipping workflow",
     sidebarVisible: false,
   },
   {
     name: "Sales Sheets",
-    path: "/sales-sheets",
+    path: "/sales?tab=sales-sheets",
     icon: Layers,
     group: "sales",
     ariaLabel: "Create and share sales sheets with clients",
@@ -128,7 +127,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: "Live Shopping",
-    path: "/live-shopping",
+    path: "/sales?tab=live-shopping",
     icon: Video,
     group: "sales",
     ariaLabel: "Live shopping sessions with clients",
@@ -145,58 +144,70 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: false,
   },
 
-  // ─── Operations group (2 sidebar items) ────────────────────────────────────
-  {
-    name: INVENTORY_WORKSPACE.title,
-    path: "/operations",
-    icon: PackageCheck,
-    group: "inventory",
-    ariaLabel: INVENTORY_WORKSPACE.description,
-    sidebarVisible: true,
-  },
+  // ─── Buy group (1 sidebar item) ────────────────────────────────────────────
   {
     name: "Purchase Orders",
     path: "/purchase-orders",
     icon: Truck,
     ariaLabel: "Purchase order queue",
-    group: "inventory",
+    group: "buy",
     sidebarVisible: true,
+  },
+
+  // ─── Operations group (1 sidebar item) ────────────────────────────────────
+  {
+    name: "Inventory",
+    path: "/inventory",
+    icon: PackageCheck,
+    group: "operations",
+    ariaLabel: INVENTORY_WORKSPACE.description,
+    sidebarVisible: true,
+  },
+  {
+    name: "Intake",
+    path: "/direct-intake",
+    icon: Download,
+    group: "operations",
+    ariaLabel:
+      "Legacy intake alias that now routes into the receiving queue",
+    sidebarVisible: false,
   },
 
   // Absorbed into Inventory workspace tabs — hidden from sidebar, visible in Command Palette
   // NAV-003: Photography absorbed as Inventory tab
   {
     name: "Photography",
-    path: "/photography",
+    path: "/inventory?tab=photography",
     icon: Camera,
-    group: "inventory",
+    group: "operations",
     ariaLabel: "Product photography queue and workflow management",
     sidebarVisible: false,
   },
   {
     name: "Samples",
-    path: "/samples",
+    path: "/inventory?tab=samples",
     icon: Beaker,
-    group: "inventory",
+    group: "operations",
     sidebarVisible: false,
   },
   // TERP-0005: Receiving absorbed into Operations workspace
   {
     name: "Receiving",
-    path: "/operations?tab=receiving",
+    path: "/inventory?tab=receiving",
     icon: Download,
-    group: "inventory",
-    ariaLabel: "Receive inventory into the system",
+    group: "operations",
+    ariaLabel: "Review purchase orders waiting to be received",
     sidebarVisible: false,
   },
+
+  // ─── Relationships group (1 sidebar item) ─────────────────────────────────
   {
-    name: "Spreadsheet View",
-    path: "/operations?tab=receiving&mode=spreadsheet",
-    icon: Table,
-    group: "inventory",
-    ariaLabel: "Spreadsheet view for receiving and inventory operations",
-    featureFlag: "spreadsheet-view",
-    sidebarVisible: false,
+    name: RELATIONSHIPS_WORKSPACE.title,
+    path: "/relationships",
+    icon: Users,
+    group: "relationships",
+    ariaLabel: RELATIONSHIPS_WORKSPACE.description,
+    sidebarVisible: true,
   },
 
   // ─── Finance group (3 sidebar items) ───────────────────────────────────────
@@ -293,7 +304,7 @@ export const navigationItems: NavigationItem[] = [
   // QA-W2-008: Users absorbed into Settings workspace
   {
     name: "Users",
-    path: "/users",
+    path: "/settings?tab=users",
     icon: UserCog,
     group: "admin",
     sidebarVisible: false,
@@ -301,7 +312,7 @@ export const navigationItems: NavigationItem[] = [
   // TERP-0005: Locations absorbed into Settings workspace
   {
     name: "Locations",
-    path: "/locations",
+    path: "/settings?tab=locations",
     icon: MapPin,
     group: "admin",
     ariaLabel: "Manage warehouse and storage locations",
@@ -327,7 +338,7 @@ export const navigationItems: NavigationItem[] = [
   // FEAT-017: Feature Flags absorbed into Settings workspace
   {
     name: "Feature Flags",
-    path: "/settings/feature-flags",
+    path: "/settings?tab=feature-flags",
     icon: Flag,
     group: "admin",
     ariaLabel: "Manage feature flags and rollouts",
@@ -368,13 +379,13 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
   },
   {
     name: "Record Receiving",
-    path: "/operations?tab=receiving",
+    path: "/inventory?tab=receiving",
     icon: Download,
     ariaLabel: "Record product receiving",
   },
   {
     name: "Clients",
-    path: "/clients",
+    path: "/relationships?tab=clients",
     icon: Users,
     ariaLabel: "Open client workspace",
   },
@@ -391,10 +402,10 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
     ariaLabel: "Open invoices",
   },
   {
-    name: "Operations",
-    path: "/operations",
+    name: "Inventory",
+    path: "/inventory",
     icon: PackageCheck,
-    ariaLabel: "Open operations workspace",
+    ariaLabel: "Open inventory workspace",
   },
   {
     name: SALES_WORKSPACE.title,
@@ -407,8 +418,8 @@ export const quickLinkCandidates: readonly QuickLinkItem[] = [
 export const defaultQuickLinkPaths: readonly string[] = [
   "/",
   "/sales?tab=create-order",
-  "/operations?tab=receiving",
-  "/clients",
+  "/inventory?tab=receiving",
+  "/relationships?tab=clients",
 ];
 
 export function buildQuickLinks(options?: {
@@ -528,15 +539,18 @@ export function buildNavigationAccessModel(options?: {
     flagsLoading: options?.flagsLoading,
   });
 
-  // TER-597: commandNavigationItems includes ALL navigation items (including
-  // sidebarVisible: false ones) so the Command Palette can navigate to any page.
+  // TER-597: commandNavigationItems includes absorbed navigation items
+  // (including sidebarVisible: false ones) so the Command Palette can
+  // navigate to the current canonical surfaces without surfacing legacy aliases.
   const allAccessibleItems = navigationItems.filter(item => {
     if (!item.featureFlag) return true;
     if (options?.flagsLoading) return false;
     return (options?.flags ?? {})[item.featureFlag] ?? false;
   });
 
-  const commandNavigationItems = allAccessibleItems;
+  const commandNavigationItems = allAccessibleItems.filter(
+    item => item.path !== "/direct-intake"
+  );
 
   const accessiblePaths = new Set(
     commandNavigationItems

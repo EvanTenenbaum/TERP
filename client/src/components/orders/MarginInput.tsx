@@ -4,7 +4,7 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Percent, DollarSign, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,11 @@ interface MarginInputProps {
   cogsPerUnit: number;
   source: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   isOverridden: boolean;
-  onChange: (newMarginPercent: number, isOverridden: boolean) => void;
+  onChange: (
+    newMarginPercent: number,
+    isOverridden: boolean,
+    unitPrice: number
+  ) => void;
 }
 
 export function MarginInput({
@@ -36,7 +40,14 @@ export function MarginInput({
 }: MarginInputProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputMode, setInputMode] = useState<"percent" | "dollar">("dollar");
-  const [inputValue, setInputValue] = useState(marginDollar.toFixed(2));
+  const formatInputValue = useCallback(
+    (mode: "percent" | "dollar"): string =>
+      mode === "dollar" ? marginDollar.toFixed(2) : marginPercent.toFixed(1),
+    [marginDollar, marginPercent]
+  );
+  const [inputValue, setInputValue] = useState(
+    formatInputValue("dollar")
+  );
   const [validationMessage, setValidationMessage] = useState<string | null>(
     null
   );
@@ -45,32 +56,70 @@ export function MarginInput({
     if (isEditing) {
       return;
     }
-    setInputValue(
-      inputMode === "dollar"
-        ? marginDollar.toFixed(2)
-        : marginPercent.toFixed(1)
-    );
-  }, [inputMode, isEditing, marginDollar, marginPercent]);
+    setInputValue(formatInputValue(inputMode));
+  }, [formatInputValue, inputMode, isEditing]);
+
+  const roundToTwoDecimals = (value: number): number =>
+    Math.round(value * 100) / 100;
 
   const marginPercentFromDollar = (value: number): number => {
+    const retailPrice = cogsPerUnit + value;
+    if (retailPrice <= 0) {
+      return 0;
+    }
+    return roundToTwoDecimals((value / retailPrice) * 100);
+  };
+
+  const marginDollarFromPercent = (value: number): number => {
     if (cogsPerUnit <= 0) {
       return 0;
     }
-    return (value / cogsPerUnit) * 100;
+
+    if (value >= 100) {
+      return 0;
+    }
+
+    const retailPrice = cogsPerUnit / (1 - value / 100);
+    return roundToTwoDecimals(retailPrice - cogsPerUnit);
   };
+
+  const unitPriceFromDollar = (value: number): number =>
+    roundToTwoDecimals(cogsPerUnit + value);
+
+  const unitPriceFromPercent = (value: number): number => {
+    if (cogsPerUnit <= 0 || value >= 100) {
+      return roundToTwoDecimals(cogsPerUnit);
+    }
+
+    return roundToTwoDecimals(cogsPerUnit / (1 - value / 100));
+  };
+
+  const sourceLabel =
+    source === "CUSTOMER_PROFILE"
+      ? "Profile-priced"
+      : source === "DEFAULT"
+        ? "Fallback priced"
+        : "Manual";
+
+  const sourceDescription =
+    source === "CUSTOMER_PROFILE"
+      ? "This row is currently priced from the relationship profile. The value shown here is the resulting gross margin for this row's exact cost and price. The profile rule result is shown separately on the row, and the two numbers can differ because markup and gross margin use different formulas."
+      : source === "DEFAULT"
+        ? "No relationship pricing rule matched, so this row is following fallback pricing context from category or shared defaults."
+        : "This row is using a manual gross-margin override.";
 
   const getSourceBadge = () => {
     switch (source) {
       case "CUSTOMER_PROFILE":
         return (
           <Badge variant="default" className="text-xs">
-            Profile
+            Profile-priced
           </Badge>
         );
       case "DEFAULT":
         return (
           <Badge variant="secondary" className="text-xs">
-            Default
+            Fallback priced
           </Badge>
         );
       case "MANUAL":
@@ -92,7 +141,8 @@ export function MarginInput({
 
   const validateInput = (): string | null => {
     const trimmed = inputValue.trim();
-    const fieldLabel = inputMode === "percent" ? "Margin (%)" : "Margin ($)";
+    const fieldLabel =
+      inputMode === "percent" ? "Gross Margin (%)" : "Gross Margin ($)";
     if (!trimmed) {
       return `Field: ${fieldLabel}. Rule: value is required. Fix: enter a numeric value before saving.`;
     }
@@ -103,11 +153,15 @@ export function MarginInput({
     }
 
     if (inputMode === "percent" && parsed < -100) {
-      return "Field: Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target markup.";
+      return "Field: Gross Margin (%). Rule: cannot be less than -100%. Fix: use a value between -100 and your target margin.";
+    }
+
+    if (inputMode === "percent" && parsed >= 100) {
+      return "Field: Gross Margin (%). Rule: must stay below 100%. Fix: use a value below 100 or switch to dollar mode.";
     }
 
     if (inputMode === "dollar" && cogsPerUnit <= 0 && parsed !== 0) {
-      return "Field: Margin ($). Rule: dollar mode requires a positive COGS baseline. Fix: update COGS first or set margin to 0.";
+      return "Field: Gross Margin ($). Rule: dollar mode requires a positive COGS baseline. Fix: update COGS first or set margin to 0.";
     }
 
     return null;
@@ -123,17 +177,17 @@ export function MarginInput({
     const value = parseFloat(inputValue);
     const marginPercentValue =
       inputMode === "dollar" ? marginPercentFromDollar(value) : value;
-    onChange(marginPercentValue, true);
+    const unitPriceValue =
+      inputMode === "dollar"
+        ? unitPriceFromDollar(value)
+        : unitPriceFromPercent(value);
+    onChange(marginPercentValue, true, unitPriceValue);
     setValidationMessage(null);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setInputValue(
-      inputMode === "dollar"
-        ? marginDollar.toFixed(2)
-        : marginPercent.toFixed(1)
-    );
+    setInputValue(formatInputValue(inputMode));
     setValidationMessage(null);
     setIsEditing(false);
   };
@@ -176,9 +230,12 @@ export function MarginInput({
           )}
 
           <div>
-            <h4 className="font-semibold mb-2">Edit Margin</h4>
+            <h4 className="font-semibold mb-2">Edit Gross Margin</h4>
             <p className="text-sm text-muted-foreground">
-              Source: {source.replace("_", " ").toLowerCase()}
+              Source: {sourceLabel}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {sourceDescription}
             </p>
           </div>
 
@@ -192,8 +249,11 @@ export function MarginInput({
                 const nextMode = value as "percent" | "dollar";
                 const numericValue = parseFloat(inputValue);
                 if (nextMode !== inputMode && Number.isFinite(numericValue)) {
-                  if (nextMode === "dollar") {
-                    const dollarValue = (cogsPerUnit * numericValue) / 100;
+                  const currentFormattedValue = formatInputValue(inputMode);
+                  if (inputValue === currentFormattedValue) {
+                    setInputValue(formatInputValue(nextMode));
+                  } else if (nextMode === "dollar") {
+                    const dollarValue = marginDollarFromPercent(numericValue);
                     setInputValue(dollarValue.toFixed(2));
                   } else {
                     const percentValue = marginPercentFromDollar(numericValue);
@@ -217,7 +277,7 @@ export function MarginInput({
 
           <div className="space-y-2">
             <Label htmlFor="margin-input">
-              Margin {inputMode === "percent" ? "(%)" : "($)"}
+              Gross Margin {inputMode === "percent" ? "(%)" : "($)"}
             </Label>
             <Input
               id="margin-input"

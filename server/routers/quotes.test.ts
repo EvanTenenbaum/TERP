@@ -111,16 +111,9 @@ describe("Quotes Router", () => {
     });
   });
 
-  describe("Null quoteStatus handling (W6 fix)", () => {
-    it("should reject send when quoteStatus is null", async () => {
-      // The quotes router does a DB query; since we mock the DB,
-      // we need to test the isValidStatusTransition logic directly
-
-      // Null/undefined status should not be silently defaulted
-      // The router now throws before calling isValidStatusTransition
-      // Verify the old DRAFT fallback no longer exists by checking
-      // that DRAFT is not a valid status in the quote machine
-      expect(isValidStatusTransition("quote", "DRAFT", "SENT")).toBe(false);
+  describe("Null quoteStatus handling (legacy quote compatibility)", () => {
+    it("treats legacy null quote status like UNSENT for transitions", async () => {
+      expect(isValidStatusTransition("quote", "UNSENT", "SENT")).toBe(true);
     });
 
     it("should reject transition from non-existent status", async () => {

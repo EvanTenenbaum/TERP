@@ -9,12 +9,21 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
+import { requireAnyPermission } from "../_core/permissionMiddleware";
 
-// Pick & Pack status enum for validation
-const pickPackStatusSchema = z.enum(["PENDING", "PICKING", "PACKED", "READY"]);
+const pickPackDisplayStatusSchema = z.enum([
+  "PENDING",
+  "PARTIAL",
+  "READY",
+  "SHIPPED",
+]);
 
 type PickPackOrderItem = {
   id?: number;
@@ -52,16 +61,142 @@ function normalizeOrderItems(rawItems: unknown): PickPackOrderItem[] {
   return [];
 }
 
+const shippedFulfillmentStatuses = new Set([
+  "SHIPPED",
+  "DELIVERED",
+  "RETURNED",
+  "RESTOCKED",
+  "RETURNED_TO_VENDOR",
+]);
+
+function normalizeStatus(value: string | null | undefined): string | null {
+  return value?.toUpperCase() ?? null;
+}
+
+function normalizeOrderType(value: unknown): string | null {
+  return typeof value === "string" ? value.toUpperCase() : null;
+}
+
+function normalizeDraftFlag(value: unknown): boolean | null {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    if (value === 0) {
+      return false;
+    }
+    if (value === 1) {
+      return true;
+    }
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "0" || normalized === "false") {
+      return false;
+    }
+    if (normalized === "1" || normalized === "true") {
+      return true;
+    }
+  }
+
+  return null;
+}
+
+function hasExcludedQueuePrefix(value: unknown): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  return normalized.startsWith("D-") || normalized.startsWith("Q-");
+}
+
+export function isPickPackQueueEligible(input: {
+  orderType: unknown;
+  isDraft: unknown;
+  orderNumber?: unknown;
+}): boolean {
+  return (
+    normalizeOrderType(input.orderType) === "SALE" &&
+    normalizeDraftFlag(input.isDraft) === false &&
+    !hasExcludedQueuePrefix(input.orderNumber)
+  );
+}
+
+function assertPickPackQueueEligible(
+  orderId: number,
+  input: { orderType: unknown; isDraft: unknown; orderNumber?: unknown }
+): void {
+  if (!isPickPackQueueEligible(input)) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Order ${orderId} is not eligible for pick and pack`,
+    });
+  }
+}
+
+export function mapPickPackDisplayStatus(
+  rawPickPackStatus: string | null | undefined,
+  rawFulfillmentStatus: string | null | undefined
+): z.infer<typeof pickPackDisplayStatusSchema> {
+  const pickPackStatus = normalizeStatus(rawPickPackStatus);
+  const fulfillmentStatus = normalizeStatus(rawFulfillmentStatus);
+
+  if (fulfillmentStatus && shippedFulfillmentStatuses.has(fulfillmentStatus)) {
+    return "SHIPPED";
+  }
+  if (pickPackStatus === "READY") {
+    return "READY";
+  }
+  if (pickPackStatus === "PICKING" || pickPackStatus === "PACKED") {
+    return "PARTIAL";
+  }
+  return "PENDING";
+}
+
+function buildStatusCondition(
+  status: z.infer<typeof pickPackDisplayStatusSchema>,
+  orders: {
+    pickPackStatus: unknown;
+    fulfillmentStatus: unknown;
+  },
+  sql: typeof import("drizzle-orm").sql
+) {
+  if (status === "PENDING") {
+    return sql`(${orders.pickPackStatus} = 'PENDING' OR ${orders.pickPackStatus} IS NULL) AND (${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR'))`;
+  }
+
+  if (status === "PARTIAL") {
+    return sql`${orders.pickPackStatus} IN ('PICKING', 'PACKED') AND (${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR'))`;
+  }
+
+  if (status === "READY") {
+    return sql`${orders.pickPackStatus} = 'READY' AND (${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR'))`;
+  }
+
+  return sql`${orders.fulfillmentStatus} IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR')`;
+}
+
 export const pickPackRouter = router({
   /**
    * Get the real-time pick list (orders ready for picking)
    */
-  getPickList: adminProcedure
+  getPickList: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "orders:read",
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         filters: z
           .object({
-            status: pickPackStatusSchema.optional(),
+            status: pickPackDisplayStatusSchema.optional(),
             customerId: z.number().optional(),
             dateFrom: z.string().optional(),
             dateTo: z.string().optional(),
@@ -92,11 +227,13 @@ export const pickPackRouter = router({
       ];
 
       if (input.filters?.status) {
-        conditions.push(eq(orders.pickPackStatus, input.filters.status));
-      } else {
-        // Default: show all non-shipped orders
         conditions.push(
-          sql`${orders.pickPackStatus} != 'READY' OR ${orders.pickPackStatus} IS NULL`
+          buildStatusCondition(input.filters.status, orders, sql)
+        );
+      } else {
+        // Default: show the active queue, including ready orders.
+        conditions.push(
+          sql`${orders.fulfillmentStatus} IS NULL OR ${orders.fulfillmentStatus} NOT IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR')`
         );
       }
 
@@ -119,6 +256,8 @@ export const pickPackRouter = router({
         .select({
           orderId: orders.id,
           orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
           clientId: orders.clientId,
           clientName: clients.name,
           items: orders.items,
@@ -135,8 +274,12 @@ export const pickPackRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
+      const eligibleOrders = pickListOrders.filter(order =>
+        isPickPackQueueEligible(order)
+      );
+
       // Get bag counts for each order
-      const orderIds = pickListOrders.map(o => o.orderId);
+      const orderIds = eligibleOrders.map(o => o.orderId);
 
       const bagCounts: Record<
         number,
@@ -192,7 +335,7 @@ export const pickPackRouter = router({
       }
 
       // Format response
-      return pickListOrders.map(order => {
+      return eligibleOrders.map(order => {
         const items = normalizeOrderItems(order.items);
         const itemCount = items.reduce(
           (sum, item) => sum + (item.quantity || 1),
@@ -211,7 +354,10 @@ export const pickPackRouter = router({
           itemCount,
           packedCount: stats.packedItemCount,
           bagCount: stats.bagCount,
-          pickPackStatus: order.pickPackStatus || "PENDING",
+          pickPackStatus: mapPickPackDisplayStatus(
+            order.pickPackStatus,
+            order.fulfillmentStatus
+          ),
           fulfillmentStatus: order.fulfillmentStatus,
           createdAt: order.createdAt,
           confirmedAt: order.confirmedAt,
@@ -223,7 +369,15 @@ export const pickPackRouter = router({
   /**
    * Get order details for picking/packing
    */
-  getOrderDetails: adminProcedure
+  getOrderDetails: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "orders:read",
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input, ctx: _ctx }) => {
       const db = await import("../db").then(m => m.getDb());
@@ -242,6 +396,8 @@ export const pickPackRouter = router({
         .select({
           id: orders.id,
           orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
           clientId: orders.clientId,
           clientName: clients.name,
           items: orders.items,
@@ -259,6 +415,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Get bags for this order
       const bags = await db
@@ -343,7 +501,10 @@ export const pickPackRouter = router({
           orderNumber: order.orderNumber,
           clientId: order.clientId,
           clientName: order.clientName,
-          pickPackStatus: order.pickPackStatus || "PENDING",
+          pickPackStatus: mapPickPackDisplayStatus(
+            order.pickPackStatus,
+            order.fulfillmentStatus
+          ),
           fulfillmentStatus: order.fulfillmentStatus,
           total: order.total,
           notes: order.notes,
@@ -367,7 +528,14 @@ export const pickPackRouter = router({
   /**
    * Pack selected items into a bag
    */
-  packItems: adminProcedure
+  packItems: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -390,7 +558,13 @@ export const pickPackRouter = router({
 
       // Verify order exists
       const [order] = await db
-        .select({ id: orders.id, pickPackStatus: orders.pickPackStatus })
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          pickPackStatus: orders.pickPackStatus,
+        })
         .from(orders)
         .where(eq(orders.id, input.orderId))
         .limit(1);
@@ -398,6 +572,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Generate bag identifier if not provided
       let bagIdentifier = input.bagIdentifier;
@@ -457,9 +633,8 @@ export const pickPackRouter = router({
             (err.message.includes("ER_DUP_ENTRY") ||
               err.message.toLowerCase().includes("duplicate entry") ||
               (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
-              String(
-                (err as unknown as { errno?: number }).errno ?? ""
-              ) === "1062");
+              String((err as unknown as { errno?: number }).errno ?? "") ===
+                "1062");
 
           if (isKnownDuplicate) {
             logger.warn(
@@ -502,7 +677,14 @@ export const pickPackRouter = router({
   /**
    * Unpack items from a bag (requires confirmation)
    */
-  unpackItems: adminProcedure
+  unpackItems: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -521,6 +703,23 @@ export const pickPackRouter = router({
       const { orderBags, orderItemBags, auditLogs, orders } =
         await import("../../drizzle/schema");
       const { eq, and, isNull, sql } = await import("drizzle-orm");
+
+      const [order] = await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+        })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Get bag IDs for this order
       const orderBagIds = await db
@@ -556,13 +755,6 @@ export const pickPackRouter = router({
         );
 
       // Log the unpack action with reason to audit log (WS-005)
-      // Get order number for better audit trail
-      const [order] = await db
-        .select({ orderNumber: orders.orderNumber })
-        .from(orders)
-        .where(eq(orders.id, input.orderId))
-        .limit(1);
-
       // TER-298: Use authenticated actor ID for audit attribution
       const actorId = getAuthenticatedUserId(ctx);
       await db.insert(auditLogs).values({
@@ -593,7 +785,14 @@ export const pickPackRouter = router({
   /**
    * Mark all items in order as packed
    */
-  markAllPacked: adminProcedure
+  markAllPacked: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
@@ -614,7 +813,13 @@ export const pickPackRouter = router({
 
       // Get order items
       const [order] = await db
-        .select({ id: orders.id, items: orders.items })
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          items: orders.items,
+        })
         .from(orders)
         .where(eq(orders.id, input.orderId))
         .limit(1);
@@ -622,6 +827,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       // Prefer persisted line-item IDs where available.
       const lineItemRows = await db
@@ -643,7 +850,7 @@ export const pickPackRouter = router({
 
       // Wrap bag creation + item packing + status update in a transaction
       // so partial failures don't leave orphaned orderItemBags rows
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async tx => {
         // Create bag
         const [newBag] = await tx.insert(orderBags).values({
           orderId: input.orderId,
@@ -668,9 +875,8 @@ export const pickPackRouter = router({
               (err.message.includes("ER_DUP_ENTRY") ||
                 err.message.toLowerCase().includes("duplicate entry") ||
                 (err as unknown as { code?: string }).code === "ER_DUP_ENTRY" ||
-                String(
-                  (err as unknown as { errno?: number }).errno ?? ""
-                ) === "1062");
+                String((err as unknown as { errno?: number }).errno ?? "") ===
+                  "1062");
 
             if (isKnownDuplicate) {
               logger.warn(
@@ -714,7 +920,14 @@ export const pickPackRouter = router({
   /**
    * Mark order as ready for shipping
    */
-  markOrderReady: adminProcedure
+  markOrderReady: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(z.object({ orderId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await import("../db").then(m => m.getDb());
@@ -730,7 +943,13 @@ export const pickPackRouter = router({
 
       // Get order with items
       const [order] = await db
-        .select({ id: orders.id, items: orders.items })
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          items: orders.items,
+        })
         .from(orders)
         .where(eq(orders.id, input.orderId))
         .limit(1);
@@ -738,6 +957,8 @@ export const pickPackRouter = router({
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
+
+      assertPickPackQueueEligible(order.id, order);
 
       const items = normalizeOrderItems(order.items);
       const totalItemCount = items.length;
@@ -782,11 +1003,18 @@ export const pickPackRouter = router({
   /**
    * Update order pick/pack status
    */
-  updateStatus: adminProcedure
+  updateStatus: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
     .input(
       z.object({
         orderId: z.number(),
-        status: pickPackStatusSchema,
+        status: z.enum(["PENDING", "PICKING", "PACKED", "READY"]),
       })
     )
     .mutation(async ({ input, ctx: _ctx }) => {
@@ -800,6 +1028,23 @@ export const pickPackRouter = router({
       const { orders } = await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
 
+      const [order] = await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+        })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      assertPickPackQueueEligible(order.id, order);
+
       await db
         .update(orders)
         .set({ pickPackStatus: input.status })
@@ -811,59 +1056,66 @@ export const pickPackRouter = router({
   /**
    * Get stats for the pick/pack dashboard
    */
-  getStats: adminProcedure.query(async ({ ctx: _ctx }) => {
-    const db = await import("../db").then(m => m.getDb());
-    if (!db)
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Database not available",
-      });
+  getStats: protectedProcedure
+    .use(
+      requireAnyPermission([
+        "orders:read",
+        "pick-pack:manage",
+        "orders:fulfill",
+        "orders:update",
+      ])
+    )
+    .query(async ({ ctx: _ctx }) => {
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-    const { orders } = await import("../../drizzle/schema");
-    const { eq, and, isNull, sql } = await import("drizzle-orm");
+      const { orders } = await import("../../drizzle/schema");
+      const { eq, and, isNull } = await import("drizzle-orm");
 
-    const conditions = [
-      eq(orders.orderType, "SALE"),
-      eq(orders.isDraft, false),
-      isNull(orders.deletedAt),
-    ];
+      const conditions = [
+        eq(orders.orderType, "SALE"),
+        eq(orders.isDraft, false),
+        isNull(orders.deletedAt),
+      ];
 
-    // Get counts by status
-    const stats = await db
-      .select({
-        status: orders.pickPackStatus,
-        count: sql<number>`COUNT(*)`,
-      })
-      .from(orders)
-      .where(and(...conditions))
-      .groupBy(orders.pickPackStatus);
+      const orderStatuses = await db
+        .select({
+          orderNumber: orders.orderNumber,
+          orderType: orders.orderType,
+          isDraft: orders.isDraft,
+          pickPackStatus: orders.pickPackStatus,
+          fulfillmentStatus: orders.fulfillmentStatus,
+        })
+        .from(orders)
+        .where(and(...conditions));
 
-    const statusCounts = {
-      PENDING: 0,
-      PICKING: 0,
-      PACKED: 0,
-      READY: 0,
-    };
+      const statusCounts = {
+        PENDING: 0,
+        PARTIAL: 0,
+        READY: 0,
+        SHIPPED: 0,
+      };
 
-    for (const stat of stats) {
-      if (stat.status && stat.status in statusCounts) {
-        statusCounts[stat.status as keyof typeof statusCounts] = Number(
-          stat.count
+      for (const order of orderStatuses.filter(isPickPackQueueEligible)) {
+        const displayStatus = mapPickPackDisplayStatus(
+          order.pickPackStatus,
+          order.fulfillmentStatus
         );
-      } else {
-        // NULL status counts as PENDING
-        statusCounts.PENDING += Number(stat.count);
+        statusCounts[displayStatus] += 1;
       }
-    }
 
-    return {
-      pending: statusCounts.PENDING,
-      picking: statusCounts.PICKING,
-      packed: statusCounts.PACKED,
-      ready: statusCounts.READY,
-      total: Object.values(statusCounts).reduce((a, b) => a + b, 0),
-    };
-  }),
+      return {
+        pending: statusCounts.PENDING,
+        partial: statusCounts.PARTIAL,
+        ready: statusCounts.READY,
+        shipped: statusCounts.SHIPPED,
+        total: Object.values(statusCounts).reduce((a, b) => a + b, 0),
+      };
+    }),
 });
 
 export type PickPackRouter = typeof pickPackRouter;

@@ -28,6 +28,9 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { MetricConfig, ModuleConfig } from "./types";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+
+const SALES_ORDERS_PATH = buildSalesWorkspacePath("orders");
 
 // ============================================================================
 // METRIC CONFIGURATIONS
@@ -183,7 +186,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
     },
   },
 
@@ -196,7 +199,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ status: "READY_FOR_PACKING" }),
     },
   },
@@ -210,7 +213,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ status: "PACKED" }),
     },
   },
@@ -224,7 +227,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ status: "SHIPPED" }),
     },
   },
@@ -238,7 +241,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ status: "DELIVERED" }),
     },
   },
@@ -252,7 +255,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "currency",
     category: "financial",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ sortBy: "totalAmount", sortOrder: "desc" }),
     },
   },
@@ -266,7 +269,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "analytical",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ period: "current_week" }),
     },
   },
@@ -280,7 +283,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ overdue: "true" }),
     },
   },
@@ -294,7 +297,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     format: "count",
     category: "operational",
     destination: {
-      path: "/orders",
+      path: SALES_ORDERS_PATH,
       getParams: () => ({ hasReturns: "true" }),
     },
   },

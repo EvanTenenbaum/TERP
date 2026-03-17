@@ -79,13 +79,14 @@ import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
+import { PricingContextPanel } from "@/components/pricing/PricingContextPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
   useOrderCalculations,
-  calculateLineItem,
+  calculateLineItemFromRetailPrice,
 } from "@/hooks/orders/useOrderCalculations";
 import { useRetryableQuery } from "@/hooks/useRetryableQuery";
 import {
@@ -112,10 +113,24 @@ interface InventoryItemForOrder {
   productId?: number; // WSQA-002: Product ID for flexible lot selection
   name: string;
   basePrice: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogs?: number;
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogs?: number;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
   retailPrice?: number;
+  priceMarkup?: number;
+  appliedRules?: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }>;
   orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
   quantity?: number; // Available stock quantity
 }
+
+type LineItemMarginSource = "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
 
 type CustomerDrawerSection = "money" | "sales-pricing";
 
@@ -133,12 +148,26 @@ interface DraftLineItemPayload {
   quantity: number | string;
   cogsPerUnit: number | string;
   originalCogsPerUnit: number | string;
+  cogsMode?: "FIXED" | "RANGE" | null;
+  unitCogsMin?: number | string | null;
+  unitCogsMax?: number | string | null;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL" | null;
+  originalRangeMin?: number | string | null;
+  originalRangeMax?: number | string | null;
+  isBelowVendorRange?: boolean | null;
+  belowRangeReason?: string | null;
   isCogsOverridden: boolean;
   cogsOverrideReason?: string | null;
   marginPercent: number | string;
   marginDollar: number | string;
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  profilePriceAdjustmentPercent?: number | string | null;
+  appliedRules?: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }> | null;
   unitPrice: number | string;
   lineTotal: number | string;
   isSample: boolean;
@@ -153,6 +182,22 @@ interface OrderDraftSnapshot {
   showAdjustmentOnDocument: boolean;
   items: LineItem[];
 }
+
+export const resolveInventoryPricingContext = (
+  item: Pick<InventoryItemForOrder, "appliedRules" | "priceMarkup">
+): {
+  marginSource: LineItemMarginSource;
+  profilePriceAdjustmentPercent: number | null;
+} => {
+  const hasProfileRuleMatch = (item.appliedRules?.length ?? 0) > 0;
+
+  return {
+    marginSource: hasProfileRuleMatch ? "CUSTOMER_PROFILE" : "DEFAULT",
+    profilePriceAdjustmentPercent: hasProfileRuleMatch
+      ? (item.priceMarkup ?? null)
+      : null,
+  };
+};
 
 const normalizeFingerprintNumber = (
   value: number | null | undefined,
@@ -189,12 +234,30 @@ const buildOrderFingerprint = (snapshot: OrderDraftSnapshot): string =>
         item.originalCogsPerUnit,
         4
       ),
+      cogsMode: item.cogsMode ?? null,
+      unitCogsMin: normalizeFingerprintNumber(item.unitCogsMin ?? null, 4),
+      unitCogsMax: normalizeFingerprintNumber(item.unitCogsMax ?? null, 4),
+      effectiveCogsBasis: item.effectiveCogsBasis ?? null,
+      originalRangeMin: normalizeFingerprintNumber(
+        item.originalRangeMin ?? null,
+        4
+      ),
+      originalRangeMax: normalizeFingerprintNumber(
+        item.originalRangeMax ?? null,
+        4
+      ),
+      isBelowVendorRange: item.isBelowVendorRange ?? false,
+      belowRangeReason: item.belowRangeReason ?? null,
       isCogsOverridden: item.isCogsOverridden,
       cogsOverrideReason: item.cogsOverrideReason ?? null,
       marginPercent: normalizeFingerprintNumber(item.marginPercent, 4),
       marginDollar: normalizeFingerprintNumber(item.marginDollar, 4),
       isMarginOverridden: item.isMarginOverridden,
       marginSource: item.marginSource,
+      profilePriceAdjustmentPercent: normalizeFingerprintNumber(
+        item.profilePriceAdjustmentPercent ?? null,
+        4
+      ),
       unitPrice: normalizeFingerprintNumber(item.unitPrice, 4),
       lineTotal: normalizeFingerprintNumber(item.lineTotal, 4),
       isSample: item.isSample,
@@ -232,12 +295,38 @@ const mapDraftLineItemsToEditorState = (
     quantity: Number(item.quantity),
     cogsPerUnit: Number(item.cogsPerUnit),
     originalCogsPerUnit: Number(item.originalCogsPerUnit),
+    cogsMode: item.cogsMode ?? undefined,
+    unitCogsMin:
+      item.unitCogsMin !== null && item.unitCogsMin !== undefined
+        ? Number(item.unitCogsMin)
+        : null,
+    unitCogsMax:
+      item.unitCogsMax !== null && item.unitCogsMax !== undefined
+        ? Number(item.unitCogsMax)
+        : null,
+    effectiveCogsBasis: item.effectiveCogsBasis ?? undefined,
+    originalRangeMin:
+      item.originalRangeMin !== null && item.originalRangeMin !== undefined
+        ? Number(item.originalRangeMin)
+        : null,
+    originalRangeMax:
+      item.originalRangeMax !== null && item.originalRangeMax !== undefined
+        ? Number(item.originalRangeMax)
+        : null,
+    isBelowVendorRange: Boolean(item.isBelowVendorRange),
+    belowRangeReason: item.belowRangeReason ?? undefined,
     isCogsOverridden: item.isCogsOverridden,
     cogsOverrideReason: item.cogsOverrideReason ?? undefined,
     marginPercent: Number(item.marginPercent),
     marginDollar: Number(item.marginDollar),
     isMarginOverridden: item.isMarginOverridden,
     marginSource: item.marginSource,
+    profilePriceAdjustmentPercent:
+      item.profilePriceAdjustmentPercent !== null &&
+      item.profilePriceAdjustmentPercent !== undefined
+        ? Number(item.profilePriceAdjustmentPercent)
+        : null,
+    appliedRules: item.appliedRules ?? [],
     unitPrice: Number(item.unitPrice),
     lineTotal: Number(item.lineTotal),
     isSample: item.isSample,
@@ -304,10 +393,23 @@ export default function OrderCreatorPageV2() {
     null
   );
   const { hasAnyPermission } = usePermissions();
-  const canEditPricing = hasAnyPermission([
+  const canViewPricingContext = hasAnyPermission([
+    "orders:view_pricing",
+    "pricing:read",
+    "pricing:access",
+    "pricing:rules:read",
+    "pricing:profiles:read",
+    "pricing:defaults:view",
+  ]);
+  const canManagePricing = hasAnyPermission([
     "pricing:manage",
     "pricing:update",
     "pricing:create",
+    "pricing:profiles:update",
+    "pricing:profiles:create",
+    "pricing:rules:update",
+    "pricing:rules:create",
+    "pricing:defaults:edit",
   ]);
 
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
@@ -732,6 +834,97 @@ export default function OrderCreatorPageV2() {
     [closeCustomerDrawer, refetchClientDetails]
   );
 
+  const refreshProfilePricingInOrder = useCallback(async () => {
+    const refreshedInventory = await inventoryQuery.refetch();
+    const latestInventory =
+      (refreshedInventory.data as InventoryItemForOrder[] | undefined) ??
+      (inventory as InventoryItemForOrder[] | undefined) ??
+      [];
+
+    if (latestInventory.length === 0) {
+      return;
+    }
+
+    setItems(currentItems =>
+      currentItems.map(item => {
+        if (item.marginSource === "MANUAL" || item.isMarginOverridden) {
+          return item;
+        }
+
+        const profilePricing = latestInventory.find(
+          inv => inv.id === item.batchId
+        );
+        if (!profilePricing) {
+          return item;
+        }
+
+        const shouldRefreshCogsState =
+          !item.isCogsOverridden &&
+          item.effectiveCogsBasis !== "MANUAL" &&
+          (!item.effectiveCogsBasis ||
+            item.effectiveCogsBasis === profilePricing.effectiveCogsBasis);
+        const cogsPerUnit = shouldRefreshCogsState
+          ? (profilePricing.effectiveCogs ?? item.cogsPerUnit)
+          : item.cogsPerUnit;
+        const retailPrice =
+          profilePricing.retailPrice ?? profilePricing.basePrice ?? cogsPerUnit;
+        const recalculated = calculateLineItemFromRetailPrice(
+          item.batchId,
+          item.quantity,
+          cogsPerUnit,
+          retailPrice
+        );
+        const pricingContext = resolveInventoryPricingContext(profilePricing);
+
+        return {
+          ...item,
+          cogsPerUnit,
+          originalCogsPerUnit: shouldRefreshCogsState
+            ? cogsPerUnit
+            : item.originalCogsPerUnit,
+          cogsMode: shouldRefreshCogsState
+            ? (profilePricing.cogsMode ?? item.cogsMode)
+            : item.cogsMode,
+          unitCogsMin: shouldRefreshCogsState
+            ? (profilePricing.unitCogsMin ?? item.unitCogsMin ?? null)
+            : (item.unitCogsMin ?? null),
+          unitCogsMax: shouldRefreshCogsState
+            ? (profilePricing.unitCogsMax ?? item.unitCogsMax ?? null)
+            : (item.unitCogsMax ?? null),
+          effectiveCogsBasis: shouldRefreshCogsState
+            ? (profilePricing.effectiveCogsBasis ?? item.effectiveCogsBasis)
+            : item.effectiveCogsBasis,
+          originalRangeMin: shouldRefreshCogsState
+            ? (profilePricing.unitCogsMin ?? item.originalRangeMin ?? null)
+            : (item.originalRangeMin ?? null),
+          originalRangeMax: shouldRefreshCogsState
+            ? (profilePricing.unitCogsMax ?? item.originalRangeMax ?? null)
+            : (item.originalRangeMax ?? null),
+          isBelowVendorRange:
+            typeof item.originalRangeMin === "number"
+              ? cogsPerUnit < item.originalRangeMin
+              : false,
+          marginPercent: recalculated.marginPercent ?? 0,
+          marginDollar: recalculated.marginDollar ?? 0,
+          unitPrice: recalculated.unitPrice ?? 0,
+          lineTotal: recalculated.lineTotal ?? 0,
+          marginSource: pricingContext.marginSource,
+          profilePriceAdjustmentPercent:
+            pricingContext.profilePriceAdjustmentPercent,
+          appliedRules: profilePricing.appliedRules ?? [],
+          isMarginOverridden: false,
+        };
+      })
+    );
+  }, [inventory, inventoryQuery]);
+
+  const handlePricingProfileApplied = useCallback(() => {
+    void (async () => {
+      await refreshProfilePricingInOrder();
+      await refetchClientDetails();
+      closeCustomerDrawer();
+    })();
+  }, [closeCustomerDrawer, refreshProfilePricingInOrder, refetchClientDetails]);
   // Calculations
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
 
@@ -746,9 +939,16 @@ export default function OrderCreatorPageV2() {
         productDisplayName: item.productDisplayName,
         quantity: item.quantity,
         cogsPerUnit: item.cogsPerUnit,
+        originalCogsPerUnit: item.originalCogsPerUnit,
+        effectiveCogsBasis: item.effectiveCogsBasis,
+        originalRangeMin: item.originalRangeMin,
+        originalRangeMax: item.originalRangeMax,
+        isBelowVendorRange: item.isBelowVendorRange ?? false,
+        belowRangeReason: item.belowRangeReason,
         isCogsOverridden: item.isCogsOverridden,
         cogsOverrideReason: item.cogsOverrideReason,
         marginPercent: item.marginPercent,
+        unitPrice: item.unitPrice,
         isMarginOverridden: item.isMarginOverridden,
         marginSource: item.marginSource,
         isSample: item.isSample,
@@ -1040,10 +1240,9 @@ export default function OrderCreatorPageV2() {
 
     return validItems.map(item => {
       // Calculate margin percent from basePrice and retailPrice
-      const cogsPerUnit = item.basePrice || 0;
+      const cogsPerUnit =
+        item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
       const retailPrice = item.retailPrice || item.basePrice || 0;
-      const marginPercent =
-        cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
 
       const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
       const quantity =
@@ -1052,26 +1251,43 @@ export default function OrderCreatorPageV2() {
           availableUnits
         ) ?? 1;
 
-      // Use calculateLineItem to ensure proper structure
-      const calculated = calculateLineItem(
+      // Preserve exact retail-price cents when profile pricing drives the row.
+      const calculated = calculateLineItemFromRetailPrice(
         item.id, // batchId - guaranteed to be defined after filter
         quantity,
         cogsPerUnit,
-        marginPercent
+        retailPrice
       );
+      const pricingContext = resolveInventoryPricingContext(item);
 
       return {
         ...calculated,
         productId: item.productId, // WSQA-002: Include productId for flexible lot selection
-        marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
+        cogsMode: item.cogsMode,
+        unitCogsMin: item.unitCogsMin ?? null,
+        unitCogsMax: item.unitCogsMax ?? null,
+        effectiveCogsBasis:
+          item.effectiveCogsBasis ??
+          (item.cogsMode === "RANGE" ? "MID" : "MANUAL"),
+        originalRangeMin: item.unitCogsMin ?? null,
+        originalRangeMax: item.unitCogsMax ?? null,
+        isBelowVendorRange:
+          typeof item.unitCogsMin === "number"
+            ? cogsPerUnit < item.unitCogsMin
+            : false,
+        marginPercent: calculated.marginPercent || 0, // Ensure marginPercent is always a number
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
         lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
         productDisplayName: item.name || "Unknown Product",
         originalCogsPerUnit: cogsPerUnit,
+        belowRangeReason: undefined,
         isCogsOverridden: false,
         isMarginOverridden: false,
-        marginSource: "CUSTOMER_PROFILE" as const,
+        marginSource: pricingContext.marginSource,
+        profilePriceAdjustmentPercent:
+          pricingContext.profilePriceAdjustmentPercent,
+        appliedRules: item.appliedRules ?? [],
         isSample: false,
       };
     });
@@ -1428,11 +1644,25 @@ export default function OrderCreatorPageV2() {
 
                 {/* Right Column: Totals & Preview (1/3) */}
                 <div className="space-y-4 lg:sticky lg:top-4 self-start">
-                  {/* Customer Context Snapshot */}
+                  {canViewPricingContext ? (
+                    <PricingContextPanel
+                      clientId={clientId}
+                      orderTotal={totals.total}
+                    />
+                  ) : (
+                    <Card>
+                      <CardContent className="py-6">
+                        <p className="text-center text-sm text-muted-foreground">
+                          Pricing context requires pricing access.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <Card>
                     <CardContent className="pt-4 space-y-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Customer Context
+                        Customer Actions
                       </p>
                       <div className="space-y-1.5">
                         <p className="text-sm font-semibold">
@@ -1474,16 +1704,11 @@ export default function OrderCreatorPageV2() {
                               event.currentTarget
                             )
                           }
-                          disabled={!canEditPricing}
+                          disabled={!canViewPricingContext}
                         >
                           Pricing Profile
                         </Button>
                       </div>
-                      {!canEditPricing ? (
-                        <p className="text-[11px] text-muted-foreground">
-                          Pricing edits require pricing permissions.
-                        </p>
-                      ) : null}
                     </CardContent>
                   </Card>
 
@@ -1749,12 +1974,20 @@ export default function OrderCreatorPageV2() {
                     />
                   ) : null}
                   {customerDrawerSection === "sales-pricing" ? (
-                    <PricingConfigTab
-                      clientId={clientId}
-                      onProfileApplied={() => {
-                        void refetchClientDetails();
-                      }}
-                    />
+                    canManagePricing ? (
+                      <PricingConfigTab
+                        clientId={clientId}
+                        onProfileApplied={handlePricingProfileApplied}
+                      />
+                    ) : (
+                      <Card>
+                        <CardContent className="py-4 text-sm text-muted-foreground">
+                          Pricing rules can be reviewed here, but changing the
+                          relationship pricing profile requires pricing edit
+                          permissions.
+                        </CardContent>
+                      </Card>
+                    )
                   ) : null}
                 </div>
               ) : (

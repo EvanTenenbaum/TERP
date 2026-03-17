@@ -24,14 +24,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LineItemRow } from "./LineItemRow";
+import type { EffectiveCogsBasis } from "./COGSInput";
 import {
   BatchSelectionDialog,
   type BatchAllocation,
 } from "./BatchSelectionDialog";
-import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+import {
+  calculateLineItem,
+  calculateLineItemFromRetailPrice,
+  calculateRetailPriceFromMarkupPercent,
+} from "@/hooks/orders/useOrderCalculations";
 import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelection";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import type { PowersheetBulkActionContract } from "@/types/powersheet";
+import { toast } from "sonner";
+
+interface AppliedPricingRule {
+  ruleId: number;
+  ruleName: string;
+  adjustment: string;
+}
 
 export interface LineItem {
   id?: number;
@@ -42,12 +54,22 @@ export interface LineItem {
   quantity: number;
   cogsPerUnit: number;
   originalCogsPerUnit: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogsBasis?: EffectiveCogsBasis;
+  originalRangeMin?: number | null;
+  originalRangeMax?: number | null;
+  isBelowVendorRange?: boolean;
+  belowRangeReason?: string;
   isCogsOverridden: boolean;
   cogsOverrideReason?: string;
   marginPercent: number;
   marginDollar: number;
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  profilePriceAdjustmentPercent?: number | null;
+  appliedRules?: AppliedPricingRule[];
   unitPrice: number;
   lineTotal: number;
   isSample: boolean;
@@ -74,19 +96,40 @@ const getRowSelectionId = (item: LineItem, index: number): string =>
     ? `line:${item.id}`
     : `line:${index}:${item.batchId}:${item.productId ?? "unknown"}`;
 
+const resolveProfilePriceAdjustmentPercent = (
+  item: LineItem
+): number | null => {
+  if (
+    typeof item.profilePriceAdjustmentPercent === "number" &&
+    Number.isFinite(item.profilePriceAdjustmentPercent)
+  ) {
+    return item.profilePriceAdjustmentPercent;
+  }
+
+  if (item.marginSource !== "CUSTOMER_PROFILE" || item.originalCogsPerUnit <= 0) {
+    return null;
+  }
+
+  return (
+    ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
+    100
+  );
+};
+
 export function LineItemTable({
   items,
   clientId,
   onChange,
   onAddItem,
 }: LineItemTableProps) {
-  const { isCompact, toggleDensity } = useUiDensity();
+  const { isCompact } = useUiDensity();
   // WSQA-002: Batch selection dialog state
   const [lotSelection, setLotSelection] = useState<LotSelectionState | null>(
     null
   );
   const [bulkMarginPercent, setBulkMarginPercent] = useState("");
   const [bulkCogsPerUnit, setBulkCogsPerUnit] = useState("");
+  const [bulkCogsReason, setBulkCogsReason] = useState("");
   const tableRef = useRef<HTMLDivElement | null>(null);
 
   const rowSelectionIds = useMemo(
@@ -230,11 +273,22 @@ export function LineItemTable({
       // If single batch selected, update the existing line item
       if (allocations.length === 1) {
         const allocation = allocations[0];
-        const updated = calculateLineItem(
+        const profilePriceAdjustmentPercent =
+          resolveProfilePriceAdjustmentPercent(currentItem);
+        const nextUnitPrice =
+          currentItem.marginSource === "CUSTOMER_PROFILE" &&
+          !currentItem.isMarginOverridden &&
+          profilePriceAdjustmentPercent !== null
+            ? calculateRetailPriceFromMarkupPercent(
+                allocation.unitCost,
+                profilePriceAdjustmentPercent
+              )
+            : currentItem.unitPrice;
+        const updated = calculateLineItemFromRetailPrice(
           allocation.batchId,
           allocation.quantity,
           allocation.unitCost,
-          currentItem.marginPercent
+          nextUnitPrice
         );
 
         const newItems = [...items];
@@ -244,17 +298,30 @@ export function LineItemTable({
           batchId: allocation.batchId,
           cogsPerUnit: allocation.unitCost,
           originalCogsPerUnit: allocation.unitCost,
+          effectiveCogsBasis: "MANUAL",
           isCogsOverridden: false,
+          profilePriceAdjustmentPercent,
         };
         onChange(newItems);
       } else {
         // Multiple batches: replace current item with multiple line items
+        const profilePriceAdjustmentPercent =
+          resolveProfilePriceAdjustmentPercent(currentItem);
         const newLineItems = allocations.map(allocation => {
-          const updated = calculateLineItem(
+          const nextUnitPrice =
+            currentItem.marginSource === "CUSTOMER_PROFILE" &&
+            !currentItem.isMarginOverridden &&
+            profilePriceAdjustmentPercent !== null
+              ? calculateRetailPriceFromMarkupPercent(
+                  allocation.unitCost,
+                  profilePriceAdjustmentPercent
+                )
+              : currentItem.unitPrice;
+          const updated = calculateLineItemFromRetailPrice(
             allocation.batchId,
             allocation.quantity,
             allocation.unitCost,
-            currentItem.marginPercent
+            nextUnitPrice
           );
 
           return {
@@ -264,7 +331,9 @@ export function LineItemTable({
             batchId: allocation.batchId,
             cogsPerUnit: allocation.unitCost,
             originalCogsPerUnit: allocation.unitCost,
+            effectiveCogsBasis: "MANUAL" as const,
             isCogsOverridden: false,
+            profilePriceAdjustmentPercent,
           };
         });
 
@@ -311,37 +380,55 @@ export function LineItemTable({
       return;
     }
 
+    const selectedItems = selectedIndexes.map(index => items[index]);
+    const requiresBelowRangeReason = selectedItems.some(
+      item =>
+        typeof item.originalRangeMin === "number" &&
+        nextCogs < item.originalRangeMin
+    );
+
+    if (requiresBelowRangeReason && !bulkCogsReason.trim()) {
+      toast.error(
+        "A reason is required when bulk COGS goes below vendor range."
+      );
+      return;
+    }
+
     bulkActions.applyToSelected(item => {
-      const updated = calculateLineItem(
+      const updated = calculateLineItemFromRetailPrice(
         item.batchId,
         item.quantity,
         nextCogs,
-        item.marginPercent
+        item.unitPrice
       );
       return {
         ...item,
         ...updated,
         cogsPerUnit: nextCogs,
+        effectiveCogsBasis: "MANUAL",
+        isBelowVendorRange:
+          typeof item.originalRangeMin === "number"
+            ? nextCogs < item.originalRangeMin
+            : false,
         isCogsOverridden: nextCogs !== item.originalCogsPerUnit,
+        belowRangeReason:
+          typeof item.originalRangeMin === "number" &&
+          nextCogs < item.originalRangeMin
+            ? bulkCogsReason.trim()
+            : undefined,
         cogsOverrideReason:
-          nextCogs !== item.originalCogsPerUnit ? "Bulk override" : undefined,
+          nextCogs !== item.originalCogsPerUnit
+            ? bulkCogsReason.trim() || "Bulk override"
+            : undefined,
       };
     });
-  }, [bulkActions, bulkCogsPerUnit]);
+  }, [bulkActions, bulkCogsPerUnit, bulkCogsReason, items, selectedIndexes]);
 
   return (
     <div className={isCompact ? "space-y-2" : "space-y-3"}>
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Line Items</h3>
         <div className="flex gap-2">
-          <Button
-            variant={isCompact ? "secondary" : "outline"}
-            size="sm"
-            onClick={toggleDensity}
-            data-testid="line-item-density-toggle"
-          >
-            {isCompact ? "Comfortable" : "Compact"}
-          </Button>
           {items.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleClearAll}>
               <Trash2 className="h-4 w-4 mr-2" />
@@ -408,6 +495,12 @@ export function LineItemTable({
                 className="h-8 w-24 text-right"
                 inputMode="decimal"
               />
+              <Input
+                value={bulkCogsReason}
+                onChange={event => setBulkCogsReason(event.target.value)}
+                placeholder="COGS reason"
+                className="h-8 w-40"
+              />
               <Button size="sm" variant="outline" onClick={handleBulkApplyCogs}>
                 Apply COGS
               </Button>
@@ -463,7 +556,7 @@ export function LineItemTable({
                   COGS/Unit
                 </TableHead>
                 <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
-                  Margin
+                  Gross Margin
                 </TableHead>
                 <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
                   Price/Unit

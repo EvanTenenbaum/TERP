@@ -15,6 +15,7 @@
 
 import React, { useState, useCallback, useRef, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -818,7 +819,7 @@ export function ClientLedgerWorkSurface() {
       let path = "";
       switch (type) {
         case "ORDER":
-          path = `/orders?id=${id}`;
+          path = buildSalesWorkspacePath("orders", { id });
           break;
         case "PAYMENT":
           path = `/accounting/payments?id=${id}`;

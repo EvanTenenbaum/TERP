@@ -20,6 +20,39 @@ vi.mock("../db", () => {
     return "unknown";
   }
 
+  function matchesCondition(
+    row: Record<string, unknown>,
+    condition: unknown
+  ): boolean {
+    if (!condition || typeof condition !== "object") {
+      return false;
+    }
+
+    if ("op" in condition && condition.op === "and" && "args" in condition) {
+      return Array.isArray(condition.args)
+        ? condition.args.every(sub => matchesCondition(row, sub))
+        : false;
+    }
+
+    if (
+      "op" in condition &&
+      condition.op === "eq" &&
+      "col" in condition &&
+      "val" in condition
+    ) {
+      const colName =
+        condition.col &&
+        typeof condition.col === "object" &&
+        "name" in condition.col
+          ? condition.col.name
+          : undefined;
+
+      return colName ? row[colName] === condition.val : false;
+    }
+
+    return false;
+  }
+
   const mockDb = {
     select: vi.fn(selection => {
       let currentTable = "";
@@ -193,8 +226,22 @@ vi.mock("../db", () => {
     }),
     delete: vi.fn(table => {
       const tableName = getTableName(table);
-      mockStorage[tableName] = [];
-      return Promise.resolve();
+
+      const clearAll = () => {
+        mockStorage[tableName] = [];
+        return Promise.resolve();
+      };
+
+      return {
+        where: vi.fn(condition => {
+          const rows = mockStorage[tableName] || [];
+          mockStorage[tableName] = rows.filter(
+            row => !matchesCondition(row as Record<string, unknown>, condition)
+          );
+          return Promise.resolve();
+        }),
+        then: (resolve: () => void) => clearAll().then(resolve),
+      };
     }),
   };
 
@@ -219,7 +266,7 @@ import {
 } from "../../drizzle/schema";
 import { seedRBACDefaults, assignRoleToUser } from "./seedRBAC";
 import { getDb } from "../db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 describe("RBAC Seeding", () => {
   let db: Awaited<ReturnType<typeof getDb>>;
@@ -288,6 +335,44 @@ describe("RBAC Seeding", () => {
       const secondRoles = await db.select().from(roles);
 
       expect(secondRoles).toHaveLength(firstRoles.length);
+    });
+
+    it("should reconcile missing role-permission mappings for existing roles", async () => {
+      await seedRBACDefaults();
+
+      const [salesManagerRole] = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, "Sales Manager"))
+        .limit(1);
+      const [pricingReadPermission] = await db
+        .select()
+        .from(permissions)
+        .where(eq(permissions.name, "pricing:read"))
+        .limit(1);
+
+      await db
+        .delete(rolePermissions)
+        .where(
+          and(
+            eq(rolePermissions.roleId, salesManagerRole.id),
+            eq(rolePermissions.permissionId, pricingReadPermission.id)
+          )
+        );
+
+      await seedRBACDefaults();
+
+      const restoredMapping = await db
+        .select()
+        .from(rolePermissions)
+        .where(
+          and(
+            eq(rolePermissions.roleId, salesManagerRole.id),
+            eq(rolePermissions.permissionId, pricingReadPermission.id)
+          )
+        );
+
+      expect(restoredMapping).toHaveLength(1);
     });
 
     it("should mark all roles as system roles", async () => {
@@ -369,6 +454,58 @@ describe("RBAC Seeding", () => {
   describe("Role Permission Verification", () => {
     beforeEach(async () => {
       await seedRBACDefaults();
+    });
+
+    it("Sales Manager should have pricing read permission for order creation", async () => {
+      const [salesManagerRole] = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, "Sales Manager"))
+        .limit(1);
+
+      const salesPermissions = await db
+        .select({
+          permissionName: permissions.name,
+        })
+        .from(rolePermissions)
+        .innerJoin(
+          permissions,
+          eq(rolePermissions.permissionId, permissions.id)
+        )
+        .where(eq(rolePermissions.roleId, salesManagerRole.id));
+
+      const permissionNames = salesPermissions.map(
+        (p: Record<string, unknown>) => p.permissionName
+      );
+
+      expect(permissionNames).toContain("orders:create");
+      expect(permissionNames).toContain("pricing:read");
+    });
+
+    it("Customer Service should have pricing read permission for order creation", async () => {
+      const [customerServiceRole] = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, "Customer Service"))
+        .limit(1);
+
+      const customerServicePermissions = await db
+        .select({
+          permissionName: permissions.name,
+        })
+        .from(rolePermissions)
+        .innerJoin(
+          permissions,
+          eq(rolePermissions.permissionId, permissions.id)
+        )
+        .where(eq(rolePermissions.roleId, customerServiceRole.id));
+
+      const permissionNames = customerServicePermissions.map(
+        (p: Record<string, unknown>) => p.permissionName
+      );
+
+      expect(permissionNames).toContain("orders:create");
+      expect(permissionNames).toContain("pricing:read");
     });
 
     it("Operations Manager should have inventory and orders permissions", async () => {

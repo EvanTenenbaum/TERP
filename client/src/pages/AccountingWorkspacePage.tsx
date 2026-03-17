@@ -39,7 +39,11 @@ export default function AccountingWorkspacePage() {
       onTabChange={setActiveTab}
       meta={[
         {
-          label: "Core flow",
+          label: "Start here",
+          value: "Receive payment or pay supplier",
+        },
+        {
+          label: "Flow",
           value: "Invoice / Bill -> Payment -> Ledger",
         },
       ]}

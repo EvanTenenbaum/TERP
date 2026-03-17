@@ -38,17 +38,17 @@ describe("CommandPalette", () => {
     expect(screen.queryByText("Spreadsheet View")).not.toBeInTheDocument();
   });
 
-  it("shows feature-flagged navigation entries when enabled", () => {
+  it("does not surface absorbed spreadsheet navigation even when enabled", () => {
     mockSpreadsheetEnabled = true;
     render(<CommandPalette open onOpenChange={() => {}} />);
 
-    expect(screen.getByText("Spreadsheet View")).toBeInTheDocument();
+    expect(screen.queryByText("Spreadsheet View")).not.toBeInTheDocument();
   });
 
-  it("uses the renamed receiving action and operations navigation label", () => {
+  it("uses the renamed receiving action and inventory navigation label", () => {
     render(<CommandPalette open onOpenChange={() => {}} />);
 
     expect(screen.getByText("Record Receiving")).toBeInTheDocument();
-    expect(screen.getByText("Operations")).toBeInTheDocument();
+    expect(screen.getByText("Inventory")).toBeInTheDocument();
   });
 });

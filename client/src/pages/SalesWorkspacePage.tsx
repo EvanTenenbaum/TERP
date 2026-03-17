@@ -3,6 +3,8 @@ import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
+import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
+import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
@@ -19,7 +21,7 @@ import {
   LinearWorkspaceShell,
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, useLocation, useSearch } from "wouter";
 
 type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
@@ -36,10 +38,16 @@ const SALES_TABS = SALES_TABS_CONFIG.map(
 
 export default function SalesWorkspacePage() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { activeTab, setActiveTab } = useQueryTabState<SalesQueryTab>({
     defaultTab: "orders",
     validTabs: [...SALES_TABS, "pick-pack"],
   });
+  const redirectParams = Object.fromEntries(
+    Array.from(new URLSearchParams(search).entries()).filter(
+      ([key]) => key !== "tab"
+    )
+  );
   const pilotSurfaceSupported = activeTab === "orders";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
@@ -50,7 +58,9 @@ export default function SalesWorkspacePage() {
   useWorkspaceHomeTelemetry("sales", activeTab);
 
   if (activeTab === "pick-pack") {
-    return <Redirect to={buildOperationsWorkspacePath("shipping")} />;
+    return (
+      <Redirect to={buildOperationsWorkspacePath("shipping", redirectParams)} />
+    );
   }
 
   return (
@@ -83,6 +93,12 @@ export default function SalesWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
         <ReturnsPage embedded />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="sales-sheets">
+        <SalesSheetCreatorPage embedded />
+      </LinearWorkspacePanel>
+      <LinearWorkspacePanel value="live-shopping">
+        <LiveShoppingPage />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="create-order">
         <OrderCreatorPage />

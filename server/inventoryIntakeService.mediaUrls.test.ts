@@ -18,6 +18,17 @@ vi.mock("./sequenceDb", () => ({
   }),
 }));
 
+vi.mock("./lib/batchInsertCompatibility", async importOriginal => {
+  const actual = await importOriginal<
+    typeof import("./lib/batchInsertCompatibility")
+  >();
+
+  return {
+    ...actual,
+    insertBatchWithCompatibility: vi.fn(async () => 300),
+  };
+});
+
 import { processIntake } from "./inventoryIntakeService";
 import { productImages } from "../drizzle/schema";
 

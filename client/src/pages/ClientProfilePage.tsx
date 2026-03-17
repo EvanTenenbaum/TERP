@@ -89,7 +89,7 @@ const sourcePathForLedgerEntry = (
 ) => {
   switch (entry.sourceType) {
     case "ORDER":
-      return `/orders?id=${entry.sourceId}`;
+      return buildSalesWorkspacePath("orders", { id: entry.sourceId });
     case "PAYMENT":
       return `/accounting/payments?id=${entry.sourceId}`;
     case "PURCHASE_ORDER":
@@ -452,10 +452,19 @@ export default function ClientProfilePage() {
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 text-sm">
-                    <p className="font-medium">Contact</p>
-                    <p>{shell.email || "No email on file"}</p>
-                    <p>{shell.phone || "No phone on file"}</p>
-                    <p>{shell.address || "No address on file"}</p>
+                    <p className="font-medium">Core Handles</p>
+                    <p>Code name: {shell.name}</p>
+                    <p>
+                      Relationship code: {shell.teriCode || "Not assigned yet"}
+                    </p>
+                    <p>
+                      Email handle: {shell.email || "No email handle on file"}
+                    </p>
+                    <p>
+                      Phone / messaging handle:{" "}
+                      {shell.phone || "No phone or messaging handle on file"}
+                    </p>
+                    <p>Address: {shell.address || "No address on file"}</p>
                   </div>
                   <div className="space-y-3">
                     <div>
@@ -563,7 +572,9 @@ export default function ClientProfilePage() {
             {shell.wishlist ? (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Wishlist & Notes</CardTitle>
+                  <CardTitle className="text-base">
+                    Preferences & Notes
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {shell.wishlist}
@@ -642,7 +653,7 @@ export default function ClientProfilePage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      Wishlist Snapshot
+                      Preference Snapshot
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -1186,7 +1197,7 @@ export default function ClientProfilePage() {
           </DialogHeader>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3">
-              <Label htmlFor="profile-name">Name</Label>
+              <Label htmlFor="profile-name">Code Name</Label>
               <Input
                 id="profile-name"
                 value={editForm.name}
@@ -1199,9 +1210,10 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="profile-email">Email</Label>
+              <Label htmlFor="profile-email">Email Handle</Label>
               <Input
                 id="profile-email"
+                type="email"
                 value={editForm.email}
                 onChange={event =>
                   setEditForm(current => ({
@@ -1212,7 +1224,7 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="profile-phone">Phone</Label>
+              <Label htmlFor="profile-phone">Phone or Messaging Handle</Label>
               <Input
                 id="profile-phone"
                 value={editForm.phone}
@@ -1240,7 +1252,7 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3 md:col-span-2">
-              <Label htmlFor="profile-address">Address</Label>
+              <Label htmlFor="profile-address">Address / Shipping Notes</Label>
               <Textarea
                 id="profile-address"
                 value={editForm.address}
@@ -1267,7 +1279,7 @@ export default function ClientProfilePage() {
               />
             </div>
             <div className="space-y-3 md:col-span-2">
-              <Label htmlFor="profile-wishlist">Wishlist / Notes</Label>
+              <Label htmlFor="profile-wishlist">Preferences / Notes</Label>
               <Textarea
                 id="profile-wishlist"
                 value={editForm.wishlist}
@@ -1383,7 +1395,7 @@ export default function ClientProfilePage() {
           moneyAction
             ? "Quick ledger adjustment from the profile"
             : selectedTransaction
-              ? "Editable legacy client transaction"
+              ? "Editable client transaction"
               : selectedPayment
                 ? "Payment detail with source link"
                 : "Read-only source-linked ledger entry"

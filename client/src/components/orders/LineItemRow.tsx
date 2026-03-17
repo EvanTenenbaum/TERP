@@ -6,6 +6,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { COGSInput } from "./COGSInput";
+import type { EffectiveCogsBasis } from "./COGSInput";
 import { MarginInput } from "./MarginInput";
 import {
   Tooltip,
@@ -14,8 +15,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 // import { useMarginLookup } from "@/hooks/orders/useMarginLookup";
-import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+import { calculateLineItemFromRetailPrice } from "@/hooks/orders/useOrderCalculations";
 import { parsePositiveInteger } from "@/lib/quantity";
+
+interface AppliedPricingRule {
+  ruleId: number;
+  ruleName: string;
+  adjustment: string;
+}
 
 interface LineItem {
   id?: number;
@@ -25,12 +32,22 @@ interface LineItem {
   quantity: number;
   cogsPerUnit: number;
   originalCogsPerUnit: number;
+  cogsMode?: "FIXED" | "RANGE";
+  unitCogsMin?: number | null;
+  unitCogsMax?: number | null;
+  effectiveCogsBasis?: EffectiveCogsBasis;
+  originalRangeMin?: number | null;
+  originalRangeMax?: number | null;
+  isBelowVendorRange?: boolean;
+  belowRangeReason?: string;
   isCogsOverridden: boolean;
   cogsOverrideReason?: string;
   marginPercent: number;
   marginDollar: number;
   isMarginOverridden: boolean;
   marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
+  profilePriceAdjustmentPercent?: number | null;
+  appliedRules?: AppliedPricingRule[];
   unitPrice: number;
   lineTotal: number;
   isSample: boolean;
@@ -70,13 +87,15 @@ export const LineItemRow = memo(function LineItemRow({
       return;
     }
 
-    const updated = calculateLineItem(
-      item.batchId,
-      normalizedQty,
-      item.cogsPerUnit,
-      item.marginPercent
-    );
-    onUpdate(updated);
+    onUpdate({
+      ...item,
+      ...calculateLineItemFromRetailPrice(
+        item.batchId,
+        normalizedQty,
+        item.cogsPerUnit,
+        item.unitPrice
+      ),
+    });
   };
 
   const handleQuantityBlur = () => {
@@ -126,37 +145,45 @@ export const LineItemRow = memo(function LineItemRow({
   };
 
   // Handle COGS change
-  const handleCOGSChange = (
-    newCOGS: number,
-    isOverridden: boolean,
-    reason?: string
-  ) => {
-    const updated = calculateLineItem(
+  const handleCOGSChange = (next: {
+    newValue: number;
+    isOverridden: boolean;
+    reason?: string;
+    effectiveBasis: EffectiveCogsBasis;
+    isBelowVendorRange: boolean;
+  }) => {
+    const updated = calculateLineItemFromRetailPrice(
       item.batchId,
       item.quantity,
-      newCOGS,
-      item.marginPercent
+      next.newValue,
+      item.unitPrice
     );
     onUpdate({
+      ...item,
       ...updated,
-      cogsPerUnit: newCOGS,
-      isCogsOverridden: isOverridden,
-      cogsOverrideReason: reason,
+      cogsPerUnit: next.newValue,
+      isCogsOverridden: next.isOverridden,
+      cogsOverrideReason: next.reason,
+      effectiveCogsBasis: next.effectiveBasis,
+      isBelowVendorRange: next.isBelowVendorRange,
+      belowRangeReason: next.reason,
     });
   };
 
   // Handle margin change
   const handleMarginChange = (
     newMarginPercent: number,
-    isOverridden: boolean
+    isOverridden: boolean,
+    unitPrice: number
   ) => {
-    const updated = calculateLineItem(
+    const updated = calculateLineItemFromRetailPrice(
       item.batchId,
       item.quantity,
       item.cogsPerUnit,
-      newMarginPercent
+      unitPrice
     );
     onUpdate({
+      ...item,
       ...updated,
       marginPercent: newMarginPercent,
       isMarginOverridden: isOverridden,
@@ -171,6 +198,43 @@ export const LineItemRow = memo(function LineItemRow({
   // Warning badges
   const hasLowMargin = item.marginPercent < 5;
   const hasNegativeMargin = item.marginPercent < 0;
+  const showProfileAdjustment =
+    item.marginSource === "CUSTOMER_PROFILE" &&
+    !item.isMarginOverridden &&
+    !item.isCogsOverridden &&
+    item.effectiveCogsBasis !== "MANUAL" &&
+    item.originalCogsPerUnit > 0;
+  const profileAdjustmentPercent = showProfileAdjustment
+    ? item.profilePriceAdjustmentPercent ??
+      ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
+        100
+    : null;
+  const pricingSourceLabel =
+    item.marginSource === "CUSTOMER_PROFILE"
+      ? "Price from profile rule"
+      : item.marginSource === "DEFAULT"
+        ? "Price from shared default"
+        : "Price manually overridden";
+  const cogsSourceLabel =
+    item.isCogsOverridden || item.effectiveCogsBasis === "MANUAL"
+      ? item.isCogsOverridden
+        ? "Manual cost entry"
+        : "Weighted lot allocation cost"
+      : item.effectiveCogsBasis
+        ? `Using ${item.effectiveCogsBasis.toLowerCase()} supplier range`
+        : "Using saved supplier cost";
+  const appliedRuleSummary =
+    item.appliedRules && item.appliedRules.length > 0
+      ? item.appliedRules.length === 1
+        ? `${item.appliedRules[0].ruleName} (${item.appliedRules[0].adjustment})`
+        : `${item.appliedRules[0].ruleName} (${item.appliedRules[0].adjustment}) +${item.appliedRules.length - 1} more`
+      : null;
+  const appliedRuleTitle =
+    item.appliedRules && item.appliedRules.length > 0
+      ? item.appliedRules
+          .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+          .join(", ")
+      : undefined;
 
   return (
     <TableRow
@@ -199,6 +263,32 @@ export const LineItemRow = memo(function LineItemRow({
           </span>
           <span className="text-xs text-muted-foreground">
             ID: {item.batchId}
+          </span>
+          {item.cogsMode === "RANGE" &&
+            typeof item.originalRangeMin === "number" &&
+            typeof item.originalRangeMax === "number" && (
+              <span className="text-xs text-muted-foreground">
+                Vendor range ${item.originalRangeMin.toFixed(2)} to $
+                {item.originalRangeMax.toFixed(2)}
+              </span>
+            )}
+          <span className="text-xs text-muted-foreground">
+            {pricingSourceLabel}
+          </span>
+          {profileAdjustmentPercent !== null && (
+            <span className="text-xs text-muted-foreground" title={appliedRuleTitle}>
+              Profile {item.appliedRules && item.appliedRules.length > 1 ? "rules net" : "rule"}{" "}
+              {profileAdjustmentPercent >= 0 ? "+" : ""}
+              {profileAdjustmentPercent.toFixed(1)}% markup
+            </span>
+          )}
+          {appliedRuleSummary && (
+            <span className="text-xs text-muted-foreground" title={appliedRuleTitle}>
+              Applied: {appliedRuleSummary}
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {cogsSourceLabel}
           </span>
           {item.isSample && (
             <Badge variant="secondary" className="w-fit mt-1">
@@ -250,7 +340,12 @@ export const LineItemRow = memo(function LineItemRow({
           value={item.cogsPerUnit}
           originalValue={item.originalCogsPerUnit}
           isOverridden={item.isCogsOverridden}
-          reason={item.cogsOverrideReason}
+          reason={item.belowRangeReason || item.cogsOverrideReason}
+          cogsMode={item.cogsMode}
+          rangeMin={item.originalRangeMin}
+          rangeMax={item.originalRangeMax}
+          effectiveBasis={item.effectiveCogsBasis}
+          isBelowVendorRange={item.isBelowVendorRange}
           onChange={handleCOGSChange}
         />
       </TableCell>

@@ -121,7 +121,9 @@ export const CreditExplanation = React.memo(function CreditExplanation({
       {/* Header */}
       <div className="flex items-center gap-2">
         <Info className="h-4 w-4 text-blue-600" />
-        <span className="text-sm font-medium">How this was calculated</span>
+        <span className="text-sm font-medium">
+          How client capacity was calculated
+        </span>
       </div>
 
       {/* Plain English Explanation */}
@@ -137,7 +139,9 @@ export const CreditExplanation = React.memo(function CreditExplanation({
           {/* Base Capacity */}
           <div className="flex justify-between items-center text-sm">
             <div>
-              <span className="font-medium">Base Capacity</span>
+              <span className="font-medium">
+                Revenue-Based Starting Capacity
+              </span>
               <p className="text-xs text-muted-foreground">
                 2× average monthly revenue
               </p>
@@ -156,8 +160,8 @@ export const CreditExplanation = React.memo(function CreditExplanation({
             <div>
               <span className="font-medium">Risk Modifier</span>
               <p className="text-xs text-muted-foreground">
-                Based on credit health score ({creditHealthScore.toFixed(0)}
-                /100)
+                Adjusts starting capacity using the client health score (
+                {creditHealthScore.toFixed(0)}/100)
               </p>
             </div>
             <span className="font-mono font-medium">
@@ -170,7 +174,7 @@ export const CreditExplanation = React.memo(function CreditExplanation({
 
           {/* Final Calculation */}
           <div className="flex justify-between items-center text-sm">
-            <span className="font-medium">Final Credit Limit</span>
+            <span className="font-medium">Recommended Capacity</span>
             <span className="font-mono font-bold text-base">
               $
               {creditLimit.toLocaleString(undefined, {
@@ -185,7 +189,7 @@ export const CreditExplanation = React.memo(function CreditExplanation({
       {/* Signal Breakdown */}
       <div className="space-y-2 pt-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Signal Breakdown
+          Capacity Signal Breakdown
         </p>
 
         {signals.map(signal => {
@@ -218,7 +222,7 @@ export const CreditExplanation = React.memo(function CreditExplanation({
       {/* Weighted Score Summary */}
       <div className="pt-2 border-t">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">Credit Health Score</span>
+          <span className="text-muted-foreground">Capacity Health Score</span>
           <span className={`font-bold ${getScoreColor(creditHealthScore)}`}>
             {creditHealthScore.toFixed(0)}/100
           </span>

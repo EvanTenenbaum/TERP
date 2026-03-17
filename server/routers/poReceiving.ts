@@ -25,6 +25,7 @@ import {
 import { eq, and, desc, sql, or, isNull } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
+import { insertBatchWithCompatibility } from "../lib/batchInsertCompatibility";
 
 export const poReceivingRouter = router({
   // Receive a purchase order (create intake session and update inventory)
@@ -141,7 +142,7 @@ export const poReceivingRouter = router({
             const batchSku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const receivedQty = parseFloat(item.receivedQuantity);
 
-            const [newBatch] = await tx.insert(batches).values({
+            batchId = await insertBatchWithCompatibility(tx, {
               code: batchCode,
               sku: batchSku,
               productId: item.newBatchData.productId,
@@ -153,11 +154,13 @@ export const poReceivingRouter = router({
               defectiveQty: "0",
               sampleQty: "0",
               unitCogs: item.newBatchData.costPerUnit?.toString() || "0",
+              unitCogsMin: null,
+              unitCogsMax: null,
               cogsMode: "FIXED",
               paymentTerms: "CONSIGNMENT",
               batchStatus: "AWAITING_INTAKE",
+              metadata: null,
             });
-            batchId = newBatch.insertId;
 
             // INV-005: Record inventory movement for new batch creation
             await tx.insert(inventoryMovements).values({
@@ -600,7 +603,7 @@ export const poReceivingRouter = router({
             );
 
           // Create batch
-          const [newBatch] = await tx.insert(batches).values({
+          const batchId = await insertBatchWithCompatibility(tx, {
             code: batchCode,
             sku: batchSku,
             productId: poItem.productId,
@@ -642,8 +645,6 @@ export const poReceivingRouter = router({
               poItemId: item.poItemId,
             }),
           });
-
-          const batchId = newBatch.insertId;
 
           // INV-005: Record inventory movement for new batch creation
           await tx.insert(inventoryMovements).values({

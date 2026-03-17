@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { calculateRetailPrice, calculateRetailPrices } from "../pricingEngine";
+import {
+  calculateRetailPrice,
+  calculateRetailPrices,
+  hydrateConfiguredPricingRules,
+} from "../pricingEngine";
 import type { InventoryItem, PricingRule } from "../pricingEngine";
 
 // Mock console methods to prevent output during tests
@@ -7,6 +11,50 @@ vi.spyOn(console, "info").mockImplementation(() => {});
 vi.spyOn(console, "warn").mockImplementation(() => {});
 
 describe("Pricing Engine", () => {
+  describe("hydrateConfiguredPricingRules", () => {
+    it("uses profile priority instead of raw rule-table priority", () => {
+      const rules: PricingRule[] = [
+        {
+          id: 1,
+          name: "Lower profile priority",
+          adjustmentType: "PERCENT_MARKUP",
+          adjustmentValue: "20",
+          conditions: {},
+          logicType: "AND",
+          priority: 99,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          description: null,
+          createdBy: null,
+        },
+        {
+          id: 2,
+          name: "Higher profile priority",
+          adjustmentType: "DOLLAR_MARKUP",
+          adjustmentValue: "10",
+          conditions: {},
+          logicType: "AND",
+          priority: 1,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          description: null,
+          createdBy: null,
+        },
+      ];
+
+      const hydrated = hydrateConfiguredPricingRules(rules, [
+        { ruleId: 1, priority: 1 },
+        { ruleId: 2, priority: 10 },
+      ]);
+
+      expect(hydrated.map(rule => rule.id)).toEqual([2, 1]);
+      expect(hydrated[0]?.priority).toBe(10);
+      expect(hydrated[1]?.priority).toBe(1);
+    });
+  });
+
   describe("calculateRetailPrice", () => {
     it("should return base price when no rules apply", async () => {
       const item: InventoryItem = {

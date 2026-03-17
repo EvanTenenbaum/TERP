@@ -19,10 +19,12 @@ import {
   useCallback,
   type KeyboardEvent,
 } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,11 @@ import { usePowersheetSelection } from "@/hooks/powersheet/usePowersheetSelectio
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import { resolveBulkCogsUpdates } from "@/components/work-surface/purchaseOrderBulkCogs";
+import {
+  buildPurchaseOrderCategoryOptions,
+  getPurchaseOrderSubcategoryOptions,
+  normalizePurchaseOrderSubcategory,
+} from "@/components/work-surface/purchaseOrderCategoryOptions";
 import {
   InspectorPanel,
   InspectorSection,
@@ -295,16 +302,6 @@ const PAYMENT_TERMS_OPTIONS = [
   { value: "NET_30", label: "Net 30" },
   { value: "PARTIAL", label: "Partial" },
 ];
-
-const CATEGORY_OPTIONS = [
-  { value: "Flower", label: "Flower" },
-  { value: "Deps", label: "Deps" },
-  { value: "Concentrate", label: "Concentrate" },
-  { value: "Edible", label: "Edible" },
-  { value: "PreRoll", label: "Pre-Roll" },
-  { value: "Vape", label: "Vape" },
-  { value: "Other", label: "Other" },
-] as const;
 
 // TER-670: Updated to WCAG 2.2 AA-compliant color combinations (-900 text on -100 bg).
 const PO_STATUS_COLORS: Record<string, string> = {
@@ -596,6 +593,7 @@ function POInspectorContent({
 // ============================================================================
 
 export function PurchaseOrdersWorkSurface() {
+  const [, setLocation] = useLocation();
   // Auth
   useAuth(); // Required for authentication check
 
@@ -688,6 +686,9 @@ export function PurchaseOrdersWorkSurface() {
     trpc.organizationSettings.getDisplaySettings.useQuery();
   const showExpectedDelivery =
     settingsData?.display?.showExpectedDelivery ?? true;
+  const { data: categoriesData } = trpc.settings.categories.list.useQuery();
+  const { data: subcategoriesData } =
+    trpc.settings.subcategories.list.useQuery();
 
   // Data queries
   const {
@@ -752,6 +753,20 @@ export function PurchaseOrdersWorkSurface() {
         subcategory: product.subcategory ?? "",
       }));
   }, [productsData, productsListFallback]);
+
+  const categoryOptions = useMemo(
+    () => buildPurchaseOrderCategoryOptions(categoriesData),
+    [categoriesData]
+  );
+  const getSubcategoryOptions = useCallback(
+    (categoryName: string) =>
+      getPurchaseOrderSubcategoryOptions(
+        categoryName,
+        categoriesData,
+        subcategoriesData
+      ),
+    [categoriesData, subcategoriesData]
+  );
 
   const recentSupplierProductsQuery =
     trpc.purchaseOrders.getRecentProductsBySupplier.useQuery(
@@ -1442,14 +1457,33 @@ export function PurchaseOrdersWorkSurface() {
 
       const nextItem =
         field === "productName"
-          ? resolveTypedProduct({
-              ...currentItem,
-              productName: value,
-            })
-          : {
-              ...currentItem,
-              [field]: value,
-            };
+          ? (() => {
+              const resolvedItem = resolveTypedProduct({
+                ...currentItem,
+                productName: value,
+              });
+
+              return {
+                ...resolvedItem,
+                subcategory: normalizePurchaseOrderSubcategory(
+                  resolvedItem.subcategory,
+                  getSubcategoryOptions(resolvedItem.category)
+                ),
+              };
+            })()
+          : field === "category"
+            ? {
+                ...currentItem,
+                category: value,
+                subcategory: normalizePurchaseOrderSubcategory(
+                  currentItem.subcategory,
+                  getSubcategoryOptions(value)
+                ),
+              }
+            : {
+                ...currentItem,
+                [field]: value,
+              };
 
       setFormData(prev => {
         const nextItems = [...prev.items];
@@ -1475,6 +1509,7 @@ export function PurchaseOrdersWorkSurface() {
       buildPoLineValues,
       clearPoDraftFieldError,
       formData.items,
+      getSubcategoryOptions,
       handlePoLineValidationChange,
       resolveTypedProduct,
       setPoLineValidationValues,
@@ -1669,6 +1704,14 @@ export function PurchaseOrdersWorkSurface() {
         actions={
           <>
             {SaveStateIndicator}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
+            >
+              Open Receiving Queue
+            </Button>
             <div className="text-sm text-muted-foreground flex gap-4">
               <span>
                 Total:{" "}
@@ -2215,6 +2258,9 @@ export function PurchaseOrdersWorkSurface() {
                       const quantity = Number(item.quantityOrdered || 0);
                       const unitCost = getDraftUnitCostValue(item);
                       const rowTotal = quantity * unitCost;
+                      const subcategoryOptions = getSubcategoryOptions(
+                        item.category
+                      );
                       const matchedProduct = item.productId
                         ? products.find(
                             product => product.id === Number(item.productId)
@@ -2317,7 +2363,7 @@ export function PurchaseOrdersWorkSurface() {
                                 <SelectValue placeholder="Category" />
                               </SelectTrigger>
                               <SelectContent>
-                                {CATEGORY_OPTIONS.map(option => (
+                                {categoryOptions.map(option => (
                                   <SelectItem
                                     key={option.value}
                                     value={option.value}
@@ -2327,17 +2373,37 @@ export function PurchaseOrdersWorkSurface() {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <Input
-                              placeholder="Subcategory"
-                              value={item.subcategory}
-                              onChange={e =>
+                            <Select
+                              value={item.subcategory || undefined}
+                              onValueChange={value =>
                                 handleLineItemFieldChange(
                                   index,
                                   "subcategory",
-                                  e.target.value
+                                  value
                                 )
                               }
-                            />
+                              disabled={subcategoryOptions.length === 0}
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue
+                                  placeholder={
+                                    subcategoryOptions.length > 0
+                                      ? "Subcategory"
+                                      : "No subcategories"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subcategoryOptions.map(subcategory => (
+                                  <SelectItem
+                                    key={`${item.category}-${subcategory}`}
+                                    value={subcategory}
+                                  >
+                                    {subcategory}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="align-top">
                             <Input

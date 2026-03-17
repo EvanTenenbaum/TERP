@@ -46,14 +46,14 @@ export interface PickPackGridRow {
   itemCount: number;
   packedCount: number;
   bagCount: number;
-  pickPackStatus: "PENDING" | "PICKING" | "PACKED" | "READY";
+  pickPackStatus: "PENDING" | "PARTIAL" | "READY" | "SHIPPED";
   total: number | null;
 }
 
 export interface PickPackStats {
   pending: number;
-  picking: number;
-  packed: number;
+  partial: number;
   ready: number;
+  shipped: number;
   total: number;
 }

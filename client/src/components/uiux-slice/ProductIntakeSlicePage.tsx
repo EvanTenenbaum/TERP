@@ -56,9 +56,9 @@ import {
   saveGridPreference,
   type GridViewMode,
 } from "@/lib/gridPreferences";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 import {
-  createProductIntakeDraftFromPO,
   getProductIntakeDraft,
   loadProductIntakeLabActivity,
   listProductIntakeDrafts,
@@ -75,6 +75,7 @@ import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getMixedBrandLabel } from "@/lib/nomenclature";
+import { resolveNextSelectedDraftId } from "./productIntakeSelection";
 
 const defaultColumns: GridColumnOption[] = [
   { id: "brand", label: "Brand/Farmer", visible: true },
@@ -135,38 +136,8 @@ function calculateValidation(draft: ProductIntakeDraft | null) {
 
 type ActivityMovement = ProductIntakeLabActivity;
 
-type PoListItem = {
-  id: number;
-  poNumber: string;
-  purchaseOrderStatus?: string;
-  supplierClientId?: number | null;
-  supplier?: { name?: string | null } | null;
-};
-
-type PoDetailItem = {
-  id: number;
-  productId: number;
-  productName?: string | null;
-  category?: string | null;
-  subcategory?: string | null;
-  quantityOrdered?: string | number | null;
-  quantityReceived?: string | number | null;
-  cogsMode?: "FIXED" | "RANGE" | null;
-  unitCost?: string | number | null;
-  unitCostMin?: string | number | null;
-  unitCostMax?: string | number | null;
-};
-
-type PoDetail = {
-  id: number;
-  poNumber: string;
-  supplierClientId?: number | null;
-  supplier?: { name?: string | null } | null;
-  items?: PoDetailItem[];
-};
-
 export function ProductIntakeSlicePage() {
-  const [route] = useLocation();
+  const [route, navigate] = useLocation();
   const isLabRoute = route.startsWith("/slice-v1-lab");
   const { user } = useAuth();
   const userId = user?.id;
@@ -187,7 +158,7 @@ export function ProductIntakeSlicePage() {
   const [transferLocationId, setTransferLocationId] = useState<string>("");
   const [transferQty, setTransferQty] = useState("0");
   const [transferReason, setTransferReason] = useState("");
-  const [voidReason, setVoidReason] = useState("Void intake");
+  const [voidReason, setVoidReason] = useState("Void receiving");
   const [bulkLocationId, setBulkLocationId] = useState<string>("");
   const [bulkGrade, setBulkGrade] = useState("");
 
@@ -228,22 +199,15 @@ export function ProductIntakeSlicePage() {
     () => (Array.isArray(locationsQuery.data) ? locationsQuery.data : []),
     [locationsQuery.data]
   );
-  const poListQuery = trpc.purchaseOrders.getAll.useQuery({});
-  const bootstrapPo = useMemo(() => {
-    const payload = poListQuery.data;
-    const items = Array.isArray(payload) ? payload : (payload?.items ?? []);
-    const list = items as PoListItem[];
-    return (
-      list.find(po => po.purchaseOrderStatus !== "RECEIVED") ?? list[0] ?? null
-    );
-  }, [poListQuery.data]);
-  const bootstrapPoDetailsQuery =
-    trpc.purchaseOrders.getByIdWithDetails.useQuery(
-      { id: bootstrapPo?.id ?? -1 },
-      { enabled: !!bootstrapPo?.id }
-    );
-  const productsQuery = trpc.purchaseOrders.products.useQuery({ limit: 50 });
-  const bootstrapAttemptedRef = useRef(false);
+
+  const goToReceivingQueue = useCallback(() => {
+    if (route.startsWith("/slice-v1-lab")) {
+      navigate("/slice-v1-lab/purchase-orders");
+      return;
+    }
+
+    navigate(buildOperationsWorkspacePath("receiving"));
+  }, [navigate, route]);
 
   useEffect(() => {
     setLabActivityItems(loadProductIntakeLabActivity(storageUserId));
@@ -257,13 +221,13 @@ export function ProductIntakeSlicePage() {
     (nextSelectedId?: string | null) => {
       const list = listProductIntakeDrafts(storageUserId);
       setDrafts(list);
-      if (nextSelectedId) {
-        setSelectedDraftId(nextSelectedId);
-        return;
-      }
-      if (!selectedDraftId && list.length > 0) {
-        setSelectedDraftId(list[0].id);
-      }
+      setSelectedDraftId(
+        resolveNextSelectedDraftId({
+          drafts: list,
+          requestedDraftId: nextSelectedId,
+          currentSelectedDraftId: selectedDraftId,
+        })
+      );
     },
     [selectedDraftId, storageUserId]
   );
@@ -273,150 +237,12 @@ export function ProductIntakeSlicePage() {
     refreshDrafts(fromUrl);
   }, [refreshDrafts, route, storageUserId]);
 
-  useEffect(() => {
-    if (bootstrapAttemptedRef.current) return;
-    if (drafts.length > 0) return;
-
-    const detail = bootstrapPoDetailsQuery.data as PoDetail | undefined;
-    const poItems = detail?.items ?? [];
-    const defaultWarehouse =
-      locations.find(loc => (loc.site ?? "").toLowerCase().includes("main")) ??
-      locations[0];
-
-    if (detail && poItems.length > 0) {
-      const lines: ProductIntakeDraftLine[] = poItems
-        .map((line, index): ProductIntakeDraftLine | null => {
-          const ordered = Number(line.quantityOrdered ?? 0);
-          const received = Number(line.quantityReceived ?? 0);
-          const remaining = Math.max(0, ordered - received);
-          if (remaining <= 0) return null;
-          return {
-            id: `line-${detail.id}-${line.id}-${index}`,
-            poItemId: line.id,
-            productId: line.productId,
-            productName: line.productName ?? `Product #${line.productId}`,
-            brandName: detail.supplier?.name ?? "Seed Supplier",
-            strainName: line.productName ?? `Product #${line.productId}`,
-            category: line.category ?? "",
-            subcategory: line.subcategory ?? "",
-            packaging: line.subcategory ?? "",
-            quantityOrdered: ordered,
-            quantityReceived: received,
-            intakeQty: Math.min(remaining, Math.max(1, remaining)),
-            cogsMode:
-              (line.cogsMode as "FIXED" | "RANGE" | undefined) ?? "FIXED",
-            unitCost: Number(line.unitCost ?? 0),
-            unitCostMin:
-              line.unitCostMin !== null && line.unitCostMin !== undefined
-                ? Number(line.unitCostMin)
-                : undefined,
-            unitCostMax:
-              line.unitCostMax !== null && line.unitCostMax !== undefined
-                ? Number(line.unitCostMax)
-                : undefined,
-            grade: "A",
-            locationId: defaultWarehouse?.id ?? null,
-            locationName: defaultWarehouse?.site ?? "Main Warehouse",
-            mediaUrls: [
-              {
-                url: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=60",
-                fileName: "seed-evidence.jpg",
-                fileType: "image/jpeg",
-                fileSize: 0,
-              },
-            ],
-          };
-        })
-        .filter((line): line is ProductIntakeDraftLine => line !== null)
-        .slice(0, 8);
-
-      if (lines.length > 0) {
-        const draft = createProductIntakeDraftFromPO({
-          poId: detail.id,
-          poNumber: detail.poNumber,
-          vendorId: detail.supplierClientId ?? null,
-          vendorName: detail.supplier?.name ?? "Seed Supplier",
-          warehouseId: defaultWarehouse?.id ?? null,
-          warehouseName: defaultWarehouse?.site ?? "Main Warehouse",
-          lines,
-        });
-        upsertProductIntakeDraft(draft, storageUserId);
-        bootstrapAttemptedRef.current = true;
-        refreshDrafts(draft.id);
-        return;
-      }
-    }
-
-    const product = productsQuery.data?.items?.[0];
-    if (product) {
-      const draft = createProductIntakeDraftFromPO({
-        poId: 0,
-        poNumber: "PO-SEED-LOCAL",
-        vendorId: null,
-        vendorName: product.brandName ?? "Seed Supplier",
-        warehouseId: defaultWarehouse?.id ?? null,
-        warehouseName: defaultWarehouse?.site ?? "Main Warehouse",
-        lines: [
-          {
-            id: `line-seed-${product.id}`,
-            poItemId: 0,
-            productId: product.id,
-            productName: product.nameCanonical ?? `Product #${product.id}`,
-            brandName: product.brandName ?? "Seed Supplier",
-            strainName:
-              product.strainName ?? product.nameCanonical ?? "Seed Strain",
-            category: product.category ?? "Flower",
-            subcategory: product.subcategory ?? "Indoor",
-            packaging: product.subcategory ?? "Indoor",
-            quantityOrdered: 10,
-            quantityReceived: 0,
-            intakeQty: 5,
-            unitCost: 95,
-            grade: "A",
-            locationId: defaultWarehouse?.id ?? null,
-            locationName: defaultWarehouse?.site ?? "Main Warehouse",
-            mediaUrls: [
-              {
-                url: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?auto=format&fit=crop&w=600&q=60",
-                fileName: "seed-intake.jpg",
-                fileType: "image/jpeg",
-                fileSize: 0,
-              },
-            ],
-          },
-        ],
-      });
-      upsertProductIntakeDraft(draft, storageUserId);
-      bootstrapAttemptedRef.current = true;
-      refreshDrafts(draft.id);
-      return;
-    }
-
-    if (
-      poListQuery.isFetched &&
-      bootstrapPoDetailsQuery.isFetched &&
-      productsQuery.isFetched
-    ) {
-      bootstrapAttemptedRef.current = true;
-    }
-  }, [
-    bootstrapPoDetailsQuery.data,
-    bootstrapPoDetailsQuery.isFetched,
-    drafts.length,
-    locations,
-    poListQuery.isFetched,
-    productsQuery.data?.items,
-    productsQuery.isFetched,
-    refreshDrafts,
-    storageUserId,
-  ]);
-
   const selectedDraft = useMemo(
     () =>
       selectedDraftId
         ? getProductIntakeDraft(selectedDraftId, storageUserId)
-        : (drafts[0] ?? null),
-    [drafts, selectedDraftId, storageUserId]
+        : null,
+    [selectedDraftId, storageUserId]
   );
 
   // Shared powersheet selection for draft lines (TER-284)
@@ -597,7 +423,7 @@ export function ProductIntakeSlicePage() {
       return null;
     }
     if (latest.version !== draft.version) {
-      toast.error("This intake changed elsewhere. Reloaded latest version.");
+      toast.error("This receiving draft changed elsewhere. Reloaded latest version.");
       refreshDrafts(draft.id);
       return null;
     }
@@ -1000,7 +826,7 @@ export function ProductIntakeSlicePage() {
       recordLabActivity(
         "CHANGE_LOCATION",
         transferQtyNum.toString(),
-        transferReason || `Change Location from Intake ${selectedDraft?.id}`,
+        transferReason || `Change Location from Receiving ${selectedDraft?.id}`,
         selectedLine.batchId ?? 0
       );
       setActivityReloadToken(token => token + 1);
@@ -1036,7 +862,8 @@ export function ProductIntakeSlicePage() {
         toBin: destination.bin ?? undefined,
         quantity: transferQtyNum.toString(),
         notes:
-          transferReason || `Change Location from Intake ${selectedDraft?.id}`,
+          transferReason ||
+          `Change Location from Receiving ${selectedDraft?.id}`,
       });
 
       setActivityReloadToken(token => token + 1);
@@ -1072,13 +899,13 @@ export function ProductIntakeSlicePage() {
       recordLabActivity(
         "VOID_INTAKE",
         "0",
-        voidReason || `Void intake ${selectedDraft.id}`,
+        voidReason || `Void receiving ${selectedDraft.id}`,
         0
       );
       refreshDrafts(selectedDraft.id);
       setActivityReloadToken(token => token + 1);
       setVoidOpen(false);
-      toast.success("Intake voided with reversal movements.");
+      toast.success("Receiving was voided with reversal movements.");
       recordFrictionEvent({
         event: "flow_complete",
         workflow: "GF-007",
@@ -1112,7 +939,7 @@ export function ProductIntakeSlicePage() {
           candidates[0];
         await reverseMutation.mutateAsync({
           movementId: preferred.id,
-          reason: voidReason || `Void intake ${selectedDraft.id}`,
+          reason: voidReason || `Void receiving ${selectedDraft.id}`,
         });
       }
 
@@ -1120,7 +947,7 @@ export function ProductIntakeSlicePage() {
       refreshDrafts(selectedDraft.id);
       setActivityReloadToken(token => token + 1);
       setVoidOpen(false);
-      toast.success("Intake voided with reversal movements.");
+      toast.success("Receiving was voided with reversal movements.");
       recordFrictionEvent({
         event: "flow_complete",
         workflow: "GF-007",
@@ -1209,8 +1036,8 @@ export function ProductIntakeSlicePage() {
 
     toast.success(
       usedLocalFallback
-        ? "Draft intake photos saved locally for this testing session."
-        : "Draft intake photos saved."
+        ? "Draft receiving photos saved locally for this testing session."
+        : "Draft receiving photos saved."
     );
   };
 
@@ -1239,7 +1066,7 @@ export function ProductIntakeSlicePage() {
 
   const intakeContext = selectedDraft
     ? `${selectedDraft.id} · ${selectedDraft.vendorName} · ${selectedDraft.warehouseName} · PO ${selectedDraft.poNumber} · ${summary.lines} lines · ${summary.units.toFixed(2)} units · $${summary.cost.toFixed(2)} · ${selectedDraft.status}`
-    : "Select an intake draft to continue.";
+    : "No active receiving draft. Start from the Receiving queue and open a purchase order that is waiting to be received.";
 
   const galleryImages = isLabRoute
     ? (selectedLine?.mediaUrls ?? []).map((media, index) => ({
@@ -1311,6 +1138,12 @@ export function ProductIntakeSlicePage() {
           onChange={setColumnsAndPersist}
           onReset={resetColumns}
         />
+
+        {!selectedDraft && (
+          <Button variant="outline" size="sm" onClick={goToReceivingQueue}>
+            Back to Receiving Queue
+          </Button>
+        )}
       </div>
 
       <div className="px-6 py-2 border-b text-xs text-muted-foreground">
@@ -1347,7 +1180,7 @@ export function ProductIntakeSlicePage() {
             validation.errorCount > 0
           }
         >
-          {receiveMutation.isPending ? "Intaking..." : "Receive"}
+          {receiveMutation.isPending ? "Receiving..." : "Receive"}
         </Button>
 
         <Button
@@ -1413,7 +1246,7 @@ export function ProductIntakeSlicePage() {
               onClick={() => setVoidOpen(true)}
             >
               <RotateCcw className="h-4 w-4 mr-1" />
-              Void Intake
+              Void Receiving
             </Button>
           </>
         )}
@@ -1712,7 +1545,12 @@ export function ProductIntakeSlicePage() {
                   className="p-8 text-center text-muted-foreground"
                   colSpan={12}
                 >
-                  Select a receiving draft.
+                  <div className="space-y-3">
+                    <p>Open a purchase order from the Receiving queue to continue.</p>
+                    <Button variant="outline" size="sm" onClick={goToReceivingQueue}>
+                      Back to Receiving Queue
+                    </Button>
+                  </div>
                 </td>
               </tr>
             )}
@@ -1723,9 +1561,9 @@ export function ProductIntakeSlicePage() {
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Review Intake</DialogTitle>
+            <DialogTitle>Review Receiving</DialogTitle>
             <DialogDescription className="sr-only">
-              Review totals and blocking errors before completing intake.
+              Review totals and blocking errors before completing receiving.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
@@ -1762,7 +1600,7 @@ export function ProductIntakeSlicePage() {
           <DrawerHeader>
             <DrawerTitle>Activity Log</DrawerTitle>
             <DrawerDescription className="sr-only">
-              Inventory and correction movement history for this intake.
+              Inventory and correction movement history for this receiving record.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-2">
@@ -1805,7 +1643,7 @@ export function ProductIntakeSlicePage() {
           <DrawerHeader>
             <DrawerTitle>Attachments</DrawerTitle>
             <DrawerDescription className="sr-only">
-              Upload and manage intake photo evidence for the selected line.
+              Upload and manage receiving photo evidence for the selected line.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-3">
@@ -1817,7 +1655,7 @@ export function ProductIntakeSlicePage() {
             {selectedLine && (
               <>
                 <div>
-                  <Label>Upload Intake Photos</Label>
+                  <Label>Upload Receiving Photos</Label>
                   <Input
                     type="file"
                     multiple
@@ -1971,9 +1809,9 @@ export function ProductIntakeSlicePage() {
       <Dialog open={voidOpen} onOpenChange={setVoidOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Void Intake</DialogTitle>
+            <DialogTitle>Void Receiving</DialogTitle>
             <DialogDescription className="sr-only">
-              Void this intake by creating reversal movements.
+              Void this receiving record by creating reversal movements.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1998,7 +1836,7 @@ export function ProductIntakeSlicePage() {
               onClick={submitVoid}
               disabled={reverseMutation.isPending}
             >
-              {reverseMutation.isPending ? "Voiding..." : "Void Intake"}
+              {reverseMutation.isPending ? "Voiding..." : "Void Receiving"}
             </Button>
           </DialogFooter>
         </DialogContent>

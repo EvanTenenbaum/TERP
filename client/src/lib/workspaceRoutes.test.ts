@@ -12,12 +12,12 @@ describe("workspaceRoutes operations aliases", () => {
     expect(normalizeOperationsTab("shipping")).toBe("shipping");
   });
 
-  it("builds canonical operations workspace paths", () => {
+  it("builds canonical inventory workspace paths", () => {
     expect(buildOperationsWorkspacePath("intake")).toBe(
-      "/operations?tab=receiving"
+      "/inventory?tab=receiving"
     );
     expect(
       buildOperationsWorkspacePath("pick-pack", { mode: "spreadsheet" })
-    ).toBe("/operations?tab=shipping&mode=spreadsheet");
+    ).toBe("/inventory?tab=shipping&mode=spreadsheet");
   });
 });

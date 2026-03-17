@@ -1,5 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useLocation,
+  useSearch,
+  type RouteComponentProps as WouterRouteComponentProps,
+} from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -44,15 +48,27 @@ import GridColumnsPopover, {
   type GridColumnOption,
 } from "@/components/uiux-slice/GridColumnsPopover";
 import {
+  buildPurchaseOrderCategoryOptions,
+  getPurchaseOrderSubcategoryOptions,
+} from "@/components/work-surface/purchaseOrderCategoryOptions";
+import {
   createProductIntakeDraftFromPO,
   upsertProductIntakeDraft,
 } from "@/lib/productIntakeDrafts";
+import {
+  applySliceCategorySelection,
+  applySliceProductSelection,
+  buildSliceCreatePayloadItem,
+  type PurchaseOrdersSliceFormItem,
+} from "./purchaseOrdersSliceForm";
+import { parsePurchaseOrderDeepLink } from "./purchaseOrdersDeepLink";
 import {
   clearGridPreference,
   loadGridPreference,
   saveGridPreference,
   type GridViewMode,
 } from "@/lib/gridPreferences";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 
 const statusColor: Record<string, string> = {
@@ -72,6 +88,18 @@ const defaultColumns: GridColumnOption[] = [
   { id: "expected", label: "Expected", visible: true },
   { id: "total", label: "Total", visible: true },
 ];
+
+const RECEIVING_QUEUE_STATUSES = ["CONFIRMED", "RECEIVING"] as const;
+type PurchaseOrdersSliceMode = "procurement" | "receiving";
+type PurchaseOrdersSlicePageProps = {
+  mode?: PurchaseOrdersSliceMode;
+} & Partial<WouterRouteComponentProps<Record<string, string | undefined>>>;
+
+function canReceivePurchaseOrder(status?: string | null): boolean {
+  return RECEIVING_QUEUE_STATUSES.includes(
+    status as (typeof RECEIVING_QUEUE_STATUSES)[number]
+  );
+}
 
 type IntakePickerLine = {
   poItemId: number;
@@ -109,17 +137,16 @@ type VendorLike = {
   _clientId?: number | null;
 };
 
-type CreatePoItemForm = {
+type CreatePoItemForm = PurchaseOrdersSliceFormItem & {
   id: string;
-  productId: string;
-  quantityOrdered: string;
-  unitCost: string;
 };
 
 function createPoItemForm(): CreatePoItemForm {
   return {
     id: `po-line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     productId: "",
+    category: "",
+    subcategory: "",
     quantityOrdered: "",
     unitCost: "",
   };
@@ -134,8 +161,11 @@ function formatDateCell(value: unknown): string {
   return parsed.toLocaleDateString();
 }
 
-export function PurchaseOrdersSlicePage() {
+export function PurchaseOrdersSlicePage({
+  mode = "procurement",
+}: PurchaseOrdersSlicePageProps) {
   const [route, navigate] = useLocation();
+  const routeSearch = useSearch();
   const { user } = useAuth();
   const userId = user?.id;
   const preferenceUserId = route.startsWith("/slice-v1-lab")
@@ -143,7 +173,9 @@ export function PurchaseOrdersSlicePage() {
     : userId;
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState(
+    mode === "receiving" ? "ACTIVE_QUEUE" : "ALL"
+  );
   const [selectedPoId, setSelectedPoId] = useState<number | null>(null);
   const [selectedPoIds, setSelectedPoIds] = useState<Set<number>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -151,6 +183,10 @@ export function PurchaseOrdersSlicePage() {
   const [pickerLines, setPickerLines] = useState<IntakePickerLine[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkPlacing, setBulkPlacing] = useState(false);
+  const deepLink = useMemo(
+    () => parsePurchaseOrderDeepLink(routeSearch),
+    [routeSearch]
+  );
 
   const [viewMode, setViewMode] = useState<GridViewMode>(() => {
     return (
@@ -184,12 +220,55 @@ export function PurchaseOrdersSlicePage() {
     items: [createPoItemForm()],
   });
 
-  const posQuery = trpc.purchaseOrders.getAll.useQuery({});
+  useEffect(() => {
+    const poId = deepLink.poId;
+    if (poId === null) {
+      return;
+    }
+
+    setSelectedPoId(current =>
+      current === poId ? current : poId
+    );
+    setSelectedPoIds(current => {
+      if (current.size === 1 && current.has(poId)) {
+        return current;
+      }
+      return new Set([poId]);
+    });
+  }, [deepLink.poId]);
+
+  useEffect(() => {
+    if (deepLink.supplierClientId === null || deepLink.poId !== null) {
+      return;
+    }
+
+    const supplierClientId = String(deepLink.supplierClientId);
+    setCreateForm(prev =>
+      prev.supplierClientId === supplierClientId
+        ? prev
+        : { ...prev, supplierClientId }
+    );
+    setCreateOpen(true);
+  }, [deepLink.poId, deepLink.supplierClientId]);
+
+  const posQuery = trpc.purchaseOrders.getAll.useQuery(undefined, {
+    enabled: mode !== "receiving",
+  });
+  const pendingReceivingQuery = trpc.poReceiving.getPendingReceiving.useQuery(
+    undefined,
+    {
+      enabled: mode === "receiving",
+    }
+  );
   const poItems = useMemo(() => {
+    if (mode === "receiving") {
+      return pendingReceivingQuery.data ?? [];
+    }
+
     const data = posQuery.data;
     if (Array.isArray(data)) return data;
     return data?.items ?? [];
-  }, [posQuery.data]);
+  }, [mode, pendingReceivingQuery.data, posQuery.data]);
 
   const suppliersQuery = trpc.clients.list.useQuery({
     clientTypes: ["seller"],
@@ -218,10 +297,12 @@ export function PurchaseOrdersSlicePage() {
 
   const getSupplierName = useCallback(
     (po: {
+      supplierName?: string | null;
       supplierClientId?: number | null;
       vendorId?: number | null;
       supplier?: { name?: string | null } | null;
     }) => {
+      if (po.supplierName?.trim()) return po.supplierName.trim();
       if (po.supplier?.name?.trim()) return po.supplier.name.trim();
 
       const supplierByClient = suppliers.find(
@@ -250,6 +331,22 @@ export function PurchaseOrdersSlicePage() {
 
   const productsQuery = trpc.purchaseOrders.products.useQuery({ limit: 500 });
   const products = productsQuery.data?.items ?? [];
+  const { data: categoriesData } = trpc.settings.categories.list.useQuery();
+  const { data: subcategoriesData } =
+    trpc.settings.subcategories.list.useQuery();
+  const categoryOptions = useMemo(
+    () => buildPurchaseOrderCategoryOptions(categoriesData),
+    [categoriesData]
+  );
+  const getSubcategoryOptions = useCallback(
+    (categoryName: string) =>
+      getPurchaseOrderSubcategoryOptions(
+        categoryName,
+        categoriesData,
+        subcategoriesData
+      ),
+    [categoriesData, subcategoriesData]
+  );
 
   const selectedPoQuery = trpc.purchaseOrders.getByIdWithDetails.useQuery(
     { id: selectedPoId ?? -1 },
@@ -318,12 +415,27 @@ export function PurchaseOrdersSlicePage() {
         (po.poNumber ?? "").toLowerCase().includes(term) ||
         supplierName.toLowerCase().includes(term);
       const matchesStatus =
-        statusFilter === "ALL" || po.purchaseOrderStatus === statusFilter;
+        statusFilter === "ALL"
+          ? true
+          : statusFilter === "ACTIVE_QUEUE"
+            ? RECEIVING_QUEUE_STATUSES.includes(
+                po.purchaseOrderStatus as (typeof RECEIVING_QUEUE_STATUSES)[number]
+              )
+            : po.purchaseOrderStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [getSupplierName, poItems, search, statusFilter]);
 
   const selectedPo = selectedPoQuery.data;
+
+  const refetchPurchaseOrders = useCallback(async () => {
+    if (mode === "receiving") {
+      await pendingReceivingQuery.refetch();
+      return;
+    }
+
+    await posQuery.refetch();
+  }, [mode, pendingReceivingQuery, posQuery]);
 
   const activePoForIntake = useMemo(() => {
     if (selectedPo) return selectedPo;
@@ -356,7 +468,7 @@ export function PurchaseOrdersSlicePage() {
         notes: "",
         items: [createPoItemForm()],
       });
-      await posQuery.refetch();
+      await refetchPurchaseOrders();
     },
     onError: e => toast.error(e.message),
   });
@@ -374,7 +486,7 @@ export function PurchaseOrdersSlicePage() {
     try {
       await submitPoMutation.mutateAsync({ id: poId });
       await confirmPoMutation.mutateAsync({ id: poId });
-      await Promise.all([posQuery.refetch(), selectedPoQuery.refetch()]);
+      await Promise.all([refetchPurchaseOrders(), selectedPoQuery.refetch()]);
       toast.success("Purchase Order placed");
       recordFrictionEvent({
         event: "flow_complete",
@@ -415,7 +527,7 @@ export function PurchaseOrdersSlicePage() {
       }
     }
 
-    await posQuery.refetch();
+    await refetchPurchaseOrders();
     if (selectedPoId) await selectedPoQuery.refetch();
 
     toast.success(`Placed ${successCount} purchase order(s).`);
@@ -433,6 +545,11 @@ export function PurchaseOrdersSlicePage() {
         step: "open-intake-picker",
         note: "no-po-selected",
       });
+      return;
+    }
+
+    if (!canReceivePurchaseOrder(po.purchaseOrderStatus)) {
+      toast.error("Only confirmed or partially received POs can enter Receiving.");
       return;
     }
 
@@ -473,13 +590,13 @@ export function PurchaseOrdersSlicePage() {
 
     const chosen = pickerLines.filter(l => l.selected && l.intakeQty > 0);
     if (chosen.length === 0) {
-      toast.error("Select at least one line with intake quantity.");
+      toast.error("Select at least one line with a receiving quantity.");
       return;
     }
 
     const invalid = chosen.find(line => line.intakeQty > line.remainingQty);
     if (invalid) {
-      toast.error("Intake quantity cannot exceed remaining quantity.");
+      toast.error("Receiving quantity cannot exceed the remaining quantity.");
       return;
     }
 
@@ -516,11 +633,9 @@ export function PurchaseOrdersSlicePage() {
       })),
     });
 
-    const intakeBasePath = route.startsWith("/slice-v1-lab")
-      ? "/slice-v1-lab/product-intake"
-      : route.startsWith("/slice-v1")
-        ? "/slice-v1/product-intake"
-        : "/operations?tab=receiving";
+    const receivingDraftPath = route.startsWith("/slice-v1-lab")
+      ? `/slice-v1-lab/product-intake?draftId=${encodeURIComponent(draft.id)}`
+      : buildOperationsWorkspacePath("receiving", { draftId: draft.id });
 
     upsertProductIntakeDraft(draft, preferenceUserId);
     setPickerOpen(false);
@@ -532,7 +647,7 @@ export function PurchaseOrdersSlicePage() {
       stepCount: chosen.length + 1,
       elapsedMs: Date.now() - startedAt,
     });
-    navigate(`${intakeBasePath}?draftId=${encodeURIComponent(draft.id)}`);
+    navigate(receivingDraftPath);
   };
 
   const createPurchaseOrder = () => {
@@ -542,12 +657,8 @@ export function PurchaseOrdersSlicePage() {
     }
 
     const items = createForm.items
-      .filter(i => i.productId && i.quantityOrdered && i.unitCost)
-      .map(i => ({
-        productId: Number(i.productId),
-        quantityOrdered: Number(i.quantityOrdered),
-        unitCost: Number(i.unitCost),
-      }));
+      .map(buildSliceCreatePayloadItem)
+      .filter((item): item is NonNullable<typeof item> => !!item);
 
     if (items.length === 0) {
       toast.error("At least one line item is required.");
@@ -573,16 +684,24 @@ export function PurchaseOrdersSlicePage() {
 
   const contextLine = selectedPo
     ? `${selectedPo.poNumber} · ${getSupplierName(selectedPo)} · ${selectedPo.purchaseOrderStatus} · ${selectedPo.items?.length ?? 0} lines · $${Number(selectedPo.total ?? 0).toFixed(2)}`
-    : "Select a purchase order row to inspect detail context and start receiving.";
+    : mode === "receiving"
+      ? "Select a PO that is still awaiting receipt to inspect the delivery context and start receiving."
+      : "Select a purchase order row to inspect detail context and start receiving.";
+
+  const pageTitle = mode === "receiving" ? "Receiving" : "Purchase Orders";
+  const pageDescription =
+    mode === "receiving"
+      ? "Receive against purchase orders that are still waiting to be delivered, and continue partial receipts from one queue."
+      : "Review open purchase orders, place them, and start receiving from one queue.";
 
   return (
     <div className="h-full flex flex-col">
       <div className="px-6 py-4 border-b">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Purchase Orders
+          {pageTitle}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Purchase Order to Receiving routing surface.
+          {pageDescription}
         </p>
       </div>
 
@@ -602,12 +721,23 @@ export function PurchaseOrdersSlicePage() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Statuses</SelectItem>
-            <SelectItem value="DRAFT">Draft</SelectItem>
-            <SelectItem value="SENT">Sent</SelectItem>
-            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="RECEIVING">Intaking</SelectItem>
-            <SelectItem value="RECEIVED">Received</SelectItem>
+            {mode === "receiving" ? (
+              <>
+                <SelectItem value="ACTIVE_QUEUE">Awaiting Receipt</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="RECEIVING">Receiving</SelectItem>
+                <SelectItem value="RECEIVED">Received</SelectItem>
+              </>
+            ) : (
+              <>
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="DRAFT">Draft</SelectItem>
+                <SelectItem value="SENT">Sent</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="RECEIVING">Receiving</SelectItem>
+                <SelectItem value="RECEIVED">Received</SelectItem>
+              </>
+            )}
           </SelectContent>
         </Select>
 
@@ -633,39 +763,48 @@ export function PurchaseOrdersSlicePage() {
       </div>
 
       <div className="px-6 py-2 border-b flex items-center gap-2 flex-wrap text-sm">
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Create PO
-        </Button>
+        {mode !== "receiving" && (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Create PO
+          </Button>
+        )}
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => selectedPoId && placeOrder(selectedPoId)}
-          disabled={
-            !selectedPoId ||
-            submitPoMutation.isPending ||
-            confirmPoMutation.isPending
-          }
-        >
-          <Truck className="h-4 w-4 mr-1" />
-          Place Order
-        </Button>
+        {mode !== "receiving" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => selectedPoId && placeOrder(selectedPoId)}
+            disabled={
+              !selectedPoId ||
+              submitPoMutation.isPending ||
+              confirmPoMutation.isPending
+            }
+          >
+            <Truck className="h-4 w-4 mr-1" />
+            Place Order
+          </Button>
+        )}
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => void placeOrderBulk()}
-          disabled={bulkPlacing || selectableDraftIds.length === 0}
-        >
-          <ShoppingCart className="h-4 w-4 mr-1" />
-          Place Order (Bulk)
-        </Button>
+        {mode !== "receiving" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void placeOrderBulk()}
+            disabled={bulkPlacing || selectableDraftIds.length === 0}
+          >
+            <ShoppingCart className="h-4 w-4 mr-1" />
+            Place Order (Bulk)
+          </Button>
+        )}
 
         <Button
           size="sm"
           onClick={openIntakePicker}
-          disabled={!activePoForIntake}
+          disabled={
+            !activePoForIntake ||
+            !canReceivePurchaseOrder(activePoForIntake.purchaseOrderStatus)
+          }
         >
           <ClipboardPlus className="h-4 w-4 mr-1" />
           Start Receiving
@@ -814,7 +953,7 @@ export function PurchaseOrdersSlicePage() {
               {activePoForIntake ? ` from ${activePoForIntake.poNumber}` : ""}
             </DrawerTitle>
             <DrawerDescription className="sr-only">
-              Select PO lines and quantities to start a receiving draft.
+              Select PO lines and quantities to begin receiving.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto">
@@ -825,7 +964,7 @@ export function PurchaseOrdersSlicePage() {
                   <th className="text-left p-2">Product</th>
                   <th className="text-right p-2">Remaining</th>
                   <th className="text-right p-2">Unit Cost</th>
-                  <th className="text-right p-2 w-44">Intake Qty</th>
+                  <th className="text-right p-2 w-44">Receive Qty</th>
                 </tr>
               </thead>
               <tbody>
@@ -886,7 +1025,7 @@ export function PurchaseOrdersSlicePage() {
               <Button variant="outline" onClick={() => setPickerOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={createIntakeDraft}>Create Intake Draft</Button>
+              <Button onClick={createIntakeDraft}>Open Receiving Draft</Button>
             </div>
           </DrawerFooter>
         </DrawerContent>
@@ -1023,18 +1162,32 @@ export function PurchaseOrdersSlicePage() {
               </div>
 
               <div className="space-y-2">
-                {createForm.items.map((line, index) => (
-                  <div
-                    key={line.id}
-                    className="grid grid-cols-[1.4fr_0.6fr_0.6fr_auto] gap-2"
-                  >
+                {createForm.items.map((line, index) => {
+                  const subcategoryOptions = getSubcategoryOptions(
+                    line.category
+                  );
+                  return (
+                    <div
+                      key={line.id}
+                      className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.55fr_0.7fr_auto] gap-2"
+                    >
                     <Select
                       value={line.productId}
                       onValueChange={value => {
+                        const selectedProduct = products.find(
+                          product => String(product.id) === value
+                        );
                         setCreateForm(prev => ({
                           ...prev,
                           items: prev.items.map((item, i) =>
-                            i === index ? { ...item, productId: value } : item
+                            i === index
+                              ? applySliceProductSelection(
+                                  item,
+                                  value,
+                                  selectedProduct,
+                                  getSubcategoryOptions
+                                )
+                              : item
                           ),
                         }));
                       }}
@@ -1049,6 +1202,70 @@ export function PurchaseOrdersSlicePage() {
                             value={String(product.id)}
                           >
                             {product.nameCanonical}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={line.category || undefined}
+                      onValueChange={value => {
+                        setCreateForm(prev => ({
+                          ...prev,
+                          items: prev.items.map((item, i) =>
+                            i === index
+                              ? applySliceCategorySelection(
+                                  item,
+                                  value,
+                                  getSubcategoryOptions
+                                )
+                              : item
+                          ),
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={line.subcategory || undefined}
+                      onValueChange={value => {
+                        setCreateForm(prev => ({
+                          ...prev,
+                          items: prev.items.map((item, i) =>
+                            i === index
+                              ? { ...item, subcategory: value }
+                              : item
+                          ),
+                        }));
+                      }}
+                      disabled={subcategoryOptions.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            subcategoryOptions.length > 0
+                              ? "Subcategory"
+                              : "No subcategories"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subcategoryOptions.map(subcategory => (
+                          <SelectItem
+                            key={`${line.category}-${subcategory}`}
+                            value={subcategory}
+                          >
+                            {subcategory}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1102,8 +1319,9 @@ export function PurchaseOrdersSlicePage() {
                     >
                       Remove
                     </Button>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

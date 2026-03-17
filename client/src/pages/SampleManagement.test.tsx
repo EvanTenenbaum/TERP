@@ -40,22 +40,78 @@ const sampleItems: SampleRequestMock[] = [
     sampleRequestStatus: "FULFILLED",
     notes: null,
   },
+  {
+    id: 3,
+    clientId: 2,
+    requestedBy: 2,
+    requestDate: "2026-01-04T00:00:00.000Z",
+    products: [{ productId: 12, quantity: "1" }],
+    sampleRequestStatus: "CANCELLED",
+    notes: "Cancelled sample request",
+  },
 ];
 
 let capturedStatus: string | undefined;
 let capturedSearch: string | undefined;
+let capturedActionAvailability:
+  | {
+      onDelete: boolean;
+      onRequestReturn: boolean;
+      onApproveReturn: boolean;
+      onCompleteReturn: boolean;
+      onRequestVendorReturn: boolean;
+      onShipToVendor: boolean;
+      onConfirmVendorReturn: boolean;
+      onUpdateLocation: boolean;
+    }
+  | undefined;
 let getAllMock = vi.fn();
 let refetchMock = vi.fn();
+let hasPermissionMock = vi.fn();
 
 vi.mock("@/components/samples/SampleList", () => ({
+  getSampleOperatorLane: (status: string) => {
+    if (
+      [
+        "RETURNED",
+        "RETURN_REQUESTED",
+        "RETURN_APPROVED",
+        "VENDOR_RETURN_REQUESTED",
+        "SHIPPED_TO_VENDOR",
+        "VENDOR_CONFIRMED",
+      ].includes(status)
+    ) {
+      return "RETURN";
+    }
+    return "OUT";
+  },
+  isOperatorVisibleSampleStatus: (status: string) => status !== "CANCELLED",
   SampleList: (props: {
     statusFilter: string;
     searchQuery: string;
     samples: unknown[];
     isLoading: boolean;
+    onDelete?: unknown;
+    onRequestReturn?: unknown;
+    onApproveReturn?: unknown;
+    onCompleteReturn?: unknown;
+    onRequestVendorReturn?: unknown;
+    onShipToVendor?: unknown;
+    onConfirmVendorReturn?: unknown;
+    onUpdateLocation?: unknown;
   }) => {
     capturedStatus = props.statusFilter;
     capturedSearch = props.searchQuery;
+    capturedActionAvailability = {
+      onDelete: Boolean(props.onDelete),
+      onRequestReturn: Boolean(props.onRequestReturn),
+      onApproveReturn: Boolean(props.onApproveReturn),
+      onCompleteReturn: Boolean(props.onCompleteReturn),
+      onRequestVendorReturn: Boolean(props.onRequestVendorReturn),
+      onShipToVendor: Boolean(props.onShipToVendor),
+      onConfirmVendorReturn: Boolean(props.onConfirmVendorReturn),
+      onUpdateLocation: Boolean(props.onUpdateLocation),
+    };
     return (
       <div data-testid="sample-list-mock">
         <span data-testid="sample-count">
@@ -100,6 +156,18 @@ vi.mock("@/hooks/useAuth", () => ({
     isAuthenticated: true,
     refresh: vi.fn(),
     logout: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/usePermissions", () => ({
+  usePermissions: () => ({
+    hasPermission: hasPermissionMock,
+    hasAnyPermission: vi.fn(),
+    hasAllPermissions: vi.fn(),
+    isSuperAdmin: false,
+    permissions: [],
+    isLoading: false,
+    error: null,
   }),
 }));
 
@@ -204,7 +272,18 @@ describe("SampleManagement", () => {
   beforeEach(() => {
     capturedStatus = undefined;
     capturedSearch = undefined;
+    capturedActionAvailability = undefined;
     refetchMock = vi.fn();
+    hasPermissionMock = vi.fn((permission: string) =>
+      [
+        "samples:create",
+        "samples:delete",
+        "samples:return",
+        "samples:approve",
+        "samples:vendorReturn",
+        "samples:track",
+      ].includes(permission)
+    );
 
     // Default mock - samples with data
     getAllMock = vi.fn().mockReturnValue({
@@ -241,7 +320,18 @@ describe("SampleManagement", () => {
       render(<SampleManagement />);
 
       expect(screen.getByText(/All 2/i)).toBeInTheDocument();
-      expect(screen.getByText(/Pending 1/i)).toBeInTheDocument();
+      expect(screen.getByText(/Samples Out 2/i)).toBeInTheDocument();
+    });
+
+    it("hides standalone page chrome when embedded in Inventory but keeps the create action", () => {
+      render(<SampleManagement embedded />);
+
+      expect(
+        screen.queryByRole("heading", { name: /sample management/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /new sample/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -249,19 +339,19 @@ describe("SampleManagement", () => {
     it("updates status filter when tab clicked", async () => {
       render(<SampleManagement />);
 
-      const pendingTab = screen.getByRole("tab", { name: /pending/i });
-      fireEvent.click(pendingTab);
+      const outTab = screen.getByRole("tab", { name: /samples out/i });
+      fireEvent.click(outTab);
 
-      await waitFor(() => expect(capturedStatus).toBe("PENDING"));
+      await waitFor(() => expect(capturedStatus).toBe("OUT"));
     });
 
-    it("updates status filter to Approved when clicked", async () => {
+    it("updates status filter to Samples Return when clicked", async () => {
       render(<SampleManagement />);
 
-      const approvedTab = screen.getByRole("tab", { name: /approved/i });
-      fireEvent.click(approvedTab);
+      const returnTab = screen.getByRole("tab", { name: /samples return/i });
+      fireEvent.click(returnTab);
 
-      await waitFor(() => expect(capturedStatus).toBe("FULFILLED"));
+      await waitFor(() => expect(capturedStatus).toBe("RETURN"));
     });
   });
 
@@ -271,6 +361,16 @@ describe("SampleManagement", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /new sample/i }));
       expect(screen.getByTestId("sample-form")).toBeInTheDocument();
+    });
+
+    it("hides creation button when user lacks samples:create", () => {
+      hasPermissionMock = vi.fn(() => false);
+
+      render(<SampleManagement />);
+
+      expect(
+        screen.queryByRole("button", { name: /new sample/i })
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -378,6 +478,27 @@ describe("SampleManagement", () => {
         }),
         expect.anything()
       );
+    });
+  });
+
+  describe("Permission Surfacing", () => {
+    it("does not expose dead-end sample actions when permissions are missing", () => {
+      hasPermissionMock = vi.fn(permission =>
+        permission === "samples:track"
+      );
+
+      render(<SampleManagement />);
+
+      expect(capturedActionAvailability).toEqual({
+        onDelete: false,
+        onRequestReturn: false,
+        onApproveReturn: false,
+        onCompleteReturn: false,
+        onRequestVendorReturn: false,
+        onShipToVendor: false,
+        onConfirmVendorReturn: false,
+        onUpdateLocation: true,
+      });
     });
   });
 

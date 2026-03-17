@@ -18,14 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DollarSign,
-  FileText,
-  Receipt,
-  Plus,
   ArrowRight,
   AlertTriangle,
   Users,
   Package,
+  ArrowDownCircle,
+  ArrowUpCircle,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import {
@@ -172,22 +170,153 @@ export default function AccountingDashboard({
   const recentInvoicesList = invoiceList.slice(0, 5);
   const recentBillsList = billList.slice(0, 5);
   const recentPaymentsList = (recentPayments?.items ?? []).slice(0, 5);
+  const overdueInvoiceCount = overdueInvoices?.pagination?.total || 0;
+  const overdueBillCount = overdueBills?.pagination?.total || 0;
+
+  const navigateTo = (path: string) => {
+    window.location.href = path;
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6" data-testid="accounting-dashboard">
       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
-      {/* Header */}
-      <div>
+      <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
           Accounting Dashboard
         </h1>
         <p className="text-muted-foreground mt-1">
-          Overview of your financial health and key metrics
+          Start with the two finance actions that move cash today, then work
+          through invoices, bills, and ledger detail.
         </p>
       </div>
 
-      {/* Financial Overview */}
-      <DataCardSection moduleId="accounting" />
+      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
+        <Card className="border-green-200 bg-green-50/60">
+          <CardHeader className="space-y-2">
+            <Badge
+              variant="outline"
+              className="w-fit border-green-300 bg-white/80 text-green-700"
+            >
+              Start here
+            </Badge>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-green-200 bg-background/90 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl">Receive payment</CardTitle>
+                    <CardDescription className="mt-1">
+                      Record incoming cash against open invoices first.
+                    </CardDescription>
+                  </div>
+                  <ArrowDownCircle className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="mt-4 space-y-1">
+                  <p className="text-2xl font-semibold text-green-700">
+                    {formatCurrency(arSummary?.totalAR)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {overdueInvoiceCount} overdue invoice
+                    {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
+                  </p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => setReceivePaymentOpen(true)}
+                  >
+                    Receive Payment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigateTo("/accounting?tab=invoices")}
+                  >
+                    Review invoices
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-background/90 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl">Pay supplier</CardTitle>
+                    <CardDescription className="mt-1">
+                      Clear open bills and log outgoing payments without leaving
+                      finance.
+                    </CardDescription>
+                  </div>
+                  <ArrowUpCircle className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="mt-4 space-y-1">
+                  <p className="text-2xl font-semibold text-amber-700">
+                    {formatCurrency(apSummary?.totalAP)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {overdueBillCount} overdue bill
+                    {overdueBillCount === 1 ? "" : "s"} need attention
+                  </p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={() => setPayVendorOpen(true)}
+                  >
+                    Pay Supplier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigateTo("/accounting?tab=bills")}
+                  >
+                    Review bills
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>More finance tasks</CardTitle>
+            <CardDescription>
+              Use these after the payment queues are under control.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            <Button
+              variant="outline"
+              className="justify-between"
+              onClick={() => navigateTo("/accounting?tab=payments")}
+            >
+              Open payments
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-between"
+              onClick={() => navigateTo("/accounting?tab=general-ledger")}
+            >
+              Post journal entry
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-between"
+              onClick={() => navigateTo("/accounting?tab=expenses")}
+            >
+              Record expense
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-between"
+              onClick={() => navigateTo("/accounting?tab=bank-transactions")}
+            >
+              Review bank activity
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* AR/AP Aging - BUG-092 fix: Proper loading/error states */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -336,8 +465,6 @@ export default function AccountingDashboard({
           </CardContent>
         </Card>
       </div>
-
-      <GLReversalViewer limit={25} />
 
       {/* Overdue Items */}
       <Tabs defaultValue="overdue-invoices" className="w-full">
@@ -508,106 +635,79 @@ export default function AccountingDashboard({
         </TabsContent>
       </Tabs>
 
-      {/* Expense Breakdown */}
-      {expenseBreakdown &&
-        Array.isArray(expenseBreakdown) &&
-        expenseBreakdown.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Expense Breakdown by Category</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => (window.location.href = "/accounting/expenses")}
-              >
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {expenseBreakdown
-                  .slice(0, 6)
-                  .map((item: ExpenseBreakdownItem) => (
-                    <div
-                      key={item.categoryId}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <span className="text-sm font-medium">
-                        {item.categoryName}
-                      </span>
-                      <span className="text-sm font-mono font-bold">
-                        {formatCurrency(item.totalAmount)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-      {/* Quick Actions - WS-001 & WS-002: Added Receive Payment and Pay Vendor */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {/* WS-001: Receive Client Payment - Primary Quick Action */}
-            <Button
-              variant="default"
-              className="h-20 flex-col gap-2 bg-green-600 hover:bg-green-700"
-              onClick={() => setReceivePaymentOpen(true)}
-            >
-              <DollarSign className="h-5 w-5" />
-              <span>Receive Payment</span>
-            </Button>
-            {/* WS-002: Pay Vendor - Primary Quick Action */}
-            <Button
-              variant="destructive"
-              className="h-20 flex-col gap-2"
-              onClick={() => setPayVendorOpen(true)}
-            >
-              <DollarSign className="h-5 w-5" />
-              <span>Pay Supplier</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() =>
-                (window.location.href = "/accounting/general-ledger")
-              }
-            >
-              <Plus className="h-5 w-5" />
-              <span>Post Journal Entry</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => (window.location.href = "/accounting/invoices")}
-            >
-              <FileText className="h-5 w-5" />
-              <span>Create Invoice</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => (window.location.href = "/accounting/bills")}
-            >
-              <Receipt className="h-5 w-5" />
-              <span>Create Bill</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => (window.location.href = "/accounting/expenses")}
-            >
-              <Receipt className="h-5 w-5" />
-              <span>Record Expense</span>
-            </Button>
+      <Tabs defaultValue="queue-focus" className="w-full">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Finance detail</h2>
+            <p className="text-sm text-muted-foreground">
+              Keep the dashboard focused on payment work by default. Open
+              analysis only when you need to inspect deeper finance detail.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <TabsList>
+            <TabsTrigger value="queue-focus">Keep queues in focus</TabsTrigger>
+            <TabsTrigger value="analysis">Open analysis</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="queue-focus">
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle>Queue-first landing</CardTitle>
+              <CardDescription>
+                The payment queues, overdue work, and recent activity stay
+                visible above. Open analysis only when you need dashboard
+                metrics, expense mix, or GL corrections.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analysis" className="space-y-6">
+          <DataCardSection moduleId="accounting" />
+
+          {expenseBreakdown &&
+            Array.isArray(expenseBreakdown) &&
+            expenseBreakdown.length > 0 && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Expense Breakdown by Category</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      (window.location.href = "/accounting/expenses")
+                    }
+                  >
+                    View All
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {expenseBreakdown
+                      .slice(0, 6)
+                      .map((item: ExpenseBreakdownItem) => (
+                        <div
+                          key={item.categoryId}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <span className="text-sm font-medium">
+                            {item.categoryName}
+                          </span>
+                          <span className="text-sm font-mono font-bold">
+                            {formatCurrency(item.totalAmount)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+          <GLReversalViewer limit={25} />
+        </TabsContent>
+      </Tabs>
 
       {/* WS-001 & WS-002: Quick Action Modals */}
       <ReceivePaymentModal

@@ -3,8 +3,10 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, isNull, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, or, type SQL } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
+import { getCompatibleBatchSelect } from "./lib/batchColumnCompatibility";
+import { insertOrderWithCompatibility } from "./lib/orderInsertCompatibility";
 import { getDb } from "./db";
 import {
   orders,
@@ -36,6 +38,7 @@ import {
   isReadyForPackingLikeStatus,
   normalizeFulfillmentStatus,
 } from "./lib/fulfillmentStatusCompatibility";
+import { parseMoneyOrNull, parseMoneyOrZero } from "./utils/money";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
 // ST-053: Import DbTransaction type for proper typing
@@ -55,9 +58,22 @@ export interface OrderItem {
 
   // COGS
   unitCogs: number;
+  originalCogsPerUnit?: number;
   cogsMode: "FIXED" | "RANGE";
-  cogsSource: "FIXED" | "MIDPOINT" | "CLIENT_ADJUSTMENT" | "RULE" | "MANUAL";
+  cogsSource:
+    | "FIXED"
+    | "LOW"
+    | "MIDPOINT"
+    | "HIGH"
+    | "CLIENT_ADJUSTMENT"
+    | "RULE"
+    | "MANUAL";
   appliedRule?: string;
+  effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
+  originalRangeMin?: number | null;
+  originalRangeMax?: number | null;
+  isBelowVendorRange?: boolean;
+  belowRangeReason?: string;
 
   // Profit
   unitMargin: number;
@@ -104,6 +120,72 @@ export interface CreateOrderInput {
   actorId: number;
 }
 
+async function syncOrderLineItemsForOrder(
+  tx: DbTransaction,
+  orderId: number,
+  items: OrderItem[]
+): Promise<void> {
+  const existingLineItems = await tx
+    .select({ id: orderLineItems.id })
+    .from(orderLineItems)
+    .where(eq(orderLineItems.orderId, orderId));
+
+  const existingLineItemIds = existingLineItems.map(item => item.id);
+  if (existingLineItemIds.length > 0) {
+    await tx
+      .delete(orderLineItemAllocations)
+      .where(
+        safeInArray(
+          orderLineItemAllocations.orderLineItemId,
+          existingLineItemIds
+        )
+      );
+
+    await tx.delete(orderLineItems).where(eq(orderLineItems.orderId, orderId));
+  }
+
+  if (items.length === 0) {
+    return;
+  }
+
+  await tx.insert(orderLineItems).values(
+    items.map(item => ({
+      orderId,
+      batchId: item.batchId,
+      productDisplayName: item.displayName,
+      quantity: item.quantity.toString(),
+      cogsPerUnit: item.unitCogs.toFixed(4),
+      originalCogsPerUnit: (item.originalCogsPerUnit ?? item.unitCogs).toFixed(
+        4
+      ),
+      effectiveCogsBasis: item.effectiveCogsBasis ?? "MANUAL",
+      originalRangeMin:
+        item.originalRangeMin !== null && item.originalRangeMin !== undefined
+          ? item.originalRangeMin.toFixed(4)
+          : null,
+      originalRangeMax:
+        item.originalRangeMax !== null && item.originalRangeMax !== undefined
+          ? item.originalRangeMax.toFixed(4)
+          : null,
+      isBelowVendorRange: item.isBelowVendorRange ?? false,
+      belowRangeReason: item.isBelowVendorRange ? item.belowRangeReason : null,
+      isCogsOverridden: item.overrideCogs !== undefined,
+      cogsOverrideReason:
+        item.overrideCogs !== undefined ? "Legacy order path override" : null,
+      marginPercent: item.marginPercent.toFixed(2),
+      marginDollar: item.unitMargin.toFixed(2),
+      isMarginOverridden: item.overridePrice !== undefined,
+      marginSource:
+        item.overridePrice !== undefined || item.overrideCogs !== undefined
+          ? ("MANUAL" as const)
+          : ("DEFAULT" as const),
+      unitPrice: item.unitPrice.toFixed(2),
+      lineTotal: item.lineTotal.toFixed(2),
+      isSample: item.isSample,
+    }))
+  );
+}
+
 export interface ConvertQuoteToSaleInput {
   quoteId: number;
   paymentTerms:
@@ -117,12 +199,127 @@ export interface ConvertQuoteToSaleInput {
   notes?: string;
 }
 
-function normalizeOrderRecord<T extends { fulfillmentStatus?: string | null }>(
-  order: T
-): T {
+type OrderItemLike = Partial<OrderItem> & {
+  batchId?: number | string | null;
+  displayName?: string | null;
+  originalName?: string | null;
+  productName?: string | null;
+  quantity?: number | string | null;
+  unitPrice?: number | string | null;
+  price?: number | string | null;
+  lineTotal?: number | string | null;
+  unitCogs?: number | string | null;
+  cogsPerUnit?: number | string | null;
+  lineCogs?: number | string | null;
+  unitMargin?: number | string | null;
+  lineMargin?: number | string | null;
+  marginPercent?: number | string | null;
+  overridePrice?: number | string | null;
+  overrideCogs?: number | string | null;
+};
+
+function normalizeStoredOrderItem(rawItem: unknown): OrderItem {
+  if (!rawItem || typeof rawItem !== "object") {
+    throw new Error("Order contains an invalid line item payload");
+  }
+
+  const item = rawItem as OrderItemLike;
+  const batchId = Number(item.batchId);
+  if (!Number.isFinite(batchId) || batchId <= 0) {
+    throw new Error("Order contains an item with a missing batchId");
+  }
+
+  const quantity = parseMoneyOrZero(item.quantity);
+  const unitPrice = parseMoneyOrZero(item.unitPrice ?? item.price);
+  const lineTotal = parseMoneyOrNull(item.lineTotal) ?? unitPrice * quantity;
+  const unitCogs = parseMoneyOrZero(item.unitCogs ?? item.cogsPerUnit);
+  const lineCogs = parseMoneyOrNull(item.lineCogs) ?? unitCogs * quantity;
+  const unitMargin = parseMoneyOrNull(item.unitMargin) ?? unitPrice - unitCogs;
+  const lineMargin = parseMoneyOrNull(item.lineMargin) ?? lineTotal - lineCogs;
+  const marginPercent =
+    parseMoneyOrNull(item.marginPercent) ??
+    (unitPrice > 0 ? (unitMargin / unitPrice) * 100 : 0);
+
+  const cogsMode = item.cogsMode === "RANGE" ? "RANGE" : "FIXED";
+  const cogsSource =
+    item.cogsSource &&
+    [
+      "FIXED",
+      "LOW",
+      "MIDPOINT",
+      "HIGH",
+      "CLIENT_ADJUSTMENT",
+      "RULE",
+      "MANUAL",
+    ].includes(item.cogsSource)
+      ? item.cogsSource
+      : "MANUAL";
+  const effectiveCogsBasis =
+    item.effectiveCogsBasis &&
+    ["LOW", "MID", "HIGH", "MANUAL"].includes(item.effectiveCogsBasis)
+      ? item.effectiveCogsBasis
+      : "MANUAL";
+  const displayName =
+    item.displayName ||
+    item.productName ||
+    item.originalName ||
+    `Batch ${batchId}`;
+
+  return {
+    batchId,
+    displayName,
+    originalName: item.originalName || displayName,
+    quantity,
+    unitPrice,
+    isSample: Boolean(item.isSample),
+    unitCogs,
+    originalCogsPerUnit: parseMoneyOrNull(item.originalCogsPerUnit) ?? unitCogs,
+    cogsMode,
+    cogsSource,
+    appliedRule: item.appliedRule,
+    effectiveCogsBasis,
+    originalRangeMin: parseMoneyOrNull(item.originalRangeMin),
+    originalRangeMax: parseMoneyOrNull(item.originalRangeMax),
+    isBelowVendorRange: Boolean(item.isBelowVendorRange),
+    belowRangeReason:
+      typeof item.belowRangeReason === "string"
+        ? item.belowRangeReason
+        : undefined,
+    unitMargin,
+    marginPercent,
+    lineTotal,
+    lineCogs,
+    lineMargin,
+    overridePrice: parseMoneyOrNull(item.overridePrice) ?? undefined,
+    overrideCogs: parseMoneyOrNull(item.overrideCogs) ?? undefined,
+  };
+}
+
+function parseStoredOrderItems(items: unknown): OrderItem[] {
+  const parsedItems =
+    typeof items === "string" ? JSON.parse(items) : (items as unknown);
+
+  if (!Array.isArray(parsedItems)) {
+    return [];
+  }
+
+  return parsedItems.map(normalizeStoredOrderItem);
+}
+
+function normalizeOrderRecord<
+  T extends {
+    fulfillmentStatus?: string | null;
+    orderType?: string | null;
+    quoteStatus?: string | null;
+  },
+>(order: T): T {
   return {
     ...order,
     fulfillmentStatus: normalizeFulfillmentStatus(order.fulfillmentStatus),
+    quoteStatus:
+      order.orderType === "QUOTE" && !order.quoteStatus
+        ? "UNSENT"
+        : order.quoteStatus,
   };
 }
 
@@ -193,11 +390,12 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     // 2. Process each item and calculate COGS
     // IMPORTANT: Lock batches with FOR UPDATE to prevent race conditions
     const processedItems: OrderItem[] = [];
+    const batchSelect = await getCompatibleBatchSelect();
 
     for (const item of input.items) {
       // Get batch details with row-level lock to prevent concurrent modifications
       const batch = await tx
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId))
         .limit(1)
@@ -236,6 +434,27 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       }
 
       // Calculate COGS (unless overridden)
+      const defaultCogsResult = calculateCogs({
+        batch: {
+          id: batch.id,
+          cogsMode: batch.cogsMode,
+          unitCogs: batch.unitCogs,
+          unitCogsMin: batch.unitCogsMin,
+          unitCogsMax: batch.unitCogsMax,
+        },
+        client: {
+          id: client.id,
+          cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
+          cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
+        },
+        context: {
+          quantity: item.quantity,
+          salePrice: item.overridePrice || item.unitPrice,
+          paymentTerms: input.paymentTerms,
+        },
+        rangeBasis: "MID",
+      });
+
       let cogsResult;
       if (item.overrideCogs !== undefined) {
         // Manual override
@@ -249,28 +468,17 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
           cogsSource: "MANUAL" as const,
           unitMargin,
           marginPercent,
+          effectiveCogsBasis: "MANUAL" as const,
+          originalRangeMin: defaultCogsResult.originalRangeMin,
+          originalRangeMax: defaultCogsResult.originalRangeMax,
+          isBelowVendorRange:
+            defaultCogsResult.originalRangeMin !== null
+              ? item.overrideCogs < defaultCogsResult.originalRangeMin
+              : false,
         };
       } else {
         // Calculate using COGS calculator
-        cogsResult = calculateCogs({
-          batch: {
-            id: batch.id,
-            cogsMode: batch.cogsMode,
-            unitCogs: batch.unitCogs,
-            unitCogsMin: batch.unitCogsMin,
-            unitCogsMax: batch.unitCogsMax,
-          },
-          client: {
-            id: client.id,
-            cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
-            cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
-          },
-          context: {
-            quantity: item.quantity,
-            salePrice: item.overridePrice || item.unitPrice,
-            paymentTerms: input.paymentTerms,
-          },
-        });
+        cogsResult = defaultCogsResult;
       }
 
       const finalPrice = item.overridePrice || item.unitPrice;
@@ -286,9 +494,17 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         unitPrice: finalPrice,
         isSample: item.isSample,
         unitCogs: cogsResult.unitCogs,
+        originalCogsPerUnit: defaultCogsResult.unitCogs,
         cogsMode: batch.cogsMode,
         cogsSource: cogsResult.cogsSource,
         appliedRule: cogsResult.appliedRule,
+        effectiveCogsBasis: cogsResult.effectiveCogsBasis,
+        originalRangeMin: cogsResult.originalRangeMin,
+        originalRangeMax: cogsResult.originalRangeMax,
+        isBelowVendorRange: cogsResult.isBelowVendorRange,
+        belowRangeReason: cogsResult.isBelowVendorRange
+          ? "Legacy order path override below vendor range"
+          : undefined,
         unitMargin: cogsResult.unitMargin,
         marginPercent: cogsResult.marginPercent,
         lineTotal,
@@ -373,7 +589,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         // Re-fetch with lock to ensure we have latest quantity
         // (though we already locked earlier, this ensures consistency)
         const lockedBatch = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(eq(batches.id, item.batchId))
           .limit(1)
@@ -441,6 +657,8 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       throw new Error("Failed to create order");
     }
 
+    await syncOrderLineItemsForOrder(tx, order.id, processedItems);
+
     return normalizeOrderRecord(order) as Order;
   });
 }
@@ -471,8 +689,7 @@ export async function getOrderById(id: number): Promise<Order | null> {
   let parsedItems: OrderItem[] = [];
   if (order.items) {
     try {
-      parsedItems =
-        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      parsedItems = parseStoredOrderItems(order.items);
     } catch (e) {
       console.error(`Failed to parse items for order ${order.id}:`, e);
       throw new Error(
@@ -524,10 +741,7 @@ export async function getOrdersByClient(
     let parsedItems: OrderItem[] = [];
     if (order.items) {
       try {
-        parsedItems =
-          typeof order.items === "string"
-            ? JSON.parse(order.items)
-            : order.items;
+        parsedItems = parseStoredOrderItems(order.items);
       } catch (e) {
         console.error(`Failed to parse items for order ${order.id}:`, e);
         throw new Error(
@@ -619,12 +833,22 @@ export async function getAllOrders(filters?: {
         normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
       )
     ) {
-      conditions.push(
-        eq(
-          orders.quoteStatus,
-          normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
-        )
-      );
+      if (normalizedQuoteStatus === "UNSENT") {
+        const unsentOrLegacyFilter = or(
+          eq(orders.quoteStatus, "UNSENT"),
+          isNull(orders.quoteStatus)
+        );
+        if (unsentOrLegacyFilter) {
+          conditions.push(unsentOrLegacyFilter);
+        }
+      } else {
+        conditions.push(
+          eq(
+            orders.quoteStatus,
+            normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
+          )
+        );
+      }
     }
   }
 
@@ -728,10 +952,7 @@ export async function getAllOrders(filters?: {
     let parsedItems: OrderItem[] = [];
     if (row.orders.items) {
       try {
-        parsedItems =
-          typeof row.orders.items === "string"
-            ? JSON.parse(row.orders.items)
-            : row.orders.items;
+        parsedItems = parseStoredOrderItems(row.orders.items);
       } catch (e) {
         console.error(`Failed to parse items for order ${row.orders.id}:`, e);
         throw new Error(
@@ -1002,12 +1223,7 @@ export async function convertQuoteToSale(
     }
 
     // SM-001: Validate quote status allows conversion
-    if (!quote.quoteStatus) {
-      throw new Error(
-        `Quote ${input.quoteId} has no status set. Cannot convert.`
-      );
-    }
-    const currentStatus = quote.quoteStatus;
+    const currentStatus = quote.quoteStatus ?? "UNSENT";
     if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
       throw new Error(
         `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +
@@ -1028,32 +1244,46 @@ export async function convertQuoteToSale(
     }
 
     // 2. Parse quote items
-    const quoteItems = JSON.parse(quote.items as string) as OrderItem[];
+    const quoteItems = parseStoredOrderItems(quote.items);
+    const batchSelect = await getCompatibleBatchSelect();
+    const subtotal = quoteItems.reduce((sum, item) => sum + item.lineTotal, 0);
+    const totalCogs = quoteItems.reduce((sum, item) => sum + item.lineCogs, 0);
+    const totalMargin = subtotal - totalCogs;
+    const avgMarginPercent = subtotal > 0 ? (totalMargin / subtotal) * 100 : 0;
+    const tax = parseMoneyOrZero(quote.tax);
+    const discount = parseMoneyOrZero(quote.discount);
+    const total = parseMoneyOrNull(quote.total) ?? subtotal + tax - discount;
 
     // 3. Calculate due date
     const dueDate = calculateDueDate(input.paymentTerms);
+    const readyForPackingStatus =
+      await getStoredFulfillmentStatus("READY_FOR_PACKING");
 
     // 4. Generate sale number
     const saleNumber = `S-${Date.now()}`;
 
     // 5. Create sale order
-    await tx.insert(orders).values({
+    const confirmedAt = new Date();
+    await insertOrderWithCompatibility(tx, {
       orderNumber: saleNumber,
       orderType: "SALE",
       clientId: quote.clientId,
-      items: quote.items,
-      subtotal: quote.subtotal,
-      tax: quote.tax,
-      discount: quote.discount,
-      total: quote.total,
-      totalCogs: quote.totalCogs,
-      totalMargin: quote.totalMargin,
-      avgMarginPercent: quote.avgMarginPercent,
+      isDraft: false,
+      items: JSON.stringify(quoteItems),
+      subtotal: subtotal.toString(),
+      tax: tax.toString(),
+      discount: discount.toString(),
+      total: total.toString(),
+      totalCogs: totalCogs.toString(),
+      totalMargin: totalMargin.toString(),
+      avgMarginPercent: avgMarginPercent.toString(),
       paymentTerms: input.paymentTerms,
       cashPayment: input.cashPayment?.toString() || "0",
-      dueDate: dueDate,
+      dueDate,
       saleStatus: "PENDING",
-      notes: input.notes || quote.notes,
+      fulfillmentStatus: readyForPackingStatus,
+      confirmedAt,
+      notes: input.notes || quote.notes || null,
       createdBy: quote.createdBy,
       convertedFromOrderId: quote.id,
     });
@@ -1066,13 +1296,19 @@ export async function convertQuoteToSale(
       .limit(1)
       .then(rows => rows[0]);
 
+    if (!sale) {
+      throw new Error("Failed to create sale order");
+    }
+
+    await syncOrderLineItemsForOrder(tx, sale.id, quoteItems);
+
     // 6. Reserve inventory with row-level locking to prevent race conditions
     // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
     // This is the standard ERP pattern: reserve on confirm, deduct on ship.
     for (const item of quoteItems) {
       // Lock batch row to prevent concurrent modifications
       const batch = await tx
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId))
         .limit(1)
@@ -1140,10 +1376,6 @@ export async function convertQuoteToSale(
     // Cash payments and credit exposure updates also happen at fulfillment time.
 
     // 8. Return the sale
-    if (!sale) {
-      throw new Error("Failed to create sale order");
-    }
-
     return sale;
   });
 }
@@ -1165,8 +1397,7 @@ export async function exportOrder(
   }
 
   // Parse items
-  const items =
-    typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+  const items = parseStoredOrderItems(order.items);
 
   // Build export data
   const exportData = {
@@ -1297,8 +1528,9 @@ export async function confirmDraftOrder(input: {
     // INV-002: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
     // This ensures that if two confirmations happen simultaneously, one will wait for the other
     // BUG-115: Use safeInArray to prevent crash if batchIds is somehow empty
+    const batchSelect = await getCompatibleBatchSelect();
     const lockedBatches = await tx
-      .select()
+      .select(batchSelect)
       .from(batches)
       .where(safeInArray(batches.id, batchIds))
       .for("update");
@@ -1353,6 +1585,15 @@ export async function confirmDraftOrder(input: {
         confirmedAt: new Date(),
       })
       .where(eq(orders.id, input.orderId));
+
+    const [existingLineItemCount] = await tx
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(orderLineItems)
+      .where(eq(orderLineItems.orderId, input.orderId));
+
+    if (Number(existingLineItemCount?.count || 0) === 0) {
+      await syncOrderLineItemsForOrder(tx, input.orderId, draftItems);
+    }
 
     // 7. Reserve inventory
     // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
@@ -1493,10 +1734,11 @@ export async function updateDraftOrder(input: {
       // Process each item and calculate COGS
       const processedItems: OrderItem[] = [];
 
+      const batchSelect = await getCompatibleBatchSelect();
       for (const item of input.items) {
         // Get batch details
         const batch = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(eq(batches.id, item.batchId))
           .limit(1)
@@ -1505,6 +1747,26 @@ export async function updateDraftOrder(input: {
         if (!batch) {
           throw new Error(`Batch ${item.batchId} not found`);
         }
+
+        const defaultCogsResult = calculateCogs({
+          batch: {
+            id: batch.id,
+            cogsMode: batch.cogsMode,
+            unitCogs: batch.unitCogs,
+            unitCogsMin: batch.unitCogsMin,
+            unitCogsMax: batch.unitCogsMax,
+          },
+          client: {
+            id: client.id,
+            cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
+            cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
+          },
+          context: {
+            quantity: item.quantity,
+            salePrice: item.overridePrice || item.unitPrice,
+          },
+          rangeBasis: "MID",
+        });
 
         // Calculate COGS (unless overridden)
         let cogsResult;
@@ -1519,26 +1781,16 @@ export async function updateDraftOrder(input: {
             cogsSource: "MANUAL" as const,
             unitMargin,
             marginPercent,
+            effectiveCogsBasis: "MANUAL" as const,
+            originalRangeMin: defaultCogsResult.originalRangeMin,
+            originalRangeMax: defaultCogsResult.originalRangeMax,
+            isBelowVendorRange:
+              defaultCogsResult.originalRangeMin !== null
+                ? item.overrideCogs < defaultCogsResult.originalRangeMin
+                : false,
           };
         } else {
-          cogsResult = calculateCogs({
-            batch: {
-              id: batch.id,
-              cogsMode: batch.cogsMode,
-              unitCogs: batch.unitCogs,
-              unitCogsMin: batch.unitCogsMin,
-              unitCogsMax: batch.unitCogsMax,
-            },
-            client: {
-              id: client.id,
-              cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
-              cogsAdjustmentValue: client.cogsAdjustmentValue || "0",
-            },
-            context: {
-              quantity: item.quantity,
-              salePrice: item.overridePrice || item.unitPrice,
-            },
-          });
+          cogsResult = defaultCogsResult;
         }
 
         const finalPrice = item.overridePrice || item.unitPrice;
@@ -1554,9 +1806,17 @@ export async function updateDraftOrder(input: {
           unitPrice: finalPrice,
           isSample: item.isSample,
           unitCogs: cogsResult.unitCogs,
+          originalCogsPerUnit: defaultCogsResult.unitCogs,
           cogsMode: batch.cogsMode,
           cogsSource: cogsResult.cogsSource,
           appliedRule: cogsResult.appliedRule,
+          effectiveCogsBasis: cogsResult.effectiveCogsBasis,
+          originalRangeMin: cogsResult.originalRangeMin,
+          originalRangeMax: cogsResult.originalRangeMax,
+          isBelowVendorRange: cogsResult.isBelowVendorRange,
+          belowRangeReason: cogsResult.isBelowVendorRange
+            ? "Legacy draft path override below vendor range"
+            : undefined,
           unitMargin: cogsResult.unitMargin,
           marginPercent: cogsResult.marginPercent,
           lineTotal,
@@ -1596,6 +1856,8 @@ export async function updateDraftOrder(input: {
           notes: input.notes || draft.notes,
         })
         .where(eq(orders.id, input.orderId));
+
+      await syncOrderLineItemsForOrder(tx, input.orderId, processedItems);
     } else {
       // Just update notes and validUntil
       const updateData: Record<string, unknown> = {};
@@ -1778,7 +2040,12 @@ export function getValidSaleStatusTransitions(currentStatus: string): string[] {
 export async function updateOrderStatus(input: {
   orderId: number;
   // ORD-003: Added CANCELLED as valid status for order cancellation before shipping
-  newStatus: "READY_FOR_PACKING" | "PACKED" | "SHIPPED" | "CANCELLED";
+  newStatus:
+    | "READY_FOR_PACKING"
+    | "PACKED"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "CANCELLED";
   notes?: string;
   userId: number;
   expectedVersion?: number; // DATA-005: Optimistic locking support
@@ -1858,8 +2125,9 @@ export async function updateOrderStatus(input: {
           );
         }
 
+        const batchSelect = await getCompatibleBatchSelect();
         const [batch] = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(eq(batches.id, item.batchId));
         if (!batch) {
@@ -2273,10 +2541,11 @@ export async function processReturn(input: {
 
     // Restock inventory for each returned item
     const { inventoryMovements } = await import("../drizzle/schema");
+    const batchSelect = await getCompatibleBatchSelect();
     for (const item of items) {
       // Get current batch quantity
       const [batch] = await tx
-        .select()
+        .select(batchSelect)
         .from(batches)
         .where(eq(batches.id, item.batchId));
       if (!batch) continue;

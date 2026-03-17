@@ -58,7 +58,7 @@ export const CreditIndicator = React.memo(function CreditIndicator({
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>No credit limit set</p>
+          <p>No client capacity set</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -137,15 +137,15 @@ export const CreditIndicator = React.memo(function CreditIndicator({
           </div>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Credit Limit:</span>
+              <span className="text-muted-foreground">Capacity Limit:</span>
               <span className="font-medium">{formatCurrency(limit)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Amount Owed:</span>
+              <span className="text-muted-foreground">Current Exposure:</span>
               <span className="font-medium">{formatCurrency(owed)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Available:</span>
+              <span className="text-muted-foreground">Headroom:</span>
               <span
                 className={`font-medium ${availableCredit < 0 ? "text-red-600" : "text-green-600"}`}
               >
@@ -184,7 +184,7 @@ export const CreditIndicatorDot = React.memo(function CreditIndicatorDot({
     return (
       <span
         className="inline-block w-2 h-2 rounded-full bg-gray-300"
-        title="No credit limit"
+        title="No client capacity"
       />
     );
   }

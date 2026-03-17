@@ -24,6 +24,7 @@ import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { SalesSheetPreview } from "@/components/sales/SalesSheetPreview";
 import { DraftControls } from "@/components/sales/DraftControls";
 import { DraftDialog } from "@/components/sales/DraftDialog";
+import { SavedSheetsDialog } from "@/components/sales/SavedSheetsDialog";
 import { QuickViewSelector } from "@/components/sales/QuickViewSelector";
 import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
 import { ClientCombobox } from "@/components/ui/client-combobox";
@@ -34,6 +35,7 @@ import type {
   InventoryFilters,
   InventorySortConfig,
   ColumnVisibility,
+  SavedSheetInfo,
 } from "@/components/sales/types";
 import {
   DEFAULT_FILTERS,
@@ -43,7 +45,13 @@ import {
 
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
-export default function SalesSheetCreatorPage() {
+interface SalesSheetCreatorPageProps {
+  embedded?: boolean;
+}
+
+export default function SalesSheetCreatorPage({
+  embedded = false,
+}: SalesSheetCreatorPageProps) {
   const [, setLocation] = useLocation();
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<PricedInventoryItem[]>([]);
@@ -54,6 +62,7 @@ export default function SalesSheetCreatorPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
+  const [showSavedSheetsDialog, setShowSavedSheetsDialog] = useState(false);
 
   // Filter/Sort state (SALES-SHEET-IMPROVEMENTS)
   const [filters, setFilters] = useState<InventoryFilters>(DEFAULT_FILTERS);
@@ -98,6 +107,11 @@ export default function SalesSheetCreatorPage() {
     { clientId: selectedClientId ?? undefined },
     { enabled: selectedClientId !== null && selectedClientId > 0 }
   );
+  const { data: savedSheets, isLoading: savedSheetsLoading } =
+    trpc.salesSheets.getHistory.useQuery(
+      { clientId: selectedClientId ?? 0, limit: 50 },
+      { enabled: selectedClientId !== null && selectedClientId > 0 }
+    );
 
   const utils = trpc.useUtils();
 
@@ -285,6 +299,29 @@ export default function SalesSheetCreatorPage() {
     [currentDraftId, deleteDraftMutation]
   );
 
+  const handleLoadSavedSheet = useCallback(
+    async (sheetId: number) => {
+      try {
+        const result = await utils.salesSheets.getById.fetch({ sheetId });
+
+        if (result) {
+          setSelectedClientId(result.clientId);
+          setSelectedItems(result.items as PricedInventoryItem[]);
+          setCurrentDraftId(null);
+          setDraftName(`Saved Sheet #${result.id}`);
+          setLastSaveTime(result.createdAt ? new Date(result.createdAt) : null);
+          setHasUnsavedChanges(false);
+          isInitialLoad.current = true;
+          setShowSavedSheetsDialog(false);
+          toast.success("Saved sheet loaded");
+        }
+      } catch (_error) {
+        toast.error("Failed to load saved sheet");
+      }
+    },
+    [utils.salesSheets.getById]
+  );
+
   // Handle add items to sheet
   const handleAddItems = useCallback((items: PricedInventoryItem[]) => {
     setSelectedItems(prev => {
@@ -365,10 +402,29 @@ export default function SalesSheetCreatorPage() {
     updatedAt: d.updatedAt,
     createdAt: d.createdAt,
   }));
+  const formattedSavedSheets: SavedSheetInfo[] = (savedSheets ?? []).map(
+    sheet => ({
+      id: sheet.id,
+      clientId: sheet.clientId,
+      itemCount: sheet.itemCount,
+      totalValue: sheet.totalValue,
+      createdAt: sheet.createdAt,
+    })
+  );
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6">
-      <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+    <div
+      className={
+        embedded ? "space-y-6" : "container mx-auto p-4 md:p-6 space-y-6"
+      }
+    >
+      {!embedded ? (
+        <BackButton
+          label="Back to Orders"
+          to={buildSalesWorkspacePath("orders")}
+          className="mb-4"
+        />
+      ) : null}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -392,6 +448,7 @@ export default function SalesSheetCreatorPage() {
             currentDraftId={currentDraftId}
             onSaveDraft={handleSaveDraft}
             onLoadDraft={() => setShowDraftDialog(true)}
+            onLoadSavedSheet={() => setShowSavedSheetsDialog(true)}
             isSaving={saveDraftMutation.isPending}
             disabled={!selectedClientId}
           />
@@ -500,6 +557,12 @@ export default function SalesSheetCreatorPage() {
                             quantity: item.quantity,
                             category: item.category,
                             vendor: item.vendor,
+                            cogsMode: item.cogsMode,
+                            unitCogs: item.unitCogs,
+                            unitCogsMin: item.unitCogsMin,
+                            unitCogsMax: item.unitCogsMax,
+                            effectiveCogs: item.effectiveCogs,
+                            effectiveCogsBasis: item.effectiveCogsBasis,
                           })),
                         })
                       );
@@ -534,6 +597,14 @@ export default function SalesSheetCreatorPage() {
         onLoadDraft={handleLoadDraft}
         onDeleteDraft={handleDeleteDraft}
         isDeleting={deleteDraftMutation.isPending}
+      />
+
+      <SavedSheetsDialog
+        open={showSavedSheetsDialog}
+        onOpenChange={setShowSavedSheetsDialog}
+        savedSheets={formattedSavedSheets}
+        isLoading={savedSheetsLoading}
+        onLoadSavedSheet={handleLoadSavedSheet}
       />
 
       {/* Save View Dialog */}

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
+import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import InventorySheetPilotSurface from "@/components/spreadsheet-native/InventorySheetPilotSurface";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
@@ -20,9 +21,11 @@ import {
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
 import { PageLoading } from "@/components/ui/loading-state";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 
-const ReceivingPage = lazy(() => import("@/pages/IntakeReceipts"));
+const ReceivingPage = lazy(
+  () => import("@/components/uiux-slice/ProductIntakeSlicePage")
+);
 const PhotographyPage = lazy(() => import("@/pages/PhotographyPage"));
 const SampleManagement = lazy(() => import("@/pages/SampleManagement"));
 
@@ -39,12 +42,14 @@ const INVENTORY_TABS = INVENTORY_TABS_CONFIG.map(
 
 export default function InventoryWorkspacePage() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { activeTab: requestedTab, setActiveTab } =
     useQueryTabState<InventoryQueryTab>({
       defaultTab: "inventory",
       validTabs: [...INVENTORY_TABS, "intake", "pick-pack"],
     });
   const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
+  const receivingDraftId = new URLSearchParams(search).get("draftId");
   const pilotSurfaceSupported = activeTab === "inventory";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
@@ -83,18 +88,22 @@ export default function InventoryWorkspacePage() {
         <PickPackWorkSurface />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="receiving">
-        <Suspense fallback={<PageLoading message="Loading receiving..." />}>
-          <ReceivingPage />
-        </Suspense>
+        {receivingDraftId ? (
+          <Suspense fallback={<PageLoading message="Loading receiving..." />}>
+            <ReceivingPage />
+          </Suspense>
+        ) : (
+          <PurchaseOrdersSlicePage mode="receiving" />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="photography">
         <Suspense fallback={<PageLoading message="Loading photography..." />}>
-          <PhotographyPage />
+          <PhotographyPage embedded />
         </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="samples">
         <Suspense fallback={<PageLoading message="Loading samples..." />}>
-          <SampleManagement />
+          <SampleManagement embedded />
         </Suspense>
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>

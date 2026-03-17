@@ -40,6 +40,9 @@ export type SampleStatus =
   | "SHIPPED_TO_VENDOR"
   | "VENDOR_CONFIRMED";
 
+export type SampleOperatorFilter = "ALL" | SampleStatus | "OUT" | "RETURN";
+export type SampleOperatorLane = "OUT" | "RETURN";
+
 export type SampleLocation =
   | "WAREHOUSE"
   | "WITH_CLIENT"
@@ -62,7 +65,7 @@ export interface SampleListItem {
 
 export interface SampleListProps {
   samples: SampleListItem[];
-  statusFilter: "ALL" | SampleStatus;
+  statusFilter: SampleOperatorFilter;
   searchQuery: string;
   isLoading?: boolean;
   onDelete?: (sampleId: number) => void;
@@ -86,32 +89,40 @@ type SortKey =
 
 type SortDirection = "asc" | "desc";
 
-const statusLabels: Record<SampleStatus, string> = {
-  PENDING: "Pending",
-  FULFILLED: "Approved",
-  CANCELLED: "Cancelled",
-  RETURNED: "Returned",
-  RETURN_REQUESTED: "Return Requested",
-  RETURN_APPROVED: "Return Approved",
-  VENDOR_RETURN_REQUESTED: "Supplier Return Requested",
-  SHIPPED_TO_VENDOR: "Shipped to Supplier",
-  VENDOR_CONFIRMED: "Supplier Confirmed",
-};
+export function getSampleOperatorLane(
+  status: SampleStatus
+): SampleOperatorLane {
+  if (
+    [
+      "RETURNED",
+      "RETURN_REQUESTED",
+      "RETURN_APPROVED",
+      "VENDOR_RETURN_REQUESTED",
+      "SHIPPED_TO_VENDOR",
+      "VENDOR_CONFIRMED",
+    ].includes(status)
+  ) {
+    return "RETURN";
+  }
+  return "OUT";
+}
 
-const statusVariant: Record<
-  SampleStatus,
-  "default" | "secondary" | "outline" | "destructive"
-> = {
-  PENDING: "secondary",
-  FULFILLED: "default",
-  CANCELLED: "outline",
-  RETURNED: "outline",
-  RETURN_REQUESTED: "secondary",
-  RETURN_APPROVED: "secondary",
-  VENDOR_RETURN_REQUESTED: "secondary",
-  SHIPPED_TO_VENDOR: "default",
-  VENDOR_CONFIRMED: "default",
-};
+export function isOperatorVisibleSampleStatus(status: SampleStatus): boolean {
+  return status !== "CANCELLED";
+}
+
+function getOperatorStatusLabel(status: SampleStatus): string {
+  return getSampleOperatorLane(status) === "RETURN"
+    ? "Samples Return"
+    : "Samples Out";
+}
+
+function getStatusVariant(
+  status: SampleStatus
+): "default" | "secondary" | "outline" | "destructive" {
+  if (getSampleOperatorLane(status) === "RETURN") return "secondary";
+  return "default";
+}
 
 const locationLabels: Record<SampleLocation, string> = {
   WAREHOUSE: "Warehouse",
@@ -183,8 +194,16 @@ export const SampleList = React.memo(function SampleList({
   const filteredSamples = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
     return samples.filter(sample => {
+      if (!isOperatorVisibleSampleStatus(sample.status)) {
+        return false;
+      }
+
       const matchesStatus =
-        statusFilter === "ALL" ? true : sample.status === statusFilter;
+        statusFilter === "ALL"
+          ? true
+          : statusFilter === "OUT" || statusFilter === "RETURN"
+            ? getSampleOperatorLane(sample.status) === statusFilter
+            : sample.status === statusFilter;
 
       const matchesSearch =
         normalizedSearch.length === 0 ||
@@ -387,8 +406,8 @@ export const SampleList = React.memo(function SampleList({
                   </TableCell>
                   <TableCell>{sample.clientName}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[sample.status]}>
-                      {statusLabels[sample.status]}
+                    <Badge variant={getStatusVariant(sample.status)}>
+                      {getOperatorStatusLabel(sample.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>{formatDate(sample.requestedDate)}</TableCell>

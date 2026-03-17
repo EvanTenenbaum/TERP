@@ -19,9 +19,9 @@ describe("ACCOUNTING_WORKSPACE", () => {
 });
 
 describe("INVENTORY_WORKSPACE", () => {
-  it("exposes the operations tabs with receiving and shipping labels", () => {
-    expect(INVENTORY_WORKSPACE.title).toBe("Operations");
-    expect(INVENTORY_WORKSPACE.homePath).toBe("/operations");
+  it("exposes the inventory workspace tabs with receiving and shipping labels", () => {
+    expect(INVENTORY_WORKSPACE.title).toBe("Inventory");
+    expect(INVENTORY_WORKSPACE.homePath).toBe("/inventory");
     expect(INVENTORY_WORKSPACE.tabs).toEqual([
       { value: "inventory", label: "Inventory" },
       { value: "receiving", label: "Receiving" },

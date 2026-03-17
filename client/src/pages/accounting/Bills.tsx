@@ -7,7 +7,8 @@
  * - State machine enforcement for status changes
  */
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ import {
 import type { BillStatus } from "@/components/accounting/BillStatusActions";
 import { formatDate } from "@/lib/dateFormat";
 import { toast } from "sonner";
+import { findBillByRouteId, parseBillRouteContext } from "./billRoute";
 
 // Bill type definition
 type Bill = {
@@ -61,12 +63,20 @@ type BillSortField =
   | "status";
 
 export default function Bills({ embedded }: { embedded?: boolean } = {}) {
+  const routeSearch = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const routeContext = useMemo(
+    () => parseBillRouteContext(routeSearch),
+    [routeSearch]
+  );
+  const [selectedStatus, setSelectedStatus] = useState<string>(
+    () => routeContext.statusFilter ?? "ALL"
+  );
   const [sortField, setSortField] = useState<BillSortField>("billDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showAging, setShowAging] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const routeBillId = routeContext.billId;
 
   // Fetch bills
   const {
@@ -172,6 +182,16 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
     setSortField("billDate");
     setSortDirection("desc");
   };
+
+  useEffect(() => {
+    setSelectedBill(findBillByRouteId(bills?.items ?? [], routeBillId));
+  }, [bills, routeBillId]);
+
+  useEffect(() => {
+    if (routeContext.statusFilter) {
+      setSelectedStatus(routeContext.statusFilter);
+    }
+  }, [routeContext.statusFilter]);
 
   return (
     <div className="flex flex-col gap-6 p-6">

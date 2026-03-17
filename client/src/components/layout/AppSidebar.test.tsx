@@ -74,7 +74,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
       [
         "/",
         "/sales?tab=create-order",
-        "/operations?tab=receiving",
+        "/inventory?tab=receiving",
         "/clients",
       ].includes(path),
     togglePin: mockTogglePin,
@@ -82,7 +82,7 @@ vi.mock("@/hooks/useNavigationState", () => ({
     pinnedPaths: [
       "/",
       "/sales?tab=create-order",
-      "/operations?tab=receiving",
+      "/inventory?tab=receiving",
       "/clients",
     ],
   }),
@@ -110,7 +110,14 @@ describe("AppSidebar navigation", () => {
     const groupLabels = screen.getAllByTestId("nav-group-label");
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
-    expect(labelTexts).toEqual(["Sell", "Operations", "Finance", "Admin"]);
+    expect(labelTexts).toEqual([
+      "Sell",
+      "Buy",
+      "Operations",
+      "Relationships",
+      "Finance",
+      "Admin",
+    ]);
   });
 
   it("renders sidebar-visible navigation items only", () => {
@@ -160,7 +167,7 @@ describe("AppSidebar navigation", () => {
     expect(purchaseOrdersLink).toHaveAttribute("aria-current", "page");
   });
 
-  it("highlights Operations for legacy receiving and shipping aliases", () => {
+  it("highlights Operations for legacy receiving, intake, and shipping aliases", () => {
     mockLocation = "/pick-pack";
     const { rerender } = render(
       <ThemeProvider>
@@ -174,6 +181,32 @@ describe("AppSidebar navigation", () => {
     expect(operationsLink).toHaveAttribute("aria-current", "page");
 
     mockLocation = "/receiving";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: /Manage inventory, receiving, shipping/i,
+      })
+    ).toHaveAttribute("aria-current", "page");
+
+    mockLocation = "/intake";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: /Manage inventory, receiving, shipping/i,
+      })
+    ).toHaveAttribute("aria-current", "page");
+
+    mockLocation = "/direct-intake";
     rerender(
       <ThemeProvider>
         <Sidebar open />

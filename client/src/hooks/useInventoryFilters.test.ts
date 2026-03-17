@@ -10,6 +10,7 @@ describe("useInventoryFilters", () => {
     // Clear localStorage before each test
     localStorage.clear();
     vi.clearAllMocks();
+    window.history.replaceState({}, "", "/inventory");
   });
 
   describe("initialization", () => {
@@ -21,6 +22,39 @@ describe("useInventoryFilters", () => {
       expect(result.current.filters.stockLevel).toBe("all");
       expect(result.current.hasActiveFilters).toBe(false);
       expect(result.current.activeFilterCount).toBe(0);
+    });
+
+    it("hydrates deep-linked inventory filters from the URL", () => {
+      window.history.replaceState(
+        {},
+        "",
+        "/inventory?status=LIVE,RESERVED&category=Flower&stockStatus=LOW&ageBracket=AGING&batchId=478"
+      );
+
+      const { result } = renderHook(() => useInventoryFilters());
+
+      expect(result.current.filters.status).toEqual(["LIVE", "RESERVED"]);
+      expect(result.current.filters.category).toBe("Flower");
+      expect(result.current.filters.stockStatus).toBe("LOW");
+      expect(result.current.filters.ageBracket).toBe("AGING");
+      expect(result.current.filters.batchId).toBe("478");
+      expect(result.current.hasActiveFilters).toBe(true);
+      expect(result.current.activeFilterCount).toBe(5);
+    });
+
+    it("ignores invalid enhanced filter params from the URL", () => {
+      window.history.replaceState(
+        {},
+        "",
+        "/inventory?stockStatus=BAD&ageBracket=OLD&batchId=%20%20"
+      );
+
+      const { result } = renderHook(() => useInventoryFilters());
+
+      expect(result.current.filters.stockStatus).toBe("ALL");
+      expect(result.current.filters.ageBracket).toBe("ALL");
+      expect(result.current.filters.batchId).toBeNull();
+      expect(result.current.hasActiveFilters).toBe(false);
     });
   });
 

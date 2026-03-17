@@ -19,7 +19,6 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -59,10 +58,6 @@ import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEd
 import { useUndo } from "@/hooks/work-surface/useUndo";
 import { useExport } from "@/hooks/work-surface/useExport";
 import { usePermissions } from "@/hooks/usePermissions";
-import {
-  isShippingEnabledMode,
-  resolveSalesBusinessMode,
-} from "@/lib/salesMode";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
@@ -73,7 +68,7 @@ import { PICK_PACK_STATUS_TOKENS } from "../../lib/statusTokens";
 // Types
 // ============================================================================
 
-type PickPackStatus = "PENDING" | "PICKING" | "PACKED" | "READY";
+type PickPackStatus = "PENDING" | "PARTIAL" | "READY" | "SHIPPED";
 type PickPackSortKey =
   | "newest"
   | "oldest"
@@ -81,8 +76,6 @@ type PickPackSortKey =
   | "client_desc"
   | "order_asc"
   | "order_desc";
-
-const PICK_PACK_VIEW_STATE_KEY = "terp-pick-pack-view-v2";
 const PICK_PACK_SORT_OPTIONS: Array<{
   value: PickPackSortKey;
   label: string;
@@ -177,20 +170,20 @@ function StatusBadge({ status }: { status: PickPackStatus }) {
       icon: Clock,
       label: "Pending",
     },
-    PICKING: {
+    PARTIAL: {
       color: PICK_PACK_STATUS_TOKENS.PICKING,
       icon: Package,
-      label: "Picking",
-    },
-    PACKED: {
-      color: PICK_PACK_STATUS_TOKENS.PACKED,
-      icon: CheckCircle,
-      label: "Packed",
+      label: "Partial",
     },
     READY: {
       color: PICK_PACK_STATUS_TOKENS.READY,
       icon: Truck,
       label: "Ready",
+    },
+    SHIPPED: {
+      color: PICK_PACK_STATUS_TOKENS.PACKED,
+      icon: CheckCircle,
+      label: "Shipped",
     },
   };
   const { color, icon: Icon, label } = config[status] || config.PENDING;
@@ -559,49 +552,27 @@ function OrderInspector({
 // ============================================================================
 
 export function PickPackWorkSurface() {
-  const [location] = useLocation();
-  const { hasAnyPermission } = usePermissions();
-  const salesBusinessMode = useMemo(
-    () => resolveSalesBusinessMode(location),
-    [location]
-  );
-  const shippingEnabled = isShippingEnabledMode(salesBusinessMode);
-  const canManagePickPack = hasAnyPermission([
+  const { hasAnyPermission, isLoading: permissionsLoading } = usePermissions();
+  const canAccessPickPack = hasAnyPermission([
+    "orders:read",
     "pick-pack:manage",
-    "orders:manage",
     "orders:fulfill",
     "orders:update",
   ]);
-  const readyCtaLabel = shippingEnabled
-    ? "Mark Ready for Fulfillment (R)"
-    : "Mark Ready for Payment (R)";
+  const canManagePickPack = hasAnyPermission([
+    "pick-pack:manage",
+    "orders:fulfill",
+    "orders:update",
+  ]);
+  const readyCtaLabel = "Mark Ready for Shipping (R)";
 
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  // Parse localStorage once and distribute
-  const savedViewState = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem(PICK_PACK_VIEW_STATE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw) as {
-        statusFilter?: PickPackStatus | "ALL";
-        searchQuery?: string;
-        sortKey?: PickPackSortKey;
-      };
-    } catch {
-      return null;
-    }
-  }, []);
   const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
-    () => savedViewState?.statusFilter ?? "ALL"
+    "ALL"
   );
-  const [searchQuery, setSearchQuery] = useState(
-    () => savedViewState?.searchQuery ?? ""
-  );
-  const [sortKey, setSortKey] = useState<PickPackSortKey>(
-    () => savedViewState?.sortKey ?? "newest"
-  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<PickPackSortKey>("newest");
   const [focusedOrderIndex, setFocusedOrderIndex] = useState(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState(0);
   const [focusZone, setFocusZone] = useState<"list" | "items">("list");
@@ -609,17 +580,6 @@ export function PickPackWorkSurface() {
     null
   );
   const [inspectedItemId, setInspectedItemId] = useState<number | null>(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        PICK_PACK_VIEW_STATE_KEY,
-        JSON.stringify({ statusFilter, searchQuery, sortKey })
-      );
-    } catch {
-      // Ignore storage failures.
-    }
-  }, [searchQuery, sortKey, statusFilter]);
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -714,6 +674,22 @@ export function PickPackWorkSurface() {
     });
   }, [pickList, searchQuery, sortKey]);
 
+  const hasActiveFilters =
+    statusFilter !== "ALL" ||
+    searchQuery.trim().length > 0 ||
+    sortKey !== "newest";
+
+  const resetQueueView = useCallback(() => {
+    setStatusFilter("ALL");
+    setSearchQuery("");
+    setSortKey("newest");
+    setFocusedOrderIndex(0);
+    setFocusZone("list");
+    window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+  }, []);
+
   // Get unpacked items for current order
   const unpackedItems = useMemo(() => {
     if (!orderDetails) return [];
@@ -754,7 +730,10 @@ export function PickPackWorkSurface() {
   const notifyStatusFilterExit = useCallback(
     (orderNumber: string | undefined, newStatus: string) => {
       const normalizedFilter = statusFilter.toUpperCase();
-      const normalizedTarget = newStatus.toUpperCase();
+      const normalizedTarget =
+        newStatus === "PICKING" || newStatus === "PACKED"
+          ? "PARTIAL"
+          : newStatus.toUpperCase();
       if (normalizedFilter === "ALL" || normalizedFilter === normalizedTarget) {
         return;
       }
@@ -834,11 +813,7 @@ export function PickPackWorkSurface() {
       void refetchPickList();
       void refetchStats();
       setSaved();
-      toast.success(
-        shippingEnabled
-          ? "Order marked ready for shipping"
-          : "Order marked ready for payment handoff"
-      );
+      toast.success("Order marked ready for shipping");
       notifyStatusFilterExit(orderNum, "READY");
     },
     onError: (error: { message: string }) => {
@@ -846,6 +821,27 @@ export function PickPackWorkSurface() {
       if (!handleConflictError(error)) {
         setError(error.message || "Failed to mark ready");
         toast.error(`Failed to mark ready: ${error.message}`);
+      }
+    },
+  });
+
+  const shipOrderMutation = trpc.orders.shipOrder.useMutation({
+    onMutate: () => setSaving(),
+    onSuccess: () => {
+      const orderNum = orderDetails?.order.orderNumber;
+      setSelectedOrderId(null);
+      setInspectorMode(null);
+      setInspectedItemId(null);
+      void refetchPickList();
+      void refetchStats();
+      setSaved();
+      toast.success("Order marked shipped");
+      notifyStatusFilterExit(orderNum, "SHIPPED");
+    },
+    onError: (error: { message: string }) => {
+      if (!handleConflictError(error)) {
+        setError(error.message || "Failed to mark shipped");
+        toast.error(`Failed to mark shipped: ${error.message}`);
       }
     },
   });
@@ -956,6 +952,14 @@ export function PickPackWorkSurface() {
       markReadyMutation.mutate({ orderId: selectedOrderId });
     }
   }, [canManagePickPack, selectedOrderId, markReadyMutation]);
+
+  const handleMarkShipped = useCallback(() => {
+    if (!canManagePickPack || !selectedOrderId) {
+      return;
+    }
+
+    shipOrderMutation.mutate({ id: selectedOrderId });
+  }, [canManagePickPack, selectedOrderId, shipOrderMutation]);
 
   const handleExportManifest = useCallback(() => {
     if (!orderDetails || pickPackManifestRows.length === 0) {
@@ -1160,16 +1164,35 @@ export function PickPackWorkSurface() {
     return null;
   }, [inspectorMode, inspectedItemId, orderDetails]);
 
+  const canShipSelectedOrder =
+    !!orderDetails &&
+    orderDetails.order.pickPackStatus === "READY" &&
+    !["SHIPPED", "DELIVERED", "RETURNED"].includes(
+      orderDetails.order.fulfillmentStatus ?? ""
+    );
+
   // Status counts
   const statusCounts = useMemo(
     () => ({
       pending: stats?.pending || 0,
-      picking: stats?.picking || 0,
-      packed: stats?.packed || 0,
+      partial: stats?.partial || 0,
       ready: stats?.ready || 0,
+      shipped: stats?.shipped || 0,
     }),
     [stats]
   );
+
+  if (!permissionsLoading && !canAccessPickPack) {
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <Card className="max-w-md">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Shipping access requires order read or fulfillment permissions.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1215,21 +1238,21 @@ export function PickPackWorkSurface() {
             </div>
             <div className="text-center p-2 bg-blue-50 rounded-lg">
               <div className="text-lg font-bold text-blue-600">
-                {statusCounts.picking}
+                {statusCounts.partial}
               </div>
-              <div className="text-xs text-blue-700">Picking</div>
+              <div className="text-xs text-blue-700">Partial</div>
             </div>
             <div className="text-center p-2 bg-green-50 rounded-lg">
               <div className="text-lg font-bold text-green-600">
-                {statusCounts.packed}
-              </div>
-              <div className="text-xs text-green-700">Packed</div>
-            </div>
-            <div className="text-center p-2 bg-purple-50 rounded-lg">
-              <div className="text-lg font-bold text-purple-600">
                 {statusCounts.ready}
               </div>
-              <div className="text-xs text-purple-700">Ready</div>
+              <div className="text-xs text-green-700">Ready</div>
+            </div>
+            <div className="text-center p-2 bg-slate-50 rounded-lg">
+              <div className="text-lg font-bold text-slate-600">
+                {statusCounts.shipped}
+              </div>
+              <div className="text-xs text-slate-700">Shipped</div>
             </div>
           </div>
 
@@ -1251,15 +1274,18 @@ export function PickPackWorkSurface() {
               value={statusFilter}
               onValueChange={v => setStatusFilter(v as PickPackStatus | "ALL")}
             >
-              <SelectTrigger className="w-full sm:w-[130px]">
+              <SelectTrigger
+                className="w-full sm:w-[130px]"
+                data-testid="status-filter"
+              >
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="ALL">All statuses</SelectItem>
                 <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="PICKING">Picking</SelectItem>
-                <SelectItem value="PACKED">Packed</SelectItem>
+                <SelectItem value="PARTIAL">Partial</SelectItem>
                 <SelectItem value="READY">Ready</SelectItem>
+                <SelectItem value="SHIPPED">Shipped</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -1280,6 +1306,15 @@ export function PickPackWorkSurface() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetQueueView}
+              disabled={!hasActiveFilters}
+              data-testid="pick-pack-reset-filters"
+            >
+              Reset
+            </Button>
           </div>
         </div>
 
@@ -1302,7 +1337,21 @@ export function PickPackWorkSurface() {
               data-testid="order-queue-empty"
             >
               <Package className="w-8 h-8 mb-2" />
-              <p>No orders ready for shipping</p>
+              <p>
+                {hasActiveFilters
+                  ? "No shipping orders match the current filters."
+                  : "No shipping orders are currently in the queue."}
+              </p>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2"
+                  onClick={resetQueueView}
+                >
+                  Clear filters
+                </Button>
+              )}
             </div>
           ) : (
             filteredPickList.map((order, index) => (
@@ -1447,30 +1496,52 @@ export function PickPackWorkSurface() {
                 Pack All to One Bag
               </Button>
               <div className="flex-1" />
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleMarkReady}
-                disabled={
-                  orderDetails.summary.packedItems <
-                    orderDetails.summary.totalItems ||
-                  markReadyMutation.isPending ||
-                  !canManagePickPack
-                }
-                className="bg-green-600 hover:bg-green-700"
-                title={
-                  canManagePickPack
-                    ? undefined
-                    : "Shipping manage permissions required"
-                }
-              >
-                {markReadyMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Truck className="w-4 h-4 mr-2" />
-                )}
-                {readyCtaLabel}
-              </Button>
+              {canShipSelectedOrder ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleMarkShipped}
+                  disabled={shipOrderMutation.isPending || !canManagePickPack}
+                  className="bg-green-600 hover:bg-green-700"
+                  title={
+                    canManagePickPack
+                      ? undefined
+                      : "Shipping manage permissions required"
+                  }
+                >
+                  {shipOrderMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Truck className="w-4 h-4 mr-2" />
+                  )}
+                  Mark Shipped
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleMarkReady}
+                  disabled={
+                    orderDetails.summary.packedItems <
+                      orderDetails.summary.totalItems ||
+                    markReadyMutation.isPending ||
+                    !canManagePickPack
+                  }
+                  className="bg-green-600 hover:bg-green-700"
+                  title={
+                    canManagePickPack
+                      ? undefined
+                      : "Shipping manage permissions required"
+                  }
+                >
+                  {markReadyMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Truck className="w-4 h-4 mr-2" />
+                  )}
+                  {readyCtaLabel}
+                </Button>
+              )}
             </div>
 
             {/* Items List */}

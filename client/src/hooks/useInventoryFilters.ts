@@ -1,12 +1,10 @@
 /**
  * useInventoryFilters Hook
  * Manages inventory filter state and logic
- * CHAOS-023: Persists filter state to localStorage
+ * Honors explicit URL deep links but otherwise starts from a clean workspace.
  */
 
-import { useState, useMemo, useEffect } from "react";
-
-const STORAGE_KEY = "terp-inventory-filters";
+import { useState, useMemo } from "react";
 
 export interface InventoryFilters {
   status: string[];
@@ -56,84 +54,68 @@ export const defaultFilters: InventoryFilters = {
   batchId: null,
 };
 
-/**
- * Load filters from localStorage
- */
-function loadFiltersFromStorage(): Partial<InventoryFilters> | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-
-    const parsed = JSON.parse(stored);
-
-    // Convert date strings back to Date objects
-    if (parsed.dateRange) {
-      parsed.dateRange = {
-        from: parsed.dateRange.from ? new Date(parsed.dateRange.from) : null,
-        to: parsed.dateRange.to ? new Date(parsed.dateRange.to) : null,
-      };
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Save filters to localStorage
- */
-function saveFiltersToStorage(filters: InventoryFilters): void {
-  try {
-    // Convert Date objects to ISO strings for storage
-    const toStore = {
-      ...filters,
-      dateRange: {
-        from: filters.dateRange.from?.toISOString() ?? null,
-        to: filters.dateRange.to?.toISOString() ?? null,
-      },
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
-  } catch {
-    // Silently fail if localStorage is full or unavailable
-  }
-}
-
 export function useInventoryFilters() {
-  // Initialize filters from URL parameters first, then localStorage
+  // Deep links may pre-seed filters, but routine entry should stay clean.
   const getInitialFilters = (): InventoryFilters => {
     const params = new URLSearchParams(window.location.search);
-    const hasUrlParams = params.has('stockLevel') || params.has('status') || params.has('category');
+    const hasUrlParams =
+      params.has("stockLevel") ||
+      params.has("status") ||
+      params.has("category") ||
+      params.has("stockStatus") ||
+      params.has("ageBracket") ||
+      params.has("batchId");
 
     // If URL params exist, use those (for deep linking)
     if (hasUrlParams) {
       const initialFilters = { ...defaultFilters };
 
       // Check for stockLevel parameter (from data cards)
-      const stockLevel = params.get('stockLevel');
-      if (stockLevel && ['in_stock', 'low_stock', 'out_of_stock'].includes(stockLevel)) {
-        initialFilters.stockLevel = stockLevel as InventoryFilters['stockLevel'];
+      const stockLevel = params.get("stockLevel");
+      if (
+        stockLevel &&
+        ["in_stock", "low_stock", "out_of_stock"].includes(stockLevel)
+      ) {
+        initialFilters.stockLevel =
+          stockLevel as InventoryFilters["stockLevel"];
       }
 
       // Check for status parameter
-      const status = params.get('status');
+      const status = params.get("status");
       if (status) {
-        initialFilters.status = status.split(',');
+        initialFilters.status = status.split(",");
       }
 
       // Check for category parameter
-      const category = params.get('category');
+      const category = params.get("category");
       if (category) {
         initialFilters.category = category;
       }
 
-      return initialFilters;
-    }
+      const stockStatus = params.get("stockStatus");
+      if (
+        stockStatus &&
+        ["CRITICAL", "LOW", "OPTIMAL", "OUT_OF_STOCK"].includes(stockStatus)
+      ) {
+        initialFilters.stockStatus =
+          stockStatus as InventoryFilters["stockStatus"];
+      }
 
-    // Otherwise, try to load from localStorage
-    const storedFilters = loadFiltersFromStorage();
-    if (storedFilters) {
-      return { ...defaultFilters, ...storedFilters };
+      const ageBracket = params.get("ageBracket");
+      if (
+        ageBracket &&
+        ["FRESH", "MODERATE", "AGING", "CRITICAL"].includes(ageBracket)
+      ) {
+        initialFilters.ageBracket =
+          ageBracket as InventoryFilters["ageBracket"];
+      }
+
+      const batchId = params.get("batchId");
+      if (batchId?.trim()) {
+        initialFilters.batchId = batchId.trim();
+      }
+
+      return initialFilters;
     }
 
     return defaultFilters;
@@ -141,16 +123,11 @@ export function useInventoryFilters() {
 
   const [filters, setFilters] = useState<InventoryFilters>(getInitialFilters);
 
-  // Persist filters to localStorage whenever they change
-  useEffect(() => {
-    saveFiltersToStorage(filters);
-  }, [filters]);
-
   const updateFilter = <K extends keyof InventoryFilters>(
     key: K,
     value: InventoryFilters[K]
   ) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const clearAllFilters = () => {
@@ -190,7 +167,8 @@ export function useInventoryFilters() {
     if (filters.dateRange.from || filters.dateRange.to) count++;
     if (filters.location) count++;
     if (filters.stockLevel !== "all") count++;
-    if (filters.cogsRange.min !== null || filters.cogsRange.max !== null) count++;
+    if (filters.cogsRange.min !== null || filters.cogsRange.max !== null)
+      count++;
     if (filters.paymentStatus.length > 0) count++;
     // Sprint 4 Track A: 4.A.2 ENH-001 - Enhanced filters
     if (filters.stockStatus !== "ALL") count++;
@@ -207,4 +185,3 @@ export function useInventoryFilters() {
     activeFilterCount,
   };
 }
-

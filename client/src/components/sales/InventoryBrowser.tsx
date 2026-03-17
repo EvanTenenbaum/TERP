@@ -78,6 +78,25 @@ function isNonSellableStatus(status?: string): status is NonSellableStatus {
   return (NON_SELLABLE_STATUSES as readonly string[]).includes(status);
 }
 
+function formatProfileRuleMarkup(priceMarkup: number): string {
+  const sign = priceMarkup >= 0 ? "+" : "";
+  return `${sign}${priceMarkup.toFixed(1)}% markup`;
+}
+
+function formatAppliedRulesSummary(
+  appliedRules: Array<{ ruleId: number; ruleName: string; adjustment: string }>
+): string | null {
+  if (appliedRules.length === 0) {
+    return null;
+  }
+
+  if (appliedRules.length === 1) {
+    return `${appliedRules[0].ruleName} (${appliedRules[0].adjustment})`;
+  }
+
+  return `${appliedRules[0].ruleName} (${appliedRules[0].adjustment}) +${appliedRules.length - 1} more`;
+}
+
 // Extended inventory item type for internal use (includes orderQuantity when added)
 interface InventoryItemWithQuantity extends PricedInventoryItem {
   orderQuantity?: number;
@@ -202,10 +221,10 @@ export function InventoryBrowser({
     setQuickQuantities(prev => ({ ...prev, [itemId]: sanitized }));
   };
 
-  // Calculate markup percentage
-  const calculateMarkup = (basePrice: number, retailPrice: number) => {
-    if (basePrice === 0) return 0;
-    return ((retailPrice - basePrice) / basePrice) * 100;
+  // Show gross margin so the browser matches pricing profiles and order rows.
+  const calculateMargin = (basePrice: number, retailPrice: number) => {
+    if (retailPrice <= 0) return 0;
+    return ((retailPrice - basePrice) / retailPrice) * 100;
   };
 
   if (isLoading) {
@@ -277,7 +296,7 @@ export function InventoryBrowser({
                 <TableHead>Qty Available</TableHead>
                 <TableHead>Price/Unit</TableHead>
                 <TableHead>Client Price</TableHead>
-                <TableHead>Markup</TableHead>
+                <TableHead>Gross Margin</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -292,7 +311,7 @@ export function InventoryBrowser({
                 </TableRow>
               ) : (
                 filteredInventory.map(item => {
-                  const markup = calculateMarkup(
+                  const margin = calculateMargin(
                     item.basePrice,
                     item.retailPrice
                   );
@@ -418,14 +437,51 @@ export function InventoryBrowser({
                         </Badge>
                       </TableCell>
                       <TableCell>{availableUnits}</TableCell>
-                      <TableCell>${item.basePrice.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>${item.basePrice.toFixed(2)}</span>
+                          {item.cogsMode === "RANGE" &&
+                            typeof item.unitCogsMin === "number" &&
+                            typeof item.unitCogsMax === "number" && (
+                              <span className="text-xs text-muted-foreground">
+                                {item.effectiveCogsBasis || "MID"} of $
+                                {item.unitCogsMin.toFixed(2)} to $
+                                {item.unitCogsMax.toFixed(2)}
+                              </span>
+                            )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-semibold">
-                        ${item.retailPrice.toFixed(2)}
+                        <div className="flex flex-col">
+                          <span>${item.retailPrice.toFixed(2)}</span>
+                          {item.appliedRules.length > 0 && (
+                            <>
+                              <span
+                                className="text-xs font-normal text-muted-foreground"
+                                title={item.appliedRules
+                                  .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                  .join(", ")}
+                              >
+                                Profile{" "}
+                                {item.appliedRules.length > 1 ? "rules net" : "rule"}{" "}
+                                {formatProfileRuleMarkup(item.priceMarkup)}
+                              </span>
+                              <span
+                                className="text-xs font-normal text-muted-foreground"
+                                title={item.appliedRules
+                                  .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                  .join(", ")}
+                              >
+                                Applied: {formatAppliedRulesSummary(item.appliedRules)}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={markup > 0 ? "default" : "secondary"}>
-                          {markup > 0 ? "+" : ""}
-                          {markup.toFixed(1)}%
+                        <Badge variant={margin > 0 ? "default" : "secondary"}>
+                          {margin > 0 ? "+" : ""}
+                          {margin.toFixed(1)}%
                         </Badge>
                       </TableCell>
                     </TableRow>

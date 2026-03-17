@@ -1,18 +1,21 @@
 import { getDb } from "../../db";
 import { eq, and } from "drizzle-orm";
-import { 
-  products, 
-  batches 
-} from "../../../drizzle/schema";
+import { products, batches } from "../../../drizzle/schema";
 import { sessionPriceOverrides } from "../../../drizzle/schema-live-shopping";
 import { pricingService } from "../pricingService";
 import { financialMath } from "../../utils/financialMath";
+import { resolveBatchCogs, type CogsRangeBasis } from "../../cogsCalculator";
 
 export interface CalculatedPrice {
   finalPrice: string;
   source: "OVERRIDE" | "MARGIN_CALC" | "COST_FALLBACK";
   isOverride: boolean;
   baseCost: string;
+  effectiveCogs: string;
+  effectiveCogsBasis: CogsRangeBasis;
+  cogsMode: "FIXED" | "RANGE";
+  unitCogsMin?: string | null;
+  unitCogsMax?: string | null;
   appliedMargin?: number;
 }
 
@@ -37,6 +40,9 @@ export const sessionPricingService = {
     const batchResult = await db
       .select({
         cost: batches.unitCogs,
+        cogsMode: batches.cogsMode,
+        unitCogsMin: batches.unitCogsMin,
+        unitCogsMax: batches.unitCogsMax,
         productId: batches.productId,
         productCategory: products.category, // Assuming category exists on products table
       })
@@ -49,8 +55,27 @@ export const sessionPricingService = {
       throw new Error(`Batch ID ${batchId} not found`);
     }
 
-    const { cost, productId, productCategory } = batchResult[0];
-    const costStr = String(cost);
+    const {
+      cost,
+      cogsMode,
+      unitCogsMin,
+      unitCogsMax,
+      productId,
+      productCategory,
+    } = batchResult[0];
+    const defaultBasis =
+      await pricingService.getRangePricingDefaultForChannel("LIVE_SHOPPING");
+    const resolvedCogs = resolveBatchCogs(
+      {
+        id: batchId,
+        cogsMode,
+        unitCogs: cost,
+        unitCogsMin,
+        unitCogsMax,
+      },
+      { rangeBasis: defaultBasis }
+    );
+    const costStr = financialMath.toFixed(resolvedCogs.unitCogs);
 
     // 2. Check for Session Override
     const override = await db
@@ -70,16 +95,24 @@ export const sessionPricingService = {
         source: "OVERRIDE",
         isOverride: true,
         baseCost: costStr,
+        effectiveCogs: costStr,
+        effectiveCogsBasis: resolvedCogs.effectiveCogsBasis,
+        cogsMode,
+        unitCogsMin,
+        unitCogsMax,
       };
     }
 
     // 3. Calculate based on Margin Logic
     // We treat null category as generic if missing
     const categoryToUse = productCategory || "UNCATEGORIZED";
-    
+
     const marginResult = await pricingService.getMarginWithFallback(
       clientId,
-      categoryToUse
+      categoryToUse,
+      {
+        basePrice: Number(costStr),
+      }
     );
 
     if (marginResult.marginPercent !== null) {
@@ -93,18 +126,28 @@ export const sessionPricingService = {
         source: "MARGIN_CALC",
         isOverride: false,
         baseCost: costStr,
+        effectiveCogs: costStr,
+        effectiveCogsBasis: resolvedCogs.effectiveCogsBasis,
+        cogsMode,
+        unitCogsMin,
+        unitCogsMax,
         appliedMargin: marginResult.marginPercent,
       };
     }
 
     // 4. Fallback to Cost (Safety Net)
-    // If no margin rules exist, we default to cost to prevent error, 
+    // If no margin rules exist, we default to cost to prevent error,
     // but this should ideally be flagged in UI.
     return {
       finalPrice: financialMath.toFixed(costStr),
       source: "COST_FALLBACK",
       isOverride: false,
       baseCost: costStr,
+      effectiveCogs: costStr,
+      effectiveCogsBasis: resolvedCogs.effectiveCogsBasis,
+      cogsMode,
+      unitCogsMin,
+      unitCogsMax,
       appliedMargin: 0,
     };
   },
@@ -166,5 +209,5 @@ export const sessionPricingService = {
           eq(sessionPriceOverrides.productId, productId)
         )
       );
-  }
+  },
 };

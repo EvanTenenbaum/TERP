@@ -19,6 +19,7 @@ const buildLineItem = (overrides: Partial<LineItem> = {}): LineItem => ({
   marginDollar: 2.5,
   isMarginOverridden: false,
   marginSource: "DEFAULT",
+  appliedRules: [],
   unitPrice: 12.5,
   lineTotal: 25,
   isSample: false,
@@ -93,11 +94,52 @@ describe("LineItemTable powersheet actions", () => {
 
     const nextItems = onChange.mock.calls[0][0] as LineItem[];
     expect(nextItems[0].cogsPerUnit).toBe(14.5);
+    expect(nextItems[0].unitPrice).toBe(12.5);
     expect(nextItems[0].isCogsOverridden).toBe(true);
     expect(nextItems[0].cogsOverrideReason).toBe("Bulk override");
 
     expect(nextItems[1].cogsPerUnit).toBe(10);
     expect(nextItems[1].isCogsOverridden).toBe(false);
     expect(nextItems[1].cogsOverrideReason).toBeUndefined();
+  });
+
+  it("shows pricing and cost provenance for each row", () => {
+    render(
+      <LineItemTable
+        clientId={123}
+        items={[
+          buildLineItem({
+            marginSource: "CUSTOMER_PROFILE",
+            cogsMode: "RANGE",
+            effectiveCogsBasis: "MID",
+            originalRangeMin: 9,
+            originalRangeMax: 11,
+            appliedRules: [
+              { ruleId: 1, ruleName: "Flower Markup", adjustment: "+25%" },
+            ],
+          }),
+          buildLineItem({
+            batchId: 2002,
+            productId: 22,
+            marginSource: "MANUAL",
+            effectiveCogsBasis: "MANUAL",
+          }),
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Price from profile rule")).toBeInTheDocument();
+    expect(
+      screen.getByText("Profile rule +25.0% markup")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Applied: Flower Markup (+25%)")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Using mid supplier range")).toBeInTheDocument();
+    expect(screen.getByText("Price manually overridden")).toBeInTheDocument();
+    expect(
+      screen.getByText("Weighted lot allocation cost")
+    ).toBeInTheDocument();
   });
 });

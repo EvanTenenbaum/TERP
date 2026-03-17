@@ -338,7 +338,14 @@ function ActiveInventoryTab({
     unitsAvailable: number;
     daysOld: number;
     unitCogs: number;
+    cogsMode?: "FIXED" | "RANGE";
+    unitCogsMin?: number | null;
+    unitCogsMax?: number | null;
+    effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
     batchStatus: string;
+    belowRangeSaleCount?: number;
+    belowRangeUnitsSold?: number;
+    latestBelowRangeReason?: string | null;
   }>;
   onBatchClick?: (batchId: number) => void;
 }) {
@@ -401,12 +408,40 @@ function ActiveInventoryTab({
                 </span>
               </TableCell>
               <TableCell className="text-right">
-                {formatCurrency(item.unitCogs)}
+                <div>
+                  <div>{formatCurrency(item.unitCogs)}</div>
+                  {item.cogsMode === "RANGE" &&
+                    typeof item.unitCogsMin === "number" &&
+                    typeof item.unitCogsMax === "number" && (
+                      <div className="text-xs text-muted-foreground">
+                        {item.effectiveCogsBasis || "MID"} of{" "}
+                        {formatCurrency(item.unitCogsMin)} to{" "}
+                        {formatCurrency(item.unitCogsMax)}
+                      </div>
+                    )}
+                  {(item.belowRangeSaleCount || 0) > 0 && (
+                    <div className="mt-1 text-xs text-amber-700">
+                      Below-range on {(item.belowRangeUnitsSold || 0).toFixed(2)}u
+                    </div>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
-                <Badge variant="secondary">
-                  {item.batchStatus.replace(/_/g, " ")}
-                </Badge>
+                <div className="flex flex-col items-start gap-1">
+                  <Badge variant="secondary">
+                    {item.batchStatus.replace(/_/g, " ")}
+                  </Badge>
+                  {(item.belowRangeSaleCount || 0) > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 text-amber-700"
+                    >
+                      {(item.belowRangeSaleCount || 0) === 1
+                        ? "1 below-range sale"
+                        : `${item.belowRangeSaleCount} below-range sales`}
+                    </Badge>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -433,7 +468,14 @@ function SupplyHistoryTab({
       batchCode: string;
       quantitySupplied: number;
       unitCogs: number;
+      cogsMode?: "FIXED" | "RANGE";
+      unitCogsMin?: number | null;
+      unitCogsMax?: number | null;
+      effectiveCogsBasis?: "LOW" | "MID" | "HIGH" | "MANUAL";
       totalCogs: number;
+      belowRangeSaleCount?: number;
+      belowRangeUnitsSold?: number;
+      latestBelowRangeReason?: string | null;
     }>;
     totalValue: number;
   }>;
@@ -512,13 +554,40 @@ function SupplyHistoryTab({
                           <div className="text-xs text-muted-foreground">
                             {product.category} - {product.batchCode}
                           </div>
+                          {(product.belowRangeSaleCount || 0) > 0 && (
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                              <Badge
+                                variant="outline"
+                                className="border-amber-300 text-amber-700"
+                              >
+                                Below vendor ask on{" "}
+                                {(product.belowRangeUnitsSold || 0).toFixed(2)}u
+                              </Badge>
+                              {product.latestBelowRangeReason && (
+                                <span className="text-muted-foreground">
+                                  {product.latestBelowRangeReason}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {product.quantitySupplied.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(product.unitCogs)}
+                        <div>
+                          <div>{formatCurrency(product.unitCogs)}</div>
+                          {product.cogsMode === "RANGE" &&
+                            typeof product.unitCogsMin === "number" &&
+                            typeof product.unitCogsMax === "number" && (
+                              <div className="text-xs text-muted-foreground">
+                                {product.effectiveCogsBasis || "MID"} of{" "}
+                                {formatCurrency(product.unitCogsMin)} to{" "}
+                                {formatCurrency(product.unitCogsMax)}
+                              </div>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(product.totalCogs)}

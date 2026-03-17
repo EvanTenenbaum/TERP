@@ -5,9 +5,9 @@ import {
 } from "@/components/layout/LinearWorkspaceShell";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
-import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
+import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
-import { Redirect } from "wouter";
+import { Redirect, useSearch } from "wouter";
 
 type ProcurementTab = "purchase-orders";
 type ProcurementQueryTab =
@@ -21,6 +21,7 @@ const PROCUREMENT_TABS = [
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
 export default function ProcurementWorkspacePage() {
+  const search = useSearch();
   const { activeTab, setActiveTab } = useQueryTabState<ProcurementQueryTab>({
     defaultTab: "purchase-orders",
     validTabs: [
@@ -30,15 +31,28 @@ export default function ProcurementWorkspacePage() {
       "receiving",
     ],
   });
+  const redirectParams = Object.fromEntries(
+    Array.from(new URLSearchParams(search).entries()).filter(
+      ([key]) => key !== "tab"
+    )
+  );
 
   useWorkspaceHomeTelemetry("procurement", activeTab);
 
   if (activeTab === "receiving" || activeTab === "product-intake") {
-    return <Redirect to={buildOperationsWorkspacePath("receiving")} />;
+    return (
+      <Redirect
+        to={buildOperationsWorkspacePath("receiving", redirectParams)}
+      />
+    );
   }
 
   if (activeTab === "inventory-browse") {
-    return <Redirect to={buildOperationsWorkspacePath("inventory")} />;
+    return (
+      <Redirect
+        to={buildOperationsWorkspacePath("inventory", redirectParams)}
+      />
+    );
   }
 
   return (
@@ -61,7 +75,7 @@ export default function ProcurementWorkspacePage() {
       ]}
     >
       <LinearWorkspacePanel value="purchase-orders">
-        <PurchaseOrdersWorkSurface />
+        <PurchaseOrdersSlicePage />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

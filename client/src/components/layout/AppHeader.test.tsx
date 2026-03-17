@@ -110,9 +110,7 @@ describe("AppHeader - Notification Bell", () => {
     // Check for unread badge - should show the mocked unread count
     const badge = screen.getByText("2");
     expect(badge).toBeInTheDocument();
-
-    const densityToggle = screen.getByTestId("density-toggle-button");
-    expect(densityToggle).toBeInTheDocument();
+    expect(screen.queryByTestId("density-toggle-button")).not.toBeInTheDocument();
   });
 
   it("routes notifications to the notifications hub", () => {
@@ -126,5 +124,19 @@ describe("AppHeader - Notification Bell", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: /notifications/i }));
 
     expect(mockSetLocation).toHaveBeenCalledWith("/notifications");
+  });
+
+  it("keeps density control inside the account menu instead of primary header chrome", () => {
+    render(
+      <ThemeProvider>
+        <AppHeader />
+      </ThemeProvider>
+    );
+
+    openAccountMenu();
+
+    expect(
+      screen.getByRole("menuitem", { name: /switch to comfortable spacing/i })
+    ).toBeInTheDocument();
   });
 });

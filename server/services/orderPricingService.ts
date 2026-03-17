@@ -13,6 +13,7 @@
 
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { getDb } from "../db";
+import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import {
   clients,
   pricingProfiles,
@@ -377,11 +378,12 @@ export async function calculateOrderPricing(params: {
   let categoryAdjustmentsTotal = 0;
   let ageAdjustmentsTotal = 0;
   let quantityDiscountsTotal = 0;
+  const batchSelect = await getCompatibleBatchSelect();
 
   for (const item of params.lineItems) {
     // Get batch with product info
     const batchResult = await db
-      .select()
+      .select(batchSelect)
       .from(batches)
       .where(eq(batches.id, item.batchId))
       .limit(1);

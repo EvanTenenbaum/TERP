@@ -58,7 +58,8 @@ test.describe("Golden Flow: GF-007 Inventory Management", () => {
       id: batch.id,
       field: "onHandQty",
       adjustment,
-      reason: "GF-007 quantity adjustment validation",
+      adjustmentReason: "COUNT_DISCREPANCY",
+      notes: "GF-007 quantity adjustment validation",
     });
 
     const afterList = await trpcQuery<InventoryListResponse>(
@@ -77,7 +78,8 @@ test.describe("Golden Flow: GF-007 Inventory Management", () => {
       id: batch.id,
       field: "onHandQty",
       adjustment: -adjustment,
-      reason: "GF-007 cleanup rollback",
+      adjustmentReason: "COUNT_DISCREPANCY",
+      notes: "GF-007 cleanup rollback",
     });
 
     const rolledBackList = await trpcQuery<InventoryListResponse>(

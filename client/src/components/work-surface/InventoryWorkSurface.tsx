@@ -13,10 +13,12 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 
 // UI Components
@@ -63,7 +65,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
 import { FilterChips } from "@/components/inventory/FilterChips";
 import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
@@ -196,9 +197,6 @@ interface BatchVersionEntity {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-// localStorage key for persisting search/sort state across page reloads
-const INVENTORY_VIEW_STATE_KEY = "terp-inventory-view-v1";
 
 const BATCH_STATUSES = [
   { value: "ALL", label: "All Statuses" },
@@ -532,6 +530,7 @@ function BatchInspectorContent({
 // ============================================================================
 
 export function InventoryWorkSurface() {
+  const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pendingBulkDeleteRef = useRef<
     Array<{
@@ -540,35 +539,13 @@ export function InventoryWorkSurface() {
     }>
   >([]);
 
-  // State — Initialize from localStorage for filter persistence
-  const savedViewState = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem(INVENTORY_VIEW_STATE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw) as {
-        search?: string;
-        sortColumn?: string | null;
-        sortDirection?: string;
-      };
-    } catch {
-      return null;
-    }
-  }, []);
-  const [search, setSearch] = useState(() => savedViewState?.search ?? "");
-  const [sortColumn, setSortColumn] = useState<string | null>(
-    () => savedViewState?.sortColumn ?? null
-  );
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(() => {
-    const saved = savedViewState?.sortDirection;
-    if (saved === "asc" || saved === "desc") return saved;
-    return "desc";
-  });
+  const [search, setSearch] = useState("");
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [inventoryViewMode, setInventoryViewMode] =
     useState<InventoryViewMode>("table");
   const [page, setPage] = useState(0);
   const [bulkStatus, setBulkStatus] = useState<InventoryBatchStatus>("LIVE");
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   const [showQtyAdjust, setShowQtyAdjust] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -587,18 +564,6 @@ export function InventoryWorkSurface() {
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
     useInventoryFilters();
   const { exportCSV, state: exportState } = useExport<InventoryExportRow>();
-
-  // Persist search/sort state to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        INVENTORY_VIEW_STATE_KEY,
-        JSON.stringify({ search, sortColumn, sortDirection })
-      );
-    } catch {
-      // Ignore storage failures.
-    }
-  }, [search, sortColumn, sortDirection]);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -647,6 +612,21 @@ export function InventoryWorkSurface() {
         return "sku";
     }
   }, [sortColumn]);
+
+  const hasSavedChrome =
+    search.trim().length > 0 || sortColumn !== null || sortDirection !== "desc";
+  const hasResettableView = hasActiveFilters || hasSavedChrome || page !== 0;
+
+  const resetWorkspaceView = useCallback(() => {
+    setSearch("");
+    setSortColumn(null);
+    setSortDirection("desc");
+    clearAllFilters();
+    setPage(0);
+    window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+  }, [clearAllFilters]);
 
   // Data queries
   const {
@@ -1872,13 +1852,21 @@ export function InventoryWorkSurface() {
               </>
             )}
           </Button>
+          <Button
+            variant="outline"
+            onClick={resetWorkspaceView}
+            disabled={!hasResettableView}
+            data-testid="inventory-reset-view"
+          >
+            Reset
+          </Button>
           {/* TER-220: Unified receiving entry point */}
           <Button
             data-testid="new-batch-btn"
-            onClick={() => setShowPurchaseModal(true)}
+            onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Receive Inventory
+            Open Receiving Queue
           </Button>
         </div>
 
@@ -2115,8 +2103,9 @@ export function InventoryWorkSurface() {
                 title="No inventory found"
                 description="Receive products to start managing stock, locations, and availability."
                 action={{
-                  label: "Open Receiving",
-                  onClick: () => setShowPurchaseModal(true),
+                  label: "Open Receiving Queue",
+                  onClick: () =>
+                    setLocation(buildOperationsWorkspacePath("receiving")),
                 }}
               />
             )
@@ -2750,15 +2739,6 @@ export function InventoryWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <PurchaseModal
-        open={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-        onSuccess={() => {
-          setSuccessMessage("Product intake created successfully.");
-          refreshInventory();
-        }}
-      />
 
       <SaveViewModal
         open={showSaveViewModal}

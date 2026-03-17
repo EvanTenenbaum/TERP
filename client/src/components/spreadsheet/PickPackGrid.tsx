@@ -19,9 +19,9 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
-  PICKING: "bg-blue-100 text-blue-800",
-  PACKED: "bg-green-100 text-green-800",
-  READY: "bg-purple-100 text-purple-800",
+  PARTIAL: "bg-blue-100 text-blue-800",
+  READY: "bg-green-100 text-green-800",
+  SHIPPED: "bg-slate-100 text-slate-800",
 };
 
 const StatusCellRenderer = (params: ICellRendererParams<PickPackGridRow>) => {
@@ -138,9 +138,9 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
     return (
       statsData ?? {
         pending: 0,
-        picking: 0,
-        packed: 0,
+        partial: 0,
         ready: 0,
+        shipped: 0,
         total: 0,
       }
     );
@@ -195,7 +195,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         editable: true,
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
-          values: ["PENDING", "PICKING", "PACKED", "READY"],
+          values: ["PENDING", "PARTIAL", "READY"],
         },
       },
       {
@@ -239,9 +239,19 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
       if (event.colDef.field === "pickPackStatus") {
         const status = event.newValue as PickPackGridRow["pickPackStatus"];
         if (status) {
+          const mutationStatus =
+            status === "PARTIAL"
+              ? "PICKING"
+              : status === "SHIPPED"
+                ? null
+                : status;
+          if (!mutationStatus) {
+            toast.error("Shipped orders cannot be edited from the grid");
+            return;
+          }
           updateStatus.mutate({
             orderId: event.data.orderId,
-            status,
+            status: mutationStatus,
           });
         }
       }
@@ -298,18 +308,18 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
             </div>
             <div className="flex items-center gap-1">
               <Loader2 className="h-4 w-4 text-blue-500" />
-              <span className="text-muted-foreground">Picking:</span>
-              <span className="font-semibold">{stats.picking}</span>
+              <span className="text-muted-foreground">Partial:</span>
+              <span className="font-semibold">{stats.partial}</span>
             </div>
             <div className="flex items-center gap-1">
               <Package className="h-4 w-4 text-green-500" />
-              <span className="text-muted-foreground">Packed:</span>
-              <span className="font-semibold">{stats.packed}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle className="h-4 w-4 text-purple-500" />
               <span className="text-muted-foreground">Ready:</span>
               <span className="font-semibold">{stats.ready}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <CheckCircle className="h-4 w-4 text-slate-500" />
+              <span className="text-muted-foreground">Shipped:</span>
+              <span className="font-semibold">{stats.shipped}</span>
             </div>
           </div>
 
@@ -421,11 +431,11 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
                 "bg-yellow-50": params =>
                   params.data?.pickPackStatus === "PENDING",
                 "bg-blue-50": params =>
-                  params.data?.pickPackStatus === "PICKING",
+                  params.data?.pickPackStatus === "PARTIAL",
                 "bg-green-50": params =>
-                  params.data?.pickPackStatus === "PACKED",
-                "bg-purple-50": params =>
                   params.data?.pickPackStatus === "READY",
+                "bg-slate-50": params =>
+                  params.data?.pickPackStatus === "SHIPPED",
               }}
             />
           </div>

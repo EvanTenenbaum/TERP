@@ -677,6 +677,11 @@ export const PERMISSIONS = [
     module: "pricing",
   },
   {
+    name: "pricing:read",
+    description: "Can read pricing context and pricing module data",
+    module: "pricing",
+  },
+  {
     name: "pricing:rules:read",
     description: "Can view pricing rules",
     module: "pricing",
@@ -1428,6 +1433,7 @@ export const ownerExecutivePermissions = [
   // Work Surface simplified permissions
   "accounting:read",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "pricing:defaults:view",
@@ -1503,6 +1509,7 @@ export const operationsManagerPermissions = [
   // Work Surface simplified permissions
   "accounting:read",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "returns:access",
@@ -1557,7 +1564,7 @@ export const operationsManagerPermissions = [
 ];
 
 // Sales Manager: Full access to clients, orders, quotes, sales sheets
-// BUG-090: Added samples:access, samples:read for viewing samples (BLOCKED-001)
+// BUG-090: Added samples access plus create so sales can request samples end to end
 // BUG-090: Added accounting:reports:view for finance reports access (BLOCKED-003)
 // Note: Pick & Pack (BLOCKED-002) requires adminProcedure - by design for warehouse-only access
 export const salesManagerPermissions = [
@@ -1567,9 +1574,10 @@ export const salesManagerPermissions = [
   "dashboard:customize",
   "analytics:access",
   "analytics:view_reports",
-  // BLOCKED-001 fix: Allow viewing samples (needed for sales context)
+  // BLOCKED-001 fix: Allow sales to create and review sample requests
   "samples:access",
   "samples:read",
+  "samples:create",
   "samples:inventory:view",
   "clients:access",
   "clients:read",
@@ -1604,6 +1612,7 @@ export const salesManagerPermissions = [
   "inventory:read",
   "inventory:quantity:view",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "pricing:defaults:view",
@@ -1712,6 +1721,7 @@ export const accountantPermissions = [
   "accounting:delete",
   "accounting:manage",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "calendar:access",
@@ -1779,6 +1789,7 @@ export const inventoryManagerPermissions = [
   "vendors:access",
   "vendors:read",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "calendar:access",
@@ -1848,6 +1859,7 @@ export const buyerProcurementPermissions = [
   "vendor_supply:update",
   "vendor_supply:delete",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "calendar:access",
@@ -1903,6 +1915,7 @@ export const customerServicePermissions = [
   "inventory:read",
   "inventory:quantity:view",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "returns:access",
@@ -2019,6 +2032,7 @@ export const readOnlyAuditorPermissions = [
   // Work Surface simplified permissions
   "accounting:read",
   "pricing:access",
+  "pricing:read",
   "pricing:rules:read",
   "pricing:profiles:read",
   "pricing:defaults:view",

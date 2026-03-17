@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { useLocation } from "wouter";
 
 export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
@@ -95,7 +96,7 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 className="rounded border bg-muted/40 p-2 text-left hover:bg-muted/60 transition-colors"
-                onClick={() => setLocation("/orders")}
+                onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
               >
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Sold Today

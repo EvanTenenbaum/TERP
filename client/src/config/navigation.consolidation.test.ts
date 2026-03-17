@@ -4,7 +4,11 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { navigationItems, buildNavigationGroups } from "./navigation";
+import {
+  navigationItems,
+  buildNavigationAccessModel,
+  buildNavigationGroups,
+} from "./navigation";
 
 const paths = navigationItems.map(item => item.path);
 
@@ -20,7 +24,7 @@ describe("consolidated navigation IA", () => {
     expect(paths).toContain("/sales");
     expect(paths).toContain("/relationships");
     expect(paths).toContain("/demand-supply");
-    expect(paths).toContain("/operations");
+    expect(paths).toContain("/inventory");
     expect(paths).toContain("/credits");
     expect(paths).toContain("/notifications");
     expect(paths).toContain("/settings/cogs");
@@ -39,7 +43,6 @@ describe("consolidated navigation IA", () => {
     expect(paths).not.toContain("/inbox");
   });
 
-  // TER-600: Validate the 11-item sidebar structure
   it("has exactly 11 sidebar-visible items", () => {
     expect(sidebarItems).toHaveLength(11);
   });
@@ -47,14 +50,14 @@ describe("consolidated navigation IA", () => {
   it("has correct sidebar-visible items per group", () => {
     const sidebarPaths = sidebarItems.map(item => item.path);
 
-    // Sell group: Sales, Relationships, Demand & Supply
+    // Sell group: Sales, Demand & Supply
     expect(sidebarPaths).toContain("/sales");
-    expect(sidebarPaths).toContain("/relationships");
     expect(sidebarPaths).toContain("/demand-supply");
 
-    // Operations group: Operations, Purchase Orders
-    expect(sidebarPaths).toContain("/operations");
+    // Buy, Operations, and Relationships groups
     expect(sidebarPaths).toContain("/purchase-orders");
+    expect(sidebarPaths).toContain("/inventory");
+    expect(sidebarPaths).toContain("/relationships");
 
     // Finance group: Accounting, Credits, Reports
     expect(sidebarPaths).toContain("/accounting");
@@ -70,17 +73,19 @@ describe("consolidated navigation IA", () => {
   // TER-597: Absorbed items are hidden from sidebar but present in full list
   it("keeps absorbed items in navigationItems for Command Palette continuity", () => {
     // Operations absorbed items
-    expect(paths).toContain("/operations?tab=shipping");
-    expect(paths).toContain("/operations?tab=receiving");
-    expect(paths).toContain("/sales-sheets");
-    expect(paths).toContain("/live-shopping");
+    expect(paths).toContain("/inventory?tab=shipping");
+    expect(paths).toContain("/inventory?tab=receiving");
+    expect(paths).toContain("/sales?tab=sales-sheets");
+    expect(paths).toContain("/sales?tab=live-shopping");
 
     // Inventory absorbed items
-    expect(paths).toContain("/photography");
-    expect(paths).toContain("/samples");
+    expect(paths).toContain("/inventory?tab=photography");
+    expect(paths).toContain("/inventory?tab=samples");
 
     // Admin absorbed items
-    expect(paths).toContain("/users");
+    expect(paths).toContain("/settings?tab=users");
+    expect(paths).toContain("/settings?tab=locations");
+    expect(paths).toContain("/settings?tab=feature-flags");
     expect(paths).toContain("/scheduling");
     expect(paths).toContain("/time-clock");
     expect(paths).toContain("/todos");
@@ -90,16 +95,29 @@ describe("consolidated navigation IA", () => {
     const sidebarHiddenPaths = hiddenItems.map(item => item.path);
 
     // Absorbed items must NOT be sidebar-visible
-    expect(sidebarHiddenPaths).toContain("/sales-sheets");
-    expect(sidebarHiddenPaths).toContain("/live-shopping");
-    expect(sidebarHiddenPaths).toContain("/operations?tab=shipping");
-    expect(sidebarHiddenPaths).toContain("/operations?tab=receiving");
-    expect(sidebarHiddenPaths).toContain("/photography");
-    expect(sidebarHiddenPaths).toContain("/samples");
-    expect(sidebarHiddenPaths).toContain("/users");
+    expect(sidebarHiddenPaths).toContain("/sales?tab=sales-sheets");
+    expect(sidebarHiddenPaths).toContain("/sales?tab=live-shopping");
+    expect(sidebarHiddenPaths).toContain("/inventory?tab=shipping");
+    expect(sidebarHiddenPaths).toContain("/inventory?tab=receiving");
+    expect(sidebarHiddenPaths).toContain("/direct-intake");
+    expect(sidebarHiddenPaths).toContain("/inventory?tab=photography");
+    expect(sidebarHiddenPaths).toContain("/inventory?tab=samples");
+    expect(sidebarHiddenPaths).toContain("/settings?tab=users");
+    expect(sidebarHiddenPaths).toContain("/settings?tab=locations");
+    expect(sidebarHiddenPaths).toContain("/settings?tab=feature-flags");
     expect(sidebarHiddenPaths).toContain("/scheduling");
     expect(sidebarHiddenPaths).toContain("/time-clock");
     expect(sidebarHiddenPaths).toContain("/todos");
+  });
+
+  it("keeps legacy intake aliases out of command navigation", () => {
+    const accessModel = buildNavigationAccessModel();
+    const commandPaths = accessModel.commandNavigationItems.map(
+      item => item.path
+    );
+
+    expect(commandPaths).toContain("/inventory?tab=receiving");
+    expect(commandPaths).not.toContain("/direct-intake");
   });
 
   it("buildNavigationGroups returns only sidebar-visible items", () => {
@@ -108,25 +126,31 @@ describe("consolidated navigation IA", () => {
 
     // Sidebar-visible items must be present
     expect(groupedPaths).toContain("/sales");
-    expect(groupedPaths).toContain("/operations");
+    expect(groupedPaths).toContain("/inventory");
     expect(groupedPaths).toContain("/accounting");
 
     // Absorbed items must NOT appear in sidebar groups
-    expect(groupedPaths).not.toContain("/sales-sheets");
-    expect(groupedPaths).not.toContain("/photography");
-    expect(groupedPaths).not.toContain("/users");
+    expect(groupedPaths).not.toContain("/sales?tab=sales-sheets");
+    expect(groupedPaths).not.toContain("/inventory?tab=photography");
+    expect(groupedPaths).not.toContain("/settings?tab=users");
     expect(groupedPaths).not.toContain("/scheduling");
     expect(groupedPaths).not.toContain("/todos");
   });
 
   it("has the correct group assignments for sidebar items", () => {
     const sellItems = sidebarItems.filter(i => i.group === "sales");
-    const buyItems = sidebarItems.filter(i => i.group === "inventory");
+    const buyItems = sidebarItems.filter(i => i.group === "buy");
+    const operationsItems = sidebarItems.filter(i => i.group === "operations");
+    const relationshipItems = sidebarItems.filter(
+      i => i.group === "relationships"
+    );
     const financeItems = sidebarItems.filter(i => i.group === "finance");
     const adminItems = sidebarItems.filter(i => i.group === "admin");
 
-    expect(sellItems).toHaveLength(3);
-    expect(buyItems).toHaveLength(2);
+    expect(sellItems).toHaveLength(2);
+    expect(buyItems).toHaveLength(1);
+    expect(operationsItems).toHaveLength(1);
+    expect(relationshipItems).toHaveLength(1);
     expect(financeItems).toHaveLength(3);
     expect(adminItems).toHaveLength(3);
   });

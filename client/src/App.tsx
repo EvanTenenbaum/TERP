@@ -15,7 +15,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardHomePage from "./pages/DashboardHomePage";
-import UsersPage from "@/pages/UsersPage";
 import { AppShell } from "./components/layout/AppShell";
 import Settings from "@/pages/Settings";
 import AccountingWorkspacePage from "@/pages/AccountingWorkspacePage";
@@ -29,7 +28,6 @@ import SalesWorkspacePage from "@/pages/SalesWorkspacePage";
 import ProcurementWorkspacePage from "@/pages/ProcurementWorkspacePage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
-import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 // Work Surface components - legacy pages removed, using WorkSurface directly
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
@@ -39,12 +37,8 @@ import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSli
 import SliceV1WorkbenchLayout from "@/components/uiux-slice/SliceV1WorkbenchLayout";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
-import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 import AdminSetupPage from "@/pages/AdminSetupPage";
 import VendorRedirect from "@/components/VendorRedirect";
-import SampleManagement from "@/pages/SampleManagement";
-import LocationsPage from "@/pages/LocationsPage";
-import IntakeReceipts from "@/pages/IntakeReceipts"; // FEAT-008: Intake Verification System
 import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -69,14 +63,12 @@ import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import LiveShoppingPage from "@/pages/LiveShoppingPage";
-import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
-import PhotographyPage from "@/pages/PhotographyPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { trackLegacyRouteRedirect } from "@/lib/navigation/routeUsageTelemetry";
+import { resolveRelationshipsTab } from "@/lib/navigation/consolidation";
 import {
   buildOperationsWorkspacePath,
   normalizeOperationsTab,
@@ -177,7 +169,6 @@ const RedirectToProcurementSpreadsheet: FC = () => {
   const params = new URLSearchParams(search);
 
   params.set("tab", "receiving");
-  params.set("mode", "spreadsheet");
 
   const destination = buildOperationsWorkspacePath(
     "receiving",
@@ -196,7 +187,7 @@ const RedirectToProcurementSpreadsheet: FC = () => {
   return <Redirect to={destination} />;
 };
 
-const RedirectInventoryToOperations: FC = () => {
+const RedirectOperationsToInventory: FC = () => {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const destination = buildOperationsWorkspacePath(
@@ -207,7 +198,7 @@ const RedirectInventoryToOperations: FC = () => {
   );
 
   useTrackLegacyRedirect({
-    from: "/inventory",
+    from: "/operations",
     to: destination,
     tab: normalizeOperationsTab(params.get("tab")) ?? "inventory",
     search: search || undefined,
@@ -231,6 +222,30 @@ const RedirectToOperationsTab = (from: string, tab: string) => {
       from,
       to: destination,
       tab: normalizeOperationsTab(tab) ?? undefined,
+      search: search || undefined,
+    });
+
+    return <Redirect to={destination} />;
+  };
+
+  return RedirectComponent;
+};
+
+const RedirectToRelationshipsWorkspace = (from: string) => {
+  const RedirectComponent: FC = () => {
+    const search = useSearch();
+    const params = new URLSearchParams(search);
+    const tab = resolveRelationshipsTab(search);
+
+    params.set("tab", tab);
+
+    const query = params.toString();
+    const destination = `/relationships${query ? `?${query}` : ""}`;
+
+    useTrackLegacyRedirect({
+      from,
+      to: destination,
+      tab,
       search: search || undefined,
     });
 
@@ -370,12 +385,12 @@ function Router() {
                   component={withErrorBoundary(DemandSupplyWorkspacePage)}
                 />
                 <Route
-                  path="/operations"
+                  path="/inventory"
                   component={withErrorBoundary(InventoryWorkspacePage)}
                 />
                 <Route
-                  path="/inventory"
-                  component={withErrorBoundary(RedirectInventoryToOperations)}
+                  path="/operations"
+                  component={withErrorBoundary(RedirectOperationsToInventory)}
                 />
                 <Route
                   path="/inventory/:id"
@@ -481,7 +496,9 @@ function Router() {
                 />
                 <Route
                   path="/clients"
-                  component={withErrorBoundary(RelationshipsWorkspacePage)}
+                  component={withErrorBoundary(
+                    RedirectToRelationshipsWorkspace("/clients")
+                  )}
                 />
                 <Route
                   path="/clients/:id"
@@ -495,7 +512,10 @@ function Router() {
                   path="/client-ledger"
                   component={withErrorBoundary(ClientLedgerWorkSurface)}
                 />
-                <Route path="/users" component={withErrorBoundary(UsersPage)} />
+                <Route
+                  path="/users"
+                  component={RedirectWithTab("/users", "/settings", "users")}
+                />
                 <Route
                   path="/pricing/rules"
                   component={withErrorBoundary(PricingRulesPage)}
@@ -506,23 +526,32 @@ function Router() {
                 />
                 <Route
                   path="/sales-sheets"
-                  component={withErrorBoundary(SalesSheetCreatorPage)}
+                  component={RedirectWithTab(
+                    "/sales-sheets",
+                    "/sales",
+                    "sales-sheets"
+                  )}
                 />
                 {/* TER-189: Redirect legacy singular route to plural */}
                 <Route
                   path="/sales-sheet"
-                  component={RedirectWithSearch(
+                  component={RedirectWithTab(
                     "/sales-sheet",
-                    "/sales-sheets"
+                    "/sales",
+                    "sales-sheets"
                   )}
                 />
                 <Route
                   path="/sales-portal"
-                  component={withErrorBoundary(UnifiedSalesPortalPage)}
+                  component={RedirectWithTab(
+                    "/sales-portal",
+                    "/sales",
+                    "live-shopping"
+                  )}
                 />
                 <Route
                   path="/orders"
-                  component={withErrorBoundary(SalesWorkspacePage)}
+                  component={RedirectWithTab("/orders", "/sales", "orders")}
                 />
                 <Route
                   path="/pick-pack"
@@ -530,7 +559,10 @@ function Router() {
                 />
                 <Route
                   path="/photography"
-                  component={withErrorBoundary(PhotographyPage)}
+                  component={RedirectToOperationsTab(
+                    "/photography",
+                    "photography"
+                  )}
                 />
                 <Route
                   path="/orders/create"
@@ -565,7 +597,11 @@ function Router() {
                 />
                 <Route
                   path="/settings/feature-flags"
-                  component={withErrorBoundary(FeatureFlagsPage)}
+                  component={RedirectWithTab(
+                    "/settings/feature-flags",
+                    "/settings",
+                    "feature-flags"
+                  )}
                 />
                 <Route
                   path="/settings"
@@ -580,7 +616,7 @@ function Router() {
                   component={RedirectWithTab(
                     "/credit-settings",
                     "/credits",
-                    "settings"
+                    "capacity"
                   )}
                 />
                 {/* NAV-017: Credits management page */}
@@ -589,7 +625,7 @@ function Router() {
                   component={RedirectWithTab(
                     "/credits/manage",
                     "/credits",
-                    "credits"
+                    "adjustments"
                   )}
                 />
                 <Route
@@ -637,6 +673,13 @@ function Router() {
                   component={withErrorBoundary(ProcurementWorkspacePage)}
                 />
                 <Route
+                  path="/procurement"
+                  component={RedirectWithSearch(
+                    "/procurement",
+                    "/purchase-orders"
+                  )}
+                />
+                <Route
                   path="/purchase-orders/classic"
                   component={RedirectWithTab(
                     "/purchase-orders/classic",
@@ -646,38 +689,45 @@ function Router() {
                 />
                 <Route
                   path="/product-intake"
-                  component={RedirectWithTab(
+                  component={RedirectToOperationsTab(
                     "/product-intake",
-                    "/purchase-orders",
-                    "product-intake"
+                    "receiving"
                   )}
                 />
                 <Route
                   path="/inventory-browse"
-                  component={RedirectWithTab(
+                  component={RedirectToOperationsTab(
                     "/inventory-browse",
-                    "/purchase-orders",
-                    "inventory-browse"
+                    "inventory"
                   )}
                 />
                 <Route
                   path="/slice-v1"
                   component={RedirectWithSearch(
                     "/slice-v1",
-                    "/slice-v1/purchase-orders"
+                    "/purchase-orders"
                   )}
                 />
                 <Route
                   path="/slice-v1/purchase-orders"
-                  component={withErrorBoundary(PurchaseOrdersSlicePage)}
+                  component={RedirectWithSearch(
+                    "/slice-v1/purchase-orders",
+                    "/purchase-orders"
+                  )}
                 />
                 <Route
                   path="/slice-v1/product-intake"
-                  component={withErrorBoundary(ProductIntakeSlicePage)}
+                  component={RedirectToOperationsTab(
+                    "/slice-v1/product-intake",
+                    "receiving"
+                  )}
                 />
                 <Route
                   path="/slice-v1/inventory"
-                  component={withErrorBoundary(InventoryBrowseSlicePage)}
+                  component={RedirectToOperationsTab(
+                    "/slice-v1/inventory",
+                    "inventory"
+                  )}
                 />
                 <Route
                   path="/returns"
@@ -685,21 +735,30 @@ function Router() {
                 />
                 <Route
                   path="/samples"
-                  component={withErrorBoundary(SampleManagement)}
+                  component={RedirectToOperationsTab("/samples", "samples")}
                 />
                 <Route
                   path="/locations"
-                  component={withErrorBoundary(LocationsPage)}
+                  component={RedirectWithTab(
+                    "/locations",
+                    "/settings",
+                    "locations"
+                  )}
                 />
-                {/* FEAT-008: Intake Verification System */}
                 <Route
                   path="/intake-receipts"
-                  component={withErrorBoundary(IntakeReceipts)}
+                  component={RedirectToOperationsTab(
+                    "/intake-receipts",
+                    "receiving"
+                  )}
                 />
-                {/* RT-05/RT-06: Route compatibility aliases to procurement workspace tab */}
                 <Route
                   path="/receiving"
                   component={RedirectToOperationsTab("/receiving", "receiving")}
+                />
+                <Route
+                  path="/intake"
+                  component={RedirectToOperationsTab("/intake", "receiving")}
                 />
                 <Route
                   path="/direct-intake"
@@ -718,7 +777,11 @@ function Router() {
                 />
                 <Route
                   path="/live-shopping"
-                  component={withErrorBoundary(LiveShoppingPage)}
+                  component={RedirectWithTab(
+                    "/live-shopping",
+                    "/sales",
+                    "live-shopping"
+                  )}
                 />
                 <Route
                   path="/spreadsheet-view"

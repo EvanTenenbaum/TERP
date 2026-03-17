@@ -9,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -52,6 +58,8 @@ import {
   DollarSign,
   Clock,
   TrendingUp,
+  Shield,
+  ArrowRight,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useToast } from "@/hooks/use-toast";
@@ -154,7 +162,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
   // Mutations
   const issueCreditMutation = trpc.credits.issue.useMutation({
     onSuccess: () => {
-      toast({ title: "Credit issued successfully" });
+      toast({ title: "Credit adjustment issued successfully" });
       setIssueCreditOpen(false);
       setNewCredit({
         clientId: "",
@@ -167,7 +175,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
     },
     onError: error => {
       toast({
-        title: "Error issuing credit",
+        title: "Error issuing credit adjustment",
         description: error.message,
         variant: "destructive",
       });
@@ -176,7 +184,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
 
   const applyCreditMutation = trpc.credits.applyCredit.useMutation({
     onSuccess: () => {
-      toast({ title: "Credit applied successfully" });
+      toast({ title: "Credit adjustment applied successfully" });
       setApplyCreditOpen(false);
       setApplyForm({ invoiceId: "", amount: "", notes: "" });
       setSelectedCredit(null);
@@ -184,7 +192,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
     },
     onError: error => {
       toast({
-        title: "Error applying credit",
+        title: "Error applying credit adjustment",
         description: error.message,
         variant: "destructive",
       });
@@ -193,12 +201,12 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
 
   const voidCreditMutation = trpc.credits.void.useMutation({
     onSuccess: () => {
-      toast({ title: "Credit voided successfully" });
+      toast({ title: "Credit adjustment voided successfully" });
       refetch();
     },
     onError: error => {
       toast({
-        title: "Error voiding credit",
+        title: "Error voiding credit adjustment",
         description: error.message,
         variant: "destructive",
       });
@@ -268,20 +276,94 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
     <div className="flex flex-col gap-6 p-6">
       {!embedded && <BackButton label="Back to Dashboard" to="/" />}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Credits Management
+            Issued Credit Adjustments
           </h1>
           <p className="text-muted-foreground mt-1">
-            Issue, track, and apply customer credits
+            Issue, track, and apply credit adjustments after returns, pricing
+            corrections, refunds, or goodwill decisions.
           </p>
         </div>
-        <Button onClick={() => setIssueCreditOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Issue Credit
-        </Button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-blue-200 bg-blue-50/70">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Client credit capacity lives separately</CardTitle>
+                <CardDescription className="mt-1">
+                  Use capacity settings when you need to change a client&apos;s
+                  limit, exposure guardrails, or override rules.
+                </CardDescription>
+              </div>
+              <Shield className="h-5 w-5 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border border-blue-200 bg-background/90 p-3 text-sm text-muted-foreground">
+              Capacity answers &quot;How much can this client carry?&quot;
+              Issued adjustments answer &quot;What adjustment balance can the
+              client spend back down?&quot;
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => (window.location.href = "/credits?tab=capacity")}
+            >
+              Open Capacity Settings
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-emerald-200 bg-emerald-50/70">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Issue or apply an adjustment</CardTitle>
+                <CardDescription className="mt-1">
+                  Keep post-sale adjustments visible here until they are fully
+                  applied back to invoices.
+                </CardDescription>
+              </div>
+              <CreditCard className="h-5 w-5 text-emerald-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Open adjustment balance
+                </p>
+                <p className="text-2xl font-semibold text-emerald-700">
+                  {formatCurrency(summary?.totalCreditsRemaining)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Issued adjustments
+                </p>
+                <p className="text-2xl font-semibold">
+                  {summary?.creditCount ?? 0}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setIssueCreditOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Issue Credit Adjustment
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setStatusFilter("ACTIVE")}
+              >
+                Review Open Balances
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Summary Cards */}
@@ -290,7 +372,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Credits Issued
+                Issued Adjustment Value
               </CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -299,7 +381,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                 {formatCurrency(summary.totalCreditsIssued)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {summary.creditCount} credits
+                {summary.creditCount} adjustments
               </p>
             </CardContent>
           </Card>
@@ -307,7 +389,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Available Credits
+                Open Credit Balance
               </CardTitle>
               <DollarSign className="h-4 w-4 text-green-600" />
             </CardHeader>
@@ -316,7 +398,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                 {formatCurrency(summary.totalCreditsRemaining)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Can be applied to invoices
+                Still available to apply against invoices
               </p>
             </CardContent>
           </Card>
@@ -324,7 +406,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Credits Used
+                Adjustments Used
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-blue-600" />
             </CardHeader>
@@ -333,7 +415,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                 {formatCurrency(summary.totalCreditsUsed)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Applied to invoices
+                Already used to reduce invoices
               </p>
             </CardContent>
           </Card>
@@ -341,7 +423,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Expiring Soon
+                Expiring Adjustments
               </CardTitle>
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
@@ -350,7 +432,8 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                 {formatCurrency(summary.expiringWithin30Days.totalAmount)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {summary.expiringWithin30Days.count} credits in next 30 days
+                {summary.expiringWithin30Days.count} open adjustments in the
+                next 30 days
               </p>
             </CardContent>
           </Card>
@@ -361,12 +444,18 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Credits</CardTitle>
+            <div>
+              <CardTitle>Issued adjustments and balances</CardTitle>
+              <CardDescription className="mt-1">
+                Search, filter, and apply issued credit adjustments without
+                mixing them up with client capacity settings.
+              </CardDescription>
+            </div>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search credits..."
+                  placeholder="Search issued adjustments..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   className="pl-8 w-[200px]"
@@ -393,16 +482,18 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">Loading credits...</p>
+            <p className="text-muted-foreground">
+              Loading issued adjustments...
+            </p>
           ) : credits?.items && credits.items.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Credit #</TableHead>
                   <TableHead>Client</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Original Amount</TableHead>
-                  <TableHead>Remaining</TableHead>
+                  <TableHead>Adjustment Reason</TableHead>
+                  <TableHead>Issued</TableHead>
+                  <TableHead>Open Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Expires</TableHead>
                   <TableHead>Actions</TableHead>
@@ -449,7 +540,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                               size="sm"
                               onClick={() => openApplyDialog(credit)}
                             >
-                              Apply
+                              Apply to Invoice
                             </Button>
                             <Button
                               variant="ghost"
@@ -472,7 +563,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
             </Table>
           ) : (
             <p className="text-muted-foreground text-center py-4">
-              No credits found
+              No issued adjustments match the current filters
             </p>
           )}
         </CardContent>
@@ -482,9 +573,10 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
       <Dialog open={issueCreditOpen} onOpenChange={setIssueCreditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Issue Credit</DialogTitle>
+            <DialogTitle>Issue Credit Adjustment</DialogTitle>
             <DialogDescription>
-              Create a new credit for a customer
+              Create an issued adjustment balance that can be applied back to a
+              customer invoice.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -552,7 +644,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                 onChange={e =>
                   setNewCredit({ ...newCredit, notes: e.target.value })
                 }
-                placeholder="Additional notes"
+                placeholder="Internal notes about this adjustment"
               />
             </div>
           </div>
@@ -564,7 +656,9 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               onClick={handleIssueCredit}
               disabled={issueCreditMutation.isPending}
             >
-              {issueCreditMutation.isPending ? "Issuing..." : "Issue Credit"}
+              {issueCreditMutation.isPending
+                ? "Issuing..."
+                : "Issue Adjustment"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -574,9 +668,9 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
       <Dialog open={applyCreditOpen} onOpenChange={setApplyCreditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Apply Credit</DialogTitle>
+            <DialogTitle>Apply Credit Adjustment</DialogTitle>
             <DialogDescription>
-              Apply credit {selectedCredit?.creditNumber} to an invoice
+              Apply credit {selectedCredit?.creditNumber} to an invoice balance
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -633,7 +727,9 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               onClick={handleApplyCredit}
               disabled={applyCreditMutation.isPending}
             >
-              {applyCreditMutation.isPending ? "Applying..." : "Apply Credit"}
+              {applyCreditMutation.isPending
+                ? "Applying..."
+                : "Apply to Invoice"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -643,10 +739,10 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
       <AlertDialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Void Credit?</AlertDialogTitle>
+            <AlertDialogTitle>Void Issued Adjustment?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to void this credit? This action cannot be
-              undone.
+              Are you sure you want to void this issued adjustment balance?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -663,7 +759,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Void Credit
+              Void Issued Adjustment
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -50,6 +50,8 @@ import {
   getStoredFulfillmentStatus,
   normalizeFulfillmentStatus,
 } from "../lib/fulfillmentStatusCompatibility";
+import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
+import { resolveBatchCogs } from "../cogsCalculator";
 
 // ============================================================================
 // BUG-502: In-memory rate limiting for confirm endpoint
@@ -103,8 +105,18 @@ const lineItemInputSchema = z.object({
   isSample: z.boolean().default(false),
   // ORD-002: COGS must be non-negative
   cogsPerUnit: z.number().nonnegative("COGS per unit cannot be negative"),
+  originalCogsPerUnit: z.number().nonnegative().optional(),
+  effectiveCogsBasis: z
+    .enum(["LOW", "MID", "HIGH", "MANUAL"])
+    .optional()
+    .default("MID"),
+  originalRangeMin: z.number().nonnegative().nullable().optional(),
+  originalRangeMax: z.number().nonnegative().nullable().optional(),
+  isBelowVendorRange: z.boolean().default(false),
+  belowRangeReason: z.string().optional(),
   marginPercent: z.number().optional(),
   marginDollar: z.number().optional(),
+  unitPrice: z.number().nonnegative().optional(),
   isCogsOverridden: z.boolean().default(false),
   cogsOverrideReason: z.string().optional(),
   isMarginOverridden: z.boolean().default(false),
@@ -135,6 +147,125 @@ const createOrderInputSchema = z.object({
     .optional(),
   cashPayment: z.number().optional(),
 });
+
+type DraftLineItemInput = z.infer<typeof lineItemInputSchema>;
+
+type DraftBatchPricingContext = Pick<
+  Batch,
+  "id" | "productId" | "cogsMode" | "unitCogs" | "unitCogsMin" | "unitCogsMax"
+> & {
+  batchGrade: string | null;
+  productCategory: string | null;
+  productName: string | null;
+  productSubcategory: string | null;
+  supplierName: string | null;
+};
+
+export function buildDraftPricingLookupOptions(
+  batchContext: Pick<
+    DraftBatchPricingContext,
+    "productName" | "productSubcategory" | "batchGrade" | "supplierName"
+  >
+) {
+  return {
+    itemName: batchContext.productName ?? undefined,
+    subcategory: batchContext.productSubcategory ?? undefined,
+    grade: batchContext.batchGrade ?? undefined,
+    vendor: batchContext.supplierName ?? undefined,
+  };
+}
+
+async function getDraftBatchPricingContext(
+  db: Exclude<Awaited<ReturnType<typeof getDb>>, null>,
+  batchId: number
+): Promise<DraftBatchPricingContext> {
+  const batchContext = await db
+    .select({
+      id: batches.id,
+      productId: batches.productId,
+      cogsMode: batches.cogsMode,
+      unitCogs: batches.unitCogs,
+      unitCogsMin: batches.unitCogsMin,
+      unitCogsMax: batches.unitCogsMax,
+      batchGrade: batches.grade,
+      productCategory: products.category,
+      productName: products.nameCanonical,
+      productSubcategory: products.subcategory,
+      supplierName: clients.name,
+    })
+    .from(batches)
+    .innerJoin(products, eq(batches.productId, products.id))
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
+    .where(eq(batches.id, batchId))
+    .limit(1)
+    .then(rows => rows[0]);
+
+  if (!batchContext) {
+    throw new Error(`Batch ${batchId} not found`);
+  }
+
+  return batchContext;
+}
+
+function resolveDraftLineItemCogs(
+  batch: Pick<
+    Batch,
+    "id" | "cogsMode" | "unitCogs" | "unitCogsMin" | "unitCogsMax"
+  >,
+  item: DraftLineItemInput
+) {
+  const defaultRangeBasis =
+    item.effectiveCogsBasis === "LOW" || item.effectiveCogsBasis === "HIGH"
+      ? item.effectiveCogsBasis
+      : "MID";
+
+  const defaultCogs = resolveBatchCogs(
+    {
+      id: batch.id,
+      cogsMode: batch.cogsMode,
+      unitCogs: batch.unitCogs,
+      unitCogsMin: batch.unitCogsMin,
+      unitCogsMax: batch.unitCogsMax,
+    },
+    { rangeBasis: defaultRangeBasis }
+  );
+
+  const selectedCogs =
+    item.isCogsOverridden || item.effectiveCogsBasis === "MANUAL"
+      ? resolveBatchCogs(
+          {
+            id: batch.id,
+            cogsMode: batch.cogsMode,
+            unitCogs: batch.unitCogs,
+            unitCogsMin: batch.unitCogsMin,
+            unitCogsMax: batch.unitCogsMax,
+          },
+          {
+            rangeBasis: defaultRangeBasis,
+            manualCogs: item.cogsPerUnit,
+          }
+        )
+      : defaultCogs;
+
+  const cogsPerUnit = selectedCogs.unitCogs;
+  const originalCogsPerUnit = item.originalCogsPerUnit ?? defaultCogs.unitCogs;
+  const isBelowVendorRange =
+    selectedCogs.originalRangeMin !== null &&
+    cogsPerUnit < selectedCogs.originalRangeMin;
+
+  return {
+    cogsPerUnit,
+    originalCogsPerUnit,
+    effectiveCogsBasis: selectedCogs.effectiveCogsBasis,
+    originalRangeMin: selectedCogs.originalRangeMin,
+    originalRangeMax: selectedCogs.originalRangeMax,
+    isBelowVendorRange,
+    belowRangeReason: isBelowVendorRange
+      ? item.belowRangeReason?.trim()
+      : undefined,
+  };
+}
 
 // ============================================================================
 // CONSOLIDATED ORDERS ROUTER
@@ -483,15 +614,14 @@ export const ordersRouter = router({
         const batchIds = lineItems.map(
           (item: OrderLineItem) => item.batchId as number
         );
+        const batchSelect = await getCompatibleBatchSelect();
         const batchRecords = await tx
-          .select()
+          .select(batchSelect)
           .from(batches)
           .where(safeInArray(batches.id, batchIds))
           .for("update");
 
-        const batchMap = new Map<number, Batch>(
-          batchRecords.map((b: Batch) => [b.id, b])
-        );
+        const batchMap = new Map(batchRecords.map(batch => [batch.id, batch]));
 
         // Check each line item has sufficient inventory
         for (const item of lineItems) {
@@ -774,30 +904,19 @@ export const ordersRouter = router({
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          // Get batch info for COGS
-          const batch = await db.query.batches.findFirst({
-            where: eq(batches.id, item.batchId),
-            columns: {
-              id: true,
-              productId: true,
-              unitCogs: true,
-            },
-          });
+          const batch = await getDraftBatchPricingContext(db, item.batchId);
 
-          if (!batch) {
-            throw new Error(`Batch ${item.batchId} not found`);
+          const resolvedCogs = resolveDraftLineItemCogs(batch, item);
+          if (
+            resolvedCogs.isBelowVendorRange &&
+            !item.belowRangeReason?.trim()
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "A reason is required when selling below the vendor COGS range.",
+            });
           }
-
-          // Get product info for category lookup
-          const product = await db.query.products.findFirst({
-            where: eq(products.id, batch.productId),
-            columns: { category: true },
-          });
-
-          const originalCogs = parseMoneyOrZero(batch.unitCogs);
-          const cogsPerUnit = item.isCogsOverridden
-            ? item.cogsPerUnit
-            : originalCogs;
 
           // Get margin (from input or lookup)
           let marginPercent: number;
@@ -807,11 +926,14 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
-            // Try to get margin using product category or fallback to "OTHER"
-            const productCategory = product?.category || "OTHER";
+            const productCategory = batch.productCategory || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              productCategory
+              productCategory,
+              {
+                basePrice: resolvedCogs.cogsPerUnit,
+                ...buildDraftPricingLookupOptions(batch),
+              }
             );
 
             // If no margin found after all fallbacks, use 30% as last resort
@@ -829,22 +951,31 @@ export const ordersRouter = router({
             }
           }
 
+          const providedUnitPrice =
+            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+              ? item.unitPrice
+              : null;
           const unitPrice =
+            providedUnitPrice ??
             marginCalculationService.calculatePriceFromMarginPercent(
-              cogsPerUnit,
+              resolvedCogs.cogsPerUnit,
               marginPercent
             );
+          const normalizedMarginPercent =
+            marginCalculationService.calculateMarginPercent(
+              resolvedCogs.cogsPerUnit,
+              unitPrice
+            );
           const marginDollar = marginCalculationService.calculateMarginDollar(
-            cogsPerUnit,
+            resolvedCogs.cogsPerUnit,
             unitPrice
           );
           const lineTotal = unitPrice * item.quantity;
 
           return {
             ...item,
-            cogsPerUnit,
-            originalCogsPerUnit: originalCogs,
-            marginPercent,
+            ...resolvedCogs,
+            marginPercent: normalizedMarginPercent,
             marginDollar,
             marginSource,
             unitPrice,
@@ -877,7 +1008,10 @@ export const ordersRouter = router({
       });
 
       // Generate order number
-      const orderNumber = await ordersDb.generateOrderNumber(input.orderType);
+      const orderNumber = await ordersDb.generateOrderNumber(
+        input.orderType,
+        true
+      );
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
 
@@ -921,6 +1055,19 @@ export const ordersRouter = router({
             isSample: item.isSample,
             cogsPerUnit: item.cogsPerUnit.toString(),
             originalCogsPerUnit: item.originalCogsPerUnit.toString(),
+            effectiveCogsBasis: item.effectiveCogsBasis,
+            originalRangeMin:
+              item.originalRangeMin !== null &&
+              item.originalRangeMin !== undefined
+                ? item.originalRangeMin.toString()
+                : null,
+            originalRangeMax:
+              item.originalRangeMax !== null &&
+              item.originalRangeMax !== undefined
+                ? item.originalRangeMax.toString()
+                : null,
+            isBelowVendorRange: item.isBelowVendorRange,
+            belowRangeReason: item.belowRangeReason || null,
             marginPercent: item.marginPercent.toString(),
             marginDollar: item.marginDollar.toString(),
             isCogsOverridden: item.isCogsOverridden,
@@ -1004,31 +1151,19 @@ export const ordersRouter = router({
       // Calculate line item prices (same logic as createDraftEnhanced)
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          const batch = await db.query.batches.findFirst({
-            where: eq(batches.id, item.batchId),
-            columns: {
-              id: true,
-              productId: true,
-              unitCogs: true,
-            },
-          });
+          const batch = await getDraftBatchPricingContext(db, item.batchId);
 
-          if (!batch) {
-            throw new Error(`Batch ${item.batchId} not found`);
+          const resolvedCogs = resolveDraftLineItemCogs(batch, item);
+          if (
+            resolvedCogs.isBelowVendorRange &&
+            !item.belowRangeReason?.trim()
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "A reason is required when selling below the vendor COGS range.",
+            });
           }
-
-          // BUG-086 FIX: Get product category like createDraftEnhanced does
-          const product = batch.productId
-            ? await db.query.products.findFirst({
-                where: eq(products.id, batch.productId),
-                columns: { category: true },
-              })
-            : null;
-
-          const originalCogs = parseMoneyOrZero(batch.unitCogs);
-          const cogsPerUnit = item.isCogsOverridden
-            ? item.cogsPerUnit
-            : originalCogs;
 
           let marginPercent: number;
           let marginSource: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
@@ -1037,11 +1172,14 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
-            // BUG-086 FIX: Use actual product category, not hardcoded "OTHER"
-            const productCategory = product?.category || "OTHER";
+            const productCategory = batch.productCategory || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              productCategory
+              productCategory,
+              {
+                basePrice: resolvedCogs.cogsPerUnit,
+                ...buildDraftPricingLookupOptions(batch),
+              }
             );
 
             // BUG-086 FIX: Use 30% fallback with warning instead of 0%
@@ -1058,22 +1196,31 @@ export const ordersRouter = router({
             }
           }
 
+          const providedUnitPrice =
+            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+              ? item.unitPrice
+              : null;
           const unitPrice =
+            providedUnitPrice ??
             marginCalculationService.calculatePriceFromMarginPercent(
-              cogsPerUnit,
+              resolvedCogs.cogsPerUnit,
               marginPercent
             );
+          const normalizedMarginPercent =
+            marginCalculationService.calculateMarginPercent(
+              resolvedCogs.cogsPerUnit,
+              unitPrice
+            );
           const marginDollar = marginCalculationService.calculateMarginDollar(
-            cogsPerUnit,
+            resolvedCogs.cogsPerUnit,
             unitPrice
           );
           const lineTotal = unitPrice * item.quantity;
 
           return {
             ...item,
-            cogsPerUnit,
-            originalCogsPerUnit: originalCogs,
-            marginPercent,
+            ...resolvedCogs,
+            marginPercent: normalizedMarginPercent,
             marginDollar,
             marginSource,
             unitPrice,
@@ -1155,6 +1302,19 @@ export const ordersRouter = router({
               isSample: item.isSample,
               cogsPerUnit: item.cogsPerUnit.toString(),
               originalCogsPerUnit: item.originalCogsPerUnit.toString(),
+              effectiveCogsBasis: item.effectiveCogsBasis,
+              originalRangeMin:
+                item.originalRangeMin !== null &&
+                item.originalRangeMin !== undefined
+                  ? item.originalRangeMin.toString()
+                  : null,
+              originalRangeMax:
+                item.originalRangeMax !== null &&
+                item.originalRangeMax !== undefined
+                  ? item.originalRangeMax.toString()
+                  : null,
+              isBelowVendorRange: item.isBelowVendorRange,
+              belowRangeReason: item.belowRangeReason || null,
               marginPercent: item.marginPercent.toString(),
               marginDollar: item.marginDollar.toString(),
               isCogsOverridden: item.isCogsOverridden,
@@ -1410,6 +1570,9 @@ export const ordersRouter = router({
                 id: batches.id,
                 productId: batches.productId,
                 batchSku: batches.sku,
+                cogsMode: batches.cogsMode,
+                unitCogsMin: batches.unitCogsMin,
+                unitCogsMax: batches.unitCogsMax,
               })
               .from(batches)
               .where(safeInArray(batches.id, batchIds))
@@ -1420,6 +1583,9 @@ export const ordersRouter = router({
           {
             productId: batch.productId,
             batchSku: batch.batchSku,
+            cogsMode: batch.cogsMode,
+            unitCogsMin: batch.unitCogsMin,
+            unitCogsMax: batch.unitCogsMax,
           },
         ])
       );
@@ -1430,6 +1596,11 @@ export const ordersRouter = router({
           ...lineItem,
           productId: batchMetadataById.get(lineItem.batchId)?.productId ?? null,
           batchSku: batchMetadataById.get(lineItem.batchId)?.batchSku ?? null,
+          cogsMode: batchMetadataById.get(lineItem.batchId)?.cogsMode ?? null,
+          unitCogsMin:
+            batchMetadataById.get(lineItem.batchId)?.unitCogsMin ?? null,
+          unitCogsMax:
+            batchMetadataById.get(lineItem.batchId)?.unitCogsMax ?? null,
         })),
       };
     }),
@@ -1543,6 +1714,16 @@ export const ordersRouter = router({
         .update(orderLineItems)
         .set({
           cogsPerUnit: input.newCOGS.toString(),
+          effectiveCogsBasis: "MANUAL",
+          isBelowVendorRange:
+            lineItem.originalRangeMin !== null
+              ? input.newCOGS < parseMoneyOrZero(lineItem.originalRangeMin)
+              : false,
+          belowRangeReason:
+            lineItem.originalRangeMin !== null &&
+            input.newCOGS < parseMoneyOrZero(lineItem.originalRangeMin)
+              ? input.reason
+              : null,
           isCogsOverridden: true,
           cogsOverrideReason: input.reason,
         })
@@ -1582,6 +1763,7 @@ export const ordersRouter = router({
           "READY_FOR_PACKING",
           "PACKED",
           "SHIPPED",
+          "DELIVERED",
           "CANCELLED",
         ]),
         notes: z.string().optional(),
@@ -1830,8 +2012,9 @@ export const ordersRouter = router({
           }
 
           // INV-003: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
+          const batchSelect = await getCompatibleBatchSelect();
           const batchRecords = await tx
-            .select()
+            .select(batchSelect)
             .from(batches)
             .where(safeInArray(batches.id, batchIds))
             .for("update");
@@ -2045,8 +2228,9 @@ export const ordersRouter = router({
           if (allocatedQty <= 0) continue;
 
           // Lock the batch row for update
+          const batchSelect = await getCompatibleBatchSelect();
           const [batch] = await tx
-            .select()
+            .select(batchSelect)
             .from(batches)
             .where(eq(batches.id, allocation.batchId))
             .for("update")
@@ -2589,8 +2773,9 @@ export const ordersRouter = router({
 
         for (const alloc of input.allocations) {
           // Lock batch row to prevent concurrent allocation
+          const batchSelect = await getCompatibleBatchSelect();
           const [batch] = await tx
-            .select()
+            .select(batchSelect)
             .from(batches)
             .where(eq(batches.id, alloc.batchId))
             .for("update")
@@ -2620,7 +2805,21 @@ export const ordersRouter = router({
             });
           }
 
-          const unitCost = parseMoneyOrZero(batch.unitCogs);
+          const allocationCogs =
+            lineItem.effectiveCogsBasis === "MANUAL" ||
+            lineItem.isCogsOverridden
+              ? {
+                  unitCogs: parseMoneyOrZero(lineItem.cogsPerUnit),
+                  effectiveCogsBasis: "MANUAL" as const,
+                }
+              : resolveBatchCogs(batch, {
+                  rangeBasis:
+                    lineItem.effectiveCogsBasis === "LOW" ||
+                    lineItem.effectiveCogsBasis === "HIGH"
+                      ? lineItem.effectiveCogsBasis
+                      : "MID",
+                });
+          const unitCost = allocationCogs.unitCogs;
 
           // Insert allocation record
           await tx.insert(orderLineItemAllocations).values({
@@ -2658,6 +2857,26 @@ export const ordersRouter = router({
           .update(orderLineItems)
           .set({
             cogsPerUnit: weightedAvgCogs.toFixed(2),
+            effectiveCogsBasis:
+              lineItem.effectiveCogsBasis === "LOW" ||
+              lineItem.effectiveCogsBasis === "MID" ||
+              lineItem.effectiveCogsBasis === "HIGH"
+                ? lineItem.effectiveCogsBasis
+                : "MANUAL",
+            isBelowVendorRange:
+              (lineItem.effectiveCogsBasis === "MANUAL" ||
+                lineItem.isCogsOverridden) &&
+              lineItem.originalRangeMin !== null
+                ? weightedAvgCogs < parseMoneyOrZero(lineItem.originalRangeMin)
+                : false,
+            belowRangeReason:
+              (lineItem.effectiveCogsBasis === "MANUAL" ||
+                lineItem.isCogsOverridden) &&
+              lineItem.originalRangeMin !== null &&
+              weightedAvgCogs < parseMoneyOrZero(lineItem.originalRangeMin)
+                ? lineItem.belowRangeReason ||
+                  "Weighted allocation cost fell below vendor range"
+                : null,
           })
           .where(eq(orderLineItems.id, input.lineItemId));
 
