@@ -73,7 +73,7 @@ Explicit exception adjacency:
 
 ## Validation Notes
 
-The largest inventory risk is now ownership drift, not source drift.
+The largest inventory risk is now mutation-parity drift in adjacent flows, not source drift.
 
 Current workbook and direct child components now account for 21 unique procedures, and all 21 are represented in the reconciled source set.
 
@@ -89,7 +89,20 @@ Live staging validation on March 13, 2026 confirmed:
 - gallery mode is real current functionality, not just a planned view toggle
 - `Export CSV` produces a real filtered inventory export artifact
 
-One caution remains: `Save View` stayed disabled for a search-only state change in staging. Until the current implementation is better proven, parity should be defined around structured filters and existing saved-view behavior, not a broad promise that every visible search state can be saved as a named view.
+Live staging validation on March 15, 2026 materially tightened the pilot truth:
+
+- the requested Inventory `surface=sheet-native` route now serves the live sheet-native pilot in staging
+- pilot browse/filter and deep-link inspector behavior are now live-proven against the staging workbook route
+- pilot status editing and quantity adjustment now have live mutation evidence, and the proof runner reverted the test changes after capture
+- the pilot route normalizes to the consolidated workspace path `/inventory?tab=inventory&surface=sheet-native`
+- the classic inventory surface still exposes the intake handoff through `Open Receiving Queue`
+- the bulk delete path is now grounded in live staging evidence: delete eligibility and the confirmation flow are real, but the actual `inventory.bulk.delete` mutation currently fails with an HTTP 500
+- all direct pilot proofs in this wave depended on the hidden `spreadsheet-native-pilot` staging flag being enabled during verification
+
+Two cautions remain:
+
+- `Save View` stayed disabled for a search-only state change in staging. Until the current implementation is better proven, parity should be defined around structured filters and existing saved-view behavior, not a broad promise that every visible search state can be saved as a named view
+- the direct pilot mutation proof for status and quantity is still narrower than the full ledger requirement because undo, audit, and race-condition parity are not yet closed
 
 The March 14, 2026 foundation pass also closed the two blueprint-blocking ownership seams:
 

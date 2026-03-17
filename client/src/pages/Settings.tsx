@@ -55,7 +55,7 @@ import { TagManagementSettings } from "@/components/settings/TagManagementSettin
 import { useLocation, useSearch } from "wouter";
 import ProductsWorkSurface from "@/components/work-surface/ProductsWorkSurface";
 import { useAuth } from "@/_core/hooks/useAuth";
-import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
+import { EmbeddedFeatureFlagsPage } from "@/pages/settings/FeatureFlagsPage";
 
 type SettingsGroupId =
   | "access-control"
@@ -404,7 +404,7 @@ export default function Settings() {
               value="feature-flags"
               className="space-y-3 sm:space-y-4 mt-3 sm:mt-4"
             >
-              <FeatureFlagsPage embedded />
+              <EmbeddedFeatureFlagsPage />
             </TabsContent>
 
             <TabsContent

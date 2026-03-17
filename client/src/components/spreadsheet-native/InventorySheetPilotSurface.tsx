@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
 import { Package, RefreshCw, SquareArrowOutUpRight } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
+import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import {
-  inventoryWorkbookAdapter,
-  inventoryPilotColumnPresets,
   mapInventoryDetailToPilotRow,
   mapInventoryItemsToPilotRows,
   summarizeInventoryDetail,
@@ -41,6 +41,8 @@ const STATUS_OPTIONS = [
   "CLOSED",
 ] as const;
 
+const PAGE_SIZE = 100;
+
 const formatCurrency = (value: number | null) =>
   value === null
     ? "-"
@@ -59,29 +61,36 @@ interface InventorySheetPilotSurfaceProps {
   onOpenClassic: (batchId?: number | null) => void;
 }
 
-const PAGE_SIZE = 100;
+interface InventoryLocationRow {
+  id: string;
+  locationLabel: string;
+  quantity: number;
+}
 
 export function InventorySheetPilotSurface({
   onOpenClassic,
 }: InventorySheetPilotSurfaceProps) {
+  const [, setLocation] = useLocation();
   const { hasPermission } = usePermissions();
   const { selectedId: selectedBatchId, setSelectedId: setSelectedBatchId } =
     useSpreadsheetSelectionParam("batchId");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [loadedWindowCount, setLoadedWindowCount] = useState(1);
 
   const canUpdateInventory = hasPermission("inventory:update");
 
   useEffect(() => {
-    setPage(1);
+    setLoadedWindowCount(1);
   }, [search, statusFilter]);
 
+  const loadedRowTarget = PAGE_SIZE * loadedWindowCount;
+
   const enhancedQuery = trpc.inventory.getEnhanced.useQuery({
-    page,
-    pageSize: PAGE_SIZE,
-    cursor: (page - 1) * PAGE_SIZE,
+    page: 1,
+    pageSize: loadedRowTarget,
+    cursor: 0,
     search: search || undefined,
     status: statusFilter === "ALL" ? undefined : [statusFilter],
     sortBy: "sku",
@@ -122,52 +131,62 @@ export function InventorySheetPilotSurface({
     [enhancedQuery.data?.items]
   );
   const totalItems = enhancedQuery.data?.summary.totalItems ?? rows.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-  const hasPreviousPage = page > 1;
-  const hasNextPage = Boolean(enhancedQuery.data?.pagination?.hasMore);
+  const hasMoreRows =
+    Boolean(enhancedQuery.data?.pagination?.hasMore) ||
+    rows.length < totalItems;
 
-  const selectedRowOnPage =
+  const selectedRowOnGrid =
     rows.find(row => row.batchId === selectedBatchId) ?? null;
   const selectedFallbackRow = useMemo(
     () =>
-      selectedRowOnPage ? null : mapInventoryDetailToPilotRow(detailQuery.data),
-    [detailQuery.data, selectedRowOnPage]
+      selectedRowOnGrid ? null : mapInventoryDetailToPilotRow(detailQuery.data),
+    [detailQuery.data, selectedRowOnGrid]
   );
-  const selectedRow = selectedRowOnPage ?? selectedFallbackRow;
+  const selectedRow = selectedRowOnGrid ?? selectedFallbackRow;
   const detailSummary = summarizeInventoryDetail(detailQuery.data);
   const views = viewsQuery.data?.items ?? [];
-  const isDeepLinkedOutsideCurrentPage =
+  const isDeepLinkedOutsideLoadedGrid =
     selectedBatchId !== null &&
-    selectedRowOnPage === null &&
+    selectedRowOnGrid === null &&
     selectedRow !== null;
+
+  const locationRows = useMemo<InventoryLocationRow[]>(
+    () =>
+      (detailQuery.data?.locations ?? []).map((location, index) => ({
+        id: `${selectedBatchId ?? "batch"}-location-${index}`,
+        locationLabel:
+          location.site ||
+          [location.zone, location.rack, location.shelf, location.bin]
+            .filter(Boolean)
+            .join(" / ") ||
+          `Location ${index + 1}`,
+        quantity:
+          typeof location.qty === "number"
+            ? location.qty
+            : Number(location.qty ?? 0),
+      })),
+    [detailQuery.data?.locations, selectedBatchId]
+  );
 
   const columnDefs = useMemo<ColDef<(typeof rows)[number]>[]>(
     () => [
       {
         field: "sku",
         headerName: "SKU",
-        minWidth: 140,
+        minWidth: 120,
+        maxWidth: 140,
       },
       {
-        field: "productName",
+        field: "productSummary",
         headerName: "Product",
         flex: 1.3,
-        minWidth: 180,
-      },
-      {
-        field: "vendorName",
-        headerName: "Supplier",
-        minWidth: 150,
-      },
-      {
-        field: "brandName",
-        headerName: "Brand",
-        minWidth: 140,
+        minWidth: 280,
       },
       {
         field: "status",
         headerName: "Status",
-        minWidth: 150,
+        minWidth: 140,
+        maxWidth: 150,
         editable: canUpdateInventory,
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
@@ -175,30 +194,46 @@ export function InventorySheetPilotSurface({
         },
       },
       {
-        field: "onHandQty",
-        headerName: "On Hand",
-        minWidth: 110,
-        valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
-      },
-      {
         field: "availableQty",
         headerName: "Available",
         minWidth: 110,
+        maxWidth: 120,
         valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
       },
       {
-        field: "unitCogs",
-        headerName: "Unit COGS",
-        minWidth: 120,
-        valueFormatter: params =>
-          formatCurrency(
-            params.value === null || params.value === undefined
-              ? null
-              : Number(params.value)
-          ),
+        field: "onHandQty",
+        headerName: "On Hand",
+        minWidth: 110,
+        maxWidth: 120,
+        valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
+      },
+      {
+        field: "ageLabel",
+        headerName: "Age",
+        minWidth: 90,
+        maxWidth: 100,
       },
     ],
     [canUpdateInventory]
+  );
+
+  const locationColumnDefs = useMemo<ColDef<InventoryLocationRow>[]>(
+    () => [
+      {
+        field: "locationLabel",
+        headerName: "Location",
+        flex: 1.2,
+        minWidth: 220,
+      },
+      {
+        field: "quantity",
+        headerName: "Qty",
+        minWidth: 100,
+        maxWidth: 120,
+        valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
+      },
+    ],
+    []
   );
 
   const handleStatusEdit = (
@@ -243,10 +278,10 @@ export function InventorySheetPilotSurface({
   const statusBarCenter = (
     <span>
       {selectedRow
-        ? isDeepLinkedOutsideCurrentPage
-          ? `Loaded ${selectedRow.sku} from batchId outside the current page`
+        ? isDeepLinkedOutsideLoadedGrid
+          ? `Loaded ${selectedRow.sku} from batchId outside the current loaded rows`
           : `Selected ${selectedRow.sku}`
-        : `Page ${page} of ${totalPages} · ${rows.length} visible rows · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
+        : `${rows.length} loaded rows of ${totalItems} · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
     </span>
   );
 
@@ -272,14 +307,25 @@ export function InventorySheetPilotSurface({
             ))}
           </SelectContent>
         </Select>
-        <Badge variant="secondary">
-          {inventoryWorkbookAdapter.sheets[0]?.archetype} sheet
-        </Badge>
-        <Badge variant="outline">
-          {inventoryPilotColumnPresets.length} locked column presets
-        </Badge>
-        <Badge variant="outline">limited browse + triage evaluation</Badge>
+        <Badge variant="outline">Pilot: browse + two direct mutations</Badge>
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => setAdjustDialogOpen(true)}
+            disabled={!canUpdateInventory || selectedRow === null}
+          >
+            <Package className="mr-2 h-4 w-4" />
+            Adjust Qty
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setLocation(buildOperationsWorkspacePath("receiving"))
+            }
+          >
+            Receiving Queue
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -289,30 +335,37 @@ export function InventorySheetPilotSurface({
               void detailQuery.refetch();
             }}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onOpenClassic(selectedBatchId)}
-          >
-            <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-            Classic Inventory
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-        This internal sheet-native pilot is limited to browse, inspect, status
-        update, and quantity adjustment. It shows one page at a time; use
-        pagination or the classic inventory surface for the full toolset,
-        including undo or reversal flows.
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
+        <span className="text-sm font-medium text-foreground">
+          {selectedRow
+            ? `${selectedRow.sku} selected`
+            : "Inventory pilot active"}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          The default sheet is width-disciplined: only the highest-yield browse
+          columns stay visible, while deeper context moves into linked detail
+          below.
+        </span>
+        {hasMoreRows ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto"
+            onClick={() => setLoadedWindowCount(current => current + 1)}
+          >
+            Load More Rows
+          </Button>
+        ) : null}
       </div>
 
       <SpreadsheetPilotGrid
         title="Inventory Sheet"
-        description="Internal sheet-native evaluation for browse and triage behavior. Full inventory execution still lives in the classic surface."
+        description="One main inventory table keeps SKU, product context, status, quantity, and age visible without forcing a wide default grid."
         rows={rows}
         columnDefs={columnDefs}
         getRowId={row => row.identity.rowKey}
@@ -325,39 +378,80 @@ export function InventorySheetPilotSurface({
         emptyDescription="Adjust the search or status filter, or switch back to the classic surface for the full inventory toolset."
         summary={
           <span>
-            Page {page} of {totalPages} · {rows.length} visible rows out of{" "}
-            {totalItems} filtered rows · {views.length} saved view
-            {views.length === 1 ? "" : "s"} ·{" "}
+            {rows.length} loaded rows out of {totalItems} filtered rows ·{" "}
+            {views.length} saved view{views.length === 1 ? "" : "s"} ·{" "}
             {canUpdateInventory ? "status editing enabled" : "read-only mode"}
           </span>
         }
         headerActions={
-          <div className="flex items-center gap-2">
+          hasMoreRows ? (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
-                setSelectedBatchId(null);
-                setPage(currentPage => Math.max(1, currentPage - 1));
-              }}
-              disabled={!hasPreviousPage}
+              onClick={() => setLoadedWindowCount(current => current + 1)}
             >
-              Previous Page
+              Load More
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelectedBatchId(null);
-                setPage(currentPage => currentPage + 1);
-              }}
-              disabled={!hasNextPage}
-            >
-              Next Page
-            </Button>
-          </div>
+          ) : null
         }
         minHeight={420}
+      />
+
+      {selectedRow ? (
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Product
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedRow.productSummary}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Available
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {formatQuantity(selectedRow.availableQty)}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Locations
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {detailSummary?.locationCount ?? 0}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Audit Events
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {detailSummary?.auditLogCount ?? 0}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <SpreadsheetPilotGrid
+        title="Selected Batch Locations"
+        description="This supporting table keeps storage context inline so the sheet can answer the next question without pushing routine work into the inspector."
+        rows={locationRows}
+        columnDefs={locationColumnDefs}
+        getRowId={row => row.id}
+        isLoading={detailQuery.isLoading}
+        errorMessage={detailQuery.error?.message ?? null}
+        emptyTitle="No batch selected"
+        emptyDescription="Select a row above to load the current storage footprint for that batch."
+        summary={
+          selectedRow ? (
+            <span>
+              {selectedRow.sku} · {locationRows.length} linked storage rows
+            </span>
+          ) : undefined
+        }
+        minHeight={220}
       />
 
       <WorkSurfaceStatusBar
@@ -365,11 +459,11 @@ export function InventorySheetPilotSurface({
         center={statusBarCenter}
         right={
           <span className="text-xs text-muted-foreground">
-            {isDeepLinkedOutsideCurrentPage
-              ? "Loaded via batchId outside the current page. Use page navigation to bring the row back into the visible grid."
+            {isDeepLinkedOutsideLoadedGrid
+              ? "Loaded via batchId outside the current loaded rows. Use Load More to bring it into the grid."
               : "Click a row to inspect it."}{" "}
-            Use the classic inventory surface for bulk actions, gallery, export,
-            intake, and undo/reversal flows.
+            Primary actions stay in the command strip; the inspector is for
+            deeper batch context.
           </span>
         }
       />
@@ -395,13 +489,25 @@ export function InventorySheetPilotSurface({
             </Badge>
           ) : null
         }
+        footer={
+          selectedBatchId !== null ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => onOpenClassic(selectedBatchId)}
+            >
+              <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+              Open Classic Detail
+            </Button>
+          ) : null
+        }
       >
         {selectedBatchId !== null ? (
           <div className="space-y-4">
-            {isDeepLinkedOutsideCurrentPage ? (
+            {isDeepLinkedOutsideLoadedGrid ? (
               <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
                 This inspector was loaded from the workbook URL. The selected
-                batch is not on the current page of grid rows.
+                batch is not in the current loaded grid rows yet.
               </div>
             ) : null}
             <InspectorSection title="Batch Summary">
@@ -414,19 +520,15 @@ export function InventorySheetPilotSurface({
               <InspectorField label="Brand">
                 <p>{selectedRow?.brandName ?? "Loading..."}</p>
               </InspectorField>
-              <InspectorField label="Available Qty">
-                <p>
-                  {selectedRow
-                    ? formatQuantity(selectedRow.availableQty)
-                    : "Loading..."}
-                </p>
-              </InspectorField>
               <InspectorField label="Current Location">
                 <p>{detailSummary?.currentLocation ?? "Loading..."}</p>
               </InspectorField>
+              <InspectorField label="Unit COGS">
+                <p>{formatCurrency(selectedRow?.unitCogs ?? null)}</p>
+              </InspectorField>
             </InspectorSection>
 
-            <InspectorSection title="Readiness">
+            <InspectorSection title="Evidence">
               <InspectorField label="Locations">
                 <p>{String(detailSummary?.locationCount ?? 0)}</p>
               </InspectorField>
@@ -436,25 +538,9 @@ export function InventorySheetPilotSurface({
               <InspectorField label="Stock Status">
                 <p>{selectedRow?.stockStatus ?? "Unknown"}</p>
               </InspectorField>
-            </InspectorSection>
-
-            <InspectorSection title="Actions">
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={() => setAdjustDialogOpen(true)}
-                  disabled={!canUpdateInventory || selectedRow === null}
-                >
-                  <Package className="mr-2 h-4 w-4" />
-                  Adjust Quantity
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenClassic(selectedBatchId)}
-                >
-                  <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-                  Open Classic Detail
-                </Button>
-              </div>
+              <InspectorField label="Age">
+                <p>{selectedRow?.ageLabel ?? "-"}</p>
+              </InspectorField>
             </InspectorSection>
           </div>
         ) : null}

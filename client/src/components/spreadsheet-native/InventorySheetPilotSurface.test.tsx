@@ -7,6 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InventorySheetPilotSurface } from "./InventorySheetPilotSurface";
 
 const mockSetSelectedId = vi.fn();
+const mockSetLocation = vi.fn();
+
+vi.mock("wouter", () => ({
+  useLocation: () => ["/operations?tab=inventory", mockSetLocation],
+}));
 
 vi.mock("@/hooks/usePermissions", () => ({
   usePermissions: () => ({
@@ -153,12 +158,13 @@ describe("InventorySheetPilotSurface", () => {
   it("keeps the inspector open for deep-linked batches outside the current page", () => {
     render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
 
+    expect(screen.getByText("Selected Batch Locations")).toBeInTheDocument();
     expect(screen.getByText("BATCH-999")).toBeInTheDocument();
     expect(
       screen.getByText(/This inspector was loaded from the workbook URL/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Loaded via batchId outside the current page/i)
+      screen.getByText(/Loaded via batchId outside the current loaded rows/i)
     ).toBeInTheDocument();
     expect(screen.getByText("Vault A")).toBeInTheDocument();
   });

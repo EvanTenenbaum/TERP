@@ -1,0 +1,2538 @@
+[
+  {
+    "routerName": "accounting",
+    "routerFile": "accounting.ts",
+    "tableName": "bills",
+    "exportName": "bills",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "accounting",
+    "routerFile": "accounting.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "accounting",
+    "routerFile": "accounting.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "accounting",
+    "routerFile": "accounting.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "accounting",
+    "routerFile": "accounting.ts",
+    "tableName": "supplierProfiles",
+    "exportName": "supplierProfiles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "admin",
+    "routerFile": "admin.ts",
+    "tableName": "permissions",
+    "exportName": "permissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "admin",
+    "routerFile": "admin.ts",
+    "tableName": "strains",
+    "exportName": "strains",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "admin",
+    "routerFile": "admin.ts",
+    "tableName": "userPermissionOverrides",
+    "exportName": "userPermissionOverrides",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "admin",
+    "routerFile": "admin.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "adminImport",
+    "routerFile": "adminImport.ts",
+    "tableName": "strains",
+    "exportName": "strains",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "adminSetup",
+    "routerFile": "adminSetup.ts",
+    "tableName": "auditLogs",
+    "exportName": "auditLogs",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "adminSetup",
+    "routerFile": "adminSetup.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "alerts",
+    "routerFile": "alerts.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "alerts",
+    "routerFile": "alerts.ts",
+    "tableName": "brands",
+    "exportName": "brands",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "alerts",
+    "routerFile": "alerts.ts",
+    "tableName": "clientNeeds",
+    "exportName": "clientNeeds",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "alerts",
+    "routerFile": "alerts.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "alerts",
+    "routerFile": "alerts.ts",
+    "tableName": "lots",
+    "exportName": "lots",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "alerts",
+    "routerFile": "alerts.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "analytics",
+    "routerFile": "analytics.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "analytics",
+    "routerFile": "analytics.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "analytics",
+    "routerFile": "analytics.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "analytics",
+    "routerFile": "analytics.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "appointmentRequests",
+    "exportName": "appointmentRequests",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "appointmentTypes",
+    "exportName": "appointmentTypes",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "calendarAvailability",
+    "exportName": "calendarAvailability",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "calendarBlockedDates",
+    "exportName": "calendarBlockedDates",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "calendars",
+    "exportName": "calendars",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "calendarUserAccess",
+    "exportName": "calendarUserAccess",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "appointmentRequests",
+    "routerFile": "appointmentRequests.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "bills",
+    "exportName": "bills",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "orderLineItems",
+    "exportName": "orderLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "supplierProfiles",
+    "exportName": "supplierProfiles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "audit",
+    "routerFile": "audit.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendar",
+    "routerFile": "calendar.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendar",
+    "routerFile": "calendar.ts",
+    "tableName": "calendarRecurrenceInstances",
+    "exportName": "calendarRecurrenceInstances",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarFinancials",
+    "routerFile": "calendarFinancials.ts",
+    "tableName": "bills",
+    "exportName": "bills",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarFinancials",
+    "routerFile": "calendarFinancials.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarFinancials",
+    "routerFile": "calendarFinancials.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarFinancials",
+    "routerFile": "calendarFinancials.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarInvitations",
+    "routerFile": "calendarInvitations.ts",
+    "tableName": "calendarEventInvitations",
+    "exportName": "calendarEventInvitations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarInvitations",
+    "routerFile": "calendarInvitations.ts",
+    "tableName": "calendarEventParticipants",
+    "exportName": "calendarEventParticipants",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarInvitations",
+    "routerFile": "calendarInvitations.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarInvitations",
+    "routerFile": "calendarInvitations.ts",
+    "tableName": "calendarInvitationHistory",
+    "exportName": "calendarInvitationHistory",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarInvitations",
+    "routerFile": "calendarInvitations.ts",
+    "tableName": "calendarInvitationSettings",
+    "exportName": "calendarInvitationSettings",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarMeetings",
+    "routerFile": "calendarMeetings.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarMeetings",
+    "routerFile": "calendarMeetings.ts",
+    "tableName": "clientMeetingHistory",
+    "exportName": "clientMeetingHistory",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarReminders",
+    "routerFile": "calendarReminders.ts",
+    "tableName": "calendarReminders",
+    "exportName": "calendarReminders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "appointmentTypes",
+    "exportName": "appointmentTypes",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "calendarAvailability",
+    "exportName": "calendarAvailability",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "calendarBlockedDates",
+    "exportName": "calendarBlockedDates",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "calendars",
+    "exportName": "calendars",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "calendarUserAccess",
+    "exportName": "calendarUserAccess",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarsManagement",
+    "routerFile": "calendarsManagement.ts",
+    "tableName": "timeOffRequests",
+    "exportName": "timeOffRequests",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "calendarViews",
+    "routerFile": "calendarViews.ts",
+    "tableName": "calendarViews",
+    "exportName": "calendarViews",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cashAudit",
+    "routerFile": "cashAudit.ts",
+    "tableName": "bankAccounts",
+    "exportName": "bankAccounts",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cashAudit",
+    "routerFile": "cashAudit.ts",
+    "tableName": "bills",
+    "exportName": "bills",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cashAudit",
+    "routerFile": "cashAudit.ts",
+    "tableName": "cashLocations",
+    "exportName": "cashLocations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cashAudit",
+    "routerFile": "cashAudit.ts",
+    "tableName": "cashLocationTransactions",
+    "exportName": "cashLocationTransactions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cashAudit",
+    "routerFile": "cashAudit.ts",
+    "tableName": "shiftAudits",
+    "exportName": "shiftAudits",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cashAudit",
+    "routerFile": "cashAudit.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "clientActivity",
+    "exportName": "clientActivity",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "clientCommunications",
+    "exportName": "clientCommunications",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "clientTransactions",
+    "exportName": "clientTransactions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "client360",
+    "routerFile": "client360.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientLedger",
+    "routerFile": "clientLedger.ts",
+    "tableName": "clientLedgerAdjustments",
+    "exportName": "clientLedgerAdjustments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientLedger",
+    "routerFile": "clientLedger.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientLedger",
+    "routerFile": "clientLedger.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientLedger",
+    "routerFile": "clientLedger.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientLedger",
+    "routerFile": "clientLedger.ts",
+    "tableName": "purchaseOrders",
+    "exportName": "purchaseOrders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientLedger",
+    "routerFile": "clientLedger.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientWants",
+    "routerFile": "clientWants.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientWants",
+    "routerFile": "clientWants.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "clientWants",
+    "routerFile": "clientWants.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cogs",
+    "routerFile": "cogs.ts",
+    "tableName": "auditLogs",
+    "exportName": "auditLogs",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cogs",
+    "routerFile": "cogs.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cogs",
+    "routerFile": "cogs.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "credits",
+    "routerFile": "credits.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "credits",
+    "routerFile": "credits.ts",
+    "tableName": "credits",
+    "exportName": "credits",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "cryptoPayments",
+    "routerFile": "cryptoPayments.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "dashboard",
+    "routerFile": "dashboard.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "dashboard",
+    "routerFile": "dashboard.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "dashboard",
+    "routerFile": "dashboard.ts",
+    "tableName": "lots",
+    "exportName": "lots",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "dashboard",
+    "routerFile": "dashboard.ts",
+    "tableName": "paymentHistory",
+    "exportName": "paymentHistory",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "dashboard",
+    "routerFile": "dashboard.ts",
+    "tableName": "sales as salesTable",
+    "exportName": "sales as salesTable",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "dashboardPreferences",
+    "routerFile": "dashboardPreferences.ts",
+    "tableName": "userDashboardPreferences",
+    "exportName": "userDashboardPreferences",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "deployments",
+    "routerFile": "deployments.ts",
+    "tableName": "deployments",
+    "exportName": "deployments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "gamification",
+    "routerFile": "gamification.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "gamification",
+    "routerFile": "gamification.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "hourTracking",
+    "routerFile": "hourTracking.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "installmentPayments",
+    "routerFile": "installmentPayments.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "intakeReceipts",
+    "routerFile": "intakeReceipts.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "intakeReceipts",
+    "routerFile": "intakeReceipts.ts",
+    "tableName": "intakeDiscrepancies",
+    "exportName": "intakeDiscrepancies",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "intakeReceipts",
+    "routerFile": "intakeReceipts.ts",
+    "tableName": "intakeReceiptItems",
+    "exportName": "intakeReceiptItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "intakeReceipts",
+    "routerFile": "intakeReceipts.ts",
+    "tableName": "intakeReceipts",
+    "exportName": "intakeReceipts",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "intakeReceipts",
+    "routerFile": "intakeReceipts.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "inventory",
+    "routerFile": "inventory.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "inventory",
+    "routerFile": "inventory.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "inventory",
+    "routerFile": "inventory.ts",
+    "tableName": "inventoryViews",
+    "exportName": "inventoryViews",
+    "ownershipKind": "manual-pilot-adjacent",
+    "notes": "Inventory views are saved-view support for pilot surface."
+  },
+  {
+    "routerName": "inventory",
+    "routerFile": "inventory.ts",
+    "tableName": "locations",
+    "exportName": "locations",
+    "ownershipKind": "manual-pilot-adjacent",
+    "notes": "Inventory pilot adjacent locations/transfer ownership seam."
+  },
+  {
+    "routerName": "inventoryMovements",
+    "routerFile": "inventoryMovements.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "inventoryMovements",
+    "routerFile": "inventoryMovements.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "inventoryMovements",
+    "routerFile": "inventoryMovements.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "inventoryMovements",
+    "routerFile": "inventoryMovements.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoiceDisputes",
+    "routerFile": "invoiceDisputes.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoiceDisputes",
+    "routerFile": "invoiceDisputes.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoiceDisputes",
+    "routerFile": "invoiceDisputes.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoices",
+    "routerFile": "invoices.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoices",
+    "routerFile": "invoices.ts",
+    "tableName": "invoiceLineItems",
+    "exportName": "invoiceLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoices",
+    "routerFile": "invoices.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoices",
+    "routerFile": "invoices.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoices",
+    "routerFile": "invoices.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "invoices",
+    "routerFile": "invoices.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "liveShopping",
+    "routerFile": "liveShopping.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "liveShopping",
+    "routerFile": "liveShopping.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "liveShopping",
+    "routerFile": "liveShopping.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "liveShopping",
+    "routerFile": "liveShopping.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "locations",
+    "routerFile": "locations.ts",
+    "tableName": "batchLocations",
+    "exportName": "batchLocations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "locations",
+    "routerFile": "locations.ts",
+    "tableName": "locations",
+    "exportName": "locations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "matchingEnhanced",
+    "routerFile": "matchingEnhanced.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "notifications",
+    "routerFile": "notifications.ts",
+    "tableName": "organizationSettings",
+    "exportName": "organizationSettings",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "officeSupply",
+    "routerFile": "officeSupply.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "manual-pilot-adjacent",
+    "notes": "Orders pilot adjacent output/accounting dependency."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "lots",
+    "exportName": "lots",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "orderLineItemAllocations",
+    "exportName": "orderLineItemAllocations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "orderLineItems",
+    "exportName": "orderLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "orderStatusHistory",
+    "exportName": "orderStatusHistory",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "manual-pilot-adjacent",
+    "notes": "Orders pilot adjacent accounting handoff."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "orders",
+    "routerFile": "orders.ts",
+    "tableName": "returns",
+    "exportName": "returns",
+    "ownershipKind": "manual-pilot-adjacent",
+    "notes": "Orders pilot adjacent returns ownership seam."
+  },
+  {
+    "routerName": "organizationSettings",
+    "routerFile": "organizationSettings.ts",
+    "tableName": "customFinanceStatuses",
+    "exportName": "customFinanceStatuses",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "organizationSettings",
+    "routerFile": "organizationSettings.ts",
+    "tableName": "locations",
+    "exportName": "locations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "organizationSettings",
+    "routerFile": "organizationSettings.ts",
+    "tableName": "organizationSettings",
+    "exportName": "organizationSettings",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "organizationSettings",
+    "routerFile": "organizationSettings.ts",
+    "tableName": "unitTypes",
+    "exportName": "unitTypes",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "organizationSettings",
+    "routerFile": "organizationSettings.ts",
+    "tableName": "userPreferences",
+    "exportName": "userPreferences",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "// FEAT-007: Multi-invoice payment support",
+    "exportName": "// FEAT-007: Multi-invoice payment support",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "invoicePayments",
+    "exportName": "invoicePayments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "ledgerEntries",
+    "exportName": "ledgerEntries",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "payments",
+    "routerFile": "payments.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "paymentTerms",
+    "routerFile": "paymentTerms.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "photography",
+    "routerFile": "photography.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "photography",
+    "routerFile": "photography.ts",
+    "tableName": "productImages",
+    "exportName": "productImages",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "photography",
+    "routerFile": "photography.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "photography",
+    "routerFile": "photography.ts",
+    "tableName": "strains",
+    "exportName": "strains",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "photography",
+    "routerFile": "photography.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "batchLocations",
+    "exportName": "batchLocations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "intakeSessions",
+    "exportName": "intakeSessions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "locations",
+    "exportName": "locations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "lots",
+    "exportName": "lots",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "purchaseOrderItems",
+    "exportName": "purchaseOrderItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "poReceiving",
+    "routerFile": "poReceiving.ts",
+    "tableName": "purchaseOrders",
+    "exportName": "purchaseOrders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "pricing",
+    "routerFile": "pricing.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "pricing",
+    "routerFile": "pricing.ts",
+    "tableName": "variableMarkupRules",
+    "exportName": "variableMarkupRules",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productCategories",
+    "routerFile": "productCategories.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productCategories",
+    "routerFile": "productCategories.ts",
+    "tableName": "categories",
+    "exportName": "categories",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productCategories",
+    "routerFile": "productCategories.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productCategories",
+    "routerFile": "productCategories.ts",
+    "tableName": "subcategories",
+    "exportName": "subcategories",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productCategoriesExtended",
+    "routerFile": "productCategoriesExtended.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productGrades",
+    "routerFile": "productGrades.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "productGrades",
+    "routerFile": "productGrades.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders",
+    "routerFile": "purchaseOrders.ts",
+    "tableName": "brands",
+    "exportName": "brands",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders",
+    "routerFile": "purchaseOrders.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders",
+    "routerFile": "purchaseOrders.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders",
+    "routerFile": "purchaseOrders.ts",
+    "tableName": "purchaseOrderItems",
+    "exportName": "purchaseOrderItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders",
+    "routerFile": "purchaseOrders.ts",
+    "tableName": "purchaseOrders",
+    "exportName": "purchaseOrders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders",
+    "routerFile": "purchaseOrders.ts",
+    "tableName": "vendors",
+    "exportName": "vendors",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders.test",
+    "routerFile": "purchaseOrders.test.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders.test",
+    "routerFile": "purchaseOrders.test.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders.test",
+    "routerFile": "purchaseOrders.test.ts",
+    "tableName": "purchaseOrderItems",
+    "exportName": "purchaseOrderItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "purchaseOrders.test",
+    "routerFile": "purchaseOrders.test.ts",
+    "tableName": "purchaseOrders",
+    "exportName": "purchaseOrders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "quotes",
+    "routerFile": "quotes.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "quotes",
+    "routerFile": "quotes.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-permissions",
+    "routerFile": "rbac-permissions.ts",
+    "tableName": "permissions",
+    "exportName": "permissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-permissions",
+    "routerFile": "rbac-permissions.ts",
+    "tableName": "rolePermissions",
+    "exportName": "rolePermissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-permissions",
+    "routerFile": "rbac-permissions.ts",
+    "tableName": "roles",
+    "exportName": "roles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-permissions",
+    "routerFile": "rbac-permissions.ts",
+    "tableName": "userPermissionOverrides",
+    "exportName": "userPermissionOverrides",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-roles",
+    "routerFile": "rbac-roles.ts",
+    "tableName": "permissions",
+    "exportName": "permissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-roles",
+    "routerFile": "rbac-roles.ts",
+    "tableName": "rolePermissions",
+    "exportName": "rolePermissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-roles",
+    "routerFile": "rbac-roles.ts",
+    "tableName": "roles",
+    "exportName": "roles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-roles",
+    "routerFile": "rbac-roles.ts",
+    "tableName": "userRoles",
+    "exportName": "userRoles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-users",
+    "routerFile": "rbac-users.ts",
+    "tableName": "permissions",
+    "exportName": "permissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-users",
+    "routerFile": "rbac-users.ts",
+    "tableName": "rolePermissions",
+    "exportName": "rolePermissions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-users",
+    "routerFile": "rbac-users.ts",
+    "tableName": "roles",
+    "exportName": "roles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-users",
+    "routerFile": "rbac-users.ts",
+    "tableName": "userPermissionOverrides",
+    "exportName": "userPermissionOverrides",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbac-users",
+    "routerFile": "rbac-users.ts",
+    "tableName": "userRoles",
+    "exportName": "userRoles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "rbacEnhanced",
+    "routerFile": "rbacEnhanced.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "receipts",
+    "routerFile": "receipts.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "receipts",
+    "routerFile": "receipts.ts",
+    "tableName": "receipts",
+    "exportName": "receipts",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "referrals",
+    "routerFile": "referrals.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "referrals",
+    "routerFile": "referrals.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "referrals",
+    "routerFile": "referrals.ts",
+    "tableName": "referralCredits",
+    "exportName": "referralCredits",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "referrals",
+    "routerFile": "referrals.ts",
+    "tableName": "referralCreditSettings",
+    "exportName": "referralCreditSettings",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "refunds",
+    "routerFile": "refunds.ts",
+    "tableName": "returns",
+    "exportName": "returns",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "refunds",
+    "routerFile": "refunds.ts",
+    "tableName": "transactionLinks",
+    "exportName": "transactionLinks",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "refunds",
+    "routerFile": "refunds.ts",
+    "tableName": "transactions",
+    "exportName": "transactions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clientActivity",
+    "exportName": "clientActivity",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clientCommunications",
+    "exportName": "clientCommunications",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clientCreditLimits",
+    "exportName": "clientCreditLimits",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clientLedgerAdjustments",
+    "exportName": "clientLedgerAdjustments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clientNeeds",
+    "exportName": "clientNeeds",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "clientTransactions",
+    "exportName": "clientTransactions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "lots",
+    "exportName": "lots",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "payments",
+    "exportName": "payments",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "purchaseOrders",
+    "exportName": "purchaseOrders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "salesSheetHistory",
+    "exportName": "salesSheetHistory",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "supplierProfiles",
+    "exportName": "supplierProfiles",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "relationshipProfile",
+    "routerFile": "relationshipProfile.ts",
+    "tableName": "vendorPayables",
+    "exportName": "vendorPayables",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "returns",
+    "routerFile": "returns.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "returns",
+    "routerFile": "returns.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "returns",
+    "routerFile": "returns.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "returns",
+    "routerFile": "returns.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "returns",
+    "routerFile": "returns.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "returns",
+    "routerFile": "returns.ts",
+    "tableName": "returns",
+    "exportName": "returns",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "scheduling",
+    "routerFile": "scheduling.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "scheduling",
+    "routerFile": "scheduling.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "scheduling",
+    "routerFile": "scheduling.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "search",
+    "routerFile": "search.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "search",
+    "routerFile": "search.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "search",
+    "routerFile": "search.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "search",
+    "routerFile": "search.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "serviceBilling",
+    "routerFile": "serviceBilling.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "serviceBilling",
+    "routerFile": "serviceBilling.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "settings",
+    "routerFile": "settings.ts",
+    "tableName": "categories",
+    "exportName": "categories",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "settings",
+    "routerFile": "settings.ts",
+    "tableName": "grades",
+    "exportName": "grades",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "settings",
+    "routerFile": "settings.ts",
+    "tableName": "locations",
+    "exportName": "locations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "settings",
+    "routerFile": "settings.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "settings",
+    "routerFile": "settings.ts",
+    "tableName": "subcategories",
+    "exportName": "subcategories",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "storage",
+    "routerFile": "storage.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "storage",
+    "routerFile": "storage.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "storage",
+    "routerFile": "storage.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "tags",
+    "routerFile": "tags.ts",
+    "tableName": "clientTags",
+    "exportName": "clientTags",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "tags",
+    "routerFile": "tags.ts",
+    "tableName": "productTags",
+    "exportName": "productTags",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "tags",
+    "routerFile": "tags.ts",
+    "tableName": "tags",
+    "exportName": "tags",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "timeOffRequests",
+    "routerFile": "timeOffRequests.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "timeOffRequests",
+    "routerFile": "timeOffRequests.ts",
+    "tableName": "timeOffRequests",
+    "exportName": "timeOffRequests",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "timeOffRequests",
+    "routerFile": "timeOffRequests.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "transactionFees",
+    "routerFile": "transactionFees.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "transactionFees",
+    "routerFile": "transactionFees.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "unifiedSalesPortal",
+    "routerFile": "unifiedSalesPortal.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "unifiedSalesPortal",
+    "routerFile": "unifiedSalesPortal.ts",
+    "tableName": "orders",
+    "exportName": "orders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "unifiedSalesPortal",
+    "routerFile": "unifiedSalesPortal.ts",
+    "tableName": "salesSheetHistory",
+    "exportName": "salesSheetHistory",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "unifiedSalesPortal",
+    "routerFile": "unifiedSalesPortal.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "userManagement",
+    "routerFile": "userManagement.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "users",
+    "routerFile": "users.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorPayables",
+    "routerFile": "vendorPayables.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorPayables",
+    "routerFile": "vendorPayables.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorPayables",
+    "routerFile": "vendorPayables.ts",
+    "tableName": "lots",
+    "exportName": "lots",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorPayables",
+    "routerFile": "vendorPayables.ts",
+    "tableName": "payableNotifications",
+    "exportName": "payableNotifications",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorPayables",
+    "routerFile": "vendorPayables.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorPayables",
+    "routerFile": "vendorPayables.ts",
+    "tableName": "vendorPayables",
+    "exportName": "vendorPayables",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorReminders",
+    "routerFile": "vendorReminders.ts",
+    "tableName": "vendorHarvestReminders",
+    "exportName": "vendorHarvestReminders",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendorReminders",
+    "routerFile": "vendorReminders.ts",
+    "tableName": "vendors",
+    "exportName": "vendors",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vendors",
+    "routerFile": "vendors.ts",
+    "tableName": "vendorNotes",
+    "exportName": "vendorNotes",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "appointmentRequests",
+    "exportName": "appointmentRequests",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "appointmentTypes",
+    "exportName": "appointmentTypes",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "billLineItems",
+    "exportName": "billLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "bills",
+    "exportName": "bills",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "calendarAvailability",
+    "exportName": "calendarAvailability",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "calendarBlockedDates",
+    "exportName": "calendarBlockedDates",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "calendarEvents",
+    "exportName": "calendarEvents",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "calendars",
+    "exportName": "calendars",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clientCatalogViews",
+    "exportName": "clientCatalogViews",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clientDraftInterests",
+    "exportName": "clientDraftInterests",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clientInterestListItems",
+    "exportName": "clientInterestListItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clientInterestLists",
+    "exportName": "clientInterestLists",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clientNeeds",
+    "exportName": "clientNeeds",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "clientTransactions",
+    "exportName": "clientTransactions",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "invoiceLineItems",
+    "exportName": "invoiceLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "vendorSupply",
+    "exportName": "vendorSupply",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "vipPortalAuth",
+    "exportName": "vipPortalAuth",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal",
+    "routerFile": "vipPortal.ts",
+    "tableName": "vipPortalConfigurations",
+    "exportName": "vipPortalConfigurations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "appointmentTypes",
+    "exportName": "appointmentTypes",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "billLineItems",
+    "exportName": "billLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "bills",
+    "exportName": "bills",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "calendarAvailability",
+    "exportName": "calendarAvailability",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "calendars",
+    "exportName": "calendars",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "invoiceLineItems",
+    "exportName": "invoiceLineItems",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "invoices",
+    "exportName": "invoices",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "notifications",
+    "exportName": "notifications",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "users",
+    "exportName": "users",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortal.appointments.test",
+    "routerFile": "vipPortal.appointments.test.ts",
+    "tableName": "vipPortalAuth",
+    "exportName": "vipPortalAuth",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortalAdmin.liveCatalog.test",
+    "routerFile": "vipPortalAdmin.liveCatalog.test.ts",
+    "tableName": "clients",
+    "exportName": "clients",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortalAdmin.liveCatalog.test",
+    "routerFile": "vipPortalAdmin.liveCatalog.test.ts",
+    "tableName": "vipPortalConfigurations",
+    "exportName": "vipPortalConfigurations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortalLiveShopping",
+    "routerFile": "vipPortalLiveShopping.ts",
+    "tableName": "batches",
+    "exportName": "batches",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "vipPortalLiveShopping",
+    "routerFile": "vipPortalLiveShopping.ts",
+    "tableName": "products",
+    "exportName": "products",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "warehouseTransfers",
+    "routerFile": "warehouseTransfers.ts",
+    "tableName": "batchLocations",
+    "exportName": "batchLocations",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  },
+  {
+    "routerName": "warehouseTransfers",
+    "routerFile": "warehouseTransfers.ts",
+    "tableName": "inventoryMovements",
+    "exportName": "inventoryMovements",
+    "ownershipKind": "direct-import",
+    "notes": "Direct Drizzle schema import in router file."
+  }
+]

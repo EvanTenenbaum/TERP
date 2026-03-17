@@ -398,6 +398,12 @@ System for managing product intake sessions and batch processing.
 
 | Staff scans/adds products to the session | IC |
 
+| Inventory manager browses the current inventory workbook with filters, saved views, and gallery thumbnails | IC, Manager |
+
+| Inventory manager uses the Add Inventory modal with vendor, brand, category, grade, location, and lightweight media support | IC, Manager |
+
+| Inventory manager performs inline status, quantity, and bulk actions with short-window undo support | IC, Manager |
+
 | System generates labels for new inventory | System |
 
 | Manager finalizes the intake session, adding inventory to stock | Manager |
@@ -589,14 +595,16 @@ Complete returns workflow with approval, intake, inventory restocking, and refun
 
 ### Primary User Flows
 
-| User Flow                             | Actors          |
-| ------------------------------------- | --------------- |
-| Sales rep creates return request      | Sales Rep       |
-| Manager approves/rejects return       | Manager         |
-| Warehouse receives returned items     | Warehouse Staff |
-| System restocks inventory from return | System          |
-| Manager processes refund              | Manager         |
-| Admin views return statistics         | Admin           |
+| User Flow                                                                 | Actors          |
+| ------------------------------------------------------------------------- | --------------- |
+| Sales rep creates return request                                          | Sales Rep       |
+| Manager approves/rejects return                                           | Manager         |
+| Manager marks order as returned and chooses restock or vendor-return path | Manager         |
+| Warehouse receives returned items                                         | Warehouse Staff |
+| System restocks inventory from return                                     | System          |
+| System offers vendor return candidates for returned order items           | System          |
+| Manager processes refund                                                  | Manager         |
+| Admin views return statistics                                             | Admin           |
 
 ### Exclusions & User-Defined Constraints
 
@@ -613,13 +621,15 @@ Quote creation, sending, and conversion to orders.
 
 ### Primary User Flows
 
-| User Flow                          | Actors    |
-| ---------------------------------- | --------- |
-| Sales rep creates quote for client | Sales Rep |
-| System sends quote to client       | System    |
-| Client accepts/rejects quote       | Client    |
-| Sales rep converts quote to order  | Sales Rep |
-| Manager views expired quotes       | Manager   |
+| User Flow                                                                              | Actors    |
+| -------------------------------------------------------------------------------------- | --------- |
+| Sales rep creates quote for client                                                     | Sales Rep |
+| Sales rep reopens a draft or duplicates a quote into the unified create-order composer | Sales Rep |
+| System sends quote to client                                                           | System    |
+| Client accepts/rejects quote                                                           | Client    |
+| Sales rep converts quote to order                                                      | Sales Rep |
+| System auto-saves quote/order draft changes while editing an existing draft            | System    |
+| Manager views expired quotes                                                           | Manager   |
 
 ### Exclusions & User-Defined Constraints
 
@@ -660,12 +670,15 @@ Consolidated interface for managing sales pipeline across orders, quotes, and sa
 
 ### Primary User Flows
 
-| User Flow                               | Actors    |
-| --------------------------------------- | --------- |
-| Sales rep views pipeline overview       | Sales Rep |
-| Manager views sales stats               | Manager   |
-| Sales rep converts quote to sale        | Sales Rep |
-| Sales rep converts sales sheet to quote | Sales Rep |
+| User Flow                                                                                           | Actors    |
+| --------------------------------------------------------------------------------------------------- | --------- |
+| Sales rep views pipeline overview                                                                   | Sales Rep |
+| Manager views sales stats                                                                           | Manager   |
+| Sales rep converts quote to sale                                                                    | Sales Rep |
+| Sales rep converts sales sheet to quote                                                             | Sales Rep |
+| Sales rep starts the create-order composer from draft, quote, client, need, or sales-sheet context  | Sales Rep |
+| Sales rep opens customer money, pricing, referral, and profile context without leaving the composer | Sales Rep |
+| System runs credit review before finalizing SALE orders                                             | System    |
 
 ### Exclusions & User-Defined Constraints
 
@@ -1659,9 +1672,11 @@ _No specific exclusions noted for this module._
 ## DF-067: Recurring Orders
 
 **Category:** Order Management
-**Status:** Fully Implemented
+**Status:** API Implemented, UI Unverified
 
 Recurring order templates with scheduling, pause/resume, and automatic generation.
+
+Server-side recurring-order procedures exist in `orderEnhancements.ts`, but no verified current client UI was found in `client/src` during the March 13, 2026 reconciliation pass. Do not treat recurring orders as safely preserved for the spreadsheet-native fork until a real current UI owner is verified.
 
 ### Primary User Flows
 

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "sales-orders-sheet-pilot",
+    "persona": "salesManager",
+    "requestedUrl": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native",
+    "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native",
+    "detectedSurface": "sheet-native-pilot",
+    "timestamp": "2026-03-15T20:59:13.508Z"
+  },
+  {
+    "id": "inventory-sheet-pilot",
+    "persona": "inventory",
+    "requestedUrl": "https://terp-staging-yicld.ondigitalocean.app/operations?tab=inventory&surface=sheet-native",
+    "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/inventory?tab=inventory&surface=sheet-native",
+    "detectedSurface": "sheet-native-pilot",
+    "timestamp": "2026-03-15T20:59:19.603Z"
+  }
+]

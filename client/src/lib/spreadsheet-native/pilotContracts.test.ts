@@ -83,7 +83,7 @@ function readLedgerCapabilityIds(filename: string) {
 function readSurfaceDetectionReport() {
   const filePath = path.resolve(
     process.cwd(),
-    "output/playwright/staging-oracle/sheet-native-surface-detection-2026-03-14.json"
+    "docs/specs/spreadsheet-native-ledgers/sheet-native-surface-detection-2026-03-15.json"
   );
   return JSON.parse(readFileSync(filePath, "utf8")) as Array<{
     id: string;
@@ -197,6 +197,8 @@ describe("spreadsheet-native pilot contracts", () => {
     expect(inventoryRows[0]).toMatchObject({
       batchId: 12,
       availableQty: 19,
+      productSummary: "Blue Dream · North Farm / North Brand / A",
+      ageLabel: expect.stringMatching(/\d+d/),
     });
     expect(inventoryRows[0]?.identity.rowKey).toBe("batch:12");
 
@@ -222,6 +224,8 @@ describe("spreadsheet-native pilot contracts", () => {
     expect(orderRows[0]).toMatchObject({
       clientName: "Atlas Labs",
       lineItemCount: 1,
+      stageLabel: "Confirmed",
+      nextStepLabel: "Accounting",
     });
     expect(orderRows[0]?.identity.rowKey).toBe("order:55");
 

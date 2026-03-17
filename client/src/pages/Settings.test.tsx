@@ -75,8 +75,8 @@ vi.mock("@/components/work-surface/ProductsWorkSurface", () => ({
 }));
 
 vi.mock("@/pages/settings/FeatureFlagsPage", () => ({
-  default: ({ embedded }: { embedded?: boolean }) => (
-    <div>Mock Feature Flags Manager {embedded ? "Embedded" : "Standalone"}</div>
+  EmbeddedFeatureFlagsPage: () => (
+    <div>Mock Feature Flags Manager Embedded</div>
   ),
 }));
 

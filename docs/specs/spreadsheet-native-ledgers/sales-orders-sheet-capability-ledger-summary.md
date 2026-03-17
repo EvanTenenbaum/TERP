@@ -100,7 +100,24 @@ Live staging validation on March 13, 2026 added several functional proofs that m
 - `Make Payment` is a real cross-workbook handoff into Accounting with `orderId` preserved in the route
 - `Download Invoice` remains a visible but inert workbook affordance; live staging click produced no download and no route change
 
-One caution still remains: the unsaved-changes guard is code-verified, but this pass still does not have a clean live staging proof for the navigation prompt.
+Live staging validation on March 15, 2026 materially tightened the pilot truth:
+
+- the requested Orders `surface=sheet-native` route now serves the live sheet-native pilot in staging
+- queue browse/filter and selected-order inspector are now live-proven on the pilot surface
+- the pilot handoff to Accounting is live-proven under `qa.accounting@terp.test`
+- the pilot handoff to Shipping is live-proven and lands on the consolidated shipping workspace route `/inventory?tab=shipping`
+- classic Orders still exposes the `Generate Invoice` entry point after row selection, but execution remains an Accounting-owned follow-on proof
+- the Quotes workbook still exposes the `Convert to Sales Order` dialog from a live quote row
+- the create-order composer is live-proven for `quoteId` seeded entry and for `clientId` seeded customer/referral/credit/pricing context
+- active draft editing, recalculation, autosave recovery, draft lifecycle controls, and draft deletion now all have live evidence on the classic Orders/Create Order surfaces, but only draft deletion is fully closed at parity level in this pass
+- the blank create-order composer keeps finalization unavailable until prerequisites exist
+- the Returns owner surface is live with a `Process Return` entry point, which keeps return execution out of the Orders pilot without losing the flow
+- all direct pilot proofs in this wave depended on the hidden `spreadsheet-native-pilot` staging flag being enabled during verification
+
+Two cautions still remain:
+
+- the unsaved-changes guard is code-verified, but this pass still does not have a clean live staging proof for the navigation prompt
+- the tested confirmed-order record loaded correctly, but it did not expose explicit downstream actions in the inspector, so the Sales-side confirmed-order action context is still only partially proven
 
 The March 14, 2026 foundation pass also closed the two blueprint-blocking ownership seams:
 

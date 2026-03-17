@@ -1,12 +1,12 @@
 {
-  "checkedAt": "2026-02-24T21:35:52.188Z",
-  "database": "mysql://root:****@127.0.0.1:3307/terp-test",
+  "checkedAt": "2026-03-14T15:35:48.919Z",
+  "database": "mysql://doadmin:****@terp-staging-db-do-user-28175253-0.g.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED",
   "complete": true,
-  "passedChecks": 7,
-  "totalChecks": 7,
+  "passedChecks": 11,
+  "totalChecks": 11,
   "missingChecks": [],
-  "requiredPassedChecks": 7,
-  "requiredTotalChecks": 7,
+  "requiredPassedChecks": 11,
+  "requiredTotalChecks": 11,
   "missingRequiredChecks": [],
   "optionalChecks": [],
   "checks": [
@@ -36,6 +36,22 @@
     },
     {
       "key": "lots.supplier_client_id.column",
+      "passed": true
+    },
+    {
+      "key": "order_item_bags.deleted_at.column",
+      "passed": true
+    },
+    {
+      "key": "purchaseOrderItems.cogsMode.column",
+      "passed": true
+    },
+    {
+      "key": "purchaseOrderItems.unitCostMin.column",
+      "passed": true
+    },
+    {
+      "key": "purchaseOrderItems.unitCostMax.column",
       "passed": true
     }
   ],

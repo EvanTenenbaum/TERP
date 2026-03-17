@@ -4,7 +4,7 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import DemandSupplyWorkspacePage from "./DemandSupplyWorkspacePage";
 import RelationshipsWorkspacePage from "./RelationshipsWorkspacePage";
@@ -15,11 +15,9 @@ import ProcurementWorkspacePage from "./ProcurementWorkspacePage";
 
 let mockActiveTab = "matchmaking";
 let mockSearch = "";
-let mockPilotFlagEnabled = false;
-let mockPilotFlagLoading = false;
+let mockPilotMode: "classic" | "sheet-native" = "classic";
 const mockSetActiveTab = vi.fn();
 const mockSetLocation = vi.fn();
-const mockRefetchFlags = vi.fn();
 const mockCreditsSummary = {
   totalCreditsRemaining: 1250,
   totalCreditsUsed: 800,
@@ -38,21 +36,18 @@ vi.mock("@/hooks/useQueryTabState", () => ({
 }));
 
 vi.mock("wouter", () => ({
+  Redirect: ({ to }: { to: string }) => <div>Redirect {to}</div>,
   useLocation: () => ["/inventory", mockSetLocation],
   useSearch: () => mockSearch,
 }));
 
-vi.mock("@/hooks/useFeatureFlag", () => ({
-  useFeatureFlag: () => ({
-    enabled: mockPilotFlagEnabled,
-    isLoading: mockPilotFlagLoading,
-    error: null,
+vi.mock("@/lib/spreadsheet-native", () => ({
+  useSpreadsheetPilotAvailability: () => ({
+    sheetPilotEnabled: mockPilotMode === "sheet-native",
+    availabilityReady: true,
   }),
-  useFeatureFlags: () => ({
-    flags: mockPilotFlagEnabled ? { "spreadsheet-native-pilot": true } : {},
-    isLoading: mockPilotFlagLoading,
-    error: null,
-    refetch: mockRefetchFlags,
+  useSpreadsheetSurfaceMode: () => ({
+    surfaceMode: mockPilotMode,
   }),
 }));
 
@@ -96,11 +91,8 @@ vi.mock("@/components/work-surface/VendorsWorkSurface", () => ({
 vi.mock("@/components/work-surface/InventoryWorkSurface", () => ({
   default: () => <div>Inventory Surface</div>,
 }));
-vi.mock("@/components/uiux-slice/ProductIntakeSlicePage", () => ({
-  default: () => <div>Receiving Slice Surface</div>,
-}));
-vi.mock("@/components/uiux-slice/PurchaseOrdersSlicePage", () => ({
-  default: () => <div>Purchase Orders Slice Surface</div>,
+vi.mock("@/components/work-surface/PickPackWorkSurface", () => ({
+  default: () => <div>Pick Pack Surface</div>,
 }));
 vi.mock("@/components/work-surface/PurchaseOrdersWorkSurface", () => ({
   default: () => <div>Purchase Orders Surface</div>,
@@ -108,14 +100,20 @@ vi.mock("@/components/work-surface/PurchaseOrdersWorkSurface", () => ({
 vi.mock("@/components/work-surface/OrdersWorkSurface", () => ({
   default: () => <div>Orders Surface</div>,
 }));
-vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
-  default: () => <div>Orders Sheet Pilot</div>,
-}));
-vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
-  default: () => <div>Inventory Sheet Pilot</div>,
-}));
 vi.mock("@/components/work-surface/QuotesWorkSurface", () => ({
   default: () => <div>Quotes Surface</div>,
+}));
+vi.mock("@/components/uiux-slice/ProductIntakeSlicePage", () => ({
+  default: () => <div>Receiving Slice Surface</div>,
+}));
+vi.mock("@/components/uiux-slice/PurchaseOrdersSlicePage", () => ({
+  default: () => <div>Purchase Orders Slice Surface</div>,
+}));
+vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
+  default: () => <div>Inventory Sheet Pilot Surface</div>,
+}));
+vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
+  default: () => <div>Orders Sheet Pilot Surface</div>,
 }));
 vi.mock("@/pages/ReturnsPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
@@ -123,7 +121,9 @@ vi.mock("@/pages/ReturnsPage", () => ({
   ),
 }));
 vi.mock("@/pages/SalesSheetCreatorPage", () => ({
-  default: () => <div>Sales Sheets Surface</div>,
+  default: ({ embedded }: { embedded?: boolean }) => (
+    <div>Sales Sheets {embedded ? "Embedded" : "Standalone"}</div>
+  ),
 }));
 vi.mock("@/pages/LiveShoppingPage", () => ({
   default: () => <div>Live Shopping Surface</div>,
@@ -151,12 +151,11 @@ vi.mock("@/pages/SampleManagement", () => ({
 
 describe("Consolidated workspace pages", () => {
   beforeEach(() => {
+    mockActiveTab = "matchmaking";
     mockSearch = "";
-    mockPilotFlagEnabled = false;
-    mockPilotFlagLoading = false;
+    mockPilotMode = "classic";
     mockSetActiveTab.mockClear();
     mockSetLocation.mockClear();
-    mockRefetchFlags.mockClear();
   });
 
   it("renders Demand & Supply workspace with embedded content", () => {
@@ -184,17 +183,15 @@ describe("Consolidated workspace pages", () => {
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
-    expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
+  });
+
+  it("renders Inventory workspace with sheet-native pilot when enabled", () => {
+    mockActiveTab = "inventory";
+    mockPilotMode = "sheet-native";
+    render(<InventoryWorkspacePage />);
     expect(
-      screen.queryByRole("button", { name: /browse sku grid/i })
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("Browse")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("tab", { name: /products/i })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /jump to products/i })
-    ).not.toBeInTheDocument();
+      screen.getByText("Inventory Sheet Pilot Surface")
+    ).toBeInTheDocument();
   });
 
   it("renders Inventory workspace with receiving queue content", () => {
@@ -237,20 +234,23 @@ describe("Consolidated workspace pages", () => {
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
-    expect(screen.queryByText("Orders Sheet Pilot")).not.toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: "New Sales Order" })
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "New Order" })
-    ).not.toBeInTheDocument();
+  });
+
+  it("renders Sales workspace with sheet-native pilot when enabled", () => {
+    mockActiveTab = "orders";
+    mockPilotMode = "sheet-native";
+    render(<SalesWorkspacePage />);
+    expect(screen.getByText("Orders Sheet Pilot Surface")).toBeInTheDocument();
   });
 
   it("renders Sales workspace with sales sheets tab content", () => {
     mockActiveTab = "sales-sheets";
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
-    expect(screen.getByText("Sales Sheets Surface")).toBeInTheDocument();
+    expect(screen.getByText("Sales Sheets Embedded")).toBeInTheDocument();
   });
 
   it("renders Sales workspace with live shopping tab content", () => {
@@ -258,6 +258,15 @@ describe("Consolidated workspace pages", () => {
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Live Shopping Surface")).toBeInTheDocument();
+  });
+
+  it("redirects pick-pack to the shipping workspace while preserving search params", () => {
+    mockActiveTab = "pick-pack";
+    mockSearch = "?tab=pick-pack&orderId=42";
+    render(<SalesWorkspacePage />);
+    expect(
+      screen.getByText(/Redirect \/inventory\?tab=shipping&orderId=42/)
+    ).toBeInTheDocument();
   });
 
   it("renders Client Credit workspace with dashboard-first content", () => {
@@ -286,7 +295,7 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
   });
 
-  it("renders Procurement workspace with purchase order queue content", () => {
+  it("renders procurement workspace", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
     expect(

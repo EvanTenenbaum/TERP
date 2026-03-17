@@ -33,12 +33,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=orders&surface=sheet-native",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "queue-filter-proof.png",
     notes:
-      "The base Orders sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof is deployment-gated while browse and filter behavior continues to use the current workbook as an oracle.",
+      "March 15, 2026 staging proof confirmed the live sheet-native Orders pilot supports in-place queue browse and filtering.",
     coverageMode: "sheet-native-direct",
     queryContractIds: ["clients.list", "orders.getAll"],
   },
@@ -48,12 +48,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=orders&surface=sheet-native&orderId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "inspector-proof.png",
     notes:
-      "The base Orders sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof for inspector and deep-link behavior remains deployment-gated.",
+      "March 15, 2026 staging proof confirmed live inspector and deep-link behavior on the sheet-native Orders pilot.",
     coverageMode: "sheet-native-direct",
     queryContractIds: [
       "orders.getOrderWithLineItems",
@@ -86,7 +86,8 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     routeOrEntry: "/sales?tab=create-order&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "draft-edit-proof.png",
-    notes: "Draft editing remains in the current workbook composer for now.",
+    notes:
+      "March 15, 2026 staging proof confirmed live draft editing, total recalculation, and save-state recovery in the current composer; quote-specific and undo coverage still need a separate pass.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -99,7 +100,8 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     routeOrEntry: "/sales?tab=create-order&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "finalize-guardrail-proof.png",
-    notes: "Finalize guardrails remain composer-owned during the step-5 pilot.",
+    notes:
+      "March 15, 2026 staging proof confirmed a blank composer keeps finalization unavailable until prerequisites exist; deeper credit and edge-case guardrails still need targeted proof.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -108,12 +110,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "code-proven",
+    proofStatus: "partial",
     routeOrEntry: "/sales?tab=orders",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "draft-lifecycle-proof.png",
     notes:
-      "Draft confirm and delete remain classic/workbook-adjacent during step 5.",
+      "March 15, 2026 staging proof confirmed the classic Orders queue still exposes Edit Draft, Confirm Order, and Delete Draft for live drafts; confirm execution itself still needs a targeted mutation pass.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -127,8 +129,8 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "confirm-ship-proof.png",
     notes:
-      "Confirm remains classic-adjacent while shipping execution hands off to the Operations-owned surface.",
-    coverageMode: "adjacent-owned",
+      "March 15, 2026 staging proof confirmed confirmed-order context still loads in the classic Orders inspector, but no explicit downstream actions were visible on the tested record; this row now tracks the Sales-side confirm context only while shipping handoff is already closed under SALE-ORD-011.",
+    coverageMode: "classic-adjacent",
   },
   {
     capabilityId: "SALE-ORD-008",
@@ -138,10 +140,10 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     criticality: "P1",
     proofStatus: "partial",
     routeOrEntry: "/sales?tab=orders&orderId=:id",
-    persona: "qa.accounting@terp.test",
+    persona: "qa.salesmanager@terp.test",
     requiredArtifact: "invoice-generation-proof.png",
     notes:
-      "Generate Invoice remains a workbook-adjacent launch from Sales into Accounting-owned invoice truth.",
+      "March 15, 2026 staging proof confirmed the classic Orders surface still exposes the Generate Invoice entry point; invoice creation execution remains an Accounting-owned follow-on proof.",
     coverageMode: "adjacent-owned",
   },
   {
@@ -150,12 +152,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Accounting",
     criticality: "P1",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=orders&surface=sheet-native&orderId=:id",
     persona: "qa.accounting@terp.test",
     requiredArtifact: "accounting-handoff-proof.png",
     notes:
-      "Payment execution is owned by Accounting and intended to launch from the sheet pilot, but the base Orders sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof is deployment-gated.",
+      "March 15, 2026 staging proof confirmed the live sheet-native Orders pilot hands the selected order into Accounting payment context with order identity preserved.",
     coverageMode: "sheet-native-direct",
   },
   {
@@ -164,12 +166,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Returns",
     criticality: "P1",
-    proofStatus: "code-proven",
+    proofStatus: "partial",
     routeOrEntry: "/sales?tab=returns",
     persona: "qa.salesrep@terp.test",
     requiredArtifact: "returns-handoff-proof.png",
     notes:
-      "Returns remain in their owned surface and are not recreated in the pilot sheet.",
+      "March 15, 2026 staging proof confirmed the Returns owner surface is still live with a Process Return entry point; return execution remains an adjacent-owned follow-on proof.",
     coverageMode: "adjacent-owned",
   },
   {
@@ -178,12 +180,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Operations -> Shipping",
     criticality: "P1",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=orders&surface=sheet-native&orderId=:id",
     persona: "qa.fulfillment@terp.test",
     requiredArtifact: "shipping-handoff-proof.png",
     notes:
-      "Shipping handoff is intended to launch from the sheet pilot into the Operations surface, but the base Orders sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof is deployment-gated.",
+      "March 15, 2026 staging proof confirmed the live sheet-native Orders pilot hands the selected order into the consolidated shipping workspace at /inventory?tab=shipping with order identity preserved.",
     coverageMode: "sheet-native-direct",
   },
   {
@@ -197,7 +199,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "conversion-proof.png",
     notes:
-      "Quote-to-order conversion currently lives on the adjacent Quotes workbook surface and now has a verified live entry point.",
+      "March 15, 2026 staging proof confirmed the adjacent Quotes workbook still exposes the Convert to Sales Order dialog; executing the conversion mutation still needs a separate targeted pass.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -233,11 +235,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P1",
-    proofStatus: "code-proven",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=orders",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "draft-delete-proof.png",
-    notes: "Draft delete remains classic-adjacent during step 5.",
+    notes:
+      "March 15, 2026 staging proof confirmed a live draft delete from the classic Orders queue and verified that the temporary draft disappeared from the filtered draft list.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -250,7 +253,8 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     routeOrEntry: "/sales?tab=create-order&quoteId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "seeded-entry-proof.png",
-    notes: "Seeded composer entry remains in the current create-order surface.",
+    notes:
+      "March 15, 2026 staging proof confirmed quoteId-seeded entry into the current create-order surface; other seed modes still need separate proof.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -264,7 +268,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "autosave-nav-guard-proof.png",
     notes:
-      "Autosave and unsaved-change protection remain composer-owned in step 5.",
+      "March 15, 2026 staging proof confirmed the autosave path on an active draft; the unsaved-navigation prompt remains a separate open proof.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -273,12 +277,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Create Order",
     ownerSurface: "Sales -> Orders",
     criticality: "P1",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=create-order&clientId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "customer-context-proof.png",
     notes:
-      "Customer, pricing, credit, and referral context remain composer sidecars.",
+      "March 15, 2026 staging proof confirmed the clientId-seeded create-order route shows customer, referral, credit, and pricing context in the live composer.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -287,12 +291,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Inventory",
     ownerSurface: "Operations -> Inventory",
     criticality: "P0",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/operations?tab=inventory&surface=sheet-native",
     persona: "qa.inventory@terp.test",
     requiredArtifact: "inventory-browse-proof.png",
     notes:
-      "The base Inventory sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof is deployment-gated while browse and triage behavior continues to use the current workbook as an oracle.",
+      "March 15, 2026 staging proof confirmed the live sheet-native Inventory pilot supports browse and in-grid filtering.",
     coverageMode: "sheet-native-direct",
     queryContractIds: ["inventory.getEnhanced", "inventory.dashboardStats"],
   },
@@ -302,12 +306,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Inventory",
     ownerSurface: "Operations -> Inventory",
     criticality: "P0",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/operations?tab=inventory&surface=sheet-native&batchId=:id",
     persona: "qa.inventory@terp.test",
     requiredArtifact: "inventory-inspector-proof.png",
     notes:
-      "The base Inventory sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof for inspector and deep-link behavior remains deployment-gated.",
+      "March 15, 2026 staging proof confirmed live inspector and batchId deep-link behavior on the sheet-native Inventory pilot.",
     coverageMode: "sheet-native-direct",
     queryContractIds: ["inventory.getById"],
   },
@@ -317,11 +321,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Inventory",
     ownerSurface: "Operations -> Inventory",
     criticality: "P0",
-    proofStatus: "code-proven",
+    proofStatus: "partial",
     routeOrEntry: "/operations?tab=inventory",
     persona: "qa.inventory@terp.test",
     requiredArtifact: "add-inventory-proof.png",
-    notes: "Add Inventory remains classic-adjacent during step 5.",
+    notes:
+      "March 15, 2026 staging proof only confirmed the classic inventory surface still exposes the Open Receiving Queue intake handoff; the actual Add Inventory modal flow in this row remains unproven.",
     coverageMode: "classic-adjacent",
   },
   {
@@ -335,7 +340,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.inventory@terp.test",
     requiredArtifact: "status-edit-proof.png",
     notes:
-      "Status editing remains one of the intended direct pilot mutations, but the base Inventory sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof is deployment-gated.",
+      "March 15, 2026 staging proof confirmed live status mutation on the sheet-native Inventory pilot and reverted the test change after capture; undo, audit, and conflict parity still need proof.",
     coverageMode: "sheet-native-direct",
     mutationContractIds: ["inventory.updateStatus"],
   },
@@ -350,7 +355,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.inventory@terp.test",
     requiredArtifact: "adjust-qty-proof.png",
     notes:
-      "Quantity adjustment remains an intended direct pilot mutation via dialog and inspector, with undo or reversal staying classic-adjacent for now, but the base Inventory sheet request still resolved to the classic workbook surface in March 14, 2026 staging detection, so direct pilot live proof is deployment-gated.",
+      "March 15, 2026 staging proof confirmed live quantity adjustment on the sheet-native Inventory pilot and reverted the test change after capture; undo, audit, and race-condition coverage still remain open.",
     coverageMode: "sheet-native-direct",
     mutationContractIds: ["inventory.adjustQty"],
   },
@@ -360,11 +365,12 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Inventory",
     ownerSurface: "Operations -> Inventory",
     criticality: "P1",
-    proofStatus: "code-proven",
+    proofStatus: "partial",
     routeOrEntry: "/operations?tab=inventory",
     persona: "qa.inventory@terp.test",
     requiredArtifact: "bulk-action-proof.png",
-    notes: "Bulk actions remain classic-adjacent during step 5.",
+    notes:
+      "[live-failing] March 15, 2026 staging proof confirmed live delete-eligibility gating and the confirmation flow, but the actual inventory.bulk.delete mutation currently fails with a staging 500, so this row is explicitly not preserved yet.",
     coverageMode: "classic-adjacent",
   },
   {

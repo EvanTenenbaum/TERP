@@ -46,14 +46,6 @@ vi.mock("@/components/work-surface/InventoryWorkSurface", () => ({
   default: () => <div>Inventory Surface</div>,
 }));
 
-vi.mock("@/components/uiux-slice/PurchaseOrdersSlicePage", () => ({
-  default: () => <div>Purchase Orders Slice Surface</div>,
-}));
-
-vi.mock("@/components/uiux-slice/ProductIntakeSlicePage", () => ({
-  default: () => <div>Receiving Slice Surface</div>,
-}));
-
 vi.mock("@/components/work-surface/PickPackWorkSurface", () => ({
   default: () => <div>Pick Pack Surface</div>,
 }));
@@ -82,26 +74,6 @@ vi.mock("@/pages/ReturnsPage", () => ({
 
 vi.mock("@/pages/OrderCreatorPage", () => ({
   default: () => <div>Order Creator</div>,
-}));
-
-vi.mock("@/pages/SalesSheetCreatorPage", () => ({
-  default: () => <div>Sales Sheets Surface</div>,
-}));
-
-vi.mock("@/pages/LiveShoppingPage", () => ({
-  default: () => <div>Live Shopping Surface</div>,
-}));
-
-vi.mock("@/pages/PhotographyPage", () => ({
-  default: ({ embedded }: { embedded?: boolean }) => (
-    <div>Photography {embedded ? "Embedded" : "Standalone"}</div>
-  ),
-}));
-
-vi.mock("@/pages/SampleManagement", () => ({
-  default: ({ embedded }: { embedded?: boolean }) => (
-    <div>Samples {embedded ? "Embedded" : "Standalone"}</div>
-  ),
 }));
 
 describe("spreadsheet-native pilot rollout gating", () => {

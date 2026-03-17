@@ -268,17 +268,17 @@ AWAITING_INTAKE → LIVE → SOLD_OUT
 
 ### 3.2 Inventory Movements
 
-| Flow                  | Procedure                                 | Type     | Auth      | Permission     |
-| --------------------- | ----------------------------------------- | -------- | --------- | -------------- |
-| Record Movement       | `inventoryMovements.record`               | mutation | protected | inventory:read |
-| Decrease Inventory    | `inventoryMovements.decrease`             | mutation | protected | inventory:read |
-| Increase Inventory    | `inventoryMovements.increase`             | mutation | protected | inventory:read |
-| Adjust Inventory      | `inventoryMovements.adjust`               | mutation | protected | inventory:read |
-| Get by Batch          | `inventoryMovements.getByBatch`           | query    | protected | inventory:read |
-| Get by Reference      | `inventoryMovements.getByReference`       | query    | protected | inventory:read |
-| Validate Availability | `inventoryMovements.validateAvailability` | query    | protected | inventory:read |
-| Get Summary           | `inventoryMovements.getSummary`           | query    | protected | inventory:read |
-| Reverse Movement      | `inventoryMovements.reverse`              | mutation | protected | inventory:read |
+| Flow                  | Procedure                                 | Type     | Auth      | Permission       |
+| --------------------- | ----------------------------------------- | -------- | --------- | ---------------- |
+| Record Movement       | `inventoryMovements.record`               | mutation | protected | inventory:update |
+| Decrease Inventory    | `inventoryMovements.decrease`             | mutation | protected | inventory:update |
+| Increase Inventory    | `inventoryMovements.increase`             | mutation | protected | inventory:update |
+| Adjust Inventory      | `inventoryMovements.adjust`               | mutation | protected | inventory:update |
+| Get by Batch          | `inventoryMovements.getByBatch`           | query    | protected | inventory:read   |
+| Get by Reference      | `inventoryMovements.getByReference`       | query    | protected | inventory:read   |
+| Validate Availability | `inventoryMovements.validateAvailability` | query    | protected | inventory:read   |
+| Get Summary           | `inventoryMovements.getSummary`           | query    | protected | inventory:read   |
+| Reverse Movement      | `inventoryMovements.reverse`              | mutation | protected | inventory:update |
 
 **Movement Types:**
 
@@ -296,6 +296,48 @@ AWAITING_INTAKE → LIVE → SOLD_OUT
 
 - `DAMAGED`, `EXPIRED`, `LOST`, `THEFT`
 - `COUNT_DISCREPANCY`, `QUALITY_ISSUE`, `REWEIGH`, `OTHER`
+
+### 3.2A Current Inventory Workbook (`/inventory`)
+
+These are the procedures that power the current inventory work surface rather than the older batch-only route model.
+
+| Flow                        | Procedure                     | Type     | Auth      | Permission       |
+| --------------------------- | ----------------------------- | -------- | --------- | ---------------- |
+| Load Enhanced Workbook      | `inventory.getEnhanced`       | query    | protected | inventory:read   |
+| List Workbook Rows          | `inventory.list`              | query    | protected | inventory:read   |
+| Load Workbook Summary       | `inventory.dashboardStats`    | query    | protected | inventory:read   |
+| Update Status In Workbook   | `inventory.updateStatus`      | mutation | protected | inventory:update |
+| Adjust Quantity In Workbook | `inventory.adjustQty`         | mutation | protected | inventory:update |
+| Bulk Update Status          | `inventory.bulk.updateStatus` | mutation | protected | inventory:update |
+| Bulk Delete Batches         | `inventory.bulk.delete`       | mutation | protected | inventory:delete |
+| Bulk Restore Batches        | `inventory.bulk.restore`      | mutation | protected | inventory:update |
+| List Saved Views            | `inventory.views.list`        | query    | protected | inventory:read   |
+| Save Workbook View          | `inventory.views.save`        | mutation | protected | inventory:read   |
+| Delete Workbook View        | `inventory.views.delete`      | mutation | protected | inventory:delete |
+| Load Gallery Thumbnails     | `photography.getBatchImages`  | query    | protected | (none)           |
+
+**Workbook Notes:**
+
+- `inventory.getEnhanced` is the current primary grid feed and should be treated as the authoritative workbook data source.
+- The current workbook preserves a short undo window around quantity adjustment and bulk delete/restore behavior.
+- Saved views have shared/private ownership semantics that should be preserved in spreadsheet-native planning.
+- Gallery mode uses `photography.getBatchImages` only for bounded thumbnail/media preview support; full photography review remains a separate surface.
+
+### 3.2B Add Inventory Support (`/inventory`)
+
+The current Add Inventory modal depends on support procedures outside the older batch CRUD inventory story.
+
+| Flow                    | Procedure                                 | Type     | Auth      | Permission       |
+| ----------------------- | ----------------------------------------- | -------- | --------- | ---------------- |
+| Create Inventory Intake | `inventory.intake`                        | mutation | protected | inventory:create |
+| Lookup Vendors          | `inventory.vendors`                       | query    | protected | inventory:read   |
+| Lookup Brands           | `inventory.brands`                        | query    | protected | inventory:read   |
+| Upload Intake Media     | `inventory.uploadMedia`                   | mutation | protected | inventory:update |
+| Delete Intake Media     | `inventory.deleteMedia`                   | mutation | protected | inventory:update |
+| Load Display Settings   | `organizationSettings.getDisplaySettings` | query    | protected | (none)           |
+| List Categories         | `settings.categories.list`                | query    | protected | (none)           |
+| List Grades             | `settings.grades.list`                    | query    | protected | (none)           |
+| List Locations          | `settings.locations.list`                 | query    | protected | (none)           |
 
 ### 3.3 COGS Management
 
@@ -351,6 +393,31 @@ AWAITING_INTAKE → LIVE → SOLD_OUT
 | Get with Line Items | `orders.getOrderWithLineItems` | query    | protected | orders:read   | All order roles                       |
 | Get Audit Log       | `orders.getAuditLog`           | query    | protected | orders:read   | Super Admin, Sales Manager            |
 
+### 4.1A Current Sales Workspace Orders Surface (`/sales?tab=orders`)
+
+The current orders queue and inspector are workbook-style sales surfaces. They browse and inspect orders in-place, then hand off adjacent accounting or shipping work without pretending those adjacent modules belong to Sales.
+
+| Flow                        | Procedure                       | Type     | Auth      | Permission      |
+| --------------------------- | ------------------------------- | -------- | --------- | --------------- |
+| Load Orders Queue           | `orders.getAll`                 | query    | protected | orders:read     |
+| Load Selected Order Detail  | `orders.getOrderWithLineItems`  | query    | protected | orders:read     |
+| Load Inspector GL Context   | `accounting.ledger.list`        | query    | protected | accounting:read |
+| Confirm Draft from Queue    | `orders.confirmDraftOrder`      | mutation | protected | orders:create   |
+| Confirm Existing Order      | `orders.confirmOrder`           | mutation | protected | orders:update   |
+| Delete Selected Draft/Order | `orders.delete`                 | mutation | protected | orders:delete   |
+| Generate Invoice            | `invoices.generateFromOrder`    | mutation | protected | invoices:create |
+| Mark Returned               | `orders.markAsReturned`         | mutation | protected | orders:update   |
+| Get Vendor Return Options   | `orders.getVendorReturnOptions` | query    | protected | orders:read     |
+| Process Restock             | `orders.processRestock`         | mutation | protected | orders:update   |
+| Process Vendor Return       | `orders.processVendorReturn`    | mutation | protected | orders:update   |
+
+**Orders Surface Notes:**
+
+- Primary current route is `/sales?tab=orders`; `/orders` remains a legacy alias into the same workspace shell.
+- The selected-order inspector currently includes line items, COGS detail, GL context, and return history.
+- `Make Payment` is a real cross-workbook handoff into `/accounting?tab=payments&orderId=:id&from=sales`.
+- `Generate Invoice` is a current workbook action, but `Download Invoice` is still a visible non-wired affordance in the current sales workbook and should not be counted as preserved functionality.
+
 ### 4.2 Draft Orders (Enhanced Workflow)
 
 | Flow                  | Procedure                    | Type     | Auth      | Permission    |
@@ -361,6 +428,42 @@ AWAITING_INTAKE → LIVE → SOLD_OUT
 | Finalize Draft        | `orders.finalizeDraft`       | mutation | protected | orders:create |
 | Update Draft          | `orders.updateDraftOrder`    | mutation | protected | orders:update |
 | Delete Draft          | `orders.deleteDraftOrder`    | mutation | protected | orders:delete |
+
+**Draft Workflow Notes:**
+
+- Current workbook ownership is centered on `createDraftEnhanced`, `updateDraftEnhanced`, `confirmDraftOrder`, and `finalizeDraft`.
+- Legacy direct routes such as `/orders/create` and `/orders/new` currently redirect into `/sales?tab=create-order`.
+- Older direct CRUD procedures still exist in the router and source docs, but they should not be mistaken for the primary current workbook flow.
+
+### 4.2A Current Sales Workspace Composer (`/sales?tab=create-order`)
+
+The current create-order composer is a workbook-style sales surface with route seeding, sidecar context, autosave, and cross-domain support procedures.
+
+| Flow                             | Procedure                                | Type     | Auth      | Permission     |
+| -------------------------------- | ---------------------------------------- | -------- | --------- | -------------- |
+| Hydrate Draft / Quote Seed       | `orders.getOrderWithLineItems`           | query    | protected | orders:read    |
+| Load Composer Inventory          | `salesSheets.getInventory`               | query    | protected | inventory:read |
+| Auto-save Active Draft           | `orders.updateDraftEnhanced`             | mutation | protected | orders:update  |
+| Run Credit Check Before Finalize | `credit.checkOrderCredit`                | mutation | protected | credits:read   |
+| Load Customer Profile Shell      | `relationshipProfile.getShell`           | query    | protected | clients:read   |
+| Load Customer Pricing Context    | `relationshipProfile.getSalesPricing`    | query    | protected | clients:read   |
+| Load Customer Money Context      | `relationshipProfile.getMoney`           | query    | protected | clients:read   |
+| Load Customer Supply Context     | `relationshipProfile.getSupplyInventory` | query    | protected | clients:read   |
+| Get Eligible Referrers           | `referrals.getEligibleReferrers`         | query    | admin     | (none)         |
+| Get Pending Referral Credits     | `referrals.getPendingCredits`            | query    | admin     | (none)         |
+| Apply Referral Credits           | `referrals.applyCreditsToOrder`          | mutation | admin     | (none)         |
+| Load Referral Settings           | `referrals.getSettings`                  | query    | admin     | (none)         |
+| Load Credit Settings             | `credit.getSettings`                     | query    | protected | credits:update |
+| Load Client Credit Record        | `credit.getByClientId`                   | query    | protected | credits:read   |
+| Calculate Client Credit          | `credit.calculate`                       | mutation | protected | credits:read   |
+
+**Composer Notes:**
+
+- Current route seeds include `draftId`, `quoteId` with duplication mode, `clientId`, `needId`, and `fromSalesSheet=true`.
+- Primary current route is `/sales?tab=create-order`; `/orders/create` and `/orders/new` are legacy compatibility entry points that redirect into the same workbook surface.
+- A saved draft currently reopens at `/sales?tab=create-order&draftId=:id`; staging proof on March 13, 2026 confirmed route hydration on a real draft.
+- Active drafts auto-save while editing, and pre-draft edits are protected by an unsaved-changes navigation guard.
+- Customer money, pricing, referral, and related profile context are intentionally shared drawer behaviors, not isolated sales-only widgets.
 
 ### 4.3 Order Status & Fulfillment
 
@@ -402,13 +505,22 @@ PENDING → PACKED → SHIPPED → (DELIVERED)
 
 ### 4.4 Returns & Conversions
 
-| Flow                  | Procedure                   | Type     | Auth      | Permission    |
-| --------------------- | --------------------------- | -------- | --------- | ------------- |
-| Process Return        | `orders.processReturn`      | mutation | protected | orders:update |
-| Get Order Returns     | `orders.getOrderReturns`    | query    | protected | orders:read   |
-| Convert to Sale       | `orders.convertToSale`      | mutation | protected | orders:create |
-| Convert Quote to Sale | `orders.convertQuoteToSale` | mutation | protected | orders:create |
-| Export Order          | `orders.export`             | mutation | protected | orders:read   |
+| Flow                      | Procedure                       | Type     | Auth      | Permission    |
+| ------------------------- | ------------------------------- | -------- | --------- | ------------- |
+| Process Return            | `orders.processReturn`          | mutation | protected | orders:update |
+| Get Order Returns         | `orders.getOrderReturns`        | query    | protected | orders:read   |
+| Mark As Returned          | `orders.markAsReturned`         | mutation | protected | orders:update |
+| Process Restock           | `orders.processRestock`         | mutation | protected | orders:update |
+| Process Vendor Return     | `orders.processVendorReturn`    | mutation | protected | orders:update |
+| Get Vendor Return Options | `orders.getVendorReturnOptions` | query    | protected | orders:read   |
+| Convert to Sale           | `orders.convertToSale`          | mutation | protected | orders:create |
+| Convert Quote to Sale     | `orders.convertQuoteToSale`     | mutation | protected | orders:create |
+| Export Order              | `orders.export`                 | mutation | protected | orders:read   |
+
+**Returns Notes:**
+
+- The current staged returns flow is not just `orders.processReturn`; it also branches into `markAsReturned`, `processRestock`, `processVendorReturn`, and `getVendorReturnOptions`.
+- Returns remain split between sales-owned review/decision flow and downstream inventory/accounting consequences.
 
 ### 4.5 Pick & Pack (WS-003)
 
@@ -1318,15 +1430,18 @@ The `suppliers` router is deprecated. All supplier operations should use the `cl
 
 ### Protected Routes - Orders & Sales
 
-| Route            | Page                   | Primary Entity |
-| ---------------- | ---------------------- | -------------- |
-| `/orders`        | Orders                 | Orders         |
-| `/orders/create` | OrderCreatorPage       | Order Creation |
-| `/quotes`        | Quotes                 | Quotes         |
-| `/sales-sheets`  | SalesSheetCreatorPage  | Sales Sheets   |
-| `/sales-portal`  | UnifiedSalesPortalPage | Sales Portal   |
-| `/pick-pack`     | PickPackPage           | Fulfillment    |
-| `/photography`   | PhotographyPage        | Product Photos |
+| Route                     | Page                   | Primary Entity                       |
+| ------------------------- | ---------------------- | ------------------------------------ |
+| `/sales`                  | SalesWorkspacePage     | Sales Workspace                      |
+| `/sales?tab=create-order` | SalesWorkspacePage     | Order Composer                       |
+| `/sales?tab=orders`       | SalesWorkspacePage     | Orders Queue                         |
+| `/orders`                 | Orders                 | Orders (legacy/list surface)         |
+| `/orders/create`          | OrderCreatorPage       | Order Creation (legacy/direct route) |
+| `/quotes`                 | Quotes                 | Quotes                               |
+| `/sales-sheets`           | SalesSheetCreatorPage  | Sales Sheets                         |
+| `/sales-portal`           | UnifiedSalesPortalPage | Sales Portal                         |
+| `/pick-pack`              | PickPackPage           | Fulfillment                          |
+| `/photography`            | PhotographyPage        | Product Photos                       |
 
 ### Protected Routes - Pricing
 

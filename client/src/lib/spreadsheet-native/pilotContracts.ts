@@ -25,11 +25,48 @@ function toDateString(value: Date | string | null | undefined) {
   return value;
 }
 
+function formatAgeLabel(value: Date | string | null | undefined) {
+  const dateString = toDateString(value);
+  if (!dateString) {
+    return "-";
+  }
+
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  const diffMs = Date.now() - parsed.getTime();
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  return `${diffDays}d`;
+}
+
+function buildProductSummary(input: {
+  productName: string;
+  vendorName: string | null | undefined;
+  brandName: string | null | undefined;
+  grade: string | null | undefined;
+}) {
+  const details = [input.vendorName, input.brandName, input.grade]
+    .map(value => value?.trim())
+    .filter(
+      (value): value is string =>
+        Boolean(value) && value !== "-" && value !== "Unknown"
+    );
+
+  if (details.length === 0) {
+    return input.productName;
+  }
+
+  return `${input.productName} · ${details.join(" / ")}`;
+}
+
 export interface InventoryPilotRow {
   identity: RowIdentity;
   batchId: number;
   sku: string;
   productName: string;
+  productSummary: string;
   category: string;
   subcategory: string;
   vendorName: string;
@@ -41,6 +78,7 @@ export interface InventoryPilotRow {
   availableQty: number;
   unitCogs: number | null;
   receivedDate: string | null;
+  ageLabel: string;
   stockStatus: string | null;
 }
 
@@ -56,8 +94,12 @@ export interface OrderQueuePilotRow {
   total: number;
   lineItemCount: number;
   createdAt: string | null;
+  ageLabel: string;
   confirmedAt: string | null;
   invoiceId: number | null;
+  stageLabel: string;
+  invoiceStateLabel: string;
+  nextStepLabel: string;
 }
 
 export interface OrderLinePilotRow {
@@ -127,6 +169,12 @@ export function mapInventoryItemsToPilotRows(
       batchId: item.id,
       sku: item.sku,
       productName: item.productName || "Unknown Product",
+      productSummary: buildProductSummary({
+        productName: item.productName || "Unknown Product",
+        vendorName: item.vendorName,
+        brandName: item.brandName,
+        grade: item.grade,
+      }),
       category: item.category || "-",
       subcategory: item.subcategory || "-",
       vendorName: item.vendorName || "-",
@@ -141,6 +189,7 @@ export function mapInventoryItemsToPilotRows(
           ? null
           : toNumber(item.unitCogs),
       receivedDate: toDateString(item.receivedDate),
+      ageLabel: formatAgeLabel(item.receivedDate),
       stockStatus: item.stockStatus ?? null,
     };
   });
@@ -166,6 +215,12 @@ export function mapInventoryDetailToPilotRow(
     batchId: detail.batch.id,
     sku: detail.batch.sku || `Batch #${detail.batch.id}`,
     productName: `Batch #${detail.batch.id}`,
+    productSummary: buildProductSummary({
+      productName: `Batch #${detail.batch.id}`,
+      vendorName: null,
+      brandName: null,
+      grade: detail.batch.grade,
+    }),
     category: "-",
     subcategory: "-",
     vendorName: "-",
@@ -180,6 +235,7 @@ export function mapInventoryDetailToPilotRow(
         ? null
         : toNumber(detail.batch.unitCogs),
     receivedDate: toDateString(detail.batch.createdAt),
+    ageLabel: formatAgeLabel(detail.batch.createdAt),
     stockStatus: null,
   };
 }
@@ -189,26 +245,50 @@ export function mapOrdersToPilotRows(input: {
   clientNamesById: Map<number, string>;
   lane: "drafts" | "confirmed";
 }): OrderQueuePilotRow[] {
-  return input.orders.map(order => ({
-    identity: createIdentity("order", order.id, "primary", order.version),
-    orderId: order.id,
-    orderNumber: order.orderNumber || `Order #${order.id}`,
-    clientId: order.clientId,
-    clientName: input.clientNamesById.get(order.clientId) || "Unknown Client",
-    lane: input.lane,
-    orderType: order.orderType || "SALE",
-    fulfillmentStatus:
+  return input.orders.map(order => {
+    const createdAt = toDateString(order.createdAt);
+    const invoiceId = order.invoiceId ?? null;
+    const stageLabel = input.lane === "drafts" ? "Draft" : "Confirmed";
+    const invoiceStateLabel =
       input.lane === "drafts"
-        ? "DRAFT"
-        : order.fulfillmentStatus || order.saleStatus || "READY_FOR_PACKING",
-    total: toNumber(order.total),
-    lineItemCount: Array.isArray((order as { lineItems?: unknown[] }).lineItems)
-      ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
-      : 0,
-    createdAt: toDateString(order.createdAt),
-    confirmedAt: toDateString(order.confirmedAt),
-    invoiceId: order.invoiceId ?? null,
-  }));
+        ? "Pending"
+        : invoiceId
+          ? `Issued #${invoiceId}`
+          : "Pending";
+    const nextStepLabel =
+      input.lane === "drafts"
+        ? "Open draft"
+        : invoiceId
+          ? "Ship"
+          : "Accounting";
+
+    return {
+      identity: createIdentity("order", order.id, "primary", order.version),
+      orderId: order.id,
+      orderNumber: order.orderNumber || `Order #${order.id}`,
+      clientId: order.clientId,
+      clientName: input.clientNamesById.get(order.clientId) || "Unknown Client",
+      lane: input.lane,
+      orderType: order.orderType || "SALE",
+      fulfillmentStatus:
+        input.lane === "drafts"
+          ? "DRAFT"
+          : order.fulfillmentStatus || order.saleStatus || "READY_FOR_PACKING",
+      total: toNumber(order.total),
+      lineItemCount: Array.isArray(
+        (order as { lineItems?: unknown[] }).lineItems
+      )
+        ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
+        : 0,
+      createdAt,
+      ageLabel: formatAgeLabel(createdAt),
+      confirmedAt: toDateString(order.confirmedAt),
+      invoiceId,
+      stageLabel,
+      invoiceStateLabel,
+      nextStepLabel,
+    };
+  });
 }
 
 export function mapOrderLineItemsToPilotRows(
@@ -248,7 +328,7 @@ export const inventoryPilotColumnPresets: ColumnPreset[] = [
     pasteAllowed: false,
   },
   {
-    key: "productName",
+    key: "productSummary",
     label: "Product",
     dataType: "text",
     editable: false,
@@ -284,9 +364,9 @@ export const inventoryPilotColumnPresets: ColumnPreset[] = [
     pasteAllowed: false,
   },
   {
-    key: "unitCogs",
-    label: "Unit COGS",
-    dataType: "currency",
+    key: "ageLabel",
+    label: "Age",
+    dataType: "text",
     editable: false,
     bulkEditable: false,
     fillAllowed: false,
@@ -295,6 +375,15 @@ export const inventoryPilotColumnPresets: ColumnPreset[] = [
 ];
 
 export const ordersQueueColumnPresets: ColumnPreset[] = [
+  {
+    key: "stageLabel",
+    label: "Stage",
+    dataType: "status",
+    editable: false,
+    bulkEditable: false,
+    fillAllowed: false,
+    pasteAllowed: false,
+  },
   {
     key: "orderNumber",
     label: "Order",
@@ -314,9 +403,9 @@ export const ordersQueueColumnPresets: ColumnPreset[] = [
     pasteAllowed: false,
   },
   {
-    key: "fulfillmentStatus",
-    label: "Status",
-    dataType: "status",
+    key: "lineItemCount",
+    label: "Lines",
+    dataType: "number",
     editable: false,
     bulkEditable: false,
     fillAllowed: false,
@@ -332,9 +421,9 @@ export const ordersQueueColumnPresets: ColumnPreset[] = [
     pasteAllowed: false,
   },
   {
-    key: "createdAt",
-    label: "Created",
-    dataType: "datetime",
+    key: "nextStepLabel",
+    label: "Next",
+    dataType: "text",
     editable: false,
     bulkEditable: false,
     fillAllowed: false,

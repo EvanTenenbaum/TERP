@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import {
-  FileText,
   Plus,
   RefreshCw,
   SquareArrowOutUpRight,
@@ -19,7 +18,6 @@ import {
   mapOrderLineItemsToPilotRows,
   mapOrdersToPilotRows,
   ordersQueueColumnPresets,
-  salesOrdersWorkbookAdapter,
   useSpreadsheetSelectionParam,
 } from "@/lib/spreadsheet-native";
 import { Button } from "@/components/ui/button";
@@ -128,45 +126,64 @@ export function OrdersSheetPilotSurface({
     [clientNamesById, confirmedQuery.data, searchLower]
   );
 
+  const queueRows = useMemo(
+    () =>
+      [...draftRows, ...confirmedRows].sort((left, right) => {
+        if (left.lane !== right.lane) {
+          return left.lane === "drafts" ? -1 : 1;
+        }
+
+        return (right.createdAt ?? "").localeCompare(left.createdAt ?? "");
+      }),
+    [confirmedRows, draftRows]
+  );
+
   const selectedOrderRow =
-    draftRows.find(row => row.orderId === selectedOrderId) ||
-    confirmedRows.find(row => row.orderId === selectedOrderId) ||
-    null;
+    queueRows.find(row => row.orderId === selectedOrderId) ?? null;
 
   const lineItemRows = useMemo(
     () => mapOrderLineItemsToPilotRows(detailQuery.data),
     [detailQuery.data]
   );
 
-  const orderColumnDefs = useMemo<ColDef<(typeof draftRows)[number]>[]>(
+  const orderColumnDefs = useMemo<ColDef<(typeof queueRows)[number]>[]>(
     () => [
+      {
+        field: "stageLabel",
+        headerName: "Stage",
+        minWidth: 110,
+        maxWidth: 130,
+      },
       {
         field: "orderNumber",
         headerName: "Order",
         minWidth: 130,
+        maxWidth: 150,
       },
       {
         field: "clientName",
         headerName: "Client",
-        flex: 1.2,
-        minWidth: 180,
+        flex: 1.3,
+        minWidth: 200,
       },
       {
-        field: "fulfillmentStatus",
-        headerName: "Status",
-        minWidth: 170,
+        field: "lineItemCount",
+        headerName: "Lines",
+        minWidth: 90,
+        maxWidth: 110,
       },
       {
         field: "total",
         headerName: "Total",
         minWidth: 120,
+        maxWidth: 140,
         valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
       },
       {
-        field: "createdAt",
-        headerName: "Created",
-        minWidth: 170,
-        valueFormatter: params => formatDate(params.value ?? null),
+        field: "nextStepLabel",
+        headerName: "Next",
+        minWidth: 140,
+        maxWidth: 170,
       },
     ],
     []
@@ -191,12 +208,6 @@ export function OrdersSheetPilotSurface({
         minWidth: 100,
       },
       {
-        field: "unitPrice",
-        headerName: "Unit Price",
-        minWidth: 120,
-        valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
-      },
-      {
         field: "lineTotal",
         headerName: "Line Total",
         minWidth: 120,
@@ -209,16 +220,21 @@ export function OrdersSheetPilotSurface({
   const statusBarLeft = (
     <span>
       {draftRows.length} drafts · {confirmedRows.length} confirmed ·{" "}
-      {ordersQueueColumnPresets.length} fixed queue columns
+      {ordersQueueColumnPresets.length} default queue columns
     </span>
   );
 
   const statusBarCenter = (
     <span>
       {selectedOrderRow
-        ? `Selected ${selectedOrderRow.orderNumber}`
-        : "Select a draft or confirmed order to load the linked detail tables"}
+        ? `Selected ${selectedOrderRow.orderNumber} · ${selectedOrderRow.stageLabel} · ${selectedOrderRow.ageLabel} old`
+        : "Select an order to load linked lines, evidence, and action context"}
     </span>
+  );
+
+  const canOpenAccounting = selectedOrderRow?.lane === "confirmed";
+  const canOpenShipping = Boolean(
+    selectedOrderRow?.lane === "confirmed" && selectedOrderRow.invoiceId
   );
 
   return (
@@ -230,10 +246,7 @@ export function OrdersSheetPilotSurface({
           placeholder="Search order or client"
           className="max-w-xs"
         />
-        <Badge variant="secondary">
-          {salesOrdersWorkbookAdapter.sheets[0]?.archetype} sheet
-        </Badge>
-        <Badge variant="outline">limited queue + inspector evaluation</Badge>
+        <Badge variant="outline">Pilot: queue + linked detail</Badge>
         <div className="ml-auto flex items-center gap-2">
           <Button
             size="sm"
@@ -244,15 +257,85 @@ export function OrdersSheetPilotSurface({
               void detailQuery.refetch();
             }}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+            <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
             size="sm"
             onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Open Workbook Composer
+            New Order
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
+        <span className="text-sm font-medium text-foreground">
+          {selectedOrderRow
+            ? `${selectedOrderRow.orderNumber} selected`
+            : "Queue evaluation active"}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          Primary actions stay on-sheet. Composer, payment, and shipping still
+          hand off to owned adjacent surfaces.
+        </span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={
+              selectedOrderRow?.lane === "drafts" ? "default" : "outline"
+            }
+            onClick={() =>
+              setLocation(
+                buildSalesWorkspacePath("create-order", {
+                  draftId:
+                    selectedOrderRow?.lane === "drafts"
+                      ? selectedOrderRow.orderId
+                      : undefined,
+                })
+              )
+            }
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {selectedOrderRow?.lane === "drafts"
+              ? "Open Draft"
+              : "Open Composer"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!selectedOrderRow || !canOpenAccounting}
+            onClick={() => {
+              if (!selectedOrderRow) {
+                return;
+              }
+
+              setLocation(
+                `/accounting?tab=payments&orderId=${selectedOrderRow.orderId}&from=sales`
+              );
+            }}
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            Accounting
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!selectedOrderRow || !canOpenShipping}
+            onClick={() => {
+              if (!selectedOrderRow) {
+                return;
+              }
+
+              setLocation(
+                buildOperationsWorkspacePath("shipping", {
+                  orderId: selectedOrderRow.orderId,
+                })
+              );
+            }}
+          >
+            <Truck className="mr-2 h-4 w-4" />
+            Shipping
           </Button>
           <Button
             size="sm"
@@ -260,62 +343,75 @@ export function OrdersSheetPilotSurface({
             onClick={() => onOpenClassic(selectedOrderId)}
           >
             <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-            Classic Orders
+            Classic
           </Button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-        This internal sheet-native pilot is limited to queue browse, selected
-        order inspection, and owned handoffs. Draft editing, create-order
-        composition, returns, and advanced output flows still run in adjacent
-        workbook surfaces.
-      </div>
+      <SpreadsheetPilotGrid
+        title="Orders Queue"
+        description="One dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context."
+        rows={queueRows}
+        columnDefs={orderColumnDefs}
+        getRowId={row => row.identity.rowKey}
+        selectedRowId={selectedOrderRow?.identity.rowKey ?? null}
+        onSelectedRowChange={row => setSelectedOrderId(row?.orderId ?? null)}
+        isLoading={draftsQuery.isLoading || confirmedQuery.isLoading}
+        errorMessage={
+          draftsQuery.error?.message ?? confirmedQuery.error?.message ?? null
+        }
+        emptyTitle="No orders match this queue"
+        emptyDescription="Adjust the search or open the composer to create a new draft."
+        summary={
+          <span>
+            {queueRows.length} visible orders · {draftRows.length} drafts ·{" "}
+            {confirmedRows.length} confirmed
+          </span>
+        }
+        minHeight={360}
+      />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <SpreadsheetPilotGrid
-          title="Drafts"
-          description="Drafts stay visible as their own lane so the pilot can evaluate adjacent-table queue behavior without replacing the composer."
-          rows={draftRows}
-          columnDefs={orderColumnDefs}
-          getRowId={row => row.identity.rowKey}
-          selectedRowId={
-            selectedOrderRow?.lane === "drafts"
-              ? selectedOrderRow.identity.rowKey
-              : null
-          }
-          onSelectedRowChange={row => setSelectedOrderId(row?.orderId ?? null)}
-          isLoading={draftsQuery.isLoading}
-          errorMessage={draftsQuery.error?.message ?? null}
-          emptyTitle="No draft orders"
-          emptyDescription="Drafts created in the composer will appear here."
-          summary={<span>{draftRows.length} visible draft rows</span>}
-          minHeight={300}
-        />
-        <SpreadsheetPilotGrid
-          title="Confirmed"
-          description="Confirmed work remains a separate lane so handoffs can be reviewed without rebuilding shipping inside the sheet."
-          rows={confirmedRows}
-          columnDefs={orderColumnDefs}
-          getRowId={row => row.identity.rowKey}
-          selectedRowId={
-            selectedOrderRow?.lane === "confirmed"
-              ? selectedOrderRow.identity.rowKey
-              : null
-          }
-          onSelectedRowChange={row => setSelectedOrderId(row?.orderId ?? null)}
-          isLoading={confirmedQuery.isLoading}
-          errorMessage={confirmedQuery.error?.message ?? null}
-          emptyTitle="No confirmed orders"
-          emptyDescription="Confirmed orders ready for operations will appear here."
-          summary={<span>{confirmedRows.length} visible confirmed rows</span>}
-          minHeight={300}
-        />
-      </div>
+      {selectedOrderRow ? (
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Client
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedOrderRow.clientName}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Stage
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedOrderRow.stageLabel} ·{" "}
+              {selectedOrderRow.fulfillmentStatus}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Invoice
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedOrderRow.invoiceStateLabel}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Next step
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedOrderRow.nextStepLabel}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <SpreadsheetPilotGrid
         title="Selected Order Lines"
-        description="The supporting table stays in sync with the active order so the pilot can evaluate linked-table behavior without replacing the draft composer."
+        description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
         rows={lineItemRows}
         columnDefs={lineItemColumnDefs}
         getRowId={row => row.identity.rowKey}
@@ -331,7 +427,7 @@ export function OrdersSheetPilotSurface({
             </span>
           ) : undefined
         }
-        minHeight={260}
+        minHeight={220}
       />
 
       <WorkSurfaceStatusBar
@@ -339,8 +435,8 @@ export function OrdersSheetPilotSurface({
         center={statusBarCenter}
         right={
           <span className="text-xs text-muted-foreground">
-            Click a row to inspect it. Use the workbook composer or classic
-            orders surface for draft editing and full order management.
+            Primary actions live next to selection. Use the inspector for deeper
+            context and evidence, not for the happy path.
           </span>
         }
       />
@@ -360,7 +456,7 @@ export function OrdersSheetPilotSurface({
       >
         {selectedOrderRow ? (
           <div className="space-y-4">
-            <InspectorSection title="Order Summary">
+            <InspectorSection title="Selection Context">
               <InspectorField label="Client">
                 <p>{selectedOrderRow.clientName}</p>
               </InspectorField>
@@ -373,9 +469,12 @@ export function OrdersSheetPilotSurface({
               <InspectorField label="Created">
                 <p>{formatDate(selectedOrderRow.createdAt)}</p>
               </InspectorField>
+              <InspectorField label="Age">
+                <p>{selectedOrderRow.ageLabel}</p>
+              </InspectorField>
             </InspectorSection>
 
-            <InspectorSection title="Linked Evidence">
+            <InspectorSection title="Evidence">
               <InspectorField label="Status Events">
                 <p>{String(statusHistoryQuery.data?.length ?? 0)}</p>
               </InspectorField>
@@ -393,60 +492,18 @@ export function OrdersSheetPilotSurface({
                 </p>
               </InspectorField>
             </InspectorSection>
-
-            <InspectorSection title="Handoffs">
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={() =>
-                    setLocation(
-                      buildSalesWorkspacePath("create-order", {
-                        draftId:
-                          selectedOrderRow.lane === "drafts"
-                            ? selectedOrderRow.orderId
-                            : undefined,
-                      })
-                    )
-                  }
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  {selectedOrderRow.lane === "drafts"
-                    ? "Open Draft Composer"
-                    : "Open Composer"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setLocation(
-                      `/accounting?tab=payments&orderId=${selectedOrderRow.orderId}&from=sales`
-                    )
-                  }
-                >
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Open Accounting Payment
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setLocation(
-                      buildOperationsWorkspacePath("shipping", {
-                        orderId: selectedOrderRow.orderId,
-                      })
-                    )
-                  }
-                >
-                  <Truck className="mr-2 h-4 w-4" />
-                  Open Shipping Handoff
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenClassic(selectedOrderRow.orderId)}
-                >
-                  <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-                  Open Classic Sales Context
-                </Button>
-              </div>
-            </InspectorSection>
           </div>
+        ) : null}
+        footer=
+        {selectedOrderRow ? (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => onOpenClassic(selectedOrderRow.orderId)}
+          >
+            <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+            Open Classic Sales Context
+          </Button>
         ) : null}
       </InspectorPanel>
     </div>

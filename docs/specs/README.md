@@ -4,12 +4,10 @@ This directory contains detailed product specifications for all major features a
 
 ## Specification Status
 
-| Status                   | Count |
-| ------------------------ | ----- |
-| Approved                 | 27    |
-| Ready for Implementation | 1     |
-| In Review                | 0     |
-| Draft                    | 14    |
+This index is maintained manually.
+
+The section tables below are the authoritative view of what is currently in this directory.
+Global summary counts were removed because they drifted too easily during active architecture work.
 
 ## NEW: Critical Wave 1 Specs (2026-01-12)
 
@@ -42,6 +40,51 @@ The following specs were identified as **MISSING** during strategic roadmap revi
 > - Complete spec with database schema, backend service, tRPC router, and frontend components
 > - Designed for autonomous implementation by Claude Code
 > - Phased implementation approach across 6 weeks
+
+---
+
+## Architecture / Governance Drafts
+
+| Task ID     | Title                                                                | Spec                                                                                                                                     | Priority     | Status   |
+| ----------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------- |
+| ARCH-SS-001 | Spreadsheet-Native ERP Governance Contract                           | [SPREADSHEET-NATIVE-ERP-GOVERNANCE-SPEC.md](./SPREADSHEET-NATIVE-ERP-GOVERNANCE-SPEC.md)                                                 | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-002 | Spreadsheet-Native Sheet Engine Contract                             | [SPREADSHEET-NATIVE-SHEET-ENGINE-CONTRACT.md](./SPREADSHEET-NATIVE-SHEET-ENGINE-CONTRACT.md)                                             | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-003 | Spreadsheet-Native UX/UI Framework                                   | [SPREADSHEET-NATIVE-UX-UI-FRAMEWORK.md](./SPREADSHEET-NATIVE-UX-UI-FRAMEWORK.md)                                                         | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-004 | Spreadsheet-Native Save, Transaction, and Undo Contract              | [SPREADSHEET-NATIVE-SAVE-TRANSACTION-UNDO-CONTRACT.md](./SPREADSHEET-NATIVE-SAVE-TRANSACTION-UNDO-CONTRACT.md)                           | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-005 | Spreadsheet-Native Reporting, Printing, and Document Output Contract | [SPREADSHEET-NATIVE-REPORTING-PRINTING-DOCUMENT-OUTPUT-CONTRACT.md](./SPREADSHEET-NATIVE-REPORTING-PRINTING-DOCUMENT-OUTPUT-CONTRACT.md) | **HIGH**     | 🟡 DRAFT |
+| ARCH-SS-006 | Spreadsheet-Native View Sharing, Permissions, and Lifecycle Contract | [SPREADSHEET-NATIVE-VIEW-SHARING-PERMISSIONS-LIFECYCLE-CONTRACT.md](./SPREADSHEET-NATIVE-VIEW-SHARING-PERMISSIONS-LIFECYCLE-CONTRACT.md) | **HIGH**     | 🟡 DRAFT |
+| ARCH-SS-007 | Spreadsheet-Native Capability Ledger Template                        | [SPREADSHEET-NATIVE-CAPABILITY-LEDGER-TEMPLATE.md](./SPREADSHEET-NATIVE-CAPABILITY-LEDGER-TEMPLATE.md)                                   | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-008 | Spreadsheet-Native Pilot Module Selection and Cutover Plan           | [SPREADSHEET-NATIVE-PILOT-MODULE-SELECTION-CUTOVER-PLAN.md](./SPREADSHEET-NATIVE-PILOT-MODULE-SELECTION-CUTOVER-PLAN.md)                 | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-009 | Spreadsheet-Native Interaction Source of Truth Contract              | [SPREADSHEET-NATIVE-INTERACTION-SOURCE-OF-TRUTH-CONTRACT.md](./SPREADSHEET-NATIVE-INTERACTION-SOURCE-OF-TRUTH-CONTRACT.md)               | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-014 | Spreadsheet-Native Foundation Baseline v2                            | [SPREADSHEET-NATIVE-FOUNDATION-BASELINE-V2.md](./SPREADSHEET-NATIVE-FOUNDATION-BASELINE-V2.md)                                           | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-015 | Spreadsheet-Native Primitive Pack                                    | [SPREADSHEET-NATIVE-PRIMITIVE-PACK.md](./SPREADSHEET-NATIVE-PRIMITIVE-PACK.md)                                                           | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-016 | Spreadsheet-Native Runtime Proof Spike                               | [SPREADSHEET-NATIVE-RUNTIME-PROOF-SPIKE.md](./SPREADSHEET-NATIVE-RUNTIME-PROOF-SPIKE.md)                                                 | **HIGH**     | 🟡 DRAFT |
+| ARCH-SS-017 | Operations -> Inventory Blueprint                                    | [SPREADSHEET-NATIVE-OPERATIONS-INVENTORY-BLUEPRINT.md](./SPREADSHEET-NATIVE-OPERATIONS-INVENTORY-BLUEPRINT.md)                           | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-018 | Sales -> Orders Blueprint                                            | [SPREADSHEET-NATIVE-SALES-ORDERS-BLUEPRINT.md](./SPREADSHEET-NATIVE-SALES-ORDERS-BLUEPRINT.md)                                           | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-020 | Spreadsheet-Native Adversarial QA 2026-03-16                         | [SPREADSHEET-NATIVE-ADVERSARIAL-QA-2026-03-16.md](./SPREADSHEET-NATIVE-ADVERSARIAL-QA-2026-03-16.md)                                     | **HIGH**     | 🟡 DRAFT |
+
+---
+
+## Pilot Ledger Proofs
+
+| Task ID     | Title                                           | Spec                                                                                                                                                                       | Priority     | Status   |
+| ----------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------- |
+| ARCH-SS-010 | Operations -> Inventory Pilot Capability Ledger | [spreadsheet-native-ledgers/operations-inventory-sheet-capability-ledger-summary.md](./spreadsheet-native-ledgers/operations-inventory-sheet-capability-ledger-summary.md) | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-011 | Sales -> Orders Pilot Capability Ledger         | [spreadsheet-native-ledgers/sales-orders-sheet-capability-ledger-summary.md](./spreadsheet-native-ledgers/sales-orders-sheet-capability-ledger-summary.md)                 | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-012 | Pilot Ledgers Adversarial Review                | [spreadsheet-native-ledgers/pilot-ledgers-adversarial-review.md](./spreadsheet-native-ledgers/pilot-ledgers-adversarial-review.md)                                         | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-013 | Pilot Ledgers Parity Proof Plan                 | [spreadsheet-native-ledgers/pilot-ledgers-parity-proof-plan.md](./spreadsheet-native-ledgers/pilot-ledgers-parity-proof-plan.md)                                           | **CRITICAL** | 🟡 DRAFT |
+| ARCH-SS-019 | Pilot Proof Cases                               | [spreadsheet-native-ledgers/pilot-proof-cases.csv](./spreadsheet-native-ledgers/pilot-proof-cases.csv)                                                                     | **CRITICAL** | 🟡 DRAFT |
+
+---
+
+## Foundation Pack
+
+| Artifact                       | Location                                                                                                                                           | Purpose                                                                            |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Foundation Pack Index          | [spreadsheet-native-foundation/README.md](./spreadsheet-native-foundation/README.md)                                                               | Entry point for schema truth, migration truth, ownership, and pilot data contracts |
+| Generated Schema Inventory     | [spreadsheet-native-foundation/generated/schema-inventory.csv](./spreadsheet-native-foundation/generated/schema-inventory.csv)                     | Machine-readable table inventory with lifecycle and fork relevance                 |
+| Generated Migration Inventory  | [spreadsheet-native-foundation/generated/migration-source-inventory.csv](./spreadsheet-native-foundation/generated/migration-source-inventory.csv) | Machine-readable migration source categorization                                   |
+| Generated Router Ownership Map | [spreadsheet-native-foundation/generated/router-table-ownership.csv](./spreadsheet-native-foundation/generated/router-table-ownership.csv)         | Machine-readable router-to-table ownership edges                                   |
 
 ---
 

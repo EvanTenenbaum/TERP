@@ -15,6 +15,7 @@
  * Output: docs/audits/schema-drift-v2.json
  */
 
+import { loadAuditEnv } from "../_lib/loadAuditEnv";
 import { getDb } from "../../server/db";
 import * as fs from "fs";
 import * as path from "path";
@@ -77,7 +78,7 @@ function checkMissingFKs(
     if (!expectedFK) continue;
 
     const fkExists = existingFKs.some(
-      (fk) =>
+      fk =>
         fk.columnName === col.columnName ||
         fk.columnName === camelToSnake(col.columnName)
     );
@@ -108,7 +109,7 @@ function checkMissingIndexes(
 
   for (const fk of existingFKs) {
     const hasIndex = existingIndexes.some(
-      (idx) => idx.columnName === fk.columnName
+      idx => idx.columnName === fk.columnName
     );
 
     if (!hasIndex) {
@@ -129,11 +130,11 @@ function checkMissingIndexes(
     if (!expectedFK) continue;
 
     const hasIndex = existingIndexes.some(
-      (idx) => idx.columnName === col.columnName
+      idx => idx.columnName === col.columnName
     );
     if (!hasIndex) {
       const alreadyReported = issues.some(
-        (i) => i.column === col.columnName && i.type === "missing_index"
+        i => i.column === col.columnName && i.type === "missing_index"
       );
       if (!alreadyReported) {
         issues.push({
@@ -194,40 +195,44 @@ async function analyzeTable(
 // ============================================================================
 
 async function main(): Promise<void> {
+  const envResult = loadAuditEnv();
   const args = process.argv.slice(2);
   const strictMode = args.includes("--strict");
   const fixMode = args.includes("--fix");
   const includeRelationalHeuristics = args.includes("--enforce-relational");
 
-  console.log("=".repeat(60));
-  console.log("SCHEMA DRIFT DETECTION v2");
-  console.log("=".repeat(60));
-  console.log(`Started: ${new Date().toISOString()}`);
-  console.log(
+  console.info("=".repeat(60));
+  console.info("SCHEMA DRIFT DETECTION v2");
+  console.info("=".repeat(60));
+  console.info(`Started: ${new Date().toISOString()}`);
+  console.info(
     `Mode: ${strictMode ? "STRICT" : "Normal"}${fixMode ? " + FIX" : ""}`
   );
-  console.log(
+  console.info(
+    `Audit env loaded from: ${envResult.loadedFrom.length > 0 ? envResult.loadedFrom.join(", ") : "none"}`
+  );
+  console.info(
     `Relational heuristic checks: ${includeRelationalHeuristics ? "ENFORCED" : "ADVISORY-OFF"}`
   );
-  console.log("");
+  console.info("");
 
   // CRITICAL: Fail if DB connection fails
-  console.log("Connecting to database...");
+  console.info("Connecting to database...");
   const db = await getDb();
   if (!db) {
     console.error("❌ FATAL: Database connection failed!");
     console.error("   Check DATABASE_URL environment variable.");
     process.exit(1);
   }
-  console.log("✅ Database connected");
+  console.info("✅ Database connected");
 
   const dbUrl = process.env.DATABASE_URL || "unknown";
   const maskedUrl = maskDatabaseUrl(dbUrl);
 
-  console.log("\nFetching table list...");
+  console.info("\nFetching table list...");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tables = await getTableList(db as any);
-  console.log(`Found ${tables.length} tables\n`);
+  console.info(`Found ${tables.length} tables\n`);
 
   const tableDrifts: TableDrift[] = [];
 
@@ -240,46 +245,52 @@ async function main(): Promise<void> {
 
     if (drift.issues.length > 0) {
       const criticalCount = drift.issues.filter(
-        (i) => i.severity === "critical"
+        i => i.severity === "critical"
       ).length;
-      const highCount = drift.issues.filter((i) => i.severity === "high").length;
+      const highCount = drift.issues.filter(i => i.severity === "high").length;
       if (criticalCount > 0) {
-        console.log(` 🔴 ${drift.issues.length} issues (${criticalCount} critical)`);
+        console.info(
+          ` 🔴 ${drift.issues.length} issues (${criticalCount} critical)`
+        );
       } else if (highCount > 0) {
-        console.log(` 🟠 ${drift.issues.length} issues (${highCount} high)`);
+        console.info(` 🟠 ${drift.issues.length} issues (${highCount} high)`);
       } else {
-        console.log(` ⚠️  ${drift.issues.length} issues`);
+        console.info(` ⚠️  ${drift.issues.length} issues`);
       }
     } else {
-      console.log(" ✅");
+      console.info(" ✅");
     }
   }
 
-  const allIssues = tableDrifts.flatMap((t) => t.issues);
+  const allIssues = tableDrifts.flatMap(t => t.issues);
   const summary = {
-    missingColumns: allIssues.filter((i) => i.type === "missing_column").length,
-    extraColumns: allIssues.filter((i) => i.type === "extra_column").length,
-    typeMismatches: allIssues.filter((i) => i.type === "type_mismatch").length,
-    precisionMismatches: allIssues.filter((i) => i.type === "precision_mismatch").length,
-    missingFKs: allIssues.filter((i) => i.type === "missing_fk").length,
-    missingIndexes: allIssues.filter((i) => i.type === "missing_index").length,
-    namingInconsistencies: allIssues.filter((i) => i.type === "naming_inconsistency").length,
-    enumDrifts: allIssues.filter((i) => i.type === "enum_drift").length,
-    nullableMismatches: allIssues.filter((i) => i.type === "nullable_mismatch").length,
+    missingColumns: allIssues.filter(i => i.type === "missing_column").length,
+    extraColumns: allIssues.filter(i => i.type === "extra_column").length,
+    typeMismatches: allIssues.filter(i => i.type === "type_mismatch").length,
+    precisionMismatches: allIssues.filter(i => i.type === "precision_mismatch")
+      .length,
+    missingFKs: allIssues.filter(i => i.type === "missing_fk").length,
+    missingIndexes: allIssues.filter(i => i.type === "missing_index").length,
+    namingInconsistencies: allIssues.filter(
+      i => i.type === "naming_inconsistency"
+    ).length,
+    enumDrifts: allIssues.filter(i => i.type === "enum_drift").length,
+    nullableMismatches: allIssues.filter(i => i.type === "nullable_mismatch")
+      .length,
   };
 
   const report: DriftReport = {
     timestamp: new Date().toISOString(),
     databaseUrl: maskedUrl,
     totalTables: tables.length,
-    tablesWithDrift: tableDrifts.filter((t) => t.issues.length > 0).length,
+    tablesWithDrift: tableDrifts.filter(t => t.issues.length > 0).length,
     totalIssues: allIssues.length,
-    criticalIssues: allIssues.filter((i) => i.severity === "critical").length,
-    highIssues: allIssues.filter((i) => i.severity === "high").length,
-    mediumIssues: allIssues.filter((i) => i.severity === "medium").length,
-    lowIssues: allIssues.filter((i) => i.severity === "low").length,
-    autoFixableIssues: allIssues.filter((i) => i.autoFixable).length,
-    tables: tableDrifts.filter((t) => t.issues.length > 0),
+    criticalIssues: allIssues.filter(i => i.severity === "critical").length,
+    highIssues: allIssues.filter(i => i.severity === "high").length,
+    mediumIssues: allIssues.filter(i => i.severity === "medium").length,
+    lowIssues: allIssues.filter(i => i.severity === "low").length,
+    autoFixableIssues: allIssues.filter(i => i.autoFixable).length,
+    tables: tableDrifts.filter(t => t.issues.length > 0),
     summary,
   };
 
@@ -290,54 +301,54 @@ async function main(): Promise<void> {
 
   const reportPath = path.join(outputDir, "schema-drift-v2.json");
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-  console.log(`\nReport written to: ${reportPath}`);
+  console.info(`\nReport written to: ${reportPath}`);
 
   // Print summary
-  console.log("\n" + "=".repeat(60));
-  console.log("SUMMARY");
-  console.log("=".repeat(60));
-  console.log(`Database: ${maskedUrl}`);
-  console.log(`Total tables: ${report.totalTables}`);
-  console.log(`Tables with drift: ${report.tablesWithDrift}`);
-  console.log(`Total issues: ${report.totalIssues}`);
-  console.log(`Auto-fixable: ${report.autoFixableIssues}`);
-  console.log("\nBy severity:");
-  console.log(`  🔴 Critical: ${report.criticalIssues}`);
-  console.log(`  🟠 High: ${report.highIssues}`);
-  console.log(`  🟡 Medium: ${report.mediumIssues}`);
-  console.log(`  ⚪ Low: ${report.lowIssues}`);
+  console.info("\n" + "=".repeat(60));
+  console.info("SUMMARY");
+  console.info("=".repeat(60));
+  console.info(`Database: ${maskedUrl}`);
+  console.info(`Total tables: ${report.totalTables}`);
+  console.info(`Tables with drift: ${report.tablesWithDrift}`);
+  console.info(`Total issues: ${report.totalIssues}`);
+  console.info(`Auto-fixable: ${report.autoFixableIssues}`);
+  console.info("\nBy severity:");
+  console.info(`  🔴 Critical: ${report.criticalIssues}`);
+  console.info(`  🟠 High: ${report.highIssues}`);
+  console.info(`  🟡 Medium: ${report.mediumIssues}`);
+  console.info(`  ⚪ Low: ${report.lowIssues}`);
 
   if (fixMode && report.autoFixableIssues > 0) {
-    console.log("\n" + "=".repeat(60));
-    console.log("AUTO-FIX SUGGESTIONS");
-    console.log("=".repeat(60));
+    console.info("\n" + "=".repeat(60));
+    console.info("AUTO-FIX SUGGESTIONS");
+    console.info("=".repeat(60));
     for (const table of report.tables) {
-      const fixable = table.issues.filter((i) => i.autoFixable);
+      const fixable = table.issues.filter(i => i.autoFixable);
       if (fixable.length > 0) {
-        console.log(`\n${table.tableName}:`);
+        console.info(`\n${table.tableName}:`);
         for (const issue of fixable) {
-          console.log(`  - ${issue.recommendation}`);
+          console.info(`  - ${issue.recommendation}`);
         }
       }
     }
   }
 
   if (report.criticalIssues > 0) {
-    console.log("\n❌ CRITICAL issues found!");
+    console.info("\n❌ CRITICAL issues found!");
     process.exit(2);
   } else if (report.highIssues > 0) {
-    console.log("\n⚠️  HIGH severity issues found.");
+    console.info("\n⚠️  HIGH severity issues found.");
     process.exit(strictMode ? 1 : 0);
   } else if (strictMode && report.totalIssues > 0) {
-    console.log("\n⚠️  Issues found in strict mode.");
+    console.info("\n⚠️  Issues found in strict mode.");
     process.exit(1);
   } else {
-    console.log("\n✅ Schema drift check complete.");
+    console.info("\n✅ Schema drift check complete.");
     process.exit(0);
   }
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error("❌ FATAL ERROR:", error);
   process.exit(1);
 });

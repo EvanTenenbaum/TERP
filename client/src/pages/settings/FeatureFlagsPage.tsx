@@ -68,9 +68,7 @@ interface FeatureFlagsPageProps {
   embedded?: boolean;
 }
 
-export default function FeatureFlagsPage({
-  embedded = false,
-}: FeatureFlagsPageProps) {
+function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
   const { toast } = useToast();
   const { isSuperAdmin, hasPermission } = usePermissions();
   const [selectedFlag, setSelectedFlag] = useState<number | null>(null);
@@ -445,6 +443,14 @@ export default function FeatureFlagsPage({
       </Dialog>
     </div>
   );
+}
+
+export function EmbeddedFeatureFlagsPage() {
+  return <FeatureFlagsPageContent embedded />;
+}
+
+export default function FeatureFlagsPage() {
+  return <FeatureFlagsPageContent />;
 }
 
 // ============================================================================

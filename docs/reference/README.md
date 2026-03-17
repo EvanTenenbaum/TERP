@@ -4,12 +4,12 @@ This directory contains canonical reference documentation for AI agents and deve
 
 ## Quick Links
 
-| Document                                                                           | Description                                              | Last Updated |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------ |
-| [FLOW_GUIDE.md](./FLOW_GUIDE.md)                                                   | Complete user flow guide by domain/entity/role           | 2026-01-15   |
-| [USER_FLOW_MATRIX.csv](./USER_FLOW_MATRIX.csv)                                     | Comprehensive CSV of all 200+ user flows                 | 2026-01-15   |
-| [USER_FLOW_IMPACT_OUTCOMES.md](./USER_FLOW_IMPACT_OUTCOMES.md)                     | Impact outcome column definitions + validation checklist | 2026-01-15   |
-| [USER_FLOW_IMPACT_OUTCOMES_TEMPLATE.csv](./USER_FLOW_IMPACT_OUTCOMES_TEMPLATE.csv) | Template CSV for impact outcomes per flow                | 2026-01-15   |
+| Document                                                                           | Description                                                              | Last Updated |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ |
+| [FLOW_GUIDE.md](./FLOW_GUIDE.md)                                                   | Working narrative flow guide, currently 27 domains / 105 entity sections | 2026-03-13   |
+| [USER_FLOW_MATRIX.csv](./USER_FLOW_MATRIX.csv)                                     | Canonical row-level inventory, currently 550 documented flow rows        | 2026-03-13   |
+| [USER_FLOW_IMPACT_OUTCOMES.md](./USER_FLOW_IMPACT_OUTCOMES.md)                     | Impact outcome column definitions + validation checklist                 | 2026-01-15   |
+| [USER_FLOW_IMPACT_OUTCOMES_TEMPLATE.csv](./USER_FLOW_IMPACT_OUTCOMES_TEMPLATE.csv) | Template CSV for impact outcomes per flow                                | 2026-01-15   |
 
 ## For AI Agents
 
@@ -26,6 +26,12 @@ grep -i "## Domain 2: CRM" docs/reference/FLOW_GUIDE.md -A 100
 ```
 
 ### Key Information in Flow Matrix
+
+`USER_FLOW_MATRIX.csv` is the primary working inventory when exhaustive interaction coverage matters.
+
+For spreadsheet-native migration work, reference matrix rows with the derived key:
+
+`Domain|Entity|Flow Name|tRPC Procedure|UI Entry Paths or NoUI`
 
 Each row in `USER_FLOW_MATRIX.csv` contains:
 
@@ -113,3 +119,7 @@ The original/working versions of these files are in `docs/assets/ST-045/`:
 - `TERP_Flow_Guide_UPDATED.md`
 - `TERP_Routes.csv`
 - `TERP_RBAC_Permission_Mismatches.csv`
+
+For spreadsheet-native migration planning, also see:
+
+- [SPREADSHEET-NATIVE-INTERACTION-SOURCE-OF-TRUTH-CONTRACT.md](../specs/SPREADSHEET-NATIVE-INTERACTION-SOURCE-OF-TRUTH-CONTRACT.md)
