@@ -1,4 +1,5 @@
 type WorkspaceParamValue = string | number | boolean | null | undefined;
+export type OrdersSheetView = "queue" | "document";
 export type OperationsTab =
   | "inventory"
   | "receiving"
@@ -33,6 +34,24 @@ export function buildSalesWorkspacePath(
   params?: Record<string, WorkspaceParamValue>
 ) {
   return buildWorkspacePath("/sales", tab, params);
+}
+
+export function buildSheetNativeOrdersPath(
+  params?: Record<string, WorkspaceParamValue>
+) {
+  return buildSalesWorkspacePath("orders", {
+    surface: "sheet-native",
+    ...params,
+  });
+}
+
+export function buildSheetNativeOrdersDocumentPath(
+  params?: Record<string, WorkspaceParamValue>
+) {
+  return buildSheetNativeOrdersPath({
+    ordersView: "document",
+    ...params,
+  });
 }
 
 export function normalizeOperationsTab(

@@ -24,6 +24,7 @@ export { OrderAdjustmentPanel } from "./OrderAdjustmentPanel";
 // Line item components
 export { LineItemRow } from "./LineItemRow";
 export { LineItemTable } from "./LineItemTable";
+export { OrdersDocumentLineItemsGrid } from "./OrdersDocumentLineItemsGrid";
 
 // Fulfillment components
 export { OrderFulfillment } from "./OrderFulfillment";

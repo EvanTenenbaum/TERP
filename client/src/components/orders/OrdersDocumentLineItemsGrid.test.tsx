@@ -1,0 +1,320 @@
+/**
+ * @vitest-environment jsdom
+ */
+
+import { useEffect, useRef } from "react";
+import type { ReactNode } from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { OrdersDocumentLineItemsGrid } from "./OrdersDocumentLineItemsGrid";
+import type { LineItem } from "./LineItemTable";
+
+const mockPowersheetGrid = vi.fn(
+  ({
+    title,
+    description,
+    summary,
+    headerActions,
+    onSelectionSetChange,
+    onSelectionSummaryChange,
+  }: Record<string, unknown>) => {
+    const hasEmittedSelection = useRef(false);
+
+    useEffect(() => {
+      if (hasEmittedSelection.current) {
+        return;
+      }
+
+      hasEmittedSelection.current = true;
+      onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 1,
+          columnKey: "quantity",
+        },
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        ranges: [
+          {
+            anchor: { rowIndex: 0, columnKey: "quantity" },
+            focus: { rowIndex: 1, columnKey: "unitPrice" },
+          },
+        ],
+        selectedRowIds: new Set(["line:1", "line:2"]),
+      });
+      onSelectionSummaryChange?.({
+        selectedCellCount: 4,
+        selectedRowCount: 2,
+        hasDiscontiguousSelection: false,
+        focusedSurface: "orders-document-grid",
+      });
+    }, [onSelectionSetChange, onSelectionSummaryChange]);
+
+    return (
+      <div>
+        <h2>{title as string}</h2>
+        <p>{description as string}</p>
+        <div>{summary as ReactNode}</div>
+        <div>{headerActions as ReactNode}</div>
+      </div>
+    );
+  }
+);
+
+vi.mock("@/components/spreadsheet-native/PowersheetGrid", () => ({
+  PowersheetGrid: (props: Record<string, unknown>) => mockPowersheetGrid(props),
+}));
+
+const { mockToastError } = vi.hoisted(() => ({
+  mockToastError: vi.fn(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: mockToastError,
+  },
+}));
+
+const buildLineItem = (overrides: Partial<LineItem> = {}): LineItem => ({
+  id: overrides.id,
+  batchId: 1001,
+  batchSku: "LOT-001",
+  productId: 11,
+  productDisplayName: "Blue Dream 3.5g",
+  quantity: 2,
+  cogsPerUnit: 10,
+  originalCogsPerUnit: 10,
+  isCogsOverridden: false,
+  marginPercent: 25,
+  marginDollar: 2.5,
+  isMarginOverridden: false,
+  marginSource: "DEFAULT",
+  appliedRules: [],
+  unitPrice: 12.5,
+  lineTotal: 25,
+  isSample: false,
+  ...overrides,
+});
+
+describe("OrdersDocumentLineItemsGrid", () => {
+  beforeEach(() => {
+    mockPowersheetGrid.mockClear();
+    mockToastError.mockReset();
+  });
+
+  it("arms the document grid with spreadsheet runtime behaviors and row actions", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1 }),
+          buildLineItem({ id: 2, batchId: 2002, productId: 22 }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    expect(call?.surfaceId).toBe("orders-document-grid");
+    expect(call?.selectionMode).toBe("cell-range");
+    expect(call?.enableFillHandle).toBe(true);
+    expect(call?.enableUndoRedo).toBe(true);
+    expect(call?.allowColumnReorder).toBe(false);
+    expect(call?.enterNavigatesVertically).toBe(true);
+    expect(call?.enterNavigatesVerticallyAfterEdit).toBe(true);
+    expect(call?.processCellFromClipboard).toBeTypeOf("function");
+    expect(call?.processDataFromClipboard).toBeTypeOf("function");
+    expect(call?.sendToClipboard).toBeTypeOf("function");
+    expect(call?.releaseGateIds).toContain("SALE-ORD-020");
+    expect(call?.releaseGateIds).toContain("SALE-ORD-021");
+    expect(call?.releaseGateIds).toContain("SALE-ORD-035");
+    expect(call?.columnDefs[0].cellClass).toBe(
+      "orders-document-grid__locked-cell"
+    );
+    expect(call?.columnDefs[0].sortable).toBe(false);
+    expect(call?.columnDefs[0].filter).toBe(false);
+    expect(call?.columnDefs[2].cellClass).toBe(
+      "orders-document-grid__editable-cell"
+    );
+    expect(screen.getByRole("button", { name: /duplicate/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /delete/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /fill price/i })).toBeEnabled();
+    expect(screen.getByText(/4 selected cells/i)).toBeInTheDocument();
+  });
+
+  it("uses the focused selected row as the fill source for price propagation", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1, unitPrice: 12.5, lineTotal: 25 }),
+          buildLineItem({
+            id: 2,
+            batchId: 2002,
+            productId: 22,
+            unitPrice: 30,
+            lineTotal: 60,
+          }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /fill price/i }));
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].unitPrice).toBe(30);
+    expect(nextItems[1].unitPrice).toBe(30);
+    expect(nextItems[0].lineTotal).toBe(60);
+  });
+
+  it("recalculates line items when spreadsheet edits change an approved field", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1 }),
+          buildLineItem({ id: 2, batchId: 2002, productId: 22 }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "quantity" },
+      newValue: "5",
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].quantity).toBe(5);
+    expect(nextItems[0].lineTotal).toBe(62.5);
+    expect(nextItems[1].quantity).toBe(2);
+  });
+
+  it("blocks invalid clipboard edits on approved fields and surfaces the rejection", () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    act(() => {
+      const nextValue = call?.processCellFromClipboard?.({
+        value: "-2",
+        column: { getColId: () => "quantity" },
+        node: { data: buildLineItem({ id: 1, quantity: 2 }) },
+      });
+      expect(nextValue).toBe(2);
+    });
+
+    expect(
+      screen.getByText(/blocked: Quantity must be a positive whole number./i)
+    ).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("rejects paste rectangles that spill into locked document columns", async () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={onChange}
+      />
+    );
+
+    await act(async () => {});
+    const call =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+    act(() => {
+      const result = call?.processDataFromClipboard?.({
+        data: [["12", "13", "14", "15", "16"]],
+      });
+      expect(result).toBeNull();
+    });
+
+    expect(
+      screen.getByText(
+        /blocked: Paste range includes locked or workflow-owned document columns./i
+      )
+    ).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("fills price, clears samples, and delegates add-item insertion without replacing orchestration", () => {
+    const onChange = vi.fn();
+    const onAddItem = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1, isSample: true, unitPrice: 14 }),
+          buildLineItem({
+            id: 2,
+            batchId: 2002,
+            productId: 22,
+            isSample: true,
+            unitPrice: 18,
+          }),
+        ]}
+        onChange={onChange}
+        onAddItem={onAddItem}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /fill price/i }));
+    const filled = onChange.mock.calls[0][0] as LineItem[];
+    expect(filled[0].unitPrice).toBe(18);
+    expect(filled[1].unitPrice).toBe(18);
+
+    fireEvent.click(screen.getByRole("button", { name: /clear samples/i }));
+    const cleared = onChange.mock.calls[1][0] as LineItem[];
+    expect(cleared.every(item => item.isSample === false)).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: /add item/i }));
+    expect(onAddItem).toHaveBeenCalledTimes(1);
+  });
+
+  it("duplicates and deletes selected rows through the shared row operations", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1 }),
+          buildLineItem({ id: 2, batchId: 2002, productId: 22 }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    const duplicated = onChange.mock.calls[0][0] as LineItem[];
+    expect(duplicated).toHaveLength(4);
+
+    fireEvent.click(screen.getByRole("button", { name: /delete/i }));
+    const deleted = onChange.mock.calls[1][0] as LineItem[];
+    expect(deleted).toHaveLength(0);
+  });
+});
