@@ -16,10 +16,19 @@
 **Current Phase:** Sprint 0 - Foundation (Bugs, API Registration, RBAC)
 
 > **This roadmap supersedes all others for execution purposes.** It consolidates:
+>
 > - MASTER_ROADMAP.md (v4.9)
 > - TERP_STRATEGIC_ROADMAP_2026.md (Customer Meeting items)
 > - UNIFIED_STRATEGIC_ROADMAP_2026-01-12.md (Gap Analysis)
 > - QA Bug Fix Plans
+
+---
+
+## Focused Execution Backup
+
+**Orders spreadsheet runtime rollout backup:** [2026-03-17-orders-spreadsheet-runtime-rollout.md](./2026-03-17-orders-spreadsheet-runtime-rollout.md)
+
+This file is a repo backup of the active Linear-only execution map for the `Sales -> Orders` spreadsheet runtime rollout. Use it when the milestone sequence, hard gates, or anti-duplication rules need to be checked outside Linear.
 
 ---
 
@@ -39,6 +48,7 @@
 **Summary:** Frontend-first execution plan with parallel agent support. Consolidates all 75 customer meeting items, bug fixes, API registration, and feature specs into a prioritized sprint structure with QA gates.
 
 **Key Features:**
+
 - 6 Sprints: Foundation → Critical UI → Wave 1-4
 - 4 parallel execution tracks per sprint
 - Mandatory QA gates between sprints
@@ -46,6 +56,7 @@
 - 100% MEET item traceability (75/75)
 
 **New Specs Created:**
+
 - [FEAT-007-CASH-AUDIT-SPEC.md](../specs/FEAT-007-CASH-AUDIT-SPEC.md) - MEET-001 to MEET-004
 - [FEAT-008-INTAKE-VERIFICATION-SPEC.md](../specs/FEAT-008-INTAKE-VERIFICATION-SPEC.md) - MEET-064 to MEET-066
 - [FEAT-009-CLIENT-LEDGER-SPEC.md](../specs/FEAT-009-CLIENT-LEDGER-SPEC.md) - MEET-010

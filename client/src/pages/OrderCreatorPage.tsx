@@ -31,7 +31,11 @@ import {
 } from "@/components/ui/select";
 import { ClientCombobox } from "@/components/ui/client-combobox";
 import { cn } from "@/lib/utils";
-import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+import {
+  buildSalesWorkspacePath,
+  buildSheetNativeOrdersDocumentPath,
+  buildSheetNativeOrdersPath,
+} from "@/lib/workspaceRoutes";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -67,6 +71,7 @@ import {
   LineItemTable,
   type LineItem,
 } from "@/components/orders/LineItemTable";
+import { OrdersDocumentLineItemsGrid } from "@/components/orders/OrdersDocumentLineItemsGrid";
 import {
   OrderAdjustmentPanel,
   type OrderAdjustment,
@@ -332,9 +337,38 @@ const mapDraftLineItemsToEditorState = (
     isSample: item.isSample,
   }));
 
-export default function OrderCreatorPageV2() {
+interface OrderCreatorPageProps {
+  surfaceVariant?: "classic-create-order" | "sheet-native-orders";
+}
+
+export function shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget(
+  target: unknown
+) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      [
+        '[data-powersheet-surface-id="orders-document-grid"]',
+        ".ag-root-wrapper",
+        ".ag-root-wrapper-body",
+        ".ag-cell",
+        ".ag-cell-inline-editing",
+        ".ag-text-field-input",
+      ].join(", ")
+    )
+  );
+}
+
+export default function OrderCreatorPageV2({
+  surfaceVariant = "classic-create-order",
+}: OrderCreatorPageProps) {
+  const utils = trpc.useUtils();
   // TER-216: Navigation after save/finalize
   const [, setLocation] = useLocation();
+  const inSheetNativeOrdersSurface = surfaceVariant === "sheet-native-orders";
   const searchString = useSearch();
   const searchParams = useMemo(
     () => new URLSearchParams(searchString),
@@ -383,6 +417,22 @@ export default function OrderCreatorPageV2() {
   const [pendingOverrideReason, setPendingOverrideReason] = useState<
     string | undefined
   >();
+
+  const buildDocumentRoute = useCallback(
+    (params?: Record<string, string | number | boolean | null | undefined>) =>
+      inSheetNativeOrdersSurface
+        ? buildSheetNativeOrdersDocumentPath(params)
+        : buildSalesWorkspacePath("create-order", params),
+    [inSheetNativeOrdersSurface]
+  );
+
+  const buildQueueRoute = useCallback(
+    (params?: Record<string, string | number | boolean | null | undefined>) =>
+      inSheetNativeOrdersSurface
+        ? buildSheetNativeOrdersPath(params)
+        : buildSalesWorkspacePath("orders", params),
+    [inSheetNativeOrdersSurface]
+  );
 
   // Referral tracking state (WS-004)
   const [referredByClientId, setReferredByClientId] = useState<number | null>(
@@ -967,15 +1017,36 @@ export default function OrderCreatorPageV2() {
     ]
   );
 
+  const invalidateOrdersSheetQueries = useCallback(
+    async (orderId: number | null | undefined) => {
+      const invalidations: Promise<unknown>[] = [
+        utils.orders.getAll.invalidate({ isDraft: true }),
+        utils.orders.getAll.invalidate({ isDraft: false }),
+      ];
+
+      if (orderId) {
+        invalidations.push(
+          utils.orders.getOrderWithLineItems.invalidate({ orderId }),
+          utils.orders.getOrderStatusHistory.invalidate({ orderId }),
+          utils.orders.getAuditLog.invalidate({ orderId })
+        );
+      }
+
+      await Promise.allSettled(invalidations);
+    },
+    [utils]
+  );
+
   // Mutations
   // BUG-093 FIX: Modified to support two-step finalization
   const createDraftMutation = trpc.orders.createDraftEnhanced.useMutation({
-    onSuccess: data => {
+    onSuccess: async data => {
       const nextVersion = data.version ?? 1;
 
       setActiveDraftId(data.orderId);
       setActiveDraftVersion(nextVersion);
       applyPersistedFingerprint();
+      await invalidateOrdersSheetQueries(data.orderId);
 
       if (isFinalizingRef.current) {
         toast.info(`Draft #${data.orderId} created, finalizing...`);
@@ -987,9 +1058,7 @@ export default function OrderCreatorPageV2() {
       }
 
       toast.success(`Draft order #${data.orderId} saved successfully`);
-      setLocation(
-        buildSalesWorkspacePath("create-order", { draftId: data.orderId })
-      );
+      setLocation(buildDocumentRoute({ draftId: data.orderId }));
     },
     onError: error => {
       pendingPersistFingerprintRef.current = null;
@@ -999,10 +1068,11 @@ export default function OrderCreatorPageV2() {
   });
 
   const updateDraftMutation = trpc.orders.updateDraftEnhanced.useMutation({
-    onSuccess: data => {
+    onSuccess: async data => {
       setActiveDraftId(data.orderId);
       setActiveDraftVersion(data.version);
       applyPersistedFingerprint();
+      await invalidateOrdersSheetQueries(data.orderId);
 
       if (isFinalizingRef.current) {
         finalizeMutation.mutate({
@@ -1022,13 +1092,13 @@ export default function OrderCreatorPageV2() {
   });
 
   const finalizeMutation = trpc.orders.finalizeDraft.useMutation({
-    onSuccess: data => {
+    onSuccess: async data => {
       // BUG-093 FIX: Reset finalization flag and form after successful finalization
       isFinalizingRef.current = false;
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
-      // Keep creators in-place after finalize for quick follow-up edits/orders.
+      await invalidateOrdersSheetQueries(data.orderId);
       resetComposerState();
-      setLocation(buildSalesWorkspacePath("create-order"));
+      setLocation(buildQueueRoute({ orderId: data.orderId }));
     },
     onError: error => {
       // BUG-093 FIX: Reset flag on error, but preserve form data so user can retry
@@ -1043,9 +1113,10 @@ export default function OrderCreatorPageV2() {
 
   // Auto-save mutation (silent, no toast notifications)
   const autoSaveMutation = trpc.orders.updateDraftEnhanced.useMutation({
-    onSuccess: data => {
+    onSuccess: async data => {
       setActiveDraftVersion(data.version);
       applyPersistedFingerprint();
+      await invalidateOrdersSheetQueries(data.orderId);
     },
     onError: error => {
       pendingPersistFingerprintRef.current = null;
@@ -1355,6 +1426,23 @@ export default function OrderCreatorPageV2() {
     },
   });
 
+  const keyboardProps = useMemo(
+    () => ({
+      ...keyboard.keyboardProps,
+      onKeyDown: (event: React.KeyboardEvent) => {
+        if (
+          inSheetNativeOrdersSurface &&
+          shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget(event.target)
+        ) {
+          return;
+        }
+
+        keyboard.keyboardProps.onKeyDown(event);
+      },
+    }),
+    [inSheetNativeOrdersSurface, keyboard.keyboardProps]
+  );
+
   const registerLineItemRemovalUndo = useCallback(
     (previousItems: LineItem[], removedBatchIds: number[]) => {
       const removedBatchIdSet = new Set(removedBatchIds);
@@ -1443,7 +1531,7 @@ export default function OrderCreatorPageV2() {
   return (
     <PageErrorBoundary pageName="OrderCreator">
       <div
-        {...keyboard.keyboardProps}
+        {...keyboardProps}
         className="container mx-auto p-3 md:p-4 space-y-4"
       >
         <section className="rounded-xl border border-border/70 bg-card shadow-sm">
@@ -1451,11 +1539,14 @@ export default function OrderCreatorPageV2() {
             <div>
               <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
                 <ShoppingCart className="h-5 w-5" />
-                Create Sales Order
+                {inSheetNativeOrdersSurface
+                  ? "Orders Document Sheet"
+                  : "Create Sales Order"}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Build the order, review margin, then save or finalize without
-                leaving the sales workspace.
+                {inSheetNativeOrdersSurface
+                  ? "Build, review, and confirm drafts without leaving the sheet-native Orders workspace."
+                  : "Build the order, review margin, then save or finalize without leaving the sales workspace."}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1597,38 +1688,72 @@ export default function OrderCreatorPageV2() {
                   {/* Line Items */}
                   <Card>
                     <CardContent className="pt-4">
-                      <h3 className="mb-2 text-sm font-semibold">Line Items</h3>
-                      <LineItemTable
-                        items={items}
-                        clientId={clientId}
-                        onChange={handleLineItemsChange}
-                        onAddItem={() => {
-                          // Scroll to InventoryBrowser section
-                          const inventoryBrowser = document.getElementById(
-                            "inventory-browser-section"
-                          );
-                          if (inventoryBrowser) {
-                            inventoryBrowser.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
-                            // Focus on search input for better UX
-                            setTimeout(() => {
-                              const searchInput =
-                                inventoryBrowser.querySelector(
-                                  'input[type="text"]'
-                                ) as HTMLInputElement;
-                              if (searchInput) {
-                                searchInput.focus();
-                              }
-                            }, 300);
-                          } else {
-                            toast.info(
-                              "Please use the inventory browser above to add items"
+                      {inSheetNativeOrdersSurface ? (
+                        <OrdersDocumentLineItemsGrid
+                          items={items}
+                          clientId={clientId}
+                          onChange={handleLineItemsChange}
+                          onAddItem={() => {
+                            const inventoryBrowser = document.getElementById(
+                              "inventory-browser-section"
                             );
-                          }
-                        }}
-                      />
+                            if (inventoryBrowser) {
+                              inventoryBrowser.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                              setTimeout(() => {
+                                const searchInput =
+                                  inventoryBrowser.querySelector(
+                                    'input[type="text"]'
+                                  ) as HTMLInputElement | null;
+                                searchInput?.focus();
+                              }, 300);
+                            } else {
+                              toast.info(
+                                "Please use the inventory browser above to add items"
+                              );
+                            }
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <h3 className="mb-2 text-sm font-semibold">
+                            Line Items
+                          </h3>
+                          <LineItemTable
+                            items={items}
+                            clientId={clientId}
+                            onChange={handleLineItemsChange}
+                            onAddItem={() => {
+                              // Scroll to InventoryBrowser section
+                              const inventoryBrowser = document.getElementById(
+                                "inventory-browser-section"
+                              );
+                              if (inventoryBrowser) {
+                                inventoryBrowser.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                                // Focus on search input for better UX
+                                setTimeout(() => {
+                                  const searchInput =
+                                    inventoryBrowser.querySelector(
+                                      'input[type="text"]'
+                                    ) as HTMLInputElement;
+                                  if (searchInput) {
+                                    searchInput.focus();
+                                  }
+                                }, 300);
+                              } else {
+                                toast.info(
+                                  "Please use the inventory browser above to add items"
+                                );
+                              }
+                            }}
+                          />
+                        </>
+                      )}
                     </CardContent>
                   </Card>
 

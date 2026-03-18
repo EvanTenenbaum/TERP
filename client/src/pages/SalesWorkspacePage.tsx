@@ -1,6 +1,7 @@
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
+import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -11,6 +12,7 @@ import { SALES_WORKSPACE } from "@/config/workspaces";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
+  buildSheetNativeOrdersDocumentPath,
 } from "@/lib/workspaceRoutes";
 import {
   useSpreadsheetPilotAvailability,
@@ -45,13 +47,19 @@ export default function SalesWorkspacePage() {
   });
   const redirectParams = Object.fromEntries(
     Array.from(new URLSearchParams(search).entries()).filter(
-      ([key]) => key !== "tab"
+      ([key]) => key !== "tab" && key !== "classic"
     )
   );
-  const pilotSurfaceSupported = activeTab === "orders";
+  const createOrderRedirectParams = Object.fromEntries(
+    Array.from(new URLSearchParams(search).entries()).filter(
+      ([key]) => key !== "tab" && key !== "classic" && key !== "orderId"
+    )
+  );
+  const pilotSurfaceSupported =
+    activeTab === "orders" || activeTab === "create-order";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode } = useSpreadsheetSurfaceMode({
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
     enabled: sheetPilotEnabled,
     ready: availabilityReady,
   });
@@ -60,6 +68,18 @@ export default function SalesWorkspacePage() {
   if (activeTab === "pick-pack") {
     return (
       <Redirect to={buildOperationsWorkspacePath("shipping", redirectParams)} />
+    );
+  }
+
+  if (
+    activeTab === "create-order" &&
+    sheetPilotEnabled &&
+    new URLSearchParams(search).get("classic") !== "true"
+  ) {
+    return (
+      <Redirect
+        to={buildSheetNativeOrdersDocumentPath(createOrderRedirectParams)}
+      />
     );
   }
 
@@ -72,6 +92,15 @@ export default function SalesWorkspacePage() {
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
       meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
+      commandStrip={
+        activeTab === "orders" ? (
+          <SheetModeToggle
+            enabled={sheetPilotEnabled}
+            surfaceMode={surfaceMode}
+            onSurfaceModeChange={setSurfaceMode}
+          />
+        ) : null
+      }
     >
       <LinearWorkspacePanel value="orders">
         {surfaceMode === "sheet-native" ? (

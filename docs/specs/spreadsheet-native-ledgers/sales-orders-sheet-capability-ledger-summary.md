@@ -44,6 +44,18 @@ Adjacent but not absorbed into this pilot sheet:
 - Open discrepancies recorded: `1`
 - Blueprint-blocking discrepancies: `none` — ownership blockers resolved in [OWNERSHIP-SEAMS-MEMO.md](../spreadsheet-native-foundation/OWNERSHIP-SEAMS-MEMO.md)
 
+## March 17 Anti-Drift Addendum
+
+Orders is no longer tracked only as a queue-plus-document pilot. It now has an explicit rollout-control layer:
+
+- [Orders Rollout Contract](../spreadsheet-native-foundation/ORDERS-ROLLOUT-CONTRACT-2026-03-17.md)
+- new release-gate rows `SALE-ORD-019` through `SALE-ORD-035`
+- explicit distinction between `implemented`, `implemented-not-surfaced`, and `live-proven`
+
+That means spreadsheet selection, clipboard, fill, field-state visibility, discoverability, workflow-target clarity, conversion ownership, row operations, edit navigation, sort/filter safety, and failure-mode proof can no longer disappear into implementation details or be counted as “done” while still hidden.
+
+Historical code proof, classic-surface proof, or pre-gate staging evidence do not satisfy the March 17 rollout gates by themselves. Current rollout closure must be evaluated against the canonical Orders rollout contract, the parity proof plan, and the dedicated `SALE-ORD-019` through `SALE-ORD-035` rows.
+
 ## Source Appendix
 
 | Source Type         | Reference                                                  | Relevant Rows / Sections                                                                                                                     | Code Refs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Why It Matters                                                                                                                   | Open Questions                                                                                                                          |
@@ -56,14 +68,22 @@ Adjacent but not absorbed into this pilot sheet:
 
 ## Key Scope Decisions
 
-1. The capability ledger spans both the main orders surface and the current create-order tab, but the current step-5 sheet-native implementation is intentionally narrower: only the orders queue/inspector is mounted in sheet-native mode while create-order remains an adjacent preserved workbook surface.
+1. The capability ledger spans both the main orders surface and the current create-order tab, and the March 17 local implementation now mounts create/edit document flow inside sheet-native Orders. Live staging proof for that document mode still remains open.
 2. Route-seeded entry modes from draft, quote, client, need, and sales-sheet handoff remain in scope because current users can start the composer from those contexts today.
 3. Autosave, unsaved-change protection, and the customer money/pricing/referral drawer remain explicit pilot capabilities instead of being treated as incidental implementation details.
 4. Pick-pack execution is preserved as a handoff to Operations -> Shipping rather than being re-owned by the orders sheet.
 5. Payment follow-up and invoice generation are preserved as linked accounting actions, not rebuilt inside the sheet.
-6. Conversion, export, and audit ownership are now resolved by the ownership seams memo. The Quotes tab is now revalidated as a live Sales-owned conversion entry point, while invoice output and recurring-order ownership still need concrete current proof surfaces.
+6. Conversion, export, and audit ownership are now tracked explicitly by the ownership seams memo. The Quotes tab is revalidated as a live Sales-owned conversion entry point, but explicit sheet-native conversion parity is still open, while invoice output and recurring-order ownership still need concrete current proof surfaces.
+7. Spreadsheet interaction and surfacing are now explicit release-gate capabilities rather than implied future polish.
+8. The rollout contract now also treats conversion parity, edit navigation, cut/clear/delete-cell, row operations, sort/filter-safe targeting, workflow ambiguity resolution, and failure-mode proof as explicit release gates rather than loose follow-up notes.
 
 ## Classification Summary
+
+Note:
+
+- the counts below reflect the March 13 ledger extraction baseline
+- the March 17 anti-drift release-gate rows `SALE-ORD-019` through `SALE-ORD-035` are additive rollout controls layered on top of that baseline
+- use the canonical Orders rollout contract and the parity proof plan for current release-gate truth
 
 - `sheet-native`: `7`
 - `sheet-plus-sidecar`: `7`

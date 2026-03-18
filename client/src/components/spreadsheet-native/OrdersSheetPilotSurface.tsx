@@ -1,17 +1,22 @@
 import { useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import {
+  ArrowLeft,
   Plus,
   RefreshCw,
   SquareArrowOutUpRight,
+  Trash2,
   Truck,
   Wallet,
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
+  buildSheetNativeOrdersDocumentPath,
+  buildSheetNativeOrdersPath,
 } from "@/lib/workspaceRoutes";
 import {
   extractItems,
@@ -22,6 +27,7 @@ import {
 } from "@/lib/spreadsheet-native";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
   InspectorField,
@@ -29,7 +35,9 @@ import {
   InspectorSection,
 } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import { SpreadsheetPilotGrid } from "./SpreadsheetPilotGrid";
+import OrderCreatorPage from "@/pages/OrderCreatorPage";
+import { PowersheetGrid } from "./PowersheetGrid";
+import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -46,6 +54,15 @@ const formatDate = (value: string | null) => {
   return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleString();
 };
 
+const parsePositiveIntegerParam = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
 interface OrdersSheetPilotSurfaceProps {
   onOpenClassic: (orderId?: number | null) => void;
 }
@@ -54,34 +71,96 @@ export function OrdersSheetPilotSurface({
   onOpenClassic,
 }: OrdersSheetPilotSurfaceProps) {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { selectedId: selectedOrderId, setSelectedId: setSelectedOrderId } =
     useSpreadsheetSelectionParam("orderId");
-  const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDeleteDraftDialog, setShowDeleteDraftDialog] = useState(false);
+  const [queueSelectionSummary, setQueueSelectionSummary] =
+    useState<PowersheetSelectionSummary | null>(null);
+  const [supportSelectionSummary, setSupportSelectionSummary] =
+    useState<PowersheetSelectionSummary | null>(null);
 
-  const clientsQuery = trpc.clients.list.useQuery({ limit: 1000 });
-  const draftsQuery = trpc.orders.getAll.useQuery({ isDraft: true });
-  const confirmedQuery = trpc.orders.getAll.useQuery({ isDraft: false });
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const draftIdFromRoute = parsePositiveIntegerParam(
+    searchParams.get("draftId")
+  );
+  const quoteIdFromRoute = parsePositiveIntegerParam(
+    searchParams.get("quoteId")
+  );
+  const clientIdFromRoute = parsePositiveIntegerParam(
+    searchParams.get("clientId")
+  );
+  const needIdFromRoute = parsePositiveIntegerParam(searchParams.get("needId"));
+  const fromSalesSheet = searchParams.get("fromSalesSheet") === "true";
+  const routeMode = searchParams.get("mode");
+  const currentDocumentMode =
+    searchParams.get("ordersView") === "document" ||
+    draftIdFromRoute !== null ||
+    quoteIdFromRoute !== null ||
+    clientIdFromRoute !== null ||
+    needIdFromRoute !== null ||
+    fromSalesSheet;
+  const queueQueryEnabled = !currentDocumentMode;
+  const effectiveSelectedOrderId = queueQueryEnabled ? selectedOrderId : null;
+
+  const openDocumentMode = (
+    params?: Record<string, string | number | boolean | null | undefined>
+  ) => {
+    setLocation(buildSheetNativeOrdersDocumentPath(params));
+  };
+
+  const openQueueMode = (
+    params?: Record<string, string | number | boolean | null | undefined>
+  ) => {
+    setLocation(buildSheetNativeOrdersPath(params));
+  };
+
+  const clientsQuery = trpc.clients.list.useQuery(
+    { limit: 1000 },
+    { enabled: queueQueryEnabled }
+  );
+  const draftsQuery = trpc.orders.getAll.useQuery(
+    { isDraft: true },
+    { enabled: queueQueryEnabled }
+  );
+  const confirmedQuery = trpc.orders.getAll.useQuery(
+    { isDraft: false },
+    { enabled: queueQueryEnabled }
+  );
   const detailQuery = trpc.orders.getOrderWithLineItems.useQuery(
-    { orderId: selectedOrderId ?? 0 },
-    { enabled: selectedOrderId !== null }
+    { orderId: effectiveSelectedOrderId ?? 0 },
+    { enabled: effectiveSelectedOrderId !== null }
   );
   const statusHistoryQuery = trpc.orders.getOrderStatusHistory.useQuery(
-    { orderId: selectedOrderId ?? 0 },
-    { enabled: selectedOrderId !== null }
+    { orderId: effectiveSelectedOrderId ?? 0 },
+    { enabled: effectiveSelectedOrderId !== null }
   );
   const auditLogQuery = trpc.orders.getAuditLog.useQuery(
-    { orderId: selectedOrderId ?? 0 },
-    { enabled: selectedOrderId !== null }
+    { orderId: effectiveSelectedOrderId ?? 0 },
+    { enabled: effectiveSelectedOrderId !== null }
   );
   const ledgerQuery = trpc.accounting.ledger.list.useQuery(
     {
       referenceType: "ORDER",
-      referenceId: selectedOrderId ?? undefined,
+      referenceId: effectiveSelectedOrderId ?? undefined,
       limit: 25,
       offset: 0,
     },
-    { enabled: selectedOrderId !== null }
+    { enabled: effectiveSelectedOrderId !== null }
   );
+  const deleteDraftMutation = trpc.orders.deleteDraftOrder.useMutation({
+    onSuccess: () => {
+      toast.success("Draft deleted");
+      setShowDeleteDraftDialog(false);
+      setSelectedOrderId(null);
+      void draftsQuery.refetch();
+      void confirmedQuery.refetch();
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to delete draft");
+    },
+  });
 
   const clientNamesById = useMemo(
     () =>
@@ -94,7 +173,7 @@ export function OrdersSheetPilotSurface({
     [clientsQuery.data]
   );
 
-  const searchLower = search.trim().toLowerCase();
+  const searchLower = searchTerm.trim().toLowerCase();
 
   const draftRows = useMemo(
     () =>
@@ -139,7 +218,7 @@ export function OrdersSheetPilotSurface({
   );
 
   const selectedOrderRow =
-    queueRows.find(row => row.orderId === selectedOrderId) ?? null;
+    queueRows.find(row => row.orderId === effectiveSelectedOrderId) ?? null;
 
   const lineItemRows = useMemo(
     () => mapOrderLineItemsToPilotRows(detailQuery.data),
@@ -221,6 +300,12 @@ export function OrdersSheetPilotSurface({
     <span>
       {draftRows.length} drafts · {confirmedRows.length} confirmed ·{" "}
       {ordersQueueColumnPresets.length} default queue columns
+      {queueSelectionSummary
+        ? ` · queue ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows`
+        : ""}
+      {supportSelectionSummary
+        ? ` · support ${supportSelectionSummary.selectedCellCount} cells`
+        : ""}
     </span>
   );
 
@@ -229,24 +314,104 @@ export function OrdersSheetPilotSurface({
       {selectedOrderRow
         ? `Selected ${selectedOrderRow.orderNumber} · ${selectedOrderRow.stageLabel} · ${selectedOrderRow.ageLabel} old`
         : "Select an order to load linked lines, evidence, and action context"}
+      {queueSelectionSummary
+        ? ` · queue selection visible${
+            queueSelectionSummary.hasDiscontiguousSelection
+              ? " · discontiguous"
+              : ""
+          }`
+        : ""}
     </span>
   );
+
+  const queueSelectionTouchesMultipleRows =
+    (queueSelectionSummary?.selectedRowCount ?? 0) > 1;
+  const workflowActionTargetLabel = selectedOrderRow
+    ? `Workflow target: focused order ${selectedOrderRow.orderNumber}`
+    : "Workflow target: select a focused order";
+  const workflowActionGuardrail = queueSelectionTouchesMultipleRows
+    ? "Spreadsheet selection spans multiple rows. Workflow actions stay locked until the focused row is the only selected row in scope."
+    : "Workflow actions remain explicit row-scoped actions. Cell selections do not change handoff ownership.";
 
   const canOpenAccounting = selectedOrderRow?.lane === "confirmed";
   const canOpenShipping = Boolean(
     selectedOrderRow?.lane === "confirmed" && selectedOrderRow.invoiceId
   );
+  const rowScopedActionsBlocked = queueSelectionTouchesMultipleRows;
+  const classicDocumentParams = {
+    draftId: draftIdFromRoute ?? undefined,
+    quoteId: quoteIdFromRoute ?? undefined,
+    clientId: clientIdFromRoute ?? undefined,
+    needId: needIdFromRoute ?? undefined,
+    mode: routeMode ?? undefined,
+    fromSalesSheet: fromSalesSheet ? true : undefined,
+  };
+  const documentContextLabel =
+    draftIdFromRoute !== null
+      ? `Draft #${draftIdFromRoute}`
+      : quoteIdFromRoute !== null
+        ? `Quote #${quoteIdFromRoute}`
+        : clientIdFromRoute !== null
+          ? `Client #${clientIdFromRoute}`
+          : fromSalesSheet
+            ? "Sales Sheet import"
+            : "New draft";
+
+  if (currentDocumentMode) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              openQueueMode({
+                orderId: draftIdFromRoute ?? undefined,
+              })
+            }
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Queue
+          </Button>
+          <Badge variant="outline">Sheet-native Orders</Badge>
+          <Badge variant="secondary">Document mode</Badge>
+          <span className="text-sm text-muted-foreground">
+            {documentContextLabel}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                setLocation(
+                  buildSalesWorkspacePath("create-order", {
+                    ...classicDocumentParams,
+                    classic: true,
+                  })
+                )
+              }
+            >
+              <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+              Classic Composer
+            </Button>
+          </div>
+        </div>
+
+        <OrderCreatorPage surfaceVariant="sheet-native-orders" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          value={search}
-          onChange={event => setSearch(event.target.value)}
+          value={searchTerm}
+          onChange={event => setSearchTerm(event.target.value)}
           placeholder="Search order or client"
           className="max-w-xs"
         />
-        <Badge variant="outline">Pilot: queue + linked detail</Badge>
+        <Badge variant="outline">Pilot: queue + document + handoffs</Badge>
         <div className="ml-auto flex items-center gap-2">
           <Button
             size="sm"
@@ -259,10 +424,7 @@ export function OrdersSheetPilotSurface({
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button
-            size="sm"
-            onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
-          >
+          <Button size="sm" onClick={() => openDocumentMode()}>
             <Plus className="mr-2 h-4 w-4" />
             New Order
           </Button>
@@ -275,9 +437,19 @@ export function OrdersSheetPilotSurface({
             ? `${selectedOrderRow.orderNumber} selected`
             : "Queue evaluation active"}
         </span>
+        <Badge
+          variant={rowScopedActionsBlocked ? "secondary" : "outline"}
+          className="max-w-full"
+        >
+          {workflowActionTargetLabel}
+        </Badge>
         <span className="text-xs text-muted-foreground">
-          Primary actions stay on-sheet. Composer, payment, and shipping still
-          hand off to owned adjacent surfaces.
+          Primary actions stay on-sheet. The document flow now stays inside the
+          sheet-native Orders surface, while accounting and shipping remain
+          explicit owner handoffs.
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {workflowActionGuardrail}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
@@ -285,26 +457,36 @@ export function OrdersSheetPilotSurface({
             variant={
               selectedOrderRow?.lane === "drafts" ? "default" : "outline"
             }
+            disabled={rowScopedActionsBlocked}
             onClick={() =>
-              setLocation(
-                buildSalesWorkspacePath("create-order", {
-                  draftId:
-                    selectedOrderRow?.lane === "drafts"
-                      ? selectedOrderRow.orderId
-                      : undefined,
-                })
-              )
+              openDocumentMode({
+                draftId:
+                  selectedOrderRow?.lane === "drafts"
+                    ? selectedOrderRow.orderId
+                    : undefined,
+              })
             }
           >
             <Plus className="mr-2 h-4 w-4" />
-            {selectedOrderRow?.lane === "drafts"
-              ? "Open Draft"
-              : "Open Composer"}
+            {selectedOrderRow?.lane === "drafts" ? "Edit Draft" : "New Draft"}
           </Button>
           <Button
             size="sm"
             variant="outline"
-            disabled={!selectedOrderRow || !canOpenAccounting}
+            disabled={
+              selectedOrderRow?.lane !== "drafts" || rowScopedActionsBlocked
+            }
+            onClick={() => setShowDeleteDraftDialog(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Draft
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={
+              !selectedOrderRow || !canOpenAccounting || rowScopedActionsBlocked
+            }
             onClick={() => {
               if (!selectedOrderRow) {
                 return;
@@ -321,7 +503,9 @@ export function OrdersSheetPilotSurface({
           <Button
             size="sm"
             variant="outline"
-            disabled={!selectedOrderRow || !canOpenShipping}
+            disabled={
+              !selectedOrderRow || !canOpenShipping || rowScopedActionsBlocked
+            }
             onClick={() => {
               if (!selectedOrderRow) {
                 return;
@@ -348,7 +532,16 @@ export function OrdersSheetPilotSurface({
         </div>
       </div>
 
-      <SpreadsheetPilotGrid
+      <PowersheetGrid
+        surfaceId="orders-queue"
+        requirementIds={["ORD-WF-001", "ORD-WF-006", "ORD-WF-007"]}
+        releaseGateIds={[
+          "SALE-ORD-019",
+          "SALE-ORD-023",
+          "SALE-ORD-024",
+          "SALE-ORD-026",
+          "SALE-ORD-027",
+        ]}
         title="Orders Queue"
         description="One dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context."
         rows={queueRows}
@@ -356,18 +549,23 @@ export function OrdersSheetPilotSurface({
         getRowId={row => row.identity.rowKey}
         selectedRowId={selectedOrderRow?.identity.rowKey ?? null}
         onSelectedRowChange={row => setSelectedOrderId(row?.orderId ?? null)}
+        selectionMode="cell-range"
+        enableFillHandle={false}
+        enableUndoRedo={false}
+        onSelectionSummaryChange={setQueueSelectionSummary}
         isLoading={draftsQuery.isLoading || confirmedQuery.isLoading}
         errorMessage={
           draftsQuery.error?.message ?? confirmedQuery.error?.message ?? null
         }
         emptyTitle="No orders match this queue"
-        emptyDescription="Adjust the search or open the composer to create a new draft."
+        emptyDescription="Adjust the search or open the document sheet to create a new draft."
         summary={
           <span>
             {queueRows.length} visible orders · {draftRows.length} drafts ·{" "}
             {confirmedRows.length} confirmed
           </span>
         }
+        antiDriftSummary="Queue release gates: spreadsheet selection parity, discoverability, and explicit workflow actions."
         minHeight={360}
       />
 
@@ -409,12 +607,19 @@ export function OrdersSheetPilotSurface({
         </div>
       ) : null}
 
-      <SpreadsheetPilotGrid
+      <PowersheetGrid
+        surfaceId="orders-support-grid"
+        requirementIds={["ORD-WF-002"]}
+        releaseGateIds={["SALE-ORD-023", "SALE-ORD-026"]}
         title="Selected Order Lines"
         description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
         rows={lineItemRows}
         columnDefs={lineItemColumnDefs}
         getRowId={row => row.identity.rowKey}
+        selectionMode="cell-range"
+        enableFillHandle={false}
+        enableUndoRedo={false}
+        onSelectionSummaryChange={setSupportSelectionSummary}
         isLoading={detailQuery.isLoading}
         errorMessage={detailQuery.error?.message ?? null}
         emptyTitle="No order selected"
@@ -427,6 +632,7 @@ export function OrdersSheetPilotSurface({
             </span>
           ) : undefined
         }
+        antiDriftSummary="Support-grid release gate: linked lines must share the same spreadsheet grammar and active-order synchronization."
         minHeight={220}
       />
 
@@ -506,6 +712,28 @@ export function OrdersSheetPilotSurface({
           </Button>
         ) : null}
       </InspectorPanel>
+
+      <ConfirmDialog
+        open={showDeleteDraftDialog}
+        onOpenChange={setShowDeleteDraftDialog}
+        title="Delete Draft Order?"
+        description={
+          selectedOrderRow?.lane === "drafts"
+            ? `Delete ${selectedOrderRow.orderNumber}? This cannot be undone.`
+            : "Delete the selected draft? This cannot be undone."
+        }
+        confirmLabel={
+          deleteDraftMutation.isPending ? "Deleting..." : "Delete Draft"
+        }
+        variant="destructive"
+        onConfirm={() => {
+          if (selectedOrderRow?.lane !== "drafts") {
+            return;
+          }
+
+          deleteDraftMutation.mutate({ orderId: selectedOrderRow.orderId });
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import type {
   CapabilityProofCase,
+  RequirementImplementationStatus,
+  RequirementSurfacingStatus,
   WorkbookAdapter,
 } from "@shared/spreadsheetNativeContracts";
+import { ordersRolloutRequirementById } from "./ordersRolloutContract";
 import { pilotWorkbookAdapters } from "./pilotContracts";
 
 export type PilotCoverageMode =
@@ -19,11 +22,15 @@ export interface PilotProofDefinition extends CapabilityProofCase {
   coverageMode: PilotCoverageMode;
   queryContractIds?: string[];
   mutationContractIds?: string[];
+  implementationStatus?: RequirementImplementationStatus;
+  surfacingStatus?: RequirementSurfacingStatus;
+  surfacedArtifactIds?: string[];
 }
 
 export interface PilotProofValidationResult {
   missingQueries: Map<string, string[]>;
   missingMutations: Map<string, string[]>;
+  missingRequirements: Map<string, string[]>;
 }
 
 export const pilotProofDefinitions: PilotProofDefinition[] = [
@@ -41,6 +48,9 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
       "March 15, 2026 staging proof confirmed the live sheet-native Orders pilot supports in-place queue browse and filtering.",
     coverageMode: "sheet-native-direct",
     queryContractIds: ["clients.list", "orders.getAll"],
+    implementationStatus: "implemented",
+    surfacingStatus: "surfaced-and-proven",
+    requirementIds: ["ORD-WF-001"],
   },
   {
     capabilityId: "SALE-ORD-002",
@@ -61,48 +71,75 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
       "orders.getAuditLog",
       "accounting.ledger.list",
     ],
+    implementationStatus: "implemented",
+    surfacingStatus: "surfaced-and-proven",
+    requirementIds: ["ORD-WF-001", "ORD-WF-002"],
   },
   {
     capabilityId: "SALE-ORD-003",
     workbook: "Sales",
-    sheet: "Create Order",
+    sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "live-proven",
-    routeOrEntry: "/sales?tab=create-order",
+    proofStatus: "code-proven",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native&ordersView=document",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "create-order-proof.png",
     notes:
-      "Current workbook composer remains the functional oracle for create-order behavior during step-5 work.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation moved new-draft entry into the sheet-native Orders document mode; staging proof is still required before this row can close as live-proven.",
+    coverageMode: "sheet-native-direct",
+    queryContractIds: ["clients.list", "salesSheets.getInventory"],
+    mutationContractIds: ["orders.createDraftEnhanced"],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-003"],
   },
   {
     capabilityId: "SALE-ORD-004",
     workbook: "Sales",
-    sheet: "Create Order",
+    sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
-    routeOrEntry: "/sales?tab=create-order&draftId=:id",
+    proofStatus: "code-proven",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "draft-edit-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed live draft editing, total recalculation, and save-state recovery in the current composer; quote-specific and undo coverage still need a separate pass.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation routes draft editing through the sheet-native Orders document mode with the existing recalculation and undo logic preserved; live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    queryContractIds: [
+      "orders.getOrderWithLineItems",
+      "salesSheets.getInventory",
+      "clients.getById",
+    ],
+    mutationContractIds: ["orders.updateDraftEnhanced"],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-003"],
   },
   {
     capabilityId: "SALE-ORD-005",
     workbook: "Sales",
-    sheet: "Create Order",
+    sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
-    routeOrEntry: "/sales?tab=create-order&draftId=:id",
+    proofStatus: "code-proven",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "finalize-guardrail-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed a blank composer keeps finalization unavailable until prerequisites exist; deeper credit and edge-case guardrails still need targeted proof.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation keeps credit checks, validation, and finalize guardrails inside the sheet-native Orders document mode; live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    mutationContractIds: [
+      "credit.checkOrderCredit",
+      "orders.finalizeDraft",
+      "orders.updateDraftEnhanced",
+    ],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-004"],
   },
   {
     capabilityId: "SALE-ORD-006",
@@ -110,13 +147,17 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
-    routeOrEntry: "/sales?tab=orders",
+    proofStatus: "code-proven",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "draft-lifecycle-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed the classic Orders queue still exposes Edit Draft, Confirm Order, and Delete Draft for live drafts; confirm execution itself still needs a targeted mutation pass.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation keeps draft edit entry and draft delete on the sheet-native Orders queue, while confirm/finalize stays inside the sheet-native document mode; live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    mutationContractIds: ["orders.deleteDraftOrder", "orders.finalizeDraft"],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-006"],
   },
   {
     capabilityId: "SALE-ORD-007",
@@ -124,13 +165,17 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
-    routeOrEntry: "/sales?tab=orders",
+    proofStatus: "code-proven",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native&orderId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "confirm-ship-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed confirmed-order context still loads in the classic Orders inspector, but no explicit downstream actions were visible on the tested record; this row now tracks the Sales-side confirm context only while shipping handoff is already closed under SALE-ORD-011.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation returns finalized orders to the sheet-native queue with confirmed-order context preserved; shipping and accounting remain explicit handoffs while live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    queryContractIds: ["orders.getOrderWithLineItems", "orders.getAuditLog"],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-002", "ORD-WF-007"],
   },
   {
     capabilityId: "SALE-ORD-008",
@@ -159,6 +204,9 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     notes:
       "March 15, 2026 staging proof confirmed the live sheet-native Orders pilot hands the selected order into Accounting payment context with order identity preserved.",
     coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "surfaced-and-proven",
+    requirementIds: ["ORD-WF-007"],
   },
   {
     capabilityId: "SALE-ORD-010",
@@ -187,6 +235,9 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     notes:
       "March 15, 2026 staging proof confirmed the live sheet-native Orders pilot hands the selected order into the consolidated shipping workspace at /inventory?tab=shipping with order identity preserved.",
     coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "surfaced-and-proven",
+    requirementIds: ["ORD-WF-007"],
   },
   {
     capabilityId: "SALE-ORD-012",
@@ -201,6 +252,9 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     notes:
       "March 15, 2026 staging proof confirmed the adjacent Quotes workbook still exposes the Convert to Sales Order dialog; executing the conversion mutation still needs a separate targeted pass.",
     coverageMode: "classic-adjacent",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-008"],
   },
   {
     capabilityId: "SALE-ORD-013",
@@ -235,55 +289,377 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P1",
-    proofStatus: "live-proven",
-    routeOrEntry: "/sales?tab=orders",
+    proofStatus: "code-proven",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "draft-delete-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed a live draft delete from the classic Orders queue and verified that the temporary draft disappeared from the filtered draft list.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation adds draft deletion directly to the sheet-native Orders queue; live staging proof is still required before this row can close.",
+    coverageMode: "sheet-native-direct",
+    mutationContractIds: ["orders.deleteDraftOrder"],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-006"],
   },
   {
     capabilityId: "SALE-ORD-016",
     workbook: "Sales",
-    sheet: "Create Order",
+    sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P1",
-    proofStatus: "partial",
-    routeOrEntry: "/sales?tab=create-order&quoteId=:id",
+    proofStatus: "code-proven",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&quoteId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "seeded-entry-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed quoteId-seeded entry into the current create-order surface; other seed modes still need separate proof.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation preserves quote, client, need, and sales-sheet seeded entry in the sheet-native Orders document mode; live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    queryContractIds: [
+      "orders.getOrderWithLineItems",
+      "clients.getById",
+      "salesSheets.getInventory",
+    ],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-005"],
   },
   {
     capabilityId: "SALE-ORD-017",
     workbook: "Sales",
-    sheet: "Create Order",
+    sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
-    routeOrEntry: "/sales?tab=create-order&draftId=:id",
+    proofStatus: "code-proven",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "autosave-nav-guard-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed the autosave path on an active draft; the unsaved-navigation prompt remains a separate open proof.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation keeps autosave, save-state, keyboard save/finalize, and unsaved-navigation protection inside the sheet-native Orders document mode; live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    mutationContractIds: [
+      "orders.createDraftEnhanced",
+      "orders.updateDraftEnhanced",
+    ],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-004"],
   },
   {
     capabilityId: "SALE-ORD-018",
     workbook: "Sales",
-    sheet: "Create Order",
+    sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P1",
-    proofStatus: "live-proven",
-    routeOrEntry: "/sales?tab=create-order&clientId=:id",
+    proofStatus: "code-proven",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&clientId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "customer-context-proof.png",
     notes:
-      "March 15, 2026 staging proof confirmed the clientId-seeded create-order route shows customer, referral, credit, and pricing context in the live composer.",
-    coverageMode: "classic-adjacent",
+      "March 17, 2026 local implementation keeps client-seeded customer, referral, credit, and pricing context inside the sheet-native Orders document mode; live staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    queryContractIds: ["clients.getById", "salesSheets.getInventory"],
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-005"],
+  },
+  {
+    capabilityId: "SALE-ORD-019",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "selection-range-parity-proof.png",
+    notes:
+      "March 17, 2026 runtime work landed the first shared PowersheetGrid selection slice for queue and support grids, including focused-row sync and range-summary plumbing. Full drag, Shift, Cmd, and row or column scope parity still needs behavioral proof before this row can close.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-001", "ORD-SS-002", "ORD-SS-003", "ORD-SS-004"],
+  },
+  {
+    capabilityId: "SALE-ORD-020",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "multi-cell-edit-proof.png",
+    notes:
+      "March 17, 2026 local implementation moved approved line-item editing onto the shared PowersheetGrid document runtime, preserving the existing Orders pricing calculations and document orchestration. This row stays partial until real multi-cell clipboard and autosave proof lands on staging.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-006", "ORD-SS-007", "ORD-SS-009"],
+  },
+  {
+    capabilityId: "SALE-ORD-021",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "clipboard-parity-proof.png",
+    notes:
+      "March 17, 2026 local implementation wired clipboard hooks through the shared SpreadsheetPilotGrid and added document-grid paste validation plus blocked-field messaging for approved editable cells. This row stays partial until copy and rectangular paste are proven on staging across the queue, support, and document surfaces.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-005", "ORD-SS-006"],
+  },
+  {
+    capabilityId: "SALE-ORD-022",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "partial",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "fill-parity-proof.png",
+    notes:
+      "March 17, 2026 local implementation enabled fill-handle behavior on the shared Orders document grid for approved editable fields. This row stays partial until safe fill behavior is exercised on staging and field-policy restrictions are proven in the live surface.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-008", "ORD-SS-009"],
+  },
+  {
+    capabilityId: "SALE-ORD-023",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "surface-consistency-proof.png",
+    notes:
+      "March 17, 2026 runtime work moved queue, support, and the sheet-native document line-item surface onto the shared PowersheetGrid adapter. This row stays partial until all three surfaces are proven together on staging with consistent spreadsheet behavior.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SF-006"],
+  },
+  {
+    capabilityId: "SALE-ORD-024",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "selection-visibility-proof.png",
+    notes:
+      "March 17, 2026 runtime work surfaced selection summary, release gates, anti-drift context, and blocked-edit feedback in the shared grid adapter, plus queue-shell visibility in Orders. Full visible focus, range, save-state, and staging proof is still pending.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SF-001", "ORD-SF-003", "ORD-SF-004"],
+  },
+  {
+    capabilityId: "SALE-ORD-025",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "field-state-visibility-proof.png",
+    notes:
+      "March 17, 2026 local implementation added document-grid editable-versus-locked field classes and header guidance so field safety is no longer implicit. This row stays partial until visible field-state cues are proven on staging across all required Orders surfaces.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SF-002", "ORD-SF-004"],
+  },
+  {
+    capabilityId: "SALE-ORD-026",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "discoverability-proof.png",
+    notes:
+      "March 17, 2026 runtime work surfaced the Orders sheet/classic toggle and began exposing selection state plus document-grid actions in the shared grid chrome, so discoverability is no longer zero. This row stays partial until queue, support, and document surfaces all expose discoverable spreadsheet affordances and hinting.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SF-005", "ORD-SF-006", "ORD-SF-008"],
+  },
+  {
+    capabilityId: "SALE-ORD-027",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "implemented-not-surfaced",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "explicit-workflow-actions-proof.png",
+    notes:
+      "Finalize, accounting, and shipping actions already exist in sheet-native Orders, but this row stays open until their separation from spreadsheet editing is explicitly surfaced and proven.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SF-007"],
+  },
+  {
+    capabilityId: "SALE-ORD-028",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "blocked",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&quoteId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "sheet-native-conversion-proof.png",
+    notes:
+      "Conversion parity is now an explicit Orders rollout gate. This row remains blocked until quote-to-order conversion ownership is explicit and the sheet-native Orders flow proves the mutation path or is reclassified with evidence.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "not-started",
+    surfacingStatus: "not-started",
+    requirementIds: ["ORD-WF-008"],
+  },
+  {
+    capabilityId: "SALE-ORD-029",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "partial",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "cut-clear-delete-proof.png",
+    notes:
+      "March 17, 2026 local implementation added document-grid clear-style actions for approved fields plus structured edit rejection for locked or invalid spreadsheet edits. This row stays partial until cut, clear, and blocked-cell behavior are proven end-to-end on staging.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-010"],
+  },
+  {
+    capabilityId: "SALE-ORD-030",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "edit-navigation-proof.png",
+    notes:
+      "March 17, 2026 local implementation added document-grid spreadsheet navigation settings for Enter-driven movement and edit-session stability. This row stays partial until Tab, Shift+Tab, Enter, Shift+Enter, and Escape are all verified with live document-grid behavior.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-011"],
+  },
+  {
+    capabilityId: "SALE-ORD-031",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "sort-filter-safe-targeting-proof.png",
+    notes:
+      "March 17, 2026 local implementation hardened the document grid against silent retargeting by disabling sort/filter controls there and validating full paste rectangles before accepting data. This row stays partial until queue, support, and document surfaces are all proven safe on staging.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-012"],
+  },
+  {
+    capabilityId: "SALE-ORD-032",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "partial",
+    routeOrEntry:
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "row-operations-proof.png",
+    notes:
+      "March 17, 2026 local implementation added document-grid duplicate and delete row actions plus sheet-native add-item insertion through the inventory browser. This row stays partial until row operations are fully proven against the shared runtime on staging.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-WF-009"],
+  },
+  {
+    capabilityId: "SALE-ORD-033",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P1",
+    proofStatus: "blocked",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "per-surface-discoverability-proof.png",
+    notes:
+      "Per-surface discoverability is now a release gate. This row remains blocked until queue, support-grid, and document-grid affordance matrices are surfaced and proven independently.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "not-started",
+    surfacingStatus: "not-started",
+    requirementIds: ["ORD-SF-008"],
+  },
+  {
+    capabilityId: "SALE-ORD-034",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "blocked",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "workflow-ambiguity-proof.png",
+    notes:
+      "Workflow ambiguity is now a release gate. This row remains blocked until focused row, focused cell, selected range, and workflow-action targeting stay visibly unambiguous before finalize or handoff actions.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "not-started",
+    surfacingStatus: "not-started",
+    requirementIds: ["ORD-SF-009"],
+  },
+  {
+    capabilityId: "SALE-ORD-035",
+    workbook: "Sales",
+    sheet: "Orders",
+    ownerSurface: "Sales -> Orders",
+    criticality: "P0",
+    proofStatus: "partial",
+    routeOrEntry: "/sales?tab=orders&surface=sheet-native",
+    persona: "qa.salesmanager@terp.test",
+    requiredArtifact: "failure-mode-proof-bundle.md",
+    notes:
+      "March 17, 2026 local implementation added document-grid blocked-paste validation and structured invalid-edit rejection messaging through the shared runtime. This row stays partial until mixed editable/locked paste, blocked fill, invalid multi-cell partial failure, undo across autosave, and hidden-row protection are proven on staging.",
+    coverageMode: "sheet-native-direct",
+    implementationStatus: "implemented",
+    surfacingStatus: "implemented-not-surfaced",
+    requirementIds: ["ORD-SS-010", "ORD-SS-012", "ORD-SF-004"],
   },
   {
     capabilityId: "OPS-INV-001",
@@ -499,6 +875,7 @@ export function validatePilotProofCases(
 
   const missingQueries = new Map<string, string[]>();
   const missingMutations = new Map<string, string[]>();
+  const missingRequirements = new Map<string, string[]>();
 
   for (const definition of proofDefinitions) {
     const unresolvedQueries = (definition.queryContractIds ?? []).filter(
@@ -514,9 +891,16 @@ export function validatePilotProofCases(
     if (unresolvedMutations.length > 0) {
       missingMutations.set(definition.capabilityId, unresolvedMutations);
     }
+
+    const unresolvedRequirements = (definition.requirementIds ?? []).filter(
+      requirementId => !ordersRolloutRequirementById.has(requirementId)
+    );
+    if (unresolvedRequirements.length > 0) {
+      missingRequirements.set(definition.capabilityId, unresolvedRequirements);
+    }
   }
 
-  return { missingQueries, missingMutations };
+  return { missingQueries, missingMutations, missingRequirements };
 }
 
 export const pilotProofValidation = validatePilotProofCases(

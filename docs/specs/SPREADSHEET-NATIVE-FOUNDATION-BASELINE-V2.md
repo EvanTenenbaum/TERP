@@ -94,7 +94,7 @@ The foundation phase is complete only when all of the following are true:
 - the party-model conflict around `clients`, `vendors`, and `supplierProfiles` is classified for fork use
 - the four remaining pilot ownership seams are explicitly closed
 - `Inventory` and `Orders` both have stable sheet data contracts and proof cases
-- the AG Grid Community proof spike either passes or forces an explicit runtime reopening
+- the active AG Grid Enterprise fit spike either passes or forces an explicit runtime reopening
 - the primitive pack is fixed enough that implementers do not have to make local interaction-grammar decisions
 - the two pilot blueprints contain only module mapping, not new architecture decisions
 

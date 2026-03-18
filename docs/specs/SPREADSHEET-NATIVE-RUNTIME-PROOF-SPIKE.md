@@ -7,15 +7,20 @@
 
 ## 1. Runtime Decision Rule
 
-AG Grid Community is the provisional baseline because:
+Superseding decision note:
 
-- it is already installed in TERP
-- it is already used in work-surface and spreadsheet code paths
+- [AG Grid Enterprise Runtime Decision](./spreadsheet-native-foundation/AG-GRID-ENTERPRISE-RUNTIME-DECISION-2026-03-17.md)
+
+AG Grid Enterprise is the active March 17, 2026 runtime candidate because:
+
+- it is now installed in TERP alongside the existing AG Grid usage
 - it is self-hosted and compatible with the fork’s runtime constraint
+- the Orders rollout contract now requires spreadsheet behaviors that previously forced a runtime reopening under the Community-only baseline
+- `TER-768` is explicitly tracking fit, licensing, UX risk, and fallback criteria for the document-grid-first rollout
 
-It is not locked in permanently.
+The older Community-baseline assumption is now historical context only.
 
-It must pass this proof spike before implementation proceeds.
+Enterprise is not locked in permanently. It must pass this proof spike before runtime migration proceeds. If it fails, the runtime decision reopens with the smallest viable fallback evaluation.
 
 ## 2. Must-Pass Scenarios
 
@@ -42,7 +47,7 @@ The current UI may provide proof mechanics, but it must not define the future la
 
 ## 4. Failure Rule
 
-If AG Grid Community fails any must-pass scenario:
+If AG Grid Enterprise fails any must-pass scenario:
 
 - stop pilot implementation
 - record the specific failed scenario

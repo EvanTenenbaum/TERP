@@ -228,6 +228,30 @@ const MODULE_FLAGS: FeatureFlagDefinition[] = [
 ];
 
 /**
+ * Workbook and pilot rollout flags
+ */
+const WORKBOOK_FLAGS: FeatureFlagDefinition[] = [
+  {
+    key: "spreadsheet-view",
+    name: "Spreadsheet View",
+    description:
+      "Enable unified spreadsheet interface for inventory, intake, and pick & pack workflows",
+    module: "module-inventory",
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "spreadsheet-native-pilot",
+    name: "Spreadsheet-Native Pilot",
+    description:
+      "Enable internal sheet-native pilot surfaces for the Orders and Inventory workbooks. Distinct from the legacy spreadsheet-view inventory feature.",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: false,
+  },
+];
+
+/**
  * Communication Feature Flags
  */
 const COMMUNICATION_FLAGS: FeatureFlagDefinition[] = [
@@ -306,6 +330,7 @@ const BETA_FLAGS: FeatureFlagDefinition[] = [
 const ALL_FLAGS: FeatureFlagDefinition[] = [
   ...WORK_SURFACE_FLAGS,
   ...MODULE_FLAGS,
+  ...WORKBOOK_FLAGS,
   ...COMMUNICATION_FLAGS,
   ...DASHBOARD_FLAGS,
   ...BETA_FLAGS,
