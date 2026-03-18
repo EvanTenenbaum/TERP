@@ -164,7 +164,7 @@ importers:
         specifier: ^35.1.0
         version: 35.1.0
       ag-grid-enterprise:
-        specifier: ^35.0.0
+        specifier: ^35.1.0
         version: 35.1.0
       ag-grid-react:
         specifier: ^35.1.0
