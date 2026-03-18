@@ -200,6 +200,34 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(nextItems[1].quantity).toBe(2);
   });
 
+  it("reverts rejected inline edits back to the last valid line-item state", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, quantity: 2, lineTotal: 25 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "quantity" },
+      oldValue: 2,
+      newValue: "-2",
+      data: buildLineItem({ id: 1, quantity: -2, lineTotal: -25 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].quantity).toBe(2);
+    expect(nextItems[0].lineTotal).toBe(25);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Quantity must be a positive whole number."
+    );
+  });
+
   it("blocks invalid clipboard edits on approved fields and surfaces the rejection", () => {
     const onChange = vi.fn();
     mockToastError.mockReset();

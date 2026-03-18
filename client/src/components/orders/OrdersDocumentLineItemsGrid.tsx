@@ -211,6 +211,33 @@ function getFocusedSelectionValue(
   return null;
 }
 
+function getRevertedEditableFieldValue(
+  currentItem: LineItem,
+  field: OrdersDocumentEditableField,
+  oldValue: unknown
+): LineItem[OrdersDocumentEditableField] {
+  switch (field) {
+    case "quantity": {
+      const normalized = parsePositiveInteger(String(oldValue ?? ""));
+      return normalized ?? currentItem.quantity;
+    }
+    case "isSample": {
+      if (typeof oldValue === "boolean") {
+        return oldValue;
+      }
+
+      const normalized = normalizeSampleClipboardValue(oldValue);
+      return normalized ?? currentItem.isSample;
+    }
+    case "cogsPerUnit":
+    case "marginPercent":
+    case "unitPrice": {
+      const normalized = parseFiniteNumber(oldValue);
+      return normalized ?? currentItem[field];
+    }
+  }
+}
+
 function normalizeDocumentLineItemEdit(
   item: LineItem,
   columnKey: OrdersDocumentEditableField | (keyof LineItem & string),
@@ -526,9 +553,10 @@ export function OrdersDocumentLineItemsGrid({
       return;
     }
 
+    const editableField = columnKey as OrdersDocumentEditableField;
     const { nextItem, rejection } = normalizeDocumentLineItemEdit(
       currentItem,
-      columnKey as OrdersDocumentEditableField | (keyof LineItem & string),
+      editableField as OrdersDocumentEditableField | (keyof LineItem & string),
       event.newValue
     );
 
@@ -537,7 +565,16 @@ export function OrdersDocumentLineItemsGrid({
       if (rejection) {
         toast.error(rejection.message);
       }
-      onChange([...normalizedItems]);
+      const revertedItems = [...normalizedItems];
+      revertedItems[targetIndex] = {
+        ...currentItem,
+        [editableField]: getRevertedEditableFieldValue(
+          currentItem,
+          editableField,
+          event.oldValue
+        ),
+      };
+      onChange(revertedItems);
       return;
     }
 
