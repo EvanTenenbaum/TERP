@@ -26,43 +26,43 @@ Orders is not complete until all Orders-owned `P0` and `P1` rows are either `liv
 
 ## Capability Closure Snapshot
 
-| Capability ID  | Owner Classification   | Current State              | Required Live Proof                                                                                                      |
-| -------------- | ---------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `SALE-ORD-001` | Orders-owned           | `live-proven`              | none                                                                                                                     |
-| `SALE-ORD-002` | Orders-owned           | `live-proven`              | none                                                                                                                     |
-| `SALE-ORD-003` | Orders-owned           | `code-proven`              | new draft from `/sales?tab=orders&surface=sheet-native&ordersView=document`                                              |
-| `SALE-ORD-004` | Orders-owned           | `code-proven`              | draft edit with recalculation and undo evidence                                                                          |
-| `SALE-ORD-005` | Orders-owned           | `code-proven`              | finalize guardrail + credit warning evidence                                                                             |
-| `SALE-ORD-006` | Orders-owned           | `code-proven`              | edit draft + delete draft + queue return evidence                                                                        |
-| `SALE-ORD-007` | Orders-owned           | `code-proven`              | confirmed-order queue return and post-confirm context evidence                                                           |
-| `SALE-ORD-008` | adjacent-owned         | `partial`                  | explicit Accounting launch proof if kept in Orders                                                                       |
-| `SALE-ORD-009` | adjacent-owned handoff | `live-proven`              | none                                                                                                                     |
-| `SALE-ORD-010` | adjacent-owned         | `partial`                  | Returns owner-surface proof refresh                                                                                      |
-| `SALE-ORD-011` | adjacent-owned handoff | `live-proven`              | none                                                                                                                     |
-| `SALE-ORD-012` | Orders-owned           | `partial`                  | quote-to-order initiation and mutation proof                                                                             |
-| `SALE-ORD-013` | ownership-blocked      | `blocked`                  | explicit owner decision                                                                                                  |
-| `SALE-ORD-014` | adjacent-owned         | `blocked`                  | Accounting output proof or explicit reclassification                                                                     |
-| `SALE-ORD-015` | Orders-owned           | `code-proven`              | sheet-native queue draft delete proof                                                                                    |
-| `SALE-ORD-016` | Orders-owned           | `code-proven`              | quote/client/need/sales-sheet seeded-entry proof                                                                         |
-| `SALE-ORD-017` | Orders-owned           | `code-proven`              | autosave + unsaved-nav + keyboard shortcut proof                                                                         |
-| `SALE-ORD-018` | Orders-owned           | `code-proven`              | client-seeded credit/pricing/referral context proof                                                                      |
-| `SALE-ORD-019` | Orders-owned           | `partial`                  | early shared selection runtime landed for queue/support; full range, Shift/Cmd, and scope-selection proof still required |
-| `SALE-ORD-020` | Orders-owned           | `partial`                  | local document-grid editing now runs through PowersheetGrid; staging multi-cell proof still required                     |
-| `SALE-ORD-021` | Orders-owned           | `partial`                  | local clipboard hooks and document-grid paste validation landed; staging clipboard proof on approved fields              |
-| `SALE-ORD-022` | Orders-owned           | `partial`                  | local document-grid fill handle enabled on approved fields; staging fill proof still required                            |
-| `SALE-ORD-023` | Orders-owned           | `partial`                  | queue, support grids, and document grid now share the adapter; full cross-surface consistency proof still required       |
-| `SALE-ORD-024` | Orders-owned           | `partial`                  | selection summary and anti-drift surfacing landed; full visible focus/range/save/blocked-state proof still required      |
-| `SALE-ORD-025` | Orders-owned           | `partial`                  | local editable/locked field-state surfacing landed; cross-surface staging proof still required                           |
-| `SALE-ORD-026` | Orders-owned           | `partial`                  | Orders sheet toggle and early queue discoverability landed; cross-surface discoverability proof is still required        |
-| `SALE-ORD-027` | Orders-owned           | `implemented-not-surfaced` | explicit workflow-action visibility proof after spreadsheet edits                                                        |
-| `SALE-ORD-028` | Orders-owned           | `blocked`                  | explicit sheet-native conversion ownership and proof                                                                     |
-| `SALE-ORD-029` | Orders-owned           | `partial`                  | local clear-style actions and structured edit rejection landed; staging proof still required                             |
-| `SALE-ORD-030` | Orders-owned           | `partial`                  | local document-grid edit-navigation settings landed; full key-behavior proof still required                              |
-| `SALE-ORD-031` | Orders-owned           | `partial`                  | local document-grid targeting safeguards landed; cross-surface sort/filter-safe targeting proof still required           |
-| `SALE-ORD-032` | Orders-owned           | `partial`                  | local duplicate/delete and sheet-native add-item row operations landed; staging proof still required                     |
-| `SALE-ORD-033` | Orders-owned           | `blocked`                  | per-surface discoverability proof                                                                                        |
-| `SALE-ORD-034` | Orders-owned           | `blocked`                  | active-row vs focused-cell workflow ambiguity proof                                                                      |
-| `SALE-ORD-035` | Orders-owned           | `partial`                  | local blocked-paste and invalid-edit trust handling landed; full staging failure-mode proof bundle still required        |
+| Capability ID  | Owner Classification   | Current State              | Required Live Proof                                                                                                       |
+| -------------- | ---------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `SALE-ORD-001` | Orders-owned           | `live-proven`              | none                                                                                                                      |
+| `SALE-ORD-002` | Orders-owned           | `live-proven`              | none                                                                                                                      |
+| `SALE-ORD-003` | Orders-owned           | `code-proven`              | new draft from `/sales?tab=orders&surface=sheet-native&ordersView=document`                                               |
+| `SALE-ORD-004` | Orders-owned           | `code-proven`              | draft edit with recalculation and undo evidence                                                                           |
+| `SALE-ORD-005` | Orders-owned           | `code-proven`              | finalize guardrail + credit warning evidence                                                                              |
+| `SALE-ORD-006` | Orders-owned           | `code-proven`              | edit draft + delete draft + queue return evidence                                                                         |
+| `SALE-ORD-007` | Orders-owned           | `code-proven`              | confirmed-order queue return and post-confirm context evidence                                                            |
+| `SALE-ORD-008` | adjacent-owned         | `partial`                  | explicit Accounting launch proof if kept in Orders                                                                        |
+| `SALE-ORD-009` | adjacent-owned handoff | `live-proven`              | none                                                                                                                      |
+| `SALE-ORD-010` | adjacent-owned         | `partial`                  | Returns owner-surface proof refresh                                                                                       |
+| `SALE-ORD-011` | adjacent-owned handoff | `live-proven`              | none                                                                                                                      |
+| `SALE-ORD-012` | Orders-owned           | `partial`                  | quote-to-order initiation and mutation proof                                                                              |
+| `SALE-ORD-013` | ownership-blocked      | `blocked`                  | explicit owner decision                                                                                                   |
+| `SALE-ORD-014` | adjacent-owned         | `blocked`                  | Accounting output proof or explicit reclassification                                                                      |
+| `SALE-ORD-015` | Orders-owned           | `code-proven`              | sheet-native queue draft delete proof                                                                                     |
+| `SALE-ORD-016` | Orders-owned           | `code-proven`              | quote/client/need/sales-sheet seeded-entry proof                                                                          |
+| `SALE-ORD-017` | Orders-owned           | `code-proven`              | autosave + unsaved-nav + keyboard shortcut proof                                                                          |
+| `SALE-ORD-018` | Orders-owned           | `code-proven`              | client-seeded credit/pricing/referral context proof                                                                       |
+| `SALE-ORD-019` | Orders-owned           | `partial`                  | document-mode Shift-range proof landed on staging; queue drag, Cmd, and scope-selection proof still required              |
+| `SALE-ORD-020` | Orders-owned           | `partial`                  | document-grid editing plus live duplicate/range proof landed on staging; full multi-cell pricing/autosave proof remains   |
+| `SALE-ORD-021` | Orders-owned           | `partial`                  | local clipboard hooks and document-grid paste validation landed; staging clipboard proof on approved fields               |
+| `SALE-ORD-022` | Orders-owned           | `partial`                  | local document-grid fill handle enabled on approved fields; staging fill proof still required                             |
+| `SALE-ORD-023` | Orders-owned           | `partial`                  | queue, support grids, and document grid now share the adapter; full cross-surface consistency proof still required        |
+| `SALE-ORD-024` | Orders-owned           | `partial`                  | document-mode selection summary and blocked-edit surfacing are live-proven; queue/support visibility proof still required |
+| `SALE-ORD-025` | Orders-owned           | `partial`                  | document-mode locked/editable field cues are live-proven; cross-surface staging proof still required                      |
+| `SALE-ORD-026` | Orders-owned           | `partial`                  | Orders sheet toggle and early queue discoverability landed; cross-surface discoverability proof is still required         |
+| `SALE-ORD-027` | Orders-owned           | `implemented-not-surfaced` | explicit workflow-action visibility proof after spreadsheet edits                                                         |
+| `SALE-ORD-028` | Orders-owned           | `blocked`                  | explicit sheet-native conversion ownership and proof                                                                      |
+| `SALE-ORD-029` | Orders-owned           | `partial`                  | local clear-style actions and structured edit rejection landed; staging proof still required                              |
+| `SALE-ORD-030` | Orders-owned           | `partial`                  | local document-grid edit-navigation settings landed; full key-behavior proof still required                               |
+| `SALE-ORD-031` | Orders-owned           | `partial`                  | local document-grid targeting safeguards landed; cross-surface sort/filter-safe targeting proof still required            |
+| `SALE-ORD-032` | Orders-owned           | `partial`                  | live duplicate-row proof landed on staging; delete-row and add-item row-operation proof still required                    |
+| `SALE-ORD-033` | Orders-owned           | `blocked`                  | per-surface discoverability proof                                                                                         |
+| `SALE-ORD-034` | Orders-owned           | `blocked`                  | active-row vs focused-cell workflow ambiguity proof                                                                       |
+| `SALE-ORD-035` | Orders-owned           | `partial`                  | staging now proves invalid-edit rejection reverts immediately; the rest of the failure-mode bundle still remains          |
 
 ## Required Staging Evidence Bundle
 

@@ -376,7 +376,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "selection-range-parity-proof.png",
     notes:
-      "March 17, 2026 runtime work landed the first shared PowersheetGrid selection slice for queue and support grids, including focused-row sync and range-summary plumbing. Full drag, Shift, Cmd, and row or column scope parity still needs behavioral proof before this row can close.",
+      "March 18, 2026 staging proof on draft 618 confirmed document-mode focused selection plus Shift-range extension through the shared PowersheetGrid runtime after live row duplication. Queue drag-range, Cmd discontiguous selection, and row or column scope proof are still required before this row can close.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -394,7 +394,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "multi-cell-edit-proof.png",
     notes:
-      "March 17, 2026 local implementation moved approved line-item editing onto the shared PowersheetGrid document runtime, preserving the existing Orders pricing calculations and document orchestration. This row stays partial until real multi-cell clipboard and autosave proof lands on staging.",
+      "March 18, 2026 staging proof on draft 618 confirmed live document-grid editing, row duplication, and range selection continue to run through the shared PowersheetGrid runtime without replacing Orders orchestration. This row stays partial until multi-cell clipboard, pricing recalculation, autosave, and undo are fully proven on staging.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -464,7 +464,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "selection-visibility-proof.png",
     notes:
-      "March 17, 2026 runtime work surfaced selection summary, release gates, anti-drift context, and blocked-edit feedback in the shared grid adapter, plus queue-shell visibility in Orders. Full visible focus, range, save-state, and staging proof is still pending.",
+      "March 18, 2026 staging proof on draft 618 confirmed visible selection summary, selected-row counts, running totals, and blocked invalid-edit feedback in document mode. Queue/support focus, save-state, and cross-surface visibility proof are still pending.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -481,7 +481,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "field-state-visibility-proof.png",
     notes:
-      "March 17, 2026 local implementation added document-grid editable-versus-locked field classes and header guidance so field safety is no longer implicit. This row stays partial until visible field-state cues are proven on staging across all required Orders surfaces.",
+      "March 18, 2026 staging proof on draft 618 confirmed document-mode locked product and batch cells remain distinct from editable quantity, COGS, and margin cells while blocked edits surface a clear rejection. Cross-surface field-state proof is still required before this gate can close.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -604,7 +604,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "row-operations-proof.png",
     notes:
-      "March 17, 2026 local implementation added document-grid duplicate and delete row actions plus sheet-native add-item insertion through the inventory browser. This row stays partial until row operations are fully proven against the shared runtime on staging.",
+      "March 18, 2026 staging proof on draft 618 confirmed live duplicate-row behavior through the shared document-grid runtime, increasing the visible quantity row count from one to two. Delete-row and add-item row operation proof are still required before this gate can close.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -655,7 +655,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "failure-mode-proof-bundle.md",
     notes:
-      "March 17, 2026 local implementation added document-grid blocked-paste validation and structured invalid-edit rejection messaging through the shared runtime. This row stays partial until mixed editable/locked paste, blocked fill, invalid multi-cell partial failure, undo across autosave, and hidden-row protection are proven on staging.",
+      "March 18, 2026 staging proof on draft 618 confirmed blocked invalid inline quantity edits now revert immediately to the last valid grid state while surfacing the rejection message, instead of leaking stale invalid values until reload. This row stays partial until mixed editable/locked paste, blocked fill, invalid multi-cell partial failure, undo across autosave, and hidden-row protection are also proven on staging.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
