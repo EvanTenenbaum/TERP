@@ -1,0 +1,89 @@
+# Orders Spreadsheet Runtime Atomic Roadmap Set
+
+Date: `2026-03-18`
+
+Most recent verified repo state: `3e205c7e`
+
+## Purpose
+
+This package is the execution contract for getting `Sales -> Orders` to `complete`.
+
+Linear remains the live tracker. This roadmap set is the repo-backed execution layer that agents follow consecutively without skipping gates.
+
+Authority rule:
+
+- use this package plus `docs/specs/spreadsheet-native-foundation/orders-runtime/*` for current execution truth
+- treat `docs/roadmaps/2026-03-17-orders-spreadsheet-runtime-rollout.md` as lineage only, not the active contract
+
+Completion means Orders is no longer a special initiative and satisfies:
+
+- product-complete
+- spreadsheet-complete
+- reuse-complete
+- surfacing-complete
+- proof-complete
+- tracker-complete
+- retirement-complete
+
+Primary evidence store:
+
+- [Orders runtime charter](../../specs/spreadsheet-native-foundation/orders-runtime/00-program-charter.md)
+- [Issue manifest](../../specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json)
+- [Proof row map](../../specs/spreadsheet-native-foundation/orders-runtime/02-proof-row-map.csv)
+- [Execution metrics](../../specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json)
+
+## Required Execution Order
+
+Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until the prior roadmap is `closed with evidence`.
+
+| Order | Roadmap                                                      | Gate | Linear Gate | Current Verdict        | Prerequisite |
+| ----- | ------------------------------------------------------------ | ---- | ----------- | ---------------------- | ------------ |
+| `0`   | [Roadmap 0](./roadmap-0-g1-engine-verdict.md)                | `G1` | `TER-787`   | `closed with evidence` | none         |
+| `1`   | [Roadmap 1](./roadmap-1-g2-shared-runtime-foundation.md)     | `G2` | `TER-788`   | `partial`              | Roadmap 0    |
+| `2`   | [Roadmap 2](./roadmap-2-g3-orders-document-rollout.md)       | `G3` | `TER-789`   | `partial`              | Roadmap 1    |
+| `3`   | [Roadmap 3](./roadmap-3-g4-cross-surface-rollout.md)         | `G4` | `TER-790`   | `partial`              | Roadmap 2    |
+| `4`   | [Roadmap 4](./roadmap-4-g5-surfacing-affordance-closure.md)  | `G5` | `TER-791`   | `partial`              | Roadmap 3    |
+| `5`   | [Roadmap 5](./roadmap-5-g6-proof-verdict-sync.md)            | `G6` | `TER-792`   | `open`                 | Roadmap 4    |
+| `6`   | [Roadmap 6](./roadmap-6-g7-retirement-governance-handoff.md) | `G7` | `TER-793`   | `open`                 | Roadmap 5    |
+
+## Global Execution Rules
+
+- Gate verdicts use only: `open`, `partial`, `closed with evidence`, `rejected with evidence`.
+- No roadmap is done from ticket prose alone.
+- Evidence writeback order is fixed:
+  1. update `orders-runtime` durable files
+  2. update Linear gate and child issues
+  3. update the roadmap status block
+- Every code-bearing roadmap uses `plan -> implement -> validate -> repair -> adversarial review -> writeback`.
+- Every proof-bearing roadmap must include build ID, commit SHA, persona, route, record ID, screenshots, and negative-case evidence.
+- `implemented-not-surfaced` is rollout-blocking.
+- `G6` is the only roadmap allowed to declare proof-complete or tracker-complete.
+- `G7` is required before Orders can leave special-initiative mode.
+
+## Command Contract
+
+Docs-only turns:
+
+- `rg -n "ORDR-|SALE-ORD-|implemented-not-surfaced|closed with evidence|rejected with evidence" docs/specs/spreadsheet-native-foundation/orders-runtime docs/roadmaps/orders-spreadsheet-runtime docs/roadmaps/2026-03-17-orders-spreadsheet-runtime-rollout.md`
+- `jq '.' docs/specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json`
+- `jq '.' docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
+
+Code-bearing turns:
+
+- write the exact targeted validation commands into the roadmap status block and gate artifact before touching code
+- run those targeted commands during the roadmap
+- before any merge-ready claim run:
+  - `pnpm check`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm build`
+
+## Roadmap-to-Issue Map
+
+- Roadmap 0: `TER-787`, `TER-767`, `TER-768`
+- Roadmap 1: `TER-788`, `TER-769`, `TER-770`, `TER-771`, `TER-772`, `TER-794`, `TER-795`, `TER-796`
+- Roadmap 2: `TER-789`, `TER-773`, `TER-774`, `TER-797`, `TER-798`, `TER-799`
+- Roadmap 3: `TER-790`, `TER-776`, `TER-777`, `TER-800`, `TER-801`, `TER-802`
+- Roadmap 4: `TER-791`, `TER-778`, `TER-803`
+- Roadmap 5: `TER-792`, `TER-779`, `TER-804`, `TER-805`
+- Roadmap 6: `TER-793`, `TER-806`

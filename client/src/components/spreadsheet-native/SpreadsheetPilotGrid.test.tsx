@@ -72,6 +72,9 @@ describe("SpreadsheetPilotGrid", () => {
     const processCellFromClipboard = vi.fn();
     const processDataFromClipboard = vi.fn();
     const sendToClipboard = vi.fn();
+    const suppressKeyboardEvent = vi.fn();
+    const onFillStart = vi.fn();
+    const onCellSelectionDeleteStart = vi.fn();
 
     render(
       <SpreadsheetPilotGrid<TestRow>
@@ -86,6 +89,10 @@ describe("SpreadsheetPilotGrid", () => {
         processCellFromClipboard={processCellFromClipboard}
         processDataFromClipboard={processDataFromClipboard}
         sendToClipboard={sendToClipboard}
+        suppressCutToClipboard
+        suppressKeyboardEvent={suppressKeyboardEvent}
+        onFillStart={onFillStart}
+        onCellSelectionDeleteStart={onCellSelectionDeleteStart}
       />
     );
 
@@ -107,6 +114,14 @@ describe("SpreadsheetPilotGrid", () => {
       processDataFromClipboard
     );
     expect(lastAgGridProps?.sendToClipboard).toBe(sendToClipboard);
+    expect(lastAgGridProps?.suppressCutToClipboard).toBe(true);
+    expect(lastAgGridProps?.defaultColDef).toMatchObject({
+      suppressKeyboardEvent,
+    });
+    expect(lastAgGridProps?.onFillStart).toBe(onFillStart);
+    expect(lastAgGridProps?.onCellSelectionDeleteStart).toBe(
+      onCellSelectionDeleteStart
+    );
   });
 
   it("can explicitly opt into column reordering when a surface allows it", () => {
@@ -222,5 +237,36 @@ describe("SpreadsheetPilotGrid", () => {
       id: "row-2",
       sku: "SKU-002",
     });
+  });
+
+  it("ignores destroyed grid APIs instead of reading selection state after teardown", () => {
+    lastAgGridProps = null;
+
+    const onSelectionSetChange = vi.fn();
+    const onSelectionSummaryChange = vi.fn();
+
+    render(
+      <SpreadsheetPilotGrid<TestRow>
+        title="Orders Queue"
+        rows={rows}
+        columnDefs={columnDefs}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        selectionMode="cell-range"
+        selectionSurface="orders-queue"
+        onSelectionSetChange={onSelectionSetChange}
+        onSelectionSummaryChange={onSelectionSummaryChange}
+      />
+    );
+
+    const destroyedApi = {
+      isDestroyed: () => true,
+    };
+
+    lastAgGridProps?.onGridReady?.({ api: destroyedApi });
+
+    expect(onSelectionSetChange).not.toHaveBeenCalled();
+    expect(onSelectionSummaryChange).not.toHaveBeenCalled();
   });
 });

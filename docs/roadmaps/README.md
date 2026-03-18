@@ -26,9 +26,13 @@
 
 ## Focused Execution Backup
 
-**Orders spreadsheet runtime rollout backup:** [2026-03-17-orders-spreadsheet-runtime-rollout.md](./2026-03-17-orders-spreadsheet-runtime-rollout.md)
+**Orders spreadsheet runtime atomic roadmap set:** [orders-spreadsheet-runtime/README.md](./orders-spreadsheet-runtime/README.md)
 
-This file is a repo backup of the active Linear-only execution map for the `Sales -> Orders` spreadsheet runtime rollout. Use it when the milestone sequence, hard gates, or anti-duplication rules need to be checked outside Linear.
+Use this package as the current repo-backed execution contract for the `Sales -> Orders` spreadsheet runtime initiative. It defines the consecutive gate roadmaps that must be followed to get to complete.
+
+**Orders spreadsheet runtime rollout lineage backup:** [2026-03-17-orders-spreadsheet-runtime-rollout.md](./2026-03-17-orders-spreadsheet-runtime-rollout.md)
+
+This file remains the milestone lineage backup for the active Linear project. Use it for original rollout context, anti-duplication rules, and issue lineage. Use the new atomic roadmap package for current execution sequencing.
 
 ---
 

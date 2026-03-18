@@ -43,6 +43,10 @@ services:
       - key: VITE_APP_ID
         scope: RUN_AND_BUILD_TIME
         value: terp-app
+
+      - key: VITE_AG_GRID_LICENSE_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
       
       # Sensitive values - Configure in DigitalOcean Control Panel
       # Go to: App > Settings > App-Level Environment Variables
@@ -96,4 +100,3 @@ ingress:
       match:
         path:
           prefix: /
-

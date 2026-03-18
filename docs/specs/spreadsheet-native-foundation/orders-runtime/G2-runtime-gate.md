@@ -1,0 +1,25 @@
+# G2 Runtime Gate
+
+- Linear gate: `TER-788`
+- Scope: shared selection runtime, clipboard/fill contracts, edit navigation, row ops, and environment hardening.
+- Exit criteria:
+  - selection, paste, fill, edit-nav, and row-op contracts reuse one runtime
+  - scoped diffs and validation commands are logged for each atomic tranche
+  - adversarial review findings are captured before G3 promotion
+- Evidence list:
+  - `Implement.md`
+  - `G2-runtime-gate.md`
+  - `execution-metrics.json`
+  - Linear issues `TER-794`..`TER-796`
+  - current atomic-card truth: `TER-794` and `TER-795` are closed locally; `TER-796` is now the active card
+  - staging artifacts for build `build-mmvlul6k` route `/sales?tab=orders&surface=sheet-native&orderId=627`
+- Validation commands:
+  - `pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx`
+  - `pnpm check`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm build`
+- Current blocker:
+  - fresh staging build `build-mmwdxj4j` now loads the Orders sheet-native route, but browser console still reports `AG Grid Enterprise License` and `License Key Not Found`; the live app spec secret is present, so the remaining blocker is the Docker builder stage not forwarding `VITE_AG_GRID_LICENSE_KEY` into the Vite build
+- Status: `partial`
+- Next unblock: deploy the Dockerfile build-arg fix, verify `/version.json` advances beyond `build-mmwdxj4j`, then validate the shared-runtime crash fix and AG Grid console state on `/sales?tab=orders&surface=sheet-native&orderId=627` before resuming row-level staging proof.

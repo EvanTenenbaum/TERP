@@ -1,0 +1,37 @@
+# Orders Runtime Implement Log
+
+- Date: `2026-03-18`
+- Active tranche: `G2` shared runtime hardening, crash-proofing, and proof recovery.
+- Scoped diff policy:
+  - keep runtime edits inside shared spreadsheet files plus their focused tests
+  - use Linear for hierarchy/status truth, not ticket prose alone
+  - keep downstream gate status blocked until proof catches up with current code
+- Status log:
+  - created durable-state files and gate artifacts
+  - created Linear gate parents `TER-787` through `TER-793`
+  - created atomic cards `TER-794` through `TER-806`
+  - reparented canonical ORDR lanes under gate parents
+  - moved blocked downstream execution lanes out of `In Progress`
+  - verified current Orders runtime seams at `ag-grid.ts`, `PowersheetGrid`, `OrdersSheetPilotSurface`, and `OrdersDocumentLineItemsGrid`
+  - passed targeted runtime verification for current Orders spreadsheet runtime surfaces
+  - passed `pnpm check`
+  - closed `G1` with evidence and promoted `G2` to the active gate
+  - aligned Linear with the current gate truth: `TER-787`, `TER-767`, `TER-768`, `TER-794`, and `TER-795` are `Done`; `TER-788` and `TER-796` are `In Progress`
+  - captured a live staging blocker on build `build-mmvlul6k (2026-03-18)` at `/sales?tab=orders&surface=sheet-native&orderId=627`
+  - traced the staging crash to missing `lineItems` tolerance in the queue support-surface mapper plus destroyed-grid API reads during teardown
+  - hardened `SpreadsheetPilotGrid` against destroyed AG Grid API access and made `mapOrderLineItemsToPilotRows` tolerate missing arrays
+  - added regression tests that cover destroyed-grid teardown and staging-shaped detail payloads with omitted `lineItems`
+  - routed shared keyboard suppression plus cut/fill/delete lifecycle hooks through `SpreadsheetPilotGrid` so Orders document field policies can reject locked-column write attempts without adding a parallel spreadsheet runtime
+  - added regression tests for locked-column cut suppression, delete-key suppression, locked-range fill rejection, and column-level paste or fill guards in the shared Orders document grid
+  - re-passed targeted vitest suites after the crash fix
+  - passed `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` on repo state `3e205c7e`
+  - traced the AG Grid watermark to missing `VITE_AG_GRID_LICENSE_KEY` entries in the live DigitalOcean app specs even though local `.env.local` already had the key configured
+  - split AG Grid license application into `client/src/lib/ag-grid-license.ts` and kept enterprise module registration in `client/src/lib/ag-grid.ts` so license state is bootstrapped consistently without coupling it only to spreadsheet-native route entry
+  - updated committed DigitalOcean app specs so staging and production both declare `VITE_AG_GRID_LICENSE_KEY` as a build-time secret instead of relying on undocumented control-panel state
+  - proved on fresh staging build `build-mmwdxj4j` that the Orders sheet-native route now renders, but AG Grid still logs `License Key Not Found`; traced the remaining gap to the Docker build stage not forwarding `VITE_AG_GRID_LICENSE_KEY` into the Vite bundle build
+  - patched `Dockerfile` so the builder stage now accepts and exports `VITE_AG_GRID_LICENSE_KEY` alongside the other Vite build args
+- Repair queue:
+  - deploy or otherwise run a staging build that includes the Dockerfile build-arg fix plus repo state `3e205c7e`, then re-run staging proof for `/sales?tab=orders&surface=sheet-native`
+  - capture post-fix screenshot, console, and network artifacts for the Orders queue route before promoting any `SALE-ORD-0xx` row
+  - attach adversarial review artifact before any row moves to `live-proven`
+  - keep the March 18 roadmap package and issue manifest as the authoritative execution contract; treat the March 17 roadmap backup as lineage only

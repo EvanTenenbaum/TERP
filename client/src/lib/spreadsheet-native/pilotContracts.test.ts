@@ -334,6 +334,13 @@ describe("spreadsheet-native pilot contracts", () => {
       lineItemId: 9,
     });
     expect(lineRows[0]?.identity.rowKey).toBe("orderLineItem:9");
+
+    expect(
+      mapOrderLineItemsToPilotRows({
+        order: { id: 55 } as never,
+        lineItems: undefined as never,
+      })
+    ).toEqual([]);
   });
 
   it("builds a deep-link fallback inventory row from detail data", () => {

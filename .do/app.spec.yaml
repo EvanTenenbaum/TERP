@@ -46,6 +46,10 @@ services:
       - key: VITE_APP_ID
         scope: RUN_AND_BUILD_TIME
         value: terp-app
+
+      - key: VITE_AG_GRID_LICENSE_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:VITE_AG_GRID_LICENSE_KEY}}"
       
       - key: QA_MODE
         scope: RUN_AND_BUILD_TIME
@@ -105,4 +109,3 @@ ingress:
       match:
         path:
           prefix: /
-

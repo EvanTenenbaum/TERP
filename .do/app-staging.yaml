@@ -91,6 +91,9 @@ services:
       - key: VITE_APP_ID
         value: terp-staging
         scope: RUN_AND_BUILD_TIME
+      - key: VITE_AG_GRID_LICENSE_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
 
       # Clerk (use test keys for staging)
       - key: VITE_CLERK_PUBLISHABLE_KEY

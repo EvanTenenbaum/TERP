@@ -74,6 +74,10 @@ services:
         value: terp-app
         scope: RUN_AND_BUILD_TIME
 
+      - key: VITE_AG_GRID_LICENSE_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+
       # Clerk authentication (using test keys - update to production keys in DO control panel)
       - key: VITE_CLERK_PUBLISHABLE_KEY
         value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA

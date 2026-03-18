@@ -128,17 +128,23 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(call?.processCellFromClipboard).toBeTypeOf("function");
     expect(call?.processDataFromClipboard).toBeTypeOf("function");
     expect(call?.sendToClipboard).toBeTypeOf("function");
+    expect(call?.suppressKeyboardEvent).toBeTypeOf("function");
+    expect(call?.suppressCutToClipboard).toBe(false);
     expect(call?.releaseGateIds).toContain("SALE-ORD-020");
     expect(call?.releaseGateIds).toContain("SALE-ORD-021");
     expect(call?.releaseGateIds).toContain("SALE-ORD-035");
     expect(call?.columnDefs[0].cellClass).toBe(
       "orders-document-grid__locked-cell"
     );
+    expect(call?.columnDefs[0].suppressPaste).toBe(true);
+    expect(call?.columnDefs[0].suppressFillHandle).toBe(true);
     expect(call?.columnDefs[0].sortable).toBe(false);
     expect(call?.columnDefs[0].filter).toBe(false);
     expect(call?.columnDefs[2].cellClass).toBe(
       "orders-document-grid__editable-cell"
     );
+    expect(call?.columnDefs[2].suppressPaste).toBe(false);
+    expect(call?.columnDefs[2].suppressFillHandle).toBe(false);
     expect(screen.getByRole("button", { name: /duplicate/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /delete/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /fill price/i })).toBeEnabled();
@@ -286,6 +292,171 @@ describe("OrdersDocumentLineItemsGrid", () => {
       )
     ).toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("suppresses cut shortcuts when the current selection includes locked document columns", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={onChange}
+      />
+    );
+
+    const initialCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      initialCall?.onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 0,
+          columnKey: "lineTotal",
+        },
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        ranges: [
+          {
+            anchor: { rowIndex: 0, columnKey: "quantity" },
+            focus: { rowIndex: 0, columnKey: "lineTotal" },
+          },
+        ],
+        selectedRowIds: new Set(["line:1"]),
+      });
+    });
+
+    const latestCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+    expect(latestCall?.suppressCutToClipboard).toBe(true);
+
+    let suppressed: boolean | undefined;
+    act(() => {
+      suppressed = latestCall?.suppressKeyboardEvent?.({
+        event: new KeyboardEvent("keydown", {
+          key: "x",
+          ctrlKey: true,
+        }),
+        editing: false,
+        column: { getColId: () => "lineTotal" },
+      });
+    });
+
+    expect(suppressed).toBe(true);
+    expect(
+      screen.getByText(/blocked: Cut is only allowed in approved editable/i)
+    ).toBeInTheDocument();
+  });
+
+  it("suppresses delete shortcuts when the current selection includes locked document columns", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={onChange}
+      />
+    );
+
+    const initialCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      initialCall?.onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 0,
+          columnKey: "productDisplayName",
+        },
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "productDisplayName",
+        },
+        ranges: [],
+        selectedRowIds: new Set(["line:1"]),
+      });
+    });
+
+    const latestCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+    let suppressed: boolean | undefined;
+    act(() => {
+      suppressed = latestCall?.suppressKeyboardEvent?.({
+        event: new KeyboardEvent("keydown", {
+          key: "Delete",
+        }),
+        editing: false,
+        column: { getColId: () => "productDisplayName" },
+      });
+    });
+
+    expect(suppressed).toBe(true);
+    expect(
+      screen.getByText(
+        /blocked: Clear and delete are only allowed in approved editable/i
+      )
+    ).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a blocked fill message when selection reaches locked document columns", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={onChange}
+      />
+    );
+
+    const initialCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      initialCall?.onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 0,
+          columnKey: "lineTotal",
+        },
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        ranges: [
+          {
+            anchor: { rowIndex: 0, columnKey: "quantity" },
+            focus: { rowIndex: 0, columnKey: "lineTotal" },
+          },
+        ],
+        selectedRowIds: new Set(["line:1"]),
+      });
+    });
+
+    const latestCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      latestCall?.onFillStart?.({});
+    });
+
+    expect(
+      screen.getByText(/blocked: Fill is only allowed in approved editable/i)
+    ).toBeInTheDocument();
   });
 
   it("fills price, clears samples, and delegates add-item insertion without replacing orchestration", () => {

@@ -2,6 +2,15 @@
 
 Date: `2026-03-17`
 
+Status: historical lineage backup only
+
+Superseded by the March 18 execution contract:
+
+- [Orders spreadsheet runtime atomic roadmap set](./orders-spreadsheet-runtime/README.md)
+- [Orders runtime durable-state artifacts](../specs/spreadsheet-native-foundation/orders-runtime/Documentation.md)
+
+Do not use this file by itself for live gate status, blocker truth, or execution order.
+
 ## Tracking
 
 - Active tracker: Linear only
@@ -10,6 +19,12 @@ Date: `2026-03-17`
 - Parent issue: `TER-766` / `[ORDR-000] Orders spreadsheet runtime rollout and release gates`
 
 This document is a repo backup of the active Linear execution map. It exists so milestone sequencing, hard gates, and anti-duplication rules do not disappear into tracker metadata.
+
+Current execution contract:
+
+- [Orders spreadsheet runtime atomic roadmap set](./orders-spreadsheet-runtime/README.md)
+
+Use the atomic roadmap set for live execution order and gate-level writeback. This file remains the lineage backup for the original milestone layout and issue decomposition.
 
 ## Source Documents
 

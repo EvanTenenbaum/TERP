@@ -1,0 +1,29 @@
+# G1 Engine Verdict
+
+- Linear gate: `TER-787`
+- Scope: tracker lock, issue manifest, AG Grid stop/go verdict, and blocker enforcement.
+- Verdict: `pass`
+- Exit criteria:
+  - contract, gate files, manifest, and proof-row map agree on ownership
+  - engine verdict records pass or fail plus scoped diff and validation commands
+  - downstream blocked lanes are not left `In Progress`
+- Evidence list:
+  - `Prompt.md`
+  - `Plan.md`
+  - `01-issue-manifest.json`
+  - `G1-engine-verdict.md`
+  - `../AG-GRID-ENTERPRISE-RUNTIME-DECISION-2026-03-17.md`
+  - `client/src/lib/ag-grid.ts`
+  - `client/src/components/spreadsheet-native/PowersheetGrid.tsx`
+  - `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
+  - `client/src/components/orders/OrdersDocumentLineItemsGrid.tsx`
+- Validation commands:
+  - `pnpm vitest run client/src/components/spreadsheet-native/PowersheetGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts`
+  - `pnpm check`
+- Evidence summary:
+  - enterprise module registration and optional license key handling are present in `client/src/lib/ag-grid.ts`
+  - the current Orders queue, support, and document surfaces all route through `PowersheetGrid`
+  - targeted runtime and contract tests passed from the current repo state on March 18, 2026
+  - blocker enforcement is already active in Linear with downstream lanes not left `In Progress`
+- Status: `closed with evidence`
+- Next unblock: activate `G2` as the current gate and keep `G3` through `G7` blocked until `G2` closes.

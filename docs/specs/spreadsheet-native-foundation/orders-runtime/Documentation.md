@@ -1,0 +1,19 @@
+# Orders Runtime Documentation
+
+- Date: `2026-03-18`
+- Purpose: short-form operating manual for the Orders spreadsheet-runtime rollout.
+- Current authority: use the March 18 roadmap package and `orders-runtime` durable files as the live execution contract; treat older roadmap backups as lineage only.
+- Artifact set:
+  - `docs/roadmaps/orders-spreadsheet-runtime/README.md`: roadmap index and execution order
+  - `docs/roadmaps/orders-spreadsheet-runtime/roadmap-0-g1-engine-verdict.md` through `roadmap-6-g7-retirement-governance-handoff.md`: consecutive gate roadmaps
+  - `00-program-charter.md`: completion contract and governance
+  - `01-issue-manifest.json`: gate tree, ticket map, and blocker convention
+  - `02-proof-row-map.csv`: row-level ownership and current state
+  - `G1`..`G7`: one durable verdict file per gate
+  - `execution-metrics.json`: reopen/lag/surfacing health metrics
+- Update rules:
+  - change gate status in the gate file, then mirror it in Linear
+  - update the roadmap status block after the gate file and Linear are written back
+  - do not promote a row to `live-proven` without evidence and adversarial review
+  - treat `implemented-not-surfaced` as rollout-blocking, not polish
+  - keep classic fallback policy and reopen criteria current in `G7-retirement-handoff.md`

@@ -1,0 +1,209 @@
+{
+  "updated_at": "2026-03-18",
+  "project": {
+    "name": "TERP - Orders Spreadsheet Runtime Rollout",
+    "parent_issue": "TER-766",
+    "blocked_convention": {
+      "linear_state": "Todo",
+      "label": "state:blocked"
+    }
+  },
+  "roadmap_package": {
+    "authoritative_date": "2026-03-18",
+    "index": "docs/roadmaps/orders-spreadsheet-runtime/README.md",
+    "lineage_backup": "docs/roadmaps/2026-03-17-orders-spreadsheet-runtime-rollout.md",
+    "files": {
+      "G1": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-0-g1-engine-verdict.md",
+      "G2": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-1-g2-shared-runtime-foundation.md",
+      "G3": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-2-g3-orders-document-rollout.md",
+      "G4": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-3-g4-cross-surface-rollout.md",
+      "G5": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-4-g5-surfacing-affordance-closure.md",
+      "G6": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-5-g6-proof-verdict-sync.md",
+      "G7": "docs/roadmaps/orders-spreadsheet-runtime/roadmap-6-g7-retirement-governance-handoff.md"
+    }
+  },
+  "gate_parents": [
+    {
+      "gate": "G1",
+      "issue": "TER-787",
+      "title": "Engine verdict, tracker lock, and stop-go enforcement",
+      "status": "closed_with_evidence",
+      "children": ["TER-767", "TER-768"]
+    },
+    {
+      "gate": "G2",
+      "issue": "TER-788",
+      "title": "Shared runtime gate",
+      "status": "partial",
+      "children": [
+        "TER-769",
+        "TER-770",
+        "TER-771",
+        "TER-772",
+        "TER-794",
+        "TER-795",
+        "TER-796"
+      ]
+    },
+    {
+      "gate": "G3",
+      "issue": "TER-789",
+      "title": "Orders document gate",
+      "status": "partial",
+      "children": ["TER-773", "TER-774", "TER-797", "TER-798", "TER-799"]
+    },
+    {
+      "gate": "G4",
+      "issue": "TER-790",
+      "title": "Cross-surface parity gate",
+      "status": "partial",
+      "children": ["TER-776", "TER-777", "TER-800", "TER-801", "TER-802"]
+    },
+    {
+      "gate": "G5",
+      "issue": "TER-791",
+      "title": "Surfacing and affordance gate",
+      "status": "partial",
+      "children": ["TER-778", "TER-803"]
+    },
+    {
+      "gate": "G6",
+      "issue": "TER-792",
+      "title": "Proof, adversarial review, and rollout verdict",
+      "status": "blocked",
+      "children": ["TER-779", "TER-804", "TER-805"]
+    },
+    {
+      "gate": "G7",
+      "issue": "TER-793",
+      "title": "Retirement policy and long-term ownership handoff",
+      "status": "blocked",
+      "children": ["TER-806"]
+    }
+  ],
+  "atomic_cards": [
+    {
+      "issue": "TER-794",
+      "title": "Runtime selection and row-vs-cell coordination",
+      "gate": "G2",
+      "source_lanes": ["TER-770"]
+    },
+    {
+      "issue": "TER-795",
+      "title": "Clipboard, fill, clear-cell, and edit rejection",
+      "gate": "G2",
+      "source_lanes": ["TER-771"]
+    },
+    {
+      "issue": "TER-796",
+      "title": "Edit navigation and row operations",
+      "gate": "G2",
+      "source_lanes": ["TER-771", "TER-772"]
+    },
+    {
+      "issue": "TER-797",
+      "title": "Document adapter mount",
+      "gate": "G3",
+      "source_lanes": ["TER-773"]
+    },
+    {
+      "issue": "TER-798",
+      "title": "Document logic preservation",
+      "gate": "G3",
+      "source_lanes": ["TER-773", "TER-774"]
+    },
+    {
+      "issue": "TER-799",
+      "title": "Document proof closure",
+      "gate": "G3",
+      "source_lanes": ["TER-773", "TER-774"]
+    },
+    {
+      "issue": "TER-800",
+      "title": "Queue selection and copy parity",
+      "gate": "G4",
+      "source_lanes": ["TER-776"]
+    },
+    {
+      "issue": "TER-801",
+      "title": "Workflow target clarity",
+      "gate": "G4",
+      "source_lanes": ["TER-776", "TER-777", "TER-778"]
+    },
+    {
+      "issue": "TER-802",
+      "title": "Support-surface consistency",
+      "gate": "G4",
+      "source_lanes": ["TER-777"]
+    },
+    {
+      "issue": "TER-803",
+      "title": "Surfacing per surface",
+      "gate": "G5",
+      "source_lanes": ["TER-778"]
+    },
+    {
+      "issue": "TER-804",
+      "title": "Proof reconciliation",
+      "gate": "G6",
+      "source_lanes": ["TER-779"]
+    },
+    {
+      "issue": "TER-805",
+      "title": "Proof writeback and verdict sync",
+      "gate": "G6",
+      "source_lanes": ["TER-779"]
+    },
+    {
+      "issue": "TER-806",
+      "title": "Retirement and governance handoff",
+      "gate": "G7",
+      "source_lanes": []
+    }
+  ],
+  "status_repairs": {
+    "removed_from_in_progress": [
+      "TER-769",
+      "TER-770",
+      "TER-771",
+      "TER-772",
+      "TER-773",
+      "TER-778"
+    ],
+    "duplicate_issue_reparented": [
+      "TER-775",
+      "TER-780",
+      "TER-781",
+      "TER-782",
+      "TER-783",
+      "TER-784",
+      "TER-785",
+      "TER-786"
+    ]
+  },
+  "latest_verification": {
+    "date": "2026-03-18",
+    "repo_sha": "3e205c7e",
+    "active_atomic_card": "TER-796",
+    "g1_commands": [
+      "pnpm vitest run client/src/components/spreadsheet-native/PowersheetGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts",
+      "pnpm check"
+    ],
+    "g2_commands": [
+      "pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx",
+      "pnpm check",
+      "pnpm lint",
+      "pnpm test",
+      "pnpm build"
+    ],
+    "live_blocker": {
+      "build_id": "build-mmvlul6k",
+      "staging_deployment_id": "b0f31972-127c-4906-b2f2-a53cdb8d89be",
+      "production_deployment_id": "36eb5bb9-5678-47ea-9d61-eb940241d951",
+      "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
+      "summary": "Staging and production now declare VITE_AG_GRID_LICENSE_KEY in the live DigitalOcean app spec, and staging has advanced to build-mmwdxj4j, but AG Grid still logs `License Key Not Found` because the Docker builder stage does not yet forward VITE_AG_GRID_LICENSE_KEY into the Vite asset build.",
+      "next_required_build_sha": "3e205c7e",
+      "next_required_runtime_check": "Deploy the Dockerfile build-arg fix, re-check /version.json, and then capture browser proof plus console logs on /sales?tab=orders&surface=sheet-native&orderId=627 to confirm AG Grid no longer reports License Key Not Found."
+    }
+  }
+}
