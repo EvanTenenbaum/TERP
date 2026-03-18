@@ -1,10 +1,16 @@
 # TERP Master Roadmap
 
-## Single Source of Truth for All Development
+## Legacy Backup Roadmap
 
 **Version:** 7.9
 **Last Updated:** 2026-02-02 (INV-FILTER-WAVE QA VERIFIED - full filter chain confirmed working)
-**Status:** Active
+**Status:** Legacy backup
+
+> **Authority note (March 17, 2026):**
+>
+> - Linear is the active source of truth for execution tracking.
+> - Program-specific rollout contracts and proof packs override this backup roadmap for release-gated work.
+> - For Orders spreadsheet runtime rollout, use the dedicated Linear project and the March 17 rollout contract/evaluation pack instead of treating this file as current execution truth.
 
 > **ROADMAP STRUCTURE (v4.0)**
 >

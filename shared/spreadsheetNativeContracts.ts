@@ -171,11 +171,59 @@ export interface WorkbookAdapter {
   sidecars: SidecarDescriptor[];
 }
 
+export type CapabilityProofStatus =
+  | "live-proven"
+  | "code-proven"
+  | "partial"
+  | "blocked"
+  | "implemented-not-surfaced";
+
+export type RequirementImplementationStatus = "not-started" | "implemented";
+
+export type RequirementSurfacingStatus =
+  | "not-started"
+  | "implemented-not-surfaced"
+  | "surfaced-and-proven";
+
+export type OrdersRolloutRequirementGroup =
+  | "workflow-parity"
+  | "spreadsheet-interaction"
+  | "surfacing-discoverability";
+
+export type OrdersRolloutRequirementSurface =
+  | "orders-queue"
+  | "orders-support-grid"
+  | "orders-document-grid"
+  | "cross-surface";
+
+export type OrdersRolloutOwnerClass =
+  | "orders-owned"
+  | "adjacent-owned"
+  | "foundation-shared";
+
+export interface OrdersRolloutRequirementRecord {
+  requirementId: string;
+  group: OrdersRolloutRequirementGroup;
+  userOutcome: string;
+  userVisibleBehavior: string;
+  surface: OrdersRolloutRequirementSurface;
+  ownerClass: OrdersRolloutOwnerClass;
+  implementationSource: string;
+  proofSource: string;
+  implementationStatus: RequirementImplementationStatus;
+  surfacingStatus: RequirementSurfacingStatus;
+  releaseStatus: "open" | "implemented" | "live-proven";
+  linkedCapabilityIds: string[];
+}
+
 export interface CapabilityProofCase {
   capabilityId: string;
   criticality: "P0" | "P1" | "P2";
   ownerSurface: string;
-  proofStatus: "live-proven" | "code-proven" | "partial" | "blocked";
+  proofStatus: CapabilityProofStatus;
   requiredArtifact: string;
   notes?: string;
+  implementationStatus?: RequirementImplementationStatus;
+  surfacingStatus?: RequirementSurfacingStatus;
+  requirementIds?: string[];
 }

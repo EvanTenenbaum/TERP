@@ -14,6 +14,7 @@ import {
   pilotProofDefinitions,
   pilotProofValidation,
 } from "./pilotProofCases";
+import { ordersRolloutRequirementById } from "./ordersRolloutContract";
 
 function parseCsv(content: string): Array<Record<string, string>> {
   const rows: string[][] = [];
@@ -80,6 +81,14 @@ function readLedgerCapabilityIds(filename: string) {
     .map(row => row["Capability ID"]);
 }
 
+function readPilotProofRows() {
+  const filePath = path.resolve(
+    process.cwd(),
+    "docs/specs/spreadsheet-native-ledgers/pilot-proof-cases.csv"
+  );
+  return parseCsv(readFileSync(filePath, "utf8"));
+}
+
 function readSurfaceDetectionReport() {
   const filePath = path.resolve(
     process.cwd(),
@@ -117,6 +126,82 @@ describe("spreadsheet-native pilot contracts", () => {
     expect(Array.from(pilotProofValidation.missingMutations.entries())).toEqual(
       []
     );
+    expect(
+      Array.from(pilotProofValidation.missingRequirements.entries())
+    ).toEqual([]);
+  });
+
+  it("maps every Orders release-gate proof row back to at least one rollout requirement", () => {
+    const ordersReleaseRows = pilotProofDefinitions.filter(
+      definition =>
+        definition.capabilityId.startsWith("SALE-ORD-") &&
+        definition.coverageMode === "sheet-native-direct"
+    );
+
+    for (const definition of ordersReleaseRows) {
+      expect(definition.requirementIds?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps proof-to-requirement mappings reciprocal with the canonical rollout contract", () => {
+    const ordersProofRows = pilotProofDefinitions.filter(definition =>
+      definition.capabilityId.startsWith("SALE-ORD-")
+    );
+
+    for (const definition of ordersProofRows) {
+      for (const requirementId of definition.requirementIds ?? []) {
+        const requirement = ordersRolloutRequirementById.get(requirementId);
+        expect(requirement).toBeDefined();
+        expect(requirement?.linkedCapabilityIds).toContain(
+          definition.capabilityId
+        );
+      }
+    }
+  });
+
+  it("includes the anti-drift spreadsheet and surfacing release gates in the P0/P1 proof set", () => {
+    const requiredCapabilityIds = [
+      "SALE-ORD-019",
+      "SALE-ORD-020",
+      "SALE-ORD-021",
+      "SALE-ORD-022",
+      "SALE-ORD-023",
+      "SALE-ORD-024",
+      "SALE-ORD-025",
+      "SALE-ORD-026",
+      "SALE-ORD-027",
+      "SALE-ORD-028",
+      "SALE-ORD-029",
+      "SALE-ORD-030",
+      "SALE-ORD-031",
+      "SALE-ORD-032",
+      "SALE-ORD-033",
+      "SALE-ORD-034",
+      "SALE-ORD-035",
+    ];
+    const actualIds = new Set(
+      pilotP0P1CapabilityProofCases.map(proofCase => proofCase.capabilityId)
+    );
+
+    for (const capabilityId of requiredCapabilityIds) {
+      expect(actualIds.has(capabilityId)).toBe(true);
+    }
+  });
+
+  it("keeps the checked-in proof CSV aligned with the machine-readable proof definitions", () => {
+    const csvRowsByCapabilityId = new Map(
+      readPilotProofRows().map(row => [row.capabilityId, row])
+    );
+
+    for (const definition of pilotProofDefinitions) {
+      const csvRow = csvRowsByCapabilityId.get(definition.capabilityId);
+      expect(csvRow).toBeDefined();
+      expect(csvRow?.proofStatus).toBe(definition.proofStatus);
+      expect(csvRow?.routeOrEntry).toBe(definition.routeOrEntry);
+      expect(csvRow?.requiredArtifact).toBe(definition.requiredArtifact);
+      expect((csvRow?.notes ?? "").length).toBeGreaterThan(0);
+      expect((definition.notes ?? "").length).toBeGreaterThan(0);
+    }
   });
 
   it("keeps one workbook adapter per pilot workbook with stable sheet ownership", () => {

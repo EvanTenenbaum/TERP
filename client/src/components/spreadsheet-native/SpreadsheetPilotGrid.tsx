@@ -1,10 +1,17 @@
+import "@/lib/ag-grid";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import type {
+  CellFocusedEvent,
+  ProcessCellForExportParams,
+  ProcessDataFromClipboardParams,
+  CellSelectionChangedEvent,
   CellValueChangedEvent,
+  CellRange,
   ColDef,
   GridApi,
   GridReadyEvent,
+  SendToClipboardParams,
   SelectionChangedEvent,
 } from "ag-grid-community";
 import { themeAlpine } from "ag-grid-community";
@@ -12,8 +19,194 @@ import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import type {
+  PowersheetSelectionSet,
+  PowersheetSelectionSummary,
+} from "@/lib/powersheet/contracts";
 
-interface SpreadsheetPilotGridProps<Row extends object> {
+export type SpreadsheetPilotGridSelectionMode = "single-row" | "cell-range";
+
+function getFocusedCellCoordinate<Row extends object>(
+  gridApi: GridApi<Row>
+): PowersheetSelectionSet["focusedCell"] {
+  const focusedCell = gridApi.getFocusedCell();
+  if (!focusedCell) {
+    return null;
+  }
+
+  return {
+    rowIndex: focusedCell.rowIndex,
+    columnKey: focusedCell.column.getColId(),
+  };
+}
+
+function addRangeRowIds<Row extends object>(
+  selectedRowIds: Set<string>,
+  gridApi: GridApi<Row>,
+  range: CellRange,
+  getRowId: (row: Row) => string
+) {
+  const startRowIndex = range.startRow?.rowIndex;
+  const endRowIndex = range.endRow?.rowIndex;
+  if (startRowIndex === undefined || endRowIndex === undefined) {
+    return;
+  }
+
+  const minRowIndex = Math.min(startRowIndex, endRowIndex);
+  const maxRowIndex = Math.max(startRowIndex, endRowIndex);
+  for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex += 1) {
+    const rowNode = gridApi.getDisplayedRowAtIndex(rowIndex);
+    if (rowNode?.data) {
+      selectedRowIds.add(getRowId(rowNode.data));
+    }
+  }
+}
+
+function buildSelectionSet<Row extends object>(
+  gridApi: GridApi<Row>,
+  getRowId: (row: Row) => string
+): PowersheetSelectionSet {
+  const ranges = (gridApi.getCellRanges() ?? [])
+    .map(range => {
+      const startRowIndex = range.startRow?.rowIndex;
+      const endRowIndex = range.endRow?.rowIndex;
+      const startColumnKey = range.startColumn?.getColId();
+      const endColumnKey =
+        range.columns[range.columns.length - 1]?.getColId() ??
+        range.startColumn?.getColId();
+
+      if (
+        startRowIndex === undefined ||
+        endRowIndex === undefined ||
+        !startColumnKey ||
+        !endColumnKey
+      ) {
+        return null;
+      }
+
+      return {
+        anchor: {
+          rowIndex: startRowIndex,
+          columnKey: startColumnKey,
+        },
+        focus: {
+          rowIndex: endRowIndex,
+          columnKey: endColumnKey,
+        },
+      };
+    })
+    .filter(
+      (range): range is PowersheetSelectionSet["ranges"][number] =>
+        range !== null
+    );
+
+  const focusedCell = getFocusedCellCoordinate(gridApi);
+  const selectedRowIds = new Set(
+    gridApi
+      .getSelectedRows()
+      .map(row => getRowId(row))
+      .filter((rowId): rowId is string => Boolean(rowId))
+  );
+
+  for (const range of gridApi.getCellRanges() ?? []) {
+    addRangeRowIds(selectedRowIds, gridApi, range, getRowId);
+  }
+
+  if (focusedCell) {
+    const focusedRowNode = gridApi.getDisplayedRowAtIndex(focusedCell.rowIndex);
+    if (focusedRowNode?.data) {
+      selectedRowIds.add(getRowId(focusedRowNode.data));
+    }
+  }
+
+  return {
+    focusedCell,
+    anchorCell: ranges[0]?.anchor ?? focusedCell,
+    ranges,
+    selectedRowIds,
+  };
+}
+
+function buildSelectionSummary<Row extends object>(
+  gridApi: GridApi<Row>,
+  selectionSet: PowersheetSelectionSet,
+  focusedSurface: PowersheetSelectionSummary["focusedSurface"]
+): PowersheetSelectionSummary {
+  const selectedCellKeys = new Set<string>();
+
+  for (const range of gridApi.getCellRanges() ?? []) {
+    const startRowIndex = range.startRow?.rowIndex;
+    const endRowIndex = range.endRow?.rowIndex;
+    if (startRowIndex === undefined || endRowIndex === undefined) {
+      continue;
+    }
+
+    const minRowIndex = Math.min(startRowIndex, endRowIndex);
+    const maxRowIndex = Math.max(startRowIndex, endRowIndex);
+
+    for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex += 1) {
+      range.columns.forEach(column => {
+        const columnKey = column.getColId();
+        selectedCellKeys.add(`${rowIndex}:${columnKey}`);
+      });
+    }
+  }
+
+  if (selectedCellKeys.size === 0 && selectionSet.focusedCell) {
+    selectedCellKeys.add(
+      `${selectionSet.focusedCell.rowIndex}:${selectionSet.focusedCell.columnKey}`
+    );
+  }
+
+  return {
+    selectedCellCount: selectedCellKeys.size,
+    selectedRowCount: selectionSet.selectedRowIds.size,
+    hasDiscontiguousSelection: selectionSet.ranges.length > 1,
+    focusedSurface,
+  };
+}
+
+function focusSelectedRowCell<Row extends object>(
+  gridApi: GridApi<Row>,
+  selectedRowId: string | null,
+  getRowId: (row: Row) => string
+) {
+  if (!selectedRowId) {
+    return;
+  }
+
+  const focusColumn = gridApi.getAllDisplayedColumns()[0];
+  if (!focusColumn) {
+    return;
+  }
+
+  let matchedRowIndex: number | null = null;
+  gridApi.forEachNode(node => {
+    if (matchedRowIndex !== null || !node.data) {
+      return;
+    }
+
+    if (getRowId(node.data) === selectedRowId) {
+      matchedRowIndex = node.rowIndex ?? null;
+    }
+  });
+
+  if (matchedRowIndex === null) {
+    return;
+  }
+
+  const focusedCell = gridApi.getFocusedCell();
+  if (
+    focusedCell?.rowIndex === matchedRowIndex &&
+    focusedCell.column.getColId() === focusColumn.getColId()
+  ) {
+    return;
+  }
+
+  gridApi.setFocusedCell(matchedRowIndex, focusColumn);
+}
+
+export interface SpreadsheetPilotGridProps<Row extends object> {
   title: string;
   description?: string;
   rows: Row[];
@@ -29,6 +222,28 @@ interface SpreadsheetPilotGridProps<Row extends object> {
   summary?: ReactNode;
   minHeight?: number;
   onCellValueChanged?: (event: CellValueChangedEvent<Row>) => void;
+  selectionMode?: SpreadsheetPilotGridSelectionMode;
+  selectionSurface?: PowersheetSelectionSummary["focusedSurface"];
+  enableFillHandle?: boolean;
+  enableUndoRedo?: boolean;
+  allowColumnReorder?: boolean;
+  enterNavigatesVertically?: boolean;
+  enterNavigatesVerticallyAfterEdit?: boolean;
+  stopEditingWhenCellsLoseFocus?: boolean;
+  processCellForClipboard?: (
+    params: ProcessCellForExportParams<Row>
+  ) => unknown;
+  processCellFromClipboard?: (
+    params: ProcessCellForExportParams<Row>
+  ) => unknown;
+  processDataFromClipboard?: (
+    params: ProcessDataFromClipboardParams<Row>
+  ) => string[][] | null;
+  sendToClipboard?: (params: SendToClipboardParams<Row>) => void;
+  onSelectionSetChange?: (selectionSet: PowersheetSelectionSet) => void;
+  onSelectionSummaryChange?: (
+    selectionSummary: PowersheetSelectionSummary
+  ) => void;
 }
 
 export function SpreadsheetPilotGrid<Row extends object>({
@@ -47,22 +262,75 @@ export function SpreadsheetPilotGrid<Row extends object>({
   summary,
   minHeight = 320,
   onCellValueChanged,
+  selectionMode = "single-row",
+  selectionSurface,
+  enableFillHandle = true,
+  enableUndoRedo = true,
+  allowColumnReorder = false,
+  enterNavigatesVertically = false,
+  enterNavigatesVerticallyAfterEdit = false,
+  stopEditingWhenCellsLoseFocus = false,
+  processCellForClipboard,
+  processCellFromClipboard,
+  processDataFromClipboard,
+  sendToClipboard,
+  onSelectionSetChange,
+  onSelectionSummaryChange,
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
+  const isCellRangeMode = selectionMode === "cell-range";
 
   const defaultColDef = useMemo<ColDef<Row>>(
     () => ({
       sortable: true,
       filter: true,
       resizable: true,
-      suppressMovable: false,
+      suppressMovable: !allowColumnReorder,
     }),
-    []
+    [allowColumnReorder]
+  );
+
+  const emitSelectionState = useCallback(
+    (gridApi: GridApi<Row>) => {
+      if (!isCellRangeMode) {
+        return;
+      }
+
+      const selectionSet = buildSelectionSet(gridApi, getRowId);
+      onSelectionSetChange?.(selectionSet);
+
+      if (selectionSurface) {
+        onSelectionSummaryChange?.(
+          buildSelectionSummary(gridApi, selectionSet, selectionSurface)
+        );
+      }
+
+      if (selectionSet.focusedCell) {
+        const focusedRowNode = gridApi.getDisplayedRowAtIndex(
+          selectionSet.focusedCell.rowIndex
+        );
+        onSelectedRowChange?.(focusedRowNode?.data ?? null);
+      }
+    },
+    [
+      getRowId,
+      isCellRangeMode,
+      onSelectedRowChange,
+      onSelectionSetChange,
+      onSelectionSummaryChange,
+      selectionSurface,
+    ]
   );
 
   const syncSelection = useCallback(() => {
     const gridApi = gridApiRef.current;
     if (!gridApi) {
+      return;
+    }
+
+    if (isCellRangeMode) {
+      focusSelectedRowCell(gridApi, selectedRowId, getRowId);
+      emitSelectionState(gridApi);
       return;
     }
 
@@ -73,7 +341,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
         getRowId(node.data) === selectedRowId;
       node.setSelected(Boolean(shouldSelect), false);
     });
-  }, [getRowId, selectedRowId]);
+  }, [emitSelectionState, getRowId, isCellRangeMode, selectedRowId]);
 
   useEffect(() => {
     syncSelection();
@@ -82,11 +350,26 @@ export function SpreadsheetPilotGrid<Row extends object>({
   const handleGridReady = (event: GridReadyEvent<Row>) => {
     gridApiRef.current = event.api;
     syncSelection();
+    emitSelectionState(event.api);
   };
 
   const handleSelectionChanged = (event: SelectionChangedEvent<Row>) => {
+    if (isCellRangeMode) {
+      return;
+    }
+
     const selectedRow = event.api.getSelectedRows()[0] ?? null;
     onSelectedRowChange?.(selectedRow);
+  };
+
+  const handleCellFocused = (event: CellFocusedEvent<Row>) => {
+    emitSelectionState(event.api);
+  };
+
+  const handleCellSelectionChanged = (
+    event: CellSelectionChangedEvent<Row>
+  ) => {
+    emitSelectionState(event.api);
   };
 
   return (
@@ -130,13 +413,45 @@ export function SpreadsheetPilotGrid<Row extends object>({
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
               animateRows
-              rowSelection={{
-                mode: "singleRow",
-                checkboxes: false,
-                enableClickSelection: true,
-              }}
+              rowSelection={
+                isCellRangeMode
+                  ? undefined
+                  : {
+                      mode: "singleRow",
+                      checkboxes: false,
+                      enableClickSelection: true,
+                    }
+              }
+              cellSelection={
+                isCellRangeMode
+                  ? {
+                      enableHeaderHighlight: true,
+                      enableColumnSelection: true,
+                      handle: enableFillHandle
+                        ? {
+                            mode: "fill",
+                            direction: "xy",
+                          }
+                        : {
+                            mode: "range",
+                          },
+                    }
+                  : undefined
+              }
+              undoRedoCellEditing={isCellRangeMode ? enableUndoRedo : false}
+              enterNavigatesVertically={enterNavigatesVertically}
+              enterNavigatesVerticallyAfterEdit={
+                enterNavigatesVerticallyAfterEdit
+              }
+              stopEditingWhenCellsLoseFocus={stopEditingWhenCellsLoseFocus}
+              processCellForClipboard={processCellForClipboard}
+              processCellFromClipboard={processCellFromClipboard}
+              processDataFromClipboard={processDataFromClipboard}
+              sendToClipboard={sendToClipboard}
               onGridReady={handleGridReady}
               onSelectionChanged={handleSelectionChanged}
+              onCellFocused={handleCellFocused}
+              onCellSelectionChanged={handleCellSelectionChanged}
               onCellValueChanged={onCellValueChanged}
               getRowId={params => getRowId(params.data)}
             />

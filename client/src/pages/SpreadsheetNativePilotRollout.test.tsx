@@ -19,6 +19,10 @@ const mockRefetchFlags = vi.fn();
 vi.mock("wouter", () => ({
   useLocation: () => [mockPath, mockSetLocation],
   useSearch: () => mockSearch,
+  Redirect: ({ to }: { to: string }) => {
+    mockSetLocation(to);
+    return <div>Redirect {to}</div>;
+  },
 }));
 
 vi.mock("@/hooks/useQueryTabState", () => ({
@@ -129,7 +133,49 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Sheet-Native Pilot" })
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Sheet-Native Pilot" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Classic Surface" })
+    ).toBeInTheDocument();
+  });
+
+  it("redirects sheet-native create-order requests into the Orders document surface", () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=create-order&draftId=91";
+    mockActiveTab = "create-order";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=91"
+    );
+  });
+
+  it("drops stale queue selection while preserving document-seed params during create-order redirect", () => {
+    mockPath = "/sales";
+    mockSearch =
+      "?tab=create-order&orderId=55&quoteId=91&mode=duplicate&fromSalesSheet=true";
+    mockActiveTab = "create-order";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&quoteId=91&mode=duplicate&fromSalesSheet=true"
+    );
+  });
+
+  it("preserves the classic create-order route when classic=true is requested", () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=create-order&classic=true&draftId=91";
+    mockActiveTab = "create-order";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    expect(screen.getByText("Order Creator")).toBeInTheDocument();
+    expect(mockSetLocation).not.toHaveBeenCalled();
   });
 });

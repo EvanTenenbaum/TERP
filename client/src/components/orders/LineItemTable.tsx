@@ -47,6 +47,7 @@ interface AppliedPricingRule {
 
 export interface LineItem {
   id?: number;
+  clientRowKey?: string;
   batchId: number;
   batchSku?: string;
   productId?: number;
@@ -106,7 +107,10 @@ const resolveProfilePriceAdjustmentPercent = (
     return item.profilePriceAdjustmentPercent;
   }
 
-  if (item.marginSource !== "CUSTOMER_PROFILE" || item.originalCogsPerUnit <= 0) {
+  if (
+    item.marginSource !== "CUSTOMER_PROFILE" ||
+    item.originalCogsPerUnit <= 0
+  ) {
     return null;
   }
 
