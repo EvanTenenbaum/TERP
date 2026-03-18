@@ -2,7 +2,7 @@
 
 Date: `2026-03-18`
 
-Most recent verified repo state: `3e205c7e`
+Most recent deployed proof base: `2bcce192`
 
 ## Purpose
 
@@ -50,6 +50,8 @@ Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until t
 
 - Gate verdicts use only: `open`, `partial`, `closed with evidence`, `rejected with evidence`.
 - No roadmap is done from ticket prose alone.
+- Active-gate operating model is `1 coordinator + up to 2 read-only sidecars + at most 1 narrow writer` until the current gate has a clean checkpointed proof packet.
+- Sidecars may explore, adversarially review, or map the next gate, but the coordinator owns source-of-truth updates, merge decisions, and gate promotion.
 - Evidence writeback order is fixed:
   1. update `orders-runtime` durable files
   2. update Linear gate and child issues
@@ -72,6 +74,7 @@ Code-bearing turns:
 
 - write the exact targeted validation commands into the roadmap status block and gate artifact before touching code
 - run those targeted commands during the roadmap
+- when the gate is still unstable, prefer read-only sidecars and one scoped writer over parallel write-heavy work that would blur proof ownership
 - before any merge-ready claim run:
   - `pnpm check`
   - `pnpm lint`

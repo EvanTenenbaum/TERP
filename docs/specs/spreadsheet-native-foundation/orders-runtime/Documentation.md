@@ -17,3 +17,7 @@
   - do not promote a row to `live-proven` without evidence and adversarial review
   - treat `implemented-not-surfaced` as rollout-blocking, not polish
   - keep classic fallback policy and reopen criteria current in `G7-retirement-handoff.md`
+  - while a gate is still unstable, keep one coordinator thread as the only source of truth and use sidecars for read-only review or narrow isolated experiments
+- Staging proof commands:
+  - `pnpm proof:staging:sheet-surfaces`: surface-detection sweep for classic versus sheet-native routes
+  - `pnpm proof:staging:orders-runtime:g2`: Orders queue/document proof bundle for build ID, AG Grid license state, document row ops, and document navigation behavior

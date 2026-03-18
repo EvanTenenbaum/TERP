@@ -2,14 +2,18 @@
   "updated_at": "2026-03-18",
   "implemented_not_surfaced_count": 1,
   "rows_reopened_per_wave": 0,
-  "staging_failures": 1,
-  "code_to_live_lag_days": 1,
+  "staging_failures": 2,
+  "code_to_live_lag_days": 0,
   "notes": [
     "implemented_not_surfaced_count is seeded from SALE-ORD-027 in the March 17 evaluation pack",
-    "code_to_live_lag_days starts at 1 because document-mode code landed March 17 and is not yet fully live-proven",
+    "code_to_live_lag_days dropped to 0 once staging build-mmweo1fu proved the deployed Dockerfile license fix and the TER-796 document-route behaviors on March 18, 2026",
     "staging_failures includes the March 18, 2026 queue-route crash on build-mmvlul6k at /sales?tab=orders&surface=sheet-native&orderId=627 before the shared-runtime hardening fix was deployed",
-    "local full-gate verification is green on repo state 3e205c7e; staging proof remains blocked until a build containing that repo state or a confirmed descendant is available",
+    "local full-gate verification is green on repo state 3e205c7e; repo state 2bcce192 is now live on staging as build-mmweo1fu and clears the prior AG Grid license blocker",
     "March 18, 2026 license investigation found that the live DigitalOcean app specs were missing VITE_AG_GRID_LICENSE_KEY even though .env.local had the key; staging deployment b0f31972-127c-4906-b2f2-a53cdb8d89be and production deployment 36eb5bb9-5678-47ea-9d61-eb940241d951 now carry the fix",
-    "Fresh staging build build-mmwdxj4j proved the route renders again but AG Grid still reports License Key Not Found, which traced the remaining blocker to Dockerfile build args not forwarding VITE_AG_GRID_LICENSE_KEY into the Vite build stage"
+    "Fresh staging build build-mmwdxj4j proved the route renders again but AG Grid still reports License Key Not Found, which traced the remaining blocker to Dockerfile build args not forwarding VITE_AG_GRID_LICENSE_KEY into the Vite build stage",
+    "Staging proof command pnpm proof:staging:orders-runtime:g2 now captures queue-route license health plus document-route duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape evidence under output/playwright/orders-runtime-g2/2026-03-18/",
+    "March 18, 2026 adversarial review kept SALE-ORD-019, SALE-ORD-020, SALE-ORD-021, SALE-ORD-022, SALE-ORD-029, SALE-ORD-031, and SALE-ORD-035 in partial because the current clipboard and failure-mode packet is still contradictory or not safely repeatable",
+    "The refreshed March 18 proof packet still reads browser clipboard state back as empty and records validPasteMethod none, so the remaining clipboard/fill blocker is still diagnostic rather than closure-ready",
+    "A later March 18 proof rerun narrowed the live blocker further: quick-add plus delete returned to baseline, but Add Item focus still failed on build-mmweo1fu and the clipboard proof path still could not promote paste or fill"
   ]
 }

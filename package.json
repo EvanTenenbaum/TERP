@@ -130,6 +130,7 @@
     "redesign:local": "bash scripts/run-redesign-local.sh",
     "foundation:generate": "tsx scripts/foundation/generate-spreadsheet-native-foundation.ts",
     "proof:staging:sheet-surfaces": "tsx scripts/spreadsheet-native/detect-staging-sheet-surfaces.ts",
+    "proof:staging:orders-runtime:g2": "tsx scripts/spreadsheet-native/prove-orders-runtime-g2.ts",
     "pre-commit:review": "tsx scripts/pre-commit-review.ts",
     "test:schema": "vitest run tests/integration/schema-verification.test.ts",
     "test:schema:ci": "pnpm test:env:up && pnpm test:db:reset && vitest run tests/integration/schema-verification.test.ts && pnpm test:env:down",

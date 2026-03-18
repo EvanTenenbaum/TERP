@@ -412,7 +412,7 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "clipboard-parity-proof.png",
     notes:
-      "March 17, 2026 local implementation wired clipboard hooks through the shared SpreadsheetPilotGrid and added document-grid paste validation plus blocked-field messaging for approved editable cells. This row stays partial until copy and rectangular paste are proven on staging across the queue, support, and document surfaces.",
+      "March 17, 2026 local implementation wired clipboard hooks through the shared SpreadsheetPilotGrid and added document-grid paste validation plus blocked-field messaging for approved editable cells. March 18 staging proof still reads browser clipboard state back as empty and leaves validPasteMethod as none, so this row stays partial until copy and rectangular paste are proven on staging across the queue, support, and document surfaces.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -563,13 +563,13 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry:
       "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "edit-navigation-proof.png",
     notes:
-      "March 17, 2026 local implementation added document-grid spreadsheet navigation settings for Enter-driven movement and edit-session stability. This row stays partial until Tab, Shift+Tab, Enter, Shift+Enter, and Escape are all verified with live document-grid behavior.",
+      "March 18, 2026 staging build build-mmweo1fu proved Tab, Shift+Tab, Enter, Shift+Enter, and Escape on draft 618 through the shared document-grid runtime. The durable evidence bundle is output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json plus the accompanying screenshots.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",
@@ -598,13 +598,13 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P1",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry:
       "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=:id",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "row-operations-proof.png",
     notes:
-      "March 18, 2026 staging proof on draft 618 confirmed live duplicate-row behavior through the shared document-grid runtime, increasing the visible quantity row count from one to two. Delete-row and add-item row operation proof are still required before this gate can close.",
+      "March 18, 2026 staging build build-mmweo1fu proved duplicate, quick-add, and delete row operations on draft 618 through the shared document-grid runtime. The durable evidence bundle is output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json plus the accompanying screenshots.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
     surfacingStatus: "implemented-not-surfaced",

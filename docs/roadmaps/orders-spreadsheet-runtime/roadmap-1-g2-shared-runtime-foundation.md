@@ -17,9 +17,11 @@ Current truth:
 
 - the shared runtime seam already exists in `PowersheetGrid`
 - targeted runtime tests passed on March 18, 2026
-- `TER-794` and `TER-795` are closed on local evidence, and `TER-796` is the current active atomic card
-- current staging build `build-mmvlul6k` still crashes on `/sales?tab=orders&surface=sheet-native&orderId=627`, so proof is blocked on validating the shared-runtime hardening fix in a fresh build
-- this roadmap remains open because the runtime tranche is only partially proven and not yet fully closed with evidence
+- `TER-794` is the only G2 atomic card currently safe to treat as closed with evidence
+- `TER-795` and `TER-796` remain open because the live clipboard, fill, and failure-path proof is still not cleanly reproducible end to end
+- staging build `build-mmweo1fu` now proves the Orders queue route loads without AG Grid watermark or license warnings, and the document route proves duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior through the shared runtime
+- the local March 18 repair set adds an explicit inventory-browser focus helper and a proof harness that now fails hard on empty clipboard state instead of silently masking the blocker
+- this roadmap remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-022`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` are still not fully live-proven, and the current live blocker is now narrowed to Add Item focus plus clipboard/fill proof-path resolution rather than row-operation drift
 
 ## Allowed Inputs
 
@@ -46,6 +48,7 @@ Current truth:
 3. Close clipboard, fill, clear/cut/delete-cell, edit rejection, and failure-path contracts.
 4. Close edit navigation, row operations, and sort/filter-safe targeting.
 5. Record environment hardening needed to make the runtime reproducible and testable.
+6. Use `1 coordinator + read-only sidecars + at most 1 narrow writer` while G2 proof is still unstable.
 
 ## Validation Commands And Proof Artifacts
 
@@ -65,10 +68,12 @@ Required artifacts:
 - scoped diff notes in `Implement.md`
 - targeted test command list in `G2-runtime-gate.md`
 - updated `execution-metrics.json`
+- adversarial-review findings packet before any additional G2 row moves beyond `partial`
 
 ## Adversarial Review Requirement
 
 - Independent attempt to break mixed editable/locked edit paths, invalid multi-cell updates, undo/redo boundaries, and filtered targeting.
+- Treat contradictory proof packets or non-repeatable staging mutations as failures, not as partial wins.
 - No row may move to `live-proven` from this roadmap.
 
 ## Stop-Go Conditions
@@ -82,6 +87,7 @@ Required artifacts:
 1. Update `G2-runtime-gate.md`, `Implement.md`, and `execution-metrics.json`.
 2. Update `TER-788` and owned child issues.
 3. Keep `G3` blocked unless this roadmap is `closed with evidence`.
+4. Record which blocker was resolved by coordinator work versus sidecar findings so the next gate inherits a clear proof trail.
 
 ## Reopen Triggers
 

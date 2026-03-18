@@ -1,6 +1,10 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { chromium, type BrowserContext } from "@playwright/test";
+import { QA_PASSWORD } from "../../tests-e2e/fixtures/auth";
+import { getEnvOrDefault, loadCodexEnv } from "./qaEnv";
+
+loadCodexEnv();
 
 type PersonaKey = "salesManager" | "inventory";
 
@@ -46,13 +50,21 @@ const outputDir = path.resolve(
 
 const personas: Record<PersonaKey, PersonaConfig> = {
   salesManager: {
-    email:
-      process.env.E2E_SALES_MANAGER_USERNAME || "qa.salesmanager@terp.test",
-    password: process.env.E2E_SALES_MANAGER_PASSWORD || "TerpQA2026!",
+    email: getEnvOrDefault(
+      "E2E_SALES_MANAGER_USERNAME",
+      "qa.salesmanager@terp.test"
+    ),
+    password: getEnvOrDefault(
+      "E2E_SALES_MANAGER_PASSWORD",
+      getEnvOrDefault("E2E_PASSWORD", QA_PASSWORD)
+    ),
   },
   inventory: {
-    email: process.env.E2E_INVENTORY_USERNAME || "qa.inventory@terp.test",
-    password: process.env.E2E_INVENTORY_PASSWORD || "TerpQA2026!",
+    email: getEnvOrDefault("E2E_INVENTORY_USERNAME", "qa.inventory@terp.test"),
+    password: getEnvOrDefault(
+      "E2E_INVENTORY_PASSWORD",
+      getEnvOrDefault("E2E_PASSWORD", QA_PASSWORD)
+    ),
   },
 };
 
@@ -66,10 +78,10 @@ const surfaceChecks: SurfaceCheckDefinition[] = [
     persona: "salesManager",
     requestedUrl: `${baseUrl}/sales?tab=orders&surface=sheet-native`,
     pilotMarkers: [
-      "limited queue + inspector evaluation",
-      "This internal sheet-native pilot is limited to queue browse",
-      "Selected Order Lines",
-      "Open Accounting Payment",
+      "Pilot: queue + document + handoffs",
+      "Workflow target: focused order",
+      "Primary actions stay on-sheet.",
+      "Orders Queue",
     ],
     classicMarkers: [
       "Manage sales and drafts",
@@ -83,10 +95,10 @@ const surfaceChecks: SurfaceCheckDefinition[] = [
     persona: "inventory",
     requestedUrl: `${baseUrl}/operations?tab=inventory&surface=sheet-native`,
     pilotMarkers: [
-      "limited browse + triage evaluation",
-      "This internal sheet-native pilot is limited to browse, inspect",
+      "Pilot: browse + two direct mutations",
+      "Inventory pilot active",
       "Inventory Sheet",
-      "Adjust Quantity",
+      "Load More Rows",
     ],
     classicMarkers: [
       "Manage batches and stock levels",

@@ -16,7 +16,7 @@
   - passed targeted runtime verification for current Orders spreadsheet runtime surfaces
   - passed `pnpm check`
   - closed `G1` with evidence and promoted `G2` to the active gate
-  - aligned Linear with the current gate truth: `TER-787`, `TER-767`, `TER-768`, `TER-794`, and `TER-795` are `Done`; `TER-788` and `TER-796` are `In Progress`
+  - aligned Linear with the current gate truth: `TER-787`, `TER-767`, `TER-768`, and `TER-794` are `Done`; `TER-788` and `TER-796` are `In Progress`; `TER-795` was later pulled back from `Done` once the clipboard and failure-bundle proof remained contradictory under adversarial review
   - captured a live staging blocker on build `build-mmvlul6k (2026-03-18)` at `/sales?tab=orders&surface=sheet-native&orderId=627`
   - traced the staging crash to missing `lineItems` tolerance in the queue support-surface mapper plus destroyed-grid API reads during teardown
   - hardened `SpreadsheetPilotGrid` against destroyed AG Grid API access and made `mapOrderLineItemsToPilotRows` tolerate missing arrays
@@ -30,8 +30,23 @@
   - updated committed DigitalOcean app specs so staging and production both declare `VITE_AG_GRID_LICENSE_KEY` as a build-time secret instead of relying on undocumented control-panel state
   - proved on fresh staging build `build-mmwdxj4j` that the Orders sheet-native route now renders, but AG Grid still logs `License Key Not Found`; traced the remaining gap to the Docker build stage not forwarding `VITE_AG_GRID_LICENSE_KEY` into the Vite bundle build
   - patched `Dockerfile` so the builder stage now accepts and exports `VITE_AG_GRID_LICENSE_KEY` alongside the other Vite build args
+  - added `pnpm proof:staging:orders-runtime:g2`, a durable staging proof harness that logs in as the sales-manager QA persona, validates the Orders queue route, and captures live document-route evidence for row operations and keyboard navigation
+  - pushed commit `2bcce192` to `origin/staging`, waited for DigitalOcean deployment `cbe6d835-1c1b-4769-9a29-8db45cf30984`, and verified staging build `build-mmweo1fu` is now live
+  - proved on staging build `build-mmweo1fu` that `/sales?tab=orders&surface=sheet-native&orderId=627` loads without AG Grid watermark text, `License Key Not Found`, or other page errors
+  - proved on staging build `build-mmweo1fu` and draft `618` that the document grid supports live duplicate, quick-add, and delete row operations plus live Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior through the shared runtime
+  - tightened the G2 proof harness so it separates AG Grid warnings from actual license warnings and restores the draft back to its starting line-item count after row-op proof
+  - captured a repeatable March 18 proof packet showing the queue route is still clean on `build-mmweo1fu`, while clipboard and fill rows remain partial because the current live sequence is still contradictory for invalid-paste and valid-paste claims
+  - refreshed the March 18 G2 proof packet with clipboard readback diagnostics; the browser clipboard still reads back as empty and the synthetic paste fallback still leaves `validPasteMethod: "none"`, so the remaining G2 blocker is still proof-path resolution rather than a confirmed safe app-code fix
+  - added a parallel subagent structure for G2 adversarial review, G3 readiness mapping, and isolated runtime investigation so the main thread can keep source-of-truth control while sidecars gather evidence
+  - integrated the coordinator-first sidecar policy into the March 18 roadmap package: keep one source-of-truth coordinator, use read-only sidecars while the gate is unstable, and avoid parallel write-heavy churn until G2 reaches a clean checkpoint
+  - added `client/src/lib/orders/inventoryBrowserFocus.ts` plus focused tests so Add Item paths explicitly scroll and retry focus against the Inventory Browser search input instead of relying on one fragile timeout
+  - reran targeted vitest coverage for the Add Item focus helper and Orders document surface after the focus repair landed
+  - hardened `pnpm proof:staging:orders-runtime:g2` so it now fails hard when Add Item focus does not land in inventory search, when clipboard readback is empty before valid paste, or when the quick-add/delete cycle does not return to baseline
+  - updated the proof harness again so clipboard setup now attempts both host clipboard and in-browser clipboard writes, and valid-paste selection now records whether AG Grid ever accepted a real two-cell range before the paste and restore steps
+  - confirmed from the latest March 18 report that quick-add followed by delete now returns to baseline (`quickAddDelta: 1`, `deleteReturnedToBaseline: true`), narrowing the live blocker to Add Item focus plus clipboard/fill proof-path resolution
+  - reran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` after the local Add Item focus repair and proof-harness hardening
 - Repair queue:
-  - deploy or otherwise run a staging build that includes the Dockerfile build-arg fix plus repo state `3e205c7e`, then re-run staging proof for `/sales?tab=orders&surface=sheet-native`
-  - capture post-fix screenshot, console, and network artifacts for the Orders queue route before promoting any `SALE-ORD-0xx` row
-  - attach adversarial review artifact before any row moves to `live-proven`
+  - keep `SALE-ORD-030` and `SALE-ORD-032` as the only G2 rows currently safe to treat as live-proven, plus the matching tracker and gate files
+  - deploy the local Add Item focus repair and capture the next G2 staging bundle for `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-022`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
+  - attach adversarial review artifact before promoting any additional `SALE-ORD-0xx` row
   - keep the March 18 roadmap package and issue manifest as the authoritative execution contract; treat the March 17 roadmap backup as lineage only

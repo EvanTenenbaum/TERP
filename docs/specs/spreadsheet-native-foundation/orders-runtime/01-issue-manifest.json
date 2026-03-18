@@ -183,27 +183,29 @@
   },
   "latest_verification": {
     "date": "2026-03-18",
-    "repo_sha": "3e205c7e",
-    "active_atomic_card": "TER-796",
+    "repo_sha": "2bcce192 + local G2 focus/proof repairs",
+    "active_atomic_card": "TER-795 and TER-796",
     "g1_commands": [
       "pnpm vitest run client/src/components/spreadsheet-native/PowersheetGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts",
       "pnpm check"
     ],
     "g2_commands": [
       "pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx",
+      "pnpm vitest run client/src/lib/orders/inventoryBrowserFocus.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/OrderCreatorPage.pricing.test.ts",
+      "pnpm proof:staging:orders-runtime:g2",
       "pnpm check",
       "pnpm lint",
       "pnpm test",
       "pnpm build"
     ],
     "live_blocker": {
-      "build_id": "build-mmvlul6k",
-      "staging_deployment_id": "b0f31972-127c-4906-b2f2-a53cdb8d89be",
+      "build_id": "build-mmweo1fu",
+      "staging_deployment_id": "cbe6d835-1c1b-4769-9a29-8db45cf30984",
       "production_deployment_id": "36eb5bb9-5678-47ea-9d61-eb940241d951",
       "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
-      "summary": "Staging and production now declare VITE_AG_GRID_LICENSE_KEY in the live DigitalOcean app spec, and staging has advanced to build-mmwdxj4j, but AG Grid still logs `License Key Not Found` because the Docker builder stage does not yet forward VITE_AG_GRID_LICENSE_KEY into the Vite asset build.",
-      "next_required_build_sha": "3e205c7e",
-      "next_required_runtime_check": "Deploy the Dockerfile build-arg fix, re-check /version.json, and then capture browser proof plus console logs on /sales?tab=orders&surface=sheet-native&orderId=627 to confirm AG Grid no longer reports License Key Not Found."
+      "summary": "Staging build-mmweo1fu clears the AG Grid watermark and `License Key Not Found` blocker on the Orders queue route, and the same proof bundle validates duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior on draft 618. The remaining live blocker is now narrower: the latest proof packet still fails `addItemFocusedInventorySearch`, still reads browser clipboard state back as empty, and still records `validPasteMethod: none`, so clipboard, fill, failure-bundle, and sort/filter-safe targeting cannot be promoted yet.",
+      "next_required_build_sha": "next local commit containing the OrderCreatorPage inventory-browser focus repair and hardened G2 proof harness",
+      "next_required_runtime_check": "Keep SALE-ORD-030 and SALE-ORD-032 as the only G2 rows currently safe to treat as live-proven, deploy the Add Item focus repair, and then capture a clean repeatable proof bundle for clipboard, fill, blocked-edit failure cases, and sort/filter-safe targeting."
     }
   }
 }

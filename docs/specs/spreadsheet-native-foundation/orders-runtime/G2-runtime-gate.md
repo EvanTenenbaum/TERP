@@ -11,15 +11,20 @@
   - `G2-runtime-gate.md`
   - `execution-metrics.json`
   - Linear issues `TER-794`..`TER-796`
-  - current atomic-card truth: `TER-794` and `TER-795` are closed locally; `TER-796` is now the active card
-  - staging artifacts for build `build-mmvlul6k` route `/sales?tab=orders&surface=sheet-native&orderId=627`
+  - current atomic-card truth: `TER-794` is closed with evidence; `TER-795` and `TER-796` remain open until clipboard, fill, failure-bundle, and row-op proof are cleanly reproducible
+  - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json`
+  - staging screenshots `01-queue-route.png` through `06-document-after-restore.png`
 - Validation commands:
   - `pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx`
+  - `pnpm proof:staging:orders-runtime:g2`
   - `pnpm check`
   - `pnpm lint`
   - `pnpm test`
   - `pnpm build`
 - Current blocker:
-  - fresh staging build `build-mmwdxj4j` now loads the Orders sheet-native route, but browser console still reports `AG Grid Enterprise License` and `License Key Not Found`; the live app spec secret is present, so the remaining blocker is the Docker builder stage not forwarding `VITE_AG_GRID_LICENSE_KEY` into the Vite build
+  - no deployment blocker remains for the AG Grid license or Orders queue route on staging; `build-mmweo1fu` clears the prior watermark and console blocker
+  - the refreshed March 18 proof packet now shows `quickAddDelta: 1` and `deleteReturnedToBaseline: true`, so the earlier delete-after-quick-add concern is no longer the active blocker
+  - local code now adds an explicit inventory-browser focus helper for the Add Item path, but that repair is not yet reflected on staging build `build-mmweo1fu`
+  - G2 remains partial because the current live proof packet still fails on `addItemFocusedInventorySearch: false`, `clipboardReadbackBeforeInvalidPaste: ""`, `clipboardReadbackBeforeValidPaste: ""`, and `validPasteMethod: "none"`, so `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-022`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still lack a repeatable closure-grade proof bundle
 - Status: `partial`
-- Next unblock: deploy the Dockerfile build-arg fix, verify `/version.json` advances beyond `build-mmwdxj4j`, then validate the shared-runtime crash fix and AG Grid console state on `/sales?tab=orders&surface=sheet-native&orderId=627` before resuming row-level staging proof.
+- Next unblock: deploy the local Add Item focus repair, rerun `pnpm proof:staging:orders-runtime:g2` against the new build, and then keep the hardened clipboard/fill proof loop isolated until it can distinguish a real runtime defect from browser-automation limits.

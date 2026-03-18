@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/drawer";
 
 import { toast } from "sonner";
+import { queueInventoryBrowserSearchFocus } from "@/lib/orders/inventoryBrowserFocus";
 import {
   ShoppingCart,
   Save,
@@ -1698,17 +1699,9 @@ export default function OrderCreatorPageV2({
                               "inventory-browser-section"
                             );
                             if (inventoryBrowser) {
-                              inventoryBrowser.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                              setTimeout(() => {
-                                const searchInput =
-                                  inventoryBrowser.querySelector(
-                                    'input[type="text"]'
-                                  ) as HTMLInputElement | null;
-                                searchInput?.focus();
-                              }, 300);
+                              queueInventoryBrowserSearchFocus(
+                                inventoryBrowser
+                              );
                             } else {
                               toast.info(
                                 "Please use the inventory browser above to add items"
@@ -1726,25 +1719,13 @@ export default function OrderCreatorPageV2({
                             clientId={clientId}
                             onChange={handleLineItemsChange}
                             onAddItem={() => {
-                              // Scroll to InventoryBrowser section
                               const inventoryBrowser = document.getElementById(
                                 "inventory-browser-section"
                               );
                               if (inventoryBrowser) {
-                                inventoryBrowser.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                                // Focus on search input for better UX
-                                setTimeout(() => {
-                                  const searchInput =
-                                    inventoryBrowser.querySelector(
-                                      'input[type="text"]'
-                                    ) as HTMLInputElement;
-                                  if (searchInput) {
-                                    searchInput.focus();
-                                  }
-                                }, 300);
+                                queueInventoryBrowserSearchFocus(
+                                  inventoryBrowser
+                                );
                               } else {
                                 toast.info(
                                   "Please use the inventory browser above to add items"

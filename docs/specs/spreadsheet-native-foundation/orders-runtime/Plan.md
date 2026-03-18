@@ -3,6 +3,10 @@
 - Date: `2026-03-18`
 - Loop: `plan -> implement -> validate -> repair` for every gate before the next gate can go active.
 - Human execution layer: `docs/roadmaps/orders-spreadsheet-runtime/README.md`
+- Operating model:
+  - coordinator owns durable files, Linear writeback, merge/deploy decisions, and gate promotion
+  - use up to two read-only sidecars for adversarial review or next-gate mapping when the active gate is still unstable
+  - use at most one narrow writer in parallel until the active gate reaches a clean checkpoint
 - Gate order:
   - `G1 TER-787`: engine verdict, tracker lock, and blocker enforcement.
   - `G2 TER-788`: shared runtime selection, clipboard/fill, edit-nav, row-op tranche.
@@ -18,3 +22,7 @@
 - Current active gate: `G2`
 - Current completed gate: `G1`
 - Current blocked gates: `G3` through `G7` via Linear label `state:blocked`
+- Current G2 milestone stack:
+  - deploy the local Add Item focus repair and rerun the staging proof packet
+  - isolate the clipboard/fill blocker with the hardened proof harness plus read-only root-cause sidecar
+  - only reopen additional G2 rows after the proof packet is repeatable and adversarial review agrees on the claim
