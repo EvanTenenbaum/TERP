@@ -2,12 +2,12 @@
 
 _Generated file. Do not edit by hand._
 
-- Generated at: `2026-03-19T20:25:39.250Z`
+- Generated at: `2026-03-19T20:41:24.200Z`
 - Active gate: `G2`
 - Linear gate: `TER-788`
 - Status: `partial`
 - Active atomic card: `TER-795`
-- Current build: `build-mmwp9o9e`
+- Current build: `build-mmxxcgce`
 - Route: `/sales?tab=orders&surface=sheet-native&orderId=627`
 
 ## Use This Before Global Session Tracking
@@ -24,17 +24,19 @@ Source of truth stays with the gate doc, issue manifest, execution metrics, and 
 
 ## Current Blocker
 
-Staging build-mmwp9o9e still clears the AG Grid watermark and `License Key Not Found` blocker on the Orders queue route, keeps the Add Item focus repair live (`addItemFocusedInventorySearch: true`), preserves the isolated duplicate plus quick-add/delete packet (`duplicateDelta: 1`, `quickAddDelta: 1`, `deleteReturnedToBaseline: true`), and continues to reproduce the live fill-handle failure (`quantityValuesAfterDrag: ["3","4","1","1"]`). March 19 continuation rechecked deployment truth with `doctl apps list-deployments` plus `version.json` and confirmed there is still no deployed build newer than build-mmwp9o9e, so the deterministic fill repair remains local-only worktree state and `SALE-ORD-022` stays deploy-blocked. The same continuation fixed a real sort/filter-safe targeting drift by carrying `focusedRowId` through the shared selection contract and preserving fill writeback by row id; targeted vitest coverage plus `pnpm check` passed, but Claude adversarial review kept `SALE-ORD-031` at partial because the live Orders document surface still disables sort/filter. `TER-795` therefore remains blocked on the unshipped fill repair, clear-style action proof, the remaining failure bundle, and the next independent proof rows rather than on AG Grid licensing, Add Item focus, or TER-796 row-operation stability.
+Fresh staging build build-mmxxcgce now carries the shipped TER-795 fill repair: the isolated live fill-handle probe on the real Orders document route records `selectionSummaryBeforeDrag: [2 selected cells · 2 rows in scope]`, `fillHandleVisible: true`, `bodyClassDuringDrag: [ag-dragging-fill-handle]`, and `quantityValuesAfterDrag: [3,4,5,6]` with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence under the shipped-build probe contract. The same shipped tranche preserves the cleared AG Grid watermark blocker, keeps the Add Item focus repair live, and carries the focused-row-id sort/filter-safe targeting repair; targeted vitest coverage plus the full local gate passed before ship. Claude adversarial review after the shipped probe kept `SALE-ORD-031` at partial because the live Orders document surface still disables sort/filter, and it added one residual note that the narrow `SALE-ORD-022` probe proves live route propagation rather than a separate post-reload persistence round-trip. `TER-795` therefore remains partial on the remaining independent proof rows and limitations rather than on deploy lag, AG Grid licensing, Add Item focus, or TER-796 row-operation stability.
 
 ## Next Unblock
 
-- Next command: `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
-- Gate doc narrative: keep `TER-795` blocked, treat `SALE-ORD-022` as deploy-blocked until a build newer than `build-mmwp9o9e` contains the local fill repair, keep `SALE-ORD-031` partial with its code-proven limitation note until a live sort/filter surface exists, and move to `SALE-ORD-019` as the next independent TER-795 row while separately preparing the next shipped build for `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`.
+- Next command: none recorded.
+- Gate doc narrative: keep `TER-795` active, record `SALE-ORD-022` as shipped-build evidence closure with its no-reload note, keep `SALE-ORD-031` partial with its code-proven limitation note until a live sort/filter surface exists, and move to `SALE-ORD-019` as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression.
 
 ## Runtime Guards
 
-- Live-proven rows only: SALE-ORD-030 and SALE-ORD-032.
-- TER-796 seal rule: keep TER-796 sealed, treat SALE-ORD-022 as deploy-blocked until a shipped build newer than build-mmwp9o9e exists, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row.
+- Live-proven rows only: not explicitly recorded in the manifest.
+- TER-796 seal rule: keep TER-796 sealed.
+- SALE-ORD-031 guard: keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row.
+- Next independent TER-795 row: move to SALE-ORD-019 as the next independent TER-795 row.
 
 ## Validation Commands
 
@@ -58,14 +60,14 @@ Staging build-mmwp9o9e still clears the AG Grid watermark and `License Key Not F
 - Total worktrees: `40`
 - Dirty worktrees: `18`
 - Dirty worktrees with 5+ entries: `7`
-- Current worktree dirty entries excluding generator-owned outputs: `28`
+- Current worktree dirty entries excluding generator-owned outputs: `5`
 
 Top dirty worktrees:
+- `101` dirty -> `/Users/evan/spec-erp-docker/TERP/TERP` (`refs/heads/staging`)
 - `37` dirty -> `/Users/evan/spec-erp-docker/TERP/TERP-low-rebuild-20260310-04c982f7` (`refs/heads/claude/staging-low-rebuild-20260310-04c982f7`)
-- `28` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318` (`refs/heads/codex/ter-795-20260318-980e3a3c`)
 - `20` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/sheet-native-staging-20260315` (`refs/heads/codex/sheet-native-staging-20260315`)
-- `17` dirty -> `/Users/evan/spec-erp-docker/TERP/TERP` (`refs/heads/staging`)
 - `17` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/workspace-surfacing-fixes-20260312` (`refs/heads/codex/workspace-surfacing-fixes-20260312`)
+- `7` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/pricing-cents-preservation-20260312` (`refs/heads/codex/ter-696-pricing-cents-preservation-20260312`)
 
 ## Source Inputs
 
