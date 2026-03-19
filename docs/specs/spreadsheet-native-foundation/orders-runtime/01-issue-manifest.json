@@ -183,7 +183,7 @@
   },
   "latest_verification": {
     "date": "2026-03-19",
-    "repo_sha": "0e2bb8ba + local G2 proof-harness selection, row-op isolation, fill-handle repro capture, deterministic vertical fill callback, degraded local boot verification, mocked sheet-native fill drag probe, hardened narrow fill-handle command contract, and focused-row-id sort/filter-safe targeting repair",
+    "repo_sha": "3398a9ba merge commit / staging build-mmxxcgce + shipped deterministic vertical fill callback, focused-row-id sort/filter-safe targeting repair, hardened narrow fill-handle command contract, and fresh live fill closure packet",
     "active_atomic_card": "TER-795",
     "g1_commands": [
       "pnpm vitest run client/src/components/spreadsheet-native/PowersheetGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts",
@@ -204,13 +204,13 @@
       "pnpm build"
     ],
     "live_blocker": {
-      "build_id": "build-mmwp9o9e",
-      "staging_deployment_id": "a2ddfe10-1e91-4d45-b1cd-93d0fcf998db",
+      "build_id": "build-mmxxcgce",
+      "staging_deployment_id": "20fda840-ae7c-4a36-a450-7f1e45029131",
       "production_deployment_id": "36eb5bb9-5678-47ea-9d61-eb940241d951",
       "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
-      "summary": "Staging build-mmwp9o9e still clears the AG Grid watermark and `License Key Not Found` blocker on the Orders queue route, keeps the Add Item focus repair live (`addItemFocusedInventorySearch: true`), preserves the isolated duplicate plus quick-add/delete packet (`duplicateDelta: 1`, `quickAddDelta: 1`, `deleteReturnedToBaseline: true`), and continues to reproduce the live fill-handle failure (`quantityValuesAfterDrag: [\"3\",\"4\",\"1\",\"1\"]`). March 19 continuation rechecked deployment truth with `doctl apps list-deployments` plus `version.json` and confirmed there is still no deployed build newer than build-mmwp9o9e, so the deterministic fill repair remains local-only worktree state and `SALE-ORD-022` stays deploy-blocked. The same continuation fixed a real sort/filter-safe targeting drift by carrying `focusedRowId` through the shared selection contract and preserving fill writeback by row id; targeted vitest coverage plus `pnpm check` passed, but Claude adversarial review kept `SALE-ORD-031` at partial because the live Orders document surface still disables sort/filter. `TER-795` therefore remains blocked on the unshipped fill repair, clear-style action proof, the remaining failure bundle, and the next independent proof rows rather than on AG Grid licensing, Add Item focus, or TER-796 row-operation stability.",
-      "next_required_build_sha": "ship a build newer than build-mmwp9o9e that contains the local TER-795 fill repair before spending the next SALE-ORD-022 live probe",
-      "next_required_runtime_check": "Keep SALE-ORD-030 and SALE-ORD-032 as the only G2 rows currently safe to treat as live-proven, keep TER-796 sealed, treat SALE-ORD-022 as deploy-blocked until a shipped build newer than build-mmwp9o9e exists, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression."
+      "summary": "Fresh staging build build-mmxxcgce now carries the shipped TER-795 fill repair: the isolated live fill-handle probe on the real Orders document route records `selectionSummaryBeforeDrag: [2 selected cells · 2 rows in scope]`, `fillHandleVisible: true`, `bodyClassDuringDrag: [ag-dragging-fill-handle]`, and `quantityValuesAfterDrag: [3,4,5,6]` with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence under the shipped-build probe contract. The same shipped tranche preserves the cleared AG Grid watermark blocker, keeps the Add Item focus repair live, and carries the focused-row-id sort/filter-safe targeting repair; targeted vitest coverage plus the full local gate passed before ship. Claude adversarial review after the shipped probe kept `SALE-ORD-031` at partial because the live Orders document surface still disables sort/filter, and it added one residual note that the narrow `SALE-ORD-022` probe proves live route propagation rather than a separate post-reload persistence round-trip. `TER-795` therefore remains partial on the remaining independent proof rows and limitations rather than on deploy lag, AG Grid licensing, Add Item focus, or TER-796 row-operation stability.",
+      "next_required_build_sha": "no additional build is required for SALE-ORD-022; staging build-mmxxcgce already proves the shipped fill repair live",
+      "next_required_runtime_check": "Keep SALE-ORD-022, SALE-ORD-030, and SALE-ORD-032 as the G2 rows currently safe to treat as closed with direct staging evidence, keep TER-796 sealed, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression."
     }
   }
 }

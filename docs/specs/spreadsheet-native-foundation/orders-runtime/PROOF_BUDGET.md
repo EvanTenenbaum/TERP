@@ -2,11 +2,11 @@
 
 _Generated file. Advisory only. Do not edit by hand._
 
-- Generated at: `2026-03-19T20:25:39.497Z`
+- Generated at: `2026-03-19T20:41:24.464Z`
 - Active gate: `G2`
 - Linear gate: `TER-788`
 - Active atomic card: `TER-795`
-- Current build: `build-mmwp9o9e`
+- Current build: `build-mmxxcgce`
 
 ## Budget State
 
@@ -22,11 +22,13 @@ _Generated file. Advisory only. Do not edit by hand._
 ## Cheapest Next Probe
 
 - Command: `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
-- Rule: Keep SALE-ORD-030 and SALE-ORD-032 as the only G2 rows currently safe to treat as live-proven, keep TER-796 sealed, treat SALE-ORD-022 as deploy-blocked until a shipped build newer than build-mmwp9o9e exists, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression.
+- Rule: Keep SALE-ORD-022, SALE-ORD-030, and SALE-ORD-032 as the G2 rows currently safe to treat as closed with direct staging evidence, keep TER-796 sealed, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression.
 
 ## Guardrails
 
-- Keep `TER-796` sealed: keep TER-796 sealed, treat SALE-ORD-022 as deploy-blocked until a shipped build newer than build-mmwp9o9e exists, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row.
+- Keep `TER-796` sealed.
+- SALE-ORD-031 guard: keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row.
+- Next independent TER-795 row: move to SALE-ORD-019 as the next independent TER-795 row.
 - Do not reopen the broad G2 staging bundle for the current fill tranche.
 - If the next fresh deployed-build pass still fails, freeze `SALE-ORD-022` as an explicit limitation packet before moving to the remaining TER-795 rows.
 - Treat this file as advisory only; source-of-truth updates still belong in the gate doc, manifest, metrics, and Linear.
