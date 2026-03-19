@@ -1,0 +1,13 @@
+{
+  "captured_at": "2026-03-19T05:38:00Z",
+  "build_id": "build-mmwp9o9e",
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+  "selectionSummary": "2 selected cells · 2 rows in scope",
+  "fillHandleCount": 1,
+  "fillHandleVisible": true,
+  "bodyClassDuringDrag": "ag-dragging-fill-handle",
+  "originalQuantityValues": ["1", "1", "1", "1"],
+  "probePattern": ["3", "4"],
+  "quantityValuesAfterDrag": ["3", "4", "1", "1"],
+  "interpretation": "The native AG Grid fill handle is visible and enters dragging state on staging, but dragging the handle does not propagate quantity values into downstream rows. This is a stable live repro for SALE-ORD-022, not a missing selector or selection-summary gap."
+}

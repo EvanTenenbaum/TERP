@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-03-19T21:21:46.499Z",
+  "generated_at": "2026-03-19T21:48:09.240Z",
   "source_state": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
   "active_atomic_card": "TER-795",
   "gate_verdict": "partial",
   "build": {
-    "id": "build-mmxxcgce",
-    "build_time": "2026-03-19T20:30:13.707Z",
-    "deployment_id": "20fda840-ae7c-4a36-a450-7f1e45029131",
-    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "id": "build-mmxzi3to",
+    "build_time": "2026-03-19T21:30:36.648Z",
+    "deployment_id": "eb16abcf-6c41-4939-a2bf-dd5687c0cc3a",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
     "base_url": "https://terp-staging-yicld.ondigitalocean.app",
     "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
     "persona": "sales-manager",
     "version_url": "https://terp-staging-yicld.ondigitalocean.app/version.json"
   },
   "accepted_live_rows": [
+    "SALE-ORD-019",
     "SALE-ORD-022",
     "SALE-ORD-030",
     "SALE-ORD-032"
   ],
   "remaining_rows": [
-    "SALE-ORD-019",
     "SALE-ORD-020",
     "SALE-ORD-021",
     "SALE-ORD-029",
@@ -27,9 +27,9 @@
     "SALE-ORD-035"
   ],
   "next_move": {
-    "row": "SALE-ORD-019",
-    "summary": "Move to the next independent TER-795 row with one isolated selection packet.",
-    "command_hint": "Add or extend one isolated selection probe for scope-selection proof across the required Orders surfaces.",
+    "row": "SALE-ORD-020",
+    "summary": "Move to the next independent TER-795 row with one isolated multi-cell edit packet.",
+    "command_hint": "Add or extend one isolated multi-cell edit probe for pricing preservation, autosave evidence, and a clean restore path.",
     "cadence_rule": "One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points."
   },
   "acceptance_rows": [
@@ -73,6 +73,50 @@
     }
   ],
   "packet_summaries": [
+    {
+      "row": "SALE-ORD-019",
+      "row_state": "live-proven",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json",
+      "suggested_verdict": "closed with evidence",
+      "command": "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-selection",
+      "assertions": [
+        {
+          "id": "queue-drag-range",
+          "label": "Queue drag-selection forms a contiguous multi-row range",
+          "passed": true
+        },
+        {
+          "id": "document-shift-range",
+          "label": "Document Shift-range selection remains live through the shared runtime",
+          "passed": true
+        },
+        {
+          "id": "queue-discontiguous",
+          "label": "Queue Cmd-click builds a discontiguous selection",
+          "passed": true
+        },
+        {
+          "id": "queue-column-scope",
+          "label": "Queue column-header selection scopes one full column",
+          "passed": true
+        },
+        {
+          "id": "queue-grid-scope",
+          "label": "Queue Cmd+A scopes the current grid",
+          "passed": true
+        },
+        {
+          "id": "license-clean",
+          "label": "No AG Grid license warnings were recorded",
+          "passed": true
+        },
+        {
+          "id": "page-clean",
+          "label": "No page errors were recorded",
+          "passed": true
+        }
+      ]
+    },
     {
       "row": "SALE-ORD-022",
       "row_state": "live-proven",

@@ -1,0 +1,102 @@
+{
+  "baseUrl": "https://terp-staging-yicld.ondigitalocean.app",
+  "timestamp": "2026-03-19T05:26:13.225Z",
+  "version": {
+    "version": "1.0.0",
+    "commit": "build-mmwp9o9e",
+    "date": "2026-03-18",
+    "branch": "unknown",
+    "phase": "Development",
+    "buildTime": "2026-03-18T23:56:20.894Z"
+  },
+  "queueRoute": {
+    "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+    "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+    "loadingShellVisible": false,
+    "watermarkVisible": false,
+    "licenseWarnings": [],
+    "pageErrors": [],
+    "bodySnippet": "SELL\nSales\nDemand & Supply\nBUY\nOPERATIONS\nRELATIONSHIPS\nFINANCE\nADMIN\n\nQA Sales Manager\n\nLogout\nK\n9+\nQA Sales Manager\nHome\nSales\nv1.0.0\n\nSELL\n/\nWORKSPACE\n\nSales\n\nManage orders, quotes, returns, sales sheets, and live shopping in a unified sales workspace.\n\nPRIMARY FLOW\nQuote -> Order -> Shipping\nOrders\nQuotes\nReturns\nSales Sheets\nLive Shopping\nNew Sales Order\nSheet-Native Pilot\nClassic Surface\nPilot: queue + document + handoffs\nNew Order\nQ-1772732286605 selected\nWorkflow target: focused order Q-1772732286605\nPrimary actions stay on-sheet. The document flow now stays inside the sheet-native Orders surface, while accounting and shipping remain explicit owner handoffs.\nWorkflow actions remain explicit row-scoped actions. Cell selections do not change handoff ownership.\nEdit Draft\nDelete Draft\nAccounting\nShipping\nClassic\nOrders Queue\n\nOne dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context.\n\n100 visible orders · 50 drafts · 50 confirmed\n1 selected cells · 1 rows in scope\nFocused cell: 0:stageLabel · Ranges: 0\nRelease gates: SALE-ORD-019, SALE-ORD-023, SALE-ORD-024, SALE-ORD-026, SALE-ORD-027\nQueue release gates: sprea",
+    "screenshotPath": "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-18/01-queue-route.png"
+  },
+  "documentRoute": {
+    "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+    "finalUrl": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+    "summaryBefore": "6 line items · 1 selected rows · Running total $4094.70 · 1 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryAfterBlockedDelete": "6 line items · 1 selected rows · Running total $4094.70 · 1 selected cells · blocked: Clear and delete are only allowed in approved editable document fields.",
+    "summaryAfterInvalidPaste": "6 line items · 0 selected rows · Running total $4094.70 · 0 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryAfterValidPaste": "6 line items · 2 selected rows · Running total $4820.22 · 2 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryBeforeDuplicate": "6 line items · 0 selected rows · Running total $4094.70 · 0 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryAfterDuplicate": "7 line items · 1 selected rows · Running total $4865.01 · 1 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryBeforeQuickAdd": "7 line items · 0 selected rows · Running total $4865.01 · 0 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryAfterQuickAdd": "8 line items · 0 selected rows · Running total $5441.09 · 0 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryAfterDelete": "7 line items · 0 selected rows · Running total $4865.01 · 1 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "summaryAfterRestore": "6 line items · 0 selected rows · Running total $4094.70 · 1 selected cells · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below.",
+    "lineItemsBefore": 6,
+    "lineItemsAfterBlockedDelete": 6,
+    "lineItemsAfterInvalidPaste": 6,
+    "lineItemsAfterValidPaste": 6,
+    "lineItemsBeforeDuplicate": 6,
+    "lineItemsAfterDuplicate": 7,
+    "lineItemsBeforeQuickAdd": 7,
+    "lineItemsAfterQuickAdd": 8,
+    "lineItemsAfterDelete": 7,
+    "lineItemsAfterRestore": 6,
+    "duplicateDelta": 1,
+    "quickAddDelta": 1,
+    "duplicateButtonEnabledBefore": true,
+    "deleteReturnedToBaseline": true,
+    "selectionStateAfterClick": "Focused cell: 0:quantity · Ranges: 1",
+    "selectionStateAfterTab": "Focused cell: 0:cogsPerUnit · Ranges: 1",
+    "selectionStateAfterShiftTab": "Focused cell: 0:quantity · Ranges: 1",
+    "selectionStateAfterEnter": "Focused cell: 1:quantity · Ranges: 1",
+    "selectionStateAfterShiftEnter": "Focused cell: 0:quantity · Ranges: 1",
+    "quantityValueBeforeEscape": "1",
+    "quantityValueAfterEscape": "1",
+    "escapeRestoredValue": true,
+    "invalidPastePreservedValue": true,
+    "clipboardReadbackBeforeInvalidPaste": "-2",
+    "clipboardReadbackBeforeValidPaste": "3\n4",
+    "selectionStateBeforeValidPaste": "Focused cell: 0:quantity · Ranges: 1",
+    "selectionSummaryBeforeValidPaste": "2 selected cells · 2 rows in scope",
+    "selectionSummaryBeforeDuplicate": "1 selected cells · 1 rows in scope",
+    "selectionStateBeforeRestorePaste": "Focused cell: none · Ranges: 0",
+    "selectionSummaryBeforeRestorePaste": "0 selected cells · 0 rows in scope",
+    "selectionStateAfterSyntheticValidPaste": null,
+    "selectionSummaryAfterSyntheticValidPaste": null,
+    "quantityValuesBeforeValidPaste": [
+      "1",
+      "1"
+    ],
+    "expectedQuantityValuesForValidPaste": [
+      "3",
+      "4"
+    ],
+    "quantityValuesAfterValidPaste": [
+      "3",
+      "4"
+    ],
+    "quantityValuesAfterRestore": [
+      "1",
+      "1"
+    ],
+    "validPasteApplied": true,
+    "validPasteMatchedExpectedValues": true,
+    "validPasteUsedTwoCellRange": true,
+    "validPasteAppliedViaKeyboard": true,
+    "validPasteAppliedViaSynthetic": false,
+    "validPasteMethod": "keyboard",
+    "addItemFocusedInventorySearch": true,
+    "quickAddLabel": "Quick add Tasty Concentrate - joy",
+    "pageErrors": [],
+    "agGridWarnings": [],
+    "licenseWarnings": [],
+    "screenshotPaths": [
+      "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-18/02-document-baseline.png",
+      "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-18/03-document-after-duplicate.png",
+      "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-18/04-document-after-quick-add.png",
+      "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-18/05-document-after-delete.png",
+      "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-18/06-document-after-restore.png"
+    ]
+  }
+}

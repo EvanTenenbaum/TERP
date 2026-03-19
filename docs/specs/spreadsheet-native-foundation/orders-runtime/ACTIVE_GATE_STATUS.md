@@ -2,12 +2,12 @@
 
 _Generated file. Do not edit by hand._
 
-- Generated at: `2026-03-19T21:21:49.470Z`
+- Generated at: `2026-03-19T21:48:17.611Z`
 - Active gate: `G2`
 - Linear gate: `TER-788`
 - Status: `partial`
 - Active atomic card: `TER-795`
-- Current build: `build-mmxxcgce`
+- Current build: `build-mmxzi3to`
 - Route: `/sales?tab=orders&surface=sheet-native&orderId=627`
 
 ## Use This Before Global Session Tracking
@@ -24,25 +24,26 @@ Source of truth for repeated TER-795 row status, build truth, and next move is `
 
 ## Current Blocker
 
-`SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, `SALE-ORD-035` still need a closure packet or explicit limitation packet. `SALE-ORD-031` also stays partial until a live sort/filter surface exists.
+`SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, `SALE-ORD-035` still need a closure packet or explicit limitation packet. `SALE-ORD-031` also stays partial until a live sort/filter surface exists.
 
 ## Next Unblock
 
-- Next row: `SALE-ORD-019`
-- Next command: Add or extend one isolated selection probe for scope-selection proof across the required Orders surfaces.
+- Next row: `SALE-ORD-020`
+- Next command: Add or extend one isolated multi-cell edit probe for pricing preservation, autosave evidence, and a clean restore path.
 - Cadence rule: One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points.
 
 ## Runtime Guards
 
-- Live-proven rows only: `SALE-ORD-022`, `SALE-ORD-030`, `SALE-ORD-032`.
+- Live-proven rows only: `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, `SALE-ORD-032`.
 - TER-796 seal rule: keep `TER-796` sealed unless an isolated row-op rerun proves a real regression.
 - SALE-ORD-022 guard: keep the closure packet honest; the probe proves shipped-route propagation, not a separate reload or persistence round-trip.
 - SALE-ORD-031 guard: keep `SALE-ORD-031` partial until a live Orders document surface exercises sort/filter.
-- Next independent TER-795 row: move to `SALE-ORD-019` next.
+- Next independent TER-795 row: move to `SALE-ORD-020` next.
 
 ## Validation Commands
 
 - `pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx`
+- `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-selection`
 - `pnpm proof:staging:orders-runtime:g2`
 - `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
 - `pnpm check`
@@ -58,6 +59,7 @@ Source of truth for repeated TER-795 row status, build truth, and next move is `
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
 - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
+- `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json`
 - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json`
@@ -67,14 +69,14 @@ Source of truth for repeated TER-795 row status, build truth, and next move is `
 - Total worktrees: `30`
 - Dirty worktrees: `18`
 - Dirty worktrees with 5+ entries: `7`
-- Current worktree dirty entries excluding generator-owned outputs: `22`
+- Current worktree dirty entries excluding generator-owned outputs: `13`
 
 Top dirty worktrees:
 - `204` dirty -> `TERP` (`refs/heads/staging`)
 - `37` dirty -> `TERP-low-rebuild-20260310-04c982f7` (`refs/heads/claude/staging-low-rebuild-20260310-04c982f7`)
-- `22` dirty -> `worktrees/orders-runtime-ter-795-20260318` (`refs/heads/codex/ter-795-g2-writeback-20260319`)
 - `20` dirty -> `worktrees/sheet-native-staging-20260315` (`refs/heads/codex/sheet-native-staging-20260315`)
 - `17` dirty -> `worktrees/workspace-surfacing-fixes-20260312` (`refs/heads/codex/workspace-surfacing-fixes-20260312`)
+- `13` dirty -> `worktrees/orders-runtime-ter-795-20260318` (`refs/heads/codex/ter-795-sale-ord-019-20260319`)
 
 ## Source Inputs
 

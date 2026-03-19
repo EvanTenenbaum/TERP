@@ -135,6 +135,7 @@
     "status:orders-runtime:all": "pnpm status:orders-runtime:sync-ter795 && pnpm status:orders-runtime:active-gate && pnpm status:orders-runtime:proof-budget",
     "proof:staging:sheet-surfaces": "tsx scripts/spreadsheet-native/detect-staging-sheet-surfaces.ts",
     "proof:staging:orders-runtime:g2": "tsx scripts/spreadsheet-native/prove-orders-runtime-g2.ts",
+    "proof:staging:orders-selection": "tsx scripts/spreadsheet-native/probe-orders-runtime-selection.ts",
     "proof:staging:orders-fill-handle": "tsx scripts/spreadsheet-native/probe-orders-runtime-fill-handle.ts",
     "proof:await-staging-build": "tsx scripts/await-staging-build.ts",
     "pre-commit:review": "tsx scripts/pre-commit-review.ts",

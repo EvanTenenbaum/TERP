@@ -2,7 +2,7 @@
   "schema_version": 1,
   "gate": "G2",
   "packet_id": "orders-runtime-g2-bundle",
-  "generated_at": "2026-03-19T21:21:46.494Z",
+  "generated_at": "2026-03-19T21:48:09.132Z",
   "command": "pnpm proof:staging:orders-runtime:g2",
   "suggested_verdict": "closed with evidence",
   "covered_rows": [
@@ -19,7 +19,7 @@
   ],
   "build": {
     "id": "build-mmwp9o9e",
-    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
     "deployment_build_time": "2026-03-18T23:56:20.894Z"
   },
   "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",

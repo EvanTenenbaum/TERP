@@ -28,3 +28,9 @@ Current scripts:
   - selects the quantity range, drags the native fill handle, and records whether the series propagates to `["3","4","5","6"]`
   - accepts `PLAYWRIGHT_BASE_URL` and optional `PLAYWRIGHT_ORDERS_DRAFT_ID`
   - writes one screenshot and one JSON report under `output/playwright/orders-runtime-g2/`
+- `probe-orders-runtime-selection.ts`
+  - logs into staging as the sales-manager QA persona
+  - targets only the Orders selection grammar tranche for `SALE-ORD-019`
+  - records queue drag-range, discontiguous selection, column-scope, current-grid scope, and document Shift-range behavior in one closure-ready packet
+  - accepts `PLAYWRIGHT_BASE_URL`, optional `PLAYWRIGHT_ORDERS_ORDER_ID`, and optional `PLAYWRIGHT_ORDERS_DRAFT_ID`
+  - writes screenshots and a JSON report under `output/playwright/orders-runtime-g2/`

@@ -371,15 +371,15 @@ export const pilotProofDefinitions: PilotProofDefinition[] = [
     sheet: "Orders",
     ownerSurface: "Sales -> Orders",
     criticality: "P0",
-    proofStatus: "partial",
+    proofStatus: "live-proven",
     routeOrEntry: "/sales?tab=orders&surface=sheet-native",
     persona: "qa.salesmanager@terp.test",
     requiredArtifact: "selection-range-parity-proof.png",
     notes:
-      "March 18, 2026 staging proof on draft 618 confirmed document-mode focused selection plus Shift-range extension through the shared PowersheetGrid runtime after live row duplication. Queue drag-range, Cmd discontiguous selection, and row or column scope proof are still required before this row can close.",
+      "March 19, 2026 staging proof on build-mmxzi3to confirmed queue drag-range, queue Cmd discontiguous selection, queue column and current-grid scope selection, and document-mode Shift-range behavior through the shared PowersheetGrid runtime.",
     coverageMode: "sheet-native-direct",
     implementationStatus: "implemented",
-    surfacingStatus: "implemented-not-surfaced",
+    surfacingStatus: "surfaced-and-proven",
     requirementIds: ["ORD-SS-001", "ORD-SS-002", "ORD-SS-003", "ORD-SS-004"],
   },
   {

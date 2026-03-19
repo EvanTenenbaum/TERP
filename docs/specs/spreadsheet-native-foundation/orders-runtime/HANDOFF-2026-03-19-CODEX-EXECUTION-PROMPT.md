@@ -34,27 +34,25 @@ Do not restart discovery from scratch. Preserve the current truth:
 - `G3` through `G7` stay blocked by contract.
 - `TER-795` is the only active atomic card.
 - `TER-796` is sealed and must not be reopened unless an isolated rerun proves a real regression.
-- `SALE-ORD-030` and `SALE-ORD-032` are the only G2 rows safe to treat as live-proven right now.
+- `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` are the only G2 rows safe to treat as live-proven right now.
 - The AG Grid license blocker is gone.
 - Add Item focus is live on staging.
-- The remaining blocker is not “general proofability confusion.” It is now a narrow `TER-795` completion problem centered on deployed-build confirmation for the repaired fill path plus the remaining unresolved proof rows.
+- The remaining blocker is not “general proofability confusion.” It is now a row-classification problem that should be cleared with the smallest honest row outcomes so execution can move into Orders document closure.
 
 Operate with these mandatory efficiency rules:
 
-- Use the skill stack intentionally:
-  - `/Users/evan/.codex/skills/codex-session-router/SKILL.md` for cold-start lane framing.
-  - `/Users/evan/.codex/skills/codex-context-compression/SKILL.md` plus `/Users/evan/.codex/skills/codex-filesystem-context/SKILL.md` to keep handoff state compact.
-  - `/Users/evan/.codex/skills/terp-parallel-supervisor/SKILL.md` if you need parallel sidecars.
-  - `/Users/evan/.codex/skills/long-horizon-execution/SKILL.md` for durable checkpoint thinking.
-  - `/Users/evan/.codex/skills/claude-qa-review/SKILL.md` for adversarial review.
-  - `/Users/evan/.codex/skills/codex-risk-verifier/SKILL.md` before any done claim or expensive verification bundle.
-- Browser work is a checkpoint instrument, not the default debugging loop.
-- Per writable tranche, allow at most:
-  - `1` full staging proof run
-  - `0-1` narrow browser probes
-- If the evidence classification does not change after those passes, stop. Write the blocker down, update the durable files, and pivot to the next atomic tranche.
-- Do not burn hours perfecting the harness when the actual goal is completing the product.
-- If something cannot be directly live-proven right now, ask Claude for alternate proof strategies and a best-confidence determination. Use confidence only to decide the next move, not to promote a row to `live-proven`.
+- No more architecture or process work unless it directly unlocks the current product gate.
+- No more broad proof loops.
+- No more new docs or skills unless they remove same-day execution drag on a live row.
+- Every writable tranche must end in exactly one of:
+  - user-facing product change
+  - closure packet
+  - limitation packet
+  - blocker packet
+- Use targeted local verification during implementation.
+- Use one narrow live probe per row when needed.
+- Use Claude only for merge-ready work or disputed limitation packets.
+- Run full `check`, `lint`, `test`, and `build` only at real ship points.
 - Confidence decision rules:
   - if local proof passes and the deployed build does not yet contain the fix, classify as `deploy-lag`
   - if local proof passes and a fresh deployed build that should contain the fix still fails in the same isolated way, classify as `product or environment blocker`, not a solved deploy problem
@@ -90,10 +88,10 @@ Execution order:
 
 Definition of done for this continuation:
 
-- finish `TER-795` honestly, either by closing rows with direct evidence or by packaging explicit limitations with enough evidence to stop churn
+- finish `TER-795` honestly, either by closing rows with direct evidence or by packaging explicit limitations or blockers with enough evidence to stop churn
 - keep `TER-796` sealed unless isolated evidence says otherwise
 - keep tracker, gate artifacts, and roadmap status perfectly aligned
-- avoid proof rabbit holes
+- move into `G3` immediately once `G2` is honestly closeable
 
 ## Compressed Execution State
 
@@ -141,19 +139,18 @@ Verification evidence:
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json`
 
 Unresolved blockers:
-- no fresh deployed build has yet been validated with the local fill fix
-- the current fill fix is still local worktree state rather than deployed truth, so live fill closure is blocked until a fresh build exists or the user explicitly authorizes shipping that fix
 - unresolved G2 rows still include:
-  - `SALE-ORD-019`
   - `SALE-ORD-020`
   - `SALE-ORD-021`
-  - `SALE-ORD-022`
   - `SALE-ORD-029`
   - `SALE-ORD-031`
   - `SALE-ORD-035`
+- `SALE-ORD-031` should now be handled as a limitation packet, not more theorizing
+- `SALE-ORD-035` should now be handled as a limitation packet unless one bounded negative-case packet closes it immediately
+- `SALE-ORD-020` and `SALE-ORD-021` should stay parked until a fresh reachable Orders document route exists
 
-Next command:
-- `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
+Immediate next command class:
+- limitation packet writeback for `SALE-ORD-031`
 
 ## Retrieval Contract
 
@@ -187,65 +184,48 @@ Do not read the March 17 rollout roadmap unless you need lineage only.
 
 ## Atomic Roadmap Forward
 
-### Tranche 1: Deployed Fill Confirmation
+### Tranche 1: Immediate G2 Close Path
 
 Objective:
-- determine whether the local deterministic fill fix is live on a fresh deployed build
+- clear the remaining `G2` rows with the smallest honest row outcomes so execution can move into Orders document closure
 
-Step 0:
-- confirm whether a deployable build containing the fill fix exists
-- if no build newer than `build-mmwp9o9e` exists, do not spend the one live probe on the old build again
-- if you are not explicitly authorized to commit or push, escalate that deploy dependency instead of trying to “prove” a local-only fix on staging
-
-Allowed work:
-- one narrow deployed-build probe
-- no broad G2 proof rerun unless the probe changes the state classification
-
-Commands:
-- `git status -sb`
-- `doctl apps list-deployments 62f2d9f8-3fb5-4576-9f7b-8dd91cf552a6`
-- open the deployed version endpoint or `version.json` and confirm its build timestamp is newer than `2026-03-18T23:56:20.894Z`
-- `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
-
-Exit states:
-- `closed with evidence` for `SALE-ORD-022` if the probe produces `["3","4","5","6"]`
-- `partial` with explicit limitation packet if the fresh build still produces `["3","4","1","1"]`
+- `SALE-ORD-031` -> limitation packet now
+- `SALE-ORD-035` -> limitation packet now unless one bounded negative-case packet closes it immediately
+- `SALE-ORD-029` -> one narrow proof attempt, then limitation if still fuzzy
+- `SALE-ORD-020` -> park until a fresh reachable document route exists, then one fresh-build attempt
+- `SALE-ORD-021` -> park until a fresh reachable document route exists, then one fresh-build attempt
 
 ### Tranche 2: Remaining TER-795 Rows
 
 Objective:
-- resolve the remaining independent proof rows without replaying already-settled work
+- resolve the remaining independent rows without replaying already-settled work or turning the shared runtime into a research program
 
 Row-by-row proof map:
 
 | Row | Behavior | What closes it | Preferred proof method |
 | --- | --- | --- | --- |
-| `SALE-ORD-019` | full drag shift cmd and scope-selection proof across required surfaces | isolated evidence that drag-selection and scoped range selection behave correctly on the required Orders surfaces | extend or add one isolated selection probe; do not mix with paste or fill |
 | `SALE-ORD-020` | multi-cell edit pricing autosave proof | isolated proof that approved multi-cell edits preserve pricing and autosave behavior | targeted edit probe plus save-state evidence |
 | `SALE-ORD-021` | approved-field paste proof on staging | isolated staging proof that approved-field paste lands correctly on the document grid | existing G2 paste harness, but only in isolated paste mode |
-| `SALE-ORD-022` | fill handle proof on staging | deployed-build proof that quantity fill propagates `3,4 -> 5,6` or an explicit limitation packet | `pnpm proof:staging:orders-fill-handle` |
-| `SALE-ORD-029` | clear-style actions and structured edit rejection proof | isolated proof for clear-style / clear-cell rejection behavior without dirtying unrelated rows | new narrow probe likely required |
-| `SALE-ORD-031` | sort/filter-safe targeting proof | isolated evidence that edits and paste target the right logical rows under sort/filter | new narrow probe likely required |
-| `SALE-ORD-035` | failure-mode bundle proof beyond immediate invalid-edit rejection | isolated failure packet that closes or limits the remaining rejection bundle | bounded negative-case probe plus limitation packaging if needed |
+| `SALE-ORD-029` | clear-style actions and structured edit rejection proof | one narrow packet that either closes the row or justifies limitation | one bounded negative-case probe only |
+| `SALE-ORD-031` | sort/filter-safe targeting proof | explicit limitation packet because the Orders surface does not expose sort or filter | no new broad proof work |
+| `SALE-ORD-035` | failure-mode bundle proof beyond immediate invalid-edit rejection | explicit limitation packet unless one bounded packet closes the row immediately | limitation packaging first |
 
 Execution order:
-1. `SALE-ORD-022` only if a fresh deployed build exists
-2. `SALE-ORD-031`
-3. `SALE-ORD-019`
+1. `SALE-ORD-031`
+2. `SALE-ORD-035`
+3. `SALE-ORD-029`
 4. `SALE-ORD-020`
 5. `SALE-ORD-021`
-6. `SALE-ORD-029`
-7. `SALE-ORD-035`
 
 Rules:
 - each row gets an isolated packet
 - no mixed-sequence proof
-- if a row cannot be directly proved, package it as an explicit limitation instead of holding the whole gate hostage
+- if a row cannot be directly proved, package it as an explicit limitation or blocker instead of holding the whole gate hostage
 
 ### Tranche 3: G2 Closure Packet
 
 Objective:
-- close `TER-795` honestly and make `G2` promotion-ready
+- close `TER-795` honestly and move directly into `G3`
 
 Required bundle:
 - refreshed gate files

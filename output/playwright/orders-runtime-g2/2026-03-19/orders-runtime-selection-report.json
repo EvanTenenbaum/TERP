@@ -1,0 +1,54 @@
+{
+  "baseUrl": "https://terp-staging-yicld.ondigitalocean.app",
+  "orderId": "627",
+  "draftId": "618",
+  "timestamp": "2026-03-19T21:49:13.683Z",
+  "version": {
+    "version": "1.0.0",
+    "commit": "build-mmxzi3to",
+    "date": "2026-03-19",
+    "branch": "unknown",
+    "phase": "Development",
+    "buildTime": "2026-03-19T21:30:36.648Z"
+  },
+  "queueRoute": {
+    "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+    "dragRange": {
+      "summary": "6 selected cells · 2 rows in scope",
+      "state": "Focused cell: 0:stageLabel · Ranges: 1"
+    },
+    "discontiguousRange": {
+      "summary": "2 selected cells · 2 rows in scope · discontiguous selection",
+      "state": "Focused cell: 1:stageLabel · Ranges: 2"
+    },
+    "columnScope": {
+      "summary": "100 selected cells · 100 rows in scope",
+      "state": "Focused cell: 1:stageLabel · Ranges: 1"
+    },
+    "gridScope": {
+      "summary": "600 selected cells · 100 rows in scope",
+      "state": "Focused cell: 0:stageLabel · Ranges: 1"
+    }
+  },
+  "documentRoute": {
+    "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+    "shiftRange": {
+      "summary": "3 selected cells · 3 rows in scope",
+      "state": "Focused cell: 0:quantity · Ranges: 1"
+    }
+  },
+  "supportSurface": {
+    "visibleCellCount": 4,
+    "focusedSelection": {
+      "summary": "1 selected cells · 1 rows in scope",
+      "state": "Focused cell: 0:productDisplayName · Ranges: 1"
+    }
+  },
+  "screenshotPaths": [
+    "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-queue-probe.png",
+    "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-document-probe.png"
+  ],
+  "licenseWarnings": [],
+  "agGridWarnings": [],
+  "pageErrors": []
+}

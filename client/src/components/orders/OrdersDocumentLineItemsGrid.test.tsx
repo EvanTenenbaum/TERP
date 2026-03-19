@@ -374,7 +374,88 @@ describe("OrdersDocumentLineItemsGrid", () => {
 
     const nextItems = onChange.mock.calls[0][0] as LineItem[];
     expect(nextItems[2].quantity).toBe(5);
+    expect(nextItems[2].unitPrice).toBe(12.5);
     expect(nextItems[2].lineTotal).toBe(62.5);
+  });
+
+  it("preserves row pricing when multi-row quantity writeback lands through fill end", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1, quantity: 2, unitPrice: 12.5, lineTotal: 25 }),
+          buildLineItem({
+            id: 2,
+            batchId: 2002,
+            productId: 22,
+            quantity: 3,
+            unitPrice: 18.75,
+            lineTotal: 56.25,
+          }),
+          buildLineItem({
+            id: 3,
+            batchId: 3003,
+            productId: 33,
+            quantity: 4,
+            unitPrice: 21.5,
+            lineTotal: 86,
+          }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    act(() => {
+      call?.onFillStart?.({});
+      call?.onFillEnd?.({
+        api: {
+          forEachNode: (iterate: (node: { data: LineItem }) => void) => {
+            iterate({
+              data: buildLineItem({
+                id: 1,
+                quantity: 5,
+                unitPrice: 12.5,
+                lineTotal: 62.5,
+              }),
+            });
+            iterate({
+              data: buildLineItem({
+                id: 2,
+                batchId: 2002,
+                productId: 22,
+                quantity: 6,
+                unitPrice: 18.75,
+                lineTotal: 112.5,
+              }),
+            });
+            iterate({
+              data: buildLineItem({
+                id: 3,
+                batchId: 3003,
+                productId: 33,
+                quantity: 4,
+                unitPrice: 21.5,
+                lineTotal: 86,
+              }),
+            });
+          },
+        },
+      });
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].quantity).toBe(5);
+    expect(nextItems[0].unitPrice).toBe(12.5);
+    expect(nextItems[0].lineTotal).toBe(62.5);
+    expect(nextItems[1].quantity).toBe(6);
+    expect(nextItems[1].unitPrice).toBe(18.75);
+    expect(nextItems[1].lineTotal).toBe(112.5);
+    expect(nextItems[2].quantity).toBe(4);
+    expect(nextItems[2].unitPrice).toBe(21.5);
+    expect(nextItems[2].lineTotal).toBe(86);
   });
 
   it("keeps hidden rows and original order stable when fill writeback follows grid display order", () => {

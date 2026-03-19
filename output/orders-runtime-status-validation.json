@@ -1,0 +1,16 @@
+{
+  "passed": 10,
+  "total": 10,
+  "checks": {
+    "active_has_local_snapshot_language": true,
+    "active_has_next_command": true,
+    "active_has_live_proven_rows": true,
+    "active_has_ter796_rule": true,
+    "active_has_sale_ord_022_guard": true,
+    "active_excludes_generator_owned_outputs_label": true,
+    "proof_has_remaining_reruns": true,
+    "proof_no_duplicate_browser_budget_heading": true,
+    "proof_has_ter796_guardrail": true,
+    "proof_has_sale_ord_022_guardrail": true
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "baseUrl": "https://terp-staging-yicld.ondigitalocean.app",
+  "draftId": "618",
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+  "timestamp": "2026-03-19T20:35:43.656Z",
+  "version": {
+    "version": "1.0.0",
+    "commit": "build-mmxxcgce",
+    "date": "2026-03-19",
+    "branch": "unknown",
+    "phase": "Development",
+    "buildTime": "2026-03-19T20:30:13.707Z"
+  },
+  "selectionSummaryBeforeDrag": "2 selected cells · 2 rows in scope",
+  "selectionStateBeforeDrag": "Focused cell: 0:quantity · Ranges: 1",
+  "selectionSummaryAfterDrag": "4 selected cells · 4 rows in scope",
+  "selectionStateAfterDrag": "Focused cell: 0:quantity · Ranges: 1",
+  "fillHandleVisible": true,
+  "bodyClassDuringDrag": "ag-dragging-fill-handle",
+  "quantityValuesBeforeDrag": [
+    "3",
+    "4",
+    "1",
+    "1"
+  ],
+  "quantityValuesAfterDrag": [
+    "3",
+    "4",
+    "5",
+    "6"
+  ],
+  "dragApplied": true,
+  "screenshotPath": "/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-probe.png",
+  "licenseWarnings": [],
+  "agGridWarnings": [],
+  "pageErrors": []
+}

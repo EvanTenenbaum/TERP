@@ -4,20 +4,20 @@ _Generated from `ter-795-state.json`. Attach this context before bounded adversa
 
 - Active atomic card: `TER-795`
 - Gate verdict: `partial`
-- Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131`
-- Deploy commit: `3398a9baa8101e47e9119fc69943da7a3627edbd`
+- Live reference build: `build-mmxzi3to` via deployment `eb16abcf-6c41-4939-a2bf-dd5687c0cc3a`
+- Deploy commit: `1e248c932623ad6c5248a7f18b4e1d23f128b297`
 - Persona: `sales-manager`
-- Next move: `SALE-ORD-019` — Move to the next independent TER-795 row with one isolated selection packet.
+- Next move: `SALE-ORD-020` — Move to the next independent TER-795 row with one isolated multi-cell edit packet.
 
 ## Accepted Rows
 
+- `SALE-ORD-019`
 - `SALE-ORD-022`
 - `SALE-ORD-030`
 - `SALE-ORD-032`
 
 ## Remaining Rows
 
-- `SALE-ORD-019`
 - `SALE-ORD-020`
 - `SALE-ORD-021`
 - `SALE-ORD-029`
@@ -41,6 +41,7 @@ _Generated from `ter-795-state.json`. Attach this context before bounded adversa
 
 ## Probe Packets
 
+- `SALE-ORD-019` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json` (closed with evidence)
 - `SALE-ORD-022` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json` (closed with evidence)
 - `SALE-ORD-030` -> `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json` (closed with evidence)
 - `SALE-ORD-032` -> `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json` (closed with evidence)

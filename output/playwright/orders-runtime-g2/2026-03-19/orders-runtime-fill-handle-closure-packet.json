@@ -3,13 +3,13 @@
   "gate": "G2",
   "row_id": "SALE-ORD-022",
   "issue": "TER-771",
-  "generated_at": "2026-03-19T21:21:46.490Z",
+  "generated_at": "2026-03-19T21:48:09.095Z",
   "command": "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle",
   "suggested_verdict": "closed with evidence",
   "acceptance_criteria": "Deployed-build proof that quantity fill propagates `3,4 -> 5,6` on the real Orders document route or an explicit limitation packet.",
   "build": {
     "id": "build-mmxxcgce",
-    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
     "deployment_build_time": "2026-03-19T20:30:13.707Z"
   },
   "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",

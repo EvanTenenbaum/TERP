@@ -20,12 +20,12 @@ Current truth:
 <!-- GENERATED:TER-795:ROADMAP-TRUTH:START -->
 - The shared runtime seam already exists in `PowersheetGrid`, and the March 18 targeted runtime tests proved the current adapter path is real rather than aspirational.
 - `TER-794` and `TER-796` are currently safe to treat as closed with evidence; `TER-795` remains partial on the remaining proof rows and the `SALE-ORD-031` limitation.
-- Staging build `build-mmwp9o9e` already cleared the AG Grid watermark or license blocker, restored queue-route health, and kept the Add Item focus repair live.
-- The repaired proof harness rejected the earlier two-cell-range theory and now proves rectangular keyboard paste with a real two-cell range on staging.
-- The fill tranche is shipped: staging build `build-mmxxcgce` records `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence.
+- Staging build `build-mmxzi3to` for commit `1e248c932623ad6c5248a7f18b4e1d23f128b297` now carries the merged process-improvement tranche and the isolated selection proof for `SALE-ORD-019`.
+- The repaired selection probe now proves queue drag-range, queue Cmd discontiguous selection, queue column and current-grid scope selection, and document Shift-range behavior on the live Orders surfaces.
+- `SALE-ORD-019` is now closed with evidence via `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json` on build `build-mmxzi3to`.
+- The fill tranche remains closed: staging build `build-mmxxcgce` recorded `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` stays closed with evidence.
 - The same continuation fixed the focused-row-id targeting drift, but `SALE-ORD-031` stays partial because the live Orders document surface still disables sort/filter and cannot exercise that path directly.
-- Claude's post-ship review left one residual caution attached to `SALE-ORD-022`: the narrow probe proves live route propagation, not a separate post-reload persistence round-trip.
-- This gate remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still need a closure packet or explicit limitation packet.
+- This gate remains open because `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still need a closure packet or explicit limitation packet.
 <!-- GENERATED:TER-795:ROADMAP-TRUTH:END -->
 
 ## Allowed Inputs
@@ -54,6 +54,30 @@ Current truth:
 4. Close edit navigation, row operations, and sort/filter-safe targeting.
 5. Record environment hardening needed to make the runtime reproducible and testable.
 6. Use `1 coordinator + read-only sidecars + at most 1 narrow writer` while G2 proof is still unstable.
+
+## Parallelization Boundary
+
+Reusable now:
+
+- roadmap and gate structure
+- state-sync, closure-packet, and limitation-packet workflow
+- proof taxonomy, requirement mapping, and ownership classification
+- future adapter planning that does not depend on frozen shared-runtime behavior
+
+Still blocked while `G2` is `partial`:
+
+- cross-module adapter implementation against the current `PowersheetGrid` behavior
+- any claim that foundation-shared capability classes are portable beyond Orders
+- `ORD-SS-012` portability because `SALE-ORD-031` still lacks a live sort/filter-capable Orders surface
+- reload-safe fill claims because `SALE-ORD-022` still carries a no-reload persistence caveat
+
+Future module adapter work may start only after:
+
+1. `G2` is `closed with evidence`.
+2. `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` each have a closure packet or explicit limitation packet.
+3. [PowersheetGrid boundary contract](../../specs/spreadsheet-native-foundation/orders-runtime/PowersheetGrid-boundary-contract.md) is promoted to a frozen interface contract.
+
+Even after that prerequisite gate opens, `implemented-not-surfaced` remains rollout-blocking for any foundation-shared capability claim.
 
 ## Validation Commands And Proof Artifacts
 

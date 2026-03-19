@@ -29,6 +29,12 @@ Primary evidence store:
 
 - [Orders runtime charter](../../specs/spreadsheet-native-foundation/orders-runtime/00-program-charter.md)
 - [Execution handoff prompt](../../specs/spreadsheet-native-foundation/orders-runtime/HANDOFF-2026-03-19-CODEX-EXECUTION-PROMPT.md)
+- [PowersheetGrid boundary contract](../../specs/spreadsheet-native-foundation/orders-runtime/PowersheetGrid-boundary-contract.md)
+- [Remaining atomic completion roadmap](./remaining-atomic-completion-roadmap-2026-03-19.md)
+- [Parallel module readiness review](./parallel-module-readiness-review-2026-03-19.md)
+- [Parallel module readiness implementation prompt](./parallel-module-readiness-implementation-prompt-2026-03-19.md)
+- [Non-Codex takeover handoff](./non-codex-takeover-handoff-2026-03-19.md)
+- [Non-Codex takeover prompt](./non-codex-takeover-prompt-2026-03-19.md)
 - [TER-795 state](../../specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json)
 - [Issue manifest](../../specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json)
 - [Proof row map](../../specs/spreadsheet-native-foundation/orders-runtime/02-proof-row-map.csv)
@@ -65,6 +71,31 @@ Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until t
 - `implemented-not-surfaced` is rollout-blocking.
 - `G6` is the only roadmap allowed to declare proof-complete or tracker-complete.
 - `G7` is required before Orders can leave special-initiative mode.
+
+## Parallel Module Boundary
+
+This package may share its process model now, but it does not authorize broad parallel technical adapter work on the shared spreadsheet runtime.
+
+Safe to parallelize now:
+
+- roadmap and gate structure
+- machine-readable state, closure-packet, and limitation-packet workflow
+- proof taxonomy and evidence expectations
+- requirement mapping, ownership classification, and future adapter planning
+
+Blocked until the shared-foundation readiness gate passes:
+
+- mounting other modules against the current `PowersheetGrid` seam as if it were frozen
+- claiming `ORD-SS-*` or `ORD-SF-*` capability coverage outside Orders
+- treating `SALE-ORD-031` sort/filter safety as portable
+- treating `SALE-ORD-022` as proof of reload-safe fill persistence
+
+Future module adapter work requires all of the following:
+
+1. `G2` is `closed with evidence`.
+2. `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` each have a closure packet or explicit limitation packet.
+3. [PowersheetGrid boundary contract](../../specs/spreadsheet-native-foundation/orders-runtime/PowersheetGrid-boundary-contract.md) is promoted to a frozen interface contract.
+4. Foundation-shared capability claims remain blocked anywhere the originating Orders requirement is still `implemented-not-surfaced`.
 
 ## Command Contract
 

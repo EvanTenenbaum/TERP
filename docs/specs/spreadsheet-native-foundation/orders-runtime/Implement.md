@@ -10,13 +10,19 @@
 <!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:START -->
 - Updated at: `2026-03-19`
 - Active atomic card: `TER-795`
-- Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
-- Directly live-proven G2 rows: `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032`
-- Remaining TER-795 rows: `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
-- Next move: `SALE-ORD-019` — Move to the next independent TER-795 row with one isolated selection packet.
-- Cadence rule: One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points.
+- Live reference build: `build-mmxzi3to` via deployment `eb16abcf-6c41-4939-a2bf-dd5687c0cc3a` for commit `1e248c932623ad6c5248a7f18b4e1d23f128b297`
+- Directly live-proven G2 rows: `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032`
+- Remaining TER-795 rows: `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
+- Next move: `SALE-ORD-031` — Write the limitation packet now so G2 stops waiting on a non-surfaced Orders sort/filter path.
+- Cadence rule: Every writable tranche ends in exactly one of user-facing product change, closure packet, limitation packet, or blocker packet. Use targeted local verification during implementation, at most one narrow live probe per row when needed, and full check/lint/test/build only at real ship points.
 <!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:END -->
 - Status log:
+  - reset the current close path toward row outcomes and immediate G3 re-entry instead of more foundation proof mechanics
+  - published `docs/specs/spreadsheet-native-foundation/orders-runtime/PowersheetGrid-boundary-contract.md` so the repo explicitly distinguishes reusable process scaffolding from blocked shared-runtime adapter work
+  - published `SALE-ORD-031` as an `ORD-SS-012` portability constraint until a live sort/filter-capable surface proves the invariant
+  - published the `SALE-ORD-022` no-reload persistence caveat as a shared-capability guard for `ORD-SS-008`
+  - added a concrete future module adapter readiness gate: no broad technical adapter work until `G2` is `closed with evidence`, the remaining TER-795 rows have closure or limitation packets, and the boundary contract is promoted to a frozen interface
+  - preserved the repo rule that `implemented-not-surfaced` remains rollout-blocking for foundation-shared capability claims
   - created durable-state files and gate artifacts
   - created Linear gate parents `TER-787` through `TER-793`
   - created atomic cards `TER-794` through `TER-806`
@@ -79,11 +85,14 @@
   - ran Claude adversarial review (`claude-opus-4-6`, high effort) against the TER-795 row-classification brief; Claude agreed `SALE-ORD-022` cannot move above deploy-blocked/open on the current staging build and recommended keeping `SALE-ORD-031` at `partial` with a limitation note because the live Orders document surface still disables sort/filter
   - reran the dedicated live probe on the fresh staging build and captured `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json` with `quantityValuesAfterDrag: ["3","4","5","6"]`, no license warnings, and no page errors, which satisfies the shipped-build closure contract for `SALE-ORD-022`
   - reran Claude adversarial review on the shipped-build evidence; Claude did not overturn the `SALE-ORD-022` closure, but it flagged one residual note that the narrow probe proves live route propagation rather than a separate post-reload persistence round-trip
+  - added `scripts/spreadsheet-native/probe-orders-runtime-selection.ts` plus `pnpm proof:staging:orders-selection` so `SALE-ORD-019` can be classified from one isolated selection packet instead of a mixed browser bundle
+  - confirmed the current live build moved to `build-mmxzi3to` for merged-main commit `1e248c932623ad6c5248a7f18b4e1d23f128b297`, then proved queue drag-range, queue Cmd discontiguous selection, queue column and current-grid scope selection, and document Shift-range behavior through `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json`
+  - closed `SALE-ORD-019` with evidence on the current staging build and moved the next independent TER-795 row to `SALE-ORD-020`
 - Repair queue:
 <!-- GENERATED:TER-795:REPAIR-QUEUE:START -->
-  - Keep `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` as the only G2 rows safe to treat as directly live-proven right now.
+  - Keep `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` as the only G2 rows safe to treat as directly live-proven right now.
   - Keep `TER-796` sealed unless a future isolated row-op rerun reproduces a real regression.
   - Keep the `SALE-ORD-022` closure packet honest: it proves shipped-route propagation on build `build-mmxxcgce`, not a separate reload or persistence round-trip.
   - Keep `SALE-ORD-031` partial with its code-proven limitation note until a live Orders document surface exercises sort or filter.
-  - Move to `SALE-ORD-019` next, then continue one row or one limitation packet at a time.
+  - Move to `SALE-ORD-020` next, then continue one row or one limitation packet at a time.
 <!-- GENERATED:TER-795:REPAIR-QUEUE:END -->

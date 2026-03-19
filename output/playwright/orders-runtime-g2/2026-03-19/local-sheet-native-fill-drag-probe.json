@@ -1,0 +1,47 @@
+{
+  "date": "2026-03-19",
+  "type": "local_browser_probe",
+  "status": "passed",
+  "scope": "SALE-ORD-022 local sheet-native fill tranche",
+  "environment": {
+    "baseUrl": "http://127.0.0.1:3001",
+    "serverCommand": "SKIP_SEEDING=true AUTO_MIGRATE_MODE=off PORT=3001 pnpm start",
+    "databaseUrlConfigured": false,
+    "authMode": "mocked auth.me via Playwright route interception",
+    "dataMode": "mocked tRPC batches via Playwright route interception"
+  },
+  "route": "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=1",
+  "selectionSummaryBeforeDrag": "2 selected cells · 2 rows in scope",
+  "selectionStateBeforeDrag": "Focused cell: 0:quantity · Ranges: 1",
+  "fillHandleVisible": true,
+  "quantityValuesBeforeDrag": [
+    "3",
+    "4",
+    "1",
+    "1"
+  ],
+  "selectionSummaryAfterDrag": "4 selected cells · 4 rows in scope",
+  "selectionStateAfterDrag": "Focused cell: 0:quantity · Ranges: 1",
+  "quantityValuesAfterDrag": [
+    "3",
+    "4",
+    "5",
+    "6"
+  ],
+  "expectedQuantityValuesAfterDrag": [
+    "3",
+    "4",
+    "5",
+    "6"
+  ],
+  "browserResult": "The repaired Orders document fill callback propagated the quantity series locally on the real sheet-native document grid.",
+  "artifacts": {
+    "selectionScreenshot": "output/playwright/orders-runtime-g2/2026-03-19/local-sheet-native-fill-selection-probe.png",
+    "dragScreenshot": "output/playwright/orders-runtime-g2/2026-03-19/local-sheet-native-fill-drag-probe.png"
+  },
+  "notes": [
+    "This is local browser proof on the real app surface, not staging proof.",
+    "The probe used a degraded production boot plus route-level tRPC stubs to avoid DATABASE_URL dependency and watch-mode churn.",
+    "TER-795 remains blocked until the same fill result is confirmed on a deployed build or an explicit limitation packet is accepted."
+  ]
+}

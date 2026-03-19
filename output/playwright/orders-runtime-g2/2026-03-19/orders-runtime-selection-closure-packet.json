@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-019",
+  "issue": "TER-770",
+  "generated_at": "2026-03-19T21:49:13.720Z",
+  "command": "PLAYWRIGHT_BASE_URL=https://terp-staging-yicld.ondigitalocean.app pnpm proof:staging:orders-selection",
+  "suggested_verdict": "closed with evidence",
+  "acceptance_criteria": "Queue drag-range, document Shift-range, Cmd discontiguous selection, and scope-selection proof on the live Orders surfaces.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": {
+    "queue": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+    "document": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618"
+  },
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "queue-drag-range",
+      "label": "Queue drag-selection forms a contiguous multi-row range",
+      "passed": true,
+      "expected": "Queue drag-selection yields one contiguous rectangular range across at least two rows.",
+      "observed": {
+        "summary": "6 selected cells · 2 rows in scope",
+        "state": "Focused cell: 0:stageLabel · Ranges: 1"
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "document-shift-range",
+      "label": "Document Shift-range selection remains live through the shared runtime",
+      "passed": true,
+      "expected": "Document Shift-range selection yields at least 3 selected cells across 3 rows with one range.",
+      "observed": {
+        "summary": "3 selected cells · 3 rows in scope",
+        "state": "Focused cell: 0:quantity · Ranges: 1"
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "queue-discontiguous",
+      "label": "Queue Cmd-click builds a discontiguous selection",
+      "passed": true,
+      "expected": "Queue Cmd-click yields a discontiguous selection with two ranges.",
+      "observed": {
+        "summary": "2 selected cells · 2 rows in scope · discontiguous selection",
+        "state": "Focused cell: 1:stageLabel · Ranges: 2"
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "queue-column-scope",
+      "label": "Queue column-header selection scopes one full column",
+      "passed": true,
+      "expected": "Column-header selection yields one selected cell per row across the visible queue.",
+      "observed": {
+        "summary": "100 selected cells · 100 rows in scope",
+        "state": "Focused cell: 1:stageLabel · Ranges: 1"
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "queue-grid-scope",
+      "label": "Queue Cmd+A scopes the current grid",
+      "passed": true,
+      "expected": "Cmd+A yields a full-grid selection with more selected cells than selected rows.",
+      "observed": {
+        "summary": "600 selected cells · 100 rows in scope",
+        "state": "Focused cell: 0:stageLabel · Ranges: 1"
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "support-surface-visible",
+      "label": "Support surface renders visible cells and emits selection state",
+      "passed": true,
+      "expected": "Support surface shows at least four visible cells and emits focused single-cell selection state.",
+      "observed": {
+        "visibleCellCount": 4,
+        "focusedSelection": {
+          "summary": "1 selected cells · 1 rows in scope",
+          "state": "Focused cell: 0:productDisplayName · Ranges: 1"
+        }
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "license-clean",
+      "label": "No AG Grid license warnings were recorded",
+      "passed": true,
+      "expected": "No license warnings are emitted during the probe.",
+      "observed": [],
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "page-clean",
+      "label": "No page errors were recorded",
+      "passed": true,
+      "expected": "No page errors are emitted during the probe.",
+      "observed": [],
+      "failure_impact": "blocker"
+    }
+  ],
+  "artifacts": {
+    "report": {
+      "relative_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-report.json",
+      "sha256": "415b2a5eba1718fe5e9e974575eeb3e31bb81e07a1f480edcbca3ad549a04260"
+    },
+    "screenshots": [
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-queue-probe.png",
+        "sha256": "7bdebb7235334f417a2613ae4e7754a502c2b64a6188a6213ea60c69c0a5afdd"
+      },
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-document-probe.png",
+        "sha256": "c7e45ec88d8aab26bdb2011f417222c4ba2bd7f7fab4f318a747bb231c757d4d"
+      }
+    ]
+  },
+  "summary": {
+    "queue_drag_range": {
+      "summary": "6 selected cells · 2 rows in scope",
+      "state": "Focused cell: 0:stageLabel · Ranges: 1"
+    },
+    "queue_discontiguous_range": {
+      "summary": "2 selected cells · 2 rows in scope · discontiguous selection",
+      "state": "Focused cell: 1:stageLabel · Ranges: 2"
+    },
+    "queue_column_scope": {
+      "summary": "100 selected cells · 100 rows in scope",
+      "state": "Focused cell: 1:stageLabel · Ranges: 1"
+    },
+    "queue_grid_scope": {
+      "summary": "600 selected cells · 100 rows in scope",
+      "state": "Focused cell: 0:stageLabel · Ranges: 1"
+    },
+    "document_shift_range": {
+      "summary": "3 selected cells · 3 rows in scope",
+      "state": "Focused cell: 0:quantity · Ranges: 1"
+    },
+    "support_surface": {
+      "visibleCellCount": 4,
+      "focusedSelection": {
+        "summary": "1 selected cells · 1 rows in scope",
+        "state": "Focused cell: 0:productDisplayName · Ranges: 1"
+      }
+    },
+    "ag_grid_warnings": [],
+    "page_errors": []
+  }
+}

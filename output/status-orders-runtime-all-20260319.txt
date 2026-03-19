@@ -1,0 +1,14 @@
+
+> terp-redesign@1.0.0 status:orders-runtime:all /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318
+> pnpm status:orders-runtime:active-gate && pnpm status:orders-runtime:proof-budget
+
+
+> terp-redesign@1.0.0 status:orders-runtime:active-gate /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318
+> node scripts/spreadsheet-native/generate-orders-runtime-active-gate-status.mjs
+
+/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md
+
+> terp-redesign@1.0.0 status:orders-runtime:proof-budget /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318
+> node scripts/spreadsheet-native/generate-orders-runtime-proof-budget.mjs
+
+/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md

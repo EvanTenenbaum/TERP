@@ -17,6 +17,7 @@ Current truth:
 
 - document-mode runtime mounting is already present in the current repo
 - this roadmap stays blocked until `G2` closes because the shared runtime tranche is not yet fully closed with evidence
+- once `G2` is honestly closeable, this roadmap becomes the immediate next execution lane; do not insert more foundation or meta-system cleanup ahead of document closure
 
 ## Allowed Inputs
 
@@ -75,7 +76,7 @@ Required staging artifacts before closure:
 
 - Stop if document rollout adds a parallel mutation path, save-state path, undo system, seeded-entry path, or route grammar.
 - Stop if any Orders-owned document row remains `implemented-not-surfaced`.
-- Go only when document mode is trustworthy enough to unblock queue/support rollout.
+- Go immediately once `G2` is honestly closed and document mode is trustworthy enough to unblock queue/support rollout.
 
 ## Completion Writeback
 
