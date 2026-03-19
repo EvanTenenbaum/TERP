@@ -26,6 +26,7 @@ const mockSpreadsheetPilotGrid = vi.fn(
           rowIndex: 2,
           columnKey: "sku",
         },
+        focusedRowId: "row-2",
         anchorCell: {
           rowIndex: 2,
           columnKey: "sku",

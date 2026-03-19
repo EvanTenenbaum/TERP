@@ -179,7 +179,9 @@ describe("Consolidated workspace pages", () => {
   it("renders Inventory workspace with inventory default content", () => {
     mockActiveTab = "inventory";
     render(<InventoryWorkspacePage />);
-    expect(screen.getByRole("heading", { name: "Inventory" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Inventory" })
+    ).toBeInTheDocument();
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
   });
 
@@ -195,15 +197,21 @@ describe("Consolidated workspace pages", () => {
   it("renders Inventory workspace with receiving queue content", () => {
     mockActiveTab = "receiving";
     render(<InventoryWorkspacePage />);
-    expect(screen.getByRole("heading", { name: "Inventory" })).toBeInTheDocument();
-    expect(screen.getByText("Purchase Orders Slice Surface")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Inventory" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Purchase Orders Slice Surface")
+    ).toBeInTheDocument();
   });
 
   it("renders Inventory workspace receiving editor when a draft is selected", async () => {
     mockActiveTab = "receiving";
     mockSearch = "?tab=receiving&draftId=draft-123";
     render(<InventoryWorkspacePage />);
-    expect(screen.getByRole("heading", { name: "Inventory" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Inventory" })
+    ).toBeInTheDocument();
     expect(
       await screen.findByText("Receiving Slice Surface")
     ).toBeInTheDocument();
@@ -212,9 +220,7 @@ describe("Consolidated workspace pages", () => {
   it("renders Inventory workspace photography tab with embedded content", async () => {
     mockActiveTab = "photography";
     render(<InventoryWorkspacePage />);
-    expect(
-      await screen.findByText("Photography Embedded")
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Photography Embedded")).toBeInTheDocument();
   });
 
   it("renders Inventory workspace samples tab with embedded content", async () => {

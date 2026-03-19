@@ -72,6 +72,10 @@ describe("SpreadsheetPilotGrid", () => {
     const processCellFromClipboard = vi.fn();
     const processDataFromClipboard = vi.fn();
     const sendToClipboard = vi.fn();
+    const suppressKeyboardEvent = vi.fn();
+    const onFillStart = vi.fn();
+    const onCellSelectionDeleteStart = vi.fn();
+    const setFillValue = vi.fn();
 
     render(
       <SpreadsheetPilotGrid<TestRow>
@@ -86,6 +90,14 @@ describe("SpreadsheetPilotGrid", () => {
         processCellFromClipboard={processCellFromClipboard}
         processDataFromClipboard={processDataFromClipboard}
         sendToClipboard={sendToClipboard}
+        suppressCutToClipboard
+        suppressKeyboardEvent={suppressKeyboardEvent}
+        onFillStart={onFillStart}
+        fillHandleOptions={{
+          direction: "y",
+          setFillValue,
+        }}
+        onCellSelectionDeleteStart={onCellSelectionDeleteStart}
       />
     );
 
@@ -97,7 +109,8 @@ describe("SpreadsheetPilotGrid", () => {
       enableColumnSelection: true,
       handle: {
         mode: "fill",
-        direction: "xy",
+        direction: "y",
+        setFillValue,
       },
     });
     expect(lastAgGridProps?.processCellFromClipboard).toBe(
@@ -107,6 +120,14 @@ describe("SpreadsheetPilotGrid", () => {
       processDataFromClipboard
     );
     expect(lastAgGridProps?.sendToClipboard).toBe(sendToClipboard);
+    expect(lastAgGridProps?.suppressCutToClipboard).toBe(true);
+    expect(lastAgGridProps?.defaultColDef).toMatchObject({
+      suppressKeyboardEvent,
+    });
+    expect(lastAgGridProps?.onFillStart).toBe(onFillStart);
+    expect(lastAgGridProps?.onCellSelectionDeleteStart).toBe(
+      onCellSelectionDeleteStart
+    );
   });
 
   it("can explicitly opt into column reordering when a surface allows it", () => {
@@ -211,7 +232,11 @@ describe("SpreadsheetPilotGrid", () => {
     lastAgGridProps?.onGridReady?.({ api: fakeApi });
 
     expect(fakeApi.setFocusedCell).toHaveBeenCalledWith(1, fakeColumns[0]);
-    expect(onSelectionSetChange).toHaveBeenCalled();
+    expect(onSelectionSetChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        focusedRowId: "row-2",
+      })
+    );
     expect(onSelectionSummaryChange).toHaveBeenCalledWith({
       selectedCellCount: 4,
       selectedRowCount: 2,
@@ -222,5 +247,36 @@ describe("SpreadsheetPilotGrid", () => {
       id: "row-2",
       sku: "SKU-002",
     });
+  });
+
+  it("ignores destroyed grid APIs instead of reading selection state after teardown", () => {
+    lastAgGridProps = null;
+
+    const onSelectionSetChange = vi.fn();
+    const onSelectionSummaryChange = vi.fn();
+
+    render(
+      <SpreadsheetPilotGrid<TestRow>
+        title="Orders Queue"
+        rows={rows}
+        columnDefs={columnDefs}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        selectionMode="cell-range"
+        selectionSurface="orders-queue"
+        onSelectionSetChange={onSelectionSetChange}
+        onSelectionSummaryChange={onSelectionSummaryChange}
+      />
+    );
+
+    const destroyedApi = {
+      isDestroyed: () => true,
+    };
+
+    lastAgGridProps?.onGridReady?.({ api: destroyedApi });
+
+    expect(onSelectionSetChange).not.toHaveBeenCalled();
+    expect(onSelectionSummaryChange).not.toHaveBeenCalled();
   });
 });

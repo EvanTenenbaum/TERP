@@ -49,7 +49,6 @@ export default function InventoryWorkspacePage() {
       validTabs: [...INVENTORY_TABS, "intake", "pick-pack"],
     });
   const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
-  const receivingDraftId = new URLSearchParams(search).get("draftId");
   const pilotSurfaceSupported = activeTab === "inventory";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
@@ -57,6 +56,7 @@ export default function InventoryWorkspacePage() {
     enabled: sheetPilotEnabled,
     ready: availabilityReady,
   });
+  const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
 
   return (

@@ -1,0 +1,36 @@
+proof_row,owner_class,current_state,gate,primary_issue,required_evidence
+SALE-ORD-001,Orders-owned,live-proven,G4,TER-776,queue browse/filter proof remains valid and must be preserved during cross-surface rollout
+SALE-ORD-002,Orders-owned,live-proven,G4,TER-777,inspector and support-grid sync proof remains valid and must survive runtime reuse
+SALE-ORD-003,Orders-owned,code-proven,G3,TER-773,new document-mode draft creation live proof
+SALE-ORD-004,Orders-owned,code-proven,G3,TER-773,draft edit with recalculation and undo live proof
+SALE-ORD-005,Orders-owned,code-proven,G3,TER-773,finalize guardrail and credit warning live proof
+SALE-ORD-006,Orders-owned,code-proven,G3,TER-773,draft reopen/delete and queue return live proof
+SALE-ORD-007,Orders-owned,code-proven,G4,TER-776,confirmed queue return and downstream context proof
+SALE-ORD-008,adjacent-owned,partial,G7,TER-806,explicit accounting launch ownership or acceptance evidence
+SALE-ORD-009,adjacent-owned handoff,live-proven,G7,TER-806,retain adjacent-owner handoff acceptance in retirement policy
+SALE-ORD-010,adjacent-owned,partial,G7,TER-806,returns owner-surface proof refresh
+SALE-ORD-011,adjacent-owned handoff,live-proven,G7,TER-806,retain shipping handoff acceptance in retirement policy
+SALE-ORD-012,Orders-owned,partial,G3,TER-774,quote-to-order initiation and mutation proof
+SALE-ORD-013,ownership-blocked,blocked,G7,TER-806,explicit owner decision
+SALE-ORD-014,adjacent-owned,blocked,G7,TER-806,accounting output proof or explicit reclassification
+SALE-ORD-015,Orders-owned,code-proven,G3,TER-773,sheet-native queue draft delete proof
+SALE-ORD-016,Orders-owned,code-proven,G3,TER-774,quote/client/need/sales-sheet seeded-entry proof
+SALE-ORD-017,Orders-owned,code-proven,G3,TER-773,autosave plus unsaved-nav plus keyboard shortcut proof
+SALE-ORD-018,Orders-owned,code-proven,G3,TER-774,client-seeded credit pricing referral context proof
+SALE-ORD-019,Orders-owned,partial,G2,TER-770,full drag shift cmd and scope-selection proof across required surfaces
+SALE-ORD-020,Orders-owned,partial,G2,TER-771,multi-cell edit pricing autosave proof
+SALE-ORD-021,Orders-owned,partial,G2,TER-771,approved-field paste proof on staging
+SALE-ORD-022,Orders-owned,partial,G2,TER-771,fill handle proof on staging
+SALE-ORD-023,Orders-owned,partial,G4,TER-777,cross-surface shared adapter consistency proof
+SALE-ORD-024,Orders-owned,partial,G5,TER-778,selection summary and blocked-edit surfacing proof on queue and support surfaces
+SALE-ORD-025,Orders-owned,partial,G5,TER-778,editable versus locked cues proof across all required surfaces
+SALE-ORD-026,Orders-owned,partial,G5,TER-778,discoverability proof across queue support and document surfaces
+SALE-ORD-027,Orders-owned,implemented-not-surfaced,G5,TER-778,workflow action visibility proof after spreadsheet edits
+SALE-ORD-028,Orders-owned,blocked,G3,TER-774,explicit sheet-native conversion ownership and proof
+SALE-ORD-029,Orders-owned,partial,G2,TER-771,clear-style actions and structured edit rejection proof
+SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,build-mmweo1fu document-grid proof for Tab Shift+Tab Enter Shift+Enter and Escape on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
+SALE-ORD-031,Orders-owned,partial,G2,TER-771,sort/filter-safe targeting proof
+SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,build-mmweo1fu document-grid proof for duplicate quick-add and delete row operations on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
+SALE-ORD-033,Orders-owned,blocked,G5,TER-778,per-surface discoverability proof
+SALE-ORD-034,Orders-owned,blocked,G4,TER-777,active-row versus focused-cell workflow ambiguity proof
+SALE-ORD-035,Orders-owned,partial,G2,TER-771,failure-mode bundle proof beyond immediate invalid-edit rejection

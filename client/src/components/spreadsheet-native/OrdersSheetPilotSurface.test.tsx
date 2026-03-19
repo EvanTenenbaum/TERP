@@ -328,6 +328,27 @@ describe("OrdersSheetPilotSurface", () => {
     expect(screen.getByRole("button", { name: /shipping/i })).toBeDisabled();
   });
 
+  it("tolerates detail payloads that omit lineItems without crashing the queue surface", () => {
+    mockOrderDetailUseQuery.mockImplementationOnce(() => ({
+      data: {
+        order: { id: 2 },
+        lineItems: undefined,
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    }));
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    const supportCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Selected Order Lines"
+    )?.[0];
+
+    expect(screen.getByText("Orders Queue")).toBeInTheDocument();
+    expect(supportCall?.rows).toEqual([]);
+  });
+
   it("renders the sheet-native document workflow when ordersView=document is requested", () => {
     mockSearch =
       "?tab=orders&surface=sheet-native&ordersView=document&draftId=1";

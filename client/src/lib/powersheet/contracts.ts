@@ -12,6 +12,7 @@ export interface PowersheetSelectionRange {
 
 export interface PowersheetSelectionSet {
   focusedCell: PowersheetCellCoordinate | null;
+  focusedRowId: string | null;
   anchorCell: PowersheetCellCoordinate | null;
   ranges: PowersheetSelectionRange[];
   selectedRowIds: Set<string>;

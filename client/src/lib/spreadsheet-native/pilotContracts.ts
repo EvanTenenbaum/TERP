@@ -298,7 +298,9 @@ export function mapOrderLineItemsToPilotRows(
     return [];
   }
 
-  return detail.lineItems.map((lineItem: OrderLineItemOutput) => ({
+  const lineItems = Array.isArray(detail.lineItems) ? detail.lineItems : [];
+
+  return lineItems.map((lineItem: OrderLineItemOutput) => ({
     identity: createIdentity(
       "orderLineItem",
       lineItem.id,

@@ -78,6 +78,7 @@ describe("powersheet anti-drift foundation contracts", () => {
   it("supports cell/range selection metadata alongside row selection", () => {
     const selection: PowersheetSelectionSet = {
       focusedCell: { rowIndex: 2, columnKey: "quantity" },
+      focusedRowId: "r3",
       anchorCell: { rowIndex: 0, columnKey: "quantity" },
       ranges: [
         {
@@ -89,6 +90,7 @@ describe("powersheet anti-drift foundation contracts", () => {
     };
 
     expect(selection.focusedCell?.columnKey).toBe("quantity");
+    expect(selection.focusedRowId).toBe("r3");
     expect(selection.ranges).toHaveLength(1);
     expect(selection.selectedRowIds.size).toBe(3);
   });

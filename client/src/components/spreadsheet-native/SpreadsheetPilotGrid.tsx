@@ -2,6 +2,8 @@ import "@/lib/ag-grid";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import type {
+  CellSelectionDeleteEndEvent,
+  CellSelectionDeleteStartEvent,
   CellFocusedEvent,
   ProcessCellForExportParams,
   ProcessDataFromClipboardParams,
@@ -9,8 +11,15 @@ import type {
   CellValueChangedEvent,
   CellRange,
   ColDef,
+  CutEndEvent,
+  CutStartEvent,
+  FillHandleOptions,
+  FillEndEvent,
+  FillStartEvent,
   GridApi,
   GridReadyEvent,
+  PasteEndEvent,
+  PasteStartEvent,
   SendToClipboardParams,
   SelectionChangedEvent,
 } from "ag-grid-community";
@@ -25,6 +34,17 @@ import type {
 } from "@/lib/powersheet/contracts";
 
 export type SpreadsheetPilotGridSelectionMode = "single-row" | "cell-range";
+
+function isGridApiDestroyed<Row extends object>(gridApi: GridApi<Row> | null) {
+  if (!gridApi) {
+    return true;
+  }
+
+  const apiWithLifecycle = gridApi as GridApi<Row> & {
+    isDestroyed?: () => boolean;
+  };
+  return apiWithLifecycle.isDestroyed?.() ?? false;
+}
 
 function getFocusedCellCoordinate<Row extends object>(
   gridApi: GridApi<Row>
@@ -101,6 +121,7 @@ function buildSelectionSet<Row extends object>(
     );
 
   const focusedCell = getFocusedCellCoordinate(gridApi);
+  let focusedRowId: string | null = null;
   const selectedRowIds = new Set(
     gridApi
       .getSelectedRows()
@@ -115,12 +136,14 @@ function buildSelectionSet<Row extends object>(
   if (focusedCell) {
     const focusedRowNode = gridApi.getDisplayedRowAtIndex(focusedCell.rowIndex);
     if (focusedRowNode?.data) {
-      selectedRowIds.add(getRowId(focusedRowNode.data));
+      focusedRowId = getRowId(focusedRowNode.data);
+      selectedRowIds.add(focusedRowId);
     }
   }
 
   return {
     focusedCell,
+    focusedRowId,
     anchorCell: ranges[0]?.anchor ?? focusedCell,
     ranges,
     selectedRowIds,
@@ -171,7 +194,7 @@ function focusSelectedRowCell<Row extends object>(
   selectedRowId: string | null,
   getRowId: (row: Row) => string
 ) {
-  if (!selectedRowId) {
+  if (!selectedRowId || isGridApiDestroyed(gridApi)) {
     return;
   }
 
@@ -225,6 +248,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   selectionMode?: SpreadsheetPilotGridSelectionMode;
   selectionSurface?: PowersheetSelectionSummary["focusedSurface"];
   enableFillHandle?: boolean;
+  fillHandleOptions?: Omit<FillHandleOptions<Row>, "mode">;
   enableUndoRedo?: boolean;
   allowColumnReorder?: boolean;
   enterNavigatesVertically?: boolean;
@@ -240,6 +264,18 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
     params: ProcessDataFromClipboardParams<Row>
   ) => string[][] | null;
   sendToClipboard?: (params: SendToClipboardParams<Row>) => void;
+  suppressCutToClipboard?: boolean;
+  suppressKeyboardEvent?: NonNullable<ColDef<Row>["suppressKeyboardEvent"]>;
+  onCutStart?: (event: CutStartEvent<Row>) => void;
+  onCutEnd?: (event: CutEndEvent<Row>) => void;
+  onPasteStart?: (event: PasteStartEvent<Row>) => void;
+  onPasteEnd?: (event: PasteEndEvent<Row>) => void;
+  onFillStart?: (event: FillStartEvent<Row>) => void;
+  onFillEnd?: (event: FillEndEvent<Row>) => void;
+  onCellSelectionDeleteStart?: (
+    event: CellSelectionDeleteStartEvent<Row>
+  ) => void;
+  onCellSelectionDeleteEnd?: (event: CellSelectionDeleteEndEvent<Row>) => void;
   onSelectionSetChange?: (selectionSet: PowersheetSelectionSet) => void;
   onSelectionSummaryChange?: (
     selectionSummary: PowersheetSelectionSummary
@@ -265,6 +301,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
   selectionMode = "single-row",
   selectionSurface,
   enableFillHandle = true,
+  fillHandleOptions,
   enableUndoRedo = true,
   allowColumnReorder = false,
   enterNavigatesVertically = false,
@@ -274,11 +311,27 @@ export function SpreadsheetPilotGrid<Row extends object>({
   processCellFromClipboard,
   processDataFromClipboard,
   sendToClipboard,
+  suppressCutToClipboard = false,
+  suppressKeyboardEvent,
+  onCutStart,
+  onCutEnd,
+  onPasteStart,
+  onPasteEnd,
+  onFillStart,
+  onFillEnd,
+  onCellSelectionDeleteStart,
+  onCellSelectionDeleteEnd,
   onSelectionSetChange,
   onSelectionSummaryChange,
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
   const isCellRangeMode = selectionMode === "cell-range";
+
+  useEffect(() => {
+    return () => {
+      gridApiRef.current = null;
+    };
+  }, []);
 
   const defaultColDef = useMemo<ColDef<Row>>(
     () => ({
@@ -286,13 +339,14 @@ export function SpreadsheetPilotGrid<Row extends object>({
       filter: true,
       resizable: true,
       suppressMovable: !allowColumnReorder,
+      suppressKeyboardEvent,
     }),
-    [allowColumnReorder]
+    [allowColumnReorder, suppressKeyboardEvent]
   );
 
   const emitSelectionState = useCallback(
     (gridApi: GridApi<Row>) => {
-      if (!isCellRangeMode) {
+      if (!isCellRangeMode || isGridApiDestroyed(gridApi)) {
         return;
       }
 
@@ -324,17 +378,18 @@ export function SpreadsheetPilotGrid<Row extends object>({
 
   const syncSelection = useCallback(() => {
     const gridApi = gridApiRef.current;
-    if (!gridApi) {
+    if (!gridApi || isGridApiDestroyed(gridApi)) {
       return;
     }
+    const activeGridApi: GridApi<Row> = gridApi;
 
     if (isCellRangeMode) {
-      focusSelectedRowCell(gridApi, selectedRowId, getRowId);
-      emitSelectionState(gridApi);
+      focusSelectedRowCell(activeGridApi, selectedRowId, getRowId);
+      emitSelectionState(activeGridApi);
       return;
     }
 
-    gridApi.forEachNode(node => {
+    activeGridApi.forEachNode(node => {
       const shouldSelect =
         selectedRowId !== null &&
         node.data !== undefined &&
@@ -354,7 +409,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
   };
 
   const handleSelectionChanged = (event: SelectionChangedEvent<Row>) => {
-    if (isCellRangeMode) {
+    if (isCellRangeMode || isGridApiDestroyed(event.api)) {
       return;
     }
 
@@ -431,6 +486,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
                         ? {
                             mode: "fill",
                             direction: "xy",
+                            ...fillHandleOptions,
                           }
                         : {
                             mode: "range",
@@ -448,11 +504,20 @@ export function SpreadsheetPilotGrid<Row extends object>({
               processCellFromClipboard={processCellFromClipboard}
               processDataFromClipboard={processDataFromClipboard}
               sendToClipboard={sendToClipboard}
+              suppressCutToClipboard={suppressCutToClipboard}
               onGridReady={handleGridReady}
               onSelectionChanged={handleSelectionChanged}
               onCellFocused={handleCellFocused}
               onCellSelectionChanged={handleCellSelectionChanged}
               onCellValueChanged={onCellValueChanged}
+              onCutStart={onCutStart}
+              onCutEnd={onCutEnd}
+              onPasteStart={onPasteStart}
+              onPasteEnd={onPasteEnd}
+              onFillStart={onFillStart}
+              onFillEnd={onFillEnd}
+              onCellSelectionDeleteStart={onCellSelectionDeleteStart}
+              onCellSelectionDeleteEnd={onCellSelectionDeleteEnd}
               getRowId={params => getRowId(params.data)}
             />
           </div>
