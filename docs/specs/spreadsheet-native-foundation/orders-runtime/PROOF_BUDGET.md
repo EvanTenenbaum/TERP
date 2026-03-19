@@ -2,7 +2,7 @@
 
 _Generated file. Advisory only. Do not edit by hand._
 
-- Generated at: `2026-03-19T20:41:24.464Z`
+- Generated at: `2026-03-19T21:21:49.697Z`
 - Active gate: `G2`
 - Linear gate: `TER-788`
 - Active atomic card: `TER-795`
@@ -11,30 +11,31 @@ _Generated file. Advisory only. Do not edit by hand._
 ## Budget State
 
 - Remaining fresh deployed-build reruns: `1`
-  Spend it only on a fresh deployed build or after a new isolated TER-795 proof/runtime change.
+  Spend it only after a new isolated runtime change or a new shipped build that changes the target row.
 - Broad G2 proof bundle: `spent`
-  The broader Orders runtime packet already proved queue-route health, duplicate, quick-add, delete, and keyboard navigation. Do not rerun it for the current TER-795 fill tranche.
+  The broader Orders runtime packet already proved queue-route health plus the currently accepted row-op lanes. Do not reopen it for unrelated TER-795 rows.
 - Narrow fill-handle probe on the current build: `spent on current build`
-  That narrow probe was validated once against the current staging build build-mmwp9o9e and reproduces the still-live failure in isolation (`selectionSummaryBeforeDrag: 2 selected cells · 2 rows in scope`, `fillHandleVisible: true`, `bodyClassDuringDrag: ag-dragging-fill-handle`, `quantityValuesAfterDrag: [3,4,1,1]`), so the browser budget can stay spent here until a fresh deployed build exists
-- Local proofability: `green locally, not yet green on a deployed build`
-  The March 19, 2026 local sheet-native fill drag probe records `selectionSummaryBeforeDrag: 2 selected cells · 2 rows in scope`, `fillHandleVisible: true`, and `quantityValuesAfterDrag: [3,4,5,6]`, so the repaired fill path is browser-proven locally even though TER-795 remains blocked until a deployed build confirms the same behavior
+  The current shipped-build closure packet already covers `SALE-ORD-022`.
+- Local proofability: `green locally and green on the shipped build for SALE-ORD-022`
+  Use local probes to shape the next row packet before spending a live run.
 
 ## Cheapest Next Probe
 
-- Command: `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
-- Rule: Keep SALE-ORD-022, SALE-ORD-030, and SALE-ORD-032 as the G2 rows currently safe to treat as closed with direct staging evidence, keep TER-796 sealed, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression.
+- Next row: `SALE-ORD-019`
+- Command shape: Add or extend one isolated selection probe for scope-selection proof across the required Orders surfaces.
+- Rule: One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points.
 
 ## Guardrails
 
-- Keep `TER-796` sealed.
-- SALE-ORD-031 guard: keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row.
-- Next independent TER-795 row: move to SALE-ORD-019 as the next independent TER-795 row.
-- Do not reopen the broad G2 staging bundle for the current fill tranche.
-- If the next fresh deployed-build pass still fails, freeze `SALE-ORD-022` as an explicit limitation packet before moving to the remaining TER-795 rows.
-- Treat this file as advisory only; source-of-truth updates still belong in the gate doc, manifest, metrics, and Linear.
+- Keep `TER-796` sealed unless an isolated row-op rerun proves a real regression.
+- Keep `SALE-ORD-022` closed with evidence, but preserve the no-reload persistence caveat.
+- Keep `SALE-ORD-031` partial until a live Orders document surface exercises sort/filter.
+- Move to `SALE-ORD-019` next and keep row scope isolated.
+- Treat this file as advisory only; `ter-795-state.json` is the machine-readable source for repeated TER-795 row status and next-move truth.
 
 ## Source Inputs
 
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`

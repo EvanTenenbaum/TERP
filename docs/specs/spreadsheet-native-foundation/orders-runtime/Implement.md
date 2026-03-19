@@ -6,6 +6,16 @@
   - keep runtime edits inside shared spreadsheet files plus their focused tests
   - use Linear for hierarchy/status truth, not ticket prose alone
   - keep downstream gate status blocked until proof catches up with current code
+- Generated TER-795 snapshot:
+<!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:START -->
+- Updated at: `2026-03-19`
+- Active atomic card: `TER-795`
+- Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
+- Directly live-proven G2 rows: `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032`
+- Remaining TER-795 rows: `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
+- Next move: `SALE-ORD-019` — Move to the next independent TER-795 row with one isolated selection packet.
+- Cadence rule: One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points.
+<!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:END -->
 - Status log:
   - created durable-state files and gate artifacts
   - created Linear gate parents `TER-787` through `TER-793`
@@ -70,10 +80,10 @@
   - reran the dedicated live probe on the fresh staging build and captured `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json` with `quantityValuesAfterDrag: ["3","4","5","6"]`, no license warnings, and no page errors, which satisfies the shipped-build closure contract for `SALE-ORD-022`
   - reran Claude adversarial review on the shipped-build evidence; Claude did not overturn the `SALE-ORD-022` closure, but it flagged one residual note that the narrow probe proves live route propagation rather than a separate post-reload persistence round-trip
 - Repair queue:
-  - keep `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` as the G2 rows currently safe to treat as closed with direct staging evidence, plus the matching tracker and gate files
-  - keep `TER-796` sealed; the next isolated TER-795 tranches are `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
-  - keep the `SALE-ORD-022` closure artifact honest: the fresh live probe proves shipped-route propagation on build `build-mmxxcgce`, but it is not a separate post-reload persistence proof
-  - keep `SALE-ORD-031` partial with a code-proven limitation note until a live Orders document surface exercises sort/filter
-  - capture the next G2 staging bundle for `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`, starting with `SALE-ORD-019` as the next independent row
-  - attach adversarial review artifact before promoting any additional `SALE-ORD-0xx` row
-  - keep the March 18 roadmap package and issue manifest as the authoritative execution contract; treat the March 17 roadmap backup as lineage only
+<!-- GENERATED:TER-795:REPAIR-QUEUE:START -->
+  - Keep `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` as the only G2 rows safe to treat as directly live-proven right now.
+  - Keep `TER-796` sealed unless a future isolated row-op rerun reproduces a real regression.
+  - Keep the `SALE-ORD-022` closure packet honest: it proves shipped-route propagation on build `build-mmxxcgce`, not a separate reload or persistence round-trip.
+  - Keep `SALE-ORD-031` partial with its code-proven limitation note until a live Orders document surface exercises sort or filter.
+  - Move to `SALE-ORD-019` next, then continue one row or one limitation packet at a time.
+<!-- GENERATED:TER-795:REPAIR-QUEUE:END -->

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "packet_id": "orders-runtime-g2-bundle",
+  "generated_at": "2026-03-19T21:21:46.494Z",
+  "command": "pnpm proof:staging:orders-runtime:g2",
+  "suggested_verdict": "closed with evidence",
+  "covered_rows": [
+    {
+      "row_id": "SALE-ORD-030",
+      "row_state": "live-proven",
+      "acceptance_criteria": "Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging."
+    },
+    {
+      "row_id": "SALE-ORD-032",
+      "row_state": "live-proven",
+      "acceptance_criteria": "Duplicate, quick-add, and delete row-operation proof on staging."
+    }
+  ],
+  "build": {
+    "id": "build-mmwp9o9e",
+    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "deployment_build_time": "2026-03-18T23:56:20.894Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "queue-route-clean",
+      "label": "Queue route loads without AG Grid license blockers",
+      "passed": true,
+      "expected": "Queue route renders without loading shell or license warnings.",
+      "observed": {
+        "loading_shell_visible": false,
+        "license_warnings": []
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "row-ops",
+      "label": "Duplicate, quick-add, and delete row operations complete and restore baseline",
+      "passed": true,
+      "expected": "duplicateDelta=1, quickAddDelta=1, and deleteReturnedToBaseline=true.",
+      "observed": {
+        "duplicate_delta": 1,
+        "quick_add_delta": 1,
+        "delete_returned_to_baseline": true
+      },
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "navigation",
+      "label": "Tab, Shift+Tab, Enter, Shift+Enter, and Escape behave through the shared runtime",
+      "passed": true,
+      "expected": "The document-route navigation states are all recorded and Escape restores the prior value.",
+      "observed": {
+        "selection_after_tab": "Focused cell: 0:cogsPerUnit · Ranges: 1",
+        "selection_after_shift_tab": "Focused cell: 0:quantity · Ranges: 1",
+        "selection_after_enter": "Focused cell: 1:quantity · Ranges: 1",
+        "selection_after_shift_enter": "Focused cell: 0:quantity · Ranges: 1",
+        "escape_restored_value": true
+      },
+      "failure_impact": "blocker"
+    }
+  ],
+  "artifacts": {
+    "report": {
+      "relative_path": "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json",
+      "sha256": "2a3e17d6b1d8ae5fd6f606576226aa499e6bdbb70b8edcb352d25920fed518ad"
+    },
+    "screenshots": [
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-18/02-document-baseline.png",
+        "sha256": "37500c79af376f9231b4d2be99f50e9c84df89230c24e6f448760f32be6bc555"
+      },
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-18/03-document-after-duplicate.png",
+        "sha256": "069aefb6f1d4b5c736990c610e99bc42e62e2cfda7faac60ad070ccb9764c50c"
+      },
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-18/04-document-after-quick-add.png",
+        "sha256": "69623a5f5b3c1186d7b3f258adbd1830a08dca795386671ed3fe069a9083080a"
+      },
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-18/05-document-after-delete.png",
+        "sha256": "74674d5666d5329928b639aebbd9b765c9d697b4d3e7f0e8ad71e480f136a166"
+      },
+      {
+        "relative_path": "output/playwright/orders-runtime-g2/2026-03-18/06-document-after-restore.png",
+        "sha256": "ee4e62c31124b6548d4ca028e0f4a9b1a23ba8fbbad0fac4f10dec939dab4db5"
+      }
+    ]
+  },
+  "summary": {
+    "duplicate_delta": 1,
+    "quick_add_delta": 1,
+    "delete_returned_to_baseline": true,
+    "add_item_focused_inventory_search": true,
+    "queue_license_warnings": [],
+    "document_license_warnings": [],
+    "page_errors": []
+  }
+}

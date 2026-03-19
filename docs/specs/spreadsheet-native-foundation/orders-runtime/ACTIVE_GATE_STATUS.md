@@ -2,7 +2,7 @@
 
 _Generated file. Do not edit by hand._
 
-- Generated at: `2026-03-19T20:41:24.200Z`
+- Generated at: `2026-03-19T21:21:49.470Z`
 - Active gate: `G2`
 - Linear gate: `TER-788`
 - Status: `partial`
@@ -13,8 +13,8 @@ _Generated file. Do not edit by hand._
 ## Use This Before Global Session Tracking
 
 For the Orders runtime initiative, this file is a local generated snapshot to check before `docs/ACTIVE_SESSIONS.md` when it is present or freshly regenerated.
-It is generated from the active gate artifacts, the issue manifest, execution metrics, and current worktree state.
-Source of truth stays with the gate doc, issue manifest, execution metrics, and Linear.
+It is generated from `ter-795-state.json`, the synced gate artifacts, and current worktree state.
+Source of truth for repeated TER-795 row status, build truth, and next move is `ter-795-state.json`; gate narrative and tracker state still live in the synced gate doc and Linear.
 
 ## Gate Snapshot
 
@@ -24,19 +24,21 @@ Source of truth stays with the gate doc, issue manifest, execution metrics, and 
 
 ## Current Blocker
 
-Fresh staging build build-mmxxcgce now carries the shipped TER-795 fill repair: the isolated live fill-handle probe on the real Orders document route records `selectionSummaryBeforeDrag: [2 selected cells · 2 rows in scope]`, `fillHandleVisible: true`, `bodyClassDuringDrag: [ag-dragging-fill-handle]`, and `quantityValuesAfterDrag: [3,4,5,6]` with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence under the shipped-build probe contract. The same shipped tranche preserves the cleared AG Grid watermark blocker, keeps the Add Item focus repair live, and carries the focused-row-id sort/filter-safe targeting repair; targeted vitest coverage plus the full local gate passed before ship. Claude adversarial review after the shipped probe kept `SALE-ORD-031` at partial because the live Orders document surface still disables sort/filter, and it added one residual note that the narrow `SALE-ORD-022` probe proves live route propagation rather than a separate post-reload persistence round-trip. `TER-795` therefore remains partial on the remaining independent proof rows and limitations rather than on deploy lag, AG Grid licensing, Add Item focus, or TER-796 row-operation stability.
+`SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, `SALE-ORD-035` still need a closure packet or explicit limitation packet. `SALE-ORD-031` also stays partial until a live sort/filter surface exists.
 
 ## Next Unblock
 
-- Next command: none recorded.
-- Gate doc narrative: keep `TER-795` active, record `SALE-ORD-022` as shipped-build evidence closure with its no-reload note, keep `SALE-ORD-031` partial with its code-proven limitation note until a live sort/filter surface exists, and move to `SALE-ORD-019` as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression.
+- Next row: `SALE-ORD-019`
+- Next command: Add or extend one isolated selection probe for scope-selection proof across the required Orders surfaces.
+- Cadence rule: One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points.
 
 ## Runtime Guards
 
-- Live-proven rows only: not explicitly recorded in the manifest.
-- TER-796 seal rule: keep TER-796 sealed.
-- SALE-ORD-031 guard: keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row.
-- Next independent TER-795 row: move to SALE-ORD-019 as the next independent TER-795 row.
+- Live-proven rows only: `SALE-ORD-022`, `SALE-ORD-030`, `SALE-ORD-032`.
+- TER-796 seal rule: keep `TER-796` sealed unless an isolated row-op rerun proves a real regression.
+- SALE-ORD-022 guard: keep the closure packet honest; the probe proves shipped-route propagation, not a separate reload or persistence round-trip.
+- SALE-ORD-031 guard: keep `SALE-ORD-031` partial until a live Orders document surface exercises sort/filter.
+- Next independent TER-795 row: move to `SALE-ORD-019` next.
 
 ## Validation Commands
 
@@ -50,27 +52,33 @@ Fresh staging build build-mmxxcgce now carries the shipped TER-795 fill repair: 
 
 ## Evidence Artifacts Present
 
-- `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json`
-- `output/playwright/orders-runtime-g2/2026-03-18/fill-handle-drag-probe.json`
-- `output/playwright/orders-runtime-g2/2026-03-19/local-sheet-native-fill-drag-probe.json`
-- `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/HANDOFF-2026-03-19-CODEX-EXECUTION-PROMPT.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
+- `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
+- `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json`
 
 ## Worktree Pressure
 
-- Total worktrees: `40`
+- Total worktrees: `30`
 - Dirty worktrees: `18`
 - Dirty worktrees with 5+ entries: `7`
-- Current worktree dirty entries excluding generator-owned outputs: `5`
+- Current worktree dirty entries excluding generator-owned outputs: `22`
 
 Top dirty worktrees:
-- `101` dirty -> `/Users/evan/spec-erp-docker/TERP/TERP` (`refs/heads/staging`)
-- `37` dirty -> `/Users/evan/spec-erp-docker/TERP/TERP-low-rebuild-20260310-04c982f7` (`refs/heads/claude/staging-low-rebuild-20260310-04c982f7`)
-- `20` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/sheet-native-staging-20260315` (`refs/heads/codex/sheet-native-staging-20260315`)
-- `17` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/workspace-surfacing-fixes-20260312` (`refs/heads/codex/workspace-surfacing-fixes-20260312`)
-- `7` dirty -> `/Users/evan/spec-erp-docker/TERP/worktrees/pricing-cents-preservation-20260312` (`refs/heads/codex/ter-696-pricing-cents-preservation-20260312`)
+- `204` dirty -> `TERP` (`refs/heads/staging`)
+- `37` dirty -> `TERP-low-rebuild-20260310-04c982f7` (`refs/heads/claude/staging-low-rebuild-20260310-04c982f7`)
+- `22` dirty -> `worktrees/orders-runtime-ter-795-20260318` (`refs/heads/codex/ter-795-g2-writeback-20260319`)
+- `20` dirty -> `worktrees/sheet-native-staging-20260315` (`refs/heads/codex/sheet-native-staging-20260315`)
+- `17` dirty -> `worktrees/workspace-surfacing-fixes-20260312` (`refs/heads/codex/workspace-surfacing-fixes-20260312`)
 
 ## Source Inputs
 
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`

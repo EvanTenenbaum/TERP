@@ -4,6 +4,7 @@ import path from "node:path";
 import { chromium, type BrowserContext, type Page } from "@playwright/test";
 import { QA_PASSWORD } from "../../tests-e2e/fixtures/auth";
 import { getEnvOrDefault, loadCodexEnv } from "./qaEnv";
+import { buildOrdersRuntimeG2ClosurePacket } from "./orders-runtime-closure-packet.mjs";
 
 loadCodexEnv();
 
@@ -792,7 +793,17 @@ async function main() {
 
       const reportPath = path.join(outputDir, "orders-runtime-g2-report.json");
       writeFileSync(reportPath, JSON.stringify(report, null, 2));
-      console.info(JSON.stringify({ reportPath, report }, null, 2));
+      const closurePacketPath = path.join(outputDir, "orders-runtime-g2-closure-packet.json");
+      const closurePacket = buildOrdersRuntimeG2ClosurePacket({
+        report,
+        reportPath,
+        deployCommit: getEnvOrDefault("PLAYWRIGHT_DEPLOY_COMMIT", ""),
+        persona: "sales-manager",
+      });
+      writeFileSync(closurePacketPath, JSON.stringify(closurePacket, null, 2));
+      console.info(
+        JSON.stringify({ reportPath, closurePacketPath, report, closurePacket }, null, 2)
+      );
 
       if (
         queueRoute.loadingShellVisible ||

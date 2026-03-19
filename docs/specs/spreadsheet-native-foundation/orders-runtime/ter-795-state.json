@@ -1,0 +1,211 @@
+{
+  "updated_at": "2026-03-19",
+  "gate": "G2",
+  "linear_gate": "TER-788",
+  "active_atomic_card": "TER-795",
+  "gate_verdict": "partial",
+  "execution_state": "active",
+  "build": {
+    "id": "build-mmxxcgce",
+    "build_time": "2026-03-19T20:30:13.707Z",
+    "deployment_id": "20fda840-ae7c-4a36-a450-7f1e45029131",
+    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "base_url": "https://terp-staging-yicld.ondigitalocean.app",
+    "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
+    "persona": "sales-manager",
+    "version_url": "https://terp-staging-yicld.ondigitalocean.app/version.json"
+  },
+  "row_verdicts": [
+    {
+      "row": "SALE-ORD-019",
+      "issue": "TER-770",
+      "row_state": "partial",
+      "required_evidence": "full drag shift cmd and scope-selection proof across required surfaces",
+      "classification_note": "Still needs one isolated closure-grade selection packet across the required Orders surfaces.",
+      "packet_path": null,
+      "next_action": "Extend or add one isolated selection probe; do not mix with paste or fill."
+    },
+    {
+      "row": "SALE-ORD-020",
+      "issue": "TER-771",
+      "row_state": "partial",
+      "required_evidence": "multi-cell edit pricing autosave proof",
+      "classification_note": "Still needs a targeted multi-cell edit packet with pricing preservation plus autosave evidence.",
+      "packet_path": null,
+      "next_action": "Use a targeted edit probe plus save-state evidence."
+    },
+    {
+      "row": "SALE-ORD-021",
+      "issue": "TER-771",
+      "row_state": "partial",
+      "required_evidence": "approved-field paste proof on staging",
+      "classification_note": "Current paste evidence is still support-only and not yet packaged as a direct closure packet for this row.",
+      "packet_path": null,
+      "next_action": "Reuse the existing paste harness in isolated paste mode only."
+    },
+    {
+      "row": "SALE-ORD-022",
+      "issue": "TER-771",
+      "row_state": "live-proven",
+      "required_evidence": "fill handle proof on staging",
+      "classification_note": "Closed with evidence on staging build build-mmxxcgce via the shipped-build narrow fill-handle probe; keep the no-reload persistence caveat attached.",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json",
+      "review_note": "Claude did not reopen the row, but noted the probe proves live propagation on the route and build rather than a separate post-reload persistence round-trip."
+    },
+    {
+      "row": "SALE-ORD-029",
+      "issue": "TER-771",
+      "row_state": "partial",
+      "required_evidence": "clear-style actions and structured edit rejection proof",
+      "classification_note": "Still needs an isolated clear-style or clear-cell rejection packet without unrelated row churn.",
+      "packet_path": null,
+      "next_action": "Add a new narrow negative-case probe."
+    },
+    {
+      "row": "SALE-ORD-030",
+      "issue": "TER-772",
+      "row_state": "live-proven",
+      "required_evidence": "Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging",
+      "classification_note": "Already safe to treat as closed with direct staging evidence from the broad G2 packet.",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json"
+    },
+    {
+      "row": "SALE-ORD-031",
+      "issue": "TER-771",
+      "row_state": "partial",
+      "required_evidence": "sort/filter-safe targeting proof",
+      "classification_note": "Code-proven limitation only; the live Orders document grid still disables sort/filter, so the row cannot move above partial yet.",
+      "packet_path": null,
+      "review_note": "Keep partial until a live Orders document surface exercises sort/filter."
+    },
+    {
+      "row": "SALE-ORD-032",
+      "issue": "TER-772",
+      "row_state": "live-proven",
+      "required_evidence": "duplicate, quick-add, and delete row-operation proof on staging",
+      "classification_note": "Already safe to treat as closed with direct staging evidence from the broad G2 packet.",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json"
+    },
+    {
+      "row": "SALE-ORD-035",
+      "issue": "TER-771",
+      "row_state": "partial",
+      "required_evidence": "failure-mode bundle proof beyond immediate invalid-edit rejection",
+      "classification_note": "Still needs one bounded negative-case packet or an explicit limitation packet for the remaining rejection bundle.",
+      "packet_path": null,
+      "next_action": "Use a bounded failure probe and package a limitation immediately if it stays contradictory."
+    }
+  ],
+  "accepted_live_rows": [
+    "SALE-ORD-022",
+    "SALE-ORD-030",
+    "SALE-ORD-032"
+  ],
+  "sealed_cards": [
+    "TER-796"
+  ],
+  "remaining_rows": [
+    "SALE-ORD-019",
+    "SALE-ORD-020",
+    "SALE-ORD-021",
+    "SALE-ORD-029",
+    "SALE-ORD-031",
+    "SALE-ORD-035"
+  ],
+  "next_move": {
+    "row": "SALE-ORD-019",
+    "summary": "Move to the next independent TER-795 row with one isolated selection packet.",
+    "command_hint": "Add or extend one isolated selection probe for scope-selection proof across the required Orders surfaces.",
+    "cadence_rule": "One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points."
+  },
+  "current_truth": [
+    "The shared runtime seam already exists in `PowersheetGrid`, and the March 18 targeted runtime tests proved the current adapter path is real rather than aspirational.",
+    "`TER-794` and `TER-796` are currently safe to treat as closed with evidence; `TER-795` remains partial on the remaining proof rows and the `SALE-ORD-031` limitation.",
+    "Staging build `build-mmwp9o9e` already cleared the AG Grid watermark or license blocker, restored queue-route health, and kept the Add Item focus repair live.",
+    "The repaired proof harness rejected the earlier two-cell-range theory and now proves rectangular keyboard paste with a real two-cell range on staging.",
+    "The fill tranche is shipped: staging build `build-mmxxcgce` records `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence.",
+    "The same continuation fixed the focused-row-id targeting drift, but `SALE-ORD-031` stays partial because the live Orders document surface still disables sort/filter and cannot exercise that path directly.",
+    "Claude's post-ship review left one residual caution attached to `SALE-ORD-022`: the narrow probe proves live route propagation, not a separate post-reload persistence round-trip.",
+    "This gate remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still need a closure packet or explicit limitation packet."
+  ],
+  "validation_commands": {
+    "targeted": [
+      "pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx",
+      "pnpm proof:staging:orders-runtime:g2",
+      "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle"
+    ],
+    "ship": [
+      "pnpm check",
+      "pnpm lint",
+      "pnpm test",
+      "pnpm build"
+    ]
+  },
+  "evidence_paths": [
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/HANDOFF-2026-03-19-CODEX-EXECUTION-PROMPT.md",
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md",
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md",
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json",
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
+    "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json",
+    "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json",
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md",
+    "docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json"
+  ],
+  "proof_budget": {
+    "fresh_deployed_reruns_remaining": 1,
+    "broad_g2_bundle": "spent",
+    "narrow_fill_probe": "spent on current build",
+    "local_proofability": "green locally and green on the shipped build for SALE-ORD-022",
+    "rule": "Do not reopen TER-796 unless an isolated row-op rerun reproduces a real regression. Keep live probing row-scoped and stop after one informative rerun per shipped build."
+  },
+  "repair_queue": [
+    "Keep `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` as the only G2 rows safe to treat as directly live-proven right now.",
+    "Keep `TER-796` sealed unless a future isolated row-op rerun reproduces a real regression.",
+    "Keep the `SALE-ORD-022` closure packet honest: it proves shipped-route propagation on build `build-mmxxcgce`, not a separate reload or persistence round-trip.",
+    "Keep `SALE-ORD-031` partial with its code-proven limitation note until a live Orders document surface exercises sort or filter.",
+    "Move to `SALE-ORD-019` next, then continue one row or one limitation packet at a time."
+  ],
+  "review_context": {
+    "acceptance_rows": [
+      {
+        "row": "SALE-ORD-019",
+        "acceptance": "full drag shift cmd and scope-selection proof across required surfaces"
+      },
+      {
+        "row": "SALE-ORD-020",
+        "acceptance": "multi-cell edit pricing autosave proof"
+      },
+      {
+        "row": "SALE-ORD-021",
+        "acceptance": "approved-field paste proof on staging"
+      },
+      {
+        "row": "SALE-ORD-022",
+        "acceptance": "deployed-build proof that quantity fill propagates `3,4 -> 5,6` or an explicit limitation packet"
+      },
+      {
+        "row": "SALE-ORD-029",
+        "acceptance": "clear-style actions and structured edit rejection proof"
+      },
+      {
+        "row": "SALE-ORD-031",
+        "acceptance": "sort/filter-safe targeting proof"
+      },
+      {
+        "row": "SALE-ORD-035",
+        "acceptance": "failure-mode bundle proof beyond immediate invalid-edit rejection"
+      }
+    ],
+    "prior_reviews": [
+      {
+        "review_label": "TER-795 row031 review 2026-03-19",
+        "conclusion": "`SALE-ORD-022` could not be promoted before ship; `SALE-ORD-031` should stay partial because the live Orders document surface still disables sort/filter."
+      },
+      {
+        "review_label": "TER-795 post-ship review 2026-03-19",
+        "conclusion": "`SALE-ORD-022` remains acceptable as closed with evidence, with one residual caution that the probe proves live propagation rather than a separate reload or persistence round-trip."
+      }
+    ]
+  }
+}

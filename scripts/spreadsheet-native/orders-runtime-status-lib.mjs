@@ -18,6 +18,15 @@ export const roadmapReadmePath = path.join(
 export const implementPath = path.join(ordersRuntimeDir, "Implement.md");
 export const manifestPath = path.join(ordersRuntimeDir, "01-issue-manifest.json");
 export const metricsPath = path.join(ordersRuntimeDir, "execution-metrics.json");
+export const ter795StatePath = path.join(ordersRuntimeDir, "ter-795-state.json");
+export const proofRowMapPath = path.join(ordersRuntimeDir, "02-proof-row-map.csv");
+export const g2GatePath = path.join(ordersRuntimeDir, "G2-runtime-gate.md");
+export const roadmapG2Path = path.join(
+  repoRoot,
+  "docs/roadmaps/orders-spreadsheet-runtime/roadmap-1-g2-shared-runtime-foundation.md",
+);
+export const reviewContextJsonPath = path.join(ordersRuntimeDir, "adversarial-review-context.json");
+export const reviewContextMarkdownPath = path.join(ordersRuntimeDir, "adversarial-review-context.md");
 
 export function readText(filePath) {
   return readFileSync(filePath, "utf8");
@@ -25,6 +34,10 @@ export function readText(filePath) {
 
 export function readJson(filePath) {
   return JSON.parse(readText(filePath));
+}
+
+export function readTer795State() {
+  return readJson(ter795StatePath);
 }
 
 function collectIndentedBullets(lines, startPrefix) {
@@ -245,4 +258,19 @@ export function formatTimestamp(date = new Date()) {
 
 export function writeGeneratedFile(targetPath, content) {
   writeFileSync(targetPath, content, "utf8");
+}
+
+export function replaceMarkedBlock(text, marker, replacement) {
+  const startToken = `<!-- ${marker}:START -->`;
+  const endToken = `<!-- ${marker}:END -->`;
+  const startIndex = text.indexOf(startToken);
+  const endIndex = text.indexOf(endToken);
+
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    throw new Error(`Missing marker block ${marker}.`);
+  }
+
+  const before = text.slice(0, startIndex + startToken.length);
+  const after = text.slice(endIndex);
+  return `${before}\n${replacement.trimEnd()}\n${after}`;
 }
