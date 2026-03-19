@@ -17,11 +17,16 @@ Current truth:
 
 - the shared runtime seam already exists in `PowersheetGrid`
 - targeted runtime tests passed on March 18, 2026
-- `TER-794` is the only G2 atomic card currently safe to treat as closed with evidence
-- `TER-795` and `TER-796` remain open because the live clipboard, fill, and failure-path proof is still not cleanly reproducible end to end
-- staging build `build-mmweo1fu` now proves the Orders queue route loads without AG Grid watermark or license warnings, and the document route proves duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior through the shared runtime
-- the local March 18 repair set adds an explicit inventory-browser focus helper and a proof harness that now fails hard on empty clipboard state instead of silently masking the blocker
-- this roadmap remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-022`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` are still not fully live-proven, and the current live blocker is now narrowed to Add Item focus plus clipboard/fill proof-path resolution rather than row-operation drift
+- `TER-794` and `TER-796` are currently safe to treat as closed with evidence
+- `TER-795` remains blocked even after the live clipboard and row-op packet cleaned up, because fill-handle, sort/filter-safe targeting, clear-style action proof, and the remaining failure bundle are still unresolved
+- staging build `build-mmwp9o9e` proves the Orders queue route loads without AG Grid watermark or license warnings, the document route proves duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior through the shared runtime, and the Add Item focus repair is live
+- the repaired proof harness now rejects the earlier two-cell-range theory and proves rectangular keyboard paste with a real two-cell range on staging
+- the active TER-795 tranche is now a scoped local fill fix: Orders document fill is constrained to the vertical axis and uses a deterministic AG Grid `setFillValue` callback for approved fields, and a March 19 local browser micro-probe on the real sheet-native document route now shows the repaired series propagating `3,4 -> 5,6`
+- the next live check is now reduced to one narrow command, `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`, instead of another full G2 proof rerun, and that probe now carries the same selection-summary fallback plus richer failure fields used in the broader harness
+- March 19 local probing also proves the worktree can boot a degraded production server without `DATABASE_URL`, and a mocked tRPC browser harness reaches the real sheet-native document grid without watch-mode churn; the next blocker is deployed-build confirmation, not local browser startup
+- March 19 continuation confirmed there is still no deployed build newer than `build-mmwp9o9e`, so `SALE-ORD-022` is now a deploy-blocked limitation until the local fill repair is shipped and re-probed on a fresh build
+- the same continuation fixed a real sort/filter-safe row-targeting drift by carrying `focusedRowId` through the shared selection contract and preserving fill writeback by row id, but Claude review kept `SALE-ORD-031` at `partial` because the live Orders document surface still disables sort/filter and therefore cannot exercise that path directly
+- this roadmap remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-022`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still lack a closure-grade proof bundle or limitation packet that can safely advance `G2`
 
 ## Allowed Inputs
 

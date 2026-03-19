@@ -4,7 +4,7 @@
 
 - Gate: `G3`
 - Linear gate: `TER-789`
-- Current verdict: `partial`
+- Current verdict: `open`
 - Execution state: `blocked pending Roadmap 1`
 - Prerequisites: Roadmap 1 `closed with evidence`
 - Gate file: [G3-document-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G3-document-gate.md)

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-03-18",
+  "updated_at": "2026-03-19",
   "project": {
     "name": "TERP - Orders Spreadsheet Runtime Rollout",
     "parent_issue": "TER-766",
@@ -49,21 +49,21 @@
       "gate": "G3",
       "issue": "TER-789",
       "title": "Orders document gate",
-      "status": "partial",
+      "status": "blocked",
       "children": ["TER-773", "TER-774", "TER-797", "TER-798", "TER-799"]
     },
     {
       "gate": "G4",
       "issue": "TER-790",
       "title": "Cross-surface parity gate",
-      "status": "partial",
+      "status": "blocked",
       "children": ["TER-776", "TER-777", "TER-800", "TER-801", "TER-802"]
     },
     {
       "gate": "G5",
       "issue": "TER-791",
       "title": "Surfacing and affordance gate",
-      "status": "partial",
+      "status": "blocked",
       "children": ["TER-778", "TER-803"]
     },
     {
@@ -182,9 +182,9 @@
     ]
   },
   "latest_verification": {
-    "date": "2026-03-18",
-    "repo_sha": "2bcce192 + local G2 focus/proof repairs",
-    "active_atomic_card": "TER-795 and TER-796",
+    "date": "2026-03-19",
+    "repo_sha": "0e2bb8ba + local G2 proof-harness selection, row-op isolation, fill-handle repro capture, deterministic vertical fill callback, degraded local boot verification, mocked sheet-native fill drag probe, hardened narrow fill-handle command contract, and focused-row-id sort/filter-safe targeting repair",
+    "active_atomic_card": "TER-795",
     "g1_commands": [
       "pnpm vitest run client/src/components/spreadsheet-native/PowersheetGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts",
       "pnpm check"
@@ -192,6 +192,11 @@
     "g2_commands": [
       "pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx",
       "pnpm vitest run client/src/lib/orders/inventoryBrowserFocus.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/OrderCreatorPage.pricing.test.ts",
+      "pnpm vitest run client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx",
+      "SKIP_SEEDING=true AUTO_MIGRATE_MODE=off PORT=3001 pnpm start",
+      "node Playwright local sheet-native fill selection probe with mocked auth.me and tRPC batches",
+      "node Playwright local sheet-native fill drag probe with mocked auth.me and tRPC batches",
+      "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle",
       "pnpm proof:staging:orders-runtime:g2",
       "pnpm check",
       "pnpm lint",
@@ -199,13 +204,13 @@
       "pnpm build"
     ],
     "live_blocker": {
-      "build_id": "build-mmweo1fu",
-      "staging_deployment_id": "cbe6d835-1c1b-4769-9a29-8db45cf30984",
+      "build_id": "build-mmwp9o9e",
+      "staging_deployment_id": "a2ddfe10-1e91-4d45-b1cd-93d0fcf998db",
       "production_deployment_id": "36eb5bb9-5678-47ea-9d61-eb940241d951",
       "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
-      "summary": "Staging build-mmweo1fu clears the AG Grid watermark and `License Key Not Found` blocker on the Orders queue route, and the same proof bundle validates duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior on draft 618. The remaining live blocker is now narrower: the latest proof packet still fails `addItemFocusedInventorySearch`, still reads browser clipboard state back as empty, and still records `validPasteMethod: none`, so clipboard, fill, failure-bundle, and sort/filter-safe targeting cannot be promoted yet.",
-      "next_required_build_sha": "next local commit containing the OrderCreatorPage inventory-browser focus repair and hardened G2 proof harness",
-      "next_required_runtime_check": "Keep SALE-ORD-030 and SALE-ORD-032 as the only G2 rows currently safe to treat as live-proven, deploy the Add Item focus repair, and then capture a clean repeatable proof bundle for clipboard, fill, blocked-edit failure cases, and sort/filter-safe targeting."
+      "summary": "Staging build-mmwp9o9e still clears the AG Grid watermark and `License Key Not Found` blocker on the Orders queue route, keeps the Add Item focus repair live (`addItemFocusedInventorySearch: true`), preserves the isolated duplicate plus quick-add/delete packet (`duplicateDelta: 1`, `quickAddDelta: 1`, `deleteReturnedToBaseline: true`), and continues to reproduce the live fill-handle failure (`quantityValuesAfterDrag: [\"3\",\"4\",\"1\",\"1\"]`). March 19 continuation rechecked deployment truth with `doctl apps list-deployments` plus `version.json` and confirmed there is still no deployed build newer than build-mmwp9o9e, so the deterministic fill repair remains local-only worktree state and `SALE-ORD-022` stays deploy-blocked. The same continuation fixed a real sort/filter-safe targeting drift by carrying `focusedRowId` through the shared selection contract and preserving fill writeback by row id; targeted vitest coverage plus `pnpm check` passed, but Claude adversarial review kept `SALE-ORD-031` at partial because the live Orders document surface still disables sort/filter. `TER-795` therefore remains blocked on the unshipped fill repair, clear-style action proof, the remaining failure bundle, and the next independent proof rows rather than on AG Grid licensing, Add Item focus, or TER-796 row-operation stability.",
+      "next_required_build_sha": "ship a build newer than build-mmwp9o9e that contains the local TER-795 fill repair before spending the next SALE-ORD-022 live probe",
+      "next_required_runtime_check": "Keep SALE-ORD-030 and SALE-ORD-032 as the only G2 rows currently safe to treat as live-proven, keep TER-796 sealed, treat SALE-ORD-022 as deploy-blocked until a shipped build newer than build-mmwp9o9e exists, keep SALE-ORD-031 partial with its code-proven limitation note until sort/filter is enabled on the Orders document grid, and move to SALE-ORD-019 as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression."
     }
   }
 }

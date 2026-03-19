@@ -96,7 +96,9 @@ server/*Db.ts             # Legacy data access (don't extend)
 
 - Use `isolation: worktree` for parallel subagents
 - For 5+ independent file changes, consider `/batch`
-- Check `docs/ACTIVE_SESSIONS.md` before starting to avoid file conflicts
+- For the Orders runtime initiative, if `pnpm status:orders-runtime:all` has been run recently, use `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` and `PROOF_BUDGET.md` as local generated summaries before `docs/ACTIVE_SESSIONS.md`
+- Treat those generated files as local read-only snapshots, not live source of truth; the gate doc, issue manifest, execution metrics, and Linear remain authoritative
+- Treat `docs/ACTIVE_SESSIONS.md` as a legacy global view, not the live Orders runtime gate snapshot
 - Never edit files another agent is working on
 
 ## Skills & Deep Protocols
@@ -118,6 +120,8 @@ Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run a
 | File                                            | Purpose                                    |
 | ----------------------------------------------- | ------------------------------------------ |
 | `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear)    |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` | Generated local advisory proof-budget snapshot |
 | `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work                |
 | `.claude/known-bug-patterns.md`                 | Recurring bug catalog                      |
 | `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures                  |

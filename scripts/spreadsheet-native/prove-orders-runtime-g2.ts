@@ -30,7 +30,9 @@ interface DocumentRouteReport {
   summaryAfterBlockedDelete: string | null;
   summaryAfterInvalidPaste: string | null;
   summaryAfterValidPaste: string | null;
+  summaryBeforeDuplicate: string | null;
   summaryAfterDuplicate: string | null;
+  summaryBeforeQuickAdd: string | null;
   summaryAfterQuickAdd: string | null;
   summaryAfterDelete: string | null;
   summaryAfterRestore: string | null;
@@ -38,11 +40,15 @@ interface DocumentRouteReport {
   lineItemsAfterBlockedDelete: number | null;
   lineItemsAfterInvalidPaste: number | null;
   lineItemsAfterValidPaste: number | null;
+  lineItemsBeforeDuplicate: number | null;
   lineItemsAfterDuplicate: number | null;
+  lineItemsBeforeQuickAdd: number | null;
   lineItemsAfterQuickAdd: number | null;
   lineItemsAfterDelete: number | null;
   lineItemsAfterRestore: number | null;
+  duplicateDelta: number | null;
   quickAddDelta: number | null;
+  duplicateButtonEnabledBefore: boolean;
   deleteReturnedToBaseline: boolean;
   selectionStateAfterClick: string | null;
   selectionStateAfterTab: string | null;
@@ -56,11 +62,19 @@ interface DocumentRouteReport {
   clipboardReadbackBeforeInvalidPaste: string | null;
   clipboardReadbackBeforeValidPaste: string | null;
   selectionStateBeforeValidPaste: string | null;
+  selectionSummaryBeforeValidPaste: string | null;
+  selectionSummaryBeforeDuplicate: string | null;
   selectionStateBeforeRestorePaste: string | null;
+  selectionSummaryBeforeRestorePaste: string | null;
+  selectionStateAfterSyntheticValidPaste: string | null;
+  selectionSummaryAfterSyntheticValidPaste: string | null;
   quantityValuesBeforeValidPaste: string[];
+  expectedQuantityValuesForValidPaste: string[];
   quantityValuesAfterValidPaste: string[];
   quantityValuesAfterRestore: string[];
   validPasteApplied: boolean;
+  validPasteMatchedExpectedValues: boolean;
+  validPasteUsedTwoCellRange: boolean;
   validPasteAppliedViaKeyboard: boolean;
   validPasteAppliedViaSynthetic: boolean;
   validPasteMethod: "keyboard" | "synthetic" | "none";
@@ -175,12 +189,39 @@ async function readSelectionState(page: Page) {
   return (await state.innerText()).trim();
 }
 
+async function readSelectionSummary(page: Page) {
+  const summary = page
+    .locator('[data-testid="orders-document-grid-selection-summary"]')
+    .first();
+  if ((await summary.count()) === 0) {
+    return null;
+  }
+
+  return (await summary.innerText()).trim();
+}
+
 function collectLicenseWarnings(messages: string[]) {
   return messages.filter(message => /license|watermark/i.test(message));
 }
 
 function collectAgGridWarnings(messages: string[]) {
   return messages.filter(message => /ag grid/i.test(message));
+}
+
+function arraysEqual(left: string[], right: string[]) {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
+}
+
+function getSelectedCellCount(selectionSummary: string | null) {
+  if (!selectionSummary) {
+    return null;
+  }
+
+  const matched = selectionSummary.match(/(\d+) selected cells/i);
+  return matched ? Number(matched[1]) : null;
 }
 
 async function checkQueueRoute(context: BrowserContext) {
@@ -253,6 +294,29 @@ async function readGridCellText(page: Page, columnKey: string, rowIndex = 0) {
   return (await getGridCell(page, columnKey, rowIndex).innerText()).trim();
 }
 
+async function editGridCellValue(
+  page: Page,
+  columnKey: string,
+  rowIndex: number,
+  value: string
+) {
+  const cell = getGridCell(page, columnKey, rowIndex);
+  await cell.waitFor({ state: "visible", timeout: 20000 });
+  await cell.dblclick();
+  const editor = page.locator("input.ag-input-field-input").first();
+  await editor.waitFor({ state: "visible", timeout: 5000 });
+  await editor.press("Meta+A");
+  await editor.type(value, { delay: 25 });
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(800);
+}
+
+async function restoreQuantityValues(page: Page, values: string[]) {
+  for (const [rowIndex, value] of values.entries()) {
+    await editGridCellValue(page, "quantity", rowIndex, value);
+  }
+}
+
 async function writeClipboardText(page: Page, value: string) {
   let wroteHostClipboard = false;
 
@@ -318,8 +382,12 @@ async function selectQuantityRange(
   await page.waitForTimeout(400);
 
   let selectionState = await readSelectionState(page);
-  if (selectionState?.includes("2 selected cells")) {
-    return selectionState;
+  let selectionSummary = await readSelectionSummary(page);
+  if (getSelectedCellCount(selectionSummary) === 2) {
+    return {
+      state: selectionState,
+      summary: selectionSummary,
+    };
   }
 
   await focusGridCell(page, "quantity", startRowIndex);
@@ -336,14 +404,19 @@ async function selectQuantityRange(
   await page.waitForTimeout(400);
 
   selectionState = await readSelectionState(page);
-  return selectionState;
+  selectionSummary = await readSelectionSummary(page);
+  return {
+    state: selectionState,
+    summary: selectionSummary,
+  };
 }
 
 async function restoreDocumentLineItems(
   page: Page,
   route: string,
   targetLineItemCount: number,
-  screenshotPaths: string[]
+  screenshotPaths: string[],
+  screenshotFileName = "06-document-after-restore.png"
 ) {
   await page.goto(route, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(5000);
@@ -363,7 +436,9 @@ async function restoreDocumentLineItems(
     currentCount = parseLineItemCount(currentSummary);
   }
 
-  await capturePage(page, "06-document-after-restore.png", screenshotPaths);
+  if (screenshotFileName) {
+    await capturePage(page, screenshotFileName, screenshotPaths);
+  }
   return {
     summary: currentSummary,
     lineItemCount: currentCount,
@@ -460,68 +535,119 @@ async function checkDocumentRoute(context: BrowserContext) {
     0
   );
 
-  const selectionStateBeforeValidPaste = await selectQuantityRange(page, 0, 1);
+  const selectionBeforeValidPaste = await selectQuantityRange(page, 0, 1);
+  const selectionStateBeforeValidPaste = selectionBeforeValidPaste.state;
+  const selectionSummaryBeforeValidPaste = selectionBeforeValidPaste.summary;
+  const expectedQuantityValuesForValidPaste = [
+    quantityValuesBeforeValidPaste[0] === "1" ? "3" : "1",
+    quantityValuesBeforeValidPaste[1] === "1" ? "4" : "1",
+  ];
   await writeClipboardText(
     page,
-    `${quantityValuesBeforeValidPaste[0] === "1" ? "3" : "1"}\n${quantityValuesBeforeValidPaste[1] === "1" ? "4" : "1"}`
+    expectedQuantityValuesForValidPaste.join("\n")
   );
   const clipboardReadbackBeforeValidPaste = await readClipboardText(page);
-  await page.keyboard.press("Meta+V");
-  await page.waitForTimeout(1200);
+  const validPasteUsedTwoCellRange =
+    getSelectedCellCount(selectionSummaryBeforeValidPaste) === 2;
   let summaryAfterValidPaste = await readDocumentSummary(page);
-  let quantityValuesAfterValidPaste = [
-    await readGridCellText(page, "quantity", 0),
-    await readGridCellText(page, "quantity", 1),
-  ];
-  const validPasteAppliedViaKeyboard =
-    quantityValuesAfterValidPaste.join(",") !==
-    quantityValuesBeforeValidPaste.join(",");
+  let selectionStateAfterSyntheticValidPaste: string | null = null;
+  let selectionSummaryAfterSyntheticValidPaste: string | null = null;
+  let quantityValuesAfterValidPaste = [...quantityValuesBeforeValidPaste];
+  let validPasteMatchedExpectedValues = false;
+  let validPasteAppliedViaKeyboard = false;
   let validPasteAppliedViaSynthetic = false;
-  let validPasteMethod: "keyboard" | "synthetic" | "none" =
-    validPasteAppliedViaKeyboard ? "keyboard" : "none";
+  let validPasteMethod: "keyboard" | "synthetic" | "none" = "none";
 
-  if (!validPasteAppliedViaKeyboard) {
-    await selectQuantityRange(page, 0, 1);
+  if (validPasteUsedTwoCellRange) {
+    await page.keyboard.press("Meta+V");
+    await page.waitForTimeout(1200);
+    summaryAfterValidPaste = await readDocumentSummary(page);
+    quantityValuesAfterValidPaste = [
+      await readGridCellText(page, "quantity", 0),
+      await readGridCellText(page, "quantity", 1),
+    ];
+    validPasteMatchedExpectedValues = arraysEqual(
+      quantityValuesAfterValidPaste,
+      expectedQuantityValuesForValidPaste
+    );
+    validPasteAppliedViaKeyboard = validPasteMatchedExpectedValues;
+    if (validPasteAppliedViaKeyboard) {
+      validPasteMethod = "keyboard";
+    }
+  }
+
+  if (validPasteUsedTwoCellRange && !validPasteAppliedViaKeyboard) {
+    const selectionAfterSyntheticValidPaste = await selectQuantityRange(
+      page,
+      0,
+      1
+    );
+    selectionStateAfterSyntheticValidPaste =
+      selectionAfterSyntheticValidPaste.state;
+    selectionSummaryAfterSyntheticValidPaste =
+      selectionAfterSyntheticValidPaste.summary;
     await dispatchSyntheticPaste(
       page,
-      `${quantityValuesBeforeValidPaste[0] === "1" ? "3" : "1"}\n${quantityValuesBeforeValidPaste[1] === "1" ? "4" : "1"}`
+      expectedQuantityValuesForValidPaste.join("\n")
     );
     summaryAfterValidPaste = await readDocumentSummary(page);
     quantityValuesAfterValidPaste = [
       await readGridCellText(page, "quantity", 0),
       await readGridCellText(page, "quantity", 1),
     ];
+    validPasteMatchedExpectedValues = arraysEqual(
+      quantityValuesAfterValidPaste,
+      expectedQuantityValuesForValidPaste
+    );
     validPasteAppliedViaSynthetic =
-      quantityValuesAfterValidPaste.join(",") !==
-      quantityValuesBeforeValidPaste.join(",");
+      getSelectedCellCount(selectionSummaryAfterSyntheticValidPaste) === 2 &&
+      validPasteMatchedExpectedValues;
     if (validPasteAppliedViaSynthetic) {
       validPasteMethod = "synthetic";
     }
   }
 
-  const selectionStateBeforeRestorePaste = await selectQuantityRange(
-    page,
-    0,
-    1
-  );
-  await writeClipboardText(
-    page,
-    `${quantityValuesBeforeValidPaste[0]}\n${quantityValuesBeforeValidPaste[1]}`
-  );
-  await page.keyboard.press("Meta+V");
-  await page.waitForTimeout(1200);
+  let selectionStateBeforeRestorePaste: string | null = null;
+  let selectionSummaryBeforeRestorePaste: string | null = null;
+  let quantityValuesAfterRestore = [...quantityValuesBeforeValidPaste];
+  if (validPasteUsedTwoCellRange) {
+    await page.goto(route, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForTimeout(5000);
+    selectionStateBeforeRestorePaste = await readSelectionState(page);
+    selectionSummaryBeforeRestorePaste = await readSelectionSummary(page);
+    await restoreQuantityValues(page, quantityValuesBeforeValidPaste);
+    await page.goto(route, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForTimeout(5000);
+    quantityValuesAfterRestore = [
+      await readGridCellText(page, "quantity", 0),
+      await readGridCellText(page, "quantity", 1),
+    ];
+  }
+
   await page.goto(route, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(5000);
-  const quantityValuesAfterRestore = [
-    await readGridCellText(page, "quantity", 0),
-    await readGridCellText(page, "quantity", 1),
-  ];
-
-  await clickButton(page, "Duplicate");
+  const summaryBeforeDuplicate = await readDocumentSummary(page);
+  await ensureDocumentCellFocus(page);
+  const selectionSummaryBeforeDuplicate = await readSelectionSummary(page);
+  const duplicateButton = page.getByRole("button", { name: "Duplicate" }).first();
+  const duplicateButtonEnabledBefore = await duplicateButton.isEnabled();
+  if (duplicateButtonEnabledBefore) {
+    await clickButton(page, "Duplicate");
+  }
   await page.waitForTimeout(1500);
   const summaryAfterDuplicate = await readDocumentSummary(page);
   await capturePage(page, "03-document-after-duplicate.png", screenshotPaths);
+  await restoreDocumentLineItems(
+    page,
+    route,
+    parseLineItemCount(summaryBefore) ?? 0,
+    screenshotPaths,
+    ""
+  );
 
+  await page.goto(route, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForTimeout(5000);
+  const summaryBeforeQuickAdd = await readDocumentSummary(page);
   await clickButton(page, /add item/i);
   await page.waitForTimeout(1000);
   const inventorySearch = page
@@ -549,6 +675,9 @@ async function checkDocumentRoute(context: BrowserContext) {
     screenshotPaths
   );
   const lineItemsBefore = parseLineItemCount(summaryBefore);
+  const lineItemsBeforeDuplicate = parseLineItemCount(summaryBeforeDuplicate);
+  const lineItemsAfterDuplicate = parseLineItemCount(summaryAfterDuplicate);
+  const lineItemsBeforeQuickAdd = parseLineItemCount(summaryBeforeQuickAdd);
   const lineItemsAfterQuickAdd = parseLineItemCount(summaryAfterQuickAdd);
   const lineItemsAfterDelete = parseLineItemCount(summaryAfterDelete);
 
@@ -559,7 +688,9 @@ async function checkDocumentRoute(context: BrowserContext) {
     summaryAfterBlockedDelete,
     summaryAfterInvalidPaste,
     summaryAfterValidPaste,
+    summaryBeforeDuplicate,
     summaryAfterDuplicate,
+    summaryBeforeQuickAdd,
     summaryAfterQuickAdd,
     summaryAfterDelete,
     summaryAfterRestore: restoredDocumentState.summary,
@@ -567,15 +698,22 @@ async function checkDocumentRoute(context: BrowserContext) {
     lineItemsAfterBlockedDelete: parseLineItemCount(summaryAfterBlockedDelete),
     lineItemsAfterInvalidPaste: parseLineItemCount(summaryAfterInvalidPaste),
     lineItemsAfterValidPaste: parseLineItemCount(summaryAfterValidPaste),
-    lineItemsAfterDuplicate: parseLineItemCount(summaryAfterDuplicate),
+    lineItemsBeforeDuplicate,
+    lineItemsAfterDuplicate,
+    lineItemsBeforeQuickAdd,
     lineItemsAfterQuickAdd,
     lineItemsAfterDelete,
     lineItemsAfterRestore: restoredDocumentState.lineItemCount,
-    quickAddDelta:
-      lineItemsAfterQuickAdd !== null && lineItemsBefore !== null
-        ? lineItemsAfterQuickAdd - lineItemsBefore
+    duplicateDelta:
+      lineItemsAfterDuplicate !== null && lineItemsBeforeDuplicate !== null
+        ? lineItemsAfterDuplicate - lineItemsBeforeDuplicate
         : null,
-    deleteReturnedToBaseline: lineItemsAfterDelete === lineItemsBefore,
+    quickAddDelta:
+      lineItemsAfterQuickAdd !== null && lineItemsBeforeQuickAdd !== null
+        ? lineItemsAfterQuickAdd - lineItemsBeforeQuickAdd
+        : null,
+    duplicateButtonEnabledBefore,
+    deleteReturnedToBaseline: lineItemsAfterDelete === lineItemsBeforeQuickAdd,
     selectionStateAfterClick,
     selectionStateAfterTab,
     selectionStateAfterShiftTab,
@@ -589,12 +727,20 @@ async function checkDocumentRoute(context: BrowserContext) {
     clipboardReadbackBeforeInvalidPaste,
     clipboardReadbackBeforeValidPaste,
     selectionStateBeforeValidPaste,
+    selectionSummaryBeforeValidPaste,
+    selectionSummaryBeforeDuplicate,
     selectionStateBeforeRestorePaste,
+    selectionSummaryBeforeRestorePaste,
+    selectionStateAfterSyntheticValidPaste,
+    selectionSummaryAfterSyntheticValidPaste,
     quantityValuesBeforeValidPaste,
+    expectedQuantityValuesForValidPaste,
     quantityValuesAfterValidPaste,
     quantityValuesAfterRestore,
     validPasteApplied:
       validPasteAppliedViaKeyboard || validPasteAppliedViaSynthetic,
+    validPasteMatchedExpectedValues,
+    validPasteUsedTwoCellRange,
     validPasteAppliedViaKeyboard,
     validPasteAppliedViaSynthetic,
     validPasteMethod,
@@ -614,6 +760,8 @@ async function main() {
   mkdirSync(outputDir, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
+  let browserError: unknown = null;
+  let browserCloseError: unknown = null;
 
   try {
     const context = await browser.newContext({
@@ -623,6 +771,8 @@ async function main() {
       },
       permissions: ["clipboard-read", "clipboard-write"],
     });
+    let contextError: unknown = null;
+    let contextCloseError: unknown = null;
     try {
       await login(context, salesManager);
       const version = await context.request
@@ -669,7 +819,13 @@ async function main() {
 
       if (!documentRoute.validPasteApplied) {
         throw new Error(
-          `Document-route validation failed: valid paste did not apply via any proof path (method=${documentRoute.validPasteMethod}).`
+          `Document-route validation failed: valid paste did not apply via a real two-cell range with the expected values (method=${documentRoute.validPasteMethod}, expected=${documentRoute.expectedQuantityValuesForValidPaste.join(",")}, actual=${documentRoute.quantityValuesAfterValidPaste.join(",")}, selectionState=${documentRoute.selectionStateBeforeValidPaste ?? "none"}, selectionSummary=${documentRoute.selectionSummaryBeforeValidPaste ?? "none"}).`
+        );
+      }
+
+      if (documentRoute.duplicateDelta !== 1) {
+        throw new Error(
+          `Document-route validation failed: duplicate did not add exactly one line item in isolation (buttonEnabled=${documentRoute.duplicateButtonEnabledBefore}, before=${documentRoute.lineItemsBeforeDuplicate ?? "none"}, after=${documentRoute.lineItemsAfterDuplicate ?? "none"}, selectionSummary=${documentRoute.selectionSummaryBeforeDuplicate ?? "none"}).`
         );
       }
 
@@ -678,11 +834,31 @@ async function main() {
           "Document-route validation failed: quick-add followed by delete did not return the line-item count to baseline."
         );
       }
+    } catch (error) {
+      contextError = error;
+      throw error;
     } finally {
-      await context.close();
+      try {
+        await context.close();
+      } catch (closeError) {
+        contextCloseError = closeError;
+      }
     }
+    if (contextCloseError && !contextError) {
+      throw contextCloseError;
+    }
+  } catch (error) {
+    browserError = error;
+    throw error;
   } finally {
-    await browser.close();
+    try {
+      await browser.close();
+    } catch (closeError) {
+      browserCloseError = closeError;
+    }
+  }
+  if (browserCloseError && !browserError) {
+    throw browserCloseError;
   }
 }
 

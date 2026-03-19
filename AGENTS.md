@@ -188,7 +188,9 @@ Task completion requires: commit SHA, PR link, verification outputs, blast radiu
 
 ## Parallel Work
 
-- Check `docs/ACTIVE_SESSIONS.md` before starting
+- For the Orders runtime initiative, if `pnpm status:orders-runtime:all` has been run recently, use `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` and `PROOF_BUDGET.md` as local generated summaries before `docs/ACTIVE_SESSIONS.md`
+- Treat those generated files as local read-only snapshots, not source of truth; the gate doc, issue manifest, execution metrics, and Linear remain authoritative
+- Treat `docs/ACTIVE_SESSIONS.md` as a legacy global view, not the source of truth for the active Orders runtime gate
 - Never edit files another agent is working on
 - Use `git worktree` for parallel branches
 - Push frequently after each phase
@@ -216,6 +218,8 @@ GitHub backup: `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`
 | Known bug patterns      | `.claude/known-bug-patterns.md`                 |
 | Production migrations   | `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` |
 | QA verification skill   | `docs/skills/terp-qa/SKILL.md`                  |
+| Orders runtime status   | `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` (generated local snapshot) |
+| Orders proof budget     | `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` (generated advisory snapshot) |
 | Active sessions         | `docs/ACTIVE_SESSIONS.md`                       |
 | Master roadmap          | `docs/roadmaps/MASTER_ROADMAP.md`               |
 

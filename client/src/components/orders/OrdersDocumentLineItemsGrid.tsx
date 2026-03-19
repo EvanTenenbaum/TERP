@@ -4,7 +4,10 @@ import type {
   CellSelectionDeleteStartEvent,
   CellValueChangedEvent,
   ColDef,
+  FillEndEvent,
+  FillOperationParams,
   FillStartEvent,
+  GridApi,
   ProcessCellForExportParams,
   ProcessDataFromClipboardParams,
   SendToClipboardParams,
@@ -51,6 +54,14 @@ type OrdersDocumentGridColumnKey =
   | "productDisplayName"
   | "batchSku"
   | "lineTotal";
+
+const editableDocumentFields: OrdersDocumentEditableField[] = [
+  "quantity",
+  "cogsPerUnit",
+  "marginPercent",
+  "unitPrice",
+  "isSample",
+];
 
 const documentFieldPolicies: PowersheetFieldPolicyMap<LineItem> = {
   quantity: {
@@ -256,6 +267,67 @@ function normalizeSampleClipboardValue(value: unknown): boolean | null {
   return null;
 }
 
+function normalizeDocumentFillSeedValue(
+  columnKey: string,
+  value: unknown
+): number | boolean | null {
+  if (columnKey === "isSample") {
+    return normalizeSampleClipboardValue(value);
+  }
+
+  if (columnKey === "quantity") {
+    return parsePositiveInteger(String(value ?? ""));
+  }
+
+  return parseFiniteNumber(value);
+}
+
+function getDocumentFillValue(
+  params: FillOperationParams<LineItem>
+): number | boolean | null | false {
+  const columnKey = params.column.getColId();
+  const fieldPolicy = getFieldPolicy(columnKey);
+
+  if (!fieldPolicy?.fillAllowed) {
+    return params.currentCellValue;
+  }
+
+  const initialValues = params.initialValues
+    .map(value => normalizeDocumentFillSeedValue(columnKey, value))
+    .filter(value => value !== null);
+
+  if (initialValues.length === 0) {
+    return false;
+  }
+
+  if (columnKey === "isSample") {
+    return initialValues[params.currentIndex % initialValues.length] ?? false;
+  }
+
+  const numericValues = initialValues.filter(
+    (value): value is number => typeof value === "number"
+  );
+  if (numericValues.length !== initialValues.length) {
+    return false;
+  }
+
+  if (numericValues.length === 1) {
+    return numericValues[0];
+  }
+
+  const lastValue = numericValues[numericValues.length - 1] ?? 0;
+  const previousValue =
+    numericValues[numericValues.length - 2] ?? numericValues[0] ?? 0;
+  const step = lastValue - previousValue;
+  const nextValue = lastValue + step * (params.currentIndex + 1);
+
+  if (columnKey === "quantity") {
+    return Math.max(1, Math.round(nextValue));
+  }
+
+  return nextValue;
+}
+
 function getClipboardFallbackValue(
   params: ProcessCellForExportParams<LineItem>
 ): unknown {
@@ -265,24 +337,25 @@ function getClipboardFallbackValue(
 
 function getFocusedSelectionValue(
   selectionSet: PowersheetSelectionSet | null,
-  rowIds: string[],
   selectedRowIds: Set<string>,
   items: LineItem[],
   field: keyof LineItem
 ) {
-  const focusedRowIndex = selectionSet?.focusedCell?.rowIndex ?? null;
-  if (focusedRowIndex !== null) {
-    const focusedRowId = rowIds[focusedRowIndex];
-    if (focusedRowId && selectedRowIds.has(focusedRowId)) {
-      return items[focusedRowIndex]?.[field];
+  const focusedRowId = selectionSet?.focusedRowId ?? null;
+  if (focusedRowId && selectedRowIds.has(focusedRowId)) {
+    const focusedRow = items.find(
+      item => getDocumentLineItemRowId(item) === focusedRowId
+    );
+    if (focusedRow) {
+      return focusedRow[field];
     }
   }
 
-  const firstSelectedIndex = items.findIndex((_, index) =>
-    selectedRowIds.has(rowIds[index] ?? "")
+  const firstSelectedItem = items.find(item =>
+    selectedRowIds.has(getDocumentLineItemRowId(item))
   );
-  if (firstSelectedIndex >= 0) {
-    return items[firstSelectedIndex]?.[field];
+  if (firstSelectedItem) {
+    return firstSelectedItem[field];
   }
 
   return null;
@@ -478,6 +551,16 @@ function normalizeDocumentLineItemEdit(
   }
 }
 
+function readGridLineItemsByRowId(api: GridApi<LineItem>) {
+  const rows = new Map<string, LineItem>();
+  api.forEachNode(node => {
+    if (node.data) {
+      rows.set(getDocumentLineItemRowId(node.data), node.data);
+    }
+  });
+  return rows;
+}
+
 export function OrdersDocumentLineItemsGrid({
   items,
   clientId,
@@ -491,6 +574,7 @@ export function OrdersDocumentLineItemsGrid({
   const [lastEditRejection, setLastEditRejection] =
     useState<PowersheetEditRejection | null>(null);
   const draftRowKeyCounterRef = useRef(0);
+  const fillSnapshotRef = useRef<Map<string, LineItem> | null>(null);
 
   const normalizedItems = useMemo(
     () =>
@@ -856,6 +940,12 @@ export function OrdersDocumentLineItemsGrid({
       "fillAllowed"
     );
     if (!blockedColumnKey) {
+      fillSnapshotRef.current = new Map(
+        normalizedItems.map((item, index) => [
+          getDocumentLineItemRowId(item, index),
+          { ...item },
+        ])
+      );
       setLastEditRejection(null);
       return;
     }
@@ -867,6 +957,53 @@ export function OrdersDocumentLineItemsGrid({
         "Fill is only allowed in approved editable document fields."
       )
     );
+  };
+
+  const handleFillEnd = (event: FillEndEvent<LineItem>) => {
+    const fillSnapshot = fillSnapshotRef.current;
+    fillSnapshotRef.current = null;
+
+    if (!fillSnapshot) {
+      return;
+    }
+
+    const filledRowsById = readGridLineItemsByRowId(event.api);
+    if (filledRowsById.size === 0) {
+      return;
+    }
+
+    let rejection: PowersheetEditRejection | null = null;
+
+    const nextItems = normalizedItems.map((item, rowIndex) => {
+      const rowId = getDocumentLineItemRowId(item, rowIndex);
+      const previousRow = fillSnapshot.get(rowId) ?? item;
+      const currentRow = filledRowsById.get(rowId) ?? previousRow;
+
+      let nextRow = { ...currentRow };
+      for (const field of editableDocumentFields) {
+        if (nextRow[field] === previousRow[field]) {
+          continue;
+        }
+
+        const normalized = normalizeDocumentLineItemEdit(
+          nextRow,
+          field,
+          nextRow[field]
+        );
+        if (normalized.rejection || !normalized.nextItem) {
+          rejection = normalized.rejection;
+          return previousRow;
+        }
+        nextRow = normalized.nextItem;
+      }
+
+      return nextRow;
+    });
+
+    setLastEditRejection(rejection);
+    if (!rejection) {
+      onChange(nextItems);
+    }
   };
 
   const handleCellSelectionDeleteStart = (
@@ -935,7 +1072,6 @@ export function OrdersDocumentLineItemsGrid({
 
     const sourceUnitPrice = getFocusedSelectionValue(
       selectionSet,
-      rowIds,
       selectedRowIds,
       normalizedItems,
       "unitPrice"
@@ -1068,6 +1204,11 @@ export function OrdersDocumentLineItemsGrid({
       suppressCutToClipboard={suppressCutToClipboard}
       suppressKeyboardEvent={handleSuppressKeyboardEvent}
       onFillStart={handleFillStart}
+      fillHandleOptions={{
+        direction: "y",
+        setFillValue: getDocumentFillValue,
+      }}
+      onFillEnd={handleFillEnd}
       onCellSelectionDeleteStart={handleCellSelectionDeleteStart}
       enableFillHandle
       enableUndoRedo

@@ -75,6 +75,7 @@ describe("SpreadsheetPilotGrid", () => {
     const suppressKeyboardEvent = vi.fn();
     const onFillStart = vi.fn();
     const onCellSelectionDeleteStart = vi.fn();
+    const setFillValue = vi.fn();
 
     render(
       <SpreadsheetPilotGrid<TestRow>
@@ -92,6 +93,10 @@ describe("SpreadsheetPilotGrid", () => {
         suppressCutToClipboard
         suppressKeyboardEvent={suppressKeyboardEvent}
         onFillStart={onFillStart}
+        fillHandleOptions={{
+          direction: "y",
+          setFillValue,
+        }}
         onCellSelectionDeleteStart={onCellSelectionDeleteStart}
       />
     );
@@ -104,7 +109,8 @@ describe("SpreadsheetPilotGrid", () => {
       enableColumnSelection: true,
       handle: {
         mode: "fill",
-        direction: "xy",
+        direction: "y",
+        setFillValue,
       },
     });
     expect(lastAgGridProps?.processCellFromClipboard).toBe(
@@ -226,7 +232,11 @@ describe("SpreadsheetPilotGrid", () => {
     lastAgGridProps?.onGridReady?.({ api: fakeApi });
 
     expect(fakeApi.setFocusedCell).toHaveBeenCalledWith(1, fakeColumns[0]);
-    expect(onSelectionSetChange).toHaveBeenCalled();
+    expect(onSelectionSetChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        focusedRowId: "row-2",
+      })
+    );
     expect(onSelectionSummaryChange).toHaveBeenCalledWith({
       selectedCellCount: 4,
       selectedRowCount: 2,

@@ -13,6 +13,7 @@ import type {
   ColDef,
   CutEndEvent,
   CutStartEvent,
+  FillHandleOptions,
   FillEndEvent,
   FillStartEvent,
   GridApi,
@@ -120,6 +121,7 @@ function buildSelectionSet<Row extends object>(
     );
 
   const focusedCell = getFocusedCellCoordinate(gridApi);
+  let focusedRowId: string | null = null;
   const selectedRowIds = new Set(
     gridApi
       .getSelectedRows()
@@ -134,12 +136,14 @@ function buildSelectionSet<Row extends object>(
   if (focusedCell) {
     const focusedRowNode = gridApi.getDisplayedRowAtIndex(focusedCell.rowIndex);
     if (focusedRowNode?.data) {
-      selectedRowIds.add(getRowId(focusedRowNode.data));
+      focusedRowId = getRowId(focusedRowNode.data);
+      selectedRowIds.add(focusedRowId);
     }
   }
 
   return {
     focusedCell,
+    focusedRowId,
     anchorCell: ranges[0]?.anchor ?? focusedCell,
     ranges,
     selectedRowIds,
@@ -244,6 +248,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   selectionMode?: SpreadsheetPilotGridSelectionMode;
   selectionSurface?: PowersheetSelectionSummary["focusedSurface"];
   enableFillHandle?: boolean;
+  fillHandleOptions?: Omit<FillHandleOptions<Row>, "mode">;
   enableUndoRedo?: boolean;
   allowColumnReorder?: boolean;
   enterNavigatesVertically?: boolean;
@@ -296,6 +301,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
   selectionMode = "single-row",
   selectionSurface,
   enableFillHandle = true,
+  fillHandleOptions,
   enableUndoRedo = true,
   allowColumnReorder = false,
   enterNavigatesVertically = false,
@@ -480,6 +486,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
                         ? {
                             mode: "fill",
                             direction: "xy",
+                            ...fillHandleOptions,
                           }
                         : {
                             mode: "range",

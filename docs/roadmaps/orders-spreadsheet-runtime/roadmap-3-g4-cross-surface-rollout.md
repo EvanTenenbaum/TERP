@@ -4,7 +4,7 @@
 
 - Gate: `G4`
 - Linear gate: `TER-790`
-- Current verdict: `partial`
+- Current verdict: `open`
 - Execution state: `blocked pending Roadmap 2`
 - Prerequisites: Roadmap 2 `closed with evidence`
 - Gate file: [G4-cross-surface-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G4-cross-surface-gate.md)
