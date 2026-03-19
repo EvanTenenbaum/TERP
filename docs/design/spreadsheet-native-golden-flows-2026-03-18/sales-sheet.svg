@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1260" viewBox="0 0 1600 1260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Spreadsheet-Native Sales Sheets</title>
+  <rect width="1600" height="1260" fill="#f6f3ec" />
+  
+  
+  <g>
+    <rect x="44" y="36" width="1512" height="110" rx="28" fill="#103c39" />
+    <text x="76" y="86" fill="#f8fafc" font-family="Arial" font-size="36" font-weight="700" letter-spacing="0" text-anchor="start">Spreadsheet-Native Sales Sheets</text>
+    <text x="76" y="116" fill="#d6efe8" font-family="Arial" font-size="16" font-weight="500" letter-spacing="0" text-anchor="start">Customer-priced inventory browse stays left, while preview, save state, output, history, and Sales Order or Live Shopping handoffs stay visibly explicit on the right.</text>
+    
+  <g>
+    <rect x="1270" y="60" width="220" height="32" rx="16" fill="#1f5753" stroke="#2b6c67" />
+    <text x="1380" y="81" fill="#d9f3ed" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Source: SalesSheetCreatorPage + SalesSheetPreview</text>
+  </g>
+    <text x="1490" y="117" fill="#e9fff9" font-family="Arial" font-size="14" font-weight="700" letter-spacing="0" text-anchor="end">March 2026</text>
+  </g>
+
+  <g>
+    <rect x="72" y="186" width="1450" height="78" rx="22" fill="#f7f3ea" stroke="#d9d0bd" />
+    
+  <g>
+    <rect x="92" y="204" width="144" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="164" y="230" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Back to Orders</text>
+  </g>
+    
+  <g>
+    <rect x="252" y="210" width="174" height="30" rx="15" fill="#d7f1ed" stroke="#97d5cc" />
+    <text x="339" y="230" fill="#0f766e" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">DF-021 Sales Sheets</text>
+  </g>
+    
+  <g>
+    <rect x="440" y="210" width="212" height="30" rx="15" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="546" y="230" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Saved views + history explicit</text>
+  </g>
+    <text x="680" y="228" fill="#667085" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Legacy route: /sales-sheets · Live Shopping bridge preserved</text>
+    
+  <g>
+    <rect x="1212" y="204" width="126" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1275" y="230" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Load Draft</text>
+  </g>
+    
+  <g>
+    <rect x="1352" y="204" width="150" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1427" y="230" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">History + Views</text>
+  </g>
+  </g>
+
+  
+  <rect x="72" y="286" width="1450" height="896" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="326" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Sales Sheet Builder</text>
+  <text x="100" y="352" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The builder keeps client-priced inventory, preview, dirty-state cues, saved views, history, output controls, and conversion paths visible without collapsing into a modal-heavy sales prep flow.</text>
+  
+    
+  <g>
+    <text x="102" y="350" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">DRAFT NAME</text>
+    <rect x="102" y="360" width="340" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="118" y="389" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Golden State March Mix</text>
+  </g>
+    
+  <g>
+    <text x="460" y="350" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">CLIENT</text>
+    <rect x="460" y="360" width="294" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="476" y="389" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Golden State</text>
+  </g>
+    
+  <g>
+    <rect x="772" y="360" width="128" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="836" y="389" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Quick View</text>
+  </g>
+    
+  <g>
+    <rect x="914" y="360" width="118" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="973" y="389" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Save View</text>
+  </g>
+    
+  <g>
+    <rect x="1184" y="348" width="132" height="80" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="1204" y="376" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">AUTOSAVE</text>
+    <text x="1204" y="406" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Healthy</text>
+  </g>
+    
+  <g>
+    <rect x="1332" y="348" width="160" height="80" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="1352" y="376" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">DIRTY</text>
+    <text x="1352" y="406" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">2 cells</text>
+  </g>
+
+    <g>
+      <rect x="102" y="452" width="822" height="480" rx="24" fill="#fbfaf6" stroke="#d9d0bd" />
+      <text x="128" y="486" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Priced Inventory Browser</text>
+      <text x="128" y="514" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The left side stays dominant at review time so the operator can browse client-priced inventory, apply saved views, and add items without losing selection context.</text>
+      
+  <g>
+    <text x="128" y="542" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">SEARCH</text>
+    <rect x="128" y="552" width="250" height="44" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="144" y="579" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Search product, batch, supplier</text>
+  </g>
+      
+  <g>
+    <text x="394" y="542" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">VIEW</text>
+    <rect x="394" y="552" width="132" height="44" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="410" y="579" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Default</text>
+  </g>
+      
+  <g>
+    <text x="542" y="542" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">SORT</text>
+    <rect x="542" y="552" width="132" height="44" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="558" y="579" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Retail</text>
+  </g>
+      
+  <g>
+    <rect x="690" y="552" width="102" height="44" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="741" y="579" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Filters</text>
+  </g>
+      
+  <g>
+    <rect x="806" y="552" width="92" height="44" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="852" y="579" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Add</text>
+  </g>
+      <rect x="128" y="620" width="724" height="266" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="128" y="620" width="724" height="38" rx="18" fill="#f2ede1" /><text x="144" y="646" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Product</text><text x="360" y="646" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Category</text><line x1="344" y1="620" x2="344" y2="886" stroke="#d9d0bd" /><text x="488" y="646" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Qty</text><line x1="472" y1="620" x2="472" y2="886" stroke="#d9d0bd" /><text x="568" y="646" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Retail</text><line x1="552" y1="620" x2="552" y2="886" stroke="#d9d0bd" /><text x="676" y="646" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">COGS</text><line x1="660" y1="620" x2="660" y2="886" stroke="#d9d0bd" /><text x="772" y="646" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Selected</text><line x1="756" y1="620" x2="756" y2="886" stroke="#d9d0bd" /><rect x="129" y="658" width="722" height="38" fill="#fffdf9" /><line x1="128" y1="658" x2="852" y2="658" stroke="#d9d0bd" /><text x="144" y="684" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Blue Dream 3.5g Jar</text><text x="360" y="684" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Flower</text><text x="488" y="684" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">24</text><text x="568" y="684" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$42.50</text><text x="676" y="684" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$18.70</text><text x="772" y="684" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Yes</text><rect x="129" y="696" width="722" height="38" fill="#edf7f6" /><line x1="128" y1="696" x2="852" y2="696" stroke="#d9d0bd" /><text x="144" y="722" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Lemon Kush 7g</text><text x="360" y="722" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Flower</text><text x="488" y="722" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">10</text><text x="568" y="722" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$68.00</text><text x="676" y="722" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$27.10</text><text x="772" y="722" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Yes</text><rect x="129" y="734" width="722" height="38" fill="#fffdf9" /><line x1="128" y1="734" x2="852" y2="734" stroke="#d9d0bd" /><text x="144" y="760" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Edible 100mg</text><text x="360" y="760" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Edible</text><text x="488" y="760" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">6</text><text x="568" y="760" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$90.00</text><text x="676" y="760" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$38.00</text><text x="772" y="760" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Yes</text><rect x="129" y="772" width="722" height="38" fill="#fbf8f1" /><line x1="128" y1="772" x2="852" y2="772" stroke="#d9d0bd" /><text x="144" y="798" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Vape Cart 1g</text><text x="360" y="798" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Vape</text><text x="488" y="798" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">8</text><text x="568" y="798" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$112.50</text><text x="676" y="798" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$31.40</text><text x="772" y="798" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Yes</text><rect x="129" y="810" width="722" height="38" fill="#fffdf9" /><line x1="128" y1="810" x2="852" y2="810" stroke="#d9d0bd" /><text x="144" y="836" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Pre-roll 14 pack</text><text x="360" y="836" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Preroll</text><text x="488" y="836" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">2</text><text x="568" y="836" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$84.00</text><text x="676" y="836" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$21.20</text><text x="772" y="836" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><rect x="129" y="848" width="722" height="38" fill="#fbf8f1" /><line x1="128" y1="848" x2="852" y2="848" stroke="#d9d0bd" /><text x="144" y="874" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Greenhouse Smalls 28g</text><text x="360" y="874" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Flower</text><text x="488" y="874" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">4</text><text x="568" y="874" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$120.00</text><text x="676" y="874" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$41.00</text><text x="772" y="874" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><text x="128" y="912" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">Saved views, filters, and column visibility shape this browser; they do not replace the main inventory review surface.</text>
+      
+  <g>
+    <rect x="128" y="882" width="170" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="213" y="901" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Default view loaded</text>
+  </g>
+      
+  <g>
+    <rect x="310" y="882" width="184" height="28" rx="14" fill="#d1fadf" stroke="#86efac" />
+    <text x="402" y="901" fill="#027a48" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Client pricing applied</text>
+  </g>
+      
+  <g>
+    <rect x="506" y="882" width="392" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="702" y="901" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">View profiles save filter/sort state, not frozen item lists</text>
+  </g>
+    </g>
+
+    <g>
+      <rect x="950" y="452" width="542" height="480" rx="24" fill="#fbfaf6" stroke="#d9d0bd" />
+      <text x="976" y="486" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Preview + Output</text>
+      <text x="976" y="514" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Sticky preview keeps selected items, totals, dirty-state gating, share/export/print outputs, and convert/live actions visible while the inventory browser remains the main curation surface.</text>
+      
+  <g>
+    <rect x="1366" y="468" width="100" height="40" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1416" y="493" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Clear All</text>
+  </g>
+      <rect x="976" y="544" width="508" height="180" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="976" y="544" width="508" height="36" rx="18" fill="#f2ede1" /><text x="992" y="570" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">#</text><text x="1040" y="570" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Item</text><line x1="1024" y1="544" x2="1024" y2="724" stroke="#d9d0bd" /><text x="1224" y="570" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Qty</text><line x1="1208" y1="544" x2="1208" y2="724" stroke="#d9d0bd" /><text x="1296" y="570" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Price</text><line x1="1280" y1="544" x2="1280" y2="724" stroke="#d9d0bd" /><text x="1392" y="570" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Total</text><line x1="1376" y1="544" x2="1376" y2="724" stroke="#d9d0bd" /><rect x="977" y="580" width="506" height="36" fill="#fffdf9" /><line x1="976" y1="580" x2="1484" y2="580" stroke="#d9d0bd" /><text x="992" y="606" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">1</text><text x="1040" y="606" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Blue Dream 3.5g</text><text x="1224" y="606" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">24</text><text x="1296" y="606" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$42.50</text><text x="1392" y="606" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$1,020</text><rect x="977" y="616" width="506" height="36" fill="#edf7f6" /><line x1="976" y1="616" x2="1484" y2="616" stroke="#d9d0bd" /><text x="992" y="642" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">2</text><text x="1040" y="642" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Lemon Kush 7g</text><text x="1224" y="642" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">10</text><text x="1296" y="642" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$68.00</text><text x="1392" y="642" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$680</text><rect x="977" y="652" width="506" height="36" fill="#fffdf9" /><line x1="976" y1="652" x2="1484" y2="652" stroke="#d9d0bd" /><text x="992" y="678" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">3</text><text x="1040" y="678" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Edible 100mg</text><text x="1224" y="678" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">6</text><text x="1296" y="678" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$90.00</text><text x="1392" y="678" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$540</text><rect x="977" y="688" width="506" height="36" fill="#fbf8f1" /><line x1="976" y1="688" x2="1484" y2="688" stroke="#d9d0bd" /><text x="992" y="714" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">4</text><text x="1040" y="714" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Vape Cart 1g</text><text x="1224" y="714" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">8</text><text x="1296" y="714" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$112.50</text><text x="1392" y="714" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$900</text><text x="976" y="750" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">Preview remains a secondary companion. It is sticky because save, share, and convert trust cues belong next to selected items.</text>
+      
+  <g>
+    <rect x="976" y="744" width="146" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="996" y="772" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">ITEMS</text>
+    <text x="996" y="802" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">48</text>
+  </g>
+      
+  <g>
+    <rect x="1138" y="744" width="174" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="1158" y="772" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">VALUE</text>
+    <text x="1158" y="802" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$3,140</text>
+  </g>
+      
+  <g>
+    <rect x="1328" y="744" width="138" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="1348" y="772" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">SHARE</text>
+    <text x="1348" y="802" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Blocked</text>
+  </g>
+      
+  <g>
+    <rect x="976" y="842" width="154" height="42" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="1053" y="868" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Save Sheet</text>
+  </g>
+      
+  <g>
+    <rect x="1144" y="842" width="110" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1199" y="868" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Share Link</text>
+  </g>
+      
+  <g>
+    <rect x="1268" y="842" width="82" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1309" y="868" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">PDF</text>
+  </g>
+      
+  <g>
+    <rect x="1364" y="842" width="102" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1415" y="868" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Print</text>
+  </g>
+      
+  <g>
+    <rect x="976" y="898" width="252" height="28" rx="14" fill="#fef3c7" stroke="#fcd34d" />
+    <text x="1102" y="917" fill="#b45309" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Dirty edits block share / convert / live</text>
+  </g>
+      
+  <g>
+    <rect x="1240" y="898" width="156" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1318" y="917" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">History + views visible</text>
+  </g>
+      
+  <g>
+    <rect x="1408" y="898" width="58" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1437" y="917" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">TTL</text>
+  </g>
+    </g>
+
+    <g>
+      <rect x="102" y="960" width="1390" height="158" rx="24" fill="#fbfaf6" stroke="#d9d0bd" />
+      <text x="128" y="994" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Share + Convert + Live Handoffs</text>
+      <text x="128" y="1022" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">These actions stay explicit. Sales Sheets owns save state, customer-facing output, and live launch; Sales Order owns final composition and transaction workflow after handoff.</text>
+      
+  <g>
+    <rect x="128" y="1058" width="236" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="246" y="1077" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Seed route: ?fromSalesSheet=true</text>
+  </g>
+      
+  <g>
+    <rect x="376" y="1058" width="210" height="28" rx="14" fill="#d1fadf" stroke="#86efac" />
+    <text x="481" y="1077" fill="#027a48" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Client + items persist across handoff</text>
+  </g>
+      
+  <g>
+    <rect x="598" y="1058" width="160" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="678" y="1077" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">History + default views</text>
+  </g>
+      
+  <g>
+    <rect x="770" y="1058" width="252" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="896" y="1077" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Live Shopping stays sibling-owned</text>
+  </g>
+      
+  <g>
+    <rect x="978" y="1046" width="120" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1038" y="1072" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Share Link</text>
+  </g>
+      
+  <g>
+    <rect x="1112" y="1046" width="150" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1187" y="1072" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">To Sales Order</text>
+  </g>
+      
+  <g>
+    <rect x="1258" y="1046" width="138" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1327" y="1072" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">To Quote</text>
+  </g>
+      
+  <g>
+    <rect x="1410" y="1046" width="56" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1438" y="1072" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Live</text>
+  </g>
+    </g>
+    
+
+  
+  <g>
+    <rect x="72" y="1200" width="1450" height="58" rx="18" fill="#f1efe8" stroke="#d9d0bd" />
+    <text x="92" y="1224" fill="#667085" font-family="Arial" font-size="12" font-weight="600" letter-spacing="0" text-anchor="start">4 selected items · default client view active · 2 dirty cells</text>
+    <text x="92" y="1242" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Golden State · Save first, then share, convert, or go live · selected items persist into Sales Order or Quote</text>
+    
+  <g>
+    <rect x="1386" y="1212" width="116" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1444" y="1231" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Keys / Help</text>
+  </g>
+    <text x="1370" y="1242" fill="#667085" font-family="Arial" font-size="11" font-weight="500" letter-spacing="0" text-anchor="end">Sales Sheets stays a review-and-output surface; Sales Order owns final transaction workflow and Live Shopping stays a sibling surface.</text>
+  </g>
+  
+</svg>

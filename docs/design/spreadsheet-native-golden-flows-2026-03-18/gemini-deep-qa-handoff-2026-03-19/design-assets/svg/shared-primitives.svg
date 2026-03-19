@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1180" viewBox="0 0 1600 1180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Spreadsheet-Native Shared Primitives</title>
+  <rect width="1600" height="1180" fill="#f6f3ec" />
+  
+  
+  <g>
+    <rect x="44" y="36" width="1512" height="110" rx="28" fill="#103c39" />
+    <text x="76" y="86" fill="#f8fafc" font-family="Arial" font-size="36" font-weight="700" letter-spacing="0" text-anchor="start">Spreadsheet-Native Shared Primitives</text>
+    <text x="76" y="116" fill="#d6efe8" font-family="Arial" font-size="16" font-weight="500" letter-spacing="0" text-anchor="start">Shared March components across the pilot family: toggle, command strip, grid shell, support strip, selection surfacing, status bar, and secondary inspector.</text>
+    
+  <g>
+    <rect x="1270" y="60" width="220" height="32" rx="16" fill="#1f5753" stroke="#2b6c67" />
+    <text x="1380" y="81" fill="#d9f3ed" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Source: spreadsheet-native shared files</text>
+  </g>
+    <text x="1490" y="117" fill="#e9fff9" font-family="Arial" font-size="14" font-weight="700" letter-spacing="0" text-anchor="end">March 2026</text>
+  </g>
+
+  
+  <rect x="72" y="190" width="700" height="404" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="230" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Surface Toggle + Command Strip</text>
+  <text x="100" y="256" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">These are the consistently repeated control areas the March pilot exposes before any grid content appears.</text>
+  
+    <text x="102" y="276" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">SHEET MODE TOGGLE</text>
+    
+  <g>
+    <rect x="102" y="296" width="180" height="46" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="192" y="324" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Sheet-Native Pilot</text>
+  </g>
+    
+  <g>
+    <rect x="294" y="296" width="164" height="46" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="376" y="324" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Classic Surface</text>
+  </g>
+    <text x="102" y="390" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">COMMAND STRIP</text>
+    <rect x="102" y="410" width="640" height="138" rx="20" fill="#f7f3ea" stroke="#d9d0bd" />
+    <text x="126" y="444" fill="#1f2933" font-family="Arial" font-size="18" font-weight="700" letter-spacing="0" text-anchor="start">Search, filter, pilot badge, and primary actions belong here.</text>
+    <text x="126" y="470" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">This strip is for fast orientation and row-scoped actions before the user ever touches the inspector.</text>
+    
+  <g>
+    <rect x="126" y="492" width="118" height="40" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="185" y="517" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Refresh</text>
+  </g>
+    
+  <g>
+    <rect x="256" y="492" width="122" height="40" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="317" y="517" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">New Draft</text>
+  </g>
+    
+  <g>
+    <rect x="390" y="492" width="120" height="40" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="450" y="517" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Accounting</text>
+  </g>
+    
+  <g>
+    <rect x="522" y="492" width="110" height="40" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="577" y="517" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Fulfillment</text>
+  </g>
+    
+
+  
+  <rect x="800" y="190" width="722" height="404" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="828" y="230" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Grid Shell Anatomy</text>
+  <text x="828" y="256" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">SpreadsheetPilotGrid and PowersheetGrid add summary, selection, release gates, and anti-drift messaging under the table instead of burying them elsewhere.</text>
+  
+    <rect x="828" y="264" width="650" height="152" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="828" y="264" width="650" height="38" rx="18" fill="#f2ede1" /><text x="844" y="290" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Stage</text><text x="934" y="290" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Client</text><line x1="918" y1="264" x2="918" y2="416" stroke="#d9d0bd" /><text x="1114" y="290" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Next</text><line x1="1098" y1="264" x2="1098" y2="416" stroke="#d9d0bd" /><text x="1254" y="290" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Total</text><line x1="1238" y1="264" x2="1238" y2="416" stroke="#d9d0bd" /><text x="1374" y="290" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Age</text><line x1="1358" y1="264" x2="1358" y2="416" stroke="#d9d0bd" /><rect x="829" y="302" width="648" height="38" fill="#fffdf9" /><line x1="828" y1="302" x2="1478" y2="302" stroke="#d9d0bd" /><text x="844" y="328" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Draft</text><text x="934" y="328" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Golden State</text><text x="1114" y="328" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Review</text><text x="1254" y="328" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$3,140</text><text x="1374" y="328" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">1d</text><rect x="829" y="340" width="648" height="38" fill="#edf7f6" /><line x1="828" y1="340" x2="1478" y2="340" stroke="#d9d0bd" /><text x="844" y="366" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Confirmed</text><text x="934" y="366" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Harbor</text><text x="1114" y="366" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Ship</text><text x="1254" y="366" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$9,250</text><text x="1374" y="366" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">2d</text><rect x="829" y="378" width="648" height="38" fill="#fffdf9" /><line x1="828" y1="378" x2="1478" y2="378" stroke="#d9d0bd" /><text x="844" y="404" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Confirmed</text><text x="934" y="404" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Pine Cart</text><text x="1114" y="404" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Invoice</text><text x="1254" y="404" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$5,610</text><text x="1374" y="404" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">4d</text>
+    
+  <g>
+    <rect x="828" y="464" width="178" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="917" y="483" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">6 selected cells / 1 row</text>
+  </g>
+    
+  <g>
+    <rect x="1018" y="464" width="180" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1108" y="483" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Focused cell: 1:client</text>
+  </g>
+    
+  <g>
+    <rect x="1210" y="464" width="192" height="28" rx="14" fill="#fef3c7" stroke="#fcd34d" />
+    <text x="1306" y="483" fill="#b45309" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Release gates: SALE-ORD-024...</text>
+  </g>
+    <text x="828" y="520" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Anti-drift summary lives with the surface, so proof requirements stay visually attached to the thing being evaluated.</text>
+    
+
+  
+  <rect x="72" y="624" width="700" height="458" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="664" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Status Bar + Support Strip</text>
+  <text x="100" y="690" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The March pilot uses a visible status bar and reusable support-strip grammar to keep selection, save state, output actions, lifecycle clarifiers, and keyboard hints in view.</text>
+  
+    
+  <g>
+    <rect x="102" y="722" width="640" height="58" rx="18" fill="#f1efe8" stroke="#d9d0bd" />
+    <text x="122" y="746" fill="#667085" font-family="Arial" font-size="12" font-weight="600" letter-spacing="0" text-anchor="start">2 drafts · 4 confirmed · queue 6 cells / 1 row</text>
+    <text x="122" y="764" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Selected SO-1042 · queue selection visible · discontiguous when needed</text>
+    <text x="722" y="756" fill="#667085" font-family="Arial" font-size="12" font-weight="500" letter-spacing="0" text-anchor="end">Cmd/Ctrl+S Save · Cmd/Ctrl+Enter Finalize · Cmd/Ctrl+Z Undo</text>
+  </g>
+    <rect x="102" y="812" width="640" height="72" rx="18" fill="#f7f3ea" stroke="#d9d0bd" />
+    
+  <g>
+    <rect x="120" y="832" width="154" height="28" rx="14" fill="#d1fadf" stroke="#86efac" />
+    <text x="197" y="851" fill="#027a48" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Selection visible</text>
+  </g>
+    
+  <g>
+    <rect x="286" y="832" width="172" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="372" y="851" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Output strip reusable</text>
+  </g>
+    
+  <g>
+    <rect x="470" y="832" width="226" height="28" rx="14" fill="#fef3c7" stroke="#fcd34d" />
+    <text x="583" y="851" fill="#b45309" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Lifecycle clarifier stays adjacent</text>
+  </g>
+    <text x="102" y="918" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">The March contracts treat discoverability as a release gate. Save state, output contracts, and lifecycle notes cannot hide behind hover-only affordances.</text>
+    
+
+  
+  <rect x="800" y="624" width="722" height="458" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="828" y="664" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Secondary Inspector</text>
+  <text x="828" y="690" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Inspectors remain secondary companions. They show evidence and deeper context, but the happy path stays on-sheet.</text>
+  
+    
+  <rect x="842" y="704" width="638" height="308" rx="24" fill="#fbfaf6" stroke="#d9d0bd" />
+  <text x="866" y="738" fill="#1f2933" font-family="Arial" font-size="22" font-weight="700" letter-spacing="0" text-anchor="start">Focused Record</text>
+  <text x="866" y="762" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Selected row subtitle</text>
+  <text x="866" y="796" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">SELECTION CONTEXT</text><text x="866" y="828" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Primary field</text><text x="866" y="848" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Golden State</text><line x1="866" y1="862" x2="1456" y2="862" stroke="#d9d0bd" /><text x="866" y="886" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Workflow status</text><text x="866" y="906" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Draft · Pending</text><line x1="866" y1="920" x2="1456" y2="920" stroke="#d9d0bd" /><text x="866" y="940" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">EVIDENCE</text><text x="866" y="972" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Audit Entries</text><text x="866" y="992" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">14</text><line x1="866" y1="1006" x2="1456" y2="1006" stroke="#d9d0bd" /><text x="866" y="1030" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Linked records</text><text x="866" y="1050" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">3</text><line x1="866" y1="1064" x2="1456" y2="1064" stroke="#d9d0bd" />
+  <g>
+    <rect x="866" y="940" width="590" height="44" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1161" y="967" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Open Classic Context</text>
+  </g>
+    
+  
+</svg>

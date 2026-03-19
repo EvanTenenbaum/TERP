@@ -1,0 +1,15 @@
+{
+  "run_id": "2026-03-19-figma-review",
+  "created_at_utc": "2026-03-19T21:17:52.998648+00:00",
+  "source_video": "/Users/evan/Downloads/CleanShot 2026-03-19 at 13.57.10.mp4",
+  "video_local_path": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/00_raw/CleanShot 2026-03-19 at 13.57.10.mp4",
+  "video_mode": "symlinked",
+  "expected_artifacts": {
+    "transcript_json": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/02_transcripts/transcript.json",
+    "visual_events_json": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/03_visual/visual_events.json",
+    "timeline_json": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/04_timeline/comment_timeline.json",
+    "timeline_markdown": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/04_timeline/comment_timeline.md",
+    "tasks_markdown": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/05_tasks/actionable_tasks.md",
+    "prd_markdown": "/Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/06_prds/prd_draft.md"
+  }
+}

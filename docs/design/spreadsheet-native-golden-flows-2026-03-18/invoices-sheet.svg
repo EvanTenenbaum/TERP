@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1260" viewBox="0 0 1600 1260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Spreadsheet-Native Invoices</title>
+  <rect width="1600" height="1260" fill="#f6f3ec" />
+  
+  
+  <g>
+    <rect x="44" y="36" width="1512" height="110" rx="28" fill="#103c39" />
+    <text x="76" y="86" fill="#f8fafc" font-family="Arial" font-size="36" font-weight="700" letter-spacing="0" text-anchor="start">Spreadsheet-Native Invoices</text>
+    <text x="76" y="116" fill="#d6efe8" font-family="Arial" font-size="16" font-weight="500" letter-spacing="0" text-anchor="start">Invoice review stays registry-first, with PDF output, aging, and payment handoff visibly adjacent to the selected invoice.</text>
+    
+  <g>
+    <rect x="1270" y="60" width="220" height="32" rx="16" fill="#1f5753" stroke="#2b6c67" />
+    <text x="1380" y="81" fill="#d9f3ed" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Source: InvoicesWorkSurface</text>
+  </g>
+    <text x="1490" y="117" fill="#e9fff9" font-family="Arial" font-size="14" font-weight="700" letter-spacing="0" text-anchor="end">March 2026</text>
+  </g>
+  
+  <g>
+    <text x="72" y="180" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">SEARCH</text>
+    <rect x="72" y="190" width="264" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="88" y="219" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Search invoice or client</text>
+  </g>
+  
+  <g>
+    <text x="356" y="180" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">STATUS</text>
+    <rect x="356" y="190" width="180" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="372" y="219" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">All invoice states</text>
+  </g>
+  
+  <g>
+    <rect x="556" y="204" width="230" height="30" rx="15" fill="#d7f1ed" stroke="#97d5cc" />
+    <text x="671" y="224" fill="#0f766e" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">GF-006 invoice lifecycle</text>
+  </g>
+  
+  <g>
+    <rect x="1122" y="190" width="126" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1185" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">New Invoice</text>
+  </g>
+  
+  <g>
+    <rect x="1262" y="190" width="118" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1321" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Download</text>
+  </g>
+  
+  <g>
+    <rect x="1386" y="190" width="136" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1454" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Record Payment</text>
+  </g>
+
+  <g>
+    
+  <g>
+    <rect x="72" y="264" width="214" height="82" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="92" y="292" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">TOTAL BILLED</text>
+    <text x="92" y="322" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$184K</text>
+  </g>
+    
+  <g>
+    <rect x="302" y="264" width="214" height="82" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="322" y="292" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">TOTAL DUE</text>
+    <text x="322" y="322" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$62K</text>
+  </g>
+    
+  <g>
+    <rect x="532" y="264" width="214" height="82" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="552" y="292" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">OVERDUE</text>
+    <text x="552" y="322" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">7</text>
+  </g>
+    
+  <g>
+    <rect x="762" y="264" width="214" height="82" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="782" y="292" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">PARTIAL</text>
+    <text x="782" y="322" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">5</text>
+  </g>
+  </g>
+
+  
+  <rect x="72" y="374" width="930" height="566" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="414" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Invoices Table</text>
+  <text x="100" y="440" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The primary table keeps invoice status, client, due date, paid, balance, and aging visible without routine horizontal scroll.</text>
+  
+    <rect x="100" y="448" width="902" height="240" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="100" y="448" width="902" height="40" rx="18" fill="#f2ede1" /><text x="116" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Status</text><text x="232" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Invoice</text><line x1="216" y1="448" x2="216" y2="688" stroke="#d9d0bd" /><text x="374" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Client</text><line x1="358" y1="448" x2="358" y2="688" stroke="#d9d0bd" /><text x="588" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Due</text><line x1="572" y1="448" x2="572" y2="688" stroke="#d9d0bd" /><text x="700" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Paid</text><line x1="684" y1="448" x2="684" y2="688" stroke="#d9d0bd" /><text x="808" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Balance</text><line x1="792" y1="448" x2="792" y2="688" stroke="#d9d0bd" /><text x="924" y="474" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Aging</text><line x1="908" y1="448" x2="908" y2="688" stroke="#d9d0bd" /><rect x="101" y="488" width="900" height="40" fill="#fffdf9" /><line x1="100" y1="488" x2="1002" y2="488" stroke="#d9d0bd" /><text x="116" y="514" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">OVERDUE</text><text x="232" y="514" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2207</text><text x="374" y="514" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Golden State</text><text x="588" y="514" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 10</text><text x="700" y="514" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$1,200</text><text x="808" y="514" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$2,480</text><text x="924" y="514" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">8d</text><rect x="101" y="528" width="900" height="40" fill="#edf7f6" /><line x1="100" y1="528" x2="1002" y2="528" stroke="#d9d0bd" /><text x="116" y="554" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PARTIAL</text><text x="232" y="554" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2205</text><text x="374" y="554" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Harbor</text><text x="588" y="554" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 14</text><text x="700" y="554" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$2,000</text><text x="808" y="554" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$820</text><text x="924" y="554" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">4d</text><rect x="101" y="568" width="900" height="40" fill="#fffdf9" /><line x1="100" y1="568" x2="1002" y2="568" stroke="#d9d0bd" /><text x="116" y="594" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">SENT</text><text x="232" y="594" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2202</text><text x="374" y="594" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Sunset Supply</text><text x="588" y="594" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 18</text><text x="700" y="594" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$0</text><text x="808" y="594" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$4,100</text><text x="924" y="594" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">0d</text><rect x="101" y="608" width="900" height="40" fill="#fbf8f1" /><line x1="100" y1="608" x2="1002" y2="608" stroke="#d9d0bd" /><text x="116" y="634" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PAID</text><text x="232" y="634" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2198</text><text x="374" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">North Shore</text><text x="588" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 12</text><text x="700" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$3,140</text><text x="808" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$0</text><text x="924" y="634" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><rect x="101" y="648" width="900" height="40" fill="#fffdf9" /><line x1="100" y1="648" x2="1002" y2="648" stroke="#d9d0bd" /><text x="116" y="674" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">VOID</text><text x="232" y="674" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2195</text><text x="374" y="674" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Cinder Hill</text><text x="588" y="674" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 09</text><text x="700" y="674" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$0</text><text x="808" y="674" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$0</text><text x="924" y="674" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><text x="100" y="714" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">Payment recording is launched explicitly. PDF and print stay visible output actions beside the selected invoice.</text>
+    
+
+  
+  <rect x="1030" y="374" width="492" height="566" rx="24" fill="#fbfaf6" stroke="#d9d0bd" />
+  <text x="1054" y="408" fill="#1f2933" font-family="Arial" font-size="22" font-weight="700" letter-spacing="0" text-anchor="start">INV-2207</text>
+  <text x="1054" y="432" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Golden State</text>
+  <text x="1054" y="466" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">INVOICE DETAIL</text><text x="1054" y="498" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Status</text><text x="1054" y="518" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">OVERDUE</text><line x1="1054" y1="532" x2="1498" y2="532" stroke="#d9d0bd" /><text x="1054" y="556" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Total / Due</text><text x="1054" y="576" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">$3,680 / $2,480</text><line x1="1054" y1="590" x2="1498" y2="590" stroke="#d9d0bd" /><text x="1054" y="614" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Terms</text><text x="1054" y="634" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">NET 30</text><line x1="1054" y1="648" x2="1498" y2="648" stroke="#d9d0bd" /><text x="1054" y="672" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">AR Aging</text><text x="1054" y="692" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">8 days overdue</text><line x1="1054" y1="706" x2="1498" y2="706" stroke="#d9d0bd" /><text x="1054" y="726" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">VISIBLE ADJACENCY</text><text x="1054" y="758" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Output</text><text x="1054" y="778" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Download PDF or print</text><line x1="1054" y1="792" x2="1498" y2="792" stroke="#d9d0bd" /><text x="1054" y="816" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">Payment owner</text><text x="1054" y="836" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Open Payments handoff</text><line x1="1054" y1="850" x2="1498" y2="850" stroke="#d9d0bd" /><text x="1054" y="874" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="0" text-anchor="start">GL context</text><text x="1054" y="894" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Read-only evidence</text><line x1="1054" y1="908" x2="1498" y2="908" stroke="#d9d0bd" />
+  <g>
+    <rect x="1054" y="868" width="444" height="44" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1276" y="895" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Open Payment Flow</text>
+  </g>
+
+  
+  <rect x="72" y="968" width="1450" height="204" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="1008" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Selected Invoice Actions</text>
+  <text x="100" y="1034" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">One support band keeps reminders, output actions, and payment handoff visibly adjacent below the registry instead of burying them in a deep modal tree.</text>
+  
+      
+  <g>
+    <rect x="100" y="1040" width="172" height="28" rx="14" fill="#d1fadf" stroke="#86efac" />
+    <text x="186" y="1059" fill="#027a48" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Print + PDF visible</text>
+  </g>
+      
+  <g>
+    <rect x="284" y="1040" width="196" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="382" y="1059" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Aging strip stays visible</text>
+  </g>
+      
+  <g>
+    <rect x="492" y="1040" width="254" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="619" y="1059" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Adjacency CTA: open Payments handoff</text>
+  </g>
+      
+  <g>
+    <rect x="1128" y="1028" width="136" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1196" y="1054" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Send Reminder</text>
+  </g>
+      
+  <g>
+    <rect x="1278" y="1028" width="112" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1334" y="1054" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Print / PDF</text>
+  </g>
+      
+  <g>
+    <rect x="1404" y="1028" width="92" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1450" y="1054" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Pay</text>
+  </g>
+    
+
+  
+  <g>
+    <rect x="72" y="1190" width="1450" height="58" rx="18" fill="#f1efe8" stroke="#d9d0bd" />
+    <text x="92" y="1214" fill="#667085" font-family="Arial" font-size="12" font-weight="600" letter-spacing="0" text-anchor="start">24 invoices in view · 7 overdue</text>
+    <text x="92" y="1232" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Selected INV-2207 · Cmd/Ctrl+K search · Enter open detail</text>
+    
+  <g>
+    <rect x="1386" y="1202" width="116" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1444" y="1221" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Keys / Help</text>
+  </g>
+    <text x="1370" y="1232" fill="#667085" font-family="Arial" font-size="11" font-weight="500" letter-spacing="0" text-anchor="end">Payment execution and document output remain explicit. Bank reconciliation stays outside the invoice sheet.</text>
+  </g>
+  
+</svg>

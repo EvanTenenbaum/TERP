@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1230" viewBox="0 0 1600 1230" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Spreadsheet-Native Purchase Orders</title>
+  <rect width="1600" height="1230" fill="#f6f3ec" />
+  
+  
+  <g>
+    <rect x="44" y="36" width="1512" height="110" rx="28" fill="#103c39" />
+    <text x="76" y="86" fill="#f8fafc" font-family="Arial" font-size="36" font-weight="700" letter-spacing="0" text-anchor="start">Spreadsheet-Native Purchase Orders</text>
+    <text x="76" y="116" fill="#d6efe8" font-family="Arial" font-size="16" font-weight="500" letter-spacing="0" text-anchor="start">The PO queue stays dominant while the selected document, supplier context, and PO Receiving handoff remain visibly adjacent.</text>
+    
+  <g>
+    <rect x="1270" y="60" width="220" height="32" rx="16" fill="#1f5753" stroke="#2b6c67" />
+    <text x="1380" y="81" fill="#d9f3ed" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Source: PurchaseOrdersWorkSurface</text>
+  </g>
+    <text x="1490" y="117" fill="#e9fff9" font-family="Arial" font-size="14" font-weight="700" letter-spacing="0" text-anchor="end">March 2026</text>
+  </g>
+  
+  <g>
+    <text x="72" y="180" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">SEARCH</text>
+    <rect x="72" y="190" width="264" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="88" y="219" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Search PO or supplier</text>
+  </g>
+  
+  <g>
+    <text x="356" y="180" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">STATUS</text>
+    <rect x="356" y="190" width="176" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="372" y="219" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">All lifecycle states</text>
+  </g>
+  
+  <g>
+    <rect x="552" y="204" width="234" height="30" rx="15" fill="#d7f1ed" stroke="#97d5cc" />
+    <text x="669" y="224" fill="#0f766e" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">GF-002 procure-to-pay preserved</text>
+  </g>
+  
+  <g>
+    <rect x="1140" y="190" width="146" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1213" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Supplier Hist.</text>
+  </g>
+  
+  <g>
+    <rect x="1286" y="190" width="146" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1359" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">PO Receiving</text>
+  </g>
+  
+  <g>
+    <rect x="1446" y="190" width="76" height="48" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="1484" y="219" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">New</text>
+  </g>
+
+  
+  <rect x="72" y="282" width="836" height="566" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="322" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Purchase Order Queue</text>
+  <text x="100" y="348" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Queue view keeps the operational columns visible while status changes and PO Receiving launch remain explicit row-scoped actions.</text>
+  <rect x="100" y="356" width="932" height="294" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="100" y="356" width="932" height="42" rx="18" fill="#f2ede1" /><text x="116" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Status</text><text x="236" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">PO</text><line x1="220" y1="356" x2="220" y2="650" stroke="#d9d0bd" /><text x="366" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Supplier</text><line x1="350" y1="356" x2="350" y2="650" stroke="#d9d0bd" /><text x="586" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Items</text><line x1="570" y1="356" x2="570" y2="650" stroke="#d9d0bd" /><text x="672" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">ETA</text><line x1="656" y1="356" x2="656" y2="650" stroke="#d9d0bd" /><text x="792" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Total</text><line x1="776" y1="356" x2="776" y2="650" stroke="#d9d0bd" /><text x="902" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Next</text><line x1="886" y1="356" x2="886" y2="650" stroke="#d9d0bd" /><rect x="101" y="398" width="930" height="42" fill="#fffdf9" /><line x1="100" y1="398" x2="1032" y2="398" stroke="#d9d0bd" /><text x="116" y="424" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">DRAFT</text><text x="236" y="424" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">PO-2201</text><text x="366" y="424" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Harbor House</text><text x="586" y="424" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">5</text><text x="672" y="424" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 20</text><text x="792" y="424" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$6,240</text><text x="902" y="424" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Review costs</text><rect x="101" y="440" width="930" height="42" fill="#edf7f6" /><line x1="100" y1="440" x2="1032" y2="440" stroke="#d9d0bd" /><text x="116" y="466" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">CONFIRMED</text><text x="236" y="466" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">PO-2198</text><text x="366" y="466" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Solstice</text><text x="586" y="466" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">8</text><text x="672" y="466" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 19</text><text x="792" y="466" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$9,180</text><text x="902" y="466" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PO receiving</text><rect x="101" y="482" width="930" height="42" fill="#fffdf9" /><line x1="100" y1="482" x2="1032" y2="482" stroke="#d9d0bd" /><text x="116" y="508" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">RECEIVING</text><text x="236" y="508" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">PO-2196</text><text x="366" y="508" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">North Coast</text><text x="586" y="508" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">12</text><text x="672" y="508" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Today</text><text x="792" y="508" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$11,420</text><text x="902" y="508" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Finish intake</text><rect x="101" y="524" width="930" height="42" fill="#fbf8f1" /><line x1="100" y1="524" x2="1032" y2="524" stroke="#d9d0bd" /><text x="116" y="550" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">RECEIVED</text><text x="236" y="550" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">PO-2191</text><text x="366" y="550" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Bodega</text><text x="586" y="550" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">4</text><text x="672" y="550" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 15</text><text x="792" y="550" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$2,860</text><text x="902" y="550" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Audit</text><rect x="101" y="566" width="930" height="42" fill="#fffdf9" /><line x1="100" y1="566" x2="1032" y2="566" stroke="#d9d0bd" /><text x="116" y="592" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">DRAFT</text><text x="236" y="592" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">PO-2189</text><text x="366" y="592" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Harbor House</text><text x="586" y="592" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">6</text><text x="672" y="592" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 22</text><text x="792" y="592" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$4,900</text><text x="902" y="592" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Assign terms</text><rect x="101" y="608" width="930" height="42" fill="#fbf8f1" /><line x1="100" y1="608" x2="1032" y2="608" stroke="#d9d0bd" /><text x="116" y="634" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">CONFIRMED</text><text x="236" y="634" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">PO-2187</text><text x="366" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">North Coast</text><text x="586" y="634" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">9</text><text x="672" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 18</text><text x="792" y="634" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$7,620</text><text x="902" y="634" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PO receiving</text><text x="100" y="676" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">Queue stays width-disciplined at 1440px. Supplier setup and PO Receiving launch are adjacent support, not the main sheet.</text>
+  <g>
+    <rect x="100" y="756" width="192" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="120" y="784" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">DRAFT</text>
+    <text x="120" y="814" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">2</text>
+  </g>
+  <g>
+    <rect x="308" y="756" width="192" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="328" y="784" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">CONFIRMED</text>
+    <text x="328" y="814" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">2</text>
+  </g>
+  <g>
+    <rect x="516" y="756" width="192" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="536" y="784" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">RECEIVING</text>
+    <text x="536" y="814" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">1</text>
+  </g>
+  <g>
+    <rect x="724" y="756" width="156" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="744" y="784" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">TOTAL</text>
+    <text x="744" y="814" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$42K</text>
+  </g>
+
+  
+  <rect x="936" y="282" width="586" height="324" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="964" y="322" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Selected PO Items</text>
+  <text x="964" y="348" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The selected purchase order opens beside the queue so users can adjust lines without leaving the primary conveyor.</text>
+  
+    <rect x="964" y="356" width="522" height="190" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="964" y="356" width="522" height="38" rx="18" fill="#f2ede1" /><text x="980" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Product</text><text x="1196" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Qty</text><line x1="1180" y1="356" x2="1180" y2="546" stroke="#d9d0bd" /><text x="1288" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Unit Cost</text><line x1="1272" y1="356" x2="1272" y2="546" stroke="#d9d0bd" /><text x="1390" y="382" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Line Total</text><line x1="1374" y1="356" x2="1374" y2="546" stroke="#d9d0bd" /><rect x="965" y="394" width="520" height="38" fill="#fffdf9" /><line x1="964" y1="394" x2="1486" y2="394" stroke="#d9d0bd" /><text x="980" y="420" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Blue Dream 3.5g</text><text x="1196" y="420" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">120</text><text x="1288" y="420" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$18.70</text><text x="1390" y="420" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$2,244</text><rect x="965" y="432" width="520" height="38" fill="#edf7f6" /><line x1="964" y1="432" x2="1486" y2="432" stroke="#d9d0bd" /><text x="980" y="458" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Lemon Kush 7g</text><text x="1196" y="458" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">48</text><text x="1288" y="458" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$27.10</text><text x="1390" y="458" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$1,301</text><rect x="965" y="470" width="520" height="38" fill="#fffdf9" /><line x1="964" y1="470" x2="1486" y2="470" stroke="#d9d0bd" /><text x="980" y="496" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Vape Cart 1g</text><text x="1196" y="496" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">60</text><text x="1288" y="496" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$31.40</text><text x="1390" y="496" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$1,884</text><rect x="965" y="508" width="520" height="38" fill="#fbf8f1" /><line x1="964" y1="508" x2="1486" y2="508" stroke="#d9d0bd" /><text x="980" y="534" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Edible 100mg</text><text x="1196" y="534" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">36</text><text x="1288" y="534" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$38.00</text><text x="1390" y="534" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">$1,368</text><text x="964" y="572" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">Line edits stay in-grid; supplier notes and PO Receiving launch remain adjacent support.</text>
+    
+
+  
+  <rect x="936" y="632" width="586" height="216" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="964" y="672" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Supplier + PO Receiving Context</text>
+  <text x="964" y="698" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Visible adjacency means the next owner is always obvious: PO Receiving is a pinned CTA, not a hidden inspector-only link.</text>
+  
+    
+  <g>
+    <rect x="964" y="700" width="150" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1039" y="719" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Terms: Consign</text>
+  </g>
+    
+  <g>
+    <rect x="1126" y="700" width="132" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1192" y="719" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">ETA: Mar 19</text>
+  </g>
+    
+  <g>
+    <rect x="1270" y="700" width="226" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="1383" y="719" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Adjacency CTA: Open PO Receiving</text>
+  </g>
+    <text x="964" y="758" fill="#1f2933" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Supplier notes, ETA proof, and PO Receiving launch remain visible beneath the selected PO instead of drifting into a modal-only detail flow.</text>
+    
+  <g>
+    <rect x="964" y="786" width="146" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1037" y="812" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">PO Receiving</text>
+  </g>
+    
+  <g>
+    <rect x="1110" y="786" width="124" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1172" y="812" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Update Status</text>
+  </g>
+    
+  <g>
+    <rect x="1248" y="786" width="140" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1318" y="812" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Classic Detail</text>
+  </g>
+    
+
+  
+  <rect x="72" y="876" width="1450" height="202" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="916" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Procurement Summary Strip</text>
+  <text x="100" y="942" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">One compact support band keeps spend, supplier concentration, and ownership handoffs visible without stealing width from the main queue.</text>
+  
+    
+  <g>
+    <rect x="100" y="952" width="220" height="74" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="120" y="980" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">SPEND IN VIEW</text>
+    <text x="120" y="1010" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$42,220</text>
+  </g>
+    
+  <g>
+    <rect x="336" y="952" width="220" height="74" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="356" y="980" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">SUPPLIERS</text>
+    <text x="356" y="1010" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">4</text>
+  </g>
+    
+  <g>
+    <rect x="572" y="952" width="220" height="74" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="592" y="980" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">RECEIVING READY</text>
+    <text x="592" y="1010" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">2</text>
+  </g>
+    
+  <g>
+    <rect x="808" y="952" width="220" height="74" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="828" y="980" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">TERMS MIX</text>
+    <text x="828" y="1010" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">3 active</text>
+  </g>
+    
+  <g>
+    <rect x="1264" y="966" width="114" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1321" y="992" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Save Draft</text>
+  </g>
+    
+  <g>
+    <rect x="1392" y="966" width="104" height="42" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="1444" y="992" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Confirm</text>
+  </g>
+    
+
+  
+  <g>
+    <rect x="72" y="1100" width="1450" height="58" rx="18" fill="#f1efe8" stroke="#d9d0bd" />
+    <text x="92" y="1124" fill="#667085" font-family="Arial" font-size="12" font-weight="600" letter-spacing="0" text-anchor="start">6 POs in focus · 2 PO Receiving handoffs</text>
+    <text x="92" y="1142" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Selected PO-2198 · Enter open · Cmd/Ctrl+Shift+R open PO receiving</text>
+    
+  <g>
+    <rect x="1386" y="1112" width="116" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1444" y="1131" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Keys / Help</text>
+  </g>
+    <text x="1370" y="1142" fill="#667085" font-family="Arial" font-size="11" font-weight="500" letter-spacing="0" text-anchor="end">Supplier setup stays adjacent. Intake and supplier payment execution remain separate owners.</text>
+  </g>
+  
+</svg>
