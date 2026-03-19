@@ -2,12 +2,14 @@
 
 ## Status Block
 
+<!-- GENERATED:TER-795:ROADMAP-STATUS:START -->
 - Gate: `G2`
 - Linear gate: `TER-788`
 - Current verdict: `partial`
 - Execution state: `active`
 - Prerequisites: Roadmap 0 `closed with evidence`
 - Gate file: [G2-runtime-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md)
+<!-- GENERATED:TER-795:ROADMAP-STATUS:END -->
 
 ## Objective
 
@@ -15,19 +17,16 @@ Finish the shared spreadsheet runtime only. This roadmap does not move Orders do
 
 Current truth:
 
-- the shared runtime seam already exists in `PowersheetGrid`
-- targeted runtime tests passed on March 18, 2026
-- `TER-794` and `TER-796` are currently safe to treat as closed with evidence
-- `TER-795` remains blocked even after the live clipboard and row-op packet cleaned up, because fill-handle, sort/filter-safe targeting, clear-style action proof, and the remaining failure bundle are still unresolved
-- staging build `build-mmwp9o9e` proves the Orders queue route loads without AG Grid watermark or license warnings, the document route proves duplicate, quick-add, delete, Tab, Shift+Tab, Enter, Shift+Enter, and Escape behavior through the shared runtime, and the Add Item focus repair is live
-- the repaired proof harness now rejects the earlier two-cell-range theory and proves rectangular keyboard paste with a real two-cell range on staging
-- the active TER-795 tranche is now a scoped local fill fix: Orders document fill is constrained to the vertical axis and uses a deterministic AG Grid `setFillValue` callback for approved fields, and a March 19 local browser micro-probe on the real sheet-native document route now shows the repaired series propagating `3,4 -> 5,6`
-- the next live check was reduced to one narrow command, `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`, instead of another full G2 proof rerun, and that shipped-build probe now closes `SALE-ORD-022` on staging build `build-mmxxcgce` with `3,4 -> 5,6`
-- March 19 local probing also proves the worktree can boot a degraded production server without `DATABASE_URL`, and a mocked tRPC browser harness reaches the real sheet-native document grid without watch-mode churn; the next blocker is deployed-build confirmation, not local browser startup
-- March 19 ship continuation merged PR `#510`, synced `main -> staging`, and activated deployment `20fda840-ae7c-4a36-a450-7f1e45029131`; a cache-busted `version.json` now reports staging build `build-mmxxcgce`, and the fresh live fill probe records `quantityValuesAfterDrag: ["3","4","5","6"]` with no license warnings or page errors
-- the same continuation fixed a real sort/filter-safe row-targeting drift by carrying `focusedRowId` through the shared selection contract and preserving fill writeback by row id, but Claude review kept `SALE-ORD-031` at `partial` because the live Orders document surface still disables sort/filter and therefore cannot exercise that path directly
-- Claude's post-ship review kept one residual caution attached to `SALE-ORD-022`: the narrow probe proves live route propagation, not a separate post-reload persistence round-trip, so keep that note with the closure artifact instead of overstating the proof
-- this roadmap remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still lack a closure-grade proof bundle or limitation packet that can safely advance `G2`
+<!-- GENERATED:TER-795:ROADMAP-TRUTH:START -->
+- The shared runtime seam already exists in `PowersheetGrid`, and the March 18 targeted runtime tests proved the current adapter path is real rather than aspirational.
+- `TER-794` and `TER-796` are currently safe to treat as closed with evidence; `TER-795` remains partial on the remaining proof rows and the `SALE-ORD-031` limitation.
+- Staging build `build-mmwp9o9e` already cleared the AG Grid watermark or license blocker, restored queue-route health, and kept the Add Item focus repair live.
+- The repaired proof harness rejected the earlier two-cell-range theory and now proves rectangular keyboard paste with a real two-cell range on staging.
+- The fill tranche is shipped: staging build `build-mmxxcgce` records `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence.
+- The same continuation fixed the focused-row-id targeting drift, but `SALE-ORD-031` stays partial because the live Orders document surface still disables sort/filter and cannot exercise that path directly.
+- Claude's post-ship review left one residual caution attached to `SALE-ORD-022`: the narrow probe proves live route propagation, not a separate post-reload persistence round-trip.
+- This gate remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still need a closure packet or explicit limitation packet.
+<!-- GENERATED:TER-795:ROADMAP-TRUTH:END -->
 
 ## Allowed Inputs
 

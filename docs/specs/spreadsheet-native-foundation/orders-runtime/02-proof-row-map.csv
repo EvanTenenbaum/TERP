@@ -20,7 +20,7 @@ SALE-ORD-018,Orders-owned,code-proven,G3,TER-774,client-seeded credit pricing re
 SALE-ORD-019,Orders-owned,partial,G2,TER-770,full drag shift cmd and scope-selection proof across required surfaces
 SALE-ORD-020,Orders-owned,partial,G2,TER-771,multi-cell edit pricing autosave proof
 SALE-ORD-021,Orders-owned,partial,G2,TER-771,approved-field paste proof on staging
-SALE-ORD-022,Orders-owned,partial,G2,TER-771,fill handle proof on staging
+SALE-ORD-022,Orders-owned,live-proven,G2,TER-771,fill handle proof on staging
 SALE-ORD-023,Orders-owned,partial,G4,TER-777,cross-surface shared adapter consistency proof
 SALE-ORD-024,Orders-owned,partial,G5,TER-778,selection summary and blocked-edit surfacing proof on queue and support surfaces
 SALE-ORD-025,Orders-owned,partial,G5,TER-778,editable versus locked cues proof across all required surfaces
@@ -28,9 +28,9 @@ SALE-ORD-026,Orders-owned,partial,G5,TER-778,discoverability proof across queue 
 SALE-ORD-027,Orders-owned,implemented-not-surfaced,G5,TER-778,workflow action visibility proof after spreadsheet edits
 SALE-ORD-028,Orders-owned,blocked,G3,TER-774,explicit sheet-native conversion ownership and proof
 SALE-ORD-029,Orders-owned,partial,G2,TER-771,clear-style actions and structured edit rejection proof
-SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,build-mmweo1fu document-grid proof for Tab Shift+Tab Enter Shift+Enter and Escape on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
+SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,"Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging"
 SALE-ORD-031,Orders-owned,partial,G2,TER-771,sort/filter-safe targeting proof
-SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,build-mmweo1fu document-grid proof for duplicate quick-add and delete row operations on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
+SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,"duplicate, quick-add, and delete row-operation proof on staging"
 SALE-ORD-033,Orders-owned,blocked,G5,TER-778,per-surface discoverability proof
 SALE-ORD-034,Orders-owned,blocked,G4,TER-777,active-row versus focused-cell workflow ambiguity proof
 SALE-ORD-035,Orders-owned,partial,G2,TER-771,failure-mode bundle proof beyond immediate invalid-edit rejection

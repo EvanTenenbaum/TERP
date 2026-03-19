@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-022",
+  "issue": "TER-771",
+  "generated_at": "2026-03-19T21:21:46.490Z",
+  "command": "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle",
+  "suggested_verdict": "closed with evidence",
+  "acceptance_criteria": "Deployed-build proof that quantity fill propagates `3,4 -> 5,6` on the real Orders document route or an explicit limitation packet.",
+  "build": {
+    "id": "build-mmxxcgce",
+    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "deployment_build_time": "2026-03-19T20:30:13.707Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "two-cell-range",
+      "label": "Range selection formed before drag",
+      "passed": true,
+      "expected": "Selection summary reports 2 selected cells before drag.",
+      "observed": "2 selected cells · 2 rows in scope",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "fill-handle-visible",
+      "label": "Native fill handle is visible",
+      "passed": true,
+      "expected": "The native `.ag-fill-handle` is visible after selecting the source range.",
+      "observed": "visible",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "drag-lifecycle",
+      "label": "Drag lifecycle entered",
+      "passed": true,
+      "expected": "`body.className` contains `ag-dragging-fill-handle` during the drag.",
+      "observed": "ag-dragging-fill-handle",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "series-propagated",
+      "label": "Quantity series propagated to the target rows",
+      "passed": true,
+      "expected": "Quantity values after drag equal `3,4,5,6`.",
+      "observed": "3,4,5,6",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "license-clean",
+      "label": "No AG Grid license warnings were recorded",
+      "passed": true,
+      "expected": "No license warnings are emitted during the probe.",
+      "observed": [],
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "page-clean",
+      "label": "No page errors were recorded",
+      "passed": true,
+      "expected": "No page errors are emitted during the probe.",
+      "observed": [],
+      "failure_impact": "blocker"
+    }
+  ],
+  "optional_checks": {
+    "reload_persistence": {
+      "status": "not_run",
+      "note": "The narrow fill-handle probe does not include a separate reload or persistence round-trip."
+    }
+  },
+  "artifacts": {
+    "report": {
+      "relative_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json",
+      "sha256": "b5824bc914f2d9fc2b82f87b4a5c940f7e014004eb494fd550b76e31942aca7f"
+    },
+    "screenshot": {
+      "relative_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-probe.png",
+      "sha256": "01f74d53524924d61238d57b5797a3717c6f340e27efdf3e21a2353eb7426b47"
+    }
+  },
+  "summary": {
+    "selection_summary_before_drag": "2 selected cells · 2 rows in scope",
+    "selection_summary_after_drag": "4 selected cells · 4 rows in scope",
+    "quantity_values_before_drag": [
+      "3",
+      "4",
+      "1",
+      "1"
+    ],
+    "quantity_values_after_drag": [
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "ag_grid_warnings": [],
+    "page_errors": []
+  },
+  "prior_review": {
+    "label": "TER-795 post-ship review 2026-03-19",
+    "conclusion": "`SALE-ORD-022` remains acceptable as closed with evidence, with one residual caution that the probe proves live propagation rather than a separate reload or persistence round-trip."
+  }
+}

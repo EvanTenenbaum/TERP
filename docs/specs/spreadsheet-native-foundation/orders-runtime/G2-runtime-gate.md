@@ -6,20 +6,19 @@
   - selection, paste, fill, edit-nav, and row-op contracts reuse one runtime
   - scoped diffs and validation commands are logged for each atomic tranche
   - adversarial review findings are captured before G3 promotion
+
+<!-- GENERATED:TER-795:GATE:START -->
 - Evidence list:
-  - `HANDOFF-2026-03-19-CODEX-EXECUTION-PROMPT.md`
-  - `Implement.md`
-  - `G2-runtime-gate.md`
-  - `execution-metrics.json`
-  - Linear issues `TER-794`..`TER-796`
-  - current atomic-card truth: `TER-794` and `TER-796` are closed with evidence; `TER-795` remains partial on clear-style action proof, the `SALE-ORD-031` sort/filter limitation, and the remaining failure-bundle rows
-  - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json`
-  - `output/playwright/orders-runtime-g2/2026-03-18/fill-handle-drag-probe.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/local-sheet-native-fill-drag-probe.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json`
-  - staging screenshots `01-queue-route.png` through `06-document-after-restore.png`
-  - staging screenshot `orders-runtime-fill-handle-probe.png`
-  - local screenshots `local-sheet-native-fill-selection-probe.png` and `local-sheet-native-fill-drag-probe.png`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/HANDOFF-2026-03-19-CODEX-EXECUTION-PROMPT.md`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
+  - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
+  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md`
+  - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json`
+  - current atomic-card truth: `TER-794` and `TER-796` are closed with evidence; `TER-795` remains partial on `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
 - Validation commands:
   - `pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx`
   - `pnpm proof:staging:orders-runtime:g2`
@@ -29,24 +28,12 @@
   - `pnpm test`
   - `pnpm build`
 - Current blocker:
-  - no deployment blocker remains for the AG Grid license or Orders queue route on staging; `build-mmwp9o9e` clears the prior watermark and console blocker
-  - the latest isolated staging rerun now shows `addItemFocusedInventorySearch: true`, so the Inventory Browser focus repair is live on staging
-  - the earlier March 18 theory that staging could not establish a real two-cell range is rejected with evidence: the repaired harness records `selectionSummaryBeforeValidPaste: "2 selected cells · 2 rows in scope"`, `validPasteUsedTwoCellRange: true`, `validPasteMethod: "keyboard"`, and `quantityValuesAfterValidPaste: ["3","4"]`
-  - the same isolated rerun confirms duplicate and row-op recovery in the clean writer packet with `duplicateDelta: 1`, `quickAddDelta: 1`, and `deleteReturnedToBaseline: true`, so `TER-796` stays sealed and quick-add/delete is no longer the next unresolved row-op step
-  - a fresh March 19 live fill-handle drag probe on staging build `build-mmwp9o9e` showed `.ag-fill-handle` visible with `bodyClassDuringDrag: "ag-dragging-fill-handle"`, but the quantity series did not propagate (`quantityValuesAfterDrag: ["3","4","1","1"]`), which turned `SALE-ORD-022` into a stable live repro rather than an unresolved selector or range-creation gap
-  - the next TER-795 tranche is now implemented locally: the Orders document surface constrains native fill to the vertical axis and supplies an explicit AG Grid `setFillValue` callback for approved editable fields, with targeted vitest coverage proving the shared shell wiring plus deterministic quantity and sample-fill behavior
-  - March 19 local boot probing proved the writer worktree can serve a degraded production build without `DATABASE_URL` via `AUTO_MIGRATE_MODE=off SKIP_SEEDING=true PORT=3001 pnpm start`, and a single shell Playwright micro-probe plus mocked tRPC responses now renders the real sheet-native Orders document route locally
-  - that local browser probe forms the same real two-cell range on the actual document grid (`selectionSummaryBeforeDrag: "2 selected cells · 2 rows in scope"`, `selectionStateBeforeDrag: "Focused cell: 0:quantity · Ranges: 1"`), exposes the native `.ag-fill-handle`, and propagates the quantity series from `["3","4","1","1"]` to `["3","4","5","6"]`
-  - the remaining blocker is no longer local proofability. The repaired fill path is now confirmed on a fresh deployed build, so `SALE-ORD-022` can leave deploy-lag and move to `closed with evidence`
-  - March 19 follow-up prep now includes a dedicated narrow command, `pnpm proof:staging:orders-fill-handle`, so the next live check can isolate `SALE-ORD-022` without rerunning the broader G2 proof bundle
-  - the first run of that narrow command against staging build `build-mmwp9o9e` wrote `orders-runtime-fill-handle-report.json` and reproduced the pre-fix live failure in isolation (`selectionSummaryBeforeDrag: "2 selected cells · 2 rows in scope"`, `fillHandleVisible: true`, `bodyClassDuringDrag: "ag-dragging-fill-handle"`, `quantityValuesAfterDrag: ["3","4","1","1"]`), which validated the command contract before shipping the repair
-  - the dedicated probe is now hardened to reuse the same selection-summary fallback as the main G2 harness and to capture after-drag selection state plus console or page-error warnings, so the next fresh deployed-build pass should not require another ad hoc browser inspector step
-  - March 19 ship continuation merged PR `#510`, synced `main -> staging`, and activated deployment `20fda840-ae7c-4a36-a450-7f1e45029131`; a cache-busted `version.json` now reports staging build `build-mmxxcgce` with `buildTime: 2026-03-19T20:30:13.707Z`
-  - the one fresh live probe on build `build-mmxxcgce` now records `selectionSummaryBeforeDrag: "2 selected cells · 2 rows in scope"`, `fillHandleVisible: true`, and `quantityValuesAfterDrag: ["3","4","5","6"]` with no license warnings or page errors, so `SALE-ORD-022` is now `closed with evidence` on the shipped staging build
-  - Claude adversarial review after the shipped probe did not reopen `SALE-ORD-022`, but it did flag one residual caution: the narrow probe proves live propagation on the real route and build, not a post-reload persistence round-trip. Keep that note attached to the closure artifact rather than overstating it as a broader persistence proof
-  - the same continuation found a real sort/filter-safe targeting drift in the shared runtime: displayed-row focus and fill writeback could target the wrong logical rows if display order diverged from `normalizedItems`; `SpreadsheetPilotGrid` now carries `focusedRowId`, `OrdersDocumentLineItemsGrid` resolves focused-row actions by row id, and fill writeback preserves hidden rows plus original logical order, with targeted vitest coverage and `pnpm check` both green
-  - Claude adversarial review on March 19 kept `SALE-ORD-031` at `partial` with an explicit limitation rather than `closed with evidence`, because the Orders document grid still sets `sortable: false` and `filter: false`, so the new row-id safeguards are code-proven but not yet live-proven on a surface that actually exercises sort/filter
-  - a consumer audit of `PowersheetSelectionSet` found the runtime contract is consumed only by `SpreadsheetPilotGrid`, `PowersheetGrid`, and `OrdersDocumentLineItemsGrid` in app code, plus their focused tests, so the new `focusedRowId` field does not introduce any other in-repo runtime consumers that need writeback in this tranche
-- G2 remains partial because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still lack a repeatable closure-grade proof bundle or limitation packet
+  - staging build `build-mmxxcgce` is the current live reference build, backed by deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
+  - `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` are now the only G2 rows safe to treat as directly live-proven from staging evidence
+  - `SALE-ORD-022` is closed with evidence via the narrow fill probe packet at `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
+  - `SALE-ORD-031` stays partial with a code-proven limitation because the live Orders document grid still disables sort/filter
+  - the remaining unresolved TER-795 rows are `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
+- G2 remains partial because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still need a closure packet or explicit limitation packet
 - Status: `partial`
-- Next unblock: keep `TER-795` active, record `SALE-ORD-022` as shipped-build evidence closure with its no-reload note, keep `SALE-ORD-031` partial with its code-proven limitation note until a live sort/filter surface exists, and move to `SALE-ORD-019` as the next independent TER-795 row. Do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression.
+- Next unblock: keep `TER-795` active, keep `SALE-ORD-031` partial with its limitation note, and move to `SALE-ORD-019` as the next independent TER-795 row. Do not reopen `TER-796` unless a future isolated row-op rerun reproduces a real regression.
+<!-- GENERATED:TER-795:GATE:END -->

@@ -29,6 +29,7 @@ Primary evidence store:
 
 - [Orders runtime charter](../../specs/spreadsheet-native-foundation/orders-runtime/00-program-charter.md)
 - [Execution handoff prompt](../../specs/spreadsheet-native-foundation/orders-runtime/HANDOFF-2026-03-19-CODEX-EXECUTION-PROMPT.md)
+- [TER-795 state](../../specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json)
 - [Issue manifest](../../specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json)
 - [Proof row map](../../specs/spreadsheet-native-foundation/orders-runtime/02-proof-row-map.csv)
 - [Execution metrics](../../specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json)
@@ -60,6 +61,7 @@ Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until t
   3. update the roadmap status block
 - Every code-bearing roadmap uses `plan -> implement -> validate -> repair -> adversarial review -> writeback`.
 - Every proof-bearing roadmap must include build ID, commit SHA, persona, route, record ID, screenshots, and negative-case evidence.
+- For `TER-795`, update `ter-795-state.json` first, then run `pnpm status:orders-runtime:all` so repeated gate or roadmap status blocks and review context stay synchronized.
 - `implemented-not-surfaced` is rollout-blocking.
 - `G6` is the only roadmap allowed to declare proof-complete or tracker-complete.
 - `G7` is required before Orders can leave special-initiative mode.

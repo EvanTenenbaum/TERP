@@ -9,11 +9,14 @@
   - `00-program-charter.md`: completion contract and governance
   - `01-issue-manifest.json`: gate tree, ticket map, and blocker convention
   - `02-proof-row-map.csv`: row-level ownership and current state
+  - `ter-795-state.json`: single machine-readable TER-795 row-status source for repeated status blocks, build truth, and next move
   - `G1`..`G7`: one durable verdict file per gate
   - `execution-metrics.json`: reopen/lag/surfacing health metrics
+  - `adversarial-review-context.json` and `adversarial-review-context.md`: generated review packet context for bounded adversarial review
 - Update rules:
-  - change gate status in the gate file, then mirror it in Linear
-  - update the roadmap status block after the gate file and Linear are written back
+  - update `ter-795-state.json` first when TER-795 row verdicts, build ids, packet paths, or next move change
+  - run `pnpm status:orders-runtime:all` to sync the generated gate block, roadmap status block, proof budget, active gate snapshot, proof-row map, and adversarial-review context
+  - change gate status in the gate file and mirror it in Linear after the synced state reflects the new row truth
   - do not promote a row to `live-proven` without evidence and adversarial review
   - treat `implemented-not-surfaced` as rollout-blocking, not polish
   - keep classic fallback policy and reopen criteria current in `G7-retirement-handoff.md`
@@ -21,3 +24,5 @@
 - Staging proof commands:
   - `pnpm proof:staging:sheet-surfaces`: surface-detection sweep for classic versus sheet-native routes
   - `pnpm proof:staging:orders-runtime:g2`: Orders queue/document proof bundle for build ID, AG Grid license state, document row ops, and document navigation behavior
+  - `pnpm proof:staging:orders-fill-handle`: narrow TER-795 fill-handle probe that now emits a closure packet
+  - `pnpm proof:await-staging-build --commit <sha>`: waits for `Sync Main → Staging`, matching DigitalOcean activation, and a cache-busted `version.json` refresh before spending a live probe
