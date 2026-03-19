@@ -7,8 +7,16 @@ Treat this as a dual-context handoff:
 - Active execution lane: Orders spreadsheet-runtime rollout
 - Broader implementation context: full spreadsheet-native build-source-of-truth and detailed-ledger system
 
-Current workspace:
-/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318
+Assume you are working from a normal checkout of the TERP repository.
+
+Repository-relative bundle root:
+docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19
+
+Repository-relative broader packet root:
+TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19
+
+Repository-relative detailed ledger root:
+TERP/docs/specs/spreadsheet-native-ledgers
 
 Current branch:
 codex/ter-795-sale-ord-019-20260319
@@ -17,32 +25,32 @@ Current commit anchor:
 bdcb1e39c2736bc1a1cc30bdac391c381c5e9623
 
 First actions:
-1. Verify you are in the workspace above.
+1. Verify you are at the repository root and this bundle folder exists.
 2. Read and follow:
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/AGENTS.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/CLAUDE.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/00-protocol/AGENTS.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/00-protocol/CLAUDE.md
 3. Read the active Orders execution package in this order:
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-handoff-2026-03-19.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/roadmaps/orders-spreadsheet-runtime/README.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/roadmaps/orders-spreadsheet-runtime/remaining-atomic-completion-roadmap-2026-03-19.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/specs/spreadsheet-native-foundation/orders-runtime/PowersheetGrid-boundary-contract.md
-   - /Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318/docs/roadmaps/orders-spreadsheet-runtime/parallel-module-readiness-review-2026-03-19.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/non-codex-takeover-handoff-2026-03-19.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/README.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/remaining-atomic-completion-roadmap-2026-03-19.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/ter-795-state.json
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/G2-runtime-gate.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/Implement.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/PowersheetGrid-boundary-contract.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/01-orders-execution/parallel-module-readiness-review-2026-03-19.md
 4. Read the broader spreadsheet-native implementation packet in this order:
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-build-source-of-truth.md
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-pack-capability-ledger.csv
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-pack-capability-ledger-summary.md
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/sales-orders-sheet-capability-ledger.csv
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/operations-inventory-sheet-capability-ledger.csv
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/sales-sheets-capability-ledger.csv
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/direct-intake-capability-ledger.csv
-   - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/purchase-orders-capability-ledger.csv
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/02-broader-build-source-of-truth/spreadsheet-native-build-source-of-truth.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/02-broader-build-source-of-truth/spreadsheet-native-pack-capability-ledger.csv
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/02-broader-build-source-of-truth/spreadsheet-native-pack-capability-ledger-summary.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/03-detailed-ledgers/sales-orders-sheet-capability-ledger.csv
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/03-detailed-ledgers/operations-inventory-sheet-capability-ledger.csv
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/03-detailed-ledgers/sales-sheets-capability-ledger.csv
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/03-detailed-ledgers/direct-intake-capability-ledger.csv
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/03-detailed-ledgers/purchase-orders-capability-ledger.csv
 5. Read the design-review intent artifacts as context, not implementation truth:
-   - /Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/deep_pass_review.md
-   - /Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/05_tasks/actionable_tasks.md
-   - /Users/evan/spec-erp-docker/TERP/TERP/artifacts/video-feedback/2026-03-19-figma-review/06_prds/prd_draft.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/04-design-review-context/deep_pass_review.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/04-design-review-context/actionable_tasks.md
+   - docs/roadmaps/orders-spreadsheet-runtime/non-codex-takeover-bundle-2026-03-19/04-design-review-context/prd_draft.md
 
 Primary mission:
 - finish the Orders spreadsheet-runtime initiative in dependency order
@@ -92,15 +100,15 @@ Immediate Orders priority order:
 Broader spreadsheet-native source-of-truth contract:
 - Treat the Figma work as directional UI reference only, not implementation truth.
 - The implementation source of truth is the build packet at:
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-build-source-of-truth.md
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-pack-capability-ledger.csv
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-pack-capability-ledger-summary.md
+  - TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-build-source-of-truth.md
+  - TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-pack-capability-ledger.csv
+  - TERP/docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-pack-capability-ledger-summary.md
 - Detailed ledgers already exist for:
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/sales-orders-sheet-capability-ledger.csv
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/operations-inventory-sheet-capability-ledger.csv
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/sales-sheets-capability-ledger.csv
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/direct-intake-capability-ledger.csv
-  - /Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-ledgers/purchase-orders-capability-ledger.csv
+  - TERP/docs/specs/spreadsheet-native-ledgers/sales-orders-sheet-capability-ledger.csv
+  - TERP/docs/specs/spreadsheet-native-ledgers/operations-inventory-sheet-capability-ledger.csv
+  - TERP/docs/specs/spreadsheet-native-ledgers/sales-sheets-capability-ledger.csv
+  - TERP/docs/specs/spreadsheet-native-ledgers/direct-intake-capability-ledger.csv
+  - TERP/docs/specs/spreadsheet-native-ledgers/purchase-orders-capability-ledger.csv
 - Sales Sheets, Direct Intake, and Purchase Orders were collapsed to pointer rows in the pack CSV so there is no ambiguous ID remapping at pack level.
 - Remaining pack-level modules are intentionally still `pack-only / blocked`.
 - Shared and cross-pack contracts are the next required detailed-ledger tranche because they are foundational.
