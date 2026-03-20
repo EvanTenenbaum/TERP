@@ -1,0 +1,43 @@
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","DirectIntakeWorkSurface","Keyboard navigation hook",54,DirectIntakeWorkSurface
+EXP-002,export,"Export hook","DirectIntakeWorkSurface","Export functionality via useExport",58,DirectIntakeWorkSurface
+ACT-003,action,"Filter: Select location","DirectIntakeWorkSurface","Select filter",775,DirectIntakeWorkSurface
+EXP-004,export,"export","DirectIntakeWorkSurface","Export/download action",895,DirectIntakeWorkSurface
+QUE-007,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",1043,DirectIntakeWorkSurface
+QUE-008,query,"locations.getAll","trpc.locations.getAll.useQuery","Query: locations.getAll",1071,DirectIntakeWorkSurface
+QUE-009,query,"productCatalogue.list","trpc.productCatalogue.list.useQuery","Query: productCatalogue.list",1112,DirectIntakeWorkSurface
+MUT-010,mutation,"inventory.intake","trpc.inventory.intake.useMutation","Mutation: inventory.intake",1133,DirectIntakeWorkSurface
+MUT-011,mutation,"inventory.uploadMedia","trpc.inventory.uploadMedia.useMutation","Mutation: inventory.uploadMedia",1134,DirectIntakeWorkSurface
+MUT-012,mutation,"inventory.deleteMedia","trpc.inventory.deleteMedia.useMutation","Mutation: inventory.deleteMedia",1135,DirectIntakeWorkSurface
+EXP-013,export,"ExportCsv","DirectIntakeWorkSurface","Export/download action",1885,DirectIntakeWorkSurface
+KEY-014,keyboard,"vendorName","DirectIntakeWorkSurface","Keyboard shortcut",1889,DirectIntakeWorkSurface
+KEY-015,keyboard,"brandName","DirectIntakeWorkSurface","Keyboard shortcut",1890,DirectIntakeWorkSurface
+KEY-016,keyboard,"item","DirectIntakeWorkSurface","Keyboard shortcut",1891,DirectIntakeWorkSurface
+KEY-017,keyboard,"category","DirectIntakeWorkSurface","Keyboard shortcut",1892,DirectIntakeWorkSurface
+KEY-018,keyboard,"subcategory","DirectIntakeWorkSurface","Keyboard shortcut",1893,DirectIntakeWorkSurface
+KEY-019,keyboard,"qty","DirectIntakeWorkSurface","Keyboard shortcut",1894,DirectIntakeWorkSurface
+KEY-020,keyboard,"cogsMode","DirectIntakeWorkSurface","Keyboard shortcut",1895,DirectIntakeWorkSurface
+KEY-021,keyboard,"cogs","DirectIntakeWorkSurface","Keyboard shortcut",1896,DirectIntakeWorkSurface
+KEY-022,keyboard,"cogsMin","DirectIntakeWorkSurface","Keyboard shortcut",1897,DirectIntakeWorkSurface
+KEY-023,keyboard,"cogsMax","DirectIntakeWorkSurface","Keyboard shortcut",1898,DirectIntakeWorkSurface
+KEY-024,keyboard,"effectiveCogs","DirectIntakeWorkSurface","Keyboard shortcut",1900,DirectIntakeWorkSurface
+KEY-025,keyboard,"lineTotal","DirectIntakeWorkSurface","Keyboard shortcut",1905,DirectIntakeWorkSurface
+KEY-026,keyboard,"paymentTerms","DirectIntakeWorkSurface","Keyboard shortcut",1910,DirectIntakeWorkSurface
+KEY-027,keyboard,"site","DirectIntakeWorkSurface","Keyboard shortcut",1911,DirectIntakeWorkSurface
+KEY-028,keyboard,"status","DirectIntakeWorkSurface","Keyboard shortcut",1912,DirectIntakeWorkSurface
+KEY-029,keyboard,"notes","DirectIntakeWorkSurface","Keyboard shortcut",1913,DirectIntakeWorkSurface
+ACT-031,action,"Add Row","DirectIntakeWorkSurface","Button (outline)",2347,DirectIntakeWorkSurface
+ACT-032,action,"Filter: Fill down field","DirectIntakeWorkSurface","Select filter",2387,DirectIntakeWorkSurface
+KEY-034,keyboard,"Tab","DirectIntakeWorkSurface","Keyboard shortcut",2588,DirectIntakeWorkSurface
+KEY-035,keyboard,"Enter","DirectIntakeWorkSurface","Keyboard shortcut",2589,DirectIntakeWorkSurface
+KEY-036,keyboard,"Esc","DirectIntakeWorkSurface","Keyboard shortcut",2590,DirectIntakeWorkSurface
+KEY-037,keyboard,"Cmd/Ctrl+Z","DirectIntakeWorkSurface","Keyboard shortcut",2591,DirectIntakeWorkSurface
+
+=== DirectIntakeWorkSurface Capability Extraction ===
+Total capabilities: 33
+  keyboard: 21
+  export: 3
+  action: 3
+  query: 3
+  mutation: 3
+

@@ -1,0 +1,64 @@
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","InventoryWorkSurface","Keyboard navigation hook",91,InventoryWorkSurface
+EXP-002,export,"Export hook","InventoryWorkSurface","Export functionality via useExport",95,InventoryWorkSurface
+EXP-003,export,"export","InventoryWorkSurface","Export/download action",532,InventoryWorkSurface
+QUE-005,query,"inventory.getEnhanced","trpc.inventory.getEnhanced.useQuery","Query: inventory.getEnhanced",637,InventoryWorkSurface
+QUE-006,query,"inventory.list","trpc.inventory.list.useQuery","Query: inventory.list",672,InventoryWorkSurface
+QUE-007,query,"inventory.dashboardStats","trpc.inventory.dashboardStats.useQuery","Query: inventory.dashboardStats",692,InventoryWorkSurface
+MUT-008,mutation,"inventory.updateStatus","trpc.inventory.updateStatus.useMutation","Mutation: inventory.updateStatus",1059,InventoryWorkSurface
+MUT-009,mutation,"inventory.adjustQty","trpc.inventory.adjustQty.useMutation","Mutation: inventory.adjustQty",1060,InventoryWorkSurface
+MUT-010,mutation,"inventory.bulk.restore","trpc.inventory.bulk.restore.useMutation","Mutation: inventory.bulk.restore",1061,InventoryWorkSurface
+MUT-012,mutation,"inventory.bulk.updateStatus","trpc.inventory.bulk.updateStatus.useMutation","Mutation: inventory.bulk.updateStatus",1080,InventoryWorkSurface
+MUT-013,mutation,"inventory.bulk.delete","trpc.inventory.bulk.delete.useMutation","Mutation: inventory.bulk.delete",1102,InventoryWorkSurface
+EXP-016,export,"ExportCsv","InventoryWorkSurface","Export/download action",1569,InventoryWorkSurface
+EXP-017,export,"Export","InventoryWorkSurface","Export/download action",1575,InventoryWorkSurface
+KEY-018,keyboard,"id","InventoryWorkSurface","Keyboard shortcut",1619,InventoryWorkSurface
+KEY-019,keyboard,"sku","InventoryWorkSurface","Keyboard shortcut",1620,InventoryWorkSurface
+KEY-020,keyboard,"productName","InventoryWorkSurface","Keyboard shortcut",1621,InventoryWorkSurface
+KEY-021,keyboard,"category","InventoryWorkSurface","Keyboard shortcut",1622,InventoryWorkSurface
+KEY-022,keyboard,"subcategory","InventoryWorkSurface","Keyboard shortcut",1623,InventoryWorkSurface
+KEY-023,keyboard,"vendor","InventoryWorkSurface","Keyboard shortcut",1624,InventoryWorkSurface
+KEY-024,keyboard,"brand","InventoryWorkSurface","Keyboard shortcut",1625,InventoryWorkSurface
+KEY-025,keyboard,"grade","InventoryWorkSurface","Keyboard shortcut",1626,InventoryWorkSurface
+KEY-026,keyboard,"status","InventoryWorkSurface","Keyboard shortcut",1627,InventoryWorkSurface
+KEY-027,keyboard,"onHand","InventoryWorkSurface","Keyboard shortcut",1628,InventoryWorkSurface
+KEY-028,keyboard,"reserved","InventoryWorkSurface","Keyboard shortcut",1629,InventoryWorkSurface
+KEY-029,keyboard,"quarantine","InventoryWorkSurface","Keyboard shortcut",1630,InventoryWorkSurface
+KEY-030,keyboard,"hold","InventoryWorkSurface","Keyboard shortcut",1631,InventoryWorkSurface
+KEY-031,keyboard,"available","InventoryWorkSurface","Keyboard shortcut",1632,InventoryWorkSurface
+KEY-032,keyboard,"unitCogs","InventoryWorkSurface","Keyboard shortcut",1633,InventoryWorkSurface
+KEY-033,keyboard,"totalValue","InventoryWorkSurface","Keyboard shortcut",1634,InventoryWorkSurface
+KEY-034,keyboard,"purchaseDate","InventoryWorkSurface","Keyboard shortcut",1635,InventoryWorkSurface
+KEY-035,keyboard,"expirationDate","InventoryWorkSurface","Keyboard shortcut",1636,InventoryWorkSurface
+KEY-036,keyboard,"location","InventoryWorkSurface","Keyboard shortcut",1637,InventoryWorkSurface
+DIA-037,dialog,"Confirmation dialog","InventoryWorkSurface","Confirmation gate",1642,InventoryWorkSurface
+KEY-042,keyboard,"paymentStatus","InventoryWorkSurface","Keyboard shortcut",1703,InventoryWorkSurface
+KEY-046,keyboard,"stockLevel","InventoryWorkSurface","Keyboard shortcut",1715,InventoryWorkSurface
+KEY-047,keyboard,"dateRange","InventoryWorkSurface","Keyboard shortcut",1716,InventoryWorkSurface
+KEY-048,keyboard,"cogsRange","InventoryWorkSurface","Keyboard shortcut",1718,InventoryWorkSurface
+KEY-049,keyboard,"stockStatus","InventoryWorkSurface","Keyboard shortcut",1720,InventoryWorkSurface
+KEY-050,keyboard,"ageBracket","InventoryWorkSurface","Keyboard shortcut",1721,InventoryWorkSurface
+KEY-051,keyboard,"batchId","InventoryWorkSurface","Keyboard shortcut",1722,InventoryWorkSurface
+ACT-052,action,"Search inventory... (Cmd+K)","InventoryWorkSurface","Search/filter input",1817,InventoryWorkSurface
+NAV-053,navigation,"buildOperationsWorkspacePath","InventoryWorkSurface","Route navigation (builder)",1866,InventoryWorkSurface
+ACT-054,action,"Filter: Bulk status","InventoryWorkSurface","Select filter",1919,InventoryWorkSurface
+KEY-057,keyboard,"Enter","InventoryWorkSurface","Keyboard shortcut",2150,InventoryWorkSurface
+KEY-067,keyboard,"Cmd/Ctrl+K","InventoryWorkSurface","Keyboard shortcut",2658,InventoryWorkSurface
+KEY-068,keyboard,"↑↓","InventoryWorkSurface","Keyboard shortcut",2659,InventoryWorkSurface
+KEY-070,keyboard,"Esc","InventoryWorkSurface","Keyboard shortcut",2661,InventoryWorkSurface
+KEY-071,keyboard,"Cmd/Ctrl+Z","InventoryWorkSurface","Keyboard shortcut",2662,InventoryWorkSurface
+DIA-072,dialog,"Delete selected batches?","InventoryWorkSurface","Confirmation gate",2671,InventoryWorkSurface
+ACT-073,action,"Filter: Select status","InventoryWorkSurface","Select filter",2721,InventoryWorkSurface
+ACT-075,action,"setShowEditDialog(false)}> Cancel","InventoryWorkSurface","Button (outline)",2735,InventoryWorkSurface
+ACT-076,action,"Update Product","InventoryWorkSurface","Button (default)",2738,InventoryWorkSurface
+
+=== InventoryWorkSurface Capability Extraction ===
+Total capabilities: 52
+  keyboard: 32
+  mutation: 5
+  action: 5
+  export: 4
+  query: 3
+  dialog: 2
+  navigation: 1
+

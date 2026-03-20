@@ -1,0 +1,25 @@
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","InvoicesWorkSurface","Keyboard navigation hook",63,InvoicesWorkSurface
+EXP-002,export,"DownloadPDF","InvoicesWorkSurface","Export/download action",254,InvoicesWorkSurface
+EXP-003,export,"Print","InvoicesWorkSurface","Export/download action",255,InvoicesWorkSurface
+EXP-006,export,"export","InvoicesWorkSurface","Export/download action",477,InvoicesWorkSurface
+QUE-007,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",568,InvoicesWorkSurface
+QUE-008,query,"accounting.invoices.list","trpc.accounting.invoices.list.useQuery","Query: accounting.invoices.list",578,InvoicesWorkSurface
+QUE-009,query,"accounting.invoices.getById","trpc.accounting.invoices.getById.useQuery","Query: accounting.invoices.getById",589,InvoicesWorkSurface
+QUE-010,query,"accounting.invoices.getARAging","trpc.accounting.invoices.getARAging.useQuery","Query: accounting.invoices.getARAging",611,InvoicesWorkSurface
+MUT-011,mutation,"accounting.invoices.updateStatus","trpc.accounting.invoices.updateStatus.useMutation","Mutation: accounting.invoices.updateStatus",712,InvoicesWorkSurface
+MUT-013,mutation,"accounting.invoices.create","trpc.accounting.invoices.create.useMutation","Mutation: accounting.invoices.create",747,InvoicesWorkSurface
+MUT-014,mutation,"invoices.downloadPdf","trpc.invoices.downloadPdf.useMutation","Mutation: invoices.downloadPdf",762,InvoicesWorkSurface
+ACT-019,action,"Search invoices... (Cmd+K)","InvoicesWorkSurface","Search/filter input",923,InvoicesWorkSurface
+ACT-020,action,"Filter: Status","InvoicesWorkSurface","Select filter",940,InvoicesWorkSurface
+ACT-022,action,"Filter: Select client","InvoicesWorkSurface","Select filter",1194,InvoicesWorkSurface
+ACT-023,action,"setShowVoidDialog(false)}> Cancel","InvoicesWorkSurface","Button (outline)",1285,InvoicesWorkSurface
+
+=== InvoicesWorkSurface Capability Extraction ===
+Total capabilities: 15
+  query: 4
+  action: 4
+  export: 3
+  mutation: 3
+  keyboard: 1
+

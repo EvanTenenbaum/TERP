@@ -1,0 +1,24 @@
+capability_id,type,name,source,detail,line,component
+EXP-001,export,"export","Payments","Export/download action",41,Payments
+QUE-004,query,"accounting.payments.list","trpc.accounting.payments.list.useQuery","Query: accounting.payments.list",91,Payments
+
+=== Payments Capability Extraction ===
+Total capabilities: 2
+  export: 1
+  query: 1
+
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","InvoiceToPaymentFlow","Keyboard navigation hook",56,InvoiceToPaymentFlow
+EXP-002,export,"export","InvoiceToPaymentFlow","Export/download action",686,InvoiceToPaymentFlow
+QUE-003,query,"accounting.invoices.getById","trpc.accounting.invoices.getById.useQuery","Query: accounting.invoices.getById",708,InvoiceToPaymentFlow
+QUE-004,query,"clients.getById","trpc.clients.getById.useQuery","Query: clients.getById",712,InvoiceToPaymentFlow
+QUE-005,query,"accounting.payments.list","trpc.accounting.payments.list.useQuery","Query: accounting.payments.list",716,InvoiceToPaymentFlow
+MUT-006,mutation,"accounting.payments.create","trpc.accounting.payments.create.useMutation","Mutation: accounting.payments.create",767,InvoiceToPaymentFlow
+
+=== InvoiceToPaymentFlow Capability Extraction ===
+Total capabilities: 6
+  query: 3
+  keyboard: 1
+  export: 1
+  mutation: 1
+

@@ -1,0 +1,38 @@
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","PickPackWorkSurface","Keyboard navigation hook",55,PickPackWorkSurface
+EXP-002,export,"Export hook","PickPackWorkSurface","Export functionality via useExport",59,PickPackWorkSurface
+EXP-003,export,"export","PickPackWorkSurface","Export/download action",554,PickPackWorkSurface
+QUE-004,query,"pickPack.getPickList","trpc.pickPack.getPickList.useQuery","Query: pickPack.getPickList",593,PickPackWorkSurface
+QUE-005,query,"pickPack.getStats","trpc.pickPack.getStats.useQuery","Query: pickPack.getStats",599,PickPackWorkSurface
+QUE-006,query,"pickPack.getOrderDetails","trpc.pickPack.getOrderDetails.useQuery","Query: pickPack.getOrderDetails",605,PickPackWorkSurface
+MUT-008,mutation,"pickPack.packItems","trpc.pickPack.packItems.useMutation","Mutation: pickPack.packItems",748,PickPackWorkSurface
+MUT-009,mutation,"pickPack.markAllPacked","trpc.pickPack.markAllPacked.useMutation","Mutation: pickPack.markAllPacked",768,PickPackWorkSurface
+MUT-010,mutation,"pickPack.unpackItems","trpc.pickPack.unpackItems.useMutation","Mutation: pickPack.unpackItems",787,PickPackWorkSurface
+MUT-011,mutation,"pickPack.markOrderReady","trpc.pickPack.markOrderReady.useMutation","Mutation: pickPack.markOrderReady",805,PickPackWorkSurface
+MUT-012,mutation,"orders.shipOrder","trpc.orders.shipOrder.useMutation","Mutation: orders.shipOrder",828,PickPackWorkSurface
+EXP-013,export,"Export","PickPackWorkSurface","Export/download action",964,PickPackWorkSurface
+KEY-014,keyboard,"orderNumber","PickPackWorkSurface","Keyboard shortcut",975,PickPackWorkSurface
+KEY-015,keyboard,"clientName","PickPackWorkSurface","Keyboard shortcut",976,PickPackWorkSurface
+KEY-016,keyboard,"productName","PickPackWorkSurface","Keyboard shortcut",977,PickPackWorkSurface
+KEY-017,keyboard,"quantity","PickPackWorkSurface","Keyboard shortcut",978,PickPackWorkSurface
+KEY-018,keyboard,"location","PickPackWorkSurface","Keyboard shortcut",979,PickPackWorkSurface
+KEY-019,keyboard,"bagIdentifier","PickPackWorkSurface","Keyboard shortcut",980,PickPackWorkSurface
+KEY-020,keyboard,"packed","PickPackWorkSurface","Keyboard shortcut",981,PickPackWorkSurface
+KEY-021,keyboard,"packedAt","PickPackWorkSurface","Keyboard shortcut",982,PickPackWorkSurface
+ACT-023,action,"Search orders... (Cmd+K)","PickPackWorkSurface","Search/filter input",1267,PickPackWorkSurface
+ACT-024,action,"Filter: Status","PickPackWorkSurface","Select filter",1281,PickPackWorkSurface
+ACT-025,action,"Filter: Sort","PickPackWorkSurface","Select filter",1295,PickPackWorkSurface
+KEY-028,keyboard,"↑↓","PickPackWorkSurface","Keyboard shortcut",1605,PickPackWorkSurface
+KEY-029,keyboard,"Space","PickPackWorkSurface","Keyboard shortcut",1606,PickPackWorkSurface
+KEY-030,keyboard,"P","PickPackWorkSurface","Keyboard shortcut",1607,PickPackWorkSurface
+KEY-031,keyboard,"R","PickPackWorkSurface","Keyboard shortcut",1608,PickPackWorkSurface
+KEY-032,keyboard,"I","PickPackWorkSurface","Keyboard shortcut",1609,PickPackWorkSurface
+
+=== PickPackWorkSurface Capability Extraction ===
+Total capabilities: 28
+  keyboard: 14
+  mutation: 5
+  export: 3
+  query: 3
+  action: 3
+

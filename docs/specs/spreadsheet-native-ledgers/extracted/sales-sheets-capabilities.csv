@@ -1,0 +1,16 @@
+capability_id,type,name,source,detail,line,component
+EXP-001,export,"export","SalesSheetCreatorPage","Export/download action",52,SalesSheetCreatorPage
+QUE-002,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",86,SalesSheetCreatorPage
+QUE-003,query,"salesSheets.getInventory","trpc.salesSheets.getInventory.useQuery","Query: salesSheets.getInventory",90,SalesSheetCreatorPage
+QUE-004,query,"salesSheets.getDrafts","trpc.salesSheets.getDrafts.useQuery","Query: salesSheets.getDrafts",100,SalesSheetCreatorPage
+QUE-005,query,"salesSheets.getViews","trpc.salesSheets.getViews.useQuery","Query: salesSheets.getViews",106,SalesSheetCreatorPage
+QUE-006,query,"salesSheets.getHistory","trpc.salesSheets.getHistory.useQuery","Query: salesSheets.getHistory",111,SalesSheetCreatorPage
+MUT-007,mutation,"salesSheets.saveDraft","trpc.salesSheets.saveDraft.useMutation","Mutation: salesSheets.saveDraft",119,SalesSheetCreatorPage
+MUT-008,mutation,"salesSheets.deleteDraft","trpc.salesSheets.deleteDraft.useMutation","Mutation: salesSheets.deleteDraft",133,SalesSheetCreatorPage
+
+=== SalesSheetCreatorPage Capability Extraction ===
+Total capabilities: 8
+  query: 5
+  mutation: 2
+  export: 1
+

@@ -136,6 +136,7 @@
     "proof:staging:sheet-surfaces": "tsx scripts/spreadsheet-native/detect-staging-sheet-surfaces.ts",
     "proof:staging:orders-runtime:g2": "tsx scripts/spreadsheet-native/prove-orders-runtime-g2.ts",
     "proof:staging:orders-fill-handle": "tsx scripts/spreadsheet-native/probe-orders-runtime-fill-handle.ts",
+    "capability:extract": "tsx scripts/extract-worksurface-capabilities.ts",
     "proof:await-staging-build": "tsx scripts/await-staging-build.ts",
     "pre-commit:review": "tsx scripts/pre-commit-review.ts",
     "test:schema": "vitest run tests/integration/schema-verification.test.ts",

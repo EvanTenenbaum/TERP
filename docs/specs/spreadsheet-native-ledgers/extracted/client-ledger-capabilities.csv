@@ -1,0 +1,22 @@
+capability_id,type,name,source,detail,line,component
+EXP-001,export,"Export","ClientLedgerWorkSurface","Export/download action",13,ClientLedgerWorkSurface
+KEY-002,keyboard,"WorkSurface keyboard contract","ClientLedgerWorkSurface","Keyboard navigation hook",76,ClientLedgerWorkSurface
+ACT-003,action,"... #...","ClientLedgerWorkSurface","Button (outline)",335,ClientLedgerWorkSurface
+MUT-004,mutation,"clientLedger.addLedgerAdjustment","trpc.clientLedger.addLedgerAdjustment.useMutation","Mutation: clientLedger.addLedgerAdjustment",387,ClientLedgerWorkSurface
+ACT-005,action,"Filter: Select type","ClientLedgerWorkSurface","Select filter",450,ClientLedgerWorkSurface
+DIA-007,dialog,"Confirm Adjustment","ClientLedgerWorkSurface","Confirmation gate",525,ClientLedgerWorkSurface
+EXP-008,export,"export","ClientLedgerWorkSurface","Export/download action",644,ClientLedgerWorkSurface
+QUE-009,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",680,ClientLedgerWorkSurface
+QUE-010,query,"clientLedger.getTransactionTypes","trpc.clientLedger.getTransactionTypes.useQuery","Query: clientLedger.getTransactionTypes",685,ClientLedgerWorkSurface
+QUE-011,query,"clientLedger.getLedger","trpc.clientLedger.getLedger.useQuery","Query: clientLedger.getLedger",691,ClientLedgerWorkSurface
+QUE-012,query,"clientLedger.exportLedger","trpc.clientLedger.exportLedger.useQuery","Query: clientLedger.exportLedger",705,ClientLedgerWorkSurface
+
+=== ClientLedgerWorkSurface Capability Extraction ===
+Total capabilities: 11
+  query: 4
+  export: 2
+  action: 2
+  keyboard: 1
+  mutation: 1
+  dialog: 1
+

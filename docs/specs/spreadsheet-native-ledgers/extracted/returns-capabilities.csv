@@ -1,0 +1,18 @@
+capability_id,type,name,source,detail,line,component
+EXP-001,export,"export","ReturnsPage","Export/download action",88,ReturnsPage
+QUE-002,query,"returns.getAll","trpc.returns.getAll.useQuery","Query: returns.getAll",109,ReturnsPage
+QUE-003,query,"returns.getStats","trpc.returns.getStats.useQuery","Query: returns.getStats",110,ReturnsPage
+QUE-004,query,"orders.getOrderWithLineItems","trpc.orders.getOrderWithLineItems.useQuery","Query: orders.getOrderWithLineItems",113,ReturnsPage
+MUT-005,mutation,"returns.create","trpc.returns.create.useMutation","Mutation: returns.create",118,ReturnsPage
+ACT-006,action,"Process Return","ReturnsPage","Button (default)",260,ReturnsPage
+ACT-007,action,"Filter: Select reason","ReturnsPage","Select filter",448,ReturnsPage
+DIA-009,dialog,"Remove Return Item","ReturnsPage","Confirmation gate",561,ReturnsPage
+
+=== ReturnsPage Capability Extraction ===
+Total capabilities: 8
+  query: 3
+  action: 2
+  export: 1
+  mutation: 1
+  dialog: 1
+

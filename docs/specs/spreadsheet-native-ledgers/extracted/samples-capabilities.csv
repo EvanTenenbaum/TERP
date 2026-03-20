@@ -1,0 +1,24 @@
+capability_id,type,name,source,detail,line,component
+EXP-001,export,"export","SampleManagement","Export/download action",112,SampleManagement
+QUE-002,query,"samples.getAll","trpc.samples.getAll.useQuery","Query: samples.getAll",151,SampleManagement
+QUE-003,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",205,SampleManagement
+QUE-004,query,"samples.productOptions","trpc.samples.productOptions.useQuery","Query: samples.productOptions",211,SampleManagement
+MUT-005,mutation,"samples.createRequest","trpc.samples.createRequest.useMutation","Mutation: samples.createRequest",329,SampleManagement
+MUT-006,mutation,"samples.cancelRequest","trpc.samples.cancelRequest.useMutation","Mutation: samples.cancelRequest",339,SampleManagement
+MUT-007,mutation,"samples.requestReturn","trpc.samples.requestReturn.useMutation","Mutation: samples.requestReturn",349,SampleManagement
+MUT-008,mutation,"samples.approveReturn","trpc.samples.approveReturn.useMutation","Mutation: samples.approveReturn",359,SampleManagement
+MUT-009,mutation,"samples.completeReturn","trpc.samples.completeReturn.useMutation","Mutation: samples.completeReturn",369,SampleManagement
+MUT-010,mutation,"samples.requestVendorReturn","trpc.samples.requestVendorReturn.useMutation","Mutation: samples.requestVendorReturn",380,SampleManagement
+MUT-011,mutation,"samples.shipToVendor","trpc.samples.shipToVendor.useMutation","Mutation: samples.shipToVendor",390,SampleManagement
+MUT-012,mutation,"samples.confirmVendorReturn","trpc.samples.confirmVendorReturn.useMutation","Mutation: samples.confirmVendorReturn",401,SampleManagement
+MUT-013,mutation,"samples.updateLocation","trpc.samples.updateLocation.useMutation","Mutation: samples.updateLocation",411,SampleManagement
+ACT-014,action,"setIsFormOpen(true)}>New Sample","SampleManagement","Button (default)",618,SampleManagement
+ACT-016,action,"Search samples out or returns...","SampleManagement","Search/filter input",720,SampleManagement
+
+=== SampleManagement Capability Extraction ===
+Total capabilities: 15
+  mutation: 9
+  query: 3
+  action: 2
+  export: 1
+

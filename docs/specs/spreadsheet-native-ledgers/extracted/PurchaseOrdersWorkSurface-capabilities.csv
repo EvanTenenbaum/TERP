@@ -1,0 +1,51 @@
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","PurchaseOrdersWorkSurface","Keyboard navigation hook",62,PurchaseOrdersWorkSurface
+EXP-002,export,"Export hook","PurchaseOrdersWorkSurface","Export functionality via useExport",67,PurchaseOrdersWorkSurface
+EXP-003,export,"export","PurchaseOrdersWorkSurface","Export/download action",595,PurchaseOrdersWorkSurface
+QUE-005,query,"organizationSettings.getDisplaySettings","trpc.organizationSettings.getDisplaySettings.useQuery","Query: organizationSettings.getDisplaySettings",686,PurchaseOrdersWorkSurface
+QUE-006,query,"settings.categories.list","trpc.settings.categories.list.useQuery","Query: settings.categories.list",689,PurchaseOrdersWorkSurface
+QUE-007,query,"settings.subcategories.list","trpc.settings.subcategories.list.useQuery","Query: settings.subcategories.list",691,PurchaseOrdersWorkSurface
+QUE-008,query,"purchaseOrders.getAll","trpc.purchaseOrders.getAll.useQuery","Query: purchaseOrders.getAll",699,PurchaseOrdersWorkSurface
+QUE-009,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",708,PurchaseOrdersWorkSurface
+QUE-010,query,"purchaseOrders.products","trpc.purchaseOrders.products.useQuery","Query: purchaseOrders.products",728,PurchaseOrdersWorkSurface
+QUE-011,query,"productCatalogue.list","trpc.productCatalogue.list.useQuery","Query: productCatalogue.list",735,PurchaseOrdersWorkSurface
+QUE-012,query,"purchaseOrders.getRecentProductsBySupplier","trpc.purchaseOrders.getRecentProductsBySupplier.useQuery","Query: purchaseOrders.getRecentProductsBySupplier",772,PurchaseOrdersWorkSurface
+QUE-013,query,"purchaseOrders.getBySupplier","trpc.purchaseOrders.getBySupplier.useQuery","Query: purchaseOrders.getBySupplier",781,PurchaseOrdersWorkSurface
+MUT-014,mutation,"purchaseOrders.create","trpc.purchaseOrders.create.useMutation","Mutation: purchaseOrders.create",834,PurchaseOrdersWorkSurface
+MUT-015,mutation,"purchaseOrders.restore","trpc.purchaseOrders.restore.useMutation","Mutation: purchaseOrders.restore",853,PurchaseOrdersWorkSurface
+MUT-016,mutation,"purchaseOrders.delete","trpc.purchaseOrders.delete.useMutation","Mutation: purchaseOrders.delete",860,PurchaseOrdersWorkSurface
+MUT-017,mutation,"purchaseOrders.updateStatus","trpc.purchaseOrders.updateStatus.useMutation","Mutation: purchaseOrders.updateStatus",895,PurchaseOrdersWorkSurface
+KEY-019,keyboard,"Cmd/Ctrl+K","PurchaseOrdersWorkSurface","Keyboard shortcut",991,PurchaseOrdersWorkSurface
+KEY-020,keyboard,"Esc","PurchaseOrdersWorkSurface","Keyboard shortcut",992,PurchaseOrdersWorkSurface
+KEY-021,keyboard,"Enter/↑↓","PurchaseOrdersWorkSurface","Keyboard shortcut",993,PurchaseOrdersWorkSurface
+EXP-022,export,"Export","PurchaseOrdersWorkSurface","Export/download action",1113,PurchaseOrdersWorkSurface
+KEY-023,keyboard,"Escape","PurchaseOrdersWorkSurface","Keyboard shortcut",1590,PurchaseOrdersWorkSurface
+KEY-024,keyboard,"ArrowUp","PurchaseOrdersWorkSurface","Keyboard shortcut",1604,PurchaseOrdersWorkSurface
+KEY-026,keyboard,"poNumber","PurchaseOrdersWorkSurface","Keyboard shortcut",1673,PurchaseOrdersWorkSurface
+KEY-027,keyboard,"supplier","PurchaseOrdersWorkSurface","Keyboard shortcut",1674,PurchaseOrdersWorkSurface
+KEY-028,keyboard,"product","PurchaseOrdersWorkSurface","Keyboard shortcut",1675,PurchaseOrdersWorkSurface
+KEY-029,keyboard,"quantityOrdered","PurchaseOrdersWorkSurface","Keyboard shortcut",1676,PurchaseOrdersWorkSurface
+KEY-030,keyboard,"quantityReceived","PurchaseOrdersWorkSurface","Keyboard shortcut",1677,PurchaseOrdersWorkSurface
+KEY-031,keyboard,"unitCost","PurchaseOrdersWorkSurface","Keyboard shortcut",1679,PurchaseOrdersWorkSurface
+KEY-032,keyboard,"lineTotal","PurchaseOrdersWorkSurface","Keyboard shortcut",1684,PurchaseOrdersWorkSurface
+KEY-033,keyboard,"status","PurchaseOrdersWorkSurface","Keyboard shortcut",1688,PurchaseOrdersWorkSurface
+KEY-034,keyboard,"orderDate","PurchaseOrdersWorkSurface","Keyboard shortcut",1689,PurchaseOrdersWorkSurface
+KEY-035,keyboard,"expectedDeliveryDate","PurchaseOrdersWorkSurface","Keyboard shortcut",1690,PurchaseOrdersWorkSurface
+NAV-036,navigation,"buildOperationsWorkspacePath","PurchaseOrdersWorkSurface","Route navigation (builder)",1711,PurchaseOrdersWorkSurface
+ACT-037,action,"Search by PO number or supplier... (Cmd+K)","PurchaseOrdersWorkSurface","Search/filter input",1746,PurchaseOrdersWorkSurface
+ACT-038,action,"Filter: Status","PurchaseOrdersWorkSurface","Select filter",1752,PurchaseOrdersWorkSurface
+ACT-042,action,"Filter: Select payment terms","PurchaseOrdersWorkSurface","Select filter",1855,PurchaseOrdersWorkSurface
+ACT-044,action,"Filter: COGS Mode","PurchaseOrdersWorkSurface","Select filter",2164,PurchaseOrdersWorkSurface
+ACT-046,action,"Filter: Category","PurchaseOrdersWorkSurface","Select filter",2362,PurchaseOrdersWorkSurface
+ACT-048,action,"Cancel","PurchaseOrdersWorkSurface","Button (outline) (conditionally disabled)",2690,PurchaseOrdersWorkSurface
+ACT-049,action,"...","PurchaseOrdersWorkSurface","Button (default) (conditionally disabled)",2693,PurchaseOrdersWorkSurface
+
+=== PurchaseOrdersWorkSurface Capability Extraction ===
+Total capabilities: 40
+  keyboard: 16
+  query: 9
+  action: 7
+  mutation: 4
+  export: 3
+  navigation: 1
+

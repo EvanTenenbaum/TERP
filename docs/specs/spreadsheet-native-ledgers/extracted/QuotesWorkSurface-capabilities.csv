@@ -1,0 +1,22 @@
+capability_id,type,name,source,detail,line,component
+KEY-001,keyboard,"WorkSurface keyboard contract","QuotesWorkSurface","Keyboard navigation hook",56,QuotesWorkSurface
+EXP-002,export,"export","QuotesWorkSurface","Export/download action",434,QuotesWorkSurface
+QUE-003,query,"clients.list","trpc.clients.list.useQuery","Query: clients.list",453,QuotesWorkSurface
+QUE-004,query,"orders.getAll","trpc.orders.getAll.useQuery","Query: orders.getAll",464,QuotesWorkSurface
+MUT-005,mutation,"orders.convertQuoteToSale","trpc.orders.convertQuoteToSale.useMutation","Mutation: orders.convertQuoteToSale",515,QuotesWorkSurface
+MUT-006,mutation,"quotes.send","trpc.quotes.send.useMutation","Mutation: quotes.send",531,QuotesWorkSurface
+MUT-007,mutation,"orders.delete","trpc.orders.delete.useMutation","Mutation: orders.delete",553,QuotesWorkSurface
+NAV-009,navigation,"buildSalesWorkspacePath","QuotesWorkSurface","Route navigation (builder)",585,QuotesWorkSurface
+ACT-011,action,"Search quotes... (Cmd+K)","QuotesWorkSurface","Search/filter input",684,QuotesWorkSurface
+ACT-012,action,"Filter: Status","QuotesWorkSurface","Select filter",690,QuotesWorkSurface
+ACT-016,action,"setShowSendDialog(false)}> Cancel","QuotesWorkSurface","Button (outline)",898,QuotesWorkSurface
+
+=== QuotesWorkSurface Capability Extraction ===
+Total capabilities: 11
+  mutation: 3
+  action: 3
+  query: 2
+  keyboard: 1
+  export: 1
+  navigation: 1
+
