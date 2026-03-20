@@ -952,6 +952,171 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(screen.queryByText(/blocked:/i)).not.toBeInTheDocument();
   });
 
+  it("recalculates margin from retail price when unitPrice is edited through the document adapter", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, cogsPerUnit: 10, quantity: 2 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "unitPrice" },
+      oldValue: 12.5,
+      newValue: "20",
+      data: buildLineItem({ id: 1, unitPrice: 20 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].unitPrice).toBe(20);
+    expect(nextItems[0].lineTotal).toBe(40);
+    expect(nextItems[0].marginPercent).toBe(50);
+    expect(nextItems[0].isMarginOverridden).toBe(true);
+    expect(nextItems[0].marginSource).toBe("MANUAL");
+  });
+
+  it("recalculates unit price from margin when marginPercent is edited through the document adapter", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, cogsPerUnit: 10, quantity: 2 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "marginPercent" },
+      oldValue: 25,
+      newValue: "50",
+      data: buildLineItem({ id: 1, marginPercent: 50 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].marginPercent).toBe(50);
+    expect(nextItems[0].unitPrice).toBe(20);
+    expect(nextItems[0].lineTotal).toBe(40);
+    expect(nextItems[0].isMarginOverridden).toBe(true);
+    expect(nextItems[0].marginSource).toBe("MANUAL");
+  });
+
+  it("validates unitPrice rejects negative values and reverts", () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, unitPrice: 12.5 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "unitPrice" },
+      oldValue: 12.5,
+      newValue: "-5",
+      data: buildLineItem({ id: 1, unitPrice: -5 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].unitPrice).toBe(12.5);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Unit price must be zero or greater."
+    );
+  });
+
+  it("validates marginPercent rejects negative values and reverts", () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, marginPercent: 25 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "marginPercent" },
+      oldValue: 25,
+      newValue: "-10",
+      data: buildLineItem({ id: 1, marginPercent: -10 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].marginPercent).toBe(25);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Margin percent must be zero or greater."
+    );
+  });
+
+  it("toggles isSample through the document adapter without affecting pricing", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, isSample: false, unitPrice: 12.5 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "isSample" },
+      oldValue: false,
+      newValue: true,
+      data: buildLineItem({ id: 1, isSample: true }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].isSample).toBe(true);
+    expect(nextItems[0].unitPrice).toBe(12.5);
+    expect(nextItems[0].lineTotal).toBe(25);
+  });
+
+  it("rejects edits on workflow-owned columns with a structured rejection", () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "lineTotal" },
+      oldValue: 25,
+      newValue: "100",
+      data: buildLineItem({ id: 1, lineTotal: 100 }),
+    });
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      "This cell is derived or workflow-owned and cannot be edited directly."
+    );
+    expect(onChange).toHaveBeenCalled();
+  });
+
   it("duplicates and deletes selected rows through the shared row operations", () => {
     const onChange = vi.fn();
 

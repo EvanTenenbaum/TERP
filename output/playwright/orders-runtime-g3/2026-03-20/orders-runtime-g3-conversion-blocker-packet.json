@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "gate": "G3",
+  "row_ids": ["SALE-ORD-012", "SALE-ORD-028"],
+  "issue": "TER-799",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "suggested_verdict": "blocker",
+  "acceptance_criteria": "Quote-to-order conversion and sheet-native conversion ownership proof.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "quote-to-order-route",
+      "label": "Quote-to-order route parsing exists but conversion mutation is not yet sheet-native-owned",
+      "passed": false,
+      "expected": "Quote-to-order initiation uses a sheet-native conversion mutation that explicitly owns the lifecycle.",
+      "observed": "OrderCreatorPage.tsx:379-385 parses quoteIdFromRoute and isDuplicateRoute. Route hydration at lines 639-682 loads quote data and maps it for duplication. However, the conversion mutation (quoteId → draft) relies on the existing SalesWorkspacePage redirect flow and is classified as not-started in ordersRolloutContract.ts (ORD-WF-008).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-012"]
+    },
+    {
+      "id": "conversion-ownership",
+      "label": "Sheet-native conversion ownership is not yet explicitly established",
+      "passed": false,
+      "expected": "An explicit sheet-native conversion path exists inside the Orders rollout contract with proof of ownership.",
+      "observed": "ordersRolloutContract.ts:128-131 shows ORD-WF-008 (quote-to-order + conversion) as implementationStatus: not-started, surfacingStatus: not-started, releaseStatus: open. No sheet-native conversion mutation exists yet.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-028"]
+    }
+  ],
+  "blocker_class": "ownership-not-established",
+  "unblock_condition": "Explicit sheet-native conversion ownership decision: either (a) implement a sheet-native conversion mutation and prove it, or (b) reclassify conversion as adjacent-owned with evidence.",
+  "row_verdicts": {
+    "SALE-ORD-012": {
+      "verdict": "partial",
+      "evidence": "Quote duplication route exists (isDuplicateRoute parsing + hydration). Quote-to-order conversion mutation is not yet sheet-native-owned.",
+      "residual": "Conversion mutation ownership decision required."
+    },
+    "SALE-ORD-028": {
+      "verdict": "blocked",
+      "evidence": "ORD-WF-008 is implementationStatus: not-started. No explicit sheet-native conversion path exists.",
+      "residual": "Explicit ownership decision required before this row can progress."
+    }
+  }
+}

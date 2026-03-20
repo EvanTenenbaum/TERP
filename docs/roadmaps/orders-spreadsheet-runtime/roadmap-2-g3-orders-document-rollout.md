@@ -4,9 +4,9 @@
 
 - Gate: `G3`
 - Linear gate: `TER-789`
-- Current verdict: `open`
-- Execution state: `blocked pending Roadmap 1`
-- Prerequisites: Roadmap 1 `closed with evidence`
+- Current verdict: `partial`
+- Execution state: `active — 8/10 rows code-proven, 2 blocked on conversion ownership`
+- Prerequisites: Roadmap 1 `closed with evidence` (met)
 - Gate file: [G3-document-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G3-document-gate.md)
 
 ## Objective
@@ -15,8 +15,11 @@ Move Orders document mode onto the shared runtime while preserving all existing 
 
 Current truth:
 
-- document-mode runtime mounting is already present in the current repo
-- this roadmap stays blocked until `G2` closes because the shared runtime tranche is not yet fully closed with evidence
+- G2 is `closed with evidence` — prerequisite met
+- document-mode runtime mounting is proven: `OrdersDocumentLineItemsGrid` renders exclusively through `PowersheetGrid`
+- 8/10 G3 rows are `code-proven` via unit tests and source inspection
+- `SALE-ORD-012` (partial) and `SALE-ORD-028` (blocked) require conversion ownership decision
+- all code-proven rows need live staging proof for `live-proven` promotion
 
 ## Allowed Inputs
 
