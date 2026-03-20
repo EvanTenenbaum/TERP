@@ -505,6 +505,8 @@ export function OrdersDocumentLineItemsGrid({
   const [lastEditRejection, setLastEditRejection] =
     useState<PowersheetEditRejection | null>(null);
   const draftRowKeyCounterRef = useRef(0);
+  const lastToastMessageRef = useRef<string | null>(null);
+  const lastToastTimeRef = useRef(0);
 
   const normalizedItems = useMemo(
     () =>
@@ -636,7 +638,15 @@ export function OrdersDocumentLineItemsGrid({
 
   const updateBlockedEdit = (rejection: PowersheetEditRejection) => {
     setLastEditRejection(rejection);
-    toast.warning(rejection.message);
+    const now = Date.now();
+    if (
+      rejection.message !== lastToastMessageRef.current ||
+      now - lastToastTimeRef.current > 300
+    ) {
+      toast.warning(rejection.message);
+      lastToastMessageRef.current = rejection.message;
+      lastToastTimeRef.current = now;
+    }
   };
 
   const handleCellValueChanged = (event: CellValueChangedEvent<LineItem>) => {

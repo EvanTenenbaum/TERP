@@ -63,12 +63,17 @@ const supportAffordances: PowersheetAffordance[] = [
   { label: "Edit", available: false },
 ];
 
+const isMac =
+  typeof navigator !== "undefined" &&
+  /mac/i.test(navigator.platform || navigator.userAgent);
+const mod = isMac ? "\u2318" : "Ctrl";
+
 const queueKeyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
   { key: "Shift+Click", label: "extend range" },
-  { key: "\u2318+Click", label: "add to selection" },
-  { key: "\u2318+C", label: "copy cells" },
-  { key: "\u2318+A", label: "select all" },
+  { key: `${mod}+Click`, label: "add to selection" },
+  { key: `${mod}+C`, label: "copy cells" },
+  { key: `${mod}+A`, label: "select all" },
 ];
 
 const documentKeyboardHints: KeyboardHint[] = [
@@ -76,9 +81,9 @@ const documentKeyboardHints: KeyboardHint[] = [
   { key: "Shift+Tab", label: "prev cell" },
   { key: "Enter", label: "next row" },
   { key: "Escape", label: "cancel edit" },
-  { key: "\u2318+C", label: "copy" },
-  { key: "\u2318+V", label: "paste" },
-  { key: "\u2318+Z", label: "undo" },
+  { key: `${mod}+C`, label: "copy" },
+  { key: `${mod}+V`, label: "paste" },
+  { key: `${mod}+Z`, label: "undo" },
 ];
 
 const formatCurrency = (value: number) =>
