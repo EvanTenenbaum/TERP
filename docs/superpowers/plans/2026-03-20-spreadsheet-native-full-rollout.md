@@ -1,272 +1,334 @@
-# Spreadsheet-Native Full Rollout — Master Implementation Plan
+# Spreadsheet-Native Full Rollout — Master Plan v2
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Roll out PowersheetGrid sheet-native surfaces to all applicable TERP modules, retire classic WorkSurface components, and prove zero capability regression — coordinated across multiple agent sessions.
+**Goal:** Roll out PowersheetGrid sheet-native surfaces to all applicable TERP modules, prove zero capability regression per module, flip defaults with telemetry, and retire classic WorkSurface components incrementally.
 
-**Architecture:** Each module gets a `*PilotSurface.tsx` component that wraps PowersheetGrid with module-specific queries, mutations, affordances, and field policies. A SheetModeToggle on each workspace page lets users switch between classic and sheet-native during transition. Classic surfaces are removed after a 30-day transition period once parity proof passes.
+**Architecture:** Each module gets a `*PilotSurface.tsx` wrapping PowersheetGrid with module-specific queries, mutations, affordances, and field policies. A SheetModeToggle lets users switch during transition. Classic surfaces are removed per-module after usage monitoring confirms low fallback reliance.
 
-**Tech Stack:** React 19, AG Grid Enterprise (PowersheetGrid wrapper), tRPC queries/mutations, Tailwind 4, shadcn/ui, Vitest for unit tests, Playwright for staging proofs.
+**Tech Stack:** React 19, AG Grid Enterprise (PowersheetGrid wrapper), tRPC, Tailwind 4, shadcn/ui, Vitest, Playwright.
 
 ---
 
 ## North Star
 
-**TERP becomes a spreadsheet-first ERP.** Every data-dense surface renders through PowersheetGrid with:
+**TERP becomes a spreadsheet-first ERP.** Every data-dense surface renders through PowersheetGrid with consistent selection, clipboard, fill, and keyboard behavior. Classic surfaces are retired module-by-module based on evidence, not a calendar.
 
-- Consistent selection, clipboard, fill, and keyboard behavior
-- Visible affordance matrix showing what's available per surface
-- Editable/locked cell visual cues
-- Platform-detected keyboard shortcuts
-- Classic fallback during transition, then sunset
-
-**Definition of Done:** Every module with a classic WorkSurface component has a sheet-native PilotSurface that passes the 3-gate verification (capability ledger → implementation → parity proof), and the classic component is removed.
+**Definition of Done:** Every module with a classic WorkSurface has a sheet-native PilotSurface that passes gate verification, its default is flipped to sheet-native, and its classic component is removed after a monitored soak period.
 
 ---
 
-## Current State (2026-03-20)
+## Honest Current State
 
-### Completed
+### Orders Pilot: Foundation Reusable, Initiative NOT Retired
 
-| Module       | Surface                          | Lines | Status                                        |
-| ------------ | -------------------------------- | ----- | --------------------------------------------- |
-| Orders       | `OrdersSheetPilotSurface.tsx`    | 741   | G5 closed, G6 partial (5 rows need attention) |
-| Inventory    | `InventorySheetPilotSurface.tsx` | ~800  | Implemented, toggle wired                     |
-| Sales Sheets | `SalesSheetsPilotSurface.tsx`    | 1057  | Implemented, toggle wired                     |
+- G5: closed with evidence
+- G6: `partial` — SALE-ORD-029, SALE-ORD-035 still code-proven; 020/021/031 are limitations
+- G7: `open` — retirement blocked per charter until G6 reaches proof-complete
+- `initiative_status: "reopened"`, `gates_closed: 5` of 7
+- **Foundation IS reusable** — PowersheetGrid, SpreadsheetPilotGrid, contracts, CSS all generalized
+- **Initiative is NOT done** — treated as background track, not blocking rollout
 
-### Capability Ledgers Ready (implementation unblocked)
+### Built Surfaces (G2 complete, G3 pending)
 
-| Module        | Ledger Rows | Discrepancies                                    | Classic Lines |
-| ------------- | ----------- | ------------------------------------------------ | ------------- |
-| Payments      | 20          | 6 (incl. dead toggle switch, missing void UI)    | 1,263         |
-| Client Ledger | 12          | 3 (export filter mismatch, permissions docs gap) | 1,225         |
+| Surface                          | Lines | Toggle Wired           |
+| -------------------------------- | ----- | ---------------------- |
+| `OrdersSheetPilotSurface.tsx`    | 805   | SalesWorkspacePage     |
+| `InventorySheetPilotSurface.tsx` | 1,046 | InventoryWorkspacePage |
+| `SalesSheetsPilotSurface.tsx`    | 1,057 | SalesWorkspacePage     |
 
-### Detailed Ledger Exists (from prior work, implementation ready)
+### Capability Ledgers Ready (G2 unblocked)
 
-| Module          | Classic Lines |
-| --------------- | ------------- |
-| Direct Intake   | 2,600         |
-| Purchase Orders | 2,909         |
+| Module          | Rows         | Discrepancies |
+| --------------- | ------------ | ------------- |
+| Payments        | 20           | 6             |
+| Client Ledger   | 12           | 3             |
+| Direct Intake   | existing CSV | existing log  |
+| Purchase Orders | existing CSV | existing log  |
 
-### Pack-Level Only (need architect pass before implementation)
+### Need Architect Pass (G1 pending)
 
-| Module                    | Pack Rows | Classic Lines |
-| ------------------------- | --------- | ------------- |
-| Fulfillment / Pick & Pack | 4         | 1,642         |
-| Invoices                  | 3         | 1,308         |
-| Quotes                    | 0         | 931           |
-| Returns                   | 4         | 577           |
-| Samples                   | 4         | 839           |
+Fulfillment, Invoices, Returns, Quotes, Samples
 
 ---
 
-## Multi-Session Execution Plan
+## Module Families
 
-### Phase 0: Foundation Cleanup (1 session)
+Modules that share the same layout/interaction pattern reuse patterns from the family leader.
 
-**Owner:** Coordinator agent
-**Goal:** Clean Linear, close stale work, establish tracking
+| Family                    | Pattern                                                                           | Leader (proven)          | Followers                                   |
+| ------------------------- | --------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------- |
+| **Queue + Detail**        | Dominant queue grid, selected-row document/inspector, workflow actions            | Orders                   | Purchase Orders, Direct Intake, Fulfillment |
+| **Ledger + Inspector**    | Client-gated transaction grid, right-rail inspector, KPI cards, adjustment dialog | (Payments — first build) | Client Ledger                               |
+| **Browser + Preview**     | Inventory/catalog browser, preview pane, conversion actions                       | Sales Sheets             | (none currently)                            |
+| **Registry + Actions**    | Read-only registry grid, row-scoped action buttons, status transitions            | (Invoices — first build) | Quotes                                      |
+| **Table + Support Cards** | Dominant data table, companion support cards for exception/expiry work            | Inventory                | Samples, Returns                            |
 
-- [ ] **Step 1:** Audit all Linear projects and issues
-- [ ] **Step 2:** Close/archive completed or stale issues
-- [ ] **Step 3:** Create Linear project: "Spreadsheet-Native Rollout" with milestones per wave
-- [ ] **Step 4:** Create parent issues for each wave (SNR-W1 through SNR-W4)
-- [ ] **Step 5:** Create child issues per module per gate (e.g., SNR-W1-PAY-G1, SNR-W1-PAY-G2, SNR-W1-PAY-G3)
-- [ ] **Step 6:** Close Orders G6 remaining items or document as accepted limitations
-- [ ] **Step 7:** Commit updated roadmap with Linear issue IDs
+**Why families matter:** The first module in each family pays the "pattern discovery" cost. Followers reuse the pattern and build faster. QA for followers is lighter because the family pattern is already proven.
 
-### Phase 1: Wave 1 Completion (2-3 sessions)
+---
 
-**Owner:** 2 parallel coder agents + 1 QA agent
-**Goal:** All 4 Wave 1 modules have sheet-native surfaces with parity proof
+## Gate Model
 
-**Session 1A: Payments implementation**
+### Family-first modules: 4 gates
 
-- Agent type: `terp-implementer` in worktree
+| Gate | Name              | Exit Criteria                                                                                                                   |
+| ---- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| G0   | Family Readiness  | Starter kit doc covers this family's pattern. Shared primitives confirmed working for this layout type.                         |
+| G1   | Capability Ledger | Detailed ledger locked. Every capability classified as preserved/adapted/deferred/rejected. Zero unclassified.                  |
+| G2   | Implementation    | PilotSurface renders. All preserved/adapted capabilities work. Affordances, hints, cues. `pnpm check && lint && test && build`. |
+| G3   | Deployed Proof    | Staging proof per capability. Classic toggle works. Route handoffs verified. Adversarial QA passes.                             |
+
+### Family-follower modules: 3 gates (G0 already proven)
+
+G1 → G2 → G3
+
+---
+
+## Revised Epic Structure
+
+### Epic A: Starter Kit + Family Contracts (1 session, front-loaded)
+
+The code generalization is already merged (commit `e6566daf`). What's missing is the documentation that tells future agents what to reuse and what not to silently drop.
+
+- [ ] **A1:** Write `docs/specs/spreadsheet-native-foundation/STARTER-KIT.md`
+  - Required primitives: PowersheetGrid, SpreadsheetPilotGrid, WorkSurfaceStatusBar, KeyboardHintBar, InspectorPanel
+  - Layout options by family (queue+detail, ledger+inspector, browser+preview, registry+actions, table+cards)
+  - Field policy conventions: `powersheet-cell--editable` / `powersheet-cell--locked`
+  - Blocked-edit behavior: toast.warning with 300ms dedup pattern
+  - Keyboard hints: platform-detected mod key, context-specific per surface
+  - Affordance matrix: `PowersheetAffordance[]` per surface
+  - Proof expectations: per-capability staging screenshot + classic toggle test
+  - What must never be silently dropped: mutations, queries, keyboard shortcuts, route handoffs, confirmation dialogs
+
+- [ ] **A2:** Define family taxonomy (table above) and document which family each module belongs to
+
+- [ ] **A3:** Add per-module usage instrumentation plan
+  - Track `?surface=classic` fallback clicks per module per session
+  - Track sheet-native vs classic route hits via existing analytics
+  - Define "safe to flip default" threshold: <5% classic usage over 2 weeks
+
+- [ ] **A4:** Close or document Orders G6/G7 remaining items
+  - SALE-ORD-029, 035: accept as code-proven limitations or capture live proof
+  - SALE-ORD-020, 021, 031: document as accepted limitations in G7
+  - Update `initiative_status` to reflect accurate state
+
+### Epic B: Wave 1 Completion (2-3 sessions)
+
+**Family: Ledger + Inspector (first family build)**
+
+**Session B1: Payments + Client Ledger implementation (parallel agents)**
+
+_Agent 1: Payments (TER-812)_ — family leader for ledger+inspector
+
 - Input: `docs/specs/spreadsheet-native-ledgers/payments-capability-ledger-summary.md`
-- Output: `PaymentsPilotSurface.tsx` with guided commit flow sidecar
-- Key constraint: Payment commit MUST stay explicit (never inline)
-- Key fix: Wire `previewPaymentBalance` into confirm step, add void UI, fix dead sendReceipt toggle
-- Toggle: Wire into AccountingWorkspacePage payments tab
+- Build: `PaymentsPilotSurface.tsx` — registry grid + guided commit sidecar
+- 8 P0 capabilities (PAY-001/002/006/007/008/011/012/014)
+- Fixes: wire `previewPaymentBalance`, add void UI, fix dead sendReceipt toggle
+- Toggle: AccountingWorkspacePage payments tab
+- Family output: document "ledger+inspector family" reuse patterns
 
-**Session 1B: Client Ledger implementation**
+_Agent 2: Client Ledger (TER-813)_ — family follower
 
-- Agent type: `terp-implementer` in worktree
 - Input: `docs/specs/spreadsheet-native-ledgers/client-ledger-capability-ledger-summary.md`
-- Output: `ClientLedgerPilotSurface.tsx`
-- Key constraint: Running balance MUST stay visible when inspector is open
-- Key constraint: 5-source balance calculation must use all sources (orders, payments received, payments sent, POs, manual adjustments)
-- Toggle: Wire into standalone client-ledger route
+- Build: `ClientLedgerPilotSurface.tsx` — client selector + transaction grid + inspector + KPI cards
+- Constraints: running balance visible with inspector open, 5-source balance, two-step adjustment
+- Toggle: standalone client-ledger route
 
-**Session 1C: Wave 1 QA + parity proof**
+**Session B2: Targeted QA — Payments + Client Ledger only**
 
-- Agent type: `terp-qa-reviewer`
-- Adversarial review of all 4 Wave 1 surfaces
-- Verify each capability in the ledger has a working sheet-native path
-- Staging proof screenshots
-- Classic fallback toggle verification
+- Adversarial review of the 2 NEW surfaces only (not Inventory/Sales Sheets yet)
+- Per-capability verification against the capability ledger
+- If Payments fails, fix Payments. Don't muddy with Inventory issues.
+- Output: SHIP/NO_SHIP per surface
 
-### Phase 2: Wave 2 Implementation (2-3 sessions)
+**Session B3: Wave 1 sweep — all 4 surfaces**
 
-**Owner:** 2-3 parallel coder agents + 1 QA agent
-**Prerequisite:** Wave 1 QA passes
-**Goal:** Direct Intake, Purchase Orders, and Fulfillment have sheet-native surfaces
+- Lighter parity check for Inventory + Sales Sheets (already built, just need proof)
+- Route handoff testing across all 4 surfaces
+- Classic toggle verification on each workspace page
+- Output: Wave 1 SHIP/NO_SHIP
 
-**Session 2A: Direct Intake implementation**
+### Epic C: Operations Document Family (2-3 sessions)
 
-- Agent type: `terp-implementer` in worktree
-- Input: existing detailed ledger at `docs/specs/spreadsheet-native-ledgers/direct-intake-capability-ledger.csv`
-- Output: `IntakePilotSurface.tsx`
-- Key constraint: Direct intake vs PO-linked intake are different workflows — must not collapse
-- Toggle: Wire into InventoryWorkspacePage intake tab
+**Family: Queue + Detail (Orders is the proven leader)**
 
-**Session 2B: Purchase Orders implementation**
+**Session C0: Fulfillment architect pass (can overlap with B1)**
 
-- Agent type: `terp-implementer` in worktree
-- Input: existing detailed ledger at `docs/specs/spreadsheet-native-ledgers/purchase-orders-capability-ledger.csv`
-- Output: `PurchaseOrdersPilotSurface.tsx`
-- Key constraint: Intake handoff must stay visible and row-scoped
-- Toggle: Wire into PurchaseOrdersWorkspacePage
+- Read-only analysis — no code changes, no conflicts
+- Input: `PickPackWorkSurface.tsx` (1,642 lines) + extraction CSV
+- Output: `docs/specs/spreadsheet-native-ledgers/fulfillment-capability-ledger-summary.md`
+- Mobile touch target requirements documented
 
-**Session 2C: Fulfillment architect + implementation**
+**Session C1: Direct Intake + Purchase Orders (parallel agents)**
 
-- Agent type: `feature-dev:code-architect` → `terp-implementer`
-- First: Build detailed capability ledger from PickPackWorkSurface.tsx (1,642 lines)
-- Then: Build `FulfillmentPilotSurface.tsx`
-- Key constraint: Mobile-friendly — sheet-native must not regress touch usability
-- Toggle: Wire into fulfillment route
+_Agent 1: Direct Intake (TER-815)_
 
-**Session 2D: Wave 2 QA**
+- Input: existing detailed ledger
+- Build: `IntakePilotSurface.tsx`
+- Key: direct vs PO-linked intake are SEPARATE workflows
+- Toggle: InventoryWorkspacePage intake tab
 
-- Same pattern as 1C
+_Agent 2: Purchase Orders (TER-816)_
 
-### Phase 3: Wave 3 Implementation (2-3 sessions)
+- Input: existing detailed ledger
+- Build: `PurchaseOrdersPilotSurface.tsx`
+- Key: 2,909 lines — largest surface. May need sub-task breakdown by capability group.
+- Key: row-scoped receiving handoff, COGS management
+- Toggle: PurchaseOrders workspace page
 
-**Owner:** Architect agents (for ledgers) + coder agents + QA
-**Prerequisite:** Wave 2 QA passes
-**Goal:** Invoices, Returns, Quotes, Samples have sheet-native surfaces
+**Session C2: Fulfillment implementation (TER-817)**
 
-**Session 3A: Architect pass for 4 remaining modules**
+- Builds AFTER Intake and PO so the ops queue+detail grammar is proven on 2 surfaces
+- Input: capability ledger from C0
+- Build: `FulfillmentPilotSurface.tsx`
+- Key: MOBILE-FIRST — test touch targets, tap areas, scroll behavior
+- Key: Fulfillment language (not "Shipping")
+- Toggle: fulfillment route
 
-- 4 parallel architect agents build detailed capability ledgers for:
-  - Invoices (from InvoicesWorkSurface.tsx, 1,308 lines)
-  - Returns (from ReturnsPage.tsx, 577 lines)
-  - Quotes (from QuotesWorkSurface.tsx, 931 lines — NO existing ledger)
-  - Samples (from SampleManagement.tsx, 839 lines)
+**Session C3: Ops family QA**
 
-**Session 3B: Implementation (parallel)**
+- Touch target testing for Fulfillment
+- Status workflow verification (pick → pack → ready → ship)
+- Handoff testing (PO → Intake, Order → Fulfillment)
+- Document "queue+detail family" reuse notes
 
-- 4 parallel coder agents build surfaces from the ledgers
+### Epic D: Specialized Surfaces (2-3 sessions)
 
-**Session 3C: Wave 3 QA**
+**Mixed families — each module assessed individually**
 
-- Same pattern as 1C
+**Session D0: Architect all 4 in parallel (read-only, safe)**
 
-### Phase 4: Classic Sunset (1 session)
+For each module, answer the adversarial question BEFORE coding:
 
-**Owner:** Coordinator agent
-**Prerequisite:** All Wave 1-3 QA passes, all parity proofs green
-**Goal:** Sheet-native becomes default, classic enters 30-day sunset
+> "Should this be fully sheet-native, or hybrid with support panes/cards remaining primary?"
 
-- [ ] **Step 1:** Set `surface=sheet-native` as default for all modules
-- [ ] **Step 2:** Keep `?surface=classic` accessible for 30-day transition
-- [ ] **Step 3:** Remove SheetModeToggle components
-- [ ] **Step 4:** After 30 days: remove classic WorkSurface components
-- [ ] **Step 5:** Update all documentation
-- [ ] **Step 6:** Close Linear project
+_Invoices_ (1,308 lines) — likely registry+actions family
+_Returns_ (577 lines) — likely table+support cards (exception queue)
+_Quotes_ (931 lines) — likely conversion flow, NOT a standalone grid
+_Samples_ (839 lines) — likely table+support cards (9 mutations, support cards for expiry/returns)
 
----
+**Session D1: Implementation — paired by family**
 
-## Per-Module Gate Structure
+- Invoices + Quotes (if both are registry-like)
+- Returns + Samples (both table+support cards)
 
-Every module follows 3 gates:
+**Session D2: Specialized QA**
 
-| Gate | Name              | Exit Criteria                                                                                                                                                   | Owner           |
-| ---- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| G1   | Capability Ledger | Detailed CSV/MD exists. Every capability classified as preserved/adapted/deferred/rejected. Zero unclassified.                                                  | Architect agent |
-| G2   | Implementation    | PilotSurface renders. All preserved/adapted capabilities work. Affordances, keyboard hints, editable/locked cues. `pnpm check && lint && test && build` passes. | Coder agent     |
-| G3   | Parity Proof      | Staging proof shows every preserved capability works. Classic toggle verified. Adversarial review passes. No P0/P1 features missing.                            | QA agent        |
+- Invoices: PDF generation, payment handoff, status transitions
+- Quotes: quote-to-order conversion flow, not just a grid
+- Returns: restock decision, vendor return path, order-linked context
+- Samples: return/vendor-return procedures, expiry tracking, support card visibility
 
----
+### Epic E: Default Flip + Soak (1-2 sessions)
 
-## Capability Regression Prevention Protocol
+**Per-module, not global. Safest first.**
 
-For EVERY module, BEFORE implementation:
+- [ ] **E1:** Add per-module default config:
+  ```ts
+  const sheetNativeDefault: Record<string, boolean> = {
+    inventory: true, // most proven, lowest risk
+    "sales-sheets": true,
+    orders: true,
+    // ... others flipped as they pass soak
+  };
+  ```
+- [ ] **E2:** Flip safest modules first (Inventory, Sales Sheets)
+- [ ] **E3:** Monitor `?surface=classic` fallback rate per module for 2 weeks
+- [ ] **E4:** Flip next batch when fallback rate < 5%
+- [ ] **E5:** Continue until all modules default to sheet-native
 
-1. **Extract** — `pnpm capability:extract <ClassicSurface.tsx>` → CSV
-2. **Diff** — Compare CSV against detailed capability ledger
-3. **Classify** — Each capability gets: preserved | adapted | deferred | rejected
-4. **Gate** — Zero unclassified capabilities before code starts
+### Epic F: Classic Retirement (incremental, per-module)
 
----
+**NOT one 13K-line delete. Per-module retirement when safe.**
 
-## Linear Project Structure
+For each module with low fallback usage and clean soak:
 
-```
-Project: Spreadsheet-Native Rollout
-├── Milestone: Wave 1 — Core Business
-│   ├── SNR-W1-INV — Inventory (G1✓ G2✓ G3 pending)
-│   ├── SNR-W1-SHT — Sales Sheets (G1✓ G2✓ G3 pending)
-│   ├── SNR-W1-PAY — Payments (G1✓ G2 pending G3 pending)
-│   └── SNR-W1-LED — Client Ledger (G1✓ G2 pending G3 pending)
-├── Milestone: Wave 2 — Operations & Procurement
-│   ├── SNR-W2-INT — Direct Intake (G1✓ G2 pending G3 pending)
-│   ├── SNR-W2-POS — Purchase Orders (G1✓ G2 pending G3 pending)
-│   └── SNR-W2-FUL — Fulfillment (G1 pending G2 pending G3 pending)
-├── Milestone: Wave 3 — Sales Extensions & Accounting
-│   ├── SNR-W3-INV — Invoices (G1 pending G2 pending G3 pending)
-│   ├── SNR-W3-RET — Returns (G1 pending G2 pending G3 pending)
-│   ├── SNR-W3-QUO — Quotes (G1 pending G2 pending G3 pending)
-│   └── SNR-W3-SMP — Samples (G1 pending G2 pending G3 pending)
-└── Milestone: Wave 4 — Classic Sunset
-    ├── SNR-W4-DEFAULT — Set sheet-native as default
-    ├── SNR-W4-TOGGLE — Remove SheetModeToggle
-    └── SNR-W4-CLEANUP — Remove classic WorkSurface components
-```
+- [ ] **F1:** Remove `SheetModeToggle` from that module's workspace page
+- [ ] **F2:** Remove classic `*WorkSurface.tsx` component
+- [ ] **F3:** Remove conditional rendering branch in the workspace page
+- [ ] **F4:** Remove related classic-only tests
+- [ ] **F5:** Run regression sweep focused on handoffs and deep links
+- [ ] **F6:** Commit as `chore(sunset): retire classic [ModuleName] surface`
+
+Modules that lag don't block modules that are ready.
 
 ---
 
-## Agent Session Delegation Rules
+## Immediate Next Sequence
 
-1. **Each session gets ONE wave or sub-wave** — never mix waves
-2. **Coder agents work in worktrees** — isolation prevents conflicts
-3. **Architect agents produce ledgers, not code** — clear boundary
-4. **QA agents review after implementation, never during**
-5. **Coordinator (this agent) owns Linear writeback and gate promotion**
-6. **Each coder agent gets:**
-   - The capability ledger for its module
-   - The extraction CSV for cross-check
-   - The Figma golden flow reference
-   - The launch matrix Adopt/Adapt/Preserve/Reject decisions
-   - The Orders implementation as the pattern reference
-   - Exact acceptance criteria from the gate structure
-7. **Each QA agent gets:**
-   - All surfaces built in that wave
-   - The capability ledgers for cross-reference
-   - The adversarial review prompt template from the Orders initiative
+1. ~~Merge shared-runtime generalization~~ ✓ (commit `e6566daf`)
+2. **Write starter kit doc** (Epic A1 — 30 min)
+3. **Build Payments + Client Ledger** in parallel (Epic B1 — 1 session)
+4. **Start Fulfillment architect** in parallel with B1 (Epic C0 — read-only, no conflicts)
+5. **Targeted QA on Payments + Client Ledger** (Epic B2)
+6. **Wave 1 sweep** across all 4 built surfaces (Epic B3)
+7. **Begin Epic C** — Direct Intake + Purchase Orders
 
 ---
 
-## Risk Register
+## Linear Mapping
 
-| Risk                                                                 | Probability | Impact   | Mitigation                                                     |
-| -------------------------------------------------------------------- | ----------- | -------- | -------------------------------------------------------------- |
-| Capability regression (users lose functionality)                     | High        | Critical | 4-step prevention protocol + adversarial QA per wave           |
-| AG Grid license issues on staging                                    | Medium      | High     | Already fixed in Dockerfile + app spec; monitor on each deploy |
-| Large surfaces (PO: 2,909 lines, Intake: 2,600) exceed agent context | Medium      | Medium   | Break into sub-tasks; use focused agents per capability group  |
-| Mobile regression on Fulfillment                                     | Medium      | High     | Explicit touch-target testing in G3 for fulfillment            |
-| Cross-surface navigation breaks                                      | Medium      | High     | Test all deep-link and handoff routes in G3                    |
-| Classic sunset removes functionality someone still uses              | Low         | Critical | 30-day transition with `?surface=classic` escape hatch         |
+| Linear Issue | Epic                       | Status                  |
+| ------------ | -------------------------- | ----------------------- |
+| TER-807      | Epic B (Wave 1)            | In Progress             |
+| TER-812      | B1 — Payments build        | Todo                    |
+| TER-813      | B1 — Client Ledger build   | Todo                    |
+| TER-814      | B3 — Inventory G3 sweep    | Todo                    |
+| TER-811      | B3 — Sales Sheets G3 sweep | Todo                    |
+| TER-808      | Epic C (Wave 2)            | Backlog                 |
+| TER-815      | C1 — Direct Intake         | Todo (blocked by W1)    |
+| TER-816      | C1 — Purchase Orders       | Todo (blocked by W1)    |
+| TER-817      | C0+C2 — Fulfillment        | Todo (blocked by W1)    |
+| TER-809      | Epic D (Wave 3)            | Backlog                 |
+| TER-818      | D0+D1 — Invoices           | Backlog (blocked by W2) |
+| TER-819      | D0+D1 — Returns            | Backlog (blocked by W2) |
+| TER-820      | D0+D1 — Quotes             | Backlog (blocked by W2) |
+| TER-821      | D0+D1 — Samples            | Backlog (blocked by W2) |
+| TER-810      | Epics E+F (Sunset)         | Backlog                 |
 
 ---
 
-## Timeline Estimate (Sessions, Not Calendar)
+## Agent Assignment Strategy
 
-| Phase            | Sessions          | Parallel Agents                | Output                                        |
-| ---------------- | ----------------- | ------------------------------ | --------------------------------------------- |
-| Phase 0: Cleanup | 1                 | 1                              | Clean Linear, tracking issues                 |
-| Phase 1: Wave 1  | 2-3               | 2 coders + 1 QA                | Payments + Client Ledger surfaces             |
-| Phase 2: Wave 2  | 2-3               | 3 coders + 1 QA                | Intake + POs + Fulfillment surfaces           |
-| Phase 3: Wave 3  | 2-3               | 4 architects + 4 coders + 1 QA | Invoices + Returns + Quotes + Samples         |
-| Phase 4: Sunset  | 1                 | 1                              | Default switch, classic removal               |
-| **Total**        | **8-11 sessions** | —                              | **All modules sheet-native, classic removed** |
+| Work Type                                       | Best Tool   | Rationale                                    |
+| ----------------------------------------------- | ----------- | -------------------------------------------- |
+| Simple module builds (Returns, Samples, Quotes) | Codex       | Pattern replication, well-bounded            |
+| Complex module builds (Payments, POs, Intake)   | Claude Opus | Trust-critical constraints, large surfaces   |
+| Architect passes (capability ledgers)           | Claude Opus | Reading 1K+ line components, reasoning-heavy |
+| QA / adversarial review                         | Claude Opus | Skeptical cross-referencing, edge cases      |
+| Starter kit doc                                 | Claude Opus | Cross-cutting knowledge synthesis            |
+| Default flip + classic deletion                 | Codex       | Mechanical, well-defined                     |
+
+---
+
+## Reusable Foundation (already generalized)
+
+Every new module gets these for free:
+
+- `PowersheetGrid` — surfaceId, affordances, selection summary, release gates (~50 lines saved)
+- `SpreadsheetPilotGrid` — AG Grid wrapper, selection, clipboard, fill, keyboard (~200 lines)
+- `powersheet-cell--editable/--locked` CSS — visual cues, light/dark, hover states (~30 lines)
+- `KeyboardHintBar` — platform-detected shortcuts with a11y (~15 lines)
+- `WorkSurfaceStatusBar` — left/center/right status bar (~10 lines)
+- `InspectorPanel` — right-rail detail with sections/fields (~50 lines)
+- `SheetModeToggle` + `useSpreadsheetSurfaceMode` — toggle infrastructure (~10 lines)
+- `PowersheetFieldPolicy` — editable/locked field contract (~20 lines)
+- Toast dedup pattern — 300ms dedup for blocked-edit toasts (~10 lines)
+- Row operation helpers — duplicate, delete, fill, apply, clear (~30 lines)
+- **Total: ~425 lines saved per module**
+
+---
+
+## What Changed From v1 (Codex feedback incorporated)
+
+| v1 Assumption                     | Codex Correction                                | v2 Change                                                 |
+| --------------------------------- | ----------------------------------------------- | --------------------------------------------------------- |
+| "Wave 0 DONE"                     | Orders G6 partial, G7 open, initiative reopened | Honest state: foundation reusable, initiative NOT retired |
+| One QA session for 4 surfaces     | Mixed failures are ambiguous                    | Split: targeted QA for new builds, then lighter sweep     |
+| Arbitrary wave ordering           | Module families drive reuse                     | Family taxonomy with leader/follower gates                |
+| 3-gate model                      | Family-first modules need G0                    | 4 gates for leaders, 3 for followers                      |
+| Global default flip after 30 days | Telemetry-driven, per-module                    | Per-module config, monitor fallback rate                  |
+| One 13K-line classic deletion     | Risky, blocks everything                        | Per-module retirement, safest first                       |
+| No starter kit doc                | Agents re-discover patterns                     | Front-loaded starter kit doc                              |
+| Fulfillment waits for Wave 2      | Architect pass is read-only                     | Overlap Fulfillment architect with Wave 1 builds          |
