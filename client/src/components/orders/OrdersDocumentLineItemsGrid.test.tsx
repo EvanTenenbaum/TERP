@@ -141,16 +141,12 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(call?.releaseGateIds).toContain("SALE-ORD-020");
     expect(call?.releaseGateIds).toContain("SALE-ORD-021");
     expect(call?.releaseGateIds).toContain("SALE-ORD-035");
-    expect(call?.columnDefs[0].cellClass).toBe(
-      "orders-document-grid__locked-cell"
-    );
+    expect(call?.columnDefs[0].cellClass).toBe("powersheet-cell--locked");
     expect(call?.columnDefs[0].suppressPaste).toBe(true);
     expect(call?.columnDefs[0].suppressFillHandle).toBe(true);
     expect(call?.columnDefs[0].sortable).toBe(false);
     expect(call?.columnDefs[0].filter).toBe(false);
-    expect(call?.columnDefs[2].cellClass).toBe(
-      "orders-document-grid__editable-cell"
-    );
+    expect(call?.columnDefs[2].cellClass).toBe("powersheet-cell--editable");
     expect(call?.columnDefs[2].suppressPaste).toBe(false);
     expect(call?.columnDefs[2].suppressFillHandle).toBe(false);
     expect(screen.getByRole("button", { name: /duplicate/i })).toBeEnabled();

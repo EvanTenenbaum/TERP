@@ -185,8 +185,8 @@ function buildDocumentCellClass(
   columnKey: OrdersDocumentGridColumnKey
 ): string | undefined {
   return getFieldPolicy(columnKey)
-    ? "orders-document-grid__editable-cell"
-    : "orders-document-grid__locked-cell";
+    ? "powersheet-cell--editable"
+    : "powersheet-cell--locked";
 }
 
 function getSpreadsheetWriteGuards(columnKey: OrdersDocumentEditableField) {

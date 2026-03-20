@@ -402,14 +402,14 @@ export function InventorySheetPilotSurface({
         headerName: "SKU",
         minWidth: 120,
         maxWidth: 140,
-        cellClass: "inventory-queue__locked-cell",
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "productSummary",
         headerName: "Product",
         flex: 1.3,
         minWidth: 280,
-        cellClass: "inventory-queue__locked-cell",
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "status",
@@ -422,8 +422,8 @@ export function InventorySheetPilotSurface({
           values: [...STATUS_OPTIONS],
         },
         cellClass: canUpdateInventory
-          ? "inventory-queue__editable-cell"
-          : "inventory-queue__locked-cell",
+          ? "powersheet-cell--editable"
+          : "powersheet-cell--locked",
       },
       {
         field: "availableQty",
@@ -431,7 +431,7 @@ export function InventorySheetPilotSurface({
         minWidth: 110,
         maxWidth: 120,
         valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
-        cellClass: "inventory-queue__locked-cell",
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "onHandQty",
@@ -439,14 +439,14 @@ export function InventorySheetPilotSurface({
         minWidth: 110,
         maxWidth: 120,
         valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
-        cellClass: "inventory-queue__locked-cell",
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "ageLabel",
         headerName: "Age",
         minWidth: 90,
         maxWidth: 100,
-        cellClass: "inventory-queue__locked-cell",
+        cellClass: "powersheet-cell--locked",
       },
     ],
     [canUpdateInventory]

@@ -35,10 +35,7 @@ export interface PowersheetSelectionSummary {
   selectedCellCount: number;
   selectedRowCount: number;
   hasDiscontiguousSelection: boolean;
-  focusedSurface:
-    | "orders-queue"
-    | "orders-support-grid"
-    | "orders-document-grid";
+  focusedSurface: string | undefined;
 }
 
 export interface PowersheetRowSelection {

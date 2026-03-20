@@ -567,86 +567,47 @@
   }
 
   /**
-   * Orders document grid: editable vs locked cell visual cues.
-   * Editable cells get a subtle left-border accent and lighter background
-   * so users know which fields accept input before clicking.
-   * Locked cells stay muted with a diagonal-stripe hint on hover.
+   * PowersheetGrid: generic editable vs locked cell visual cues.
+   * Any surface using PowersheetGrid can apply these classes to columns
+   * via AG Grid's cellClass property. The data-powersheet-surface-id
+   * attribute scopes styles to the grid wrapper automatically.
+   *
+   * Usage in columnDefs:
+   *   cellClass: fieldPolicy ? "powersheet-cell--editable" : "powersheet-cell--locked"
    */
-  [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__editable-cell {
+  [data-powersheet-surface-id] .powersheet-cell--editable {
     border-left: 2px solid oklch(0.53 0.13 44 / 0.35);
     background: oklch(0.53 0.13 44 / 0.04);
   }
 
-  [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__editable-cell:hover {
+  [data-powersheet-surface-id] .powersheet-cell--editable:hover {
     background: oklch(0.53 0.13 44 / 0.08);
   }
 
-  [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__locked-cell {
+  [data-powersheet-surface-id] .powersheet-cell--locked {
     color: var(--muted-foreground);
     background: color-mix(in oklab, var(--muted) 30%, transparent);
   }
 
-  [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__locked-cell:hover {
+  [data-powersheet-surface-id] .powersheet-cell--locked:hover {
     background: color-mix(in oklab, var(--muted) 45%, transparent);
     cursor: not-allowed;
   }
 
-  .dark [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__editable-cell {
+  .dark [data-powersheet-surface-id] .powersheet-cell--editable {
     border-left-color: oklch(0.59 0.12 44 / 0.4);
     background: oklch(0.59 0.12 44 / 0.06);
   }
 
-  .dark [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__editable-cell:hover {
+  .dark [data-powersheet-surface-id] .powersheet-cell--editable:hover {
     background: oklch(0.59 0.12 44 / 0.12);
   }
 
-  .dark [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__locked-cell {
+  .dark [data-powersheet-surface-id] .powersheet-cell--locked {
     background: color-mix(in oklab, var(--muted) 20%, transparent);
   }
 
-  .dark [data-powersheet-surface-id="orders-document-grid"] .orders-document-grid__locked-cell:hover {
-    background: color-mix(in oklab, var(--muted) 35%, transparent);
-  }
-
-  /**
-   * Inventory queue: editable vs locked cell visual cues.
-   * The status column accepts inline edits (dropdown); all other columns are
-   * locked. Editable cells get a subtle green-tinted left-border accent.
-   * Locked cells use the same muted pattern as orders-document-grid.
-   */
-  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell {
-    border-left: 2px solid oklch(0.55 0.14 145 / 0.35);
-    background: oklch(0.55 0.14 145 / 0.04);
-  }
-
-  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell:hover {
-    background: oklch(0.55 0.14 145 / 0.08);
-  }
-
-  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell {
-    color: var(--muted-foreground);
-    background: color-mix(in oklab, var(--muted) 30%, transparent);
-  }
-
-  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell:hover {
-    background: color-mix(in oklab, var(--muted) 45%, transparent);
-    cursor: default;
-  }
-
-  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell {
-    border-left-color: oklch(0.60 0.13 145 / 0.4);
-    background: oklch(0.60 0.13 145 / 0.06);
-  }
-
-  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell:hover {
-    background: oklch(0.60 0.13 145 / 0.12);
-  }
-
-  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell {
-    background: color-mix(in oklab, var(--muted) 20%, transparent);
-  }
-
-  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell:hover {
+  .dark [data-powersheet-surface-id] .powersheet-cell--locked:hover {
     background: color-mix(in oklab, var(--muted) 35%, transparent);
   }
 

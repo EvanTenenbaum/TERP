@@ -7,15 +7,6 @@ import type {
   PowersheetSelectionSummary,
 } from "@/lib/powersheet/contracts";
 
-const selectionSurfaceBySurfaceId: Record<
-  string,
-  PowersheetSelectionSummary["focusedSurface"]
-> = {
-  "orders-queue": "orders-queue",
-  "orders-support-grid": "orders-support-grid",
-  "orders-document-grid": "orders-document-grid",
-};
-
 export interface PowersheetAffordance {
   label: string;
   available: boolean;
@@ -48,8 +39,7 @@ export function PowersheetGrid<Row extends object>({
   const [selectionSummary, setSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
 
-  const effectiveSelectionSurface =
-    selectionSurface ?? selectionSurfaceBySurfaceId[surfaceId];
+  const effectiveSelectionSurface = selectionSurface ?? surfaceId;
 
   const stableDecorations = useMemo(() => {
     const renderedAffordances =
