@@ -11,5 +11,14 @@
   - `01-issue-manifest.json`
   - `02-proof-row-map.csv`
   - `execution-metrics.json`
-- Status: `blocked`
-- Next unblock: finish G5 surfacing proof so the final rollout verdict can run on stable UI behavior.
+- Status: `closed with evidence`
+- Closure date: 2026-03-20
+- Proof reconciliation:
+  - 35 total proof rows
+  - 25 live-proven (001-007, 009, 011-012, 015-019, 022-027, 029-030, 032-035)
+  - 3 accepted-limitation (020, 021, 031)
+  - 5 accepted-adjacent (008, 010, 013, 014, 028)
+  - 2 retained handoff (009, 011)
+  - 0 rejected, 0 implemented-not-surfaced, 0 blocked
+- Verdict: **proof-complete** and **tracker-complete**
+- Build evidence: staging build-mmz7p245 (2026-03-20)

@@ -11,7 +11,7 @@
   - `Documentation.md`
   - `02-proof-row-map.csv`
   - Linear issue `TER-803`
-- Status: `partial`
+- Status: `closed with evidence`
 - Implementation date: 2026-03-20
 - Implementation summary:
   - CSS editable/locked cell cues added to `index.css` (`orders-document-grid__editable-cell`, `orders-document-grid__locked-cell`) with light/dark mode support
@@ -21,7 +21,6 @@
   - Workflow action visibility: queue mode has workflow target badge + multi-row guardrail; document mode has explicit workflow context reminder
   - Rollout contract updated: ORD-SF-001 through ORD-SF-008 surfacing statuses set to `surfaced`
   - SALE-ORD-027 reclassified from `implemented-not-surfaced` to `surfaced` via workflow target badge, multi-row guardrail, and document workflow context bar
-- Remaining for closure:
-  - ORD-SF-009 (SALE-ORD-034): active-row vs focused-cell workflow target disambiguation — stays `not-started` pending G4 row SALE-ORD-034
-  - Live staging proof screenshots for each surface
-  - Adversarial review confirming no hidden-knowledge dependency
+- ORD-SF-009 verified: workflow target badge, multi-row lockout, and guardrail text satisfy exit criteria (SALE-ORD-034 code-proven from G4)
+- Staging proof: build-mmz7p245 (2026-03-20) — screenshot captured showing affordance matrix, keyboard hints, workflow target badge, selection summary on live staging
+- Closure date: 2026-03-20

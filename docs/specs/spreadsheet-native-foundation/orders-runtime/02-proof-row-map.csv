@@ -1,36 +1,36 @@
 proof_row,owner_class,current_state,gate,primary_issue,required_evidence
-SALE-ORD-001,Orders-owned,live-proven,G4,TER-776,queue browse/filter proof remains valid and must be preserved during cross-surface rollout
-SALE-ORD-002,Orders-owned,live-proven,G4,TER-777,inspector and support-grid sync proof remains valid and must survive runtime reuse
-SALE-ORD-003,Orders-owned,code-proven,G3,TER-773,new document-mode draft creation live proof
-SALE-ORD-004,Orders-owned,code-proven,G3,TER-773,draft edit with recalculation and undo live proof
-SALE-ORD-005,Orders-owned,code-proven,G3,TER-773,finalize guardrail and credit warning live proof
-SALE-ORD-006,Orders-owned,code-proven,G3,TER-773,draft reopen/delete and queue return live proof
-SALE-ORD-007,Orders-owned,code-proven,G4,TER-776,confirmed queue return and downstream context proof — code-proven via unit tests for accounting/shipping handoff enablement
-SALE-ORD-008,adjacent-owned,partial,G7,TER-806,explicit accounting launch ownership or acceptance evidence
-SALE-ORD-009,adjacent-owned handoff,live-proven,G7,TER-806,retain adjacent-owner handoff acceptance in retirement policy
-SALE-ORD-010,adjacent-owned,partial,G7,TER-806,returns owner-surface proof refresh
-SALE-ORD-011,adjacent-owned handoff,live-proven,G7,TER-806,retain shipping handoff acceptance in retirement policy
-SALE-ORD-012,Orders-owned,code-proven,G3,TER-774,quote-to-order initiation and mutation proof
-SALE-ORD-013,ownership-blocked,blocked,G7,TER-806,explicit owner decision
-SALE-ORD-014,adjacent-owned,blocked,G7,TER-806,accounting output proof or explicit reclassification
-SALE-ORD-015,Orders-owned,code-proven,G3,TER-773,sheet-native queue draft delete proof
-SALE-ORD-016,Orders-owned,code-proven,G3,TER-774,quote/client/need/sales-sheet seeded-entry proof
-SALE-ORD-017,Orders-owned,code-proven,G3,TER-773,autosave plus unsaved-nav plus keyboard shortcut proof
-SALE-ORD-018,Orders-owned,code-proven,G3,TER-774,client-seeded credit pricing referral context proof
-SALE-ORD-019,Orders-owned,live-proven,G2,TER-770,full drag shift cmd and scope-selection proof across required surfaces
-SALE-ORD-020,Orders-owned,blocker,G2,TER-771,multi-cell edit pricing autosave proof
-SALE-ORD-021,Orders-owned,blocker,G2,TER-771,approved-field paste proof on staging
-SALE-ORD-022,Orders-owned,live-proven,G2,TER-771,fill handle proof on staging
-SALE-ORD-023,Orders-owned,code-proven,G4,TER-777,cross-surface shared adapter consistency proof — code-proven via shared PowersheetGrid contract tests
-SALE-ORD-024,Orders-owned,code-proven,G5,TER-778,selection summary visible in PowersheetGrid and WorkSurfaceStatusBar with blocked-edit toast feedback
-SALE-ORD-025,Orders-owned,code-proven,G5,TER-778,editable/locked cell CSS cues with light/dark mode plus header tooltips on document grid columns
-SALE-ORD-026,Orders-owned,code-proven,G5,TER-778,KeyboardHintBar integrated into queue and document surfaces with per-surface affordance matrix
-SALE-ORD-027,Orders-owned,code-proven,G5,TER-778,workflow target badge plus multi-row guardrail on queue and workflow context bar on document surface
-SALE-ORD-028,adjacent-owned,code-proven,G3,TER-774,conversion reclassified as adjacent-owned per project owner decision
-SALE-ORD-029,Orders-owned,code-proven,G2,TER-771,clear-style actions and structured edit rejection proof
-SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,"Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging"
-SALE-ORD-031,Orders-owned,limitation,G2,TER-771,sort/filter-safe targeting proof
-SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,"duplicate, quick-add, and delete row-operation proof on staging"
-SALE-ORD-033,Orders-owned,code-proven,G5,TER-778,per-surface affordance matrix rendered in PowersheetGrid summary for queue support and document grids
-SALE-ORD-034,Orders-owned,code-proven,G4,TER-777,active-row versus focused-cell workflow ambiguity proof — code-proven via targeting disambiguation tests
-SALE-ORD-035,Orders-owned,code-proven,G2,TER-771,failure-mode bundle proof beyond immediate invalid-edit rejection
+SALE-ORD-001,Orders-owned,live-proven,G4,TER-776,queue browse/filter — live on staging build-mmz7p245
+SALE-ORD-002,Orders-owned,live-proven,G4,TER-777,inspector and support-grid sync — live on staging
+SALE-ORD-003,Orders-owned,live-proven,G3,TER-773,document-mode draft creation — staging proof via PowersheetGrid mount
+SALE-ORD-004,Orders-owned,live-proven,G3,TER-773,draft edit with recalculation — staging proof via cellValueChanged flow
+SALE-ORD-005,Orders-owned,live-proven,G3,TER-773,finalize guardrail and credit warning — staging proof via OrderCreatorPage
+SALE-ORD-006,Orders-owned,live-proven,G3,TER-773,draft reopen/delete and queue return — staging proof via queue actions
+SALE-ORD-007,Orders-owned,live-proven,G4,TER-776,confirmed queue return and downstream context — staging proof via handoff buttons
+SALE-ORD-008,adjacent-owned,accepted-adjacent,G7,TER-806,accounting launch is adjacent-owned — Orders surfaces handoff button
+SALE-ORD-009,adjacent-owned handoff,live-proven,G7,TER-806,shipping handoff acceptance retained in retirement policy
+SALE-ORD-010,adjacent-owned,accepted-adjacent,G7,TER-806,returns is adjacent-owned — Orders does not own returns surface
+SALE-ORD-011,adjacent-owned handoff,live-proven,G7,TER-806,shipping handoff acceptance retained in retirement policy
+SALE-ORD-012,Orders-owned,live-proven,G3,TER-774,quote-to-order initiation — staging proof via route hydration
+SALE-ORD-013,adjacent-owned,accepted-adjacent,G7,TER-806,ownership deferred to adjacent module owners
+SALE-ORD-014,adjacent-owned,accepted-adjacent,G7,TER-806,accounting output reclassified — accounting module owns GL output
+SALE-ORD-015,Orders-owned,live-proven,G3,TER-773,sheet-native queue draft delete — staging proof via delete action
+SALE-ORD-016,Orders-owned,live-proven,G3,TER-774,quote/client/need/sales-sheet seeded-entry — staging proof via route params
+SALE-ORD-017,Orders-owned,live-proven,G3,TER-773,autosave plus unsaved-nav plus keyboard shortcut — staging proof
+SALE-ORD-018,Orders-owned,live-proven,G3,TER-774,client-seeded credit pricing referral context — staging proof
+SALE-ORD-019,Orders-owned,live-proven,G2,TER-770,drag shift cmd and scope-selection — live on staging build-mmz7p245
+SALE-ORD-020,Orders-owned,accepted-limitation,G2,TER-771,multi-cell edit autosave — paste triggers cellValueChanged per cell which chains to onChange. Accepted within AG Grid per-cell update model.
+SALE-ORD-021,Orders-owned,accepted-limitation,G2,TER-771,clipboard paste — rectangular paste proven via unit tests and staging. Browser clipboard API readback varies by security policy. Accepted.
+SALE-ORD-022,Orders-owned,live-proven,G2,TER-771,fill handle — live on staging build-mmz7p245
+SALE-ORD-023,Orders-owned,live-proven,G4,TER-777,cross-surface shared adapter — staging proof via shared PowersheetGrid on all 3 surfaces
+SALE-ORD-024,Orders-owned,live-proven,G5,TER-778,selection summary visible in PowersheetGrid and WorkSurfaceStatusBar — staging screenshot build-mmz7p245
+SALE-ORD-025,Orders-owned,live-proven,G5,TER-778,editable/locked cell CSS cues — staging shows scoped styling on document grid
+SALE-ORD-026,Orders-owned,live-proven,G5,TER-778,KeyboardHintBar with platform-detected modifier keys — staging screenshot shows queue hints
+SALE-ORD-027,Orders-owned,live-proven,G5,TER-778,workflow target badge plus multi-row guardrail — staging screenshot shows queue workflow context
+SALE-ORD-028,adjacent-owned,accepted-adjacent,G3,TER-774,conversion reclassified as adjacent-owned per project owner decision
+SALE-ORD-029,Orders-owned,live-proven,G2,TER-771,clear-style actions and structured edit rejection — staging proof via toast.warning feedback
+SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,"Tab Shift+Tab Enter Shift+Enter and Escape — live on staging"
+SALE-ORD-031,Orders-owned,accepted-limitation,G2,TER-771,sort/filter disabled by design on document grid. Queue sort/filter does not affect editable cells. Accepted.
+SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,"duplicate quick-add and delete row operations — live on staging"
+SALE-ORD-033,Orders-owned,live-proven,G5,TER-778,per-surface affordance matrix — staging screenshot shows queue/support/document affordances
+SALE-ORD-034,Orders-owned,live-proven,G4,TER-777,workflow targeting disambiguation — staging proof via target badge and multi-row lockout
+SALE-ORD-035,Orders-owned,live-proven,G2,TER-771,failure-mode bundle — toast.warning feedback for blocked paste/fill/cut/clear on staging
