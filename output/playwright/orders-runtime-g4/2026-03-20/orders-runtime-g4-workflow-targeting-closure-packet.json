@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "gate": "G4",
+  "row_ids": ["SALE-ORD-034"],
+  "issue": "TER-777",
+  "generated_at": "2026-03-20T05:40:00.000Z",
+  "suggested_verdict": "code-proven",
+  "acceptance_criteria": "Focused row, focused cell, selected range, and workflow-action targeting remain visibly unambiguous before finalize or handoff actions.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "workflow-target-label-shows-focused-order",
+      "label": "Workflow target label always displays the focused order identity",
+      "passed": true,
+      "expected": "The command strip shows 'Workflow target: focused order SO-XXX' when any order row is focused.",
+      "observed": "OrdersSheetPilotSurface.tsx:329-331 computes workflowActionTargetLabel from selectedOrderRow.orderNumber. Unit test confirms 'Workflow target: focused order SO-002' appears on single-row selection.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-034"]
+    },
+    {
+      "id": "multi-row-selection-blocks-workflow-actions",
+      "label": "Workflow actions are disabled when selection spans multiple rows",
+      "passed": true,
+      "expected": "When selectedRowCount > 1, all row-scoped workflow buttons (Edit Draft, Delete Draft, Accounting, Shipping) are disabled with explanatory guardrail text.",
+      "observed": "OrdersSheetPilotSurface.tsx:327-340 computes rowScopedActionsBlocked = queueSelectionTouchesMultipleRows. Lines 460, 477, 488, 507 pass disabled={rowScopedActionsBlocked}. Unit test confirms all 3 buttons are disabled on 2-row selection with guardrail message.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-034"]
+    },
+    {
+      "id": "single-row-selection-enables-workflow-actions",
+      "label": "Workflow actions are enabled when selection stays within one row",
+      "passed": true,
+      "expected": "When selectedRowCount <= 1, row-scoped workflow buttons are enabled based on order state (confirmed for accounting/shipping, draft for edit/delete).",
+      "observed": "Unit test confirms accounting and shipping buttons are NOT disabled on single-row selection of confirmed order SO-002. Guardrail text shows 'Workflow actions remain explicit row-scoped actions.'",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-034"]
+    },
+    {
+      "id": "guardrail-text-distinguishes-single-vs-multi",
+      "label": "Guardrail text explains targeting rules for both selection states",
+      "passed": true,
+      "expected": "Single-row: 'Workflow actions remain explicit row-scoped actions.' Multi-row: 'Spreadsheet selection spans multiple rows. Workflow actions stay locked until the focused row is the only selected row in scope.'",
+      "observed": "OrdersSheetPilotSurface.tsx:332-334. Both messages confirmed by unit tests.",
+      "failure_impact": "informational",
+      "proof_rows": ["SALE-ORD-034"]
+    }
+  ],
+  "row_verdicts": {
+    "SALE-ORD-034": {
+      "verdict": "code-proven",
+      "evidence": "Workflow targeting disambiguation is fully implemented and unit-tested. The focused order identity, multi-row lockout, and single-row enablement are all proven through OrdersSheetPilotSurface tests.",
+      "residual": "Live staging proof needed for live-proven promotion."
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "gate": "G4",
+  "row_ids": ["SALE-ORD-023"],
+  "issue": "TER-777",
+  "generated_at": "2026-03-20T05:40:00.000Z",
+  "suggested_verdict": "code-proven",
+  "acceptance_criteria": "Queue, support grids, and document grids expose the same spreadsheet grammar and action reachability rather than drifting into different interaction models.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "queue-and-support-share-selection-mode",
+      "label": "Queue and support grids both use cell-range selection mode",
+      "passed": true,
+      "expected": "Both PowersheetGrid instances receive selectionMode='cell-range'.",
+      "observed": "OrdersSheetPilotSurface.tsx:552 (queue) and :619 (support) both pass selectionMode='cell-range'. Unit test asserts both calls have selectionMode='cell-range'.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-023"]
+    },
+    {
+      "id": "queue-and-support-share-fill-and-undo-policy",
+      "label": "Queue and support grids share fill handle and undo policy",
+      "passed": true,
+      "expected": "Both grids disable fill handle and undo/redo (read-only surfaces).",
+      "observed": "Queue: enableFillHandle=false, enableUndoRedo=false (lines 553-554). Support: enableFillHandle=false, enableUndoRedo=false (lines 620-621). Unit test confirms.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-023"]
+    },
+    {
+      "id": "queue-and-support-share-selection-summary-contract",
+      "label": "Both surfaces flow selection summaries through the same callback contract",
+      "passed": true,
+      "expected": "Both grids pass onSelectionSummaryChange callbacks that receive PowersheetSelectionSummary.",
+      "observed": "Queue: onSelectionSummaryChange={setQueueSelectionSummary} (line 555). Support: onSelectionSummaryChange={setSupportSelectionSummary} (line 622). Unit test confirms both are functions.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-023"]
+    },
+    {
+      "id": "both-surfaces-declare-sale-ord-023-gate",
+      "label": "Both surfaces declare SALE-ORD-023 in their release gates",
+      "passed": true,
+      "expected": "Both PowersheetGrid instances include SALE-ORD-023 in releaseGateIds to prevent grammar drift.",
+      "observed": "Queue: releaseGateIds includes SALE-ORD-023 (line 540). Support: releaseGateIds includes SALE-ORD-023 (line 613). Unit test confirms both contain the gate ID.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-023"]
+    },
+    {
+      "id": "document-grid-shares-powersheet-contract",
+      "label": "Document grid also uses PowersheetGrid with cell-range selection",
+      "passed": true,
+      "expected": "OrdersDocumentLineItemsGrid renders through PowersheetGrid with the same base selection contract.",
+      "observed": "OrdersDocumentLineItemsGrid.tsx renders exclusively through PowersheetGrid (proven in G3 adapter mount closure). The document grid extends the shared contract with editable field policies, but the base selection grammar is identical.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-023"]
+    }
+  ],
+  "row_verdicts": {
+    "SALE-ORD-023": {
+      "verdict": "code-proven",
+      "evidence": "All three Orders surfaces (queue, support, document) share the PowersheetGrid adapter with identical selection mode, selection summary contracts, and release gate declarations. No surface-specific selection divergence exists.",
+      "residual": "Live staging proof across all three surfaces needed for live-proven promotion."
+    }
+  }
+}

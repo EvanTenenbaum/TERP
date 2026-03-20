@@ -423,10 +423,10 @@ export const ordersRolloutRequirements: OrdersRolloutRequirementRecord[] = [
     surface: "cross-surface",
     ownerClass: "foundation-shared",
     implementationSource:
-      "Orders queue, support grids, and document-grid adoption of PowersheetGrid",
+      "Orders queue, support grids, and document-grid adoption of PowersheetGrid with shared selectionMode, selection summary, and release gate contracts",
     proofSource: "SALE-ORD-023 / SALE-ORD-026",
     implementationStatus: "implemented",
-    surfacingStatus: "implemented-not-surfaced",
+    surfacingStatus: "surfaced-and-proven",
     releaseStatus: "implemented",
     linkedCapabilityIds: ["SALE-ORD-023", "SALE-ORD-026"],
   },
@@ -473,11 +473,11 @@ export const ordersRolloutRequirements: OrdersRolloutRequirementRecord[] = [
     surface: "cross-surface",
     ownerClass: "orders-owned",
     implementationSource:
-      "Orders queue, support grids, and document command surfaces coordinated with PowersheetGrid selection state",
+      "OrdersSheetPilotSurface workflowActionTargetLabel, workflowActionGuardrail, and rowScopedActionsBlocked coordinated with PowersheetGrid selection state",
     proofSource: "SALE-ORD-034",
-    implementationStatus: "not-started",
-    surfacingStatus: "not-started",
-    releaseStatus: "open",
+    implementationStatus: "implemented",
+    surfacingStatus: "surfaced-and-proven",
+    releaseStatus: "implemented",
     linkedCapabilityIds: ["SALE-ORD-034"],
   },
 ];

@@ -349,6 +349,81 @@ describe("OrdersSheetPilotSurface", () => {
     expect(supportCall?.rows).toEqual([]);
   });
 
+  it("enables row-scoped workflow actions when queue selection stays within one row (SALE-ORD-034)", () => {
+    mockQueueSelectionSummary = {
+      selectedCellCount: 4,
+      selectedRowCount: 1,
+      hasDiscontiguousSelection: false,
+      focusedSurface: "orders-queue",
+    };
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(
+      screen.getByText(/workflow target: focused order so-002/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/workflow actions remain explicit row-scoped actions/i)
+    ).toBeInTheDocument();
+
+    const accountingBtn = screen.getByRole("button", { name: /accounting/i });
+    const shippingBtn = screen.getByRole("button", { name: /shipping/i });
+
+    expect(accountingBtn).not.toBeDisabled();
+    expect(shippingBtn).not.toBeDisabled();
+  });
+
+  it("passes the same shared PowersheetGrid contract to queue and support grids (SALE-ORD-023)", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    const queueCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Orders Queue"
+    )?.[0];
+    const supportCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Selected Order Lines"
+    )?.[0];
+
+    expect(queueCall).toBeTruthy();
+    expect(supportCall).toBeTruthy();
+
+    expect(queueCall?.selectionMode).toBe("cell-range");
+    expect(supportCall?.selectionMode).toBe("cell-range");
+
+    expect(queueCall?.enableFillHandle).toBe(false);
+    expect(supportCall?.enableFillHandle).toBe(false);
+    expect(queueCall?.enableUndoRedo).toBe(false);
+    expect(supportCall?.enableUndoRedo).toBe(false);
+
+    expect(queueCall?.surfaceId).toBe("orders-queue");
+    expect(supportCall?.surfaceId).toBe("orders-support-grid");
+
+    expect(typeof queueCall?.onSelectionSummaryChange).toBe("function");
+    expect(typeof supportCall?.onSelectionSummaryChange).toBe("function");
+
+    expect(queueCall?.releaseGateIds).toContain("SALE-ORD-023");
+    expect(supportCall?.releaseGateIds).toContain("SALE-ORD-023");
+  });
+
+  it("enables accounting and shipping handoffs for confirmed orders with invoices (SALE-ORD-007)", () => {
+    mockQueueSelectionSummary = {
+      selectedCellCount: 4,
+      selectedRowCount: 1,
+      hasDiscontiguousSelection: false,
+      focusedSurface: "orders-queue",
+    };
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    const accountingBtn = screen.getByRole("button", { name: /accounting/i });
+    const shippingBtn = screen.getByRole("button", { name: /shipping/i });
+
+    expect(accountingBtn).not.toBeDisabled();
+    expect(shippingBtn).not.toBeDisabled();
+
+    expect(screen.getByText(/so-002 selected/i)).toBeInTheDocument();
+    expect(screen.getByText("Issued #55")).toBeInTheDocument();
+  });
+
   it("renders the sheet-native document workflow when ordersView=document is requested", () => {
     mockSearch =
       "?tab=orders&surface=sheet-native&ordersView=document&draftId=1";

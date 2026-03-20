@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "gate": "G4",
+  "row_ids": ["SALE-ORD-007"],
+  "issue": "TER-776",
+  "generated_at": "2026-03-20T05:40:00.000Z",
+  "suggested_verdict": "code-proven",
+  "acceptance_criteria": "Confirmed-order context persists in the queue and exposes accounting and shipping handoffs explicitly.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "confirmed-order-context-in-queue",
+      "label": "Confirmed orders appear in the unified queue with stage and fulfillment context",
+      "passed": true,
+      "expected": "Confirmed orders render in the same queue as drafts with stageLabel, fulfillmentStatus, and invoiceStateLabel visible.",
+      "observed": "OrdersSheetPilotSurface.tsx:193-206 maps confirmed orders through mapOrdersToPilotRows. Lines 572-607 render context cards showing client, stage, invoice, and next step. Unit test confirms 'Issued #55' appears for the confirmed order's invoice state.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-007"]
+    },
+    {
+      "id": "accounting-handoff-enabled",
+      "label": "Accounting handoff button is enabled for confirmed orders",
+      "passed": true,
+      "expected": "The Accounting button is enabled when a confirmed order is focused with single-row selection.",
+      "observed": "OrdersSheetPilotSurface.tsx:336 sets canOpenAccounting = selectedOrderRow?.lane === 'confirmed'. Line 488 passes disabled={!selectedOrderRow || !canOpenAccounting || rowScopedActionsBlocked}. Unit test confirms the button is NOT disabled for confirmed SO-002.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-007"]
+    },
+    {
+      "id": "shipping-handoff-enabled",
+      "label": "Shipping handoff button is enabled for confirmed orders with invoices",
+      "passed": true,
+      "expected": "The Shipping button is enabled when a confirmed order has an invoiceId and single-row selection.",
+      "observed": "OrdersSheetPilotSurface.tsx:337-339 sets canOpenShipping = confirmed lane && invoiceId truthy. Line 507 passes disabled={!selectedOrderRow || !canOpenShipping || rowScopedActionsBlocked}. Unit test confirms the button is NOT disabled for confirmed SO-002 with invoiceId 55.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-007"]
+    },
+    {
+      "id": "accounting-routes-to-correct-path",
+      "label": "Accounting button navigates to the accounting workspace with order context",
+      "passed": true,
+      "expected": "Clicking Accounting navigates to /accounting?tab=payments&orderId=X&from=sales.",
+      "observed": "OrdersSheetPilotSurface.tsx:495-497 sets location to accounting path with orderId and from=sales params.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-007"]
+    },
+    {
+      "id": "shipping-routes-to-correct-path",
+      "label": "Shipping button navigates to the operations workspace with order context",
+      "passed": true,
+      "expected": "Clicking Shipping navigates to the operations shipping path with orderId.",
+      "observed": "OrdersSheetPilotSurface.tsx:514-517 uses buildOperationsWorkspacePath('shipping', {orderId}).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-007"]
+    }
+  ],
+  "row_verdicts": {
+    "SALE-ORD-007": {
+      "verdict": "code-proven",
+      "evidence": "Confirmed-order queue context, accounting handoff, and shipping handoff are all implemented and unit-tested. The queue renders both drafts and confirmed orders with appropriate context cards and handoff buttons that route to the correct workspaces.",
+      "residual": "Live staging proof needed for live-proven promotion."
+    }
+  }
+}
