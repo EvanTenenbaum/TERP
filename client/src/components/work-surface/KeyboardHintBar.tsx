@@ -17,7 +17,11 @@ export function KeyboardHintBar({ hints, className }: KeyboardHintBarProps) {
   }
 
   return (
-    <span className={cn("inline-flex items-center gap-1", className)}>
+    <span
+      role="region"
+      aria-label="Keyboard shortcuts"
+      className={cn("inline-flex items-center gap-1", className)}
+    >
       {hints.map((hint, index) => (
         <React.Fragment key={`${hint.key}-${hint.label}`}>
           {index > 0 && <span aria-hidden="true">·</span>}

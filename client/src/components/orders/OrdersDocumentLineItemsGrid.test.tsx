@@ -67,13 +67,15 @@ vi.mock("@/components/spreadsheet-native/PowersheetGrid", () => ({
   PowersheetGrid: (props: Record<string, unknown>) => mockPowersheetGrid(props),
 }));
 
-const { mockToastError } = vi.hoisted(() => ({
+const { mockToastError, mockToastWarning } = vi.hoisted(() => ({
   mockToastError: vi.fn(),
+  mockToastWarning: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
   toast: {
     error: mockToastError,
+    warning: mockToastWarning,
   },
 }));
 
@@ -102,6 +104,7 @@ describe("OrdersDocumentLineItemsGrid", () => {
   beforeEach(() => {
     mockPowersheetGrid.mockClear();
     mockToastError.mockReset();
+    mockToastWarning.mockReset();
   });
 
   it("arms the document grid with spreadsheet runtime behaviors and row actions", () => {
@@ -482,6 +485,9 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(
       screen.getByText(/blocked: Quantity must be a positive whole number./i)
     ).toBeInTheDocument();
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      "Quantity must be a positive whole number."
+    );
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -514,6 +520,9 @@ describe("OrdersDocumentLineItemsGrid", () => {
         /blocked: Paste range includes locked or workflow-owned document columns./i
       )
     ).toBeInTheDocument();
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      "Paste range includes locked or workflow-owned document columns."
+    );
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -576,6 +585,9 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(
       screen.getByText(/blocked: Cut is only allowed in approved editable/i)
     ).toBeInTheDocument();
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      "Cut is only allowed in approved editable document fields."
+    );
   });
 
   it("suppresses delete shortcuts when the current selection includes locked document columns", () => {
@@ -631,6 +643,9 @@ describe("OrdersDocumentLineItemsGrid", () => {
         /blocked: Clear and delete are only allowed in approved editable/i
       )
     ).toBeInTheDocument();
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      "Clear and delete are only allowed in approved editable document fields."
+    );
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -683,6 +698,9 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(
       screen.getByText(/blocked: Fill is only allowed in approved editable/i)
     ).toBeInTheDocument();
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      "Fill is only allowed in approved editable document fields."
+    );
   });
 
   it("fills price, clears samples, and delegates add-item insertion without replacing orchestration", () => {

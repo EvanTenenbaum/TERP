@@ -1,0 +1,160 @@
+{
+  "generatedAt": "2026-03-19",
+  "scope": "Revised spreadsheet-native golden-flow pack",
+  "note": "SVG files are intended for import into Figma as editable layers.",
+  "intentionalNonGoals": [
+    "Live Shopping remains a sibling surface in this pack; Sales Sheets only shows the bridge into it.",
+    "Quotes remain a separate surface in this pack; the Sales Order pair shows quote mode instead of a dedicated quotes registry artboard."
+  ],
+  "compatibilityNotes": [
+    "receiving-sheet.svg retains the established filename, but the revised artboard copy uses Intake for the direct-intake owner surface and PO Receiving for the linked purchase-order branch.",
+    "shipping-sheet.svg retains the established filename, but the revised artboard copy uses Fulfillment for the broader lifecycle and Shipping only for the explicit ship step."
+  ],
+  "sourceFiles": [
+    "client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx",
+    "client/src/components/spreadsheet-native/InventorySheetPilotSurface.tsx",
+    "client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx",
+    "client/src/components/spreadsheet-native/PowersheetGrid.tsx",
+    "client/src/components/spreadsheet-native/SheetModeToggle.tsx",
+    "client/src/pages/SalesWorkspacePage.tsx",
+    "client/src/pages/OrderCreatorPage.tsx",
+    "client/src/pages/LiveShoppingPage.tsx",
+    "client/src/pages/SalesSheetCreatorPage.tsx",
+    "client/src/components/orders/OrdersDocumentLineItemsGrid.tsx",
+    "client/src/components/sales/SalesSheetPreview.tsx",
+    "client/src/components/work-surface/DirectIntakeWorkSurface.tsx",
+    "client/src/components/work-surface/QuotesWorkSurface.tsx",
+    "client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx",
+    "client/src/components/work-surface/PickPackWorkSurface.tsx",
+    "client/src/components/work-surface/InvoicesWorkSurface.tsx",
+    "client/src/pages/accounting/Payments.tsx",
+    "client/src/components/work-surface/golden-flows/InvoiceToPaymentFlow.tsx",
+    "client/src/components/work-surface/ClientLedgerWorkSurface.tsx",
+    "client/src/pages/ReturnsPage.tsx",
+    "client/src/pages/SampleManagement.tsx",
+    "server/routers/salesSheets.ts",
+    "server/routers/inventory.ts",
+    "server/routers/poReceiving.ts",
+    "server/routers/samples.ts",
+    "docs/specs/spreadsheet-native-foundation/SPREADSHEET-NATIVE-HANDOFF-2026-03-16.md",
+    "docs/specs/spreadsheet-native-foundation/ORDERS-ROLLOUT-CONTRACT-2026-03-17.md",
+    "docs/specs/spreadsheet-native-foundation/ORDERS-FULL-PARITY-PILOT-EVALUATION-PACK-2026-03-17.md",
+    "docs/reference/FLOW_GUIDE.md",
+    "docs/reference/USER_FLOW_MATRIX.csv",
+    "docs/terminology/TERMINOLOGY_BIBLE.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/improved-prompt.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/module-specs.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/sales-order-creation-direction.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/figma-to-terp-reality-mapping-system.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/figma-to-terp-reality-launch-matrix.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/figma-to-terp-pack-reality-audit.md",
+    "docs/design/spreadsheet-native-golden-flows-2026-03-18/figma-to-terp-pack-revision-brief.md"
+  ],
+  "artboards": [
+    {
+      "file": "orders-queue.svg",
+      "mapsTo": [
+        "client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx"
+      ],
+      "route": "/sales?tab=orders&surface=sheet-native"
+    },
+    {
+      "file": "orders-document.svg",
+      "mapsTo": [
+        "client/src/pages/OrderCreatorPage.tsx",
+        "client/src/components/orders/OrdersDocumentLineItemsGrid.tsx"
+      ],
+      "route": "/sales?tab=orders&surface=sheet-native&ordersView=document",
+      "note": "Compatibility alias retained for continuity with the first expanded pack."
+    },
+    {
+      "file": "sales-order-sheet.svg",
+      "mapsTo": [
+        "client/src/pages/OrderCreatorPage.tsx",
+        "client/src/components/orders/OrdersDocumentLineItemsGrid.tsx"
+      ],
+      "route": "/sales?tab=orders&surface=sheet-native&ordersView=document",
+      "currentOracleRoutes": [
+        "/sales?tab=create-order",
+        "/orders/create",
+        "/orders/new"
+      ]
+    },
+    {
+      "file": "sales-sheet.svg",
+      "mapsTo": [
+        "client/src/pages/SalesSheetCreatorPage.tsx",
+        "client/src/components/sales/SalesSheetPreview.tsx"
+      ],
+      "route": "/sales?tab=sales-sheets&surface=sheet-native",
+      "currentOracleRoutes": ["/sales?tab=sales-sheets", "/sales-sheets"]
+    },
+    {
+      "file": "inventory-sheet.svg",
+      "mapsTo": [
+        "client/src/components/spreadsheet-native/InventorySheetPilotSurface.tsx"
+      ],
+      "route": "/inventory?tab=inventory&surface=sheet-native"
+    },
+    {
+      "file": "receiving-sheet.svg",
+      "mapsTo": [
+        "client/src/components/work-surface/DirectIntakeWorkSurface.tsx"
+      ],
+      "route": "/inventory?tab=receiving&surface=sheet-native",
+      "note": "Compatibility filename retained; artboard copy distinguishes Direct Intake from the linked PO Receiving branch."
+    },
+    {
+      "file": "purchase-orders-sheet.svg",
+      "mapsTo": [
+        "client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx"
+      ],
+      "route": "/purchase-orders?surface=sheet-native"
+    },
+    {
+      "file": "shipping-sheet.svg",
+      "mapsTo": ["client/src/components/work-surface/PickPackWorkSurface.tsx"],
+      "route": "/inventory?tab=shipping&surface=sheet-native",
+      "note": "Compatibility filename retained; artboard copy uses Fulfillment for the broader pick-pack lifecycle."
+    },
+    {
+      "file": "invoices-sheet.svg",
+      "mapsTo": ["client/src/components/work-surface/InvoicesWorkSurface.tsx"],
+      "route": "/accounting?tab=invoices&surface=sheet-native"
+    },
+    {
+      "file": "payments-sheet.svg",
+      "mapsTo": [
+        "client/src/pages/accounting/Payments.tsx",
+        "client/src/components/work-surface/golden-flows/InvoiceToPaymentFlow.tsx"
+      ],
+      "route": "/accounting?tab=payments&surface=sheet-native"
+    },
+    {
+      "file": "client-ledger-sheet.svg",
+      "mapsTo": [
+        "client/src/components/work-surface/ClientLedgerWorkSurface.tsx"
+      ],
+      "route": "/client-ledger?surface=sheet-native"
+    },
+    {
+      "file": "returns-sheet.svg",
+      "mapsTo": ["client/src/pages/ReturnsPage.tsx"],
+      "route": "/sales?tab=returns&surface=sheet-native"
+    },
+    {
+      "file": "samples-sheet.svg",
+      "mapsTo": ["client/src/pages/SampleManagement.tsx"],
+      "route": "/inventory?tab=samples&surface=sheet-native"
+    },
+    {
+      "file": "shared-primitives.svg",
+      "mapsTo": [
+        "client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx",
+        "client/src/components/spreadsheet-native/PowersheetGrid.tsx",
+        "client/src/components/spreadsheet-native/SheetModeToggle.tsx"
+      ],
+      "route": "shared"
+    }
+  ]
+}

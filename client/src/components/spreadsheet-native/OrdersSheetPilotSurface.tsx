@@ -35,9 +35,56 @@ import {
   InspectorSection,
 } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
+import {
+  KeyboardHintBar,
+  type KeyboardHint,
+} from "@/components/work-surface/KeyboardHintBar";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import { PowersheetGrid } from "./PowersheetGrid";
+import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+
+const queueAffordances: PowersheetAffordance[] = [
+  { label: "Select", available: true },
+  { label: "Multi-select", available: true },
+  { label: "Copy", available: true },
+  { label: "Paste", available: false },
+  { label: "Fill", available: false },
+  { label: "Edit", available: false },
+  { label: "Workflow actions", available: true },
+];
+
+const supportAffordances: PowersheetAffordance[] = [
+  { label: "Select", available: true },
+  { label: "Multi-select", available: true },
+  { label: "Copy", available: true },
+  { label: "Paste", available: false },
+  { label: "Fill", available: false },
+  { label: "Edit", available: false },
+];
+
+const isMac =
+  typeof navigator !== "undefined" &&
+  /mac/i.test(navigator.platform || navigator.userAgent);
+const mod = isMac ? "\u2318" : "Ctrl";
+
+const queueKeyboardHints: KeyboardHint[] = [
+  { key: "Click", label: "select row" },
+  { key: "Shift+Click", label: "extend range" },
+  { key: `${mod}+Click`, label: "add to selection" },
+  { key: `${mod}+C`, label: "copy cells" },
+  { key: `${mod}+A`, label: "select all" },
+];
+
+const documentKeyboardHints: KeyboardHint[] = [
+  { key: "Tab", label: "next cell" },
+  { key: "Shift+Tab", label: "prev cell" },
+  { key: "Enter", label: "next row" },
+  { key: "Escape", label: "cancel edit" },
+  { key: `${mod}+C`, label: "copy" },
+  { key: `${mod}+V`, label: "paste" },
+  { key: `${mod}+Z`, label: "undo" },
+];
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -398,6 +445,17 @@ export function OrdersSheetPilotSurface({
         </div>
 
         <OrderCreatorPage surfaceVariant="sheet-native-orders" />
+
+        <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            Keyboard:
+          </span>
+          <KeyboardHintBar hints={documentKeyboardHints} className="text-xs" />
+          <span className="ml-auto text-xs text-muted-foreground">
+            Spreadsheet edits stay in the grid. Finalize and handoffs use the
+            buttons below.
+          </span>
+        </div>
       </div>
     );
   }
@@ -542,6 +600,7 @@ export function OrdersSheetPilotSurface({
           "SALE-ORD-026",
           "SALE-ORD-027",
         ]}
+        affordances={queueAffordances}
         title="Orders Queue"
         description="One dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context."
         rows={queueRows}
@@ -611,6 +670,7 @@ export function OrdersSheetPilotSurface({
         surfaceId="orders-support-grid"
         requirementIds={["ORD-WF-002"]}
         releaseGateIds={["SALE-ORD-023", "SALE-ORD-026"]}
+        affordances={supportAffordances}
         title="Selected Order Lines"
         description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
         rows={lineItemRows}
@@ -640,10 +700,7 @@ export function OrdersSheetPilotSurface({
         left={statusBarLeft}
         center={statusBarCenter}
         right={
-          <span className="text-xs text-muted-foreground">
-            Primary actions live next to selection. Use the inspector for deeper
-            context and evidence, not for the happy path.
-          </span>
+          <KeyboardHintBar hints={queueKeyboardHints} className="text-xs" />
         }
       />
 

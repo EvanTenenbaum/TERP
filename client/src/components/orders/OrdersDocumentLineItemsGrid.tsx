@@ -15,7 +15,10 @@ import type {
 } from "ag-grid-community";
 import { Plus, Trash2, CopyX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PowersheetGrid } from "@/components/spreadsheet-native/PowersheetGrid";
+import {
+  PowersheetGrid,
+  type PowersheetAffordance,
+} from "@/components/spreadsheet-native/PowersheetGrid";
 import {
   applyFieldValueToSelectedRows,
   clearFieldValueForSelectedRows,
@@ -105,6 +108,17 @@ const documentFieldPolicies: PowersheetFieldPolicyMap<LineItem> = {
     surfaceLabel: "Orders document grid",
   },
 };
+
+const documentAffordances: PowersheetAffordance[] = [
+  { label: "Select", available: true },
+  { label: "Multi-select", available: true },
+  { label: "Copy", available: true },
+  { label: "Paste", available: true },
+  { label: "Fill", available: true },
+  { label: "Edit", available: true },
+  { label: "Undo/Redo", available: true },
+  { label: "Row ops", available: true },
+];
 
 const documentGridColumnOrder: OrdersDocumentGridColumnKey[] = [
   "productDisplayName",
@@ -575,6 +589,8 @@ export function OrdersDocumentLineItemsGrid({
     useState<PowersheetEditRejection | null>(null);
   const draftRowKeyCounterRef = useRef(0);
   const fillSnapshotRef = useRef<Map<string, LineItem> | null>(null);
+  const lastToastMessageRef = useRef<string | null>(null);
+  const lastToastTimeRef = useRef(0);
 
   const normalizedItems = useMemo(
     () =>
@@ -706,6 +722,15 @@ export function OrdersDocumentLineItemsGrid({
 
   const updateBlockedEdit = (rejection: PowersheetEditRejection) => {
     setLastEditRejection(rejection);
+    const now = Date.now();
+    if (
+      rejection.message !== lastToastMessageRef.current ||
+      now - lastToastTimeRef.current > 300
+    ) {
+      toast.warning(rejection.message);
+      lastToastMessageRef.current = rejection.message;
+      lastToastTimeRef.current = now;
+    }
   };
 
   const handleCellValueChanged = (event: CellValueChangedEvent<LineItem>) => {
@@ -1180,6 +1205,7 @@ export function OrdersDocumentLineItemsGrid({
         "ORD-WF-006",
         "ORD-WF-009",
       ]}
+      affordances={documentAffordances}
       releaseGateIds={[
         "SALE-ORD-020",
         "SALE-ORD-021",

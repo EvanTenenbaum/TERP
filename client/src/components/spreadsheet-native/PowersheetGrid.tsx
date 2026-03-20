@@ -16,6 +16,11 @@ const selectionSurfaceBySurfaceId: Record<
   "orders-document-grid": "orders-document-grid",
 };
 
+export interface PowersheetAffordance {
+  label: string;
+  available: boolean;
+}
+
 interface PowersheetGridProps<
   Row extends object,
 > extends SpreadsheetPilotGridProps<Row> {
@@ -23,6 +28,7 @@ interface PowersheetGridProps<
   requirementIds: string[];
   releaseGateIds?: string[];
   antiDriftSummary?: ReactNode;
+  affordances?: PowersheetAffordance[];
 }
 
 export function PowersheetGrid<Row extends object>({
@@ -30,6 +36,7 @@ export function PowersheetGrid<Row extends object>({
   requirementIds,
   releaseGateIds = [],
   antiDriftSummary,
+  affordances,
   summary,
   selectionSurface,
   onSelectionSetChange,
@@ -43,6 +50,35 @@ export function PowersheetGrid<Row extends object>({
 
   const effectiveSelectionSurface =
     selectionSurface ?? selectionSurfaceBySurfaceId[surfaceId];
+
+  const stableDecorations = useMemo(() => {
+    const renderedAffordances =
+      affordances && affordances.length > 0 ? (
+        <span data-testid={`${surfaceId}-affordances`}>
+          {affordances.map((a, i) => (
+            <span key={a.label}>
+              {i > 0 && " · "}
+              <span className={a.available ? "" : "line-through opacity-50"}>
+                {a.label}
+              </span>
+            </span>
+          ))}
+        </span>
+      ) : null;
+    const renderedReleaseGates =
+      releaseGateIds.length > 0 ? (
+        <span data-testid={`${surfaceId}-release-gates`}>
+          Release gates: {releaseGateIds.join(", ")}
+        </span>
+      ) : null;
+    const renderedAntiDrift = antiDriftSummary ? (
+      <span data-testid={`${surfaceId}-anti-drift-summary`}>
+        {antiDriftSummary}
+      </span>
+    ) : null;
+    return { renderedAffordances, renderedReleaseGates, renderedAntiDrift };
+  }, [affordances, antiDriftSummary, releaseGateIds, surfaceId]);
+
   const summaryStack = useMemo(() => {
     const renderedSummary = summary ? <>{summary}</> : null;
     const renderedSelectionSummary = selectionSummary ? (
@@ -67,35 +103,18 @@ export function PowersheetGrid<Row extends object>({
         {" · "}Ranges: {selectionSet.ranges.length}
       </span>
     ) : null;
-    const renderedReleaseGates =
-      releaseGateIds.length > 0 ? (
-        <span data-testid={`${surfaceId}-release-gates`}>
-          Release gates: {releaseGateIds.join(", ")}
-        </span>
-      ) : null;
-    const renderedAntiDrift = antiDriftSummary ? (
-      <span data-testid={`${surfaceId}-anti-drift-summary`}>
-        {antiDriftSummary}
-      </span>
-    ) : null;
 
     return (
       <div className="flex flex-col gap-1">
         {renderedSummary}
         {renderedSelectionSummary}
         {renderedSelectionState}
-        {renderedReleaseGates}
-        {renderedAntiDrift}
+        {stableDecorations.renderedAffordances}
+        {stableDecorations.renderedReleaseGates}
+        {stableDecorations.renderedAntiDrift}
       </div>
     );
-  }, [
-    antiDriftSummary,
-    releaseGateIds,
-    selectionSet,
-    selectionSummary,
-    summary,
-    surfaceId,
-  ]);
+  }, [selectionSet, selectionSummary, stableDecorations, summary, surfaceId]);
 
   return (
     <div

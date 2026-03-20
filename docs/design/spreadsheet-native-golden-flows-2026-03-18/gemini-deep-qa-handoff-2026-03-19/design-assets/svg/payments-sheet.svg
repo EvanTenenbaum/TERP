@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1260" viewBox="0 0 1600 1260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Spreadsheet-Native Payments</title>
+  <rect width="1600" height="1260" fill="#f6f3ec" />
+  
+  
+  <g>
+    <rect x="44" y="36" width="1512" height="110" rx="28" fill="#103c39" />
+    <text x="76" y="86" fill="#f8fafc" font-family="Arial" font-size="36" font-weight="700" letter-spacing="0" text-anchor="start">Spreadsheet-Native Payments</text>
+    <text x="76" y="116" fill="#d6efe8" font-family="Arial" font-size="16" font-weight="500" letter-spacing="0" text-anchor="start">The payment sheet stages transaction details in-sheet, with the guided create-and-commit flow centered and the legacy inspector kept as compatibility context only.</text>
+    
+  <g>
+    <rect x="1270" y="60" width="220" height="32" rx="16" fill="#1f5753" stroke="#2b6c67" />
+    <text x="1380" y="81" fill="#d9f3ed" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Source: Accounting Payments + InvoiceToPaymentFlow</text>
+  </g>
+    <text x="1490" y="117" fill="#e9fff9" font-family="Arial" font-size="14" font-weight="700" letter-spacing="0" text-anchor="end">March 2026</text>
+  </g>
+  
+  <g>
+    <text x="72" y="180" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">SEARCH</text>
+    <rect x="72" y="190" width="272" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="88" y="219" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Search payment or invoice</text>
+  </g>
+  
+  <g>
+    <text x="364" y="180" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">TYPE</text>
+    <rect x="364" y="190" width="160" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="380" y="219" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">Received</text>
+  </g>
+  
+  <g>
+    <rect x="544" y="204" width="248" height="30" rx="15" fill="#d7f1ed" stroke="#97d5cc" />
+    <text x="668" y="224" fill="#0f766e" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">GF-007 guided commit is primary</text>
+  </g>
+  
+  <g>
+    <rect x="1088" y="190" width="136" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1156" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Generate #</text>
+  </g>
+  
+  <g>
+    <rect x="1238" y="190" width="132" height="48" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1304" y="219" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Preview Impact</text>
+  </g>
+  
+  <g>
+    <rect x="1382" y="190" width="140" height="48" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="1452" y="219" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Record Payment</text>
+  </g>
+
+  
+  <rect x="72" y="292" width="800" height="468" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="332" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Outstanding Invoices</text>
+  <text x="100" y="358" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The dominant table keeps invoice review visible while payment inputs stage in the adjacent step card.</text>
+  <rect x="100" y="366" width="902" height="200" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="100" y="366" width="902" height="40" rx="18" fill="#f2ede1" /><text x="116" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Invoice</text><text x="250" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Client</text><line x1="234" y1="366" x2="234" y2="566" stroke="#d9d0bd" /><text x="456" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Due</text><line x1="440" y1="366" x2="440" y2="566" stroke="#d9d0bd" /><text x="566" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Amount Due</text><line x1="550" y1="366" x2="550" y2="566" stroke="#d9d0bd" /><text x="702" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Method</text><line x1="686" y1="366" x2="686" y2="566" stroke="#d9d0bd" /><text x="822" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Selected</text><line x1="806" y1="366" x2="806" y2="566" stroke="#d9d0bd" /><text x="908" y="392" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Action</text><line x1="892" y1="366" x2="892" y2="566" stroke="#d9d0bd" /><rect x="101" y="406" width="900" height="40" fill="#fffdf9" /><line x1="100" y1="406" x2="1002" y2="406" stroke="#d9d0bd" /><text x="116" y="432" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">INV-2207</text><text x="250" y="432" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Golden State</text><text x="456" y="432" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 10</text><text x="566" y="432" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$2,480</text><text x="702" y="432" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">ACH</text><text x="822" y="432" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Yes</text><text x="908" y="432" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Review</text><rect x="101" y="446" width="900" height="40" fill="#edf7f6" /><line x1="100" y1="446" x2="1002" y2="446" stroke="#d9d0bd" /><text x="116" y="472" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">INV-2205</text><text x="250" y="472" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Harbor</text><text x="456" y="472" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 14</text><text x="566" y="472" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$820</text><text x="702" y="472" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Check</text><text x="822" y="472" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><text x="908" y="472" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Select</text><rect x="101" y="486" width="900" height="40" fill="#fffdf9" /><line x1="100" y1="486" x2="1002" y2="486" stroke="#d9d0bd" /><text x="116" y="512" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">INV-2202</text><text x="250" y="512" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Sunset Supply</text><text x="456" y="512" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 18</text><text x="566" y="512" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$4,100</text><text x="702" y="512" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Wire</text><text x="822" y="512" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><text x="908" y="512" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Select</text><rect x="101" y="526" width="900" height="40" fill="#fbf8f1" /><line x1="100" y1="526" x2="1002" y2="526" stroke="#d9d0bd" /><text x="116" y="552" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">INV-2197</text><text x="250" y="552" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Pine Cart</text><text x="456" y="552" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Mar 08</text><text x="566" y="552" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$1,460</text><text x="702" y="552" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Cash</text><text x="822" y="552" fill="#0f766e" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">-</text><text x="908" y="552" fill="#0f766e" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">Select</text><text x="100" y="592" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">Invoice selection and payment prep can happen in-sheet, but posting remains a separate confirm step.</text>
+  <g>
+    <rect x="100" y="668" width="220" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="120" y="696" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">TOTAL DUE</text>
+    <text x="120" y="726" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$8,860</text>
+  </g>
+  <g>
+    <rect x="336" y="668" width="220" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="356" y="696" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">RECEIVED TODAY</text>
+    <text x="356" y="726" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$12,480</text>
+  </g>
+  <g>
+    <rect x="572" y="668" width="272" height="72" rx="18" fill="#fcfaf5" stroke="#d9d0bd" />
+    <text x="592" y="696" fill="#667085" font-family="Arial" font-size="11" font-weight="700" letter-spacing="1" text-anchor="start">UNAPPLIED / TO REVIEW</text>
+    <text x="592" y="726" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">$540</text>
+  </g>
+
+  
+  <rect x="904" y="292" width="618" height="468" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="932" y="332" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Guided Payment Commit</text>
+  <text x="932" y="358" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The right-side card mirrors the current invoice-to-payment flow: review invoice, stage details, preview impact, then explicitly record through the guided create path.</text>
+  
+    
+  <g>
+    <rect x="932" y="366" width="156" height="30" rx="15" fill="#d1fadf" stroke="#86efac" />
+    <text x="1010" y="386" fill="#027a48" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">1 Review Invoice</text>
+  </g>
+    
+  <g>
+    <rect x="1100" y="366" width="158" height="30" rx="15" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="1179" y="386" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">2 Payment Details</text>
+  </g>
+    
+  <g>
+    <rect x="1270" y="366" width="126" height="30" rx="15" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1333" y="386" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">3 Confirm</text>
+  </g>
+    
+  <g>
+    <text x="932" y="420" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">PAYMENT #</text>
+    <rect x="932" y="430" width="170" height="46" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="948" y="458" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">PMT-202603-0182</text>
+  </g>
+    
+  <g>
+    <text x="1120" y="420" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">AMOUNT</text>
+    <rect x="1120" y="430" width="140" height="46" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1136" y="458" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">2480.00</text>
+  </g>
+    
+  <g>
+    <text x="1278" y="420" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">METHOD</text>
+    <rect x="1278" y="430" width="214" height="46" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1294" y="458" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">ACH</text>
+  </g>
+    
+  <g>
+    <text x="932" y="516" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">DATE</text>
+    <rect x="932" y="526" width="200" height="46" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="948" y="554" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">2026-03-18</text>
+  </g>
+    
+  <g>
+    <text x="1150" y="516" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">REFERENCE</text>
+    <rect x="1150" y="526" width="342" height="46" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1166" y="554" fill="#475467" font-family="Arial" font-size="15" font-weight="500" letter-spacing="0" text-anchor="start">ACH-884211</text>
+  </g>
+    <rect x="932" y="620" width="560" height="74" rx="18" fill="#f7f3ea" stroke="#d9d0bd" />
+    <text x="956" y="652" fill="#667085" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" text-anchor="start">Commit rule</text>
+    <text x="956" y="678" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Spreadsheet edits stage the payment only. The financial transaction posts when Record Payment is clicked, and the guided create path stays primary.</text>
+    
+  <g>
+    <rect x="1174" y="710" width="146" height="42" rx="12" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1247" y="736" fill="#1f2933" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Preview Impact</text>
+  </g>
+    
+  <g>
+    <rect x="1336" y="710" width="156" height="42" rx="12" fill="#0f766e" stroke="#0f766e" />
+    <text x="1414" y="736" fill="#ffffff" font-family="Arial" font-size="14" font-weight="600" letter-spacing="0" text-anchor="middle">Record Payment</text>
+  </g>
+    
+
+  
+  <rect x="72" y="792" width="922" height="240" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="100" y="832" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Recent Payments</text>
+  <text x="100" y="858" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Operators keep quick audit context in view without losing the staged transaction they are preparing.</text>
+  
+    <rect x="100" y="866" width="726" height="152" rx="18" fill="#fdfcf8" stroke="#d9d0bd" /><rect x="100" y="866" width="726" height="38" rx="18" fill="#f2ede1" /><text x="116" y="892" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Payment</text><text x="252" y="892" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Invoice</text><line x1="236" y1="866" x2="236" y2="1018" stroke="#d9d0bd" /><text x="432" y="892" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Method</text><line x1="416" y1="866" x2="416" y2="1018" stroke="#d9d0bd" /><text x="552" y="892" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Amount</text><line x1="536" y1="866" x2="536" y2="1018" stroke="#d9d0bd" /><text x="692" y="892" fill="#667085" font-family="Arial" font-size="13" font-weight="700" letter-spacing="0" text-anchor="start">Reference</text><line x1="676" y1="866" x2="676" y2="1018" stroke="#d9d0bd" /><rect x="101" y="904" width="724" height="38" fill="#fffdf9" /><line x1="100" y1="904" x2="826" y2="904" stroke="#d9d0bd" /><text x="116" y="930" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PMT-0181</text><text x="252" y="930" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2201</text><text x="432" y="930" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">ACH</text><text x="552" y="930" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$1,900</text><text x="692" y="930" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">ACH-884201</text><rect x="101" y="942" width="724" height="38" fill="#fbf8f1" /><line x1="100" y1="942" x2="826" y2="942" stroke="#d9d0bd" /><text x="116" y="968" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PMT-0180</text><text x="252" y="968" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2199</text><text x="432" y="968" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">CHECK</text><text x="552" y="968" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$820</text><text x="692" y="968" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">CHK-129</text><rect x="101" y="980" width="724" height="38" fill="#fffdf9" /><line x1="100" y1="980" x2="826" y2="980" stroke="#d9d0bd" /><text x="116" y="1006" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="600" letter-spacing="0" text-anchor="start">PMT-0179</text><text x="252" y="1006" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">INV-2198</text><text x="432" y="1006" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">WIRE</text><text x="552" y="1006" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">$3,140</text><text x="692" y="1006" fill="#1f2933" font-family="Courier New" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">WIRE-771</text><text x="100" y="1044" fill="#667085" font-family="Arial" font-size="13" font-weight="500" letter-spacing="0" text-anchor="start">History and allocation trace stay visible for trust and audit context, not as a replacement for the explicit commit step.</text>
+    
+
+  
+  <rect x="1020" y="792" width="502" height="240" rx="24" fill="#fffdf9" stroke="#d9d0bd" />
+  <text x="1048" y="832" fill="#1f2933" font-family="Arial" font-size="24" font-weight="700" letter-spacing="0" text-anchor="start">Commit + Compatibility Strip</text>
+  <text x="1048" y="858" fill="#667085" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">The support band keeps receipt intent, reference requirements, guided-commit primacy, allocation trace, and legacy compatibility visible during payment entry.</text>
+  
+    
+  <g>
+    <rect x="1048" y="866" width="178" height="28" rx="14" fill="#d1fadf" stroke="#86efac" />
+    <text x="1137" y="885" fill="#027a48" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Guided create primary</text>
+  </g>
+    
+  <g>
+    <rect x="1238" y="866" width="222" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1349" y="885" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Legacy inspector compatibility only</text>
+  </g>
+    
+  <g>
+    <rect x="1048" y="906" width="188" height="28" rx="14" fill="#fffdf9" stroke="#d9d0bd" />
+    <text x="1142" y="925" fill="#1f2933" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Allocation trace visible</text>
+  </g>
+    
+  <g>
+    <rect x="1248" y="906" width="242" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" />
+    <text x="1369" y="925" fill="#155eef" font-family="Arial" font-size="13" font-weight="600" letter-spacing="0" text-anchor="middle">Adjacency CTA: back to Invoices</text>
+  </g>
+    <text x="1048" y="968" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">This sheet may open from /accounting/payments or from the accounting workspace tab, but the guided commit surface remains the design center.</text>
+    
+
+  
+  <g>
+    <rect x="72" y="1052" width="1450" height="58" rx="18" fill="#f1efe8" stroke="#d9d0bd" />
+    <text x="92" y="1076" fill="#667085" font-family="Arial" font-size="12" font-weight="600" letter-spacing="0" text-anchor="start">4 outstanding invoices in focus</text>
+    <text x="92" y="1094" fill="#1f2933" font-family="Arial" font-size="14" font-weight="500" letter-spacing="0" text-anchor="start">Selected INV-2207 · Arrow keys move stage steps · Cmd/Ctrl+Enter records only from confirm step</text>
+    <text x="1502" y="1086" fill="#667085" font-family="Arial" font-size="12" font-weight="500" letter-spacing="0" text-anchor="end">Edits stage the payment. Guided commit stays centered and the legacy inspector is compatibility-only.</text>
+  </g>
+  
+</svg>

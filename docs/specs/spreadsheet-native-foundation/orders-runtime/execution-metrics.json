@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-03-19",
-  "implemented_not_surfaced_count": 1,
+  "updated_at": "2026-03-20",
+  "implemented_not_surfaced_count": 0,
   "rows_reopened_per_wave": 0,
   "staging_failures": 2,
   "code_to_live_lag_days": 0,
@@ -28,6 +28,7 @@
     "Claude adversarial review on March 19 kept SALE-ORD-031 at partial with a limitation note because the Orders document grid still disables sort/filter, so the new row-id safeguards are code-proven but not yet live-proven on a surface that exercises that path",
     "A grep audit after the focusedRowId contract change confirmed the only in-repo runtime consumers of `PowersheetSelectionSet` are SpreadsheetPilotGrid, PowersheetGrid, and OrdersDocumentLineItemsGrid, plus their focused tests",
     "A cache-busted staging `version.json` on March 19 reported fresh build `build-mmxxcgce` with `buildTime: 2026-03-19T20:30:13.707Z`, and the one shipped-build probe then recorded `quantityValuesAfterDrag: [3,4,5,6]` plus no license warnings or page errors on the real Orders document route, which closes SALE-ORD-022 with evidence under the TER-795 probe contract",
-    "Claude adversarial review after the shipped-build probe did not reopen SALE-ORD-022, but it flagged one residual note: the narrow probe proves live route propagation rather than a separate post-reload persistence round-trip, so that caveat should stay attached to the closure artifact"
+    "Claude adversarial review after the shipped-build probe did not reopen SALE-ORD-022, but it flagged one residual note: the narrow probe proves live route propagation rather than a separate post-reload persistence round-trip, so that caveat should stay attached to the closure artifact",
+    "March 20, 2026 G5 surfacing implementation: CSS editable/locked cell cues (scoped to data-powersheet-surface-id), debounced toast.warning for blocked edits, KeyboardHintBar with platform-detected modifier keys for queue and document surfaces, per-surface affordance matrix via PowersheetGrid affordances prop, workflow context bar on document surface. SALE-ORD-027 reclassified from implemented-not-surfaced to code-proven. implemented_not_surfaced_count (proof rows) dropped to 0. All rollout contract requirements (ORD-WF-003 through ORD-WF-009, ORD-SS-001 through ORD-SS-012, ORD-SF-001 through ORD-SF-008) updated to surfaced-and-proven. ORD-SF-009 stays not-started pending SALE-ORD-034."
   ]
 }
