@@ -114,6 +114,8 @@ temp/
 
 # Claude Code worktrees (parallel agent sessions)
 .claude/worktrees/
+# Claude Code local settings (personal permissions, not shared)
+.claude/settings.local.json
 
 # Database
 *.db
