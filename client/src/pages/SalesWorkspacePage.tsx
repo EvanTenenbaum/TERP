@@ -1,6 +1,7 @@
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
+import SalesSheetsPilotSurface from "@/components/spreadsheet-native/SalesSheetsPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
@@ -50,7 +51,9 @@ export default function SalesWorkspacePage() {
     )
   );
   const pilotSurfaceSupported =
-    activeTab === "orders" || activeTab === "create-order";
+    activeTab === "orders" ||
+    activeTab === "create-order" ||
+    activeTab === "sales-sheets";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
@@ -75,7 +78,9 @@ export default function SalesWorkspacePage() {
       onTabChange={tab => setActiveTab(tab)}
       meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
-        activeTab === "orders" || activeTab === "create-order" ? (
+        activeTab === "orders" ||
+        activeTab === "create-order" ||
+        activeTab === "sales-sheets" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -106,7 +111,15 @@ export default function SalesWorkspacePage() {
         <ReturnsPage embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
-        <SalesSheetCreatorPage embedded />
+        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+          <SalesSheetsPilotSurface
+            onOpenClassic={() =>
+              setLocation(buildSalesWorkspacePath("sales-sheets"))
+            }
+          />
+        ) : (
+          <SalesSheetCreatorPage embedded />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="live-shopping">
         <LiveShoppingPage />
