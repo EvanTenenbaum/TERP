@@ -609,6 +609,48 @@
   }
 
   /**
+   * Inventory queue: editable vs locked cell visual cues.
+   * The status column accepts inline edits (dropdown); all other columns are
+   * locked. Editable cells get a subtle green-tinted left-border accent.
+   * Locked cells use the same muted pattern as orders-document-grid.
+   */
+  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell {
+    border-left: 2px solid oklch(0.55 0.14 145 / 0.35);
+    background: oklch(0.55 0.14 145 / 0.04);
+  }
+
+  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell:hover {
+    background: oklch(0.55 0.14 145 / 0.08);
+  }
+
+  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell {
+    color: var(--muted-foreground);
+    background: color-mix(in oklab, var(--muted) 30%, transparent);
+  }
+
+  [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell:hover {
+    background: color-mix(in oklab, var(--muted) 45%, transparent);
+    cursor: default;
+  }
+
+  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell {
+    border-left-color: oklch(0.60 0.13 145 / 0.4);
+    background: oklch(0.60 0.13 145 / 0.06);
+  }
+
+  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__editable-cell:hover {
+    background: oklch(0.60 0.13 145 / 0.12);
+  }
+
+  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell {
+    background: color-mix(in oklab, var(--muted) 20%, transparent);
+  }
+
+  .dark [data-powersheet-surface-id="inventory-queue"] .inventory-queue__locked-cell:hover {
+    background: color-mix(in oklab, var(--muted) 35%, transparent);
+  }
+
+  /**
    * MOBILE-UX-AUDIT: Global mobile touch target enforcement
    * Ensures all interactive elements meet WCAG 44x44px minimum on touch devices.
    * Applied only below the md breakpoint (< 768px) to avoid affecting desktop.

@@ -3,6 +3,7 @@ import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import InventorySheetPilotSurface from "@/components/spreadsheet-native/InventorySheetPilotSurface";
+import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
@@ -52,7 +53,7 @@ export default function InventoryWorkspacePage() {
   const pilotSurfaceSupported = activeTab === "inventory";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode } = useSpreadsheetSurfaceMode({
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
     enabled: sheetPilotEnabled,
     ready: availabilityReady,
   });
@@ -68,6 +69,15 @@ export default function InventoryWorkspacePage() {
       tabs={INVENTORY_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
       data-testid="inventory-header"
+      commandStrip={
+        activeTab === "inventory" ? (
+          <SheetModeToggle
+            enabled={sheetPilotEnabled}
+            surfaceMode={surfaceMode}
+            onSurfaceModeChange={setSurfaceMode}
+          />
+        ) : null
+      }
     >
       <LinearWorkspacePanel value="inventory">
         {surfaceMode === "sheet-native" ? (

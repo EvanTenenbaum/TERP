@@ -19,6 +19,13 @@ vi.mock("@/hooks/usePermissions", () => ({
   }),
 }));
 
+vi.mock("@/hooks/work-surface/useExport", () => ({
+  useExport: () => ({
+    exportCSV: vi.fn(),
+    state: { isExporting: false, progress: 0 },
+  }),
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     inventory: {
@@ -98,6 +105,8 @@ vi.mock("@/lib/trpc", () => ({
             auditLogs: [{ id: 1 }],
             availableQty: "12",
           },
+          isLoading: false,
+          error: null,
           refetch: vi.fn(),
         }),
       },
@@ -112,6 +121,26 @@ vi.mock("@/lib/trpc", () => ({
           mutate: vi.fn(),
           isPending: false,
         }),
+      },
+      bulk: {
+        updateStatus: {
+          useMutation: () => ({
+            mutate: vi.fn(),
+            isPending: false,
+          }),
+        },
+        delete: {
+          useMutation: () => ({
+            mutate: vi.fn(),
+            isPending: false,
+          }),
+        },
+        restore: {
+          useMutation: () => ({
+            mutate: vi.fn(),
+            isPending: false,
+          }),
+        },
       },
     },
   },
@@ -131,6 +160,23 @@ vi.mock("@/lib/spreadsheet-native", async () => {
   };
 });
 
+// Mock PowersheetGrid (used by the new implementation)
+vi.mock("./PowersheetGrid", () => ({
+  PowersheetGrid: ({
+    title,
+    description,
+  }: {
+    title: string;
+    description?: string;
+  }) => (
+    <div>
+      <h2>{title}</h2>
+      {description ? <p>{description}</p> : null}
+    </div>
+  ),
+}));
+
+// Keep SpreadsheetPilotGrid mock for transitive imports
 vi.mock("./SpreadsheetPilotGrid", () => ({
   SpreadsheetPilotGrid: ({
     title,
@@ -150,6 +196,10 @@ vi.mock("@/components/AdjustQuantityDialog", () => ({
   AdjustQuantityDialog: () => null,
 }));
 
+vi.mock("@/components/ui/confirm-dialog", () => ({
+  ConfirmDialog: () => null,
+}));
+
 describe("InventorySheetPilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -167,5 +217,64 @@ describe("InventorySheetPilotSurface", () => {
       screen.getByText(/Loaded via batchId outside the current loaded rows/i)
     ).toBeInTheDocument();
     expect(screen.getByText("Vault A")).toBeInTheDocument();
+  });
+
+  it("renders the main inventory grid and locations grid", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Inventory Sheet")).toBeInTheDocument();
+    expect(screen.getByText("Selected Batch Locations")).toBeInTheDocument();
+  });
+
+  it("renders the Adjust Qty button enabled when a row is selected and user has permission", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    const adjustBtn = screen.getByRole("button", {
+      name: /adjust quantity for selected batch/i,
+    });
+    expect(adjustBtn).not.toBeDisabled();
+  });
+
+  it("renders the Export CSV button", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(
+      screen.getByRole("button", { name: /export inventory to csv/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renders the keyboard hint bar with expected shortcuts", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(
+      screen.getByRole("group", { name: /keyboard shortcuts/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText("select row")).toBeInTheDocument();
+    expect(screen.getByText("extend range")).toBeInTheDocument();
+  });
+
+  it("renders the status filter dropdown", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(
+      screen.getByPlaceholderText("Search SKU, product, supplier")
+    ).toBeInTheDocument();
+  });
+
+  it("renders inspector panel actions section for users with update permission", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Actions")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /open adjust quantity dialog/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renders the Open Classic Detail button in the inspector footer", () => {
+    render(<InventorySheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(
+      screen.getByRole("button", { name: /open classic detail/i })
+    ).toBeInTheDocument();
   });
 });
