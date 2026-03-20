@@ -10,13 +10,13 @@
   "decision": {
     "made_by": "Evan (project owner)",
     "decision_date": "2026-03-20",
-    "summary": "Conversion mutations (createDraftFromQuote, route hydration) are adjacent-owned. The sheet-native surface receives and renders the hydrated result via the existing OrderCreatorPage route parsing and data mapping. No parallel mutation path, save-state path, or ownership ambiguity exists.",
+    "summary": "Conversion paths (SalesWorkspacePage route redirect, OrderCreatorPage route-based quoteId hydration) are adjacent-owned. The sheet-native surface receives and renders the hydrated result via the existing OrderCreatorPage route parsing and data mapping. No parallel mutation path, save-state path, or ownership ambiguity exists.",
     "rationale": [
       "OrderCreatorPage.tsx:379-385 parses quoteIdFromRoute and isDuplicateRoute from URL params.",
       "OrderCreatorPage.tsx:639-682 hydrates draft/quote data into editor state including line items, client, and adjustment.",
       "OrderCreatorPage.tsx:422-436 builds document/queue routes conditionally for sheet-native vs classic mode.",
-      "The conversion mutation itself (SalesWorkspacePage redirect → tRPC orders.createDraftFromQuote) is unchanged — sheet-native does not add a parallel mutation.",
-      "No ownership ambiguity: the mutation lives in the existing orders router, the sheet-native surface just renders the result."
+      "The conversion path (SalesWorkspacePage route redirect → OrderCreatorPage quoteIdFromRoute parsing → data hydration) is unchanged — sheet-native does not add a parallel conversion path.",
+      "No ownership ambiguity: the route hydration lives in OrderCreatorPage, the sheet-native surface renders the result through PowersheetGrid."
     ]
   },
   "build": {
@@ -40,7 +40,7 @@
       "id": "no-parallel-mutation",
       "label": "Sheet-native does not add a parallel conversion mutation path",
       "passed": true,
-      "expected": "The existing createDraftFromQuote mutation is the only conversion path. Sheet-native does not duplicate or override it.",
+      "expected": "The existing route-based conversion path is the only conversion mechanism. Sheet-native does not duplicate or override it.",
       "observed": "OrderCreatorPage contains no conversion mutation of its own. It receives hydrated data from the existing tRPC router. OrdersDocumentLineItemsGrid renders the result through PowersheetGrid.",
       "failure_impact": "blocker",
       "proof_rows": ["SALE-ORD-012", "SALE-ORD-028"]

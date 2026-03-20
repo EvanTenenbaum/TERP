@@ -20,7 +20,7 @@
 - Atomic card verdicts:
   - `TER-797` (adapter mount): code-proven — OrdersDocumentLineItemsGrid renders exclusively through PowersheetGrid; no classic fallback in document component
   - `TER-798` (logic preservation): code-proven — pricing recalculation, validation, autosave, undo, seeded-entry, keyboard bypass all proven
-  - `TER-799` (proof closure): closed with evidence — all 10 rows classified (9 code-proven, 1 reclassified as adjacent-owned)
+  - `TER-799` (proof closure): closed with evidence — all 10 rows classified (9 code-proven including 1 reclassified as adjacent-owned)
 - Row verdicts:
   - `SALE-ORD-003`: code-proven (PowersheetGrid mount with exclusive rendering path)
   - `SALE-ORD-004`: code-proven (recalculation through adapter, fill-handle writeback, keyboard bypass)

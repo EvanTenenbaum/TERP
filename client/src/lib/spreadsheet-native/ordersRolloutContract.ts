@@ -123,10 +123,10 @@ export const ordersRolloutRequirements: OrdersRolloutRequirementRecord[] = [
     surface: "cross-surface",
     ownerClass: "orders-owned",
     implementationSource:
-      "SalesWorkspacePage route canonicalization plus existing conversion mutations and OrderCreatorPage route hydration",
+      "SalesWorkspacePage route canonicalization plus OrderCreatorPage route-based quoteId hydration",
     proofSource: "SALE-ORD-012 / SALE-ORD-028",
     implementationStatus: "implemented",
-    surfacingStatus: "surfaced-and-proven",
+    surfacingStatus: "implemented-not-surfaced",
     releaseStatus: "implemented",
     linkedCapabilityIds: ["SALE-ORD-012", "SALE-ORD-028"],
   },
