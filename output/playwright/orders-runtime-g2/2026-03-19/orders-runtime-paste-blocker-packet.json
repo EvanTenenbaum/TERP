@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-021",
+  "issue": "TER-771",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "command": "N/A — blocker packet, staging unreachable",
+  "suggested_verdict": "blocker",
+  "blocker_class": "staging-unreachable",
+  "acceptance_criteria": "Approved-field paste proof on the live Orders document route on staging.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "paste-cell-unit-tested",
+      "label": "processCellFromClipboard accepts valid values on approved fields",
+      "passed": true,
+      "expected": "processCellFromClipboard normalizes and validates clipboard values for quantity, cogsPerUnit, marginPercent, unitPrice, and isSample.",
+      "observed": "Unit test at OrdersDocumentLineItemsGrid.test.tsx (line 462) confirms invalid values are rejected with structured messages; valid values are accepted and recalculated",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "paste-rectangle-unit-tested",
+      "label": "processDataFromClipboard validates paste rectangle width against column policies",
+      "passed": true,
+      "expected": "processDataFromClipboard returns null with a blocked message when paste width spills into locked columns.",
+      "observed": "Unit test at OrdersDocumentLineItemsGrid.test.tsx (line 490) confirms paste overflow rejection with structured message",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "staging-unreachable",
+      "label": "Live Orders document route is not reachable for paste proof session",
+      "passed": false,
+      "expected": "A fresh reachable Orders document route with Playwright clipboard API properly granting permissions.",
+      "observed": "Proof budget exhausted (0 fresh deployed reruns remaining). Prior attempts showed validPasteMethod: none due to empty browser clipboard readback.",
+      "failure_impact": "blocker"
+    }
+  ],
+  "blocker_detail": {
+    "reason": "Proof budget is exhausted and prior live paste attempts failed due to Playwright clipboard API limitations (empty clipboard readback). The handoff explicitly states: park until a fresh reachable build exists and use isolated paste-only mode.",
+    "code_readiness": "processCellFromClipboard, processDataFromClipboard, and paste-rectangle overflow rejection are all implemented and unit-tested. The code paths handle both valid and invalid clipboard data correctly.",
+    "unblock_condition": "A fresh reachable Orders document route with Playwright clipboard API properly granting permissions, followed by one isolated paste probe using --mode=paste-only.",
+    "prior_attempts": "Browser clipboard readback was empty in prior probes. The harness was updated to attempt both host clipboard and in-browser clipboard writes, but the issue persisted."
+  },
+  "summary": {
+    "paste_cell_tested": true,
+    "paste_rectangle_tested": true,
+    "paste_overflow_rejection_tested": true,
+    "staging_reachable": false,
+    "live_proof_available": false,
+    "prior_clipboard_issue": "validPasteMethod: none due to empty browser clipboard readback"
+  }
+}

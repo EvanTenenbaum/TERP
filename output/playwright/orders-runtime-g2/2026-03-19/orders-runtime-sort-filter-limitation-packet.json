@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-031",
+  "issue": "TER-771",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "command": "N/A — limitation packet, no live probe required",
+  "suggested_verdict": "limitation",
+  "limitation_class": "surface-design-constraint",
+  "acceptance_criteria": "Sort/filter-safe targeting proof on the live Orders document surface.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "sort-disabled",
+      "label": "Sort is disabled on all Orders document grid columns",
+      "passed": true,
+      "expected": "Every column definition in OrdersDocumentLineItemsGrid sets sortable: false.",
+      "observed": "Confirmed: sortable: false on all columns (productDisplayName, batchSku, quantity, cogsPerUnit, marginPercent, unitPrice, lineTotal, isSample)",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "filter-disabled",
+      "label": "Filter is disabled on all Orders document grid columns",
+      "passed": true,
+      "expected": "Every column definition in OrdersDocumentLineItemsGrid sets filter: false.",
+      "observed": "Confirmed: filter: false on all columns",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "focused-row-id-unit-tested",
+      "label": "focusedRowId targeting is implemented and unit-tested",
+      "passed": true,
+      "expected": "SpreadsheetPilotGrid records focusedRowId and OrdersDocumentLineItemsGrid resolves focused-row actions by stable row id.",
+      "observed": "Unit tests in OrdersDocumentLineItemsGrid.test.tsx (line 238) and SpreadsheetPilotGrid.test.tsx confirm focusedRowId-based targeting",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "fill-writeback-preserves-hidden-rows",
+      "label": "Fill writeback preserves hidden rows and original logical order",
+      "passed": true,
+      "expected": "Fill end handler iterates normalizedItems by rowId instead of trusting displayed row position.",
+      "observed": "Unit test at OrdersDocumentLineItemsGrid.test.tsx (line 380) confirms hidden rows survive fill writeback",
+      "failure_impact": "informational"
+    }
+  ],
+  "limitation_detail": {
+    "constraint": "The Orders document grid deliberately disables sort and filter on every column. This is a deliberate surface-design decision, not a code gap.",
+    "code_readiness": "The focusedRowId targeting fix, fill-writeback hidden-row preservation, and stable-row-id resolution are all implemented and unit-tested. The code is ready for sort/filter if the surface ever enables it.",
+    "boundary_contract": "Per PowersheetGrid-boundary-contract.md (ORD-SS-012 section): no other module may claim ORD-SS-012 coverage from Orders while SALE-ORD-031 remains an Orders-surface limitation. If another module enables sort/filter, it needs its own explicit live-proof lane.",
+    "unblock_condition": "A future Orders surface change that enables sort or filter on at least one column, followed by a live proof that row targeting remains stable after sort/filter changes display order."
+  },
+  "summary": {
+    "surface_sort_enabled": false,
+    "surface_filter_enabled": false,
+    "focused_row_id_implemented": true,
+    "focused_row_id_unit_tested": true,
+    "fill_writeback_order_safe": true,
+    "fill_writeback_hidden_row_safe": true
+  }
+}

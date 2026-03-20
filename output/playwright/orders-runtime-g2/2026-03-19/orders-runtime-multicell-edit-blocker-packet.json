@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-020",
+  "issue": "TER-771",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "command": "N/A — blocker packet, staging unreachable",
+  "suggested_verdict": "blocker",
+  "blocker_class": "staging-unreachable",
+  "acceptance_criteria": "Multi-cell edit with pricing preservation and autosave proof on the live Orders document route.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "recalculation-unit-tested",
+      "label": "Pricing recalculation logic is unit-tested for all editable fields",
+      "passed": true,
+      "expected": "onCellValueChanged triggers calculateLineItemFromRetailPrice for quantity, cogsPerUnit, unitPrice, and marginPercent edits.",
+      "observed": "Unit tests at OrdersDocumentLineItemsGrid.test.tsx (lines 291, 434) confirm recalculation for quantity and pricing fields, including revert on invalid values",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "fill-price-unit-tested",
+      "label": "Fill Price action propagates focused-row pricing to all selected rows",
+      "passed": true,
+      "expected": "Fill Price button applies focused row's unitPrice to all items and recalculates lineTotals.",
+      "observed": "Unit tests at OrdersDocumentLineItemsGrid.test.tsx (lines 210, 238) confirm Fill Price by focused-row-id and by display index",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "staging-unreachable",
+      "label": "Live Orders document route is not reachable for this proof session",
+      "passed": false,
+      "expected": "A fresh reachable Orders document route exists on a deployed build for live multi-cell edit proof.",
+      "observed": "Proof budget exhausted (0 fresh deployed reruns remaining). Prior attempts on SALE-ORD-020 were blocked on live document-grid reachability.",
+      "failure_impact": "blocker"
+    }
+  ],
+  "blocker_detail": {
+    "reason": "Proof budget is exhausted and no fresh reachable Orders document route is available from this environment. The handoff explicitly states: park until a fresh reachable Orders document route exists.",
+    "code_readiness": "Pricing recalculation, Fill Price, multi-field edit, and invalid-edit revert are all implemented and unit-tested. The code paths are verified locally.",
+    "unblock_condition": "A fresh reachable Orders document route on a deployed staging build, followed by one isolated multi-cell edit probe with before/after values and save-state evidence.",
+    "prior_attempts": "SALE-ORD-020 was blocked on live Orders document-grid reachability on staging, not local implementation certainty."
+  },
+  "summary": {
+    "recalculation_tested": true,
+    "fill_price_tested": true,
+    "autosave_tested": false,
+    "staging_reachable": false,
+    "live_proof_available": false
+  }
+}

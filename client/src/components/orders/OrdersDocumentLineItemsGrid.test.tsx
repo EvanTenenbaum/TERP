@@ -347,9 +347,7 @@ describe("OrdersDocumentLineItemsGrid", () => {
       call?.onFillStart?.({});
       call?.onFillEnd?.({
         api: {
-          forEachNode: (
-            iterate: (node: { data: LineItem }) => void
-          ) => {
+          forEachNode: (iterate: (node: { data: LineItem }) => void) => {
             iterate({ data: buildLineItem({ id: 1, quantity: 3 }) });
             iterate({
               data: buildLineItem({
@@ -720,6 +718,238 @@ describe("OrdersDocumentLineItemsGrid", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /add item/i }));
     expect(onAddItem).toHaveBeenCalledTimes(1);
+  });
+
+  it("reverts fill-end when a filled value fails field validation", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1, quantity: 3, lineTotal: 37.5 }),
+          buildLineItem({
+            id: 2,
+            batchId: 2002,
+            productId: 22,
+            quantity: 4,
+            lineTotal: 50,
+          }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    act(() => {
+      call?.onFillStart?.({});
+      call?.onFillEnd?.({
+        api: {
+          forEachNode: (iterate: (node: { data: LineItem }) => void) => {
+            iterate({ data: buildLineItem({ id: 1, quantity: 3 }) });
+            iterate({
+              data: buildLineItem({
+                id: 2,
+                batchId: 2002,
+                productId: 22,
+                quantity: -1,
+              }),
+            });
+          },
+        },
+      });
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/blocked: Quantity must be a positive whole number./i)
+    ).toBeInTheDocument();
+  });
+
+  it("rejects invalid cogsPerUnit edit and reverts to the previous value", () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, cogsPerUnit: 10, lineTotal: 25 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "cogsPerUnit" },
+      oldValue: 10,
+      newValue: "0",
+      data: buildLineItem({ id: 1, cogsPerUnit: 0 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].cogsPerUnit).toBe(10);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "COGS per unit must be greater than zero."
+    );
+  });
+
+  it("allows Delete key on approved editable field without suppression", () => {
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const initialCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      initialCall?.onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        focusedRowId: "line:1",
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        ranges: [
+          {
+            anchor: { rowIndex: 0, columnKey: "quantity" },
+            focus: { rowIndex: 0, columnKey: "quantity" },
+          },
+        ],
+        selectedRowIds: new Set(["line:1"]),
+      });
+    });
+
+    const latestCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    let suppressed: boolean | undefined;
+    act(() => {
+      suppressed = latestCall?.suppressKeyboardEvent?.({
+        event: new KeyboardEvent("keydown", {
+          key: "Delete",
+        }),
+        editing: false,
+        column: { getColId: () => "quantity" },
+      });
+    });
+
+    expect(suppressed).toBe(false);
+  });
+
+  it("allows Ctrl+X cut on approved-only selection without suppression", () => {
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const initialCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      initialCall?.onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        focusedRowId: "line:1",
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        ranges: [
+          {
+            anchor: { rowIndex: 0, columnKey: "quantity" },
+            focus: { rowIndex: 0, columnKey: "cogsPerUnit" },
+          },
+        ],
+        selectedRowIds: new Set(["line:1"]),
+      });
+    });
+
+    const latestCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    expect(latestCall?.suppressCutToClipboard).toBe(false);
+
+    let suppressed: boolean | undefined;
+    act(() => {
+      suppressed = latestCall?.suppressKeyboardEvent?.({
+        event: new KeyboardEvent("keydown", {
+          key: "x",
+          ctrlKey: true,
+        }),
+        editing: false,
+        column: { getColId: () => "quantity" },
+      });
+    });
+
+    expect(suppressed).toBe(false);
+  });
+
+  it("does not surface rejection for onCellSelectionDeleteStart on editable-only selection", () => {
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const initialCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      initialCall?.onSelectionSetChange?.({
+        focusedCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        focusedRowId: "line:1",
+        anchorCell: {
+          rowIndex: 0,
+          columnKey: "quantity",
+        },
+        ranges: [
+          {
+            anchor: { rowIndex: 0, columnKey: "quantity" },
+            focus: { rowIndex: 0, columnKey: "unitPrice" },
+          },
+        ],
+        selectedRowIds: new Set(["line:1"]),
+      });
+    });
+
+    const latestCall =
+      mockPowersheetGrid.mock.calls[
+        mockPowersheetGrid.mock.calls.length - 1
+      ]?.[0];
+
+    act(() => {
+      latestCall?.onCellSelectionDeleteStart?.({});
+    });
+
+    expect(screen.queryByText(/blocked:/i)).not.toBeInTheDocument();
   });
 
   it("duplicates and deletes selected rows through the shared row operations", () => {
