@@ -12,7 +12,6 @@ import { SALES_WORKSPACE } from "@/config/workspaces";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
-  buildSheetNativeOrdersDocumentPath,
 } from "@/lib/workspaceRoutes";
 import {
   useSpreadsheetPilotAvailability,
@@ -50,11 +49,6 @@ export default function SalesWorkspacePage() {
       ([key]) => key !== "tab" && key !== "classic"
     )
   );
-  const createOrderRedirectParams = Object.fromEntries(
-    Array.from(new URLSearchParams(search).entries()).filter(
-      ([key]) => key !== "tab" && key !== "classic" && key !== "orderId"
-    )
-  );
   const pilotSurfaceSupported =
     activeTab === "orders" || activeTab === "create-order";
   const { sheetPilotEnabled, availabilityReady } =
@@ -71,18 +65,6 @@ export default function SalesWorkspacePage() {
     );
   }
 
-  if (
-    activeTab === "create-order" &&
-    sheetPilotEnabled &&
-    new URLSearchParams(search).get("classic") !== "true"
-  ) {
-    return (
-      <Redirect
-        to={buildSheetNativeOrdersDocumentPath(createOrderRedirectParams)}
-      />
-    );
-  }
-
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
@@ -93,7 +75,7 @@ export default function SalesWorkspacePage() {
       onTabChange={tab => setActiveTab(tab)}
       meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
-        activeTab === "orders" ? (
+        activeTab === "orders" || activeTab === "create-order" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -130,7 +112,20 @@ export default function SalesWorkspacePage() {
         <LiveShoppingPage />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="create-order">
-        <OrderCreatorPage />
+        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+          <OrdersSheetPilotSurface
+            forceDocumentMode
+            onOpenClassic={orderId =>
+              setLocation(
+                buildSalesWorkspacePath("create-order", {
+                  orderId: orderId ?? undefined,
+                })
+              )
+            }
+          />
+        ) : (
+          <OrderCreatorPage />
+        )}
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

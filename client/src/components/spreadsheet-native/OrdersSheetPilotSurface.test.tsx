@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrdersSheetPilotSurface } from "./OrdersSheetPilotSurface";
 
@@ -18,6 +18,12 @@ const {
   mockAuditLogUseQuery,
   mockDeleteDraftUseMutation,
   mockLedgerListUseQuery,
+  mockDraftsRefetch,
+  mockConfirmedRefetch,
+  mockDetailRefetch,
+  mockStatusHistoryRefetch,
+  mockAuditLogRefetch,
+  mockLedgerRefetch,
 } = vi.hoisted(() => ({
   mockClientsListUseQuery: vi.fn(),
   mockOrdersGetAllUseQuery: vi.fn(),
@@ -26,6 +32,12 @@ const {
   mockAuditLogUseQuery: vi.fn(),
   mockDeleteDraftUseMutation: vi.fn(),
   mockLedgerListUseQuery: vi.fn(),
+  mockDraftsRefetch: vi.fn(),
+  mockConfirmedRefetch: vi.fn(),
+  mockDetailRefetch: vi.fn(),
+  mockStatusHistoryRefetch: vi.fn(),
+  mockAuditLogRefetch: vi.fn(),
+  mockLedgerRefetch: vi.fn(),
 }));
 let mockSearch = "";
 let mockQueueSelectionSummary: {
@@ -39,12 +51,14 @@ const mockPowersheetGrid = vi.fn(
     title,
     description,
     antiDriftSummary,
+    summary,
     surfaceId,
     onSelectionSummaryChange,
   }: {
     title: string;
     description?: string;
     antiDriftSummary?: string;
+    summary?: ReactNode;
     surfaceId?: string;
     onSelectionSummaryChange?: (summary: {
       selectedCellCount: number;
@@ -72,6 +86,7 @@ const mockPowersheetGrid = vi.fn(
       <div>
         <h2>{title}</h2>
         {description ? <p>{description}</p> : null}
+        {summary}
         {antiDriftSummary ? <span>{antiDriftSummary}</span> : null}
       </div>
     );
@@ -132,7 +147,7 @@ vi.mock("@/lib/trpc", () => ({
             },
             isLoading: false,
             error: null,
-            refetch: vi.fn(),
+            refetch: isDraft ? mockDraftsRefetch : mockConfirmedRefetch,
           })
         ),
       },
@@ -155,17 +170,19 @@ vi.mock("@/lib/trpc", () => ({
           },
           isLoading: false,
           error: null,
-          refetch: vi.fn(),
+          refetch: mockDetailRefetch,
         })),
       },
       getOrderStatusHistory: {
         useQuery: mockStatusHistoryUseQuery.mockImplementation(() => ({
           data: [{ id: 1 }],
+          refetch: mockStatusHistoryRefetch,
         })),
       },
       getAuditLog: {
         useQuery: mockAuditLogUseQuery.mockImplementation(() => ({
           data: [{ id: 1 }],
+          refetch: mockAuditLogRefetch,
         })),
       },
       deleteDraftOrder: {
@@ -180,6 +197,7 @@ vi.mock("@/lib/trpc", () => ({
         list: {
           useQuery: mockLedgerListUseQuery.mockImplementation(() => ({
             data: { items: [{ id: 1 }] },
+            refetch: mockLedgerRefetch,
           })),
         },
       },
@@ -258,8 +276,8 @@ vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
 }));
 
 vi.mock("@/components/ui/confirm-dialog", () => ({
-  ConfirmDialog: ({ isOpen }: { isOpen?: boolean }) =>
-    isOpen ? <div>Confirm Dialog</div> : null,
+  ConfirmDialog: ({ open }: { open?: boolean }) =>
+    open ? <div>Confirm Dialog</div> : null,
 }));
 
 describe("OrdersSheetPilotSurface", () => {
@@ -404,6 +422,41 @@ describe("OrdersSheetPilotSurface", () => {
     expect(supportCall?.releaseGateIds).toContain("SALE-ORD-023");
   });
 
+  it("renders queue keyboard hints and affordance visibility cues", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    const queueCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Orders Queue"
+    )?.[0];
+
+    expect(screen.getByLabelText("Keyboard shortcuts")).toBeInTheDocument();
+    expect(
+      screen.getByText(/(?:Ctrl|\u2318)\+C$/, { selector: "kbd" })
+    ).toBeInTheDocument();
+    expect(queueCall?.affordances).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Paste", available: false }),
+        expect.objectContaining({ label: "Fill", available: false }),
+        expect.objectContaining({ label: "Edit", available: false }),
+      ])
+    );
+  });
+
+  it("refreshes queue, detail, and inspector evidence queries together", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /refresh orders data/i })
+    );
+
+    expect(mockDraftsRefetch).toHaveBeenCalledTimes(1);
+    expect(mockConfirmedRefetch).toHaveBeenCalledTimes(1);
+    expect(mockDetailRefetch).toHaveBeenCalledTimes(1);
+    expect(mockStatusHistoryRefetch).toHaveBeenCalledTimes(1);
+    expect(mockAuditLogRefetch).toHaveBeenCalledTimes(1);
+    expect(mockLedgerRefetch).toHaveBeenCalledTimes(1);
+  });
+
   it("enables accounting and shipping handoffs for confirmed orders with invoices (SALE-ORD-007)", () => {
     mockQueueSelectionSummary = {
       selectedCellCount: 4,
@@ -422,6 +475,17 @@ describe("OrdersSheetPilotSurface", () => {
 
     expect(screen.getByText(/so-002 selected/i)).toBeInTheDocument();
     expect(screen.getByText("Issued #55")).toBeInTheDocument();
+  });
+
+  it("can be forced into document mode without the ordersView query param", () => {
+    render(
+      <OrdersSheetPilotSurface onOpenClassic={vi.fn()} forceDocumentMode />
+    );
+
+    expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /classic composer/i })
+    ).toBeInTheDocument();
   });
 
   it("renders the sheet-native document workflow when ordersView=document is requested", () => {

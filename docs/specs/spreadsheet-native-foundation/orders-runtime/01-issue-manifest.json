@@ -182,8 +182,8 @@
     ]
   },
   "latest_verification": {
-    "date": "2026-03-19",
-    "repo_sha": "3398a9ba merge commit / staging build-mmxxcgce + shipped deterministic vertical fill callback, focused-row-id sort/filter-safe targeting repair, hardened narrow fill-handle command contract, and fresh live fill closure packet",
+    "date": "2026-03-20",
+    "repo_sha": "f812de6f remediation branch / local gates green + fresh staging build-mmz7p245 selection closure packet + closure-doc writeback",
     "active_atomic_card": "TER-795",
     "g1_commands": [
       "pnpm vitest run client/src/components/spreadsheet-native/PowersheetGrid.test.tsx client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts",
@@ -196,6 +196,7 @@
       "SKIP_SEEDING=true AUTO_MIGRATE_MODE=off PORT=3001 pnpm start",
       "node Playwright local sheet-native fill selection probe with mocked auth.me and tRPC batches",
       "node Playwright local sheet-native fill drag probe with mocked auth.me and tRPC batches",
+      "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-selection",
       "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle",
       "pnpm proof:staging:orders-runtime:g2",
       "pnpm check",
@@ -204,13 +205,13 @@
       "pnpm build"
     ],
     "live_blocker": {
-      "build_id": "build-mmxxcgce",
-      "staging_deployment_id": "20fda840-ae7c-4a36-a450-7f1e45029131",
+      "build_id": "build-mmz7p245",
+      "staging_deployment_id": "unknown",
       "production_deployment_id": "36eb5bb9-5678-47ea-9d61-eb940241d951",
       "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
-      "summary": "Fresh staging build build-mmxxcgce carries the shipped TER-795 fill repair: the isolated live fill-handle probe on the real Orders document route records `selectionSummaryBeforeDrag: [2 selected cells · 2 rows in scope]`, `fillHandleVisible: true`, `bodyClassDuringDrag: [ag-dragging-fill-handle]`, and `quantityValuesAfterDrag: [3,4,5,6]` with no license warnings or page errors, so `SALE-ORD-022` is closed with evidence under the shipped-build probe contract. The same shipped tranche preserves the cleared AG Grid watermark blocker, keeps the Add Item focus repair live, and carries the focused-row-id sort/filter-safe targeting repair; targeted vitest coverage plus the full local gate passed before ship. Claude adversarial review kept `SALE-ORD-031` at limitation status because the live Orders document surface still disables sort/filter, and it added one residual note that the narrow `SALE-ORD-022` probe proves live route propagation rather than a separate post-reload persistence round-trip. `TER-795` is now closed with evidence; the next open work is G5 surfacing-affordance proof rather than additional G2 recovery.",
-      "next_required_build_sha": "no additional G2 build is required; staging build-mmxxcgce already proves the shipped fill repair live",
-      "next_required_runtime_check": "Keep G2 / TER-795 closed unless a classified row regresses, keep TER-796 sealed, preserve the SALE-ORD-022 no-reload caveat, and move active execution to G5 surfacing rows `SALE-ORD-024`, `SALE-ORD-025`, `SALE-ORD-026`, `SALE-ORD-027`, and `SALE-ORD-033`."
+      "summary": "Closure remediation added a fresh staging selection packet on build-mmz7p245 for `SALE-ORD-019`, plus repo-side runtime hardening for paste batching, invalid-value rejection, inspector refresh, and classic fallback recovery. The repo now passes `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build`, but the rollout is no longer allowed to claim retirement because `SALE-ORD-029` and `SALE-ORD-035` remain code-proven, `SALE-ORD-020`, `SALE-ORD-021`, and `SALE-ORD-031` remain limitation-backed, and ORD-SS-012 is still implemented-not-surfaced.",
+      "next_required_build_sha": "merge remediation branch, let staging carry the fallback/runtime fixes, then capture a fresh narrow live proof tranche for the remaining non-live rows",
+      "next_required_runtime_check": "After deploy, verify the strengthened classic fallback and queue refresh behavior on staging, then decide whether the remaining G6 rows should be promoted with fresh live packets or kept as non-retirement blockers."
     }
   }
 }

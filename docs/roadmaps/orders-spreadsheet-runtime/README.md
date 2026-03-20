@@ -45,13 +45,13 @@ Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until t
 | `2`   | [Roadmap 2](./roadmap-2-g3-orders-document-rollout.md)       | `G3` | `TER-789`   | `closed with evidence` | Roadmap 1    |
 | `3`   | [Roadmap 3](./roadmap-3-g4-cross-surface-rollout.md)         | `G4` | `TER-790`   | `closed with evidence` | Roadmap 2    |
 | `4`   | [Roadmap 4](./roadmap-4-g5-surfacing-affordance-closure.md)  | `G5` | `TER-791`   | `closed with evidence` | Roadmap 3    |
-| `5`   | [Roadmap 5](./roadmap-5-g6-proof-verdict-sync.md)            | `G6` | `TER-792`   | `closed with evidence` | Roadmap 4    |
-| `6`   | [Roadmap 6](./roadmap-6-g7-retirement-governance-handoff.md) | `G7` | `TER-793`   | `closed with evidence` | Roadmap 5    |
+| `5`   | [Roadmap 5](./roadmap-5-g6-proof-verdict-sync.md)            | `G6` | `TER-792`   | `partial`              | Roadmap 4    |
+| `6`   | [Roadmap 6](./roadmap-6-g7-retirement-governance-handoff.md) | `G7` | `TER-793`   | `open`                 | Roadmap 5    |
 
 ## Global Execution Rules
 
 - Gate verdicts use only: `open`, `partial`, `closed with evidence`, `rejected with evidence`.
-- All seven gates (`G1`–`G7`) are `closed with evidence`. The Orders initiative is **retired** as of 2026-03-20.
+- `G6` and `G7` were reopened during the 2026-03-20 closure remediation. Orders is not retired until the remaining code-proven and limitation-backed rows are either promoted with fresh live evidence or explicitly retired under an updated charter.
 - No roadmap is done from ticket prose alone.
 - Active-gate operating model is `1 coordinator + up to 2 read-only sidecars + at most 1 narrow writer` until the current gate has a clean checkpointed proof packet.
 - Sidecars may explore, adversarially review, or map the next gate, but the coordinator owns source-of-truth updates, merge decisions, and gate promotion.

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-021",
+  "issue": "TER-771",
+  "generated_at": "2026-03-20T20:16:00.000Z",
+  "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx && pnpm proof:staging:orders-runtime:g2",
+  "suggested_verdict": "accepted-limitation",
+  "limitation_class": "clipboard-readback-environment-dependent",
+  "acceptance_criteria": "Approved-field paste proof on the live Orders document route on staging.",
+  "build": {
+    "id": "build-mmz7p245",
+    "deploy_commit": "build-mmz7p245",
+    "deployment_build_time": "2026-03-20T18:07:44.128Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "approved-field-paste-supported",
+      "label": "Approved-field rectangular paste is implemented and tested",
+      "passed": true,
+      "expected": "Approved spreadsheet blocks paste into editable Orders fields while locked-column overflow is rejected.",
+      "observed": "OrdersDocumentLineItemsGrid tests cover approved-field paste validation, locked-column overflow rejection, and blocked locked-column feedback.",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "keyboard-paste-seen-on-staging",
+      "label": "Prior staging evidence already captured keyboard paste on the live route",
+      "passed": true,
+      "expected": "The live Orders route accepts a rectangular keyboard paste without relying on browser clipboard readback as the acceptance signal.",
+      "observed": "Earlier G2 staging evidence recorded a keyboard paste path (`validPasteMethod: keyboard`) with the expected quantity values.",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "clipboard-readback-not-canonical",
+      "label": "Browser clipboard readback remains environment-dependent",
+      "passed": false,
+      "expected": "Clipboard readback should not be required as the primary acceptance signal for paste support.",
+      "observed": "Browser clipboard readback still varies by security policy, so the limitation is attached to the probe environment rather than the user-facing paste path itself.",
+      "failure_impact": "accepted-limitation"
+    }
+  ],
+  "limitation_detail": {
+    "reason": "The limitation is not that Orders cannot paste; it is that automation-layer clipboard readback is not a stable acceptance signal across environments.",
+    "code_readiness": "The paste path is implemented, validated, and covered by targeted unit tests.",
+    "follow_up_needed": "Keep live paste proof tied to user-visible grid results rather than to raw browser clipboard readback."
+  },
+  "summary": {
+    "approved_field_paste_supported": true,
+    "keyboard_paste_previously_seen_on_staging": true,
+    "clipboard_readback_is_environment_dependent": true
+  }
+}

@@ -17,8 +17,8 @@ export function KeyboardHintBar({ hints, className }: KeyboardHintBarProps) {
   }
 
   return (
-    <span
-      role="region"
+    <div
+      role="group"
       aria-label="Keyboard shortcuts"
       className={cn("inline-flex items-center gap-1", className)}
     >
@@ -33,7 +33,7 @@ export function KeyboardHintBar({ hints, className }: KeyboardHintBarProps) {
           </span>
         </React.Fragment>
       ))}
-    </span>
+    </div>
   );
 }
 

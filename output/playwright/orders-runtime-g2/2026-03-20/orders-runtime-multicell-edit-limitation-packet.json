@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-020",
+  "issue": "TER-771",
+  "generated_at": "2026-03-20T20:15:00.000Z",
+  "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx",
+  "suggested_verdict": "accepted-limitation",
+  "limitation_class": "live-autosave-roundtrip-unproven",
+  "acceptance_criteria": "Multi-cell edit with pricing preservation and autosave proof on the live Orders document route.",
+  "build": {
+    "id": "repo-remediation-branch",
+    "deploy_commit": "pending-merge",
+    "deployment_build_time": null
+  },
+  "route": "orders-document-grid local/unit-test coverage",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "paste-batched",
+      "label": "Document paste batches to one onChange per paste",
+      "passed": true,
+      "expected": "Pasted spreadsheet edits trigger one document writeback after paste completes.",
+      "observed": "OrdersDocumentLineItemsGrid.test.tsx now verifies paste-driven cell changes buffer during paste and call onChange once on paste end.",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "invalid-values-rejected-before-writeback",
+      "label": "Invalid pasted numeric values are rejected before grid writeback",
+      "passed": true,
+      "expected": "Rejected values never land in the document model before validation runs.",
+      "observed": "OrdersDocumentLineItemsGrid.test.tsx now verifies negative unitPrice paste is rejected before writeback and surfaces the validation message.",
+      "failure_impact": "informational"
+    },
+    {
+      "id": "live-autosave-roundtrip-missing",
+      "label": "Large live spreadsheet edit autosave round-trip remains unproven",
+      "passed": false,
+      "expected": "A deployed build records the edit, preserves recalculation, and confirms the autosave loop completes cleanly after a bulk spreadsheet edit.",
+      "observed": "The repo behavior is hardened and unit-tested, but no fresh deployed-build probe yet captures the autosave round-trip after a large multi-cell edit.",
+      "failure_impact": "accepted-limitation"
+    }
+  ],
+  "limitation_detail": {
+    "reason": "The original limitation wording was inaccurate because document writeback no longer fans out one onChange per pasted cell. The remaining gap is specifically the missing live autosave round-trip proof on a deployed build.",
+    "code_readiness": "Paste batching, invalid numeric rejection, and structured rejection toasts are implemented and tested locally.",
+    "follow_up_needed": "Run one narrow staging probe on a deployed build after merge to confirm save-state behavior after a large multi-cell edit."
+  },
+  "summary": {
+    "document_writeback_batched": true,
+    "invalid_values_blocked_before_writeback": true,
+    "live_autosave_roundtrip_proven": false
+  }
+}

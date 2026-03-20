@@ -10,10 +10,10 @@
 <!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:START -->
 - Updated at: `2026-03-20`
 - Active atomic card: `TER-795`
-- Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
+- Live reference build: `build-mmz7p245` via deployment `unknown` for commit `build-mmz7p245`
 - Directly live-proven G2 rows: `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032`
 - Remaining TER-795 rows: none
-- Next move: `none` — TER-795 is closed with evidence. Keep G2 sealed and move active execution to G5 surfacing-affordance closure.
+- Next move: `none` — TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work.
 - Cadence rule: Each writable tranche ends in exactly one of: user-facing product change, closure packet, limitation packet, or blocker packet.
 <!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:END -->
 - Status log:
@@ -80,10 +80,10 @@
   - reran the dedicated live probe on the fresh staging build and captured `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json` with `quantityValuesAfterDrag: ["3","4","5","6"]`, no license warnings, and no page errors, which satisfies the shipped-build closure contract for `SALE-ORD-022`
   - reran Claude adversarial review on the shipped-build evidence; Claude did not overturn the `SALE-ORD-022` closure, but it flagged one residual note that the narrow probe proves live route propagation rather than a separate post-reload persistence round-trip
 - Repair queue:
-  <!-- GENERATED:TER-795:REPAIR-QUEUE:START -->
+    <!-- GENERATED:TER-795:REPAIR-QUEUE:START -->
   - All 9 G2 rows are now classified. No TER-795 rows remain in the active repair queue.
   - Keep `TER-796` sealed unless a future isolated row-op rerun reproduces a real regression.
   - Keep the `SALE-ORD-022` closure packet honest: it proves shipped-route propagation on build `build-mmxxcgce`, not a separate reload or persistence round-trip.
   - Keep `SALE-ORD-031` recorded as a limitation until a live Orders surface actually exercises sort/filter.
-  - Active execution has moved to G5 surfacing-affordance closure; do not reopen G2 unless a classified row regresses.
+  - Active execution has moved to reopened G6 retirement remediation; do not reopen G2 unless a classified row regresses.
   <!-- GENERATED:TER-795:REPAIR-QUEUE:END -->

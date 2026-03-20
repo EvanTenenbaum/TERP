@@ -116,4 +116,31 @@ describe("PowersheetGrid", () => {
       screen.getByTestId("orders-support-grid-selection-state")
     ).toHaveTextContent("Focused cell: 2:sku · Ranges: 1");
   });
+
+  it("renders affordance availability with strikethrough cues for unavailable actions", () => {
+    render(
+      <PowersheetGrid
+        surfaceId="orders-document-grid"
+        requirementIds={["ORD-SF-003"]}
+        title="Line Items"
+        rows={[{ id: "row-1" }]}
+        columnDefs={[]}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        affordances={[
+          { label: "Copy", available: true },
+          { label: "Paste", available: false },
+          { label: "Fill", available: false },
+        ]}
+      />
+    );
+
+    expect(
+      screen.getByTestId("orders-document-grid-affordances")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Copy")).not.toHaveClass("line-through");
+    expect(screen.getByText("Paste")).toHaveClass("line-through");
+    expect(screen.getByText("Fill")).toHaveClass("line-through");
+  });
 });

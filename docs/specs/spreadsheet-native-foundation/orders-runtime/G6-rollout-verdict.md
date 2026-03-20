@@ -11,14 +11,19 @@
   - `01-issue-manifest.json`
   - `02-proof-row-map.csv`
   - `execution-metrics.json`
-- Status: `closed with evidence`
+- Status: `partial`
 - Closure date: 2026-03-20
 - Proof reconciliation:
   - 35 total proof rows
-  - 25 live-proven (001-007, 009, 011-012, 015-019, 022-027, 029-030, 032-035)
+  - 23 live-proven (001-007, 009, 011-012, 015-019, 022-027, 030, 032-034)
+  - 2 code-proven (029, 035)
   - 3 accepted-limitation (020, 021, 031)
   - 5 accepted-adjacent (008, 010, 013, 014, 028)
   - 2 retained handoff (009, 011)
-  - 0 rejected, 0 implemented-not-surfaced, 0 blocked
-- Verdict: **proof-complete** and **tracker-complete**
-- Build evidence: staging build-mmz7p245 (2026-03-20)
+  - 0 rejected, 0 proof-row implemented-not-surfaced, 0 blocked
+- Verdict: **tracker-complete after remediation writeback**, **not proof-complete**
+- Build evidence: staging build-mmz7p245 (2026-03-20) for `SALE-ORD-019`; prior shipped packets remain authoritative for other live rows
+- Remaining gap:
+  - `SALE-ORD-029` and `SALE-ORD-035` are still only code-proven.
+  - `SALE-ORD-020`, `SALE-ORD-021`, and `SALE-ORD-031` remain limitation-backed rather than live-proven.
+  - `ORD-SS-012` remains `implemented-not-surfaced`, so retirement would require lowering the charter rather than meeting it.

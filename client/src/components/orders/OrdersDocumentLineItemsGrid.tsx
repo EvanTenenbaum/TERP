@@ -8,6 +8,8 @@ import type {
   FillOperationParams,
   FillStartEvent,
   GridApi,
+  PasteEndEvent,
+  PasteStartEvent,
   ProcessCellForExportParams,
   ProcessDataFromClipboardParams,
   SendToClipboardParams,
@@ -544,7 +546,17 @@ function normalizeDocumentLineItemEdit(
       const nextSample =
         typeof rawValue === "boolean"
           ? rawValue
-          : (normalizeSampleClipboardValue(rawValue) ?? false);
+          : normalizeSampleClipboardValue(rawValue);
+      if (nextSample === null) {
+        return {
+          nextItem: null,
+          rejection: createPowersheetEditRejection(
+            columnKey,
+            "invalid-value",
+            "Sample values must be true/false, yes/no, or 1/0."
+          ),
+        };
+      }
       return {
         nextItem: {
           ...item,
@@ -589,7 +601,10 @@ export function OrdersDocumentLineItemsGrid({
     useState<PowersheetEditRejection | null>(null);
   const draftRowKeyCounterRef = useRef(0);
   const fillSnapshotRef = useRef<Map<string, LineItem> | null>(null);
-  const lastToastMessageRef = useRef<string | null>(null);
+  const pasteBufferRef = useRef<LineItem[] | null>(null);
+  const pasteDirtyRef = useRef(false);
+  const pasteInProgressRef = useRef(false);
+  const lastToastKeyRef = useRef<string | null>(null);
   const lastToastTimeRef = useRef(0);
 
   const normalizedItems = useMemo(
@@ -720,17 +735,26 @@ export function OrdersDocumentLineItemsGrid({
     []
   );
 
-  const updateBlockedEdit = (rejection: PowersheetEditRejection) => {
-    setLastEditRejection(rejection);
+  const notifyEditToast = (level: "warning" | "error", message: string) => {
     const now = Date.now();
+    const toastKey = `${level}:${message}`;
     if (
-      rejection.message !== lastToastMessageRef.current ||
+      toastKey !== lastToastKeyRef.current ||
       now - lastToastTimeRef.current > 300
     ) {
-      toast.warning(rejection.message);
-      lastToastMessageRef.current = rejection.message;
+      if (level === "warning") {
+        toast.warning(message);
+      } else {
+        toast.error(message);
+      }
+      lastToastKeyRef.current = toastKey;
       lastToastTimeRef.current = now;
     }
+  };
+
+  const updateBlockedEdit = (rejection: PowersheetEditRejection) => {
+    setLastEditRejection(rejection);
+    notifyEditToast("warning", rejection.message);
   };
 
   const handleCellValueChanged = (event: CellValueChangedEvent<LineItem>) => {
@@ -745,7 +769,8 @@ export function OrdersDocumentLineItemsGrid({
       rowIndex
     );
     const targetIndex = rowIds.findIndex(rowId => rowId === currentRowId);
-    const currentItem = normalizedItems[targetIndex];
+    const currentItem =
+      pasteBufferRef.current?.[targetIndex] ?? normalizedItems[targetIndex];
     if (!currentItem) {
       return;
     }
@@ -760,7 +785,10 @@ export function OrdersDocumentLineItemsGrid({
     if (rejection || !nextItem) {
       setLastEditRejection(rejection);
       if (rejection) {
-        toast.error(rejection.message);
+        notifyEditToast("error", rejection.message);
+      }
+      if (pasteInProgressRef.current) {
+        return;
       }
       const revertedItems = [...normalizedItems];
       revertedItems[targetIndex] = {
@@ -772,6 +800,15 @@ export function OrdersDocumentLineItemsGrid({
         ),
       };
       onChange(revertedItems);
+      return;
+    }
+
+    if (pasteInProgressRef.current && pasteBufferRef.current) {
+      const nextBufferedItems = [...pasteBufferRef.current];
+      nextBufferedItems[targetIndex] = nextItem;
+      pasteBufferRef.current = nextBufferedItems;
+      pasteDirtyRef.current = true;
+      setLastEditRejection(null);
       return;
     }
 
@@ -840,6 +877,19 @@ export function OrdersDocumentLineItemsGrid({
         )
       );
       return getClipboardFallbackValue(params);
+    }
+
+    const currentItem = params.node?.data;
+    if (currentItem) {
+      const validation = normalizeDocumentLineItemEdit(
+        currentItem,
+        columnKey as OrdersDocumentEditableField,
+        normalizedNumber
+      );
+      if (validation.rejection) {
+        updateBlockedEdit(validation.rejection);
+        return getClipboardFallbackValue(params);
+      }
     }
 
     return normalizedNumber;
@@ -916,6 +966,27 @@ export function OrdersDocumentLineItemsGrid({
 
   const handleSendToClipboard = (_params: SendToClipboardParams<LineItem>) => {
     setLastEditRejection(null);
+  };
+
+  const handlePasteStart = (_event: PasteStartEvent<LineItem>) => {
+    pasteInProgressRef.current = true;
+    pasteDirtyRef.current = false;
+    pasteBufferRef.current = normalizedItems.map(item => ({ ...item }));
+    setLastEditRejection(null);
+  };
+
+  const handlePasteEnd = (_event: PasteEndEvent<LineItem>) => {
+    const bufferedItems = pasteBufferRef.current;
+    const shouldWriteBufferedPaste =
+      pasteInProgressRef.current && pasteDirtyRef.current && bufferedItems;
+
+    pasteInProgressRef.current = false;
+    pasteDirtyRef.current = false;
+    pasteBufferRef.current = null;
+
+    if (shouldWriteBufferedPaste) {
+      onChange(bufferedItems);
+    }
   };
 
   const handleSuppressKeyboardEvent = (
@@ -1227,6 +1298,8 @@ export function OrdersDocumentLineItemsGrid({
       processCellFromClipboard={handleProcessCellFromClipboard}
       processDataFromClipboard={handleProcessDataFromClipboard}
       sendToClipboard={handleSendToClipboard}
+      onPasteStart={handlePasteStart}
+      onPasteEnd={handlePasteEnd}
       suppressCutToClipboard={suppressCutToClipboard}
       suppressKeyboardEvent={handleSuppressKeyboardEvent}
       onFillStart={handleFillStart}

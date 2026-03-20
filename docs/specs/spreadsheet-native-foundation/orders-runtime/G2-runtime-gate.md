@@ -16,13 +16,13 @@
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
   - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json`
+  - `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-sort-filter-limitation-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-failure-mode-closure-packet.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json`
+  - `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-multicell-edit-limitation-packet.json`
+  - `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-paste-limitation-packet.json`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json`
   - current atomic-card truth: `TER-794`, `TER-795`, and `TER-796` are all closed with evidence
@@ -36,7 +36,7 @@
   - `pnpm test`
   - `pnpm build`
 - Current blocker:
-  - staging build `build-mmxxcgce` is the current live reference build, backed by deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
+  - staging build `build-mmz7p245` is the current live reference build, backed by deployment `unknown` for commit `build-mmz7p245`
   - `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` are now the only G2 rows safe to treat as directly live-proven from staging evidence
   - `SALE-ORD-022` is closed with evidence via the narrow fill probe packet at `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
   - `SALE-ORD-031` stays partial with a code-proven limitation because the live Orders document grid still disables sort/filter

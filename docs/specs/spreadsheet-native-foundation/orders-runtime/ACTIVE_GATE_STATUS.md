@@ -2,12 +2,12 @@
 
 _Generated file. Do not edit by hand._
 
-- Generated at: `2026-03-20T17:06:37.969Z`
-- Active gate: `G5`
-- Linear gate: `TER-791`
-- Status: `open`
+- Generated at: `2026-03-20T20:18:07.176Z`
+- Active gate: `G6`
+- Linear gate: `TER-792`
+- Status: `partial`
 - Active atomic card: `see active gate roadmap`
-- Current build: `build-mmxxcgce`
+- Current build: `build-mmz7p245`
 - Route: `/sales?tab=orders&surface=sheet-native&orderId=627`
 
 ## Use This Before Global Session Tracking
@@ -19,18 +19,18 @@ Source of truth for repeated TER-795 row status, build truth, and next move is `
 ## Gate Snapshot
 
 - Scope: shared selection runtime, clipboard/fill contracts, edit navigation, row ops, and environment hardening.
-- Repo-backed execution contract: `docs/specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md` plus `docs/roadmaps/orders-spreadsheet-runtime/roadmap-4-g5-surfacing-affordance-closure.md`
+- Repo-backed execution contract: `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md` plus `docs/roadmaps/orders-spreadsheet-runtime/roadmap-5-g6-proof-verdict-sync.md`
 - Active-gate operating model: `1 coordinator + up to 2 read-only sidecars + at most 1 narrow writer`
 
 ## Current Blocker
 
-G5 is the active gate. TER-795 / G2 is already `closed with evidence`, so current blockers and required proof now live in `docs/specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md` and `docs/roadmaps/orders-spreadsheet-runtime/roadmap-4-g5-surfacing-affordance-closure.md`.
+G6 is the active gate. TER-795 / G2 is already `closed with evidence`, so current blockers and required proof now live in `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md` and `docs/roadmaps/orders-spreadsheet-runtime/roadmap-5-g6-proof-verdict-sync.md`.
 
 ## Next Unblock
 
-- Next focus: G4 closed with evidence. Surfacing and discoverability proof can begin on the final interaction model.
+- Next focus: follow `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md` for the current open tranche.
 - TER-795 state: `closed with evidence` with `0` remaining rows.
-- Cadence rule: Do not spend more TER-795 proof budget unless a new regression reopens G2; use G5-specific proof artifacts for the active surfacing lane.
+- Cadence rule: Do not spend more TER-795 proof budget unless a new regression reopens G2; use G6-specific proof artifacts for the active surfacing lane.
 
 ## Runtime Guards
 
@@ -53,30 +53,30 @@ G5 is the active gate. TER-795 / G2 is already `closed with evidence`, so curren
 
 ## Evidence Artifacts Present
 
-- `docs/specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md`
-- `docs/roadmaps/orders-spreadsheet-runtime/roadmap-4-g5-surfacing-affordance-closure.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md`
+- `docs/roadmaps/orders-spreadsheet-runtime/roadmap-5-g6-proof-verdict-sync.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/Documentation.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/02-proof-row-map.csv`
 
 ## Worktree Pressure
 
-- Total worktrees: `31`
-- Dirty worktrees: `19`
-- Dirty worktrees with 5+ entries: `7`
-- Current worktree dirty entries excluding generator-owned outputs: `12`
+- Total worktrees: `32`
+- Dirty worktrees: `18`
+- Dirty worktrees with 5+ entries: `6`
+- Current worktree dirty entries excluding generator-owned outputs: `25`
 
 Top dirty worktrees:
 
-- `125` dirty -> `TERP` (`refs/heads/staging`)
 - `37` dirty -> `TERP-low-rebuild-20260310-04c982f7` (`refs/heads/claude/staging-low-rebuild-20260310-04c982f7`)
+- `25` dirty -> `worktrees/orders-runtime-closure-remediation-20260320` (`refs/heads/codex/orders-runtime-closure-remediation-20260320`)
 - `20` dirty -> `worktrees/sheet-native-staging-20260315` (`refs/heads/codex/sheet-native-staging-20260315`)
 - `17` dirty -> `worktrees/workspace-surfacing-fixes-20260312` (`refs/heads/codex/workspace-surfacing-fixes-20260312`)
-- `12` dirty -> `worktrees/use-all-skills-4322B-20260320` (`refs/heads/claude/use-all-skills-4322B`)
+- `7` dirty -> `worktrees/pricing-cents-preservation-20260312` (`refs/heads/codex/ter-696-pricing-cents-preservation-20260312`)
 
 ## Source Inputs
 
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
-- `docs/specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md`

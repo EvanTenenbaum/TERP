@@ -152,6 +152,118 @@ export function buildFillHandleClosurePacket({
   };
 }
 
+export function buildSelectionClosurePacket({
+  report,
+  reportPath,
+  rowId = "SALE-ORD-019",
+  issue = "TER-770",
+  deployCommit = null,
+  persona = "sales-manager",
+}) {
+  const queueRangeSummary = String(report.queueSelectionSummaryAfterShiftRange || "");
+  const queueDiscontiguousSummary = String(
+    report.queueSelectionSummaryAfterDiscontiguous || "",
+  );
+  const queueScopeSummary = String(report.queueSelectionSummaryAfterSelectAll || "");
+  const documentRangeSummary = String(
+    report.documentSelectionSummaryAfterShiftRange || "",
+  );
+
+  const assertions = [
+    assertion(
+      "queue-shift-range",
+      "Queue Shift-range forms a two-cell selection",
+      /\b2 selected cells\b/i.test(queueRangeSummary),
+      "Queue selection summary reports 2 selected cells after Shift-range selection.",
+      report.queueSelectionSummaryAfterShiftRange || "missing",
+    ),
+    assertion(
+      "queue-discontiguous",
+      "Queue Cmd-click adds a discontiguous range",
+      /discontiguous selection/i.test(queueDiscontiguousSummary),
+      "Queue selection summary reports a discontiguous selection after Cmd-click.",
+      report.queueSelectionSummaryAfterDiscontiguous || "missing",
+    ),
+    assertion(
+      "queue-scope-selection",
+      "Queue Cmd+A selects the current grid scope",
+      (() => {
+        const cellMatch = queueScopeSummary.match(/(\d+) selected cells/i);
+        const rowMatch = queueScopeSummary.match(/(\d+) rows in scope/i);
+        return Number(cellMatch?.[1] ?? 0) > 2 && Number(rowMatch?.[1] ?? 0) > 1;
+      })(),
+      "Queue selection summary reports more than 2 selected cells and more than 1 row after Cmd+A.",
+      report.queueSelectionSummaryAfterSelectAll || "missing",
+    ),
+    assertion(
+      "document-shift-range",
+      "Document Shift-range forms a two-cell selection",
+      /\b2 selected cells\b/i.test(documentRangeSummary),
+      "Document selection summary reports 2 selected cells after Shift-range selection.",
+      report.documentSelectionSummaryAfterShiftRange || "missing",
+    ),
+    assertion(
+      "license-clean",
+      "No AG Grid license warnings were recorded",
+      Array.isArray(report.licenseWarnings) && report.licenseWarnings.length === 0,
+      "No license warnings are emitted during the selection probe.",
+      Array.isArray(report.licenseWarnings) ? report.licenseWarnings : ["missing"],
+    ),
+    assertion(
+      "page-clean",
+      "No page errors were recorded",
+      Array.isArray(report.pageErrors) && report.pageErrors.length === 0,
+      "No page errors are emitted during the selection probe.",
+      Array.isArray(report.pageErrors) ? report.pageErrors : ["missing"],
+    ),
+  ];
+
+  return {
+    schema_version: 1,
+    gate: "G2",
+    row_id: rowId,
+    issue,
+    generated_at: new Date().toISOString(),
+    command: "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-selection",
+    suggested_verdict: suggestedVerdict(assertions),
+    acceptance_criteria:
+      "Full drag, Shift, Cmd, and scope-selection proof across the required Orders surfaces on staging.",
+    build: {
+      id: report.version?.buildId || report.version?.commit || null,
+      deploy_commit: deployCommit,
+      deployment_build_time: report.version?.buildTime || null,
+    },
+    route: report.queueRoute,
+    persona,
+    assertions,
+    artifacts: {
+      report: artifactRecord(reportPath),
+      queue_screenshot: artifactRecord(report.queueScreenshotPath),
+      document_screenshot: artifactRecord(report.documentScreenshotPath),
+    },
+    summary: {
+      queue_selection_state_after_shift_range:
+        report.queueSelectionStateAfterShiftRange,
+      queue_selection_summary_after_shift_range:
+        report.queueSelectionSummaryAfterShiftRange,
+      queue_selection_state_after_discontiguous:
+        report.queueSelectionStateAfterDiscontiguous,
+      queue_selection_summary_after_discontiguous:
+        report.queueSelectionSummaryAfterDiscontiguous,
+      queue_selection_state_after_select_all:
+        report.queueSelectionStateAfterSelectAll,
+      queue_selection_summary_after_select_all:
+        report.queueSelectionSummaryAfterSelectAll,
+      document_selection_state_after_shift_range:
+        report.documentSelectionStateAfterShiftRange,
+      document_selection_summary_after_shift_range:
+        report.documentSelectionSummaryAfterShiftRange,
+      ag_grid_warnings: report.agGridWarnings || [],
+      page_errors: report.pageErrors || [],
+    },
+  };
+}
+
 export function buildOrdersRuntimeG2ClosurePacket({
   report,
   reportPath,

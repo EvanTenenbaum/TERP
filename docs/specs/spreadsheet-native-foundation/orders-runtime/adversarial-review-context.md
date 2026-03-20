@@ -4,10 +4,10 @@ _Generated from `ter-795-state.json`. Attach this context before bounded adversa
 
 - Active atomic card: `TER-795`
 - Gate verdict: `closed with evidence`
-- Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131`
-- Deploy commit: `3398a9baa8101e47e9119fc69943da7a3627edbd`
+- Live reference build: `build-mmz7p245` via deployment `unknown`
+- Deploy commit: `build-mmz7p245`
 - Persona: `sales-manager`
-- Next move: `none` — TER-795 is closed with evidence. Keep G2 sealed and move active execution to G5 surfacing-affordance closure.
+- Next move: `none` — TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work.
 
 ## Accepted Rows
 
@@ -37,8 +37,9 @@ _Generated from `ter-795-state.json`. Attach this context before bounded adversa
 
 ## Probe Packets
 
-- `SALE-ORD-020` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json` (blocker)
-- `SALE-ORD-021` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json` (blocker)
+- `SALE-ORD-019` -> `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-closure-packet.json` (closed with evidence)
+- `SALE-ORD-020` -> `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-multicell-edit-limitation-packet.json` (accepted-limitation)
+- `SALE-ORD-021` -> `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-paste-limitation-packet.json` (accepted-limitation)
 - `SALE-ORD-022` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json` (closed with evidence)
 - `SALE-ORD-029` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json` (code-proven)
 - `SALE-ORD-030` -> `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json` (closed with evidence)

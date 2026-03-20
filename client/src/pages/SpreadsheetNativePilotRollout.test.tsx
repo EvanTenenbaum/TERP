@@ -67,7 +67,12 @@ vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
 }));
 
 vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
-  default: () => <div>Orders Sheet Pilot</div>,
+  default: ({ forceDocumentMode }: { forceDocumentMode?: boolean }) => (
+    <div>
+      Orders Sheet Pilot
+      {forceDocumentMode ? " Document" : ""}
+    </div>
+  ),
 }));
 
 vi.mock("@/pages/ReturnsPage", () => ({
@@ -140,7 +145,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
     ).toBeInTheDocument();
   });
 
-  it("redirects sheet-native create-order requests into the Orders document surface", () => {
+  it("keeps create-order classic by default even when the pilot is enabled", () => {
     mockPath = "/sales";
     mockSearch = "?tab=create-order&draftId=91";
     mockActiveTab = "create-order";
@@ -148,23 +153,21 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(mockSetLocation).toHaveBeenCalledWith(
-      "/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=91"
-    );
+    expect(screen.getByText("Order Creator")).toBeInTheDocument();
+    expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("drops stale queue selection while preserving document-seed params during create-order redirect", () => {
+  it("renders the sheet-native document surface on create-order when sheet-native is explicitly requested", () => {
     mockPath = "/sales";
     mockSearch =
-      "?tab=create-order&orderId=55&quoteId=91&mode=duplicate&fromSalesSheet=true";
+      "?tab=create-order&surface=sheet-native&quoteId=91&mode=duplicate&fromSalesSheet=true";
     mockActiveTab = "create-order";
     mockPilotFlagEnabled = true;
 
     render(<SalesWorkspacePage />);
 
-    expect(mockSetLocation).toHaveBeenCalledWith(
-      "/sales?tab=orders&surface=sheet-native&ordersView=document&quoteId=91&mode=duplicate&fromSalesSheet=true"
-    );
+    expect(screen.getByText("Orders Sheet Pilot Document")).toBeInTheDocument();
+    expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
   it("preserves the classic create-order route when classic=true is requested", () => {

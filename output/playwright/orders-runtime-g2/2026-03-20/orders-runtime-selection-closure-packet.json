@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-019",
+  "issue": "TER-770",
+  "generated_at": "2026-03-20T20:02:52.795Z",
+  "command": "PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-selection",
+  "suggested_verdict": "closed with evidence",
+  "acceptance_criteria": "Full drag, Shift, Cmd, and scope-selection proof across the required Orders surfaces on staging.",
+  "build": {
+    "id": "build-mmz7p245",
+    "deploy_commit": "build-mmz7p245",
+    "deployment_build_time": "2026-03-20T18:07:44.128Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "queue-shift-range",
+      "label": "Queue Shift-range forms a two-cell selection",
+      "passed": true,
+      "expected": "Queue selection summary reports 2 selected cells after Shift-range selection.",
+      "observed": "2 selected cells · 2 rows in scope",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "queue-discontiguous",
+      "label": "Queue Cmd-click adds a discontiguous range",
+      "passed": true,
+      "expected": "Queue selection summary reports a discontiguous selection after Cmd-click.",
+      "observed": "3 selected cells · 3 rows in scope · discontiguous selection",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "queue-scope-selection",
+      "label": "Queue Cmd+A selects the current grid scope",
+      "passed": true,
+      "expected": "Queue selection summary reports more than 2 selected cells and more than 1 row after Cmd+A.",
+      "observed": "600 selected cells · 100 rows in scope",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "document-shift-range",
+      "label": "Document Shift-range forms a two-cell selection",
+      "passed": true,
+      "expected": "Document selection summary reports 2 selected cells after Shift-range selection.",
+      "observed": "2 selected cells · 2 rows in scope",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "license-clean",
+      "label": "No AG Grid license warnings were recorded",
+      "passed": true,
+      "expected": "No license warnings are emitted during the selection probe.",
+      "observed": [],
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "page-clean",
+      "label": "No page errors were recorded",
+      "passed": true,
+      "expected": "No page errors are emitted during the selection probe.",
+      "observed": [],
+      "failure_impact": "blocker"
+    }
+  ],
+  "artifacts": {
+    "report": {
+      "relative_path": "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-report.json",
+      "sha256": "b679c94625d16fb4853c8f9b8e9d8fecdf9cc4ed8a70509da55a314a4e2b879b"
+    },
+    "queue_screenshot": null,
+    "document_screenshot": null
+  },
+  "summary": {
+    "queue_selection_state_after_shift_range": "Focused cell: 0:stageLabel · Ranges: 1",
+    "queue_selection_summary_after_shift_range": "2 selected cells · 2 rows in scope",
+    "queue_selection_state_after_discontiguous": "Focused cell: 2:stageLabel · Ranges: 2",
+    "queue_selection_summary_after_discontiguous": "3 selected cells · 3 rows in scope · discontiguous selection",
+    "queue_selection_state_after_select_all": "Focused cell: 0:stageLabel · Ranges: 1",
+    "queue_selection_summary_after_select_all": "600 selected cells · 100 rows in scope",
+    "document_selection_state_after_shift_range": "Focused cell: 0:quantity · Ranges: 1",
+    "document_selection_summary_after_shift_range": "2 selected cells · 2 rows in scope",
+    "ag_grid_warnings": [],
+    "page_errors": []
+  }
+}

@@ -112,10 +112,12 @@ const parsePositiveIntegerParam = (value: string | null) => {
 
 interface OrdersSheetPilotSurfaceProps {
   onOpenClassic: (orderId?: number | null) => void;
+  forceDocumentMode?: boolean;
 }
 
 export function OrdersSheetPilotSurface({
   onOpenClassic,
+  forceDocumentMode = false,
 }: OrdersSheetPilotSurfaceProps) {
   const [, setLocation] = useLocation();
   const search = useSearch();
@@ -142,6 +144,7 @@ export function OrdersSheetPilotSurface({
   const fromSalesSheet = searchParams.get("fromSalesSheet") === "true";
   const routeMode = searchParams.get("mode");
   const currentDocumentMode =
+    forceDocumentMode ||
     searchParams.get("ordersView") === "document" ||
     draftIdFromRoute !== null ||
     quoteIdFromRoute !== null ||
@@ -474,10 +477,14 @@ export function OrdersSheetPilotSurface({
           <Button
             size="sm"
             variant="outline"
+            aria-label="Refresh Orders data"
             onClick={() => {
               void draftsQuery.refetch();
               void confirmedQuery.refetch();
               void detailQuery.refetch();
+              void statusHistoryQuery.refetch();
+              void auditLogQuery.refetch();
+              void ledgerQuery.refetch();
             }}
           >
             <RefreshCw className="h-4 w-4" />

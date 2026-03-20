@@ -1,0 +1,27 @@
+{
+  "baseUrl": "https://terp-staging-yicld.ondigitalocean.app",
+  "timestamp": "2026-03-20T20:02:52.794Z",
+  "version": {
+    "version": "1.0.0",
+    "commit": "build-mmz7p245",
+    "date": "2026-03-20",
+    "branch": "unknown",
+    "phase": "Development",
+    "buildTime": "2026-03-20T18:07:44.128Z"
+  },
+  "queueRoute": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "documentRoute": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=618",
+  "queueSelectionStateAfterShiftRange": "Focused cell: 0:stageLabel · Ranges: 1",
+  "queueSelectionSummaryAfterShiftRange": "2 selected cells · 2 rows in scope",
+  "queueSelectionStateAfterDiscontiguous": "Focused cell: 2:stageLabel · Ranges: 2",
+  "queueSelectionSummaryAfterDiscontiguous": "3 selected cells · 3 rows in scope · discontiguous selection",
+  "queueSelectionStateAfterSelectAll": "Focused cell: 0:stageLabel · Ranges: 1",
+  "queueSelectionSummaryAfterSelectAll": "600 selected cells · 100 rows in scope",
+  "documentSelectionStateAfterShiftRange": "Focused cell: 0:quantity · Ranges: 1",
+  "documentSelectionSummaryAfterShiftRange": "2 selected cells · 2 rows in scope",
+  "queueScreenshotPath": null,
+  "documentScreenshotPath": null,
+  "licenseWarnings": [],
+  "agGridWarnings": [],
+  "pageErrors": []
+}

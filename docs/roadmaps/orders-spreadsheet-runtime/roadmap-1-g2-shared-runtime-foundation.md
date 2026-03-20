@@ -22,15 +22,15 @@ Current truth:
 
 - The shared runtime seam already exists in `PowersheetGrid`, and the March 18 targeted runtime tests proved the current adapter path is real rather than aspirational.
 - `TER-794`, `TER-795`, and `TER-796` are currently safe to treat as closed with evidence; all 9 G2 rows are classified.
-- Staging build `build-mmxxcgce` on route `/sales?tab=orders&surface=sheet-native&orderId=627` is the latest shipped reference build used for final G2 closure evidence.
-- The repaired selection probe proves queue drag-range, queue Cmd discontiguous selection, queue column and current-grid scope selection, and document Shift-range behavior on the live Orders surfaces.
-- `SALE-ORD-019` is closed with evidence via `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json` on build `build-mmxzi3to`.
+- Staging build `build-mmz7p245` on route `/sales?tab=orders&surface=sheet-native&orderId=627` is the latest shipped reference build used for live G2 selection evidence.
+- The repaired selection probe proves queue Shift-range, queue Cmd discontiguous selection, queue Cmd+A scope selection, and document Shift-range behavior on the live Orders surfaces.
+- `SALE-ORD-019` is closed with evidence via `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-closure-packet.json` on build `build-mmz7p245`.
 - The fill tranche remains closed: staging build `build-mmxxcgce` recorded `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` stays closed with evidence.
 - `SALE-ORD-031` is now a published limitation: Orders document grid disables sort/filter by design, so ORD-SS-012 cannot be proved on the originating surface, but that no longer blocks G2.
 - `SALE-ORD-029` and `SALE-ORD-035` are code-proven with comprehensive unit test coverage of positive and negative paths.
-- `SALE-ORD-020` and `SALE-ORD-021` remain honestly classified as deferred blockers pending a fresh reachable staging build, but they no longer block G2, G3, or G4 closure.
-- All 9 G2 rows are now classified: 4 live-proven, 2 code-proven, 1 limitation, 2 deferred blockers.
-- `G2`, `G3`, and `G4` are closed with evidence. `G5` is now the active gate.
+- `SALE-ORD-020` and `SALE-ORD-021` are accepted limitations: the repo now batches paste writeback and hardens invalid-value rejection, but the remaining live evidence gap is documented instead of hidden behind blocker language.
+- All 9 G2 rows are now classified: 4 live-proven, 2 code-proven, and 3 limitation-backed.
+- `G2`, `G3`, and `G4` are closed with evidence. The overall Orders runtime initiative is now executing against reopened `G6` retirement remediation.
 <!-- GENERATED:TER-795:ROADMAP-TRUTH:END -->
 
 ## Allowed Inputs

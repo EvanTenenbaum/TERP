@@ -460,6 +460,33 @@ describe("OrdersDocumentLineItemsGrid", () => {
     );
   });
 
+  it("rejects invalid manual sample edits instead of silently coercing them to false", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, isSample: true })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "isSample" },
+      oldValue: true,
+      newValue: "maybe",
+      data: buildLineItem({ id: 1, isSample: true }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].isSample).toBe(true);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Sample values must be true/false, yes/no, or 1/0."
+    );
+  });
+
   it("blocks invalid clipboard edits on approved fields and surfaces the rejection", () => {
     const onChange = vi.fn();
     mockToastError.mockReset();
@@ -489,6 +516,126 @@ describe("OrdersDocumentLineItemsGrid", () => {
       "Quantity must be a positive whole number."
     );
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("dedupes repeated blocked warning toasts inside the 300ms guard window", () => {
+    const nowSpy = vi.spyOn(Date, "now");
+    nowSpy.mockReturnValue(1_000);
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    const attemptInvalidSamplePaste = () =>
+      call?.processCellFromClipboard?.({
+        value: "maybe",
+        column: { getColId: () => "isSample" },
+        node: { data: buildLineItem({ id: 1, isSample: false }) },
+      });
+
+    act(() => {
+      expect(attemptInvalidSamplePaste()).toBe(false);
+      expect(attemptInvalidSamplePaste()).toBe(false);
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledTimes(1);
+
+    nowSpy.mockReturnValue(1_401);
+    act(() => {
+      attemptInvalidSamplePaste();
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledTimes(2);
+    nowSpy.mockRestore();
+  });
+
+  it("rejects pasted negative numeric values before grid writeback", () => {
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, unitPrice: 12.5 })]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    act(() => {
+      const nextValue = call?.processCellFromClipboard?.({
+        value: "-5",
+        column: { getColId: () => "unitPrice" },
+        node: { data: buildLineItem({ id: 1, unitPrice: 12.5 }) },
+      });
+      expect(nextValue).toBe(12.5);
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      "Unit price must be zero or greater."
+    );
+  });
+
+  it("buffers paste-driven cell changes and writes back once when the paste finishes", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[
+          buildLineItem({ id: 1, quantity: 2, lineTotal: 25 }),
+          buildLineItem({
+            id: 2,
+            batchId: 2002,
+            productId: 22,
+            quantity: 2,
+            unitPrice: 12.5,
+            lineTotal: 25,
+          }),
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+
+    act(() => {
+      call?.onPasteStart?.({});
+      call?.onCellValueChanged?.({
+        rowIndex: 0,
+        colDef: { field: "quantity" },
+        newValue: "5",
+        data: buildLineItem({ id: 1, quantity: 5, lineTotal: 62.5 }),
+      });
+      call?.onCellValueChanged?.({
+        rowIndex: 1,
+        colDef: { field: "unitPrice" },
+        newValue: "20",
+        data: buildLineItem({
+          id: 2,
+          batchId: 2002,
+          productId: 22,
+          quantity: 2,
+          unitPrice: 20,
+          lineTotal: 40,
+        }),
+      });
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    act(() => {
+      call?.onPasteEnd?.({});
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].quantity).toBe(5);
+    expect(nextItems[0].lineTotal).toBe(62.5);
+    expect(nextItems[1].unitPrice).toBe(20);
+    expect(nextItems[1].lineTotal).toBe(40);
   });
 
   it("rejects paste rectangles that spill into locked document columns", async () => {
@@ -1186,7 +1333,9 @@ describe("OrdersDocumentLineItemsGrid", () => {
 
   it("rejects marginPercent >= 100 instead of producing incorrect price", () => {
     const onChange = vi.fn();
+    const nowSpy = vi.spyOn(Date, "now");
     mockToastError.mockReset();
+    nowSpy.mockReturnValue(1_000);
 
     render(
       <OrdersDocumentLineItemsGrid
@@ -1213,6 +1362,7 @@ describe("OrdersDocumentLineItemsGrid", () => {
 
     onChange.mockClear();
     mockToastError.mockReset();
+    nowSpy.mockReturnValue(1_401);
     call?.onCellValueChanged?.({
       rowIndex: 0,
       colDef: { field: "marginPercent" },
@@ -1226,6 +1376,7 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(mockToastError).toHaveBeenCalledWith(
       "Margin percent must be less than 100."
     );
+    nowSpy.mockRestore();
   });
 
   it("duplicates and deletes selected rows through the shared row operations", () => {

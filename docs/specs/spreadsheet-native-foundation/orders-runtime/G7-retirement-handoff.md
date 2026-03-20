@@ -10,17 +10,17 @@
   - `G7-retirement-handoff.md`
   - `00-program-charter.md`
   - Linear issue `TER-806`
-- Status: `closed with evidence`
+- Status: `open`
 - Closure date: 2026-03-20
 
 ## Classic Fallback Policy
 
 Sheet-native coexists with classic via `SheetModeToggle` in `SalesWorkspacePage.tsx`:
 
-1. **Toggle**: Users switch between "Sheet-Native Pilot" and "Classic Surface" on the Orders tab
+1. **Toggle**: Users switch between "Sheet-Native Pilot" and "Classic Surface" on both the Orders and create-order tabs
 2. **Route preservation**: `?classic=true` preserves the classic composer
 3. **Classic button**: Sheet-native queue has a "Classic" button for the selected order
-4. **No forced migration**: Classic `OrdersWorkSurface` remains fully functional
+4. **No forced migration**: create-order no longer auto-forces sheet-native; classic `OrdersWorkSurface` and `OrderCreatorPage` remain explicit fallbacks
 
 ### Re-enable conditions
 
@@ -52,4 +52,4 @@ Reopen if: (1) sheet-native breaks a workflow classic handles, (2) editable/lock
 
 - **Post-initiative owner**: Evan
 - **Monitoring**: 2 production releases
-- **Initiative status**: **RETIRED** — Orders is no longer a special initiative
+- **Initiative status**: **NOT RETIRED** — retirement stays blocked until G6 reaches proof-complete under the charter and the strengthened classic fallback is verified on a deployed build

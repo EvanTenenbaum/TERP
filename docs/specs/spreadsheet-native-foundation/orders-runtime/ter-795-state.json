@@ -6,10 +6,10 @@
   "gate_verdict": "closed with evidence",
   "execution_state": "complete — all 9 rows classified",
   "build": {
-    "id": "build-mmxxcgce",
-    "build_time": "2026-03-19T20:30:13.707Z",
-    "deployment_id": "20fda840-ae7c-4a36-a450-7f1e45029131",
-    "deploy_commit": "3398a9baa8101e47e9119fc69943da7a3627edbd",
+    "id": "build-mmz7p245",
+    "build_time": "2026-03-20T18:07:44.128Z",
+    "deployment_id": "unknown",
+    "deploy_commit": "build-mmz7p245",
     "base_url": "https://terp-staging-yicld.ondigitalocean.app",
     "route": "/sales?tab=orders&surface=sheet-native&orderId=627",
     "persona": "sales-manager",
@@ -21,27 +21,27 @@
       "issue": "TER-770",
       "row_state": "live-proven",
       "required_evidence": "full drag shift cmd and scope-selection proof across required surfaces",
-      "classification_note": "Closed with evidence on staging build build-mmxzi3to via the isolated selection packet covering queue drag-range, queue discontiguous and scope selection, and document Shift-range proof.",
-      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json",
+      "classification_note": "Closed with evidence on staging build build-mmz7p245 via the isolated selection packet covering queue Shift-range, queue Cmd discontiguous selection, queue Cmd+A scope selection, and document Shift-range proof.",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-closure-packet.json",
       "next_action": "Closed with evidence on the current staging build."
     },
     {
       "row": "SALE-ORD-020",
       "issue": "TER-771",
-      "row_state": "blocker",
+      "row_state": "limitation",
       "required_evidence": "multi-cell edit pricing autosave proof",
-      "classification_note": "Parked: proof budget exhausted and no fresh reachable Orders document route available. Existing unit tests prove recalculation logic (quantity, cogsPerUnit, unitPrice, marginPercent) but autosave round-trip requires live staging proof.",
-      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json",
-      "next_action": "Unblocks when a fresh reachable Orders document route exists on a deployed build. Then spend one isolated edit probe."
+      "classification_note": "Accepted limitation after remediation: the Orders document grid now validates pasted numeric values before writeback, rejects invalid manual sample edits, and batches document `onChange` once per paste via `onPasteEnd`, but a separate live autosave round-trip proof for large spreadsheet edits has still not been captured.",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-multicell-edit-limitation-packet.json",
+      "next_action": "Keep the limitation attached until a fresh live probe captures the autosave round-trip on a deployed build."
     },
     {
       "row": "SALE-ORD-021",
       "issue": "TER-771",
-      "row_state": "blocker",
+      "row_state": "limitation",
       "required_evidence": "approved-field paste proof on staging",
-      "classification_note": "Parked: proof budget exhausted and prior attempts showed validPasteMethod: none due to empty browser clipboard readback. Unit tests prove processCellFromClipboard and processDataFromClipboard accept valid values on approved fields, but live paste proof requires staging with Playwright clipboard API.",
-      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json",
-      "next_action": "Unblocks when a fresh reachable Orders document route exists with Playwright clipboard API properly granting permissions. Then spend one isolated paste probe."
+      "classification_note": "Accepted limitation: approved-field rectangular paste is proven in unit tests and prior staging keyboard paste evidence, but browser clipboard API readback remains environment-dependent and is not the acceptance signal for this row.",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-paste-limitation-packet.json",
+      "next_action": "Keep the limitation attached until a fresh live probe captures the current deployed paste path without relying on clipboard readback."
     },
     {
       "row": "SALE-ORD-022",
@@ -106,22 +106,22 @@
   "remaining_rows": [],
   "next_move": {
     "row": null,
-    "summary": "TER-795 is closed with evidence. Keep G2 sealed and move active execution to G5 surfacing-affordance closure.",
-    "command_hint": "Begin Roadmap 4 / G5 surfacing proof; do not spend more TER-795 row budget unless a regression reopens G2.",
+    "summary": "TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work.",
+    "command_hint": "Use `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md` as the active closure lane; do not spend more TER-795 row budget unless a regression reopens G2.",
     "cadence_rule": "Each writable tranche ends in exactly one of: user-facing product change, closure packet, limitation packet, or blocker packet."
   },
   "current_truth": [
     "The shared runtime seam already exists in `PowersheetGrid`, and the March 18 targeted runtime tests proved the current adapter path is real rather than aspirational.",
     "`TER-794`, `TER-795`, and `TER-796` are currently safe to treat as closed with evidence; all 9 G2 rows are classified.",
-    "Staging build `build-mmxxcgce` on route `/sales?tab=orders&surface=sheet-native&orderId=627` is the latest shipped reference build used for final G2 closure evidence.",
-    "The repaired selection probe proves queue drag-range, queue Cmd discontiguous selection, queue column and current-grid scope selection, and document Shift-range behavior on the live Orders surfaces.",
-    "`SALE-ORD-019` is closed with evidence via `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json` on build `build-mmxzi3to`.",
+    "Staging build `build-mmz7p245` on route `/sales?tab=orders&surface=sheet-native&orderId=627` is the latest shipped reference build used for live G2 selection evidence.",
+    "The repaired selection probe proves queue Shift-range, queue Cmd discontiguous selection, queue Cmd+A scope selection, and document Shift-range behavior on the live Orders surfaces.",
+    "`SALE-ORD-019` is closed with evidence via `output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-closure-packet.json` on build `build-mmz7p245`.",
     "The fill tranche remains closed: staging build `build-mmxxcgce` recorded `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` stays closed with evidence.",
     "`SALE-ORD-031` is now a published limitation: Orders document grid disables sort/filter by design, so ORD-SS-012 cannot be proved on the originating surface, but that no longer blocks G2.",
     "`SALE-ORD-029` and `SALE-ORD-035` are code-proven with comprehensive unit test coverage of positive and negative paths.",
-    "`SALE-ORD-020` and `SALE-ORD-021` remain honestly classified as deferred blockers pending a fresh reachable staging build, but they no longer block G2, G3, or G4 closure.",
-    "All 9 G2 rows are now classified: 4 live-proven, 2 code-proven, 1 limitation, 2 deferred blockers.",
-    "`G2`, `G3`, and `G4` are closed with evidence. `G5` is now the active gate."
+    "`SALE-ORD-020` and `SALE-ORD-021` are accepted limitations: the repo now batches paste writeback and hardens invalid-value rejection, but the remaining live evidence gap is documented instead of hidden behind blocker language.",
+    "All 9 G2 rows are now classified: 4 live-proven, 2 code-proven, and 3 limitation-backed.",
+    "`G2`, `G3`, and `G4` are closed with evidence. The overall Orders runtime initiative is now executing against reopened `G6` retirement remediation."
   ],
   "validation_commands": {
     "targeted": [
@@ -139,30 +139,30 @@
     "docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json",
     "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
     "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json",
-    "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json",
+    "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-selection-closure-packet.json",
     "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json",
     "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-sort-filter-limitation-packet.json",
     "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json",
     "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-failure-mode-closure-packet.json",
-    "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json",
-    "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json",
+    "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-multicell-edit-limitation-packet.json",
+    "output/playwright/orders-runtime-g2/2026-03-20/orders-runtime-paste-limitation-packet.json",
     "docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md",
     "docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json"
   ],
   "proof_budget": {
     "fresh_deployed_reruns_remaining": 0,
     "broad_g2_bundle": "spent",
-    "narrow_selection_probe": "spent on shipped build",
+    "narrow_selection_probe": "spent on current staging build",
     "narrow_fill_probe": "spent on shipped build",
     "local_proofability": "green locally and closed with shipped-build evidence for SALE-ORD-019 and SALE-ORD-022",
-    "rule": "Do not spend more TER-795 live proof budget unless a new regression reopens G2. Keep TER-796 sealed, preserve the SALE-ORD-022 no-reload caveat, and use G5-specific proof artifacts for the active surfacing gate."
+    "rule": "Do not spend more TER-795 live proof budget unless a new regression reopens G2. Keep TER-796 sealed, preserve the SALE-ORD-022 no-reload caveat, and use G6-specific proof artifacts for the active retirement-remediation gate."
   },
   "repair_queue": [
     "All 9 G2 rows are now classified. No TER-795 rows remain in the active repair queue.",
     "Keep `TER-796` sealed unless a future isolated row-op rerun reproduces a real regression.",
     "Keep the `SALE-ORD-022` closure packet honest: it proves shipped-route propagation on build `build-mmxxcgce`, not a separate reload or persistence round-trip.",
     "Keep `SALE-ORD-031` recorded as a limitation until a live Orders surface actually exercises sort/filter.",
-    "Active execution has moved to G5 surfacing-affordance closure; do not reopen G2 unless a classified row regresses."
+    "Active execution has moved to reopened G6 retirement remediation; do not reopen G2 unless a classified row regresses."
   ],
   "review_context": {
     "acceptance_rows": [

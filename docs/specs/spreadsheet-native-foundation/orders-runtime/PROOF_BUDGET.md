@@ -2,11 +2,11 @@
 
 _Generated file. Advisory only. Do not edit by hand._
 
-- Generated at: `2026-03-20T17:06:40.009Z`
-- Active gate: `G5`
-- Linear gate: `TER-791`
+- Generated at: `2026-03-20T20:18:07.426Z`
+- Active gate: `G6`
+- Linear gate: `TER-792`
 - Active atomic card: `TER-795`
-- Current build: `build-mmxxcgce`
+- Current build: `build-mmz7p245`
 
 ## Budget State
 
@@ -22,7 +22,7 @@ _Generated file. Advisory only. Do not edit by hand._
 ## Cheapest Next Probe
 
 - Next row: `none`
-- Command shape: Do not spend more TER-795 proof budget unless a regression reopens G2. Move active execution to `G5` via `docs/roadmaps/orders-spreadsheet-runtime/roadmap-4-g5-surfacing-affordance-closure.md`.
+- Command shape: Do not spend more TER-795 proof budget unless a regression reopens G2. Move active execution to `G6` via `docs/roadmaps/orders-spreadsheet-runtime/roadmap-5-g6-proof-verdict-sync.md`.
 - Rule: Keep TER-795 closed with evidence and use active-gate-specific proof artifacts for the next tranche.
 
 ## Guardrails
@@ -36,7 +36,7 @@ _Generated file. Advisory only. Do not edit by hand._
 ## Source Inputs
 
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
-- `docs/specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md`
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/G6-rollout-verdict.md`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
 - `docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md`
