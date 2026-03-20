@@ -17,9 +17,9 @@ SALE-ORD-015,Orders-owned,code-proven,G3,TER-773,sheet-native queue draft delete
 SALE-ORD-016,Orders-owned,code-proven,G3,TER-774,quote/client/need/sales-sheet seeded-entry proof
 SALE-ORD-017,Orders-owned,code-proven,G3,TER-773,autosave plus unsaved-nav plus keyboard shortcut proof
 SALE-ORD-018,Orders-owned,code-proven,G3,TER-774,client-seeded credit pricing referral context proof
-SALE-ORD-019,Orders-owned,partial,G2,TER-770,full drag shift cmd and scope-selection proof across required surfaces
-SALE-ORD-020,Orders-owned,partial,G2,TER-771,multi-cell edit pricing autosave proof
-SALE-ORD-021,Orders-owned,partial,G2,TER-771,approved-field paste proof on staging
+SALE-ORD-019,Orders-owned,live-proven,G2,TER-770,full drag shift cmd and scope-selection proof across required surfaces
+SALE-ORD-020,Orders-owned,blocker,G2,TER-771,multi-cell edit pricing autosave proof
+SALE-ORD-021,Orders-owned,blocker,G2,TER-771,approved-field paste proof on staging
 SALE-ORD-022,Orders-owned,live-proven,G2,TER-771,fill handle proof on staging
 SALE-ORD-023,Orders-owned,partial,G4,TER-777,cross-surface shared adapter consistency proof
 SALE-ORD-024,Orders-owned,partial,G5,TER-778,selection summary and blocked-edit surfacing proof on queue and support surfaces
@@ -27,10 +27,10 @@ SALE-ORD-025,Orders-owned,partial,G5,TER-778,editable versus locked cues proof a
 SALE-ORD-026,Orders-owned,partial,G5,TER-778,discoverability proof across queue support and document surfaces
 SALE-ORD-027,Orders-owned,implemented-not-surfaced,G5,TER-778,workflow action visibility proof after spreadsheet edits
 SALE-ORD-028,Orders-owned,blocked,G3,TER-774,explicit sheet-native conversion ownership and proof
-SALE-ORD-029,Orders-owned,partial,G2,TER-771,clear-style actions and structured edit rejection proof
+SALE-ORD-029,Orders-owned,code-proven,G2,TER-771,clear-style actions and structured edit rejection proof
 SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,"Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging"
-SALE-ORD-031,Orders-owned,partial,G2,TER-771,sort/filter-safe targeting proof
+SALE-ORD-031,Orders-owned,limitation,G2,TER-771,sort/filter-safe targeting proof
 SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,"duplicate, quick-add, and delete row-operation proof on staging"
 SALE-ORD-033,Orders-owned,blocked,G5,TER-778,per-surface discoverability proof
 SALE-ORD-034,Orders-owned,blocked,G4,TER-777,active-row versus focused-cell workflow ambiguity proof
-SALE-ORD-035,Orders-owned,partial,G2,TER-771,failure-mode bundle proof beyond immediate invalid-edit rejection
+SALE-ORD-035,Orders-owned,code-proven,G2,TER-771,failure-mode bundle proof beyond immediate invalid-edit rejection
