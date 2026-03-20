@@ -11,5 +11,5 @@
   - `execution-metrics.json`
   - Linear issues `TER-800`..`TER-802`
   - route-level proof bundle references in `02-proof-row-map.csv`
-- Status: `blocked`
-- Next unblock: accept G3 document gate so queue and support rollout can begin.
+- Status: `open`
+- Next: G3 closed with evidence. Queue and support cross-surface rollout can begin.
