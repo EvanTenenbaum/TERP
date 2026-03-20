@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "gate": "G2",
+  "row_id": "SALE-ORD-035",
+  "issue": "TER-771",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx",
+  "suggested_verdict": "code-proven",
+  "acceptance_criteria": "Failure-mode bundle proof beyond immediate invalid-edit rejection: fill-end validation revert, cogsPerUnit rejection, clipboard rejection, paste overflow, locked-column suppression, and hidden-row preservation.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "fill-end-validation-revert",
+      "label": "Fill end reverts when a filled value fails field validation",
+      "passed": true,
+      "expected": "onChange is NOT called when onFillEnd produces a row with invalid quantity (-1); snapshot restore prevents propagation.",
+      "observed": "Unit test: reverts fill-end when a filled value fails field validation",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "cogs-rejection-revert",
+      "label": "Invalid cogsPerUnit edit is rejected with revert to previous value",
+      "passed": true,
+      "expected": "onCellValueChanged with cogsPerUnit=0 triggers revert to original cogsPerUnit=10 and surfaces toast error.",
+      "observed": "Unit test: rejects invalid cogsPerUnit edit and reverts to the previous value",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "invalid-quantity-inline-revert",
+      "label": "Invalid inline quantity edit reverts to last valid state",
+      "passed": true,
+      "expected": "onCellValueChanged with quantity=-2 triggers revert and surfaces toast error.",
+      "observed": "Pre-existing unit test (line 434): reverts rejected inline edits back to the last valid line-item state",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "clipboard-invalid-rejection",
+      "label": "Invalid clipboard values on approved fields are rejected with structured messages",
+      "passed": true,
+      "expected": "processCellFromClipboard returns original value and surfaces blocked message for invalid quantity -2.",
+      "observed": "Pre-existing unit test (line 462): blocks invalid clipboard edits on approved fields and surfaces the rejection",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "paste-overflow-rejection",
+      "label": "Paste rectangles that spill into locked columns are rejected",
+      "passed": true,
+      "expected": "processDataFromClipboard returns null and surfaces blocked message when paste width exceeds editable column span.",
+      "observed": "Pre-existing unit test (line 490): rejects paste rectangles that spill into locked document columns",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "locked-cut-suppression",
+      "label": "Cut suppression on locked columns with structured rejection",
+      "passed": true,
+      "expected": "suppressKeyboardEvent returns true for Ctrl+X on lineTotal with rejection message.",
+      "observed": "Pre-existing unit test (line 522): suppresses cut shortcuts when the current selection includes locked document columns",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "locked-delete-suppression",
+      "label": "Delete suppression on locked columns with structured rejection",
+      "passed": true,
+      "expected": "suppressKeyboardEvent returns true for Delete on productDisplayName with rejection message.",
+      "observed": "Pre-existing unit test (line 583): suppresses delete shortcuts when the current selection includes locked document columns",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "locked-fill-suppression",
+      "label": "Fill blocked on locked columns with structured rejection",
+      "passed": true,
+      "expected": "onFillStart surfaces blocked message when selection extends to lineTotal.",
+      "observed": "Pre-existing unit test (line 639): surfaces a blocked fill message when selection reaches locked document columns",
+      "failure_impact": "blocker"
+    },
+    {
+      "id": "fill-writeback-hidden-row",
+      "label": "Hidden rows preserved during fill writeback",
+      "passed": true,
+      "expected": "Fill end iterates normalizedItems by rowId, preserving rows not visible in the grid display.",
+      "observed": "Pre-existing unit test (line 380): keeps hidden rows and original order stable when fill writeback follows grid display order",
+      "failure_impact": "blocker"
+    }
+  ],
+  "optional_checks": {
+    "undo_across_autosave": {
+      "status": "deferred",
+      "note": "Undo-across-autosave is a sub-requirement that requires end-to-end integration testing with the real autosave pipeline. Unit tests cannot exercise the full undo/redo stack across an autosave round-trip."
+    }
+  },
+  "summary": {
+    "new_tests": 2,
+    "pre_existing_tests": 7,
+    "total_assertions": 9,
+    "all_passed": true,
+    "test_file": "client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx",
+    "failure_modes_covered": [
+      "fill-end validation revert",
+      "invalid cogsPerUnit rejection",
+      "invalid inline quantity revert",
+      "invalid clipboard paste rejection",
+      "paste-rectangle overflow rejection",
+      "locked-column cut suppression",
+      "locked-column delete suppression",
+      "locked-column fill suppression",
+      "hidden-row preservation during fill"
+    ]
+  },
+  "prior_review": {
+    "label": "Code-proven closure via unit tests",
+    "conclusion": "The failure-mode bundle is comprehensively covered: 2 new tests for fill-end validation revert and cogsPerUnit rejection, plus 7 pre-existing tests for inline revert, clipboard rejection, paste overflow, locked-column suppression (cut, delete, fill), and hidden-row preservation. Undo-across-autosave deferred as a limitation requiring end-to-end integration."
+  }
+}

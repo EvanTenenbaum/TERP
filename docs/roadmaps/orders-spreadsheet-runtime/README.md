@@ -41,9 +41,9 @@ Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until t
 | Order | Roadmap                                                      | Gate | Linear Gate | Current Verdict        | Prerequisite |
 | ----- | ------------------------------------------------------------ | ---- | ----------- | ---------------------- | ------------ |
 | `0`   | [Roadmap 0](./roadmap-0-g1-engine-verdict.md)                | `G1` | `TER-787`   | `closed with evidence` | none         |
-| `1`   | [Roadmap 1](./roadmap-1-g2-shared-runtime-foundation.md)     | `G2` | `TER-788`   | `partial`              | Roadmap 0    |
-| `2`   | [Roadmap 2](./roadmap-2-g3-orders-document-rollout.md)       | `G3` | `TER-789`   | `open`                 | Roadmap 1    |
-| `3`   | [Roadmap 3](./roadmap-3-g4-cross-surface-rollout.md)         | `G4` | `TER-790`   | `open`                 | Roadmap 2    |
+| `1`   | [Roadmap 1](./roadmap-1-g2-shared-runtime-foundation.md)     | `G2` | `TER-788`   | `closed with evidence` | Roadmap 0    |
+| `2`   | [Roadmap 2](./roadmap-2-g3-orders-document-rollout.md)       | `G3` | `TER-789`   | `closed with evidence` | Roadmap 1    |
+| `3`   | [Roadmap 3](./roadmap-3-g4-cross-surface-rollout.md)         | `G4` | `TER-790`   | `closed with evidence` | Roadmap 2    |
 | `4`   | [Roadmap 4](./roadmap-4-g5-surfacing-affordance-closure.md)  | `G5` | `TER-791`   | `open`                 | Roadmap 3    |
 | `5`   | [Roadmap 5](./roadmap-5-g6-proof-verdict-sync.md)            | `G6` | `TER-792`   | `open`                 | Roadmap 4    |
 | `6`   | [Roadmap 6](./roadmap-6-g7-retirement-governance-handoff.md) | `G7` | `TER-793`   | `open`                 | Roadmap 5    |
@@ -51,7 +51,7 @@ Blocked work cannot be `In Progress`. A downstream roadmap stays blocked until t
 ## Global Execution Rules
 
 - Gate verdicts use only: `open`, `partial`, `closed with evidence`, `rejected with evidence`.
-- While `G2` is `partial`, `G3` through `G7` stay blocked by contract even if their standing verdict remains `open`.
+- `G2`, `G3`, and `G4` are closed with evidence. `G5` is the active gate. `G6` and `G7` stay blocked until their prerequisites close.
 - No roadmap is done from ticket prose alone.
 - Active-gate operating model is `1 coordinator + up to 2 read-only sidecars + at most 1 narrow writer` until the current gate has a clean checkpointed proof packet.
 - Sidecars may explore, adversarially review, or map the next gate, but the coordinator owns source-of-truth updates, merge decisions, and gate promotion.

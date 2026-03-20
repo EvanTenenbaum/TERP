@@ -4,9 +4,9 @@
 
 - Gate: `G4`
 - Linear gate: `TER-790`
-- Current verdict: `open`
-- Execution state: `blocked pending Roadmap 2`
-- Prerequisites: Roadmap 2 `closed with evidence`
+- Current verdict: `closed with evidence`
+- Execution state: `complete`
+- Prerequisites: Roadmap 2 `closed with evidence` (met)
 - Gate file: [G4-cross-surface-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G4-cross-surface-gate.md)
 
 ## Objective
@@ -15,8 +15,11 @@ Roll the shared interaction grammar into queue and support surfaces and close wo
 
 Current truth:
 
-- queue and support already participate in the current shared runtime path
-- this roadmap stays blocked until `G3` closes because the document-first gate remains authoritative
+- G4 is closed with evidence — all 5 rows classified
+- queue is `live-proven` for SALE-ORD-001 and SALE-ORD-002 (from G2 packet)
+- SALE-ORD-007 (confirmed queue return): code-proven via accounting/shipping handoff unit tests
+- SALE-ORD-023 (cross-surface consistency): code-proven via shared PowersheetGrid contract tests
+- SALE-ORD-034 (workflow targeting): code-proven via targeting disambiguation tests (target label, multi-row lockout, single-row enablement)
 
 ## Allowed Inputs
 

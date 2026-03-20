@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "gate": "G3",
+  "row_ids": ["SALE-ORD-005", "SALE-ORD-016", "SALE-ORD-017", "SALE-ORD-018"],
+  "issue": "TER-798",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/OrderCreatorPage.pricing.test.ts",
+  "suggested_verdict": "code-proven",
+  "acceptance_criteria": "Document logic preservation proof: pricing recalculation, autosave integration, undo integration, validation, seeded-entry, and route hydration survive the runtime migration from classic to sheet-native.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "recalculation-quantity",
+      "label": "Quantity edits trigger calculateLineItemFromRetailPrice through the adapter",
+      "passed": true,
+      "expected": "Editing quantity recalculates lineTotal while preserving unitPrice.",
+      "observed": "Unit test: recalculates line items when spreadsheet edits change an approved field (quantity 2→5, lineTotal 25→62.5).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "recalculation-unitprice",
+      "label": "UnitPrice edits trigger calculateLineItemFromRetailPrice with margin reverse-calculation",
+      "passed": true,
+      "expected": "Editing unitPrice recalculates marginPercent and lineTotal from retail price. isMarginOverridden=true, marginSource=MANUAL.",
+      "observed": "Unit test: recalculates margin from retail price when unitPrice is edited through the document adapter (unitPrice 12.5→20, marginPercent→50, lineTotal→40).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "recalculation-margin",
+      "label": "MarginPercent edits trigger calculateLineItem with forward-calculation",
+      "passed": true,
+      "expected": "Editing marginPercent recalculates unitPrice and lineTotal from margin. isMarginOverridden=true, marginSource=MANUAL.",
+      "observed": "Unit test: recalculates unit price from margin when marginPercent is edited through the document adapter (marginPercent 25→50, unitPrice→20, lineTotal→40).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "validation-unitprice-negative",
+      "label": "Negative unitPrice is rejected and reverted with toast error",
+      "passed": true,
+      "expected": "unitPrice=-5 triggers rejection, reverts to 12.5, shows toast error.",
+      "observed": "Unit test: validates unitPrice rejects negative values and reverts.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "validation-margin-negative",
+      "label": "Negative marginPercent is rejected and reverted with toast error",
+      "passed": true,
+      "expected": "marginPercent=-10 triggers rejection, reverts to 25, shows toast error.",
+      "observed": "Unit test: validates marginPercent rejects negative values and reverts.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "validation-cogsperunit",
+      "label": "Zero cogsPerUnit is rejected and reverted",
+      "passed": true,
+      "expected": "cogsPerUnit=0 triggers rejection, reverts to 10, shows toast error.",
+      "observed": "Unit test: rejects invalid cogsPerUnit edit and reverts to the previous value.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "validation-quantity-negative",
+      "label": "Negative quantity is rejected and reverted",
+      "passed": true,
+      "expected": "quantity=-2 triggers rejection, reverts to 2, shows toast error.",
+      "observed": "Unit test: reverts rejected inline edits back to the last valid line-item state.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "workflow-owned-rejection",
+      "label": "Workflow-owned column edits are rejected with structured message",
+      "passed": true,
+      "expected": "Editing lineTotal triggers structured rejection with toast error.",
+      "observed": "Unit test: rejects edits on workflow-owned columns with a structured rejection.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "issample-toggle",
+      "label": "isSample toggle preserves pricing state",
+      "passed": true,
+      "expected": "Toggling isSample from false→true preserves unitPrice and lineTotal.",
+      "observed": "Unit test: toggles isSample through the document adapter without affecting pricing.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-005"]
+    },
+    {
+      "id": "pricing-context-resolution",
+      "label": "resolveInventoryPricingContext correctly identifies customer-profile vs fallback pricing",
+      "passed": true,
+      "expected": "Rows with applied pricing rules return CUSTOMER_PROFILE marginSource. Rows without return DEFAULT.",
+      "observed": "Unit tests: marks rows with applied pricing rules as customer-profile priced; marks rows without pricing rules as fallback priced (OrderCreatorPage.pricing.test.ts).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-018"]
+    },
+    {
+      "id": "autosave-keyboard-bypass",
+      "label": "Autosave keyboard shortcuts do not conflict with spreadsheet keyboard interactions",
+      "passed": true,
+      "expected": "shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget returns true for AG Grid cells inside the PowersheetGrid surface.",
+      "observed": "Unit test: bypasses page-level keyboard handlers when focus is inside the document spreadsheet runtime.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-017"]
+    },
+    {
+      "id": "autosave-integration-contract",
+      "label": "Autosave mutation exists at the page level with debounced 2-second callback",
+      "passed": true,
+      "expected": "OrderCreatorPage defines autoSaveMutation with trpc.orders.updateDraftEnhanced and useDebounceCallback(performAutoSave, 2000).",
+      "observed": "Source inspection: OrderCreatorPage.tsx:1116-1156 defines autosave mutation and debounced callback. handleLineItemsChange at line 1502 calls setItems which triggers the fingerprint change effect.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-017"]
+    },
+    {
+      "id": "seeded-entry-paths",
+      "label": "Quote, client, need, and sales-sheet seeded entry paths exist in OrderCreatorPage",
+      "passed": true,
+      "expected": "Route hydration from quoteId, clientId, needId, fromSalesSheet are all present and functional in sheet-native mode.",
+      "observed": "Source inspection: OrderCreatorPage.tsx:379-385 parses quoteIdFromRoute, clientIdFromRoute, needIdFromRoute. Lines 639-727 handle route hydration for drafts, quotes, and client-seeded entries. Line 422-436 builds routes conditionally for sheet-native vs classic.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-016", "SALE-ORD-018"]
+    },
+    {
+      "id": "undo-integration",
+      "label": "Undo integration exists at the page level for line-item removal",
+      "passed": true,
+      "expected": "OrderCreatorPage tracks line-item removals and registers undo actions. Keyboard undo is wired through useWorkSurfaceKeyboard.",
+      "observed": "Source inspection: OrderCreatorPage.tsx:468 creates useUndo hook. Lines 1447-1500 define registerLineItemRemovalUndo. Lines 1405-1428 wire Cmd+Z/Ctrl+Z and Cmd+S/Ctrl+S keyboard shortcuts.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-017"]
+    }
+  ],
+  "row_verdicts": {
+    "SALE-ORD-005": {
+      "verdict": "code-proven",
+      "evidence": "All pricing validation paths (quantity, cogsPerUnit, marginPercent, unitPrice, isSample, workflow-owned) are proven via unit tests. Recalculation uses calculateLineItem and calculateLineItemFromRetailPrice correctly.",
+      "residual": "Live finalize guardrail and credit warning requires staging proof."
+    },
+    "SALE-ORD-016": {
+      "verdict": "code-proven",
+      "evidence": "Seeded entry paths (quote, client, need, sales-sheet) exist in OrderCreatorPage.tsx:379-727. Route building is conditional for sheet-native mode at lines 422-436.",
+      "residual": "Live seeded-entry proof requires staging with a seeded context."
+    },
+    "SALE-ORD-017": {
+      "verdict": "code-proven",
+      "evidence": "Autosave mutation (line 1116), debounced callback (line 1156), keyboard shortcut bypass (pricing.test.ts), and undo integration (line 468, 1447-1500) all exist and are tested.",
+      "residual": "Live autosave round-trip and unsaved-nav guard proof requires staging."
+    },
+    "SALE-ORD-018": {
+      "verdict": "code-proven",
+      "evidence": "resolveInventoryPricingContext correctly distinguishes CUSTOMER_PROFILE vs DEFAULT margin source. Unit tests prove both paths.",
+      "residual": "Live client-seeded credit pricing proof requires staging with a pricing-profiled client."
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "gate": "G3",
+  "row_ids": ["SALE-ORD-003", "SALE-ORD-004", "SALE-ORD-006", "SALE-ORD-015"],
+  "issue": "TER-797",
+  "generated_at": "2026-03-20T00:00:00.000Z",
+  "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/OrderCreatorPage.pricing.test.ts",
+  "suggested_verdict": "code-proven",
+  "acceptance_criteria": "Document adapter mount proof: OrdersDocumentLineItemsGrid renders through PowersheetGrid as the exclusive runtime path, no classic LineItemTable fallback exists inside the document grid component, and all document-owned behaviors pass through the shared adapter.",
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "powersheet-grid-mount",
+      "label": "OrdersDocumentLineItemsGrid renders through PowersheetGrid with surfaceId=orders-document-grid",
+      "passed": true,
+      "expected": "PowersheetGrid mock receives surfaceId='orders-document-grid', selectionMode='cell-range', enableFillHandle=true, enableUndoRedo=true.",
+      "observed": "Unit test: arms the document grid with spreadsheet runtime behaviors and row actions. Verifies all props passed to PowersheetGrid.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-003", "SALE-ORD-004"]
+    },
+    {
+      "id": "no-classic-fallback",
+      "label": "OrdersDocumentLineItemsGrid contains no classic LineItemTable rendering path",
+      "passed": true,
+      "expected": "The component imports PowersheetGrid and renders exclusively through it. No import of LineItemTable exists in the component file.",
+      "observed": "Source inspection: OrdersDocumentLineItemsGrid.tsx imports PowersheetGrid at line 18 and renders it at line 1195+. No LineItemTable import or rendering exists. The classic/sheet-native conditional is in OrderCreatorPage.tsx:1692, not in the grid component.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-003"]
+    },
+    {
+      "id": "row-operations-through-adapter",
+      "label": "Duplicate, delete, and add-item row operations pass through the shared adapter",
+      "passed": true,
+      "expected": "Row operations (duplicate, delete, add) render as header actions in PowersheetGrid and call onChange/onAddItem without bypassing the adapter.",
+      "observed": "Unit test: duplicates and deletes selected rows through the shared row operations. Unit test: fills price, clears samples, and delegates add-item insertion without replacing orchestration.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-006", "SALE-ORD-015"]
+    },
+    {
+      "id": "keyboard-bypass-integration",
+      "label": "Page-level keyboard handlers are bypassed when focus is inside the document spreadsheet runtime",
+      "passed": true,
+      "expected": "shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget returns true when target is inside [data-powersheet-surface-id='orders-document-grid'].",
+      "observed": "Unit test: bypasses page-level keyboard handlers when focus is inside the document spreadsheet runtime (OrderCreatorPage.pricing.test.ts).",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-003", "SALE-ORD-004"]
+    },
+    {
+      "id": "fill-handle-through-adapter",
+      "label": "Fill handle operations pass through the document adapter with validation",
+      "passed": true,
+      "expected": "fillHandleOptions.setFillValue uses deterministic vertical fill. onFillStart/onFillEnd handle snapshot and writeback. Invalid fill values revert.",
+      "observed": "Unit tests: uses a deterministic vertical fill callback for approved document fields; persists fill-handle edits back into document state on fill end; reverts fill-end when a filled value fails field validation.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-004"]
+    },
+    {
+      "id": "selection-model-integration",
+      "label": "Selection set and summary are tracked through the adapter",
+      "passed": true,
+      "expected": "onSelectionSetChange and onSelectionSummaryChange callbacks update adapter state. Selection-dependent behaviors (suppressCut, fill price) respond to selection changes.",
+      "observed": "Unit tests: uses the focused row id instead of display index when filling prices; suppresses cut shortcuts when the current selection includes locked document columns.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-003"]
+    }
+  ],
+  "row_verdicts": {
+    "SALE-ORD-003": {
+      "verdict": "code-proven",
+      "evidence": "PowersheetGrid mount with exclusive rendering path, no classic fallback in component. Conditional mount lives in OrderCreatorPage.tsx:1692 via inSheetNativeOrdersSurface flag.",
+      "residual": "Live staging proof deferred — no fresh staging build available."
+    },
+    "SALE-ORD-004": {
+      "verdict": "code-proven",
+      "evidence": "Recalculation through adapter (quantity, cogsPerUnit, marginPercent, unitPrice edit tests), fill-handle writeback, and keyboard bypass all proven via unit tests.",
+      "residual": "Live draft edit + autosave round-trip requires staging proof."
+    },
+    "SALE-ORD-006": {
+      "verdict": "code-proven",
+      "evidence": "Row duplicate and delete operations proven via unit tests. Queue return behavior is in OrderCreatorPage (page-level routing), not adapter-level.",
+      "residual": "Live reopen/delete/queue-return flow requires staging proof."
+    },
+    "SALE-ORD-015": {
+      "verdict": "code-proven",
+      "evidence": "Delete row operation proven via unit test (duplicates and deletes selected rows). Queue-level draft delete is handled by OrdersSheetPilotSurface, not the document adapter.",
+      "residual": "None — queue draft delete is G1/G4 scope."
+    }
+  }
+}

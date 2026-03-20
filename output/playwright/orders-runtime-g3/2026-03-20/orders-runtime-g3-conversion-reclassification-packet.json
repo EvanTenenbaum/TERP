@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "gate": "G3",
+  "row_ids": ["SALE-ORD-012", "SALE-ORD-028"],
+  "issue": "TER-799",
+  "generated_at": "2026-03-20T04:15:00.000Z",
+  "suggested_verdict": "code-proven",
+  "supersedes": "output/playwright/orders-runtime-g3/2026-03-20/orders-runtime-g3-conversion-blocker-packet.json",
+  "acceptance_criteria": "Quote-to-order conversion ownership reclassification: existing conversion mutations are adjacent-owned, sheet-native surface consumes their output without a parallel mutation path.",
+  "decision": {
+    "made_by": "Evan (project owner)",
+    "decision_date": "2026-03-20",
+    "summary": "Conversion paths (SalesWorkspacePage route redirect, OrderCreatorPage route-based quoteId hydration) are adjacent-owned. The sheet-native surface receives and renders the hydrated result via the existing OrderCreatorPage route parsing and data mapping. No parallel mutation path, save-state path, or ownership ambiguity exists.",
+    "rationale": [
+      "OrderCreatorPage.tsx:379-385 parses quoteIdFromRoute and isDuplicateRoute from URL params.",
+      "OrderCreatorPage.tsx:639-682 hydrates draft/quote data into editor state including line items, client, and adjustment.",
+      "OrderCreatorPage.tsx:422-436 builds document/queue routes conditionally for sheet-native vs classic mode.",
+      "The conversion path (SalesWorkspacePage route redirect → OrderCreatorPage quoteIdFromRoute parsing → data hydration) is unchanged — sheet-native does not add a parallel conversion path.",
+      "No ownership ambiguity: the route hydration lives in OrderCreatorPage, the sheet-native surface renders the result through PowersheetGrid."
+    ]
+  },
+  "build": {
+    "id": "build-mmxzi3to",
+    "deploy_commit": "1e248c932623ad6c5248a7f18b4e1d23f128b297",
+    "deployment_build_time": "2026-03-19T21:30:36.648Z"
+  },
+  "route": "https://terp-staging-yicld.ondigitalocean.app/sales?tab=orders&surface=sheet-native&orderId=627",
+  "persona": "sales-manager",
+  "assertions": [
+    {
+      "id": "quote-to-order-route-hydration",
+      "label": "Quote-to-order route parsing and hydration work in sheet-native mode",
+      "passed": true,
+      "expected": "OrderCreatorPage parses quoteIdFromRoute, loads quote data, and hydrates editor state regardless of surface variant.",
+      "observed": "OrderCreatorPage.tsx:379-385 parses route params. Lines 639-682 hydrate data with setClientId, setItems, setActiveDraftId. Lines 422-436 build routes conditionally. The hydration path is surface-agnostic.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-012"]
+    },
+    {
+      "id": "no-parallel-mutation",
+      "label": "Sheet-native does not add a parallel conversion mutation path",
+      "passed": true,
+      "expected": "The existing route-based conversion path is the only conversion mechanism. Sheet-native does not duplicate or override it.",
+      "observed": "OrderCreatorPage contains no conversion mutation of its own. It receives hydrated data from the existing tRPC router. OrdersDocumentLineItemsGrid renders the result through PowersheetGrid.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-012", "SALE-ORD-028"]
+    },
+    {
+      "id": "conversion-ownership-reclassified",
+      "label": "Conversion ownership reclassified as adjacent-owned per project owner decision",
+      "passed": true,
+      "expected": "Project owner confirms conversion mutations are adjacent-owned and sheet-native consumes their output.",
+      "observed": "Decision made 2026-03-20: existing conversion mutations are sufficient, no sheet-native-specific conversion path needed.",
+      "failure_impact": "blocker",
+      "proof_rows": ["SALE-ORD-028"]
+    }
+  ],
+  "row_verdicts": {
+    "SALE-ORD-012": {
+      "verdict": "code-proven",
+      "evidence": "Quote duplication route parsing, hydration, and conditional route building all work in sheet-native mode. No parallel mutation path exists.",
+      "residual": "Live quote-to-order flow requires staging proof for live-proven promotion."
+    },
+    "SALE-ORD-028": {
+      "verdict": "code-proven",
+      "evidence": "Conversion ownership reclassified as adjacent-owned per project owner decision. Existing mutations are consumed by sheet-native without duplication.",
+      "residual": "None — ownership decision closes this row."
+    }
+  }
+}

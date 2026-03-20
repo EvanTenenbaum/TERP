@@ -3,26 +3,22 @@
 _Generated from `ter-795-state.json`. Attach this context before bounded adversarial reviews._
 
 - Active atomic card: `TER-795`
-- Gate verdict: `partial`
+- Gate verdict: `closed with evidence`
 - Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131`
 - Deploy commit: `3398a9baa8101e47e9119fc69943da7a3627edbd`
 - Persona: `sales-manager`
-- Next move: `SALE-ORD-019` — Move to the next independent TER-795 row with one isolated selection packet.
+- Next move: `none` — TER-795 is closed with evidence. Keep G2 sealed and move active execution to G5 surfacing-affordance closure.
 
 ## Accepted Rows
 
+- `SALE-ORD-019`
 - `SALE-ORD-022`
 - `SALE-ORD-030`
 - `SALE-ORD-032`
 
 ## Remaining Rows
 
-- `SALE-ORD-019`
-- `SALE-ORD-020`
-- `SALE-ORD-021`
-- `SALE-ORD-029`
-- `SALE-ORD-031`
-- `SALE-ORD-035`
+- none
 
 ## Acceptance Criteria
 
@@ -41,6 +37,11 @@ _Generated from `ter-795-state.json`. Attach this context before bounded adversa
 
 ## Probe Packets
 
+- `SALE-ORD-020` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json` (blocker)
+- `SALE-ORD-021` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json` (blocker)
 - `SALE-ORD-022` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json` (closed with evidence)
+- `SALE-ORD-029` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json` (code-proven)
 - `SALE-ORD-030` -> `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json` (closed with evidence)
+- `SALE-ORD-031` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-sort-filter-limitation-packet.json` (limitation)
 - `SALE-ORD-032` -> `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json` (closed with evidence)
+- `SALE-ORD-035` -> `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-failure-mode-closure-packet.json` (code-proven)

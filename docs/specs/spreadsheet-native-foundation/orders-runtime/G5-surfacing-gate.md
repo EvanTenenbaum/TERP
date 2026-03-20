@@ -11,5 +11,5 @@
   - `Documentation.md`
   - `02-proof-row-map.csv`
   - Linear issue `TER-803`
-- Status: `blocked`
-- Next unblock: complete G4 cross-surface parity so surfacing proof can be judged on the final interaction model.
+- Status: `open`
+- Next: G4 closed with evidence. Surfacing and discoverability proof can begin on the final interaction model.
