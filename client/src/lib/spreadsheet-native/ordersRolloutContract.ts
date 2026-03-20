@@ -125,9 +125,9 @@ export const ordersRolloutRequirements: OrdersRolloutRequirementRecord[] = [
     implementationSource:
       "SalesWorkspacePage route canonicalization plus existing conversion mutations and OrderCreatorPage route hydration",
     proofSource: "SALE-ORD-012 / SALE-ORD-028",
-    implementationStatus: "not-started",
-    surfacingStatus: "not-started",
-    releaseStatus: "open",
+    implementationStatus: "implemented",
+    surfacingStatus: "surfaced-and-proven",
+    releaseStatus: "implemented",
     linkedCapabilityIds: ["SALE-ORD-012", "SALE-ORD-028"],
   },
   {

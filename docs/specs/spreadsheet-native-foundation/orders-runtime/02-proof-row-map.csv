@@ -10,7 +10,7 @@ SALE-ORD-008,adjacent-owned,partial,G7,TER-806,explicit accounting launch owners
 SALE-ORD-009,adjacent-owned handoff,live-proven,G7,TER-806,retain adjacent-owner handoff acceptance in retirement policy
 SALE-ORD-010,adjacent-owned,partial,G7,TER-806,returns owner-surface proof refresh
 SALE-ORD-011,adjacent-owned handoff,live-proven,G7,TER-806,retain shipping handoff acceptance in retirement policy
-SALE-ORD-012,Orders-owned,partial,G3,TER-774,quote-to-order initiation and mutation proof
+SALE-ORD-012,Orders-owned,code-proven,G3,TER-774,quote-to-order initiation and mutation proof
 SALE-ORD-013,ownership-blocked,blocked,G7,TER-806,explicit owner decision
 SALE-ORD-014,adjacent-owned,blocked,G7,TER-806,accounting output proof or explicit reclassification
 SALE-ORD-015,Orders-owned,code-proven,G3,TER-773,sheet-native queue draft delete proof
@@ -26,7 +26,7 @@ SALE-ORD-024,Orders-owned,partial,G5,TER-778,selection summary and blocked-edit 
 SALE-ORD-025,Orders-owned,partial,G5,TER-778,editable versus locked cues proof across all required surfaces
 SALE-ORD-026,Orders-owned,partial,G5,TER-778,discoverability proof across queue support and document surfaces
 SALE-ORD-027,Orders-owned,implemented-not-surfaced,G5,TER-778,workflow action visibility proof after spreadsheet edits
-SALE-ORD-028,Orders-owned,blocked,G3,TER-774,explicit sheet-native conversion ownership and proof
+SALE-ORD-028,adjacent-owned,code-proven,G3,TER-774,conversion reclassified as adjacent-owned per project owner decision
 SALE-ORD-029,Orders-owned,code-proven,G2,TER-771,clear-style actions and structured edit rejection proof
 SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,"Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging"
 SALE-ORD-031,Orders-owned,limitation,G2,TER-771,sort/filter-safe targeting proof

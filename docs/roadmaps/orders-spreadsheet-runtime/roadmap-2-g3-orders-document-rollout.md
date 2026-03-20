@@ -4,8 +4,8 @@
 
 - Gate: `G3`
 - Linear gate: `TER-789`
-- Current verdict: `partial`
-- Execution state: `active — 8/10 rows code-proven, 2 blocked on conversion ownership`
+- Current verdict: `closed with evidence`
+- Execution state: `complete — all 10 rows classified`
 - Prerequisites: Roadmap 1 `closed with evidence` (met)
 - Gate file: [G3-document-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G3-document-gate.md)
 
@@ -17,9 +17,10 @@ Current truth:
 
 - G2 is `closed with evidence` — prerequisite met
 - document-mode runtime mounting is proven: `OrdersDocumentLineItemsGrid` renders exclusively through `PowersheetGrid`
-- 8/10 G3 rows are `code-proven` via unit tests and source inspection
-- `SALE-ORD-012` (partial) and `SALE-ORD-028` (blocked) require conversion ownership decision
+- all 10 G3 rows are classified: 9 `code-proven`, 1 reclassified as `adjacent-owned` (SALE-ORD-028)
+- conversion ownership decided 2026-03-20: existing mutations are adjacent-owned, sheet-native consumes output
 - all code-proven rows need live staging proof for `live-proven` promotion
+- G4 cross-surface rollout is now unblocked
 
 ## Allowed Inputs
 
