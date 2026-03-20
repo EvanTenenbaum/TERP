@@ -7,11 +7,11 @@
   "initiative_status": "reopened",
   "gates_closed": 5,
   "gates_total": 7,
-  "live_proven_count": 23,
+  "live_proven_count": 25,
   "code_proven_count": 0,
   "accepted_limitation_count": 5,
   "accepted_adjacent_count": 5,
-  "retained_handoff_count": 2,
+  "retained_handoff_count": 0,
   "notes": [
     "implemented_not_surfaced_count is currently driven by ORD-SS-012 in the rollout contract: sort/filter-safe targeting is implemented but still not surfaced on a live editable Orders surface.",
     "code_to_live_lag_days dropped to 0 once staging build-mmwp9o9e proved the deployed Add Item focus repair and preserved the cleared AG Grid license state on March 18, 2026",

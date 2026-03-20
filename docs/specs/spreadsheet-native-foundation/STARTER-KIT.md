@@ -4,8 +4,9 @@
 **Audience**: Coder agents implementing sheet-native surfaces for new modules
 
 This document captures every proven pattern from the Orders pilot so future modules
-can reuse them without re-discovery. The Orders pilot passed 7 gates and proved the
-PowersheetGrid runtime across queue, document, and handoff contexts.
+can reuse them without re-discovery. The Orders pilot closed 5 of 7 gates (G6 and G7
+remain open with accepted limitations) and proved the PowersheetGrid runtime across
+queue, document, and handoff contexts.
 
 ---
 

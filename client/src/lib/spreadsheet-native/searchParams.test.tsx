@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useSpreadsheetSurfaceMode } from "./searchParams";
 
@@ -55,5 +55,89 @@ describe("useSpreadsheetSurfaceMode", () => {
 
     expect(result.current.surfaceMode).toBe("classic");
     expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  describe("fallback tracking", () => {
+    let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleInfoSpy.mockRestore();
+    });
+
+    it("logs a fallback event when switching from sheet-native to classic", () => {
+      mockPath = "/sales";
+      mockSearch = "?tab=orders&surface=sheet-native";
+
+      const { rerender } = renderHook(() =>
+        useSpreadsheetSurfaceMode({ enabled: true, ready: true })
+      );
+
+      // Now switch to classic by removing the surface param
+      mockSearch = "?tab=orders";
+      rerender();
+
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[surface-mode-fallback]")
+      );
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining("module=sales")
+      );
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining("from=sheet-native")
+      );
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining("to=classic")
+      );
+    });
+
+    it("does not log when switching from classic to sheet-native", () => {
+      mockPath = "/sales";
+      mockSearch = "?tab=orders";
+
+      const { rerender } = renderHook(() =>
+        useSpreadsheetSurfaceMode({ enabled: true, ready: true })
+      );
+
+      // Switch to sheet-native
+      mockSearch = "?tab=orders&surface=sheet-native";
+      rerender();
+
+      expect(consoleInfoSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("[surface-mode-fallback]")
+      );
+    });
+
+    it("does not log on initial mount with classic mode", () => {
+      mockPath = "/sales";
+      mockSearch = "?tab=orders";
+
+      renderHook(() =>
+        useSpreadsheetSurfaceMode({ enabled: true, ready: true })
+      );
+
+      expect(consoleInfoSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("[surface-mode-fallback]")
+      );
+    });
+
+    it("derives module name from the first path segment", () => {
+      mockPath = "/operations/shipping";
+      mockSearch = "?surface=sheet-native";
+
+      const { rerender } = renderHook(() =>
+        useSpreadsheetSurfaceMode({ enabled: true, ready: true })
+      );
+
+      mockSearch = "";
+      rerender();
+
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining("module=operations")
+      );
+    });
   });
 });

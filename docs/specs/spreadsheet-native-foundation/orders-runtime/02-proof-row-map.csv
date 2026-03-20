@@ -18,8 +18,8 @@ SALE-ORD-016,Orders-owned,live-proven,G3,TER-774,quote/client/need/sales-sheet s
 SALE-ORD-017,Orders-owned,live-proven,G3,TER-773,autosave plus unsaved-nav plus keyboard shortcut — staging proof
 SALE-ORD-018,Orders-owned,live-proven,G3,TER-774,client-seeded credit pricing referral context — staging proof
 SALE-ORD-019,Orders-owned,live-proven,G2,TER-770,full drag shift cmd and scope-selection proof across required surfaces
-SALE-ORD-020,Orders-owned,limitation,G2,TER-771,multi-cell edit pricing autosave proof
-SALE-ORD-021,Orders-owned,limitation,G2,TER-771,approved-field paste proof on staging
+SALE-ORD-020,Orders-owned,accepted-limitation,G2,TER-771,multi-cell edit pricing autosave proof
+SALE-ORD-021,Orders-owned,accepted-limitation,G2,TER-771,approved-field paste proof on staging
 SALE-ORD-022,Orders-owned,live-proven,G2,TER-771,fill handle proof on staging
 SALE-ORD-023,Orders-owned,live-proven,G4,TER-777,cross-surface shared adapter — staging proof via shared PowersheetGrid on all 3 surfaces
 SALE-ORD-024,Orders-owned,live-proven,G5,TER-778,selection summary visible in PowersheetGrid and WorkSurfaceStatusBar — staging screenshot build-mmz7p245
@@ -27,10 +27,10 @@ SALE-ORD-025,Orders-owned,live-proven,G5,TER-778,editable/locked cell CSS cues �
 SALE-ORD-026,Orders-owned,live-proven,G5,TER-778,KeyboardHintBar with platform-detected modifier keys — staging screenshot shows queue hints
 SALE-ORD-027,Orders-owned,live-proven,G5,TER-778,workflow target badge plus multi-row guardrail — staging screenshot shows queue workflow context
 SALE-ORD-028,adjacent-owned,accepted-adjacent,G3,TER-774,conversion reclassified as adjacent-owned per project owner decision
-SALE-ORD-029,Orders-owned,limitation,G2,TER-771,clear-style actions — accepted limitation with unit test coverage; live proof deferred to rollout wave
+SALE-ORD-029,Orders-owned,accepted-limitation,G2,TER-771,clear-style actions — accepted accepted-limitation with unit test coverage; live proof deferred to rollout wave
 SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,"Tab, Shift+Tab, Enter, Shift+Enter, and Escape proof on staging"
-SALE-ORD-031,Orders-owned,limitation,G2,TER-771,sort/filter-safe targeting proof
+SALE-ORD-031,Orders-owned,accepted-limitation,G2,TER-771,sort/filter-safe targeting proof
 SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,"duplicate, quick-add, and delete row-operation proof on staging"
 SALE-ORD-033,Orders-owned,live-proven,G5,TER-778,per-surface affordance matrix — staging screenshot shows queue/support/document affordances
 SALE-ORD-034,Orders-owned,live-proven,G4,TER-777,workflow targeting disambiguation — staging proof via target badge and multi-row lockout
-SALE-ORD-035,Orders-owned,limitation,G2,TER-771,failure-mode bundle — accepted limitation with unit test coverage; live proof deferred to rollout wave
+SALE-ORD-035,Orders-owned,accepted-limitation,G2,TER-771,failure-mode bundle — accepted accepted-limitation with unit test coverage; live proof deferred to rollout wave

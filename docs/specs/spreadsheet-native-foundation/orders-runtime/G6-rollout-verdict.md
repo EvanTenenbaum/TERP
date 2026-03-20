@@ -15,11 +15,10 @@
 - Closure date: 2026-03-20
 - Proof reconciliation:
   - 35 total proof rows
-  - 23 live-proven (001-007, 009, 011-012, 015-019, 022-027, 030, 032-034)
+  - 25 live-proven (001-007, 009, 011-012, 015-019, 022-027, 030, 032-034) — includes 009 and 011 which are adjacent-owned handoffs retained in the retirement policy
   - 0 code-proven
   - 5 accepted-limitation (020, 021, 029, 031, 035)
   - 5 accepted-adjacent (008, 010, 013, 014, 028)
-  - 2 retained handoff (009, 011)
   - 0 rejected, 0 proof-row implemented-not-surfaced, 0 blocked
 - Verdict: **tracker-complete**, **limitation-accepted for remaining rows**
 - Build evidence: staging build-mmz7p245 (2026-03-20) for `SALE-ORD-019`; prior shipped packets remain authoritative for other live rows
