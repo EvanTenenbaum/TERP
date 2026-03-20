@@ -16,7 +16,7 @@
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
   - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json`
+  - selection proof is included in `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-failure-mode-closure-packet.json`

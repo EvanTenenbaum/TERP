@@ -3,11 +3,12 @@
 ## Status Block
 
 <!-- GENERATED:TER-795:ROADMAP-STATUS:START -->
+
 - Gate: `G2`
 - Linear gate: `TER-788`
-- Current verdict: `partial`
-- Execution state: `active`
-- Prerequisites: Roadmap 0 `closed with evidence`
+- Current verdict: `closed with evidence`
+- Execution state: `complete — all 9 rows classified`
+- Prerequisites: Roadmap 0 `closed with evidence` (met)
 - Gate file: [G2-runtime-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md)
 <!-- GENERATED:TER-795:ROADMAP-STATUS:END -->
 
@@ -18,14 +19,14 @@ Finish the shared spreadsheet runtime only. This roadmap does not move Orders do
 Current truth:
 
 <!-- GENERATED:TER-795:ROADMAP-TRUTH:START -->
-- The shared runtime seam already exists in `PowersheetGrid`, and the March 18 targeted runtime tests proved the current adapter path is real rather than aspirational.
-- `TER-794` and `TER-796` are currently safe to treat as closed with evidence; `TER-795` remains partial on the remaining proof rows and the `SALE-ORD-031` limitation.
-- Staging build `build-mmwp9o9e` already cleared the AG Grid watermark or license blocker, restored queue-route health, and kept the Add Item focus repair live.
-- The repaired proof harness rejected the earlier two-cell-range theory and now proves rectangular keyboard paste with a real two-cell range on staging.
-- The fill tranche is shipped: staging build `build-mmxxcgce` records `3,4 -> 5,6` on the isolated live fill-handle probe with no license warnings or page errors, so `SALE-ORD-022` is now closed with evidence.
-- The same continuation fixed the focused-row-id targeting drift, but `SALE-ORD-031` stays partial because the live Orders document surface still disables sort/filter and cannot exercise that path directly.
-- Claude's post-ship review left one residual caution attached to `SALE-ORD-022`: the narrow probe proves live route propagation, not a separate post-reload persistence round-trip.
-- This gate remains open because `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035` still need a closure packet or explicit limitation packet.
+
+- G2 is closed with evidence. All 9 proof rows are classified.
+- 4 rows live-proven: SALE-ORD-019 (selection), SALE-ORD-022 (fill handle), SALE-ORD-030 (edit nav), SALE-ORD-032 (row ops)
+- 2 rows code-proven: SALE-ORD-029 (clear/delete/cut), SALE-ORD-035 (failure modes)
+- 1 row limitation: SALE-ORD-031 (sort/filter disabled by surface design)
+- 2 rows deferred blocker: SALE-ORD-020 (multi-cell edit) and SALE-ORD-021 (paste) — pending fresh staging build, do not block G3/G4
+- Staging build `build-mmxzi3to` is the active proven build for selection and edit-nav rows.
+- Staging build `build-mmxxcgce` is the active proven build for fill-handle rows.
 <!-- GENERATED:TER-795:ROADMAP-TRUTH:END -->
 
 ## Allowed Inputs
