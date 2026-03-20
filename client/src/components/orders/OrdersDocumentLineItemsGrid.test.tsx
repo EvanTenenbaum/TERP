@@ -1117,6 +1117,99 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(onChange).toHaveBeenCalled();
   });
 
+  it("normalizes isSample consistently between inline edit and clipboard paths", () => {
+    const onChange = vi.fn();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, isSample: false })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "isSample" },
+      oldValue: false,
+      newValue: "yes",
+      data: buildLineItem({ id: 1, isSample: false }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].isSample).toBe(true);
+
+    onChange.mockClear();
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "isSample" },
+      oldValue: true,
+      newValue: "1",
+      data: buildLineItem({ id: 1, isSample: true }),
+    });
+
+    const nextItems2 = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems2[0].isSample).toBe(true);
+
+    onChange.mockClear();
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "isSample" },
+      oldValue: true,
+      newValue: "no",
+      data: buildLineItem({ id: 1, isSample: true }),
+    });
+
+    const nextItems3 = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems3[0].isSample).toBe(false);
+  });
+
+  it("rejects marginPercent >= 100 instead of producing incorrect price", () => {
+    const onChange = vi.fn();
+    mockToastError.mockReset();
+
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1, marginPercent: 25 })]}
+        onChange={onChange}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "marginPercent" },
+      oldValue: 25,
+      newValue: "100",
+      data: buildLineItem({ id: 1, marginPercent: 100 }),
+    });
+
+    const nextItems = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems[0].marginPercent).toBe(25);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Margin percent must be less than 100."
+    );
+
+    onChange.mockClear();
+    mockToastError.mockReset();
+    call?.onCellValueChanged?.({
+      rowIndex: 0,
+      colDef: { field: "marginPercent" },
+      oldValue: 25,
+      newValue: "150",
+      data: buildLineItem({ id: 1, marginPercent: 150 }),
+    });
+
+    const nextItems2 = onChange.mock.calls[0][0] as LineItem[];
+    expect(nextItems2[0].marginPercent).toBe(25);
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Margin percent must be less than 100."
+    );
+  });
+
   it("duplicates and deletes selected rows through the shared row operations", () => {
     const onChange = vi.fn();
 

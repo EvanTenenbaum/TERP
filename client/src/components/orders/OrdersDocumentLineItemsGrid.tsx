@@ -464,13 +464,15 @@ function normalizeDocumentLineItemEdit(
     }
     case "marginPercent": {
       const marginPercent = parseFiniteNumber(rawValue);
-      if (marginPercent === null || marginPercent < 0) {
+      if (marginPercent === null || marginPercent < 0 || marginPercent >= 100) {
         return {
           nextItem: null,
           rejection: createPowersheetEditRejection(
             columnKey,
             "invalid-value",
-            "Margin percent must be zero or greater."
+            marginPercent !== null && marginPercent >= 100
+              ? "Margin percent must be less than 100."
+              : "Margin percent must be zero or greater."
           ),
         };
       }
@@ -528,9 +530,7 @@ function normalizeDocumentLineItemEdit(
       const nextSample =
         typeof rawValue === "boolean"
           ? rawValue
-          : String(rawValue ?? "")
-              .trim()
-              .toLowerCase() === "true";
+          : (normalizeSampleClipboardValue(rawValue) ?? false);
       return {
         nextItem: {
           ...item,
