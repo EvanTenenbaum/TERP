@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 
 export type SpreadsheetSurfaceMode = "classic" | "sheet-native";
@@ -63,6 +63,20 @@ export function useSpreadsheetSurfaceMode(
     params.delete(SURFACE_PARAM);
     setLocation(buildUrl(pathname, params), { replace: true });
   }, [enabled, pathname, ready, search, setLocation]);
+
+  const previousModeRef = useRef<SpreadsheetSurfaceMode>(surfaceMode);
+
+  useEffect(() => {
+    const previousMode = previousModeRef.current;
+    previousModeRef.current = surfaceMode;
+
+    if (previousMode === "sheet-native" && surfaceMode === "classic") {
+      const module = pathname.split("/").filter(Boolean)[0] ?? "unknown";
+      console.info(
+        `[surface-mode-fallback] module=${module} from=sheet-native to=classic path=${pathname}`
+      );
+    }
+  }, [pathname, surfaceMode]);
 
   const setSurfaceMode = useCallback(
     (nextMode: SpreadsheetSurfaceMode) => {

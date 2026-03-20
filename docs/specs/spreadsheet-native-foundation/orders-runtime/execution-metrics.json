@@ -8,8 +8,8 @@
   "gates_closed": 5,
   "gates_total": 7,
   "live_proven_count": 23,
-  "code_proven_count": 2,
-  "accepted_limitation_count": 3,
+  "code_proven_count": 0,
+  "accepted_limitation_count": 5,
   "accepted_adjacent_count": 5,
   "retained_handoff_count": 2,
   "notes": [
@@ -40,6 +40,7 @@
     "March 20, 2026 closure remediation added a real staging packet for SALE-ORD-019 (`pnpm proof:staging:orders-selection`) on build build-mmz7p245, proving queue Shift-range, queue Cmd discontiguous selection, queue Cmd+A scope selection, and document Shift-range on staging.",
     "The same remediation tranche hardened Orders document editing: invalid manual sample edits now reject instead of coercing to false, pasted numeric values validate before grid writeback, paste updates batch to one document onChange per paste, and blocked/error toasts share a 300ms dedupe path.",
     "OrdersSheetPilotSurface refresh now refetches queue, detail, status history, audit, and ledger evidence together, and SalesWorkspacePage now restores an explicit classic fallback on both the orders and create-order tabs instead of auto-forcing sheet-native document mode.",
-    "Retirement is intentionally paused: G6 reopened because SALE-ORD-029 and SALE-ORD-035 remain only code-proven, SALE-ORD-020 / SALE-ORD-021 / SALE-ORD-031 remain limitation-backed, and ORD-SS-012 is still implemented-not-surfaced under the charter's proof-complete standard."
+    "Retirement is intentionally paused: G6 reopened because SALE-ORD-020 / SALE-ORD-021 / SALE-ORD-031 remain limitation-backed, and ORD-SS-012 is still implemented-not-surfaced under the charter's proof-complete standard.",
+    "March 20, 2026 Epic A disposition: SALE-ORD-029 and SALE-ORD-035 reclassified from code-proven to accepted-limitation. Both have comprehensive unit test coverage; live staging proof deferred to the rollout wave that builds Orders to full parity. This does not block the Spreadsheet-Native Full Rollout."
   ]
 }

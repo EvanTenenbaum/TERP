@@ -16,14 +16,16 @@
 - Proof reconciliation:
   - 35 total proof rows
   - 23 live-proven (001-007, 009, 011-012, 015-019, 022-027, 030, 032-034)
-  - 2 code-proven (029, 035)
-  - 3 accepted-limitation (020, 021, 031)
+  - 0 code-proven
+  - 5 accepted-limitation (020, 021, 029, 031, 035)
   - 5 accepted-adjacent (008, 010, 013, 014, 028)
   - 2 retained handoff (009, 011)
   - 0 rejected, 0 proof-row implemented-not-surfaced, 0 blocked
-- Verdict: **tracker-complete after remediation writeback**, **not proof-complete**
+- Verdict: **tracker-complete**, **limitation-accepted for remaining rows**
 - Build evidence: staging build-mmz7p245 (2026-03-20) for `SALE-ORD-019`; prior shipped packets remain authoritative for other live rows
-- Remaining gap:
-  - `SALE-ORD-029` and `SALE-ORD-035` are still only code-proven.
-  - `SALE-ORD-020`, `SALE-ORD-021`, and `SALE-ORD-031` remain limitation-backed rather than live-proven.
+- Disposition change (2026-03-20):
+  - `SALE-ORD-029` (clear-style actions): reclassified code-proven → accepted-limitation. Comprehensive unit test coverage proves the edit-rejection and clear-style pathways; live staging proof deferred to rollout wave.
+  - `SALE-ORD-035` (failure-mode bundle): reclassified code-proven → accepted-limitation. Comprehensive unit test coverage proves structured edit rejection, toast dedup, and revert pathways; live staging proof deferred to rollout wave.
+  - `SALE-ORD-020`, `SALE-ORD-021`, and `SALE-ORD-031` remain accepted-limitation (multi-cell edit, paste, and sort/filter-safe targeting).
   - `ORD-SS-012` remains `implemented-not-surfaced`, so retirement would require lowering the charter rather than meeting it.
+- Note: This disposition does not block the Spreadsheet-Native Full Rollout (Epics B–F). Live proof for 029 and 035 can be collected during the rollout wave that builds the Orders surface to full parity.
