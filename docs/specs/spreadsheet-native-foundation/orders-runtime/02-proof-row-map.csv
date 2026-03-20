@@ -22,15 +22,15 @@ SALE-ORD-020,Orders-owned,partial,G2,TER-771,multi-cell edit pricing autosave pr
 SALE-ORD-021,Orders-owned,partial,G2,TER-771,approved-field paste proof on staging
 SALE-ORD-022,Orders-owned,partial,G2,TER-771,fill handle proof on staging
 SALE-ORD-023,Orders-owned,partial,G4,TER-777,cross-surface shared adapter consistency proof
-SALE-ORD-024,Orders-owned,partial,G5,TER-778,selection summary and blocked-edit surfacing proof on queue and support surfaces
-SALE-ORD-025,Orders-owned,partial,G5,TER-778,editable versus locked cues proof across all required surfaces
-SALE-ORD-026,Orders-owned,partial,G5,TER-778,discoverability proof across queue support and document surfaces
-SALE-ORD-027,Orders-owned,implemented-not-surfaced,G5,TER-778,workflow action visibility proof after spreadsheet edits
+SALE-ORD-024,Orders-owned,code-proven,G5,TER-778,selection summary visible in PowersheetGrid and WorkSurfaceStatusBar with blocked-edit toast feedback
+SALE-ORD-025,Orders-owned,code-proven,G5,TER-778,editable/locked cell CSS cues with light/dark mode plus header tooltips on document grid columns
+SALE-ORD-026,Orders-owned,code-proven,G5,TER-778,KeyboardHintBar integrated into queue and document surfaces with per-surface affordance matrix
+SALE-ORD-027,Orders-owned,code-proven,G5,TER-778,workflow target badge plus multi-row guardrail on queue and workflow context bar on document surface
 SALE-ORD-028,Orders-owned,blocked,G3,TER-774,explicit sheet-native conversion ownership and proof
 SALE-ORD-029,Orders-owned,partial,G2,TER-771,clear-style actions and structured edit rejection proof
-SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,build-mmweo1fu document-grid proof for Tab Shift+Tab Enter Shift+Enter and Escape on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
+SALE-ORD-030,Orders-owned,live-proven,G2,TER-772,March 18 accepted document-grid proof for Tab Shift+Tab Enter Shift+Enter and Escape on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
 SALE-ORD-031,Orders-owned,partial,G2,TER-771,sort/filter-safe targeting proof
-SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,build-mmweo1fu document-grid proof for duplicate quick-add and delete row operations on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
-SALE-ORD-033,Orders-owned,blocked,G5,TER-778,per-surface discoverability proof
+SALE-ORD-032,Orders-owned,live-proven,G2,TER-772,March 18 accepted document-grid proof for duplicate quick-add and delete row operations on draft 618 via output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-report.json
+SALE-ORD-033,Orders-owned,code-proven,G5,TER-778,per-surface affordance matrix rendered in PowersheetGrid summary for queue support and document grids
 SALE-ORD-034,Orders-owned,blocked,G4,TER-777,active-row versus focused-cell workflow ambiguity proof
 SALE-ORD-035,Orders-owned,partial,G2,TER-771,failure-mode bundle proof beyond immediate invalid-edit rejection

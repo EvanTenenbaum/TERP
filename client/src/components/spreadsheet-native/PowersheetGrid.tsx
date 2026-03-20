@@ -16,6 +16,11 @@ const selectionSurfaceBySurfaceId: Record<
   "orders-document-grid": "orders-document-grid",
 };
 
+export interface PowersheetAffordance {
+  label: string;
+  available: boolean;
+}
+
 interface PowersheetGridProps<
   Row extends object,
 > extends SpreadsheetPilotGridProps<Row> {
@@ -23,6 +28,7 @@ interface PowersheetGridProps<
   requirementIds: string[];
   releaseGateIds?: string[];
   antiDriftSummary?: ReactNode;
+  affordances?: PowersheetAffordance[];
 }
 
 export function PowersheetGrid<Row extends object>({
@@ -30,6 +36,7 @@ export function PowersheetGrid<Row extends object>({
   requirementIds,
   releaseGateIds = [],
   antiDriftSummary,
+  affordances,
   summary,
   selectionSurface,
   onSelectionSetChange,
@@ -78,17 +85,37 @@ export function PowersheetGrid<Row extends object>({
         {antiDriftSummary}
       </span>
     ) : null;
+    const renderedAffordances =
+      affordances && affordances.length > 0 ? (
+        <span data-testid={`${surfaceId}-affordances`}>
+          {affordances
+            .map(a => (
+              <span
+                key={a.label}
+                className={a.available ? "" : "line-through opacity-50"}
+              >
+                {a.label}
+              </span>
+            ))
+            .reduce<ReactNode[]>(
+              (acc, el, i) => (i === 0 ? [el] : [...acc, " · ", el]),
+              []
+            )}
+        </span>
+      ) : null;
 
     return (
       <div className="flex flex-col gap-1">
         {renderedSummary}
         {renderedSelectionSummary}
         {renderedSelectionState}
+        {renderedAffordances}
         {renderedReleaseGates}
         {renderedAntiDrift}
       </div>
     );
   }, [
+    affordances,
     antiDriftSummary,
     releaseGateIds,
     selectionSet,

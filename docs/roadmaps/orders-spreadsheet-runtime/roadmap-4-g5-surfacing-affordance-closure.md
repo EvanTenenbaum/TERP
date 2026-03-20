@@ -5,7 +5,7 @@
 - Gate: `G5`
 - Linear gate: `TER-791`
 - Current verdict: `partial`
-- Execution state: `blocked pending Roadmap 3`
+- Execution state: `in progress — surfacing implementation landed 2026-03-20`
 - Prerequisites: Roadmap 3 `closed with evidence`
 - Gate file: [G5-surfacing-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md)
 

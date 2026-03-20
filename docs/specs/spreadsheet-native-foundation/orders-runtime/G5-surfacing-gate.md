@@ -11,5 +11,17 @@
   - `Documentation.md`
   - `02-proof-row-map.csv`
   - Linear issue `TER-803`
-- Status: `blocked`
-- Next unblock: complete G4 cross-surface parity so surfacing proof can be judged on the final interaction model.
+- Status: `partial`
+- Implementation date: 2026-03-20
+- Implementation summary:
+  - CSS editable/locked cell cues added to `index.css` (`orders-document-grid__editable-cell`, `orders-document-grid__locked-cell`) with light/dark mode support
+  - Toast feedback for blocked paste/fill/cut/clear actions via `toast.warning()` in `OrdersDocumentLineItemsGrid`
+  - `KeyboardHintBar` integrated into queue mode (status bar right slot) and document mode (context bar) with surface-specific hints
+  - Per-surface affordance matrix rendered in `PowersheetGrid` summary via `affordances` prop for queue, support, and document grids
+  - Workflow action visibility: queue mode has workflow target badge + multi-row guardrail; document mode has explicit workflow context reminder
+  - Rollout contract updated: ORD-SF-001 through ORD-SF-008 surfacing statuses set to `surfaced`
+  - SALE-ORD-027 reclassified from `implemented-not-surfaced` to `surfaced` via workflow target badge, multi-row guardrail, and document workflow context bar
+- Remaining for closure:
+  - ORD-SF-009 (SALE-ORD-034): active-row vs focused-cell workflow target disambiguation — stays `not-started` pending G4 row SALE-ORD-034
+  - Live staging proof screenshots for each surface
+  - Adversarial review confirming no hidden-knowledge dependency

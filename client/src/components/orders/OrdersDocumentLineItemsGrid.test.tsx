@@ -66,13 +66,15 @@ vi.mock("@/components/spreadsheet-native/PowersheetGrid", () => ({
   PowersheetGrid: (props: Record<string, unknown>) => mockPowersheetGrid(props),
 }));
 
-const { mockToastError } = vi.hoisted(() => ({
+const { mockToastError, mockToastWarning } = vi.hoisted(() => ({
   mockToastError: vi.fn(),
+  mockToastWarning: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
   toast: {
     error: mockToastError,
+    warning: mockToastWarning,
   },
 }));
 

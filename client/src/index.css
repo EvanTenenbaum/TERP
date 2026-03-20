@@ -567,6 +567,48 @@
   }
 
   /**
+   * Orders document grid: editable vs locked cell visual cues.
+   * Editable cells get a subtle left-border accent and lighter background
+   * so users know which fields accept input before clicking.
+   * Locked cells stay muted with a diagonal-stripe hint on hover.
+   */
+  .orders-document-grid__editable-cell {
+    border-left: 2px solid oklch(0.53 0.13 44 / 0.35);
+    background: oklch(0.53 0.13 44 / 0.04);
+  }
+
+  .orders-document-grid__editable-cell:hover {
+    background: oklch(0.53 0.13 44 / 0.08);
+  }
+
+  .orders-document-grid__locked-cell {
+    color: var(--muted-foreground);
+    background: color-mix(in oklab, var(--muted) 30%, transparent);
+  }
+
+  .orders-document-grid__locked-cell:hover {
+    background: color-mix(in oklab, var(--muted) 45%, transparent);
+    cursor: not-allowed;
+  }
+
+  .dark .orders-document-grid__editable-cell {
+    border-left-color: oklch(0.59 0.12 44 / 0.4);
+    background: oklch(0.59 0.12 44 / 0.06);
+  }
+
+  .dark .orders-document-grid__editable-cell:hover {
+    background: oklch(0.59 0.12 44 / 0.12);
+  }
+
+  .dark .orders-document-grid__locked-cell {
+    background: color-mix(in oklab, var(--muted) 20%, transparent);
+  }
+
+  .dark .orders-document-grid__locked-cell:hover {
+    background: color-mix(in oklab, var(--muted) 35%, transparent);
+  }
+
+  /**
    * MOBILE-UX-AUDIT: Global mobile touch target enforcement
    * Ensures all interactive elements meet WCAG 44x44px minimum on touch devices.
    * Applied only below the md breakpoint (< 768px) to avoid affecting desktop.
