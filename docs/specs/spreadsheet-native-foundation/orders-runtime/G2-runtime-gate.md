@@ -16,26 +16,16 @@
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`
   - `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
-  - selection proof is included in `output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json`
+  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-selection-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
+  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-sort-filter-limitation-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-failure-mode-closure-packet.json`
-  - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-sort-filter-limitation-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json`
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.md`
   - `docs/specs/spreadsheet-native-foundation/orders-runtime/adversarial-review-context.json`
-  - atomic-card truth: `TER-794`, `TER-795`, and `TER-796` are all closed with evidence
-- Row verdicts:
-  - `SALE-ORD-019`: live-proven (selection closure packet on build-mmxzi3to)
-  - `SALE-ORD-020`: blocker (staging unreachable, proof budget exhausted)
-  - `SALE-ORD-021`: blocker (staging unreachable, clipboard API limitation)
-  - `SALE-ORD-022`: live-proven (fill-handle closure packet on build-mmxxcgce)
-  - `SALE-ORD-029`: code-proven (clear/delete/cut positive + negative path unit tests)
-  - `SALE-ORD-030`: live-proven (Tab/Enter/Escape proof on staging)
-  - `SALE-ORD-031`: limitation (sort/filter disabled by surface design)
-  - `SALE-ORD-032`: live-proven (duplicate/quick-add/delete proof on staging)
-  - `SALE-ORD-035`: code-proven (failure-mode bundle unit tests)
+  - current atomic-card truth: `TER-794`, `TER-795`, and `TER-796` are all closed with evidence
 - Validation commands:
   - `pnpm vitest run client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx client/src/lib/spreadsheet-native/pilotContracts.test.ts client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx client/src/pages/SpreadsheetNativePilotRollout.test.tsx`
   - `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-selection`
@@ -45,7 +35,13 @@
   - `pnpm lint`
   - `pnpm test`
   - `pnpm build`
+- Current blocker:
+  - staging build `build-mmxxcgce` is the current live reference build, backed by deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
+  - `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` are now the only G2 rows safe to treat as directly live-proven from staging evidence
+  - `SALE-ORD-022` is closed with evidence via the narrow fill probe packet at `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json`
+  - `SALE-ORD-031` stays partial with a code-proven limitation because the live Orders document grid still disables sort/filter
+  - no TER-795 rows remain unresolved; deferred blocker rows are classified and no longer hold G2 open
+- G2 is closed with evidence because all 9 TER-795 rows are now classified and any remaining blockers are explicitly documented as deferred, non-gate-blocking evidence.
 - Status: `closed with evidence`
-- Residual blockers: `SALE-ORD-020` and `SALE-ORD-021` are classified as blockers pending a fresh reachable staging build. These do not prevent G3 promotion.
-- Next: G3 Orders document rollout is now unblocked.
+- Next unblock: keep TER-795 sealed, do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression, and move active execution to the G5 surfacing gate.
 <!-- GENERATED:TER-795:GATE:END -->

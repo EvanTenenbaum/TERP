@@ -28,6 +28,26 @@ export const roadmapG2Path = path.join(
 export const reviewContextJsonPath = path.join(ordersRuntimeDir, "adversarial-review-context.json");
 export const reviewContextMarkdownPath = path.join(ordersRuntimeDir, "adversarial-review-context.md");
 
+const GATE_DOC_FILENAMES = {
+  G1: "G1-engine-verdict.md",
+  G2: "G2-runtime-gate.md",
+  G3: "G3-document-gate.md",
+  G4: "G4-cross-surface-gate.md",
+  G5: "G5-surfacing-gate.md",
+  G6: "G6-rollout-verdict.md",
+  G7: "G7-retirement-handoff.md",
+};
+
+const ROADMAP_FILENAMES = {
+  G1: "roadmap-0-g1-engine-verdict.md",
+  G2: "roadmap-1-g2-shared-runtime-foundation.md",
+  G3: "roadmap-2-g3-orders-document-rollout.md",
+  G4: "roadmap-3-g4-cross-surface-rollout.md",
+  G5: "roadmap-4-g5-surfacing-affordance-closure.md",
+  G6: "roadmap-5-g6-proof-verdict-sync.md",
+  G7: "roadmap-6-g7-retirement-governance-handoff.md",
+};
+
 export function readText(filePath) {
   return readFileSync(filePath, "utf8");
 }
@@ -38,6 +58,18 @@ export function readJson(filePath) {
 
 export function readTer795State() {
   return readJson(ter795StatePath);
+}
+
+export function gateDocPathForGate(gate) {
+  return path.join(ordersRuntimeDir, GATE_DOC_FILENAMES[gate] ?? `${gate}-runtime-gate.md`);
+}
+
+export function roadmapPathForGate(gate) {
+  return path.join(
+    repoRoot,
+    "docs/roadmaps/orders-spreadsheet-runtime",
+    ROADMAP_FILENAMES[gate] ?? `roadmap-${gate.toLowerCase()}.md`,
+  );
 }
 
 function collectIndentedBullets(lines, startPrefix) {
@@ -74,20 +106,49 @@ function extractInlineValue(markdown, label) {
 }
 
 export function inferActiveGate() {
+  const roadmap = readText(roadmapReadmePath);
+  const roadmapRows = [...roadmap.matchAll(/^\|\s*`(\d+)`\s*\|[^|]*\|\s*`(G\d+)`\s*\|[^|]*\|\s*`([^`]+)`\s*\|\s*([^|]+)\|$/gm)].map(
+    (match) => ({
+      index: Number(match[1]),
+      gate: match[2],
+      status: match[3].trim(),
+      prerequisite: match[4].trim(),
+    }),
+  );
+
+  if (roadmapRows.length) {
+    const byIndex = new Map(roadmapRows.map((row) => [row.index, row]));
+    const activeRow = roadmapRows.find((row) => {
+      if (["closed with evidence", "rejected with evidence"].includes(row.status)) {
+        return false;
+      }
+      if (row.prerequisite === "none") {
+        return true;
+      }
+      const prerequisiteMatch = row.prerequisite.match(/Roadmap\s+(\d+)/i);
+      if (!prerequisiteMatch) {
+        return row.status === "partial";
+      }
+      const prerequisite = byIndex.get(Number(prerequisiteMatch[1]));
+      return prerequisite?.status === "closed with evidence";
+    });
+    if (activeRow) {
+      return activeRow.gate;
+    }
+  }
+
   const implement = readText(implementPath);
   const activeTranche = implement.match(/Active tranche:\s*`(G\d+)`/);
   if (activeTranche) {
     return activeTranche[1];
   }
 
-  const roadmap = readText(roadmapReadmePath);
-  const currentPartial = roadmap.match(/\|\s*`1`\s*\|.*\|\s*`(G\d+)`\s*\|.*\|\s*`partial`\s*\|/);
-  return currentPartial ? currentPartial[1] : "G2";
+  return "G2";
 }
 
 export function loadOrdersRuntimeContext() {
   const activeGate = inferActiveGate();
-  const gateDocPath = path.join(ordersRuntimeDir, `${activeGate}-runtime-gate.md`);
+  const gateDocPath = gateDocPathForGate(activeGate);
   const gateMarkdown = readText(gateDocPath);
   const gateLines = gateMarkdown.split("\n");
   const manifest = readJson(manifestPath);

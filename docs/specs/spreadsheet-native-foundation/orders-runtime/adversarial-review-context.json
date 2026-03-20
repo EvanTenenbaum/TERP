@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-03-19T21:21:46.499Z",
+  "generated_at": "2026-03-20T17:06:31.789Z",
   "source_state": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
   "active_atomic_card": "TER-795",
-  "gate_verdict": "partial",
+  "gate_verdict": "closed with evidence",
   "build": {
     "id": "build-mmxxcgce",
     "build_time": "2026-03-19T20:30:13.707Z",
@@ -14,23 +14,17 @@
     "version_url": "https://terp-staging-yicld.ondigitalocean.app/version.json"
   },
   "accepted_live_rows": [
+    "SALE-ORD-019",
     "SALE-ORD-022",
     "SALE-ORD-030",
     "SALE-ORD-032"
   ],
-  "remaining_rows": [
-    "SALE-ORD-019",
-    "SALE-ORD-020",
-    "SALE-ORD-021",
-    "SALE-ORD-029",
-    "SALE-ORD-031",
-    "SALE-ORD-035"
-  ],
+  "remaining_rows": [],
   "next_move": {
-    "row": "SALE-ORD-019",
-    "summary": "Move to the next independent TER-795 row with one isolated selection packet.",
-    "command_hint": "Add or extend one isolated selection probe for scope-selection proof across the required Orders surfaces.",
-    "cadence_rule": "One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points."
+    "row": null,
+    "summary": "TER-795 is closed with evidence. Keep G2 sealed and move active execution to G5 surfacing-affordance closure.",
+    "command_hint": "Begin Roadmap 4 / G5 surfacing proof; do not spend more TER-795 row budget unless a regression reopens G2.",
+    "cadence_rule": "Each writable tranche ends in exactly one of: user-facing product change, closure packet, limitation packet, or blocker packet."
   },
   "acceptance_rows": [
     {
@@ -74,6 +68,54 @@
   ],
   "packet_summaries": [
     {
+      "row": "SALE-ORD-020",
+      "row_state": "blocker",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-multicell-edit-blocker-packet.json",
+      "suggested_verdict": "blocker",
+      "command": "N/A — blocker packet, staging unreachable",
+      "assertions": [
+        {
+          "id": "recalculation-unit-tested",
+          "label": "Pricing recalculation logic is unit-tested for all editable fields",
+          "passed": true
+        },
+        {
+          "id": "fill-price-unit-tested",
+          "label": "Fill Price action propagates focused-row pricing to all selected rows",
+          "passed": true
+        },
+        {
+          "id": "staging-unreachable",
+          "label": "Live Orders document route is not reachable for this proof session",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "row": "SALE-ORD-021",
+      "row_state": "blocker",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-paste-blocker-packet.json",
+      "suggested_verdict": "blocker",
+      "command": "N/A — blocker packet, staging unreachable",
+      "assertions": [
+        {
+          "id": "paste-cell-unit-tested",
+          "label": "processCellFromClipboard accepts valid values on approved fields",
+          "passed": true
+        },
+        {
+          "id": "paste-rectangle-unit-tested",
+          "label": "processDataFromClipboard validates paste rectangle width against column policies",
+          "passed": true
+        },
+        {
+          "id": "staging-unreachable",
+          "label": "Live Orders document route is not reachable for paste proof session",
+          "passed": false
+        }
+      ]
+    },
+    {
       "row": "SALE-ORD-022",
       "row_state": "live-proven",
       "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-closure-packet.json",
@@ -113,6 +155,45 @@
       ]
     },
     {
+      "row": "SALE-ORD-029",
+      "row_state": "code-proven",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-clear-edit-rejection-closure-packet.json",
+      "suggested_verdict": "code-proven",
+      "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx",
+      "assertions": [
+        {
+          "id": "delete-approved-field",
+          "label": "Delete key is not suppressed on approved editable field (quantity)",
+          "passed": true
+        },
+        {
+          "id": "cut-approved-selection",
+          "label": "Ctrl+X cut is not suppressed on approved-only column selection",
+          "passed": true
+        },
+        {
+          "id": "cell-delete-start-approved",
+          "label": "onCellSelectionDeleteStart does not surface rejection on editable-only selection",
+          "passed": true
+        },
+        {
+          "id": "cut-locked-suppressed",
+          "label": "Ctrl+X cut is suppressed when selection includes locked columns",
+          "passed": true
+        },
+        {
+          "id": "delete-locked-suppressed",
+          "label": "Delete key is suppressed when selection includes locked columns",
+          "passed": true
+        },
+        {
+          "id": "fill-locked-blocked",
+          "label": "Fill start is blocked when selection reaches locked columns",
+          "passed": true
+        }
+      ]
+    },
+    {
       "row": "SALE-ORD-030",
       "row_state": "live-proven",
       "packet_path": "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json",
@@ -137,6 +218,35 @@
       ]
     },
     {
+      "row": "SALE-ORD-031",
+      "row_state": "limitation",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-sort-filter-limitation-packet.json",
+      "suggested_verdict": "limitation",
+      "command": "N/A — limitation packet, no live probe required",
+      "assertions": [
+        {
+          "id": "sort-disabled",
+          "label": "Sort is disabled on all Orders document grid columns",
+          "passed": true
+        },
+        {
+          "id": "filter-disabled",
+          "label": "Filter is disabled on all Orders document grid columns",
+          "passed": true
+        },
+        {
+          "id": "focused-row-id-unit-tested",
+          "label": "focusedRowId targeting is implemented and unit-tested",
+          "passed": true
+        },
+        {
+          "id": "fill-writeback-preserves-hidden-rows",
+          "label": "Fill writeback preserves hidden rows and original logical order",
+          "passed": true
+        }
+      ]
+    },
+    {
       "row": "SALE-ORD-032",
       "row_state": "live-proven",
       "packet_path": "output/playwright/orders-runtime-g2/2026-03-18/orders-runtime-g2-closure-packet.json",
@@ -156,6 +266,60 @@
         {
           "id": "navigation",
           "label": "Tab, Shift+Tab, Enter, Shift+Enter, and Escape behave through the shared runtime",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "row": "SALE-ORD-035",
+      "row_state": "code-proven",
+      "packet_path": "output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-failure-mode-closure-packet.json",
+      "suggested_verdict": "code-proven",
+      "command": "pnpm vitest run client/src/components/orders/OrdersDocumentLineItemsGrid.test.tsx",
+      "assertions": [
+        {
+          "id": "fill-end-validation-revert",
+          "label": "Fill end reverts when a filled value fails field validation",
+          "passed": true
+        },
+        {
+          "id": "cogs-rejection-revert",
+          "label": "Invalid cogsPerUnit edit is rejected with revert to previous value",
+          "passed": true
+        },
+        {
+          "id": "invalid-quantity-inline-revert",
+          "label": "Invalid inline quantity edit reverts to last valid state",
+          "passed": true
+        },
+        {
+          "id": "clipboard-invalid-rejection",
+          "label": "Invalid clipboard values on approved fields are rejected with structured messages",
+          "passed": true
+        },
+        {
+          "id": "paste-overflow-rejection",
+          "label": "Paste rectangles that spill into locked columns are rejected",
+          "passed": true
+        },
+        {
+          "id": "locked-cut-suppression",
+          "label": "Cut suppression on locked columns with structured rejection",
+          "passed": true
+        },
+        {
+          "id": "locked-delete-suppression",
+          "label": "Delete suppression on locked columns with structured rejection",
+          "passed": true
+        },
+        {
+          "id": "locked-fill-suppression",
+          "label": "Fill blocked on locked columns with structured rejection",
+          "passed": true
+        },
+        {
+          "id": "fill-writeback-hidden-row",
+          "label": "Hidden rows preserved during fill writeback",
           "passed": true
         }
       ]

@@ -1,20 +1,20 @@
 # Orders Runtime Implement Log
 
 - Date: `2026-03-18`
-- Active tranche: `G2` shared runtime hardening, crash-proofing, and proof recovery.
+- Active tranche: `G5` surfacing-affordance closure after G2, G3, and G4 reached closed-with-evidence status.
 - Scoped diff policy:
   - keep runtime edits inside shared spreadsheet files plus their focused tests
   - use Linear for hierarchy/status truth, not ticket prose alone
   - keep downstream gate status blocked until proof catches up with current code
 - Generated TER-795 snapshot:
 <!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:START -->
-- Updated at: `2026-03-19`
+- Updated at: `2026-03-20`
 - Active atomic card: `TER-795`
 - Live reference build: `build-mmxxcgce` via deployment `20fda840-ae7c-4a36-a450-7f1e45029131` for commit `3398a9baa8101e47e9119fc69943da7a3627edbd`
-- Directly live-proven G2 rows: `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032`
-- Remaining TER-795 rows: `SALE-ORD-019`, `SALE-ORD-020`, `SALE-ORD-021`, `SALE-ORD-029`, `SALE-ORD-031`, and `SALE-ORD-035`
-- Next move: `SALE-ORD-019` — Move to the next independent TER-795 row with one isolated selection packet.
-- Cadence rule: One isolated live probe per row or tranche, targeted tests during implementation, and full check/lint/test/build only at ship points.
+- Directly live-proven G2 rows: `SALE-ORD-019`, `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032`
+- Remaining TER-795 rows: none
+- Next move: `none` — TER-795 is closed with evidence. Keep G2 sealed and move active execution to G5 surfacing-affordance closure.
+- Cadence rule: Each writable tranche ends in exactly one of: user-facing product change, closure packet, limitation packet, or blocker packet.
 <!-- GENERATED:TER-795:IMPLEMENT-SNAPSHOT:END -->
 - Status log:
   - created durable-state files and gate artifacts
@@ -80,10 +80,10 @@
   - reran the dedicated live probe on the fresh staging build and captured `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json` with `quantityValuesAfterDrag: ["3","4","5","6"]`, no license warnings, and no page errors, which satisfies the shipped-build closure contract for `SALE-ORD-022`
   - reran Claude adversarial review on the shipped-build evidence; Claude did not overturn the `SALE-ORD-022` closure, but it flagged one residual note that the narrow probe proves live route propagation rather than a separate post-reload persistence round-trip
 - Repair queue:
-<!-- GENERATED:TER-795:REPAIR-QUEUE:START -->
-  - Keep `SALE-ORD-022`, `SALE-ORD-030`, and `SALE-ORD-032` as the only G2 rows safe to treat as directly live-proven right now.
+  <!-- GENERATED:TER-795:REPAIR-QUEUE:START -->
+  - All 9 G2 rows are now classified. No TER-795 rows remain in the active repair queue.
   - Keep `TER-796` sealed unless a future isolated row-op rerun reproduces a real regression.
   - Keep the `SALE-ORD-022` closure packet honest: it proves shipped-route propagation on build `build-mmxxcgce`, not a separate reload or persistence round-trip.
-  - Keep `SALE-ORD-031` partial with its code-proven limitation note until a live Orders document surface exercises sort or filter.
-  - Move to `SALE-ORD-019` next, then continue one row or one limitation packet at a time.
-<!-- GENERATED:TER-795:REPAIR-QUEUE:END -->
+  - Keep `SALE-ORD-031` recorded as a limitation until a live Orders surface actually exercises sort/filter.
+  - Active execution has moved to G5 surfacing-affordance closure; do not reopen G2 unless a classified row regresses.
+  <!-- GENERATED:TER-795:REPAIR-QUEUE:END -->

@@ -133,11 +133,14 @@ function syncProofRowMap(state) {
 
 function buildGateSection(state) {
   const partialRows = state.remaining_rows || [];
+  const hasRemainingRows = partialRows.length > 0;
   const evidenceLines = [
     ...toBulletLines(state.evidence_paths, (item) => `\`${relativeOrAbsolute(item)}\``),
     ...toBulletLines(
       [
-        `current atomic-card truth: \`TER-794\` and \`TER-796\` are closed with evidence; \`TER-795\` remains partial on ${formatRowList(partialRows)}`,
+        hasRemainingRows
+          ? `current atomic-card truth: \`TER-794\` and \`TER-796\` are closed with evidence; \`TER-795\` remains partial on ${formatRowList(partialRows)}`
+          : "current atomic-card truth: `TER-794`, `TER-795`, and `TER-796` are all closed with evidence",
       ],
       (item) => item,
     ),
@@ -151,7 +154,9 @@ function buildGateSection(state) {
     `  - ${formatRowList(state.accepted_live_rows)} are now the only G2 rows safe to treat as directly live-proven from staging evidence`,
     `  - \`SALE-ORD-022\` is closed with evidence via the narrow fill probe packet at \`${relativeOrAbsolute(state.row_verdicts.find((row) => row.row === "SALE-ORD-022")?.packet_path)}\``,
     `  - \`SALE-ORD-031\` stays partial with a code-proven limitation because the live Orders document grid still disables sort/filter`,
-    `  - the remaining unresolved TER-795 rows are ${formatRowList(partialRows)}`,
+    hasRemainingRows
+      ? `  - the remaining unresolved TER-795 rows are ${formatRowList(partialRows)}`
+      : "  - no TER-795 rows remain unresolved; deferred blocker rows are classified and no longer hold G2 open",
   ];
 
   return [
@@ -161,9 +166,13 @@ function buildGateSection(state) {
     ...validationLines,
     "- Current blocker:",
     ...blockerLines,
-    `- G2 remains partial because ${formatRowList(partialRows)} still need a closure packet or explicit limitation packet`,
+    hasRemainingRows
+      ? `- G2 remains partial because ${formatRowList(partialRows)} still need a closure packet or explicit limitation packet`
+      : "- G2 is closed with evidence because all 9 TER-795 rows are now classified and any remaining blockers are explicitly documented as deferred, non-gate-blocking evidence.",
     `- Status: \`${state.gate_verdict}\``,
-    `- Next unblock: keep \`${state.active_atomic_card}\` active, keep \`SALE-ORD-031\` partial with its limitation note, and move to \`${state.next_move.row}\` as the next independent TER-795 row. Do not reopen \`TER-796\` unless a future isolated row-op rerun reproduces a real regression.`,
+    hasRemainingRows
+      ? `- Next unblock: keep \`${state.active_atomic_card}\` active, keep \`SALE-ORD-031\` partial with its limitation note, and move to \`${state.next_move.row}\` as the next independent TER-795 row. Do not reopen \`TER-796\` unless a future isolated row-op rerun reproduces a real regression.`
+      : "- Next unblock: keep TER-795 sealed, do not reopen TER-796 unless a future isolated row-op rerun reproduces a real regression, and move active execution to the G5 surfacing gate.",
   ].join("\n");
 }
 
@@ -174,7 +183,7 @@ function buildImplementSnapshot(state) {
     `- Live reference build: \`${state.build.id}\` via deployment \`${state.build.deployment_id}\` for commit \`${state.build.deploy_commit}\``,
     `- Directly live-proven G2 rows: ${formatRowList(state.accepted_live_rows)}`,
     `- Remaining TER-795 rows: ${formatRowList(state.remaining_rows)}`,
-    `- Next move: \`${state.next_move.row}\` — ${state.next_move.summary}`,
+    `- Next move: \`${state.next_move.row ?? "none"}\` — ${state.next_move.summary}`,
     `- Cadence rule: ${state.next_move.cadence_rule}`,
   ].join("\n");
 }
@@ -241,7 +250,7 @@ function buildReviewContext(state) {
     `- Live reference build: \`${state.build.id}\` via deployment \`${state.build.deployment_id}\``,
     `- Deploy commit: \`${state.build.deploy_commit}\``,
     `- Persona: \`${state.build.persona}\``,
-    `- Next move: \`${state.next_move.row}\` — ${state.next_move.summary}`,
+    `- Next move: \`${state.next_move.row ?? "none"}\` — ${state.next_move.summary}`,
     "",
     "## Accepted Rows",
     "",
@@ -249,7 +258,9 @@ function buildReviewContext(state) {
     "",
     "## Remaining Rows",
     "",
-    ...state.remaining_rows.map((row) => `- \`${row}\``),
+    ...(state.remaining_rows.length
+      ? state.remaining_rows.map((row) => `- \`${row}\``)
+      : ["- none"]),
     "",
     "## Acceptance Criteria",
     "",

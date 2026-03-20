@@ -5,7 +5,7 @@
 - Gate: `G5`
 - Linear gate: `TER-791`
 - Current verdict: `open`
-- Execution state: `blocked pending Roadmap 3`
+- Execution state: `active — Roadmap 3 closed with evidence`
 - Prerequisites: Roadmap 3 `closed with evidence`
 - Gate file: [G5-surfacing-gate.md](../../specs/spreadsheet-native-foundation/orders-runtime/G5-surfacing-gate.md)
 
@@ -16,7 +16,7 @@ Close all surfacing debt across queue, document, and support surfaces so built b
 Current truth:
 
 - the current repo already contains document-mode surfacing work and March 18 proof updates for several rows
-- this roadmap remains blocked because cross-surface surfacing proof is incomplete
+- G4 is now closed with evidence, so this roadmap is the active gate for remaining surfacing and discoverability proof
 
 ## Allowed Inputs
 

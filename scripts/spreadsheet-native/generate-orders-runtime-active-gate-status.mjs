@@ -2,20 +2,58 @@ import path from "node:path";
 import {
   collectWorktreePressure,
   formatTimestamp,
+  gateDocPathForGate,
+  inferActiveGate,
   readTer795State,
+  readText,
   relativeRepoPath,
   repoRoot,
+  roadmapPathForGate,
   writeGeneratedFile,
 } from "./orders-runtime-status-lib.mjs";
 
 const state = readTer795State();
+const activeGate = inferActiveGate();
+const activeGateDocPath = gateDocPathForGate(activeGate);
+const activeRoadmapPath = roadmapPathForGate(activeGate);
+const activeGateDoc = readText(activeGateDocPath);
+const activeRoadmap = readText(activeRoadmapPath);
+const activeGateStatus = extractInlineValue(activeGateDoc, "Status");
+const activeGateLinear = extractInlineValue(activeGateDoc, "Linear gate");
+const activeGateNext = extractInlineValue(activeGateDoc, "Next");
 const worktreePressure = collectWorktreePressure();
-const evidencePaths = state.evidence_paths || [];
+const evidencePaths =
+  activeGate === "G2"
+    ? state.evidence_paths || []
+    : [
+        relativeRepoPath(activeGateDocPath),
+        relativeRepoPath(activeRoadmapPath),
+        relativeRepoPath(path.join(repoRoot, "docs/specs/spreadsheet-native-foundation/orders-runtime/Documentation.md")),
+        relativeRepoPath(path.join(repoRoot, "docs/specs/spreadsheet-native-foundation/orders-runtime/02-proof-row-map.csv")),
+      ];
 const terpWorkspaceRoot = path.resolve(repoRoot, "..", "..");
 const targetPath = path.join(
   repoRoot,
   "docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md",
 );
+
+const activeBlockerSummary =
+  activeGate === "G2"
+    ? buildG2BlockerSummary(state)
+    : `${activeGate} is the active gate. TER-795 / G2 is already \`${state.gate_verdict}\`, so current blockers and required proof now live in \`${relativeRepoPath(activeGateDocPath)}\` and \`${relativeRepoPath(activeRoadmapPath)}\`.`;
+
+const nextUnblockLines =
+  activeGate === "G2"
+    ? [
+        `- Next row: \`${state.next_move.row ?? "none"}\``,
+        `- Next command: ${state.next_move.command_hint}`,
+        `- Cadence rule: ${state.next_move.cadence_rule}`,
+      ]
+    : [
+        `- Next focus: ${activeGateNext || `follow \`${relativeRepoPath(activeGateDocPath)}\` for the current open tranche.`}`,
+        `- TER-795 state: \`${state.gate_verdict}\` with \`${state.remaining_rows.length}\` remaining rows.`,
+        `- Cadence rule: Do not spend more TER-795 proof budget unless a new regression reopens G2; use ${activeGate}-specific proof artifacts for the active surfacing lane.`,
+      ];
 
 const lines = [
   "# Orders Runtime Active Gate Status",
@@ -23,10 +61,10 @@ const lines = [
   "_Generated file. Do not edit by hand._",
   "",
   `- Generated at: \`${formatTimestamp()}\``,
-  `- Active gate: \`${state.gate}\``,
-  `- Linear gate: \`${state.linear_gate}\``,
-  `- Status: \`${state.gate_verdict}\``,
-  `- Active atomic card: \`${state.active_atomic_card}\``,
+  `- Active gate: \`${activeGate}\``,
+  `- Linear gate: \`${activeGateLinear || state.linear_gate}\``,
+  `- Status: \`${activeGate === "G2" ? state.gate_verdict : activeGateStatus || "open"}\``,
+  `- Active atomic card: \`${activeGate === "G2" ? state.active_atomic_card : "see active gate roadmap"}\``,
   `- Current build: \`${state.build.id}\``,
   `- Route: \`${state.build.route}\``,
   "",
@@ -39,26 +77,24 @@ const lines = [
   "## Gate Snapshot",
   "",
   "- Scope: shared selection runtime, clipboard/fill contracts, edit navigation, row ops, and environment hardening.",
-  "- Repo-backed execution contract: `docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md` plus `docs/roadmaps/orders-spreadsheet-runtime/README.md`",
+  `- Repo-backed execution contract: \`${relativeRepoPath(activeGateDocPath)}\` plus \`${relativeRepoPath(activeRoadmapPath)}\``,
   `- Active-gate operating model: \`1 coordinator + up to 2 read-only sidecars + at most 1 narrow writer\``,
   "",
   "## Current Blocker",
   "",
-  `${formatRowSummary(state.remaining_rows)} still need a closure packet or explicit limitation packet. \`SALE-ORD-031\` also stays partial until a live sort/filter surface exists.`,
+  activeBlockerSummary,
   "",
   "## Next Unblock",
   "",
-  `- Next row: \`${state.next_move.row}\``,
-  `- Next command: ${state.next_move.command_hint}`,
-  `- Cadence rule: ${state.next_move.cadence_rule}`,
+  ...nextUnblockLines,
   "",
   "## Runtime Guards",
   "",
-  `- Live-proven rows only: ${formatRowSummary(state.accepted_live_rows)}.`,
+  `- Live-proven G2 rows: ${formatRowSummary(state.accepted_live_rows)}.`,
   `- TER-796 seal rule: keep \`TER-796\` sealed unless an isolated row-op rerun proves a real regression.`,
   `- SALE-ORD-022 guard: keep the closure packet honest; the probe proves shipped-route propagation, not a separate reload or persistence round-trip.`,
   `- SALE-ORD-031 guard: keep \`SALE-ORD-031\` partial until a live Orders document surface exercises sort/filter.`,
-  `- Next independent TER-795 row: move to \`${state.next_move.row}\` next.`,
+  `- TER-795 closure: keep G2 closed unless a new regression reopens one of the classified rows.`,
   "",
   "## Validation Commands",
   "",
@@ -87,7 +123,7 @@ const lines = [
   "## Source Inputs",
   "",
   "- `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`",
-  "- `docs/specs/spreadsheet-native-foundation/orders-runtime/G2-runtime-gate.md`",
+  `- \`${relativeRepoPath(activeGateDocPath)}\``,
   "- `docs/specs/spreadsheet-native-foundation/orders-runtime/01-issue-manifest.json`",
   "- `docs/specs/spreadsheet-native-foundation/orders-runtime/execution-metrics.json`",
   "- `docs/specs/spreadsheet-native-foundation/orders-runtime/Implement.md`",
@@ -109,10 +145,23 @@ function formatEvidencePath(filePath) {
   return absolutePath.startsWith(repoRoot) ? relativeRepoPath(absolutePath) : filePath;
 }
 
+function buildG2BlockerSummary(currentState) {
+  if (currentState.remaining_rows?.length) {
+    return `${formatRowSummary(currentState.remaining_rows)} still need a closure packet or explicit limitation packet. \`SALE-ORD-031\` also stays partial until a live sort/filter surface exists.`;
+  }
+
+  return `No TER-795 rows remain in the active repair queue. G2 is \`${currentState.gate_verdict}\`, while any deferred blockers are documented as classified evidence rather than open gate blockers.`;
+}
+
 function formatWorktreePath(worktreePath) {
   const absolutePath = path.resolve(worktreePath);
   if (absolutePath.startsWith(terpWorkspaceRoot)) {
     return path.relative(terpWorkspaceRoot, absolutePath).replaceAll(path.sep, "/");
   }
   return absolutePath;
+}
+
+function extractInlineValue(markdown, label) {
+  const match = markdown.match(new RegExp(`^- ${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s+(?:\`([^\\n]+)\`|(.+))$`, "m"));
+  return match ? (match[1] || match[2] || "").trim() : "";
 }

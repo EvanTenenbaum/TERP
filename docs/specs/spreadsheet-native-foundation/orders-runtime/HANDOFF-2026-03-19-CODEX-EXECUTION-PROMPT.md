@@ -5,13 +5,21 @@
 - Canonical worktree: `/Users/evan/spec-erp-docker/TERP/worktrees/orders-runtime-ter-795-20260318`
 - Branch: `codex/ter-795-20260318-980e3a3c`
 - HEAD: `0e2bb8ba5edfb9c9b1e1b836acb50a8c9348cfae`
-- Current gate: `G2`
-- Active atomic card: `TER-795`
-- Current verdict: `partial`
+- Historical gate captured here: `G2`
+- Historical atomic card: `TER-795`
+- Historical verdict: `closed with evidence`
+- Current initiative gate: `G5`
+- Current initiative verdict: `open`
+
+## Status Note
+
+This file is preserved as TER-795 closeout lineage only.
+Do not use it as the live takeover prompt now that `G2`, `G3`, and `G4` are closed with evidence.
+For active work, start from `Documentation.md`, `G5-surfacing-gate.md`, and `roadmap-4-g5-surfacing-affordance-closure.md`.
 
 ## Copy/Paste Prompt
 
-Use this exact working contract.
+Historical prompt only. Do not use this as the live working contract for the current gate.
 
 You are taking over the TERP Orders spreadsheet-runtime initiative in progress.
 
@@ -98,9 +106,11 @@ Definition of done for this continuation:
 ## Compressed Execution State
 
 Goal:
+
 - Finish the Orders spreadsheet-runtime initiative without reopening settled G2 work, without wasting cycles on broad browser loops, and without promoting any downstream gate early.
 
 Constraints:
+
 - Linear is live tracker.
 - Blocked work cannot be `In Progress`.
 - Evidence writeback order is fixed:
@@ -112,12 +122,14 @@ Constraints:
 - Do not overwrite unrelated local changes.
 
 Changes completed:
+
 - deterministic vertical fill callback implemented locally for Orders document fill
 - targeted tests added and full repo gate already passed on local state
 - narrow fill-handle probe added so live validation does not require another broad G2 proof run
 - gate docs and manifest updated to reflect the new scoped contract
 
 Files touched:
+
 - `client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx`
 - `client/src/components/spreadsheet-native/SpreadsheetPilotGrid.test.tsx`
 - `client/src/components/orders/OrdersDocumentLineItemsGrid.tsx`
@@ -132,6 +144,7 @@ Files touched:
 - `docs/roadmaps/orders-spreadsheet-runtime/roadmap-1-g2-shared-runtime-foundation.md`
 
 Verification evidence:
+
 - full local gate already passed on this tranche:
   - `pnpm check`
   - `pnpm lint`
@@ -141,6 +154,7 @@ Verification evidence:
   - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json`
 
 Unresolved blockers:
+
 - no fresh deployed build has yet been validated with the local fill fix
 - the current fill fix is still local worktree state rather than deployed truth, so live fill closure is blocked until a fresh build exists or the user explicitly authorizes shipping that fix
 - unresolved G2 rows still include:
@@ -153,6 +167,7 @@ Unresolved blockers:
   - `SALE-ORD-035`
 
 Next command:
+
 - `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
 
 ## Retrieval Contract
@@ -160,20 +175,24 @@ Next command:
 Read only what the current decision needs.
 
 Cold start:
+
 - this handoff file
 - `G2-runtime-gate.md`
 - `01-issue-manifest.json`
 
 If you are validating live fill only:
+
 - `output/playwright/orders-runtime-g2/2026-03-19/orders-runtime-fill-handle-report.json`
 - `scripts/spreadsheet-native/probe-orders-runtime-fill-handle.ts`
 
 If you are changing the local fill implementation:
+
 - `client/src/components/orders/OrdersDocumentLineItemsGrid.tsx`
 - `client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx`
 - matching tests only
 
 If you are updating roadmap truth:
+
 - `G2-runtime-gate.md`
 - `Implement.md`
 - `01-issue-manifest.json`
@@ -190,45 +209,52 @@ Do not read the March 17 rollout roadmap unless you need lineage only.
 ### Tranche 1: Deployed Fill Confirmation
 
 Objective:
+
 - determine whether the local deterministic fill fix is live on a fresh deployed build
 
 Step 0:
+
 - confirm whether a deployable build containing the fill fix exists
 - if no build newer than `build-mmwp9o9e` exists, do not spend the one live probe on the old build again
 - if you are not explicitly authorized to commit or push, escalate that deploy dependency instead of trying to “prove” a local-only fix on staging
 
 Allowed work:
+
 - one narrow deployed-build probe
 - no broad G2 proof rerun unless the probe changes the state classification
 
 Commands:
+
 - `git status -sb`
 - `doctl apps list-deployments 62f2d9f8-3fb5-4576-9f7b-8dd91cf552a6`
 - open the deployed version endpoint or `version.json` and confirm its build timestamp is newer than `2026-03-18T23:56:20.894Z`
 - `PLAYWRIGHT_BASE_URL=<fresh-build-url> pnpm proof:staging:orders-fill-handle`
 
 Exit states:
+
 - `closed with evidence` for `SALE-ORD-022` if the probe produces `["3","4","5","6"]`
 - `partial` with explicit limitation packet if the fresh build still produces `["3","4","1","1"]`
 
 ### Tranche 2: Remaining TER-795 Rows
 
 Objective:
+
 - resolve the remaining independent proof rows without replaying already-settled work
 
 Row-by-row proof map:
 
-| Row | Behavior | What closes it | Preferred proof method |
-| --- | --- | --- | --- |
+| Row            | Behavior                                                               | What closes it                                                                                                    | Preferred proof method                                                    |
+| -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | `SALE-ORD-019` | full drag shift cmd and scope-selection proof across required surfaces | isolated evidence that drag-selection and scoped range selection behave correctly on the required Orders surfaces | extend or add one isolated selection probe; do not mix with paste or fill |
-| `SALE-ORD-020` | multi-cell edit pricing autosave proof | isolated proof that approved multi-cell edits preserve pricing and autosave behavior | targeted edit probe plus save-state evidence |
-| `SALE-ORD-021` | approved-field paste proof on staging | isolated staging proof that approved-field paste lands correctly on the document grid | existing G2 paste harness, but only in isolated paste mode |
-| `SALE-ORD-022` | fill handle proof on staging | deployed-build proof that quantity fill propagates `3,4 -> 5,6` or an explicit limitation packet | `pnpm proof:staging:orders-fill-handle` |
-| `SALE-ORD-029` | clear-style actions and structured edit rejection proof | isolated proof for clear-style / clear-cell rejection behavior without dirtying unrelated rows | new narrow probe likely required |
-| `SALE-ORD-031` | sort/filter-safe targeting proof | isolated evidence that edits and paste target the right logical rows under sort/filter | new narrow probe likely required |
-| `SALE-ORD-035` | failure-mode bundle proof beyond immediate invalid-edit rejection | isolated failure packet that closes or limits the remaining rejection bundle | bounded negative-case probe plus limitation packaging if needed |
+| `SALE-ORD-020` | multi-cell edit pricing autosave proof                                 | isolated proof that approved multi-cell edits preserve pricing and autosave behavior                              | targeted edit probe plus save-state evidence                              |
+| `SALE-ORD-021` | approved-field paste proof on staging                                  | isolated staging proof that approved-field paste lands correctly on the document grid                             | existing G2 paste harness, but only in isolated paste mode                |
+| `SALE-ORD-022` | fill handle proof on staging                                           | deployed-build proof that quantity fill propagates `3,4 -> 5,6` or an explicit limitation packet                  | `pnpm proof:staging:orders-fill-handle`                                   |
+| `SALE-ORD-029` | clear-style actions and structured edit rejection proof                | isolated proof for clear-style / clear-cell rejection behavior without dirtying unrelated rows                    | new narrow probe likely required                                          |
+| `SALE-ORD-031` | sort/filter-safe targeting proof                                       | isolated evidence that edits and paste target the right logical rows under sort/filter                            | new narrow probe likely required                                          |
+| `SALE-ORD-035` | failure-mode bundle proof beyond immediate invalid-edit rejection      | isolated failure packet that closes or limits the remaining rejection bundle                                      | bounded negative-case probe plus limitation packaging if needed           |
 
 Execution order:
+
 1. `SALE-ORD-022` only if a fresh deployed build exists
 2. `SALE-ORD-031`
 3. `SALE-ORD-019`
@@ -238,6 +264,7 @@ Execution order:
 7. `SALE-ORD-035`
 
 Rules:
+
 - each row gets an isolated packet
 - no mixed-sequence proof
 - if a row cannot be directly proved, package it as an explicit limitation instead of holding the whole gate hostage
@@ -245,9 +272,11 @@ Rules:
 ### Tranche 3: G2 Closure Packet
 
 Objective:
+
 - close `TER-795` honestly and make `G2` promotion-ready
 
 Required bundle:
+
 - refreshed gate files
 - isolated artifacts for each remaining row
 - Linear updates
@@ -268,6 +297,7 @@ python3 /Users/evan/.codex/skills/claude-qa-review/scripts/run_review.py \
 ```
 
 Use Claude for:
+
 - adversarial review of closure packets
 - alternate proof design when direct verification is blocked
 - confidence-weighted judgment about whether a blocker is likely harness-only, deploy-lag, or product behavior
