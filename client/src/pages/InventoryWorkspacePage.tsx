@@ -6,6 +6,7 @@ import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import InventorySheetPilotSurface from "@/components/spreadsheet-native/InventorySheetPilotSurface";
 import FulfillmentPilotSurface from "@/components/spreadsheet-native/FulfillmentPilotSurface";
 import IntakePilotSurface from "@/components/spreadsheet-native/IntakePilotSurface";
+import { SamplesPilotSurface } from "@/components/spreadsheet-native/SamplesPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -90,6 +91,21 @@ export default function InventoryWorkspacePage() {
     enabled: fulfillmentPilotEnabled,
     ready: fulfillmentAvailabilityReady,
   });
+
+  // Samples tab pilot (TER-821)
+  const samplesPilotSupported = activeTab === "samples";
+  const {
+    sheetPilotEnabled: samplesPilotEnabled,
+    availabilityReady: samplesAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(samplesPilotSupported);
+  const {
+    surfaceMode: samplesSurfaceMode,
+    setSurfaceMode: setSamplesSurfaceMode,
+  } = useSpreadsheetSurfaceMode({
+    enabled: samplesPilotEnabled,
+    ready: samplesAvailabilityReady,
+  });
+
   const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
 
@@ -120,6 +136,12 @@ export default function InventoryWorkspacePage() {
             enabled={fulfillmentPilotEnabled}
             surfaceMode={fulfillmentSurfaceMode}
             onSurfaceModeChange={setFulfillmentSurfaceMode}
+          />
+        ) : activeTab === "samples" ? (
+          <SheetModeToggle
+            enabled={samplesPilotEnabled}
+            surfaceMode={samplesSurfaceMode}
+            onSurfaceModeChange={setSamplesSurfaceMode}
           />
         ) : null
       }
@@ -173,9 +195,13 @@ export default function InventoryWorkspacePage() {
         </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="samples">
-        <Suspense fallback={<PageLoading message="Loading samples..." />}>
-          <SampleManagement embedded />
-        </Suspense>
+        {samplesSurfaceMode === "sheet-native" ? (
+          <SamplesPilotSurface />
+        ) : (
+          <Suspense fallback={<PageLoading message="Loading samples..." />}>
+            <SampleManagement embedded />
+          </Suspense>
+        )}
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );
