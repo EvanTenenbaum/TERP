@@ -439,20 +439,18 @@ export function PaymentsPilotSurface({
 }: PaymentsPilotSurfaceProps) {
   const search = useSearch();
 
-  // PAY-004: Deep-link support
+  // PAY-004: Deep-link support (?id=, ?invoiceId= only — orderId not supported by API)
   const routeParams = useMemo(() => {
     const params = new URLSearchParams(search);
     return {
       paymentId: parsePositiveInt(params.get("id")),
       invoiceId: parsePositiveInt(params.get("invoiceId")),
-      orderId: params.get("orderId")?.trim() ?? null,
     };
   }, [search]);
 
   // Filter/search state — PAY-001, PAY-002, PAY-003
   const [searchQuery, setSearchQuery] = useState(() => {
     if (routeParams.paymentId !== null) return String(routeParams.paymentId);
-    if (routeParams.orderId !== null) return routeParams.orderId;
     return "";
   });
   const [typeFilter, setTypeFilter] = useState<PaymentTypeFilter>("ALL");
@@ -543,19 +541,18 @@ export function PaymentsPilotSurface({
     routeParams.paymentId,
   ]);
 
-  // KPI totals — PAY-005
+  // KPI totals — PAY-005 (computed from filtered gridRows, not raw API response)
   const kpiTotals = useMemo(() => {
-    const all = paymentsQuery.data?.items ?? [];
     return {
-      totalCount: all.length,
-      totalReceived: all
-        .filter(p => p.paymentType === "RECEIVED")
-        .reduce((sum, p) => sum + parseFloat(p.amount ?? "0"), 0),
-      totalSent: all
-        .filter(p => p.paymentType === "SENT")
-        .reduce((sum, p) => sum + parseFloat(p.amount ?? "0"), 0),
+      totalCount: gridRows.length,
+      totalReceived: gridRows
+        .filter(r => r.paymentType === "RECEIVED")
+        .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0),
+      totalSent: gridRows
+        .filter(r => r.paymentType === "SENT")
+        .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0),
     };
-  }, [paymentsQuery.data]);
+  }, [gridRows]);
 
   // Selected row lookup
   const selectedRow = useMemo(

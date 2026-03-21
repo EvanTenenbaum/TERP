@@ -24,6 +24,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import type { ColDef } from "ag-grid-community";
 import {
   BookOpen,
@@ -575,7 +576,6 @@ function AddAdjustmentDialog({
       amount: parsedAmount,
       description: notes.trim(),
     });
-    setShowConfirm(false);
   };
 
   const selectedType = ADJUSTMENT_TYPES.find(t => t.value === type);
@@ -720,6 +720,9 @@ export interface ClientLedgerPilotSurfaceProps {
 export function ClientLedgerPilotSurface({
   onOpenClassic,
 }: ClientLedgerPilotSurfaceProps) {
+  // ── Routing ────────────────────────────────────────────────────────────────
+  const [, setLocation] = useLocation();
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{
@@ -856,25 +859,28 @@ export function ClientLedgerPilotSurface({
     }
   }, [selectedClientId, exportQuery]);
 
-  const navigateToReference = useCallback((refType: string, refId: number) => {
-    let path = "";
-    switch (refType) {
-      case "ORDER":
-        path = buildSalesWorkspacePath("orders", { id: refId });
-        break;
-      case "PAYMENT":
-        path = `/accounting/payments?id=${refId}`;
-        break;
-      case "PURCHASE_ORDER":
-        path = `/purchase-orders?id=${refId}`;
-        break;
-      default:
-        break;
-    }
-    if (path) {
-      window.location.href = path;
-    }
-  }, []);
+  const navigateToReference = useCallback(
+    (refType: string, refId: number) => {
+      let path = "";
+      switch (refType) {
+        case "ORDER":
+          path = buildSalesWorkspacePath("orders", { id: refId });
+          break;
+        case "PAYMENT":
+          path = `/accounting/payments?id=${refId}`;
+          break;
+        case "PURCHASE_ORDER":
+          path = `/purchase-orders?id=${refId}`;
+          break;
+        default:
+          break;
+      }
+      if (path) {
+        setLocation(path);
+      }
+    },
+    [setLocation]
+  );
 
   // ── Keyboard handler (attached to surface div) ─────────────────────────────
   const handleKeyDown = useCallback(
