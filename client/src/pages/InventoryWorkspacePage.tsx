@@ -1,8 +1,11 @@
 import { lazy, Suspense } from "react";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
+import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import InventorySheetPilotSurface from "@/components/spreadsheet-native/InventorySheetPilotSurface";
+import FulfillmentPilotSurface from "@/components/spreadsheet-native/FulfillmentPilotSurface";
+import IntakePilotSurface from "@/components/spreadsheet-native/IntakePilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -31,7 +34,7 @@ const PhotographyPage = lazy(() => import("@/pages/PhotographyPage"));
 const SampleManagement = lazy(() => import("@/pages/SampleManagement"));
 
 type InventoryTab = (typeof INVENTORY_WORKSPACE.tabs)[number]["value"];
-type InventoryQueryTab = OperationsTab | "intake" | "pick-pack";
+type InventoryQueryTab = OperationsTab | "pick-pack";
 
 const INVENTORY_TABS_CONFIG = [
   ...INVENTORY_WORKSPACE.tabs,
@@ -47,15 +50,45 @@ export default function InventoryWorkspacePage() {
   const { activeTab: requestedTab, setActiveTab } =
     useQueryTabState<InventoryQueryTab>({
       defaultTab: "inventory",
-      validTabs: [...INVENTORY_TABS, "intake", "pick-pack"],
+      validTabs: [...INVENTORY_TABS, "pick-pack"],
     });
   const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
+
+  // Inventory tab pilot
   const pilotSurfaceSupported = activeTab === "inventory";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
     enabled: sheetPilotEnabled,
     ready: availabilityReady,
+  });
+
+  // Intake tab pilot (TER-815)
+  const intakePilotSupported = activeTab === "intake";
+  const {
+    sheetPilotEnabled: intakePilotEnabled,
+    availabilityReady: intakeAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(intakePilotSupported);
+  const {
+    surfaceMode: intakeSurfaceMode,
+    setSurfaceMode: setIntakeSurfaceMode,
+  } = useSpreadsheetSurfaceMode({
+    enabled: intakePilotEnabled,
+    ready: intakeAvailabilityReady,
+  });
+
+  // Shipping/Fulfillment tab pilot (TER-817)
+  const fulfillmentPilotSupported = activeTab === "shipping";
+  const {
+    sheetPilotEnabled: fulfillmentPilotEnabled,
+    availabilityReady: fulfillmentAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(fulfillmentPilotSupported);
+  const {
+    surfaceMode: fulfillmentSurfaceMode,
+    setSurfaceMode: setFulfillmentSurfaceMode,
+  } = useSpreadsheetSurfaceMode({
+    enabled: fulfillmentPilotEnabled,
+    ready: fulfillmentAvailabilityReady,
   });
   const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
@@ -76,6 +109,18 @@ export default function InventoryWorkspacePage() {
             surfaceMode={surfaceMode}
             onSurfaceModeChange={setSurfaceMode}
           />
+        ) : activeTab === "intake" ? (
+          <SheetModeToggle
+            enabled={intakePilotEnabled}
+            surfaceMode={intakeSurfaceMode}
+            onSurfaceModeChange={setIntakeSurfaceMode}
+          />
+        ) : activeTab === "shipping" ? (
+          <SheetModeToggle
+            enabled={fulfillmentPilotEnabled}
+            surfaceMode={fulfillmentSurfaceMode}
+            onSurfaceModeChange={setFulfillmentSurfaceMode}
+          />
         ) : null
       }
     >
@@ -95,7 +140,23 @@ export default function InventoryWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="shipping">
-        <PickPackWorkSurface />
+        {fulfillmentSurfaceMode === "sheet-native" ? (
+          <FulfillmentPilotSurface
+            onOpenClassic={() => setFulfillmentSurfaceMode("classic")}
+          />
+        ) : (
+          <PickPackWorkSurface />
+        )}
+      </LinearWorkspacePanel>
+      {/* TER-815: Direct Intake sheet-native surface.
+          CRITICAL: This panel is DIRECT INTAKE only (no PO).
+          PO-linked receiving stays in the "receiving" panel. */}
+      <LinearWorkspacePanel value="intake">
+        {intakeSurfaceMode === "sheet-native" ? (
+          <IntakePilotSurface />
+        ) : (
+          <DirectIntakeWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="receiving">
         {receivingDraftId ? (

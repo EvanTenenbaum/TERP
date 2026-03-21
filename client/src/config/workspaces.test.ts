@@ -19,11 +19,13 @@ describe("ACCOUNTING_WORKSPACE", () => {
 });
 
 describe("INVENTORY_WORKSPACE", () => {
-  it("exposes the inventory workspace tabs with receiving and shipping labels", () => {
+  // TER-815: "intake" tab added as a first-class tab for direct intake (sheet-native pilot)
+  it("exposes the inventory workspace tabs with intake, receiving, and shipping labels", () => {
     expect(INVENTORY_WORKSPACE.title).toBe("Inventory");
     expect(INVENTORY_WORKSPACE.homePath).toBe("/inventory");
     expect(INVENTORY_WORKSPACE.tabs).toEqual([
       { value: "inventory", label: "Inventory" },
+      { value: "intake", label: "Intake" },
       { value: "receiving", label: "Receiving" },
       { value: "shipping", label: "Shipping" },
       { value: "photography", label: "Photography" },

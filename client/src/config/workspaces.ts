@@ -59,13 +59,14 @@ export const INVENTORY_WORKSPACE = {
     "Manage inventory, receiving, shipping, photography, and samples from one primary operational workspace.",
   tabs: [
     { value: "inventory", label: "Inventory" },
+    { value: "intake", label: "Intake" },
     { value: "receiving", label: "Receiving" },
     { value: "shipping", label: "Shipping" },
     { value: "photography", label: "Photography" },
     { value: "samples", label: "Samples" },
   ],
 } as const satisfies WorkspaceConfig<
-  "inventory" | "receiving" | "shipping" | "photography" | "samples"
+  "inventory" | "intake" | "receiving" | "shipping" | "photography" | "samples"
 >;
 
 export const CREDITS_WORKSPACE = {
@@ -78,9 +79,7 @@ export const CREDITS_WORKSPACE = {
     { value: "adjustments", label: "Issued Adjustments" },
     { value: "capacity", label: "Capacity Settings" },
   ],
-} as const satisfies WorkspaceConfig<
-  "dashboard" | "adjustments" | "capacity"
->;
+} as const satisfies WorkspaceConfig<"dashboard" | "adjustments" | "capacity">;
 
 export const ACCOUNTING_WORKSPACE = {
   title: "Accounting",

@@ -2,6 +2,7 @@ type WorkspaceParamValue = string | number | boolean | null | undefined;
 export type OrdersSheetView = "queue" | "document";
 export type OperationsTab =
   | "inventory"
+  | "intake"
   | "receiving"
   | "shipping"
   | "photography"
@@ -59,13 +60,12 @@ export function normalizeOperationsTab(
 ): OperationsTab | undefined {
   switch (tab) {
     case "inventory":
+    case "intake":
     case "receiving":
     case "shipping":
     case "photography":
     case "samples":
       return tab;
-    case "intake":
-      return "receiving";
     case "pick-pack":
       return "shipping";
     default:
