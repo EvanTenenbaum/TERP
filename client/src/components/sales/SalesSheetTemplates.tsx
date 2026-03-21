@@ -471,7 +471,7 @@ export function SalesSheetTemplates({
                       headerText: e.target.value,
                     })
                   }
-                  placeholder="Custom header message for your sales sheets..."
+                  placeholder="Custom header message for your sales catalogues..."
                   rows={2}
                 />
               </div>

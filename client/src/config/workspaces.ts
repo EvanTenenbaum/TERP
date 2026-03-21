@@ -14,12 +14,12 @@ export const SALES_WORKSPACE = {
   title: "Sales",
   homePath: "/sales",
   description:
-    "Manage orders, quotes, returns, sales sheets, and live shopping in a unified sales workspace.",
+    "Manage orders, quotes, returns, sales catalogues, and live shopping in a unified sales workspace.",
   tabs: [
     { value: "orders", label: "Orders" },
     { value: "quotes", label: "Quotes" },
     { value: "returns", label: "Returns" },
-    { value: "sales-sheets", label: "Sales Sheets" },
+    { value: "sales-sheets", label: "Sales Catalogues" },
     { value: "live-shopping", label: "Live Shopping" },
   ],
 } as const satisfies WorkspaceConfig<

@@ -122,7 +122,7 @@ vi.mock("@/pages/ReturnsPage", () => ({
 }));
 vi.mock("@/pages/SalesSheetCreatorPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
-    <div>Sales Sheets {embedded ? "Embedded" : "Standalone"}</div>
+    <div>Sales Catalogues {embedded ? "Embedded" : "Standalone"}</div>
   ),
 }));
 vi.mock("@/pages/LiveShoppingPage", () => ({
@@ -246,11 +246,11 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Orders Sheet Pilot Surface")).toBeInTheDocument();
   });
 
-  it("renders Sales workspace with sales sheets tab content", () => {
+  it("renders Sales workspace with sales catalogues tab content", () => {
     mockActiveTab = "sales-sheets";
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
-    expect(screen.getByText("Sales Sheets Embedded")).toBeInTheDocument();
+    expect(screen.getByText("Sales Catalogues Embedded")).toBeInTheDocument();
   });
 
   it("renders Sales workspace with live shopping tab content", () => {

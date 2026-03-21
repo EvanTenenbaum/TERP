@@ -24,7 +24,7 @@ const PATH_LABELS: Record<string, string> = {
   "/sales?tab=orders": "Orders",
   "/sales?tab=quotes": "Quotes",
   "/sales?tab=returns": "Returns",
-  "/sales?tab=sales-sheets": "Sales Sheets",
+  "/sales?tab=sales-sheets": "Sales Catalogues",
   "/sales?tab=live-shopping": "Live Shopping",
   "/sales?tab=create-order": "New Sales Order",
   "/inventory": "Inventory Workspace",

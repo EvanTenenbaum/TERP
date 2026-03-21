@@ -943,7 +943,7 @@ export function SalesSheetsPilotSurface({
               releaseGateIds={["SALE-SHT-001", "SALE-SHT-002"]}
               affordances={browserAffordances}
               title="Inventory Browser"
-              description="Select items from live inventory to add to the sales sheet. Client-sensitive pricing is applied automatically."
+              description="Select items from live inventory to add to the sales catalogue. Client-sensitive pricing is applied automatically."
               rows={inventoryRows}
               columnDefs={inventoryColumnDefs}
               getRowId={row => row.identity.rowKey}
@@ -1011,7 +1011,7 @@ export function SalesSheetsPilotSurface({
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-muted-foreground">
           <FileText className="mb-4 h-12 w-12 opacity-40" />
           <p className="text-sm">
-            Select a client to start building a sales sheet
+            Select a client to start building a sales catalogue
           </p>
         </div>
       )}

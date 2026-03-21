@@ -16,23 +16,23 @@ const SHEET_NATIVE_VALUE = "sheet-native";
  * low fallback rate (<5% classic usage over 2 weeks).
  */
 export const SHEET_NATIVE_DEFAULTS: Record<string, boolean> = {
-  // Wave 0 (pilot — already proven, flipped Phase 5)
+  // Wave 0 (pilot — proven, flipped Phase 5)
   orders: true,
   "create-order": false,
-  // Wave 1 (flipped Phase 5)
+  // Wave 1 (flipped Phase 5-6)
   inventory: true,
   "sales-sheets": true,
-  payments: false,
-  "client-ledger": false,
-  // Wave 2
-  intake: false,
-  "purchase-orders": false,
-  fulfillment: false,
-  // Wave 3
-  invoices: false,
-  returns: false,
-  quotes: false,
-  samples: false,
+  payments: true,
+  "client-ledger": true,
+  // Wave 2 (flipped Phase 6)
+  intake: true,
+  "purchase-orders": true,
+  fulfillment: true,
+  // Wave 3 (flipped Phase 6)
+  invoices: true,
+  returns: true,
+  quotes: true,
+  samples: true,
 };
 
 /** Build the availability config for useSpreadsheetSurfaceMode with the per-module default */

@@ -344,13 +344,13 @@ export function SalesSheetPreview({
   // Save mutation
   const saveMutation = trpc.salesSheets.save.useMutation({
     onSuccess: data => {
-      toast.success("Sales sheet saved successfully");
+      toast.success("Sales catalogue saved successfully");
       utils.salesSheets.getHistory.invalidate();
       setLastSavedSheetId(data);
       setHasUnsavedChanges(false);
     },
     onError: error => {
-      toast.error("Failed to save sales sheet: " + error.message);
+      toast.error("Failed to save sales catalogue: " + error.message);
     },
   });
 
@@ -460,7 +460,7 @@ export function SalesSheetPreview({
     const doc = new jsPDF();
 
     doc.setFontSize(18);
-    doc.text("Sales Sheet", 20, 20);
+    doc.text("Sales Catalogue", 20, 20);
 
     doc.setFontSize(12);
     let y = 40;
@@ -494,7 +494,7 @@ export function SalesSheetPreview({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Sales Sheet Preview</CardTitle>
+            <CardTitle>Sales Catalogue Preview</CardTitle>
             <CardDescription>
               {totalItems} item{totalItems !== 1 ? "s" : ""} selected
             </CardDescription>

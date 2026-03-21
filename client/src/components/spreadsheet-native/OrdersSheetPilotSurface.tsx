@@ -404,7 +404,7 @@ export function OrdersSheetPilotSurface({
         : clientIdFromRoute !== null
           ? `Client #${clientIdFromRoute}`
           : fromSalesSheet
-            ? "Sales Sheet import"
+            ? "Sales Catalogue import"
             : "New draft";
 
   if (currentDocumentMode) {

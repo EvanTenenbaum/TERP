@@ -111,7 +111,7 @@ import { formatCurrency } from "@/lib/utils";
 const PIPELINE_STAGES = [
   {
     id: "SALES_SHEET",
-    label: "Sales Sheets",
+    label: "Sales Catalogues",
     icon: FileText,
     color: "bg-blue-500",
     dropColor: "bg-blue-100 border-blue-500",

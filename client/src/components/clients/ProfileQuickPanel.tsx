@@ -341,7 +341,7 @@ export function ProfileQuickPanel({
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span>Sales sheet drafts</span>
+                <span>Sales catalogue drafts</span>
                 <span className="font-medium">
                   {shell.openArtifacts.salesSheetDrafts}
                 </span>

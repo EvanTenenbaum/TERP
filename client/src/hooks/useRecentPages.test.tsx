@@ -21,7 +21,7 @@ describe("useRecentPages", () => {
     mockUseSearch.mockReset();
   });
 
-  it("tracks sales sheets as a distinct recent page entry", () => {
+  it("tracks sales catalogues as a distinct recent page entry", () => {
     mockUseLocation.mockReturnValue(["/sales", vi.fn()]);
     mockUseSearch.mockReturnValue("?tab=sales-sheets");
 
@@ -29,7 +29,7 @@ describe("useRecentPages", () => {
 
     expect(result.current.recentPages[0]).toMatchObject({
       path: "/sales?tab=sales-sheets",
-      label: "Sales Sheets",
+      label: "Sales Catalogues",
     });
   });
 

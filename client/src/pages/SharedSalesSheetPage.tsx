@@ -89,7 +89,7 @@ export default function SharedSalesSheetPage() {
           <div className="flex items-center gap-3">
             <FileText className="h-8 w-8" />
             <div>
-              <h1 className="text-2xl font-bold">Sales Sheet</h1>
+              <h1 className="text-2xl font-bold">Sales Catalogue</h1>
               <p className="text-primary-foreground/80">
                 Prepared for {sheet.clientName}
               </p>

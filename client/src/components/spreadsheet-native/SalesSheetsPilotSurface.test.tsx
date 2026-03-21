@@ -301,7 +301,7 @@ describe("SalesSheetsPilotSurface", () => {
     render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
 
     expect(
-      screen.getByText("Select a client to start building a sales sheet")
+      screen.getByText("Select a client to start building a sales catalogue")
     ).toBeInTheDocument();
   });
 

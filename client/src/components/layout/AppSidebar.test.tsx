@@ -136,7 +136,7 @@ describe("AppSidebar navigation", () => {
     expect(screen.queryByText("Shipping")).not.toBeInTheDocument();
     expect(screen.queryByText("Receiving")).not.toBeInTheDocument();
     expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Sales Sheets")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sales Catalogues")).not.toBeInTheDocument();
   });
 
   it("highlights active navigation item", () => {

@@ -118,11 +118,11 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: false,
   },
   {
-    name: "Sales Sheets",
+    name: "Sales Catalogues",
     path: "/sales?tab=sales-sheets",
     icon: Layers,
     group: "sales",
-    ariaLabel: "Create and share sales sheets with clients",
+    ariaLabel: "Create and share sales catalogues with clients",
     sidebarVisible: false,
   },
   {
@@ -168,8 +168,7 @@ export const navigationItems: NavigationItem[] = [
     path: "/direct-intake",
     icon: Download,
     group: "operations",
-    ariaLabel:
-      "Legacy intake alias that now routes into the receiving queue",
+    ariaLabel: "Legacy intake alias that now routes into the receiving queue",
     sidebarVisible: false,
   },
 

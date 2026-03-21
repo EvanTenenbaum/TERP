@@ -758,7 +758,7 @@ export default function OrderCreatorPageV2({
       setSaved();
       sessionStorage.removeItem("salesSheetToQuote");
     } catch {
-      toast.error("Failed to import items from sales sheet");
+      toast.error("Failed to import items from sales catalogue");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSalesSheetImport, routeOrderId]);

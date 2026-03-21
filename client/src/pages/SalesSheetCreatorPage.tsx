@@ -430,7 +430,9 @@ export default function SalesSheetCreatorPage({
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6" />
             <div>
-              <CardTitle className="text-2xl">Sales Sheet Creator</CardTitle>
+              <CardTitle className="text-2xl">
+                Sales Catalogue Creator
+              </CardTitle>
               <CardDescription>
                 Create customized sales sheets with dynamic pricing for your
                 clients

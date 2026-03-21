@@ -20,7 +20,7 @@ import { Info } from "lucide-react";
 import { toast } from "sonner";
 
 const CHANNEL_LABELS = {
-  SALES_SHEET: "Sales Sheet",
+  SALES_SHEET: "Sales Catalogue",
   LIVE_SHOPPING: "Live Shopping",
   VIP_SHOPPING: "VIP Shopping",
 } as const;
@@ -52,8 +52,8 @@ export function CogsGlobalSettings() {
         <CardHeader>
           <CardTitle className="text-lg">Range-Based COGS Defaults</CardTitle>
           <CardDescription>
-            Choose which vendor range value becomes the default effective COGS on
-            each customer-facing channel.
+            Choose which vendor range value becomes the default effective COGS
+            on each customer-facing channel.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
