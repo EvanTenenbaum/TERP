@@ -30,7 +30,7 @@ import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 // Work Surface components - legacy pages removed, using WorkSurface directly
-import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
+import ClientLedgerPage from "@/pages/ClientLedgerPage";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import ProductIntakeSlicePage from "@/components/uiux-slice/ProductIntakeSlicePage";
 import InventoryBrowseSlicePage from "@/components/uiux-slice/InventoryBrowseSlicePage";
@@ -506,11 +506,11 @@ function Router() {
                 />
                 <Route
                   path="/clients/:clientId/ledger"
-                  component={withErrorBoundary(ClientLedgerWorkSurface)}
+                  component={withErrorBoundary(ClientLedgerPage)}
                 />
                 <Route
                   path="/client-ledger"
-                  component={withErrorBoundary(ClientLedgerWorkSurface)}
+                  component={withErrorBoundary(ClientLedgerPage)}
                 />
                 <Route
                   path="/users"
