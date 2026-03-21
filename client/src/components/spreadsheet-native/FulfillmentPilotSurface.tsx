@@ -546,7 +546,7 @@ function ItemInspector({ item, isOpen, onClose }: ItemInspectorProps) {
             {item.location || "-"}
           </p>
         </InspectorField>
-        {item.unitPrice !== null && (
+        {item.unitPrice !== null && item.unitPrice !== undefined && (
           <InspectorField label="Unit Price">
             <p>${item.unitPrice.toFixed(2)}</p>
           </InspectorField>
