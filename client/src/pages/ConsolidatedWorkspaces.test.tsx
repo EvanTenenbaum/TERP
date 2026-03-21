@@ -48,6 +48,16 @@ vi.mock("@/lib/spreadsheet-native", () => ({
   }),
   useSpreadsheetSurfaceMode: () => ({
     surfaceMode: mockPilotMode,
+    setSurfaceMode: vi.fn(),
+  }),
+  buildSurfaceAvailability: (
+    moduleId: string,
+    enabled: boolean,
+    ready?: boolean
+  ) => ({
+    enabled,
+    ready,
+    defaultSheetNative: false,
   }),
 }));
 
