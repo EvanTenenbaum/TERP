@@ -1,6 +1,7 @@
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
+import QuotesPilotSurface from "@/components/spreadsheet-native/QuotesPilotSurface";
 import SalesSheetsPilotSurface from "@/components/spreadsheet-native/SalesSheetsPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import ReturnsPage from "@/pages/ReturnsPage";
@@ -53,7 +54,8 @@ export default function SalesWorkspacePage() {
   const pilotSurfaceSupported =
     activeTab === "orders" ||
     activeTab === "create-order" ||
-    activeTab === "sales-sheets";
+    activeTab === "sales-sheets" ||
+    activeTab === "quotes";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
@@ -80,7 +82,8 @@ export default function SalesWorkspacePage() {
       commandStrip={
         activeTab === "orders" ||
         activeTab === "create-order" ||
-        activeTab === "sales-sheets" ? (
+        activeTab === "sales-sheets" ||
+        activeTab === "quotes" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -105,7 +108,11 @@ export default function SalesWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="quotes">
-        <QuotesWorkSurface />
+        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+          <QuotesPilotSurface />
+        ) : (
+          <QuotesWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
         <ReturnsPage embedded />
