@@ -21,7 +21,7 @@ import {
   orders,
   credits,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, ne } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -435,14 +435,15 @@ export const returnsRouter = router({
           return total + parseFloat(item.quantity) * unitPrice;
         }, 0);
 
-        // ACC-003: Find the invoice associated with this order
+        // ACC-003: Find the invoice associated with this order (IMP-2: exclude VOID)
         const [orderInvoice] = await tx
           .select()
           .from(invoices)
           .where(
             and(
               eq(invoices.referenceType, "ORDER"),
-              eq(invoices.referenceId, input.orderId)
+              eq(invoices.referenceId, input.orderId),
+              ne(invoices.status, "VOID")
             )
           )
           .limit(1);
@@ -451,18 +452,24 @@ export const returnsRouter = router({
 
         // ACC-003: Create credit memo if there was an invoice and return has value
         if (orderInvoice && returnValue > 0) {
-          const creditNumber = await creditsDb.generateCreditNumber("CR-RTN");
+          const creditNumber = await creditsDb.generateCreditNumber(
+            "CR-RTN",
+            tx
+          );
           const creditAmount = returnValue.toFixed(2);
-          const credit = await creditsDb.createCredit({
-            creditNumber,
-            clientId: order.clientId,
-            creditAmount,
-            amountRemaining: creditAmount, // Will be set to creditAmount by createCredit
-            creditReason: "RETURN",
-            transactionId: orderInvoice.id,
-            notes: `Return for order #${order.orderNumber || order.id}: ${input.notes || input.reason}`,
-            createdBy: userId,
-          });
+          const credit = await creditsDb.createCredit(
+            {
+              creditNumber,
+              clientId: order.clientId,
+              creditAmount,
+              amountRemaining: creditAmount,
+              creditReason: "RETURN",
+              transactionId: orderInvoice.id,
+              notes: `Return for order #${order.orderNumber || order.id}: ${input.notes || input.reason}`,
+              createdBy: userId,
+            },
+            tx
+          );
           creditId = credit.id;
 
           logger.info({
@@ -692,6 +699,28 @@ export const returnsRouter = router({
 
       // Process each received item
       await db.transaction(async tx => {
+        // CRIT-3: Check which batches were actually restocked by returns.create
+        // to avoid draining inventory that was never added
+        const priorRestockMovements = await tx
+          .select({
+            batchId: inventoryMovements.batchId,
+            quantityChange: inventoryMovements.quantityChange,
+          })
+          .from(inventoryMovements)
+          .where(
+            and(
+              eq(inventoryMovements.inventoryMovementType, "RETURN"),
+              eq(inventoryMovements.referenceType, "RETURN"),
+              eq(inventoryMovements.referenceId, input.id)
+            )
+          );
+
+        const batchesRestockedByCreate = new Set(
+          priorRestockMovements
+            .filter(m => parseFloat(m.quantityChange || "0") > 0)
+            .map(m => m.batchId)
+        );
+
         for (const item of input.receivedItems) {
           const receivedQty = parseFloat(item.receivedQuantity);
 
@@ -727,8 +756,11 @@ export const returnsRouter = router({
                 condition: item.actualCondition,
               });
             }
-          } else if (item.actualCondition === "QUARANTINE") {
-            // For items that need quarantine, move from onHandQty to quarantineQty
+          } else if (
+            item.actualCondition === "QUARANTINE" &&
+            batchesRestockedByCreate.has(item.batchId)
+          ) {
+            // CRIT-3: Only move from onHandQty if create actually restocked this batch
             const [batch] = await tx
               .select()
               .from(batches)
@@ -775,10 +807,11 @@ export const returnsRouter = router({
               });
             }
           } else if (
-            item.actualCondition === "DAMAGED" ||
-            item.actualCondition === "DESTROYED"
+            (item.actualCondition === "DAMAGED" ||
+              item.actualCondition === "DESTROYED") &&
+            batchesRestockedByCreate.has(item.batchId)
           ) {
-            // For damaged/destroyed items, reverse the inventory if it was previously restored
+            // CRIT-3: Only reverse inventory if create actually restocked this batch
             const [batch] = await tx
               .select()
               .from(batches)
@@ -915,13 +948,15 @@ export const returnsRouter = router({
         // DISC-RET-001: Guard against double credit issuance.
         // returns.create auto-issues credit (linked via transactionId → invoice).
         // If a RETURN credit already exists for this order's invoice, skip.
+        // IMP-2: Exclude VOID invoices — voided invoices should not generate credits
         const [orderInvoice] = await tx
           .select({ id: invoices.id })
           .from(invoices)
           .where(
             and(
               eq(invoices.referenceType, "ORDER"),
-              eq(invoices.referenceId, returnRecord.orderId)
+              eq(invoices.referenceId, returnRecord.orderId),
+              ne(invoices.status, "VOID")
             )
           )
           .limit(1);
@@ -972,22 +1007,25 @@ export const returnsRouter = router({
 
           if (calculatedAmount > 0) {
             // Generate credit number
-            const creditNumber = await creditsDb.generateCreditNumber();
+            const creditNumber = await creditsDb.generateCreditNumber("CR", tx);
 
             // Create the credit — include transactionId when invoice exists
             // so the creditAlreadyExists guard can catch duplicates (IMP-3)
-            const credit = await creditsDb.createCredit({
-              creditNumber,
-              clientId: order.clientId,
-              creditAmount: calculatedAmount.toFixed(2),
-              amountRemaining: calculatedAmount.toFixed(2),
-              amountUsed: "0",
-              creditReason: "RETURN",
-              transactionId: orderInvoice?.id,
-              notes: input.creditNotes || `Credit for return #${input.id}`,
-              createdBy: userId,
-              creditStatus: "ACTIVE",
-            });
+            const credit = await creditsDb.createCredit(
+              {
+                creditNumber,
+                clientId: order.clientId,
+                creditAmount: calculatedAmount.toFixed(2),
+                amountRemaining: calculatedAmount.toFixed(2),
+                amountUsed: "0",
+                creditReason: "RETURN",
+                transactionId: orderInvoice?.id,
+                notes: input.creditNotes || `Credit for return #${input.id}`,
+                createdBy: userId,
+                creditStatus: "ACTIVE",
+              },
+              tx
+            );
 
             creditId = credit.id;
 
@@ -1061,6 +1099,9 @@ export const returnsRouter = router({
           message: "Database not available",
         });
 
+      // IMP-4: DAMAGED_IN_TRANSIT and QUALITY_ISSUE are mapped to DEFECTIVE
+      // by mapReturnReason before storage, so they never appear in the DB.
+      // The defectiveCount includes all three mapped reasons.
       const stats = await db
         .select({
           totalReturns: sql<number>`COUNT(*)`,
@@ -1068,8 +1109,6 @@ export const returnsRouter = router({
           wrongItemCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'WRONG_ITEM' THEN 1 ELSE 0 END)`,
           notAsDescribedCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'NOT_AS_DESCRIBED' THEN 1 ELSE 0 END)`,
           customerChangedMindCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'CUSTOMER_CHANGED_MIND' THEN 1 ELSE 0 END)`,
-          damagedInTransitCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'DAMAGED_IN_TRANSIT' THEN 1 ELSE 0 END)`,
-          qualityIssueCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'QUALITY_ISSUE' THEN 1 ELSE 0 END)`,
           otherCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'OTHER' THEN 1 ELSE 0 END)`,
         })
         .from(returns);
@@ -1096,8 +1135,6 @@ export const returnsRouter = router({
         customerChangedMindCount: Number(
           stats[0]?.customerChangedMindCount || 0
         ),
-        damagedInTransitCount: Number(stats[0]?.damagedInTransitCount || 0),
-        qualityIssueCount: Number(stats[0]?.qualityIssueCount || 0),
         otherCount: Number(stats[0]?.otherCount || 0),
         byReason: {
           DEFECTIVE: Number(stats[0]?.defectiveCount || 0),
@@ -1106,8 +1143,6 @@ export const returnsRouter = router({
           CUSTOMER_CHANGED_MIND: Number(
             stats[0]?.customerChangedMindCount || 0
           ),
-          DAMAGED_IN_TRANSIT: Number(stats[0]?.damagedInTransitCount || 0),
-          QUALITY_ISSUE: Number(stats[0]?.qualityIssueCount || 0),
           OTHER: Number(stats[0]?.otherCount || 0),
         },
         monthly: monthlyStats.map(m => ({
