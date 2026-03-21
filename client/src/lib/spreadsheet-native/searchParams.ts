@@ -6,6 +6,35 @@ export type SpreadsheetSurfaceMode = "classic" | "sheet-native";
 const SURFACE_PARAM = "surface";
 const SHEET_NATIVE_VALUE = "sheet-native";
 
+/**
+ * Per-module default surface mode configuration.
+ * When a module is set to true here, it defaults to sheet-native
+ * without needing ?surface=sheet-native in the URL.
+ * Users can still override with ?surface=classic.
+ *
+ * Flip modules from false → true after QA + soak period confirms
+ * low fallback rate (<5% classic usage over 2 weeks).
+ */
+export const SHEET_NATIVE_DEFAULTS: Record<string, boolean> = {
+  // Wave 0 (pilot — already proven)
+  orders: false,
+  "create-order": false,
+  // Wave 1
+  inventory: false,
+  "sales-sheets": false,
+  payments: false,
+  "client-ledger": false,
+  // Wave 2
+  intake: false,
+  "purchase-orders": false,
+  fulfillment: false,
+  // Wave 3
+  invoices: false,
+  returns: false,
+  quotes: false,
+  samples: false,
+};
+
 function buildUrl(pathname: string, params: URLSearchParams) {
   const query = params.toString();
   return `${pathname}${query ? `?${query}` : ""}`;
@@ -14,6 +43,8 @@ function buildUrl(pathname: string, params: URLSearchParams) {
 interface SpreadsheetSurfaceAvailability {
   enabled: boolean;
   ready?: boolean;
+  /** When true, default to sheet-native when no URL param is set */
+  defaultSheetNative?: boolean;
 }
 
 function resolveAvailability(
@@ -23,12 +54,14 @@ function resolveAvailability(
     return {
       enabled: availability,
       ready: true,
+      defaultSheetNative: false,
     };
   }
 
   return {
     enabled: availability.enabled,
     ready: availability.ready ?? true,
+    defaultSheetNative: availability.defaultSheetNative ?? false,
   };
 }
 
@@ -37,7 +70,8 @@ export function useSpreadsheetSurfaceMode(
 ) {
   const [pathname, setLocation] = useLocation();
   const search = useSearch();
-  const { enabled, ready } = resolveAvailability(availability);
+  const { enabled, ready, defaultSheetNative } =
+    resolveAvailability(availability);
 
   const surfaceMode = useMemo<SpreadsheetSurfaceMode>(() => {
     if (!enabled) {
@@ -45,10 +79,19 @@ export function useSpreadsheetSurfaceMode(
     }
 
     const params = new URLSearchParams(search);
-    return params.get(SURFACE_PARAM) === SHEET_NATIVE_VALUE
-      ? "sheet-native"
-      : "classic";
-  }, [enabled, search]);
+    const urlValue = params.get(SURFACE_PARAM);
+
+    // Explicit URL param takes precedence
+    if (urlValue === SHEET_NATIVE_VALUE) {
+      return "sheet-native";
+    }
+    if (urlValue === "classic") {
+      return "classic";
+    }
+
+    // No URL param: use per-module default
+    return defaultSheetNative ? "sheet-native" : "classic";
+  }, [defaultSheetNative, enabled, search]);
 
   useEffect(() => {
     if (enabled || !ready) {
