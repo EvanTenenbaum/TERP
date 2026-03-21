@@ -7,7 +7,7 @@ Status: `planning`
 
 Roll out the PowersheetGrid spreadsheet-native runtime to every TERP module where it adds value, without losing any functionality users currently have.
 
-Orders is complete (7 gates closed, initiative retired 2026-03-20). This roadmap covers the remaining 11 modules.
+Orders foundation is reusable (G1-G5 closed). G6 is `partial` (ORD-SS-012 remains implemented-not-surfaced), G7 is `open` (retirement blocked per charter). This roadmap covers all 13 modules including Orders parity completion.
 
 ## Capability Regression Prevention
 
@@ -63,9 +63,9 @@ These need detailed capability ledgers before implementation:
 
 Waves follow the Figma-to-TERP Reality Launch Matrix. Each wave has a prerequisite gate.
 
-### Wave 0: Foundation (COMPLETE)
+### Wave 0: Foundation (REUSABLE, NOT RETIRED)
 
-Orders is the pilot. All 7 gates closed. The PowersheetGrid runtime, selection model, clipboard/fill/edit contracts, affordance matrix, and keyboard hints are proven and reusable.
+Orders is the pilot. G1-G5 closed. G6 `partial` — 5 accepted-limitations, ORD-SS-012 implemented-not-surfaced. G7 `open` — retirement blocked until G6 proof-complete and classic fallback verified on a deployed build. The PowersheetGrid runtime, selection model, clipboard/fill/edit contracts, affordance matrix, and keyboard hints are proven and reusable.
 
 **Reusable foundation from Orders:**
 

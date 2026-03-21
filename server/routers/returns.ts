@@ -435,7 +435,10 @@ export const returnsRouter = router({
           return total + parseFloat(item.quantity) * unitPrice;
         }, 0);
 
-        // ACC-003: Find the invoice associated with this order (IMP-2: exclude VOID)
+        // ACC-003: Find the most recent non-VOID invoice for this order.
+        // IMP-2: exclude VOID. IMP-5: order by createdAt DESC so we always pick
+        // the latest invoice when multiple non-VOID invoices exist (120+ orders
+        // on staging have this condition).
         const [orderInvoice] = await tx
           .select()
           .from(invoices)
@@ -446,6 +449,7 @@ export const returnsRouter = router({
               ne(invoices.status, "VOID")
             )
           )
+          .orderBy(desc(invoices.createdAt))
           .limit(1);
 
         let creditId: number | undefined;
@@ -697,6 +701,30 @@ export const returnsRouter = router({
         throw new Error(getReturnTransitionError(currentStatus, "RECEIVED"));
       }
 
+      // CRIT-4: Build map of max allowed quantities from original return items.
+      // receivedQuantity must never exceed the quantity on the original return.
+      type ReturnItem = { batchId: number; quantity: string };
+      let originalReturnItems: ReturnItem[] = [];
+      try {
+        originalReturnItems =
+          typeof returnRecord.items === "string"
+            ? JSON.parse(returnRecord.items)
+            : (returnRecord.items as ReturnItem[]) || [];
+      } catch {
+        logger.warn({
+          msg: "[Returns] Could not parse return items for quantity cap",
+          returnId: input.id,
+        });
+      }
+      const maxReturnQtyByBatch = new Map<number, number>();
+      for (const item of originalReturnItems) {
+        const qty = parseFloat(item.quantity || "0");
+        maxReturnQtyByBatch.set(
+          item.batchId,
+          (maxReturnQtyByBatch.get(item.batchId) || 0) + qty
+        );
+      }
+
       // Process each received item
       await db.transaction(async tx => {
         // CRIT-3: Check which batches were actually restocked by returns.create
@@ -722,7 +750,20 @@ export const returnsRouter = router({
         );
 
         for (const item of input.receivedItems) {
-          const receivedQty = parseFloat(item.receivedQuantity);
+          const rawReceivedQty = parseFloat(item.receivedQuantity);
+          const maxAllowed = maxReturnQtyByBatch.get(item.batchId) ?? 0;
+          const receivedQty = Math.min(rawReceivedQty, maxAllowed);
+
+          if (rawReceivedQty > maxAllowed) {
+            logger.warn({
+              msg: "[Returns] CRIT-4: receivedQuantity capped to original return quantity",
+              returnId: input.id,
+              batchId: item.batchId,
+              requested: rawReceivedQty,
+              capped: receivedQty,
+              maxAllowed,
+            });
+          }
 
           // If sellable, ensure inventory was restored
           if (item.actualCondition === "SELLABLE" && receivedQty > 0) {
@@ -949,6 +990,7 @@ export const returnsRouter = router({
         // returns.create auto-issues credit (linked via transactionId → invoice).
         // If a RETURN credit already exists for this order's invoice, skip.
         // IMP-2: Exclude VOID invoices — voided invoices should not generate credits
+        // IMP-5: Order by createdAt DESC for deterministic pick when multiple exist
         const [orderInvoice] = await tx
           .select({ id: invoices.id })
           .from(invoices)
@@ -959,6 +1001,7 @@ export const returnsRouter = router({
               ne(invoices.status, "VOID")
             )
           )
+          .orderBy(desc(invoices.createdAt))
           .limit(1);
 
         let creditAlreadyExists = false;

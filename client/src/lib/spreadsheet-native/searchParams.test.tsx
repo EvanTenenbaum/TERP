@@ -2,17 +2,23 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useSpreadsheetSurfaceMode } from "./searchParams";
 
 let mockPath = "/operations";
 let mockSearch = "";
 const mockSetLocation = vi.fn();
+const mockTrackFallbackToClassic = vi.fn();
 
 vi.mock("wouter", () => ({
   useLocation: () => [mockPath, mockSetLocation],
   useSearch: () => mockSearch,
+}));
+
+vi.mock("./surfaceTelemetry", () => ({
+  trackFallbackToClassic: (...args: unknown[]) =>
+    mockTrackFallbackToClassic(...args),
 }));
 
 describe("useSpreadsheetSurfaceMode", () => {
@@ -20,6 +26,7 @@ describe("useSpreadsheetSurfaceMode", () => {
     mockPath = "/operations";
     mockSearch = "";
     mockSetLocation.mockClear();
+    mockTrackFallbackToClassic.mockClear();
   });
 
   it("uses sheet-native mode when enabled and requested", () => {
@@ -58,16 +65,6 @@ describe("useSpreadsheetSurfaceMode", () => {
   });
 
   describe("fallback tracking", () => {
-    let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-      consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-      consoleInfoSpy.mockRestore();
-    });
-
     it("logs a fallback event when switching from sheet-native to classic", () => {
       mockPath = "/sales";
       mockSearch = "?tab=orders&surface=sheet-native";
@@ -80,17 +77,9 @@ describe("useSpreadsheetSurfaceMode", () => {
       mockSearch = "?tab=orders";
       rerender();
 
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[surface-mode-fallback]")
-      );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("module=sales")
-      );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("from=sheet-native")
-      );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("to=classic")
+      expect(mockTrackFallbackToClassic).toHaveBeenCalledWith(
+        "sales",
+        "/sales"
       );
     });
 
@@ -106,9 +95,7 @@ describe("useSpreadsheetSurfaceMode", () => {
       mockSearch = "?tab=orders&surface=sheet-native";
       rerender();
 
-      expect(consoleInfoSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("[surface-mode-fallback]")
-      );
+      expect(mockTrackFallbackToClassic).not.toHaveBeenCalled();
     });
 
     it("does not log on initial mount with classic mode", () => {
@@ -119,9 +106,7 @@ describe("useSpreadsheetSurfaceMode", () => {
         useSpreadsheetSurfaceMode({ enabled: true, ready: true })
       );
 
-      expect(consoleInfoSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("[surface-mode-fallback]")
-      );
+      expect(mockTrackFallbackToClassic).not.toHaveBeenCalled();
     });
 
     it("derives module name from the first path segment", () => {
@@ -135,8 +120,9 @@ describe("useSpreadsheetSurfaceMode", () => {
       mockSearch = "";
       rerender();
 
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("module=operations")
+      expect(mockTrackFallbackToClassic).toHaveBeenCalledWith(
+        "operations",
+        "/operations/shipping"
       );
     });
   });

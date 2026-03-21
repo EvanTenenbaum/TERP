@@ -128,12 +128,7 @@ export const cogsModeEnum = mysqlEnum("cogsMode", ["FIXED", "RANGE"]);
  * Range COGS basis enum
  * Defines which point of a vendor COGS range should be used as the effective cost
  */
-export const cogsRangeBasisValues = [
-  "LOW",
-  "MID",
-  "HIGH",
-  "MANUAL",
-] as const;
+export const cogsRangeBasisValues = ["LOW", "MID", "HIGH", "MANUAL"] as const;
 
 /**
  * Pricing channel enum
@@ -1197,6 +1192,11 @@ export const invoices = mysqlTable(
   table => ({
     customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
     createdByIdx: index("idx_invoices_created_by").on(table.createdBy),
+    // IMP-5: Index for returns invoice lookups (was full table scan)
+    referenceIdx: index("idx_invoices_reference").on(
+      table.referenceType,
+      table.referenceId
+    ),
     // Composite indexes for common query patterns
     customerStatusIdx: index("idx_invoices_customer_status").on(
       table.customerId,
@@ -4596,10 +4596,7 @@ export const orderLineItems = mysqlTable(
       precision: 15, // SCHEMA-012: standardized to decimal(15,4)
       scale: 4,
     }).notNull(),
-    effectiveCogsBasis: mysqlEnum(
-      "effective_cogs_basis",
-      cogsRangeBasisValues
-    )
+    effectiveCogsBasis: mysqlEnum("effective_cogs_basis", cogsRangeBasisValues)
       .notNull()
       .default("MANUAL"),
     originalRangeMin: decimal("original_range_min", {
