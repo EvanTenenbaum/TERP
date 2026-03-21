@@ -15,6 +15,12 @@ import Expenses from "@/pages/accounting/Expenses";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
+import PaymentsPilotSurface from "@/components/spreadsheet-native/PaymentsPilotSurface";
+import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
+import {
+  useSpreadsheetPilotAvailability,
+  useSpreadsheetSurfaceMode,
+} from "@/lib/spreadsheet-native";
 
 type AccountingTab = (typeof ACCOUNTING_WORKSPACE.tabs)[number]["value"];
 const ACCOUNTING_TABS = ACCOUNTING_WORKSPACE.tabs.map(
@@ -28,6 +34,15 @@ export default function AccountingWorkspacePage() {
   });
 
   useWorkspaceHomeTelemetry("accounting", activeTab);
+
+  // Sheet-native pilot: only supported on the payments tab
+  const pilotSurfaceSupported = activeTab === "payments";
+  const { sheetPilotEnabled, availabilityReady } =
+    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
+    enabled: sheetPilotEnabled,
+    ready: availabilityReady,
+  });
 
   return (
     <LinearWorkspaceShell
@@ -47,6 +62,15 @@ export default function AccountingWorkspacePage() {
           value: "Invoice / Bill -> Payment -> Ledger",
         },
       ]}
+      commandStrip={
+        activeTab === "payments" ? (
+          <SheetModeToggle
+            enabled={sheetPilotEnabled}
+            surfaceMode={surfaceMode}
+            onSurfaceModeChange={setSurfaceMode}
+          />
+        ) : null
+      }
     >
       <LinearWorkspacePanel value="dashboard">
         <AccountingDashboard embedded />
@@ -58,7 +82,13 @@ export default function AccountingWorkspacePage() {
         <Bills embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="payments">
-        <Payments embedded />
+        {surfaceMode === "sheet-native" ? (
+          <PaymentsPilotSurface
+            onOpenClassic={() => setSurfaceMode("classic")}
+          />
+        ) : (
+          <Payments embedded />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="general-ledger">
         <GeneralLedger embedded />
