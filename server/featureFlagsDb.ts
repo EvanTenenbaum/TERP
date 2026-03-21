@@ -1,6 +1,6 @@
 /**
  * Feature Flags Database Access Layer
- * 
+ *
  * Provides database operations for the feature flag system.
  * All user identification uses openId (string) to match RBAC pattern.
  */
@@ -34,26 +34,32 @@ async function insertAuditLog(
   newValue: Record<string, unknown> | null
 ): Promise<void> {
   if (!db) return;
-  
+
   const prevJson = previousValue ? JSON.stringify(previousValue) : null;
   const newJson = newValue ? JSON.stringify(newValue) : null;
-  
+
   try {
     // Use parameterized query with explicit NULL handling
     const flagIdValue = flagId === null ? sql`NULL` : sql`${flagId}`;
     const prevValue = prevJson === null ? sql`NULL` : sql`${prevJson}`;
     const newValue2 = newJson === null ? sql`NULL` : sql`${newJson}`;
-    
+
     await db.execute(sql`
-      INSERT INTO feature_flag_audit_logs 
+      INSERT INTO feature_flag_audit_logs
         (flag_id, flag_key, action, actor_open_id, previous_value, new_value)
-      VALUES 
+      VALUES
         (${flagIdValue}, ${flagKey}, ${action}, ${actorOpenId}, ${prevValue}, ${newValue2})
     `);
-    logger.info({ flagKey, action, actorOpenId }, "[FeatureFlags] Audit log created");
+    logger.info(
+      { flagKey, action, actorOpenId },
+      "[FeatureFlags] Audit log created"
+    );
   } catch (error) {
     // Don't throw - audit logging should never break the main operation
-    logger.error({ error, flagKey, action }, "[FeatureFlags] Failed to insert audit log");
+    logger.error(
+      { error, flagKey, action },
+      "[FeatureFlags] Failed to insert audit log"
+    );
   }
 }
 
@@ -73,10 +79,7 @@ export const featureFlagsDb = {
       logger.warn("[FeatureFlags] Database not available");
       return [];
     }
-    return db
-      .select()
-      .from(featureFlags)
-      .where(isNull(featureFlags.deletedAt));
+    return db.select().from(featureFlags).where(isNull(featureFlags.deletedAt));
   },
 
   /**
@@ -122,7 +125,9 @@ export const featureFlagsDb = {
     return db
       .select()
       .from(featureFlags)
-      .where(and(eq(featureFlags.module, module), isNull(featureFlags.deletedAt)));
+      .where(
+        and(eq(featureFlags.module, module), isNull(featureFlags.deletedAt))
+      );
   },
 
   /**
@@ -146,7 +151,10 @@ export const featureFlagsDb = {
       flag as Record<string, unknown>
     );
 
-    logger.info({ flagKey: flag.key, flagId, actorOpenId }, "[FeatureFlags] Flag created");
+    logger.info(
+      { flagKey: flag.key, flagId, actorOpenId },
+      "[FeatureFlags] Flag created"
+    );
     return flagId;
   },
 
@@ -195,7 +203,10 @@ export const featureFlagsDb = {
       updates as Record<string, unknown>
     );
 
-    logger.info({ flagKey: existing.key, flagId: id, actorOpenId, action }, "[FeatureFlags] Flag updated");
+    logger.info(
+      { flagKey: existing.key, flagId: id, actorOpenId, action },
+      "[FeatureFlags] Flag updated"
+    );
   },
 
   /**
@@ -230,7 +241,10 @@ export const featureFlagsDb = {
       null
     );
 
-    logger.info({ flagKey: existing.key, flagId: id, actorOpenId }, "[FeatureFlags] Flag deleted");
+    logger.info(
+      { flagKey: existing.key, flagId: id, actorOpenId },
+      "[FeatureFlags] Flag deleted"
+    );
   },
 
   // ========================================================================
@@ -250,13 +264,15 @@ export const featureFlagsDb = {
       .select({ roleId: userRoles.roleId })
       .from(userRoles)
       .where(eq(userRoles.userId, userOpenId));
-    return roles.map((r) => r.roleId);
+    return roles.map(r => r.roleId);
   },
 
   /**
    * Get all role overrides for a flag
    */
-  async getRoleOverrides(flagId: number): Promise<{ roleId: number; enabled: boolean }[]> {
+  async getRoleOverrides(
+    flagId: number
+  ): Promise<{ roleId: number; enabled: boolean }[]> {
     if (!db) {
       logger.warn("[FeatureFlags] Database not available");
       return [];
@@ -304,13 +320,20 @@ export const featureFlagsDb = {
       { type: "role", roleId, enabled }
     );
 
-    logger.info({ flagId, roleId, enabled, actorOpenId }, "[FeatureFlags] Role override set");
+    logger.info(
+      { flagId, roleId, enabled, actorOpenId },
+      "[FeatureFlags] Role override set"
+    );
   },
 
   /**
    * Remove a role override
    */
-  async removeRoleOverride(flagId: number, roleId: number, actorOpenId: string): Promise<void> {
+  async removeRoleOverride(
+    flagId: number,
+    roleId: number,
+    actorOpenId: string
+  ): Promise<void> {
     if (!db) {
       throw new Error("[FeatureFlags] Database not available");
     }
@@ -340,7 +363,10 @@ export const featureFlagsDb = {
       null
     );
 
-    logger.info({ flagId, roleId, actorOpenId }, "[FeatureFlags] Role override removed");
+    logger.info(
+      { flagId, roleId, actorOpenId },
+      "[FeatureFlags] Role override removed"
+    );
   },
 
   // ========================================================================
@@ -351,7 +377,10 @@ export const featureFlagsDb = {
    * Get user override for a flag
    * USES openId (string), NOT numeric id
    */
-  async getUserOverride(flagId: number, userOpenId: string): Promise<boolean | null> {
+  async getUserOverride(
+    flagId: number,
+    userOpenId: string
+  ): Promise<boolean | null> {
     if (!db) {
       logger.warn("[FeatureFlags] Database not available");
       return null;
@@ -404,7 +433,10 @@ export const featureFlagsDb = {
       { type: "user", userOpenId, enabled }
     );
 
-    logger.info({ flagId, userOpenId, enabled, actorOpenId }, "[FeatureFlags] User override set");
+    logger.info(
+      { flagId, userOpenId, enabled, actorOpenId },
+      "[FeatureFlags] User override set"
+    );
   },
 
   /**
@@ -445,7 +477,10 @@ export const featureFlagsDb = {
       null
     );
 
-    logger.info({ flagId, userOpenId, actorOpenId }, "[FeatureFlags] User override removed");
+    logger.info(
+      { flagId, userOpenId, actorOpenId },
+      "[FeatureFlags] User override removed"
+    );
   },
 
   // ========================================================================
@@ -499,7 +534,9 @@ export const featureFlagsDb = {
    * Get all user overrides for a specific user (for efficient batch loading)
    * USES openId (string), NOT numeric id
    */
-  async getAllUserOverrides(userOpenId: string): Promise<FeatureFlagUserOverride[]> {
+  async getAllUserOverrides(
+    userOpenId: string
+  ): Promise<FeatureFlagUserOverride[]> {
     if (!db) {
       logger.warn("[FeatureFlags] Database not available");
       return [];
@@ -513,7 +550,9 @@ export const featureFlagsDb = {
   /**
    * Get all user overrides for a specific flag
    */
-  async getFlagUserOverrides(flagId: number): Promise<FeatureFlagUserOverride[]> {
+  async getFlagUserOverrides(
+    flagId: number
+  ): Promise<FeatureFlagUserOverride[]> {
     if (!db) {
       logger.warn("[FeatureFlags] Database not available");
       return [];
