@@ -16,12 +16,12 @@ const SHEET_NATIVE_VALUE = "sheet-native";
  * low fallback rate (<5% classic usage over 2 weeks).
  */
 export const SHEET_NATIVE_DEFAULTS: Record<string, boolean> = {
-  // Wave 0 (pilot — already proven)
-  orders: false,
+  // Wave 0 (pilot — already proven, flipped Phase 5)
+  orders: true,
   "create-order": false,
-  // Wave 1
-  inventory: false,
-  "sales-sheets": false,
+  // Wave 1 (flipped Phase 5)
+  inventory: true,
+  "sales-sheets": true,
   payments: false,
   "client-ledger": false,
   // Wave 2

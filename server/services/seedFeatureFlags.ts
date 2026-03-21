@@ -187,10 +187,10 @@ const DEFAULT_FLAGS = [
     key: "spreadsheet-native-pilot",
     name: "Spreadsheet-Native Pilot",
     description:
-      "Enable internal sheet-native pilot surfaces for the Orders and Inventory workbooks. Distinct from the legacy spreadsheet-view inventory feature.",
+      "Enable internal sheet-native pilot surfaces for all workbooks. Covers 11 modules (Orders, Inventory, Sales Sheets, Payments, Client Ledger, Intake, POs, Fulfillment, Invoices, Returns, Samples). Toggle reverts to classic with one click.",
     module: null,
     systemEnabled: true,
-    defaultEnabled: false,
+    defaultEnabled: true,
   },
 
   // ========================================================================
@@ -449,6 +449,26 @@ export async function seedFeatureFlags(
       const existing = await featureFlagsDb.getByKey(flag.key);
 
       if (existing) {
+        // Phase 2: Upgrade pilot flag to defaultEnabled=true for dogfooding rollout.
+        // Other flags keep their existing DB state.
+        if (
+          flag.key === "spreadsheet-native-pilot" &&
+          !existing.defaultEnabled &&
+          flag.defaultEnabled
+        ) {
+          await featureFlagsDb.update(
+            existing.id,
+            { defaultEnabled: true },
+            actorOpenId
+          );
+          logger.info(
+            { key: flag.key },
+            "[FeatureFlags] Upgraded pilot flag to defaultEnabled=true"
+          );
+          result.created++;
+          continue;
+        }
+
         logger.debug(
           { key: flag.key },
           "[FeatureFlags] Flag already exists, skipping"
