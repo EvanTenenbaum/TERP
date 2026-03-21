@@ -74,7 +74,11 @@ export default function InventoryWorkspacePage() {
     setSurfaceMode: setIntakeSurfaceMode,
   } = useSpreadsheetSurfaceMode({
     enabled: intakePilotEnabled,
-    ready: intakeAvailabilityReady,
+    // Guard ready behind intakePilotSupported: when the intake tab is not
+    // active, useSpreadsheetPilotAvailability short-circuits to ready=true
+    // which would spuriously strip surface=sheet-native from the URL while
+    // another tab's pilot is still loading (TER-815).
+    ready: intakeAvailabilityReady && intakePilotSupported,
   });
 
   // Shipping/Fulfillment tab pilot (TER-817)
@@ -88,7 +92,9 @@ export default function InventoryWorkspacePage() {
     setSurfaceMode: setFulfillmentSurfaceMode,
   } = useSpreadsheetSurfaceMode({
     enabled: fulfillmentPilotEnabled,
-    ready: fulfillmentAvailabilityReady,
+    // Same guard as intake: prevent spurious URL cleanup when fulfillment tab
+    // is not active (TER-817).
+    ready: fulfillmentAvailabilityReady && fulfillmentPilotSupported,
   });
   const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
