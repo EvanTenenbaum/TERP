@@ -159,7 +159,9 @@ export default function InventoryWorkspacePage() {
           PO-linked receiving stays in the "receiving" panel. */}
       <LinearWorkspacePanel value="intake">
         {intakeSurfaceMode === "sheet-native" ? (
-          <IntakePilotSurface />
+          <IntakePilotSurface
+            onOpenClassic={() => setIntakeSurfaceMode("classic")}
+          />
         ) : (
           <DirectIntakeWorkSurface />
         )}

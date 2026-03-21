@@ -1002,7 +1002,11 @@ function ValidationFailureCard({ errorRows }: { errorRows: IntakeDraftRow[] }) {
 // MAIN COMPONENT
 // ============================================================================
 
-export function IntakePilotSurface() {
+interface IntakePilotSurfaceProps {
+  onOpenClassic?: () => void;
+}
+
+export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
   const INITIAL_ROW_COUNT = 5;
 
   // ---- Row state ----
@@ -2087,6 +2091,11 @@ export function IntakePilotSurface() {
           >
             Edit Details
           </Button>
+          {onOpenClassic && (
+            <Button variant="ghost" size="sm" onClick={onOpenClassic}>
+              Classic
+            </Button>
+          )}
         </div>
       </div>
 
