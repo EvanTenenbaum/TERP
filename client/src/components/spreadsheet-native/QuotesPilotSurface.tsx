@@ -859,7 +859,7 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
 
   return (
     <div
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-2"
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >

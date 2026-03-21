@@ -724,7 +724,7 @@ export function PurchaseOrdersPilotSurface({
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {/* Search + controls bar */}
       <div className="flex flex-wrap items-center gap-2">
         <Input

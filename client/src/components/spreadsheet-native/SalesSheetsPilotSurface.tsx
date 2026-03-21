@@ -755,7 +755,7 @@ export function SalesSheetsPilotSurface({
     !hasUnsavedChanges && selectedItems.length > 0 && selectedClientId !== null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {/* ── toolbar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         {/* client selector */}

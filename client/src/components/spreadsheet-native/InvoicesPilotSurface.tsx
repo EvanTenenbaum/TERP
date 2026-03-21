@@ -1058,7 +1058,7 @@ export function InvoicesPilotSurface({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {/* KPI Summary Band — INV-006, DISC-INV-005 fix (server getSummary) */}
       <KpiCards
         totalInvoices={summary.totalInvoices}

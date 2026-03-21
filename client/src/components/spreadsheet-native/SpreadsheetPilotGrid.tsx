@@ -296,7 +296,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
   emptyDescription,
   headerActions,
   summary,
-  minHeight = 320,
+  minHeight = 520,
   onCellValueChanged,
   selectionMode = "single-row",
   selectionSurface,
@@ -429,9 +429,9 @@ export function SpreadsheetPilotGrid<Row extends object>({
 
   return (
     <Card className="border-border/70 shadow-sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-        <div className="space-y-1">
-          <CardTitle className="text-base">{title}</CardTitle>
+      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+        <div className="space-y-0.5">
+          <CardTitle className="text-sm font-semibold">{title}</CardTitle>
           {description ? (
             <p className="text-sm text-muted-foreground">{description}</p>
           ) : null}
@@ -467,6 +467,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
               rowData={rows}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
+              rowHeight={28}
+              headerHeight={32}
               animateRows
               rowSelection={
                 isCellRangeMode

@@ -832,7 +832,7 @@ export function SamplesPilotSurface({
   // ============================================================================
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {/* ── Command strip ── */}
       <div className="flex flex-wrap items-center gap-2">
         <Input
@@ -1058,7 +1058,7 @@ export function SamplesPilotSurface({
         />
 
         {/* ── Expiring samples companion card (DISC-SAM-013 / SAM-013) ── */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           <ExpiringSamplesWidget daysAhead={30} limit={5} />
         </div>
       </div>

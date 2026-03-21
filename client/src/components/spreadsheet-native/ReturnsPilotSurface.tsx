@@ -870,7 +870,7 @@ export function ReturnsPilotSurface({
   const stats = statsQuery.data;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {/* Stats summary band — RET-005, RET-029 */}
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

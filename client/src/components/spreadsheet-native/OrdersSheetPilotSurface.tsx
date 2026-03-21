@@ -409,7 +409,7 @@ export function OrdersSheetPilotSurface({
 
   if (currentDocumentMode) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
           <Button
             size="sm"
@@ -464,7 +464,7 @@ export function OrdersSheetPilotSurface({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={searchTerm}
