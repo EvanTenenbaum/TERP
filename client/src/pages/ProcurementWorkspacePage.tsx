@@ -6,8 +6,14 @@ import {
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
+import PurchaseOrdersPilotSurface from "@/components/spreadsheet-native/PurchaseOrdersPilotSurface";
+import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
-import { Redirect, useSearch } from "wouter";
+import {
+  useSpreadsheetPilotAvailability,
+  useSpreadsheetSurfaceMode,
+} from "@/lib/spreadsheet-native";
+import { Redirect, useLocation, useSearch } from "wouter";
 
 type ProcurementTab = "purchase-orders";
 type ProcurementQueryTab =
@@ -21,6 +27,7 @@ const PROCUREMENT_TABS = [
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
 export default function ProcurementWorkspacePage() {
+  const [, setLocation] = useLocation();
   const search = useSearch();
   const { activeTab, setActiveTab } = useQueryTabState<ProcurementQueryTab>({
     defaultTab: "purchase-orders",
@@ -36,6 +43,14 @@ export default function ProcurementWorkspacePage() {
       ([key]) => key !== "tab"
     )
   );
+
+  const pilotSurfaceSupported = activeTab === "purchase-orders";
+  const { sheetPilotEnabled, availabilityReady } =
+    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
+    enabled: sheetPilotEnabled,
+    ready: availabilityReady,
+  });
 
   useWorkspaceHomeTelemetry("procurement", activeTab);
 
@@ -73,9 +88,28 @@ export default function ProcurementWorkspacePage() {
           value: "Use Operations for receiving, shipping, and stock control",
         },
       ]}
+      commandStrip={
+        activeTab === "purchase-orders" ? (
+          <SheetModeToggle
+            enabled={sheetPilotEnabled}
+            surfaceMode={surfaceMode}
+            onSurfaceModeChange={setSurfaceMode}
+          />
+        ) : null
+      }
     >
       <LinearWorkspacePanel value="purchase-orders">
-        <PurchaseOrdersSlicePage />
+        {surfaceMode === "sheet-native" ? (
+          <PurchaseOrdersPilotSurface
+            onOpenClassic={poId =>
+              setLocation(
+                `/purchase-orders${poId !== null && poId !== undefined ? `?poId=${poId}` : ""}`
+              )
+            }
+          />
+        ) : (
+          <PurchaseOrdersSlicePage />
+        )}
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );
