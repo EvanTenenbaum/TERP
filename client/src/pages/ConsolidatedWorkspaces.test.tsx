@@ -5,7 +5,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import DemandSupplyWorkspacePage from "./DemandSupplyWorkspacePage";
 import RelationshipsWorkspacePage from "./RelationshipsWorkspacePage";
 import InventoryWorkspacePage from "./InventoryWorkspacePage";
@@ -185,13 +185,15 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
   });
 
-  it("renders Inventory workspace with sheet-native pilot when enabled", () => {
+  it("renders Inventory workspace with sheet-native pilot when enabled", async () => {
     mockActiveTab = "inventory";
     mockPilotMode = "sheet-native";
     render(<InventoryWorkspacePage />);
-    expect(
-      screen.getByText("Inventory Sheet Pilot Surface")
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Inventory Sheet Pilot Surface")
+      ).toBeInTheDocument();
+    });
   });
 
   it("renders Inventory workspace with receiving queue content", () => {
@@ -239,11 +241,15 @@ describe("Consolidated workspace pages", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Sales workspace with sheet-native pilot when enabled", () => {
+  it("renders Sales workspace with sheet-native pilot when enabled", async () => {
     mockActiveTab = "orders";
     mockPilotMode = "sheet-native";
     render(<SalesWorkspacePage />);
-    expect(screen.getByText("Orders Sheet Pilot Surface")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Orders Sheet Pilot Surface")
+      ).toBeInTheDocument();
+    });
   });
 
   it("renders Sales workspace with sales catalogues tab content", () => {

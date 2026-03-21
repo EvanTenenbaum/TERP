@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import InventoryWorkspacePage from "./InventoryWorkspacePage";
 import SalesWorkspacePage from "./SalesWorkspacePage";
 
@@ -128,7 +128,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("renders the orders sheet-native pilot when the master flag is on and requested", () => {
+  it("renders the orders sheet-native pilot when the master flag is on and requested", async () => {
     mockPath = "/sales";
     mockSearch = "?tab=orders&surface=sheet-native";
     mockActiveTab = "orders";
@@ -136,7 +136,9 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
+    });
     expect(
       screen.getByRole("button", { name: "Sheet-Native Pilot" })
     ).toBeInTheDocument();
@@ -157,7 +159,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("renders the sheet-native document surface on create-order when sheet-native is explicitly requested", () => {
+  it("renders the sheet-native document surface on create-order when sheet-native is explicitly requested", async () => {
     mockPath = "/sales";
     mockSearch =
       "?tab=create-order&surface=sheet-native&quoteId=91&mode=duplicate&fromSalesSheet=true";
@@ -166,7 +168,11 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(screen.getByText("Orders Sheet Pilot Document")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Orders Sheet Pilot Document")
+      ).toBeInTheDocument();
+    });
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
