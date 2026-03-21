@@ -2,6 +2,7 @@ import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
 import SalesSheetsPilotSurface from "@/components/spreadsheet-native/SalesSheetsPilotSurface";
+import ReturnsPilotSurface from "@/components/spreadsheet-native/ReturnsPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
@@ -53,7 +54,8 @@ export default function SalesWorkspacePage() {
   const pilotSurfaceSupported =
     activeTab === "orders" ||
     activeTab === "create-order" ||
-    activeTab === "sales-sheets";
+    activeTab === "sales-sheets" ||
+    activeTab === "returns";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
@@ -80,7 +82,8 @@ export default function SalesWorkspacePage() {
       commandStrip={
         activeTab === "orders" ||
         activeTab === "create-order" ||
-        activeTab === "sales-sheets" ? (
+        activeTab === "sales-sheets" ||
+        activeTab === "returns" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -108,7 +111,15 @@ export default function SalesWorkspacePage() {
         <QuotesWorkSurface />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
-        <ReturnsPage embedded />
+        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+          <ReturnsPilotSurface
+            onOpenClassic={() =>
+              setLocation(buildSalesWorkspacePath("returns"))
+            }
+          />
+        ) : (
+          <ReturnsPage embedded />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
         {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
