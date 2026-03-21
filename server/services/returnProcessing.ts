@@ -4,7 +4,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql, inArray, and } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   orders,
@@ -15,6 +15,8 @@ import {
   orderStatusHistory,
   vendorReturns,
   vendorReturnItems,
+  returns,
+  inventoryMovements,
 } from "../../drizzle/schema";
 import { logger } from "../_core/logger";
 import { withTransaction } from "../dbTransaction";
@@ -23,8 +25,11 @@ import { withTransaction } from "../dbTransaction";
  * Process restock - return items to inventory
  * Increases batch quantities based on order line item allocations
  */
-export async function processRestock(orderId: number, userId: number): Promise<void> {
-  await withTransaction(async (tx) => {
+export async function processRestock(
+  orderId: number,
+  userId: number
+): Promise<void> {
+  await withTransaction(async tx => {
     // Get order
     const [order] = await tx
       .select()
@@ -46,6 +51,49 @@ export async function processRestock(orderId: number, userId: number): Promise<v
       });
     }
 
+    // DISC-RET-003: Build map of quantities already restocked via returns.create
+    // to prevent double-counting when both restock paths touch the same batches.
+    const orderReturns = await tx
+      .select({ id: returns.id })
+      .from(returns)
+      .where(eq(returns.orderId, orderId));
+
+    const alreadyRestocked = new Map<number, number>();
+    if (orderReturns.length > 0) {
+      const returnIds = orderReturns.map(r => r.id);
+      const priorMovements = await tx
+        .select({
+          batchId: inventoryMovements.batchId,
+          quantityChange: inventoryMovements.quantityChange,
+        })
+        .from(inventoryMovements)
+        .where(
+          and(
+            eq(inventoryMovements.inventoryMovementType, "RETURN"),
+            eq(inventoryMovements.referenceType, "RETURN"),
+            inArray(inventoryMovements.referenceId, returnIds)
+          )
+        );
+
+      for (const mv of priorMovements) {
+        const qty = parseFloat(mv.quantityChange || "0");
+        if (qty > 0) {
+          alreadyRestocked.set(
+            mv.batchId,
+            (alreadyRestocked.get(mv.batchId) || 0) + qty
+          );
+        }
+      }
+
+      if (alreadyRestocked.size > 0) {
+        logger.warn({
+          msg: "DISC-RET-003: Found prior return-based restocks — adjusting to prevent double-count",
+          orderId,
+          batchesAlreadyRestocked: Object.fromEntries(alreadyRestocked),
+        });
+      }
+    }
+
     // Get line items for this order
     const lineItems = await tx
       .select()
@@ -62,7 +110,26 @@ export async function processRestock(orderId: number, userId: number): Promise<v
         .where(eq(orderLineItemAllocations.orderLineItemId, item.id));
 
       for (const alloc of allocations) {
-        const quantityToRestock = parseFloat(alloc.quantityAllocated || "0");
+        let quantityToRestock = parseFloat(alloc.quantityAllocated || "0");
+
+        // DISC-RET-003: Subtract already-restocked amount for this batch
+        const priorQty = alreadyRestocked.get(alloc.batchId) || 0;
+        if (priorQty > 0) {
+          quantityToRestock = Math.max(0, quantityToRestock - priorQty);
+          // Consume the prior amount so it isn't double-subtracted across allocations
+          alreadyRestocked.set(
+            alloc.batchId,
+            Math.max(0, priorQty - parseFloat(alloc.quantityAllocated || "0"))
+          );
+          if (quantityToRestock === 0) {
+            logger.info({
+              msg: "DISC-RET-003: Skipping batch — already fully restocked via return",
+              batchId: alloc.batchId,
+              orderId,
+            });
+            continue;
+          }
+        }
 
         // Increase batch quantity (with row lock)
         await tx
@@ -84,7 +151,25 @@ export async function processRestock(orderId: number, userId: number): Promise<v
 
       // If no allocations, fall back to line item batch
       if (allocations.length === 0 && item.batchId) {
-        const quantityToRestock = parseFloat(item.quantity || "0");
+        let quantityToRestock = parseFloat(item.quantity || "0");
+
+        // DISC-RET-003: Subtract already-restocked amount
+        const priorQty = alreadyRestocked.get(item.batchId) || 0;
+        if (priorQty > 0) {
+          quantityToRestock = Math.max(0, quantityToRestock - priorQty);
+          alreadyRestocked.set(
+            item.batchId,
+            Math.max(0, priorQty - parseFloat(item.quantity || "0"))
+          );
+          if (quantityToRestock === 0) {
+            logger.info({
+              msg: "DISC-RET-003: Skipping batch — already fully restocked via return",
+              batchId: item.batchId,
+              orderId,
+            });
+            continue;
+          }
+        }
 
         await tx
           .update(batches)
@@ -139,7 +224,7 @@ export async function processVendorReturn(
   returnReason: string,
   userId: number
 ): Promise<number> {
-  return await withTransaction(async (tx) => {
+  return await withTransaction(async tx => {
     // Validate order status
     const [order] = await tx
       .select()
@@ -168,7 +253,11 @@ export async function processVendorReturn(
       .where(eq(orderLineItems.orderId, orderId));
 
     let totalValue = 0;
-    const itemsToReturn: { batchId: number; quantity: number; unitCost: number }[] = [];
+    const itemsToReturn: {
+      batchId: number;
+      quantity: number;
+      unitCost: number;
+    }[] = [];
 
     for (const item of lineItems) {
       // Check for allocations first

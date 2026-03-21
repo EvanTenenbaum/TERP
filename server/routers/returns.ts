@@ -7,7 +7,11 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { getDb } from "../db";
 import {
   returns,
@@ -15,6 +19,7 @@ import {
   inventoryMovements,
   clients,
   orders,
+  credits,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -329,11 +334,7 @@ export const returnsRouter = router({
 
       // Wrap in transaction to ensure atomicity
       const result = await db.transaction(async tx => {
-        // Get authenticated user ID
-        const userId = ctx.user?.id;
-        if (!userId) {
-          throw new Error("User not authenticated");
-        }
+        const userId = getAuthenticatedUserId(ctx);
 
         // Verify order exists
         const [order] = await tx
@@ -534,10 +535,7 @@ export const returnsRouter = router({
           message: "Database not available",
         });
 
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw new Error("User not authenticated");
-      }
+      const userId = getAuthenticatedUserId(ctx);
 
       logger.info({ msg: "[Returns] Approving return", returnId: input.id });
 
@@ -595,10 +593,7 @@ export const returnsRouter = router({
           message: "Database not available",
         });
 
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw new Error("User not authenticated");
-      }
+      const userId = getAuthenticatedUserId(ctx);
 
       logger.info({ msg: "[Returns] Rejecting return", returnId: input.id });
 
@@ -661,10 +656,7 @@ export const returnsRouter = router({
           message: "Database not available",
         });
 
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw new Error("User not authenticated");
-      }
+      const userId = getAuthenticatedUserId(ctx);
 
       logger.info({
         msg: "[Returns] Receiving return items",
@@ -862,10 +854,7 @@ export const returnsRouter = router({
           message: "Database not available",
         });
 
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw new Error("User not authenticated");
-      }
+      const userId = getAuthenticatedUserId(ctx);
 
       logger.info({
         msg: "[Returns] Processing return",
@@ -909,8 +898,48 @@ export const returnsRouter = router({
 
       let creditId: number | null = null;
 
-      // Issue credit if requested
-      if (input.issueCredit) {
+      // DISC-RET-001: Guard against double credit issuance.
+      // returns.create auto-issues credit (linked via transactionId → invoice).
+      // If a RETURN credit already exists for this order's invoice, skip.
+      const [orderInvoice] = await db
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.referenceType, "ORDER"),
+            eq(invoices.referenceId, returnRecord.orderId)
+          )
+        )
+        .limit(1);
+
+      let creditAlreadyExists = false;
+      if (orderInvoice) {
+        const [existing] = await db
+          .select({ id: credits.id })
+          .from(credits)
+          .where(
+            and(
+              eq(credits.clientId, order.clientId),
+              eq(credits.creditReason, "RETURN"),
+              eq(credits.transactionId, orderInvoice.id)
+            )
+          )
+          .limit(1);
+
+        if (existing) {
+          creditAlreadyExists = true;
+          creditId = existing.id;
+          logger.warn({
+            msg: "[Returns] DISC-RET-001: Credit already issued at return creation — skipping duplicate",
+            returnId: input.id,
+            existingCreditId: existing.id,
+            invoiceId: orderInvoice.id,
+          });
+        }
+      }
+
+      // Issue credit if requested AND not already issued
+      if (input.issueCredit && !creditAlreadyExists) {
         // Calculate credit amount based on returned items
         let calculatedAmount = input.creditAmount;
 
