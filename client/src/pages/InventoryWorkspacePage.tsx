@@ -3,6 +3,7 @@ import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import InventorySheetPilotSurface from "@/components/spreadsheet-native/InventorySheetPilotSurface";
+import FulfillmentPilotSurface from "@/components/spreadsheet-native/FulfillmentPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -50,6 +51,8 @@ export default function InventoryWorkspacePage() {
       validTabs: [...INVENTORY_TABS, "intake", "pick-pack"],
     });
   const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
+
+  // Inventory tab pilot
   const pilotSurfaceSupported = activeTab === "inventory";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
@@ -57,6 +60,24 @@ export default function InventoryWorkspacePage() {
     enabled: sheetPilotEnabled,
     ready: availabilityReady,
   });
+
+  // Shipping/Fulfillment tab pilot (TER-817)
+  // Note: pass ready:false when the shipping tab is not active to prevent
+  // useSpreadsheetSurfaceMode from stripping surface= params that belong to
+  // the inventory tab's pilot hook (they share the same URL param).
+  const fulfillmentPilotSupported = activeTab === "shipping";
+  const {
+    sheetPilotEnabled: fulfillmentPilotEnabled,
+    availabilityReady: fulfillmentAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(fulfillmentPilotSupported);
+  const {
+    surfaceMode: fulfillmentSurfaceMode,
+    setSurfaceMode: setFulfillmentSurfaceMode,
+  } = useSpreadsheetSurfaceMode({
+    enabled: fulfillmentPilotEnabled,
+    ready: fulfillmentPilotSupported ? fulfillmentAvailabilityReady : false,
+  });
+
   const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
 
@@ -75,6 +96,13 @@ export default function InventoryWorkspacePage() {
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
             onSurfaceModeChange={setSurfaceMode}
+          />
+        ) : activeTab === "shipping" ? (
+          // TER-817: Fulfillment sheet-native toggle
+          <SheetModeToggle
+            enabled={fulfillmentPilotEnabled}
+            surfaceMode={fulfillmentSurfaceMode}
+            onSurfaceModeChange={setFulfillmentSurfaceMode}
           />
         ) : null
       }
@@ -95,7 +123,14 @@ export default function InventoryWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="shipping">
-        <PickPackWorkSurface />
+        {/* TER-817: Sheet-native fulfillment surface; classic always available as fallback */}
+        {fulfillmentSurfaceMode === "sheet-native" ? (
+          <FulfillmentPilotSurface
+            onOpenClassic={() => setFulfillmentSurfaceMode("classic")}
+          />
+        ) : (
+          <PickPackWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="receiving">
         {receivingDraftId ? (
