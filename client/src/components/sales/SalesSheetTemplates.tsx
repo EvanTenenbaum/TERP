@@ -163,9 +163,10 @@ export function SalesSheetTemplates({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Customize Sales Sheet</DialogTitle>
+          <DialogTitle>Customize Sales Catalogue</DialogTitle>
           <DialogDescription>
-            Choose a layout template and customize branding for your sales sheet
+            Choose a layout template and customize branding for your sales
+            catalogue
           </DialogDescription>
         </DialogHeader>
 

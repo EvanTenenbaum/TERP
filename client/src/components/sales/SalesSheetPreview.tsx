@@ -418,7 +418,7 @@ export function SalesSheetPreview({
       })
       .join("\n");
 
-    const fullText = `Sales Sheet\n\n${text}\n\nTotal: ${totalItems} items - $${totalValue.toFixed(2)}`;
+    const fullText = `Sales Catalogue\n\n${text}\n\nTotal: ${totalItems} items - $${totalValue.toFixed(2)}`;
 
     navigator.clipboard
       .writeText(fullText)
@@ -633,10 +633,10 @@ export function SalesSheetPreview({
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Share Sales Sheet</DialogTitle>
+                          <DialogTitle>Share Sales Catalogue</DialogTitle>
                           <DialogDescription>
                             Send this link to your client. They can view the
-                            sales sheet without logging in.
+                            sales catalogue without logging in.
                           </DialogDescription>
                         </DialogHeader>
                         {shareUrl && (

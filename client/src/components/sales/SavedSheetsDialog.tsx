@@ -36,7 +36,7 @@ export const SavedSheetsDialog = React.memo(function SavedSheetsDialog({
             Load Saved Sheet
           </DialogTitle>
           <DialogDescription>
-            Reopen a saved sales sheet for this client.
+            Reopen a saved sales catalogue for this client.
           </DialogDescription>
         </DialogHeader>
 
@@ -65,7 +65,9 @@ export const SavedSheetsDialog = React.memo(function SavedSheetsDialog({
                 >
                   <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium">Saved Sheet #{sheet.id}</span>
+                      <span className="font-medium">
+                        Saved Sheet #{sheet.id}
+                      </span>
                       <span className="text-sm text-muted-foreground">
                         ${Number(sheet.totalValue || 0).toFixed(2)}
                       </span>

@@ -43,7 +43,9 @@ export default function SharedSalesSheetPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
-          <p className="mt-4 text-muted-foreground">Loading sales sheet...</p>
+          <p className="mt-4 text-muted-foreground">
+            Loading sales catalogue...
+          </p>
         </div>
       </div>
     );
@@ -56,7 +58,7 @@ export default function SharedSalesSheetPage() {
           <CardHeader>
             <CardTitle className="text-destructive">Link Not Valid</CardTitle>
             <CardDescription>
-              This sales sheet link has expired or is no longer available.
+              This sales catalogue link has expired or is no longer available.
               Please contact your sales representative for an updated link.
             </CardDescription>
           </CardHeader>

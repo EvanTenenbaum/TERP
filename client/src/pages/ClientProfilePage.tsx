@@ -643,7 +643,7 @@ export default function ClientProfilePage() {
                       ))
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        No sales sheets or order drafts are attached to this
+                        No sales catalogues or order drafts are attached to this
                         profile yet.
                       </p>
                     )}

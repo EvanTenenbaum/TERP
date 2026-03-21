@@ -1042,8 +1042,8 @@ export default function UnifiedSalesPortalPage() {
           <DialogHeader>
             <DialogTitle>Convert to Quote</DialogTitle>
             <DialogDescription>
-              Create a quote from this sales sheet. The original sales sheet
-              will be linked to the new quote.
+              Create a quote from this sales catalogue. The original sales
+              catalogue will be linked to the new quote.
             </DialogDescription>
           </DialogHeader>
 

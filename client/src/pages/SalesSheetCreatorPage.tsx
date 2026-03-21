@@ -434,7 +434,7 @@ export default function SalesSheetCreatorPage({
                 Sales Catalogue Creator
               </CardTitle>
               <CardDescription>
-                Create customized sales sheets with dynamic pricing for your
+                Create customized sales catalogues with dynamic pricing for your
                 clients
               </CardDescription>
             </div>
@@ -584,7 +584,7 @@ export default function SalesSheetCreatorPage({
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Select a client to start creating a sales sheet</p>
+              <p>Select a client to start creating a sales catalogue</p>
             </div>
           )}
         </CardContent>

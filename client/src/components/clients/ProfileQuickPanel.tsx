@@ -347,7 +347,7 @@ export function ProfileQuickPanel({
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Sent sales sheets</span>
+                <span>Sent sales catalogues</span>
                 <span className="font-medium">
                   {shell.openArtifacts.sentSalesSheets}
                 </span>

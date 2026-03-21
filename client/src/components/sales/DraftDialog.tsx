@@ -59,13 +59,13 @@ export const DraftDialog = React.memo(function DraftDialog({
             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No drafts found</p>
             <p className="text-sm mt-1">
-              Start creating a sales sheet and save it as a draft
+              Start creating a sales catalogue and save it as a draft
             </p>
           </div>
         ) : (
           <ScrollArea className="max-h-[400px]">
             <div className="space-y-2 pr-4">
-              {drafts.map((draft) => (
+              {drafts.map(draft => (
                 <div
                   key={draft.id}
                   className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
@@ -94,7 +94,7 @@ export const DraftDialog = React.memo(function DraftDialog({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       onDeleteDraft(draft.id);
                     }}
