@@ -4,14 +4,21 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import _userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InvoiceToPaymentFlow } from "./InvoiceToPaymentFlow";
 
 // Mock tRPC with configurable mutation behavior
+let mockMutationCallbacks: {
+  onSuccess?: (data: number, variables: unknown, context: unknown) => void;
+  onError?: (error: Error) => void;
+} = {};
+const mockMutate = vi.fn((data: unknown) => {
+  mockMutationCallbacks.onSuccess?.(123, data, undefined);
+});
+
 let mockMutationConfig = {
-  mutate: vi.fn(),
+  mutate: mockMutate,
   isPending: false,
 };
 
@@ -23,17 +30,31 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     accounting: {
+      quickActions: {
+        previewPaymentBalance: {
+          useQuery: vi.fn(() => ({
+            data: {
+              clientId: 100,
+              clientName: "Test Customer",
+              currentBalance: 1000,
+              paymentAmount: 1000,
+              projectedBalance: 0,
+              willCreateCredit: false,
+            },
+            isLoading: false,
+          })),
+        },
+      },
       payments: {
         create: {
           useMutation: vi.fn(config => {
-            // Store the onSuccess/onError handlers for testing
+            mockMutationCallbacks = {
+              onSuccess: config?.onSuccess,
+              onError: config?.onError,
+            };
             mockMutationConfig = {
               ...mockMutationConfig,
-              mutate: vi.fn(data => {
-                if (config?.onSuccess) {
-                  config.onSuccess(123, data, undefined);
-                }
-              }),
+              mutate: mockMutate,
               mutateAsync: vi.fn().mockResolvedValue({ paymentId: 123 }),
             };
             return mockMutationConfig;
@@ -116,8 +137,9 @@ describe("InvoiceToPaymentFlow - GF-PHASE2-001", () => {
       },
     });
     vi.clearAllMocks();
+    mockMutationCallbacks = {};
     mockMutationConfig = {
-      mutate: vi.fn(),
+      mutate: mockMutate,
       isPending: false,
     };
   });
@@ -249,6 +271,50 @@ describe("InvoiceToPaymentFlow - GF-PHASE2-001", () => {
       const invoiceText = screen.queryByText(/INV-001/i);
       // May or may not be visible depending on step, but should exist in DOM
       expect(invoiceText !== null || true).toBeTruthy();
+    });
+  });
+
+  it("renders the balance preview after advancing to payment details", async () => {
+    renderComponent();
+
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+
+    expect(await screen.findByText("Current balance")).toBeInTheDocument();
+    expect(screen.getByText("After payment")).toBeInTheDocument();
+    expect(screen.getByText("$1,000.00")).toBeInTheDocument();
+    expect(screen.getByText("$0.00")).toBeInTheDocument();
+  });
+
+  it("keeps the send receipt path wired after toggling the receipt switch", async () => {
+    renderComponent();
+
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+
+    expect(await screen.findByText("Current balance")).toBeInTheDocument();
+
+    const nextButton = screen.getByRole("button", { name: /next/i });
+    await waitFor(() => expect(nextButton).toBeEnabled());
+    fireEvent.click(nextButton);
+
+    expect(await screen.findByText("Send payment receipt")).toBeInTheDocument();
+
+    const receiptSwitch = screen.getByRole("switch");
+    expect(receiptSwitch).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(receiptSwitch);
+    expect(receiptSwitch).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /record & send receipt/i })
+    );
+
+    await waitFor(() => {
+      expect(mockMutationConfig.mutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          invoiceId: 1,
+          sendReceipt: true,
+        })
+      );
     });
   });
 

@@ -414,10 +414,16 @@ function PaymentDetailsStep({
   config,
   amountDue,
   onUpdate,
+  balancePreview,
 }: {
   config: PaymentConfig;
   amountDue: number;
   onUpdate: PaymentConfigUpdate;
+  balancePreview?: {
+    currentBalance: number;
+    projectedBalance: number;
+    willCreateCredit: boolean;
+  };
 }) {
   const [quickAmount, setQuickAmount] = useState<string>("full");
 
@@ -467,6 +473,23 @@ function PaymentDetailsStep({
         <p className="text-sm text-muted-foreground">
           Amount due: {formatCurrency(amountDue)}
         </p>
+        {balancePreview && (
+          <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Current balance</span>
+              <span>{formatCurrency(balancePreview.currentBalance)}</span>
+            </div>
+            <div className="flex justify-between font-medium">
+              <span className="text-muted-foreground">After payment</span>
+              <span>{formatCurrency(balancePreview.projectedBalance)}</span>
+            </div>
+            {balancePreview.willCreateCredit && (
+              <p className="text-xs text-amber-600 mt-1">
+                This will create a credit on the account
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Payment Method */}
@@ -547,11 +570,13 @@ function ConfirmStep({
   config,
   onRecord,
   isRecording,
+  onToggleReceipt,
 }: {
   invoice: Invoice;
   config: PaymentConfig;
   onRecord: (sendReceipt: boolean) => void;
   isRecording: boolean;
+  onToggleReceipt: (checked: boolean) => void;
 }) {
   const paymentAmount = parseFloat(config.amount) || 0;
   const amountDue = parseFloat(invoice.amountDue);
@@ -638,7 +663,10 @@ function ConfirmStep({
             Email a receipt to the customer
           </p>
         </div>
-        <Switch checked={config.sendReceipt} onCheckedChange={() => {}} />
+        <Switch
+          checked={config.sendReceipt}
+          onCheckedChange={onToggleReceipt}
+        />
       </div>
 
       <div className="flex gap-4">
@@ -717,6 +745,20 @@ export function InvoiceToPaymentFlow({
     { invoiceId },
     { enabled: open && !!invoiceId }
   );
+  const { data: balancePreview } =
+    trpc.accounting.quickActions.previewPaymentBalance.useQuery(
+      {
+        clientId: invoiceData?.customerId ?? -1,
+        amount: parseFloat(config.amount) || 0,
+      },
+      {
+        enabled:
+          open &&
+          !!invoiceData?.customerId &&
+          parseFloat(config.amount) > 0 &&
+          currentStep >= 2,
+      }
+    );
 
   const invoice = useMemo<Invoice | null>(() => {
     if (!invoiceData) return null;
@@ -886,6 +928,7 @@ export function InvoiceToPaymentFlow({
                 config={config}
                 amountDue={amountDue}
                 onUpdate={updateConfig}
+                balancePreview={balancePreview}
               />
             )}
             {currentStep === 3 && invoice && (
@@ -894,6 +937,9 @@ export function InvoiceToPaymentFlow({
                 config={config}
                 onRecord={handleRecord}
                 isRecording={recordPaymentMutation.isPending}
+                onToggleReceipt={checked =>
+                  setConfig(prev => ({ ...prev, sendReceipt: checked }))
+                }
               />
             )}
           </div>
