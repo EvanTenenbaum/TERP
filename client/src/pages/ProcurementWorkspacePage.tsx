@@ -15,6 +15,7 @@ const PurchaseOrdersPilotSurface = lazy(
 );
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import {
+  buildSurfaceAvailability,
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
 } from "@/lib/spreadsheet-native";
@@ -52,10 +53,13 @@ export default function ProcurementWorkspacePage() {
   const pilotSurfaceSupported = activeTab === "purchase-orders";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
-    enabled: sheetPilotEnabled,
-    ready: availabilityReady,
-  });
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "purchase-orders",
+      sheetPilotEnabled,
+      availabilityReady
+    )
+  );
 
   useWorkspaceHomeTelemetry("procurement", activeTab);
 

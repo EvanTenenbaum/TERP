@@ -13,6 +13,7 @@
 
 import { lazy } from "react";
 import {
+  buildSurfaceAvailability,
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
 } from "@/lib/spreadsheet-native";
@@ -33,10 +34,13 @@ export default function ClientLedgerPage() {
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
 
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
-    enabled: sheetPilotEnabled,
-    ready: availabilityReady,
-  });
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "client-ledger",
+      sheetPilotEnabled,
+      availabilityReady
+    )
+  );
 
   const handleOpenClassic = () => {
     setSurfaceMode("classic");

@@ -26,6 +26,7 @@ const InvoicesPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/InvoicesPilotSurface")
 );
 import {
+  buildSurfaceAvailability,
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
 } from "@/lib/spreadsheet-native";
@@ -47,10 +48,9 @@ export default function AccountingWorkspacePage() {
   const pilotSurfaceSupported = activeTab === "payments";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
-    enabled: sheetPilotEnabled,
-    ready: availabilityReady,
-  });
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(activeTab, sheetPilotEnabled, availabilityReady)
+  );
 
   return (
     <LinearWorkspaceShell

@@ -29,6 +29,7 @@ import {
   type OperationsTab,
 } from "@/lib/workspaceRoutes";
 import {
+  buildSurfaceAvailability,
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
 } from "@/lib/spreadsheet-native";
@@ -71,10 +72,9 @@ export default function InventoryWorkspacePage() {
   const pilotSurfaceSupported = activeTab === "inventory";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
-    enabled: sheetPilotEnabled,
-    ready: availabilityReady,
-  });
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability("inventory", sheetPilotEnabled, availabilityReady)
+  );
 
   // Intake tab pilot (TER-815)
   const intakePilotSupported = activeTab === "intake";
@@ -85,14 +85,13 @@ export default function InventoryWorkspacePage() {
   const {
     surfaceMode: intakeSurfaceMode,
     setSurfaceMode: setIntakeSurfaceMode,
-  } = useSpreadsheetSurfaceMode({
-    enabled: intakePilotEnabled,
-    // Guard ready behind intakePilotSupported: when the intake tab is not
-    // active, useSpreadsheetPilotAvailability short-circuits to ready=true
-    // which would spuriously strip surface=sheet-native from the URL while
-    // another tab's pilot is still loading (TER-815).
-    ready: intakeAvailabilityReady && intakePilotSupported,
-  });
+  } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "intake",
+      intakePilotEnabled,
+      intakeAvailabilityReady && intakePilotSupported
+    )
+  );
 
   // Shipping/Fulfillment tab pilot (TER-817)
   const fulfillmentPilotSupported = activeTab === "shipping";
@@ -103,12 +102,13 @@ export default function InventoryWorkspacePage() {
   const {
     surfaceMode: fulfillmentSurfaceMode,
     setSurfaceMode: setFulfillmentSurfaceMode,
-  } = useSpreadsheetSurfaceMode({
-    enabled: fulfillmentPilotEnabled,
-    // Same guard as intake: prevent spurious URL cleanup when fulfillment tab
-    // is not active (TER-817).
-    ready: fulfillmentAvailabilityReady && fulfillmentPilotSupported,
-  });
+  } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "fulfillment",
+      fulfillmentPilotEnabled,
+      fulfillmentAvailabilityReady && fulfillmentPilotSupported
+    )
+  );
   // Samples tab pilot
   const samplesPilotSupported = activeTab === "samples";
   const {
@@ -118,10 +118,13 @@ export default function InventoryWorkspacePage() {
   const {
     surfaceMode: samplesSurfaceMode,
     setSurfaceMode: setSamplesSurfaceMode,
-  } = useSpreadsheetSurfaceMode({
-    enabled: samplesPilotEnabled,
-    ready: samplesAvailabilityReady && samplesPilotSupported,
-  });
+  } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "samples",
+      samplesPilotEnabled,
+      samplesAvailabilityReady && samplesPilotSupported
+    )
+  );
 
   const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);

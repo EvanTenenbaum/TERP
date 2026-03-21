@@ -28,6 +28,7 @@ import {
   buildSalesWorkspacePath,
 } from "@/lib/workspaceRoutes";
 import {
+  buildSurfaceAvailability,
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
 } from "@/lib/spreadsheet-native";
@@ -69,10 +70,9 @@ export default function SalesWorkspacePage() {
     activeTab === "sales-sheets";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
-    enabled: sheetPilotEnabled,
-    ready: availabilityReady,
-  });
+  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(activeTab, sheetPilotEnabled, availabilityReady)
+  );
   useWorkspaceHomeTelemetry("sales", activeTab);
 
   if (activeTab === "pick-pack") {

@@ -93,6 +93,15 @@ export const RETURN_STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 /**
+ * CRIT-2: Sanitize user-provided text before appending to return notes.
+ * Prevents injection of status markers like [CANCELLED, [PROCESSED etc.
+ * that would corrupt the notes-based state machine.
+ */
+function sanitizeNotesText(text: string): string {
+  return text.replace(/\[/g, "(");
+}
+
+/**
  * SM-003: Extract current status from return notes
  * Since the schema doesn't have a status field, we track it in notes
  * Exported for unit testing
@@ -352,7 +361,7 @@ export const returnsRouter = router({
           orderId: input.orderId,
           items: input.items as unknown,
           returnReason: mappedReason,
-          notes: input.notes,
+          notes: input.notes ? sanitizeNotesText(input.notes) : null,
           processedBy: userId,
         });
 
@@ -559,7 +568,9 @@ export const returnsRouter = router({
       const updatedNotes = [
         returnRecord.notes,
         `[APPROVED by User #${userId} at ${new Date().toISOString()}]`,
-        input.approvalNotes ? `Approval notes: ${input.approvalNotes}` : null,
+        input.approvalNotes
+          ? `Approval notes: ${sanitizeNotesText(input.approvalNotes)}`
+          : null,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -617,7 +628,7 @@ export const returnsRouter = router({
       const updatedNotes = [
         returnRecord.notes,
         `[REJECTED by User #${userId} at ${new Date().toISOString()}]`,
-        `Rejection reason: ${input.rejectionReason}`,
+        `Rejection reason: ${sanitizeNotesText(input.rejectionReason)}`,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -963,7 +974,8 @@ export const returnsRouter = router({
             // Generate credit number
             const creditNumber = await creditsDb.generateCreditNumber();
 
-            // Create the credit
+            // Create the credit — include transactionId when invoice exists
+            // so the creditAlreadyExists guard can catch duplicates (IMP-3)
             const credit = await creditsDb.createCredit({
               creditNumber,
               clientId: order.clientId,
@@ -971,6 +983,7 @@ export const returnsRouter = router({
               amountRemaining: calculatedAmount.toFixed(2),
               amountUsed: "0",
               creditReason: "RETURN",
+              transactionId: orderInvoice?.id,
               notes: input.creditNotes || `Credit for return #${input.id}`,
               createdBy: userId,
               creditStatus: "ACTIVE",
@@ -992,7 +1005,7 @@ export const returnsRouter = router({
           returnRecord.notes,
           `[PROCESSED by User #${userId} at ${new Date().toISOString()}]`,
           creditId ? `Credit issued: Credit #${creditId}` : "No credit issued",
-          input.creditNotes,
+          input.creditNotes ? sanitizeNotesText(input.creditNotes) : null,
         ]
           .filter(Boolean)
           .join(" | ");
