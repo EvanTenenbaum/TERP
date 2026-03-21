@@ -137,15 +137,22 @@ export function useSpreadsheetSurfaceMode(
   const setSurfaceMode = useCallback(
     (nextMode: SpreadsheetSurfaceMode) => {
       const params = new URLSearchParams(search);
-      if (!enabled || nextMode === "classic") {
+      if (!enabled) {
         params.delete(SURFACE_PARAM);
-      } else {
+      } else if (nextMode === "classic" && defaultSheetNative) {
+        // When default is sheet-native, must explicitly write ?surface=classic
+        // to override — deleting the param would re-resolve to sheet-native
+        params.set(SURFACE_PARAM, "classic");
+      } else if (nextMode === "sheet-native" && !defaultSheetNative) {
         params.set(SURFACE_PARAM, SHEET_NATIVE_VALUE);
+      } else {
+        // Toggling back to the module's default — remove the override
+        params.delete(SURFACE_PARAM);
       }
 
       setLocation(buildUrl(pathname, params));
     },
-    [enabled, pathname, search, setLocation]
+    [defaultSheetNative, enabled, pathname, search, setLocation]
   );
 
   return { surfaceMode, setSurfaceMode };

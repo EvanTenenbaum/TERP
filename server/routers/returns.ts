@@ -862,153 +862,159 @@ export const returnsRouter = router({
         issueCredit: input.issueCredit,
       });
 
-      // Get the return with order details
-      const [returnRecord] = await db
-        .select()
-        .from(returns)
-        .where(eq(returns.id, input.id));
+      // Wrap in transaction with row lock to prevent concurrent double-credit (QA #4)
+      const { creditId: resultCreditId } = await db.transaction(async tx => {
+        // Lock the return row to serialize concurrent process calls
+        const [returnRecord] = await tx
+          .select()
+          .from(returns)
+          .where(eq(returns.id, input.id))
+          .for("update");
 
-      if (!returnRecord) {
-        throw new Error("Return not found");
-      }
+        if (!returnRecord) {
+          throw new Error("Return not found");
+        }
 
-      // SM-003: Validate status transition
-      const currentStatus = extractReturnStatus(returnRecord.notes);
-      if (!isValidReturnStatusTransition(currentStatus, "PROCESSED")) {
-        throw new Error(getReturnTransitionError(currentStatus, "PROCESSED"));
-      }
+        // SM-003: Validate status transition
+        const currentStatus = extractReturnStatus(returnRecord.notes);
+        if (!isValidReturnStatusTransition(currentStatus, "PROCESSED")) {
+          throw new Error(getReturnTransitionError(currentStatus, "PROCESSED"));
+        }
 
-      // Get order to find client
-      const [order] = await db
-        .select({
-          id: orders.id,
-          clientId: orders.clientId,
-          total: orders.total,
-        })
-        .from(orders)
-        .where(eq(orders.id, returnRecord.orderId));
+        // Get order to find client
+        const [order] = await tx
+          .select({
+            id: orders.id,
+            clientId: orders.clientId,
+            total: orders.total,
+          })
+          .from(orders)
+          .where(eq(orders.id, returnRecord.orderId));
 
-      if (!order) {
-        throw new Error("Order not found for this return");
-      }
+        if (!order) {
+          throw new Error("Order not found for this return");
+        }
 
-      if (!order.clientId) {
-        throw new Error("Order has no client associated");
-      }
+        if (!order.clientId) {
+          throw new Error("Order has no client associated");
+        }
 
-      let creditId: number | null = null;
+        let creditId: number | null = null;
 
-      // DISC-RET-001: Guard against double credit issuance.
-      // returns.create auto-issues credit (linked via transactionId → invoice).
-      // If a RETURN credit already exists for this order's invoice, skip.
-      const [orderInvoice] = await db
-        .select({ id: invoices.id })
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.referenceType, "ORDER"),
-            eq(invoices.referenceId, returnRecord.orderId)
-          )
-        )
-        .limit(1);
-
-      let creditAlreadyExists = false;
-      if (orderInvoice) {
-        const [existing] = await db
-          .select({ id: credits.id })
-          .from(credits)
+        // DISC-RET-001: Guard against double credit issuance.
+        // returns.create auto-issues credit (linked via transactionId → invoice).
+        // If a RETURN credit already exists for this order's invoice, skip.
+        const [orderInvoice] = await tx
+          .select({ id: invoices.id })
+          .from(invoices)
           .where(
             and(
-              eq(credits.clientId, order.clientId),
-              eq(credits.creditReason, "RETURN"),
-              eq(credits.transactionId, orderInvoice.id)
+              eq(invoices.referenceType, "ORDER"),
+              eq(invoices.referenceId, returnRecord.orderId)
             )
           )
           .limit(1);
 
-        if (existing) {
-          creditAlreadyExists = true;
-          creditId = existing.id;
-          logger.warn({
-            msg: "[Returns] DISC-RET-001: Credit already issued at return creation — skipping duplicate",
-            returnId: input.id,
-            existingCreditId: existing.id,
-            invoiceId: orderInvoice.id,
-          });
-        }
-      }
+        let creditAlreadyExists = false;
+        if (orderInvoice) {
+          const [existing] = await tx
+            .select({ id: credits.id })
+            .from(credits)
+            .where(
+              and(
+                eq(credits.clientId, order.clientId),
+                eq(credits.creditReason, "RETURN"),
+                eq(credits.transactionId, orderInvoice.id)
+              )
+            )
+            .limit(1);
 
-      // Issue credit if requested AND not already issued
-      if (input.issueCredit && !creditAlreadyExists) {
-        // Calculate credit amount based on returned items
-        let calculatedAmount = input.creditAmount;
-
-        if (!calculatedAmount) {
-          // Calculate from items - this is a simplified calculation
-          const items = returnRecord.items as Array<{ quantity: string }>;
-          const totalQty = items.reduce(
-            (sum, item) => sum + parseFloat(item.quantity || "0"),
-            0
-          );
-          const orderTotal = parseFloat(order.total || "0");
-          // Proportional calculation (simplified)
-          calculatedAmount =
-            orderTotal > 0 ? Math.min(orderTotal, totalQty * 10) : 0;
+          if (existing) {
+            creditAlreadyExists = true;
+            creditId = existing.id;
+            logger.warn({
+              msg: "[Returns] DISC-RET-001: Credit already issued at return creation — skipping duplicate",
+              returnId: input.id,
+              existingCreditId: existing.id,
+              invoiceId: orderInvoice.id,
+            });
+          }
         }
 
-        if (calculatedAmount > 0) {
-          // Generate credit number
-          const creditNumber = await creditsDb.generateCreditNumber();
+        // Issue credit if requested AND not already issued
+        if (input.issueCredit && !creditAlreadyExists) {
+          // Calculate credit amount based on returned items
+          let calculatedAmount = input.creditAmount;
 
-          // Create the credit
-          const credit = await creditsDb.createCredit({
-            creditNumber,
-            clientId: order.clientId,
-            creditAmount: calculatedAmount.toFixed(2),
-            amountRemaining: calculatedAmount.toFixed(2),
-            amountUsed: "0",
-            creditReason: "RETURN",
-            notes: input.creditNotes || `Credit for return #${input.id}`,
-            createdBy: userId,
-            creditStatus: "ACTIVE",
-          });
+          if (!calculatedAmount) {
+            // Calculate from items - this is a simplified calculation
+            const items = returnRecord.items as Array<{ quantity: string }>;
+            const totalQty = items.reduce(
+              (sum, item) => sum + parseFloat(item.quantity || "0"),
+              0
+            );
+            const orderTotal = parseFloat(order.total || "0");
+            // Proportional calculation (simplified)
+            calculatedAmount =
+              orderTotal > 0 ? Math.min(orderTotal, totalQty * 10) : 0;
+          }
 
-          creditId = credit.id;
+          if (calculatedAmount > 0) {
+            // Generate credit number
+            const creditNumber = await creditsDb.generateCreditNumber();
 
-          logger.info({
-            msg: "[Returns] Credit issued for return",
-            returnId: input.id,
-            creditId: credit.id,
-            creditAmount: calculatedAmount,
-          });
+            // Create the credit
+            const credit = await creditsDb.createCredit({
+              creditNumber,
+              clientId: order.clientId,
+              creditAmount: calculatedAmount.toFixed(2),
+              amountRemaining: calculatedAmount.toFixed(2),
+              amountUsed: "0",
+              creditReason: "RETURN",
+              notes: input.creditNotes || `Credit for return #${input.id}`,
+              createdBy: userId,
+              creditStatus: "ACTIVE",
+            });
+
+            creditId = credit.id;
+
+            logger.info({
+              msg: "[Returns] Credit issued for return",
+              returnId: input.id,
+              creditId: credit.id,
+              creditAmount: calculatedAmount,
+            });
+          }
         }
-      }
 
-      // Update return notes with processing info
-      const updatedNotes = [
-        returnRecord.notes,
-        `[PROCESSED by User #${userId} at ${new Date().toISOString()}]`,
-        creditId ? `Credit issued: Credit #${creditId}` : "No credit issued",
-        input.creditNotes,
-      ]
-        .filter(Boolean)
-        .join(" | ");
+        // Update return notes with processing info
+        const updatedNotes = [
+          returnRecord.notes,
+          `[PROCESSED by User #${userId} at ${new Date().toISOString()}]`,
+          creditId ? `Credit issued: Credit #${creditId}` : "No credit issued",
+          input.creditNotes,
+        ]
+          .filter(Boolean)
+          .join(" | ");
 
-      await db
-        .update(returns)
-        .set({ notes: updatedNotes })
-        .where(eq(returns.id, input.id));
+        await tx
+          .update(returns)
+          .set({ notes: updatedNotes })
+          .where(eq(returns.id, input.id));
+
+        return { creditId };
+      });
 
       logger.info({
         msg: "[Returns] Return processed",
         returnId: input.id,
-        creditId,
+        creditId: resultCreditId,
       });
 
       return {
         success: true,
         returnId: input.id,
-        creditId,
+        creditId: resultCreditId,
       };
     }),
 

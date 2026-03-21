@@ -449,21 +449,28 @@ export async function seedFeatureFlags(
       const existing = await featureFlagsDb.getByKey(flag.key);
 
       if (existing) {
-        // Phase 2: Upgrade pilot flag to defaultEnabled=true for dogfooding rollout.
-        // Other flags keep their existing DB state.
+        // Phase 2 one-shot: Upgrade pilot flag to defaultEnabled=true.
+        // Only fires if the flag was never upgraded (no pilotUpgraded marker).
+        // Respects admin overrides — once upgraded, never re-fires.
+        const existingMeta =
+          (existing.metadata as Record<string, unknown>) || {};
         if (
           flag.key === "spreadsheet-native-pilot" &&
           !existing.defaultEnabled &&
-          flag.defaultEnabled
+          flag.defaultEnabled &&
+          !existingMeta.pilotUpgraded
         ) {
           await featureFlagsDb.update(
             existing.id,
-            { defaultEnabled: true },
+            {
+              defaultEnabled: true,
+              metadata: { ...existingMeta, pilotUpgraded: true },
+            },
             actorOpenId
           );
           logger.info(
             { key: flag.key },
-            "[FeatureFlags] Upgraded pilot flag to defaultEnabled=true"
+            "[FeatureFlags] One-shot upgrade: pilot flag defaultEnabled=true"
           );
           result.created++;
           continue;
