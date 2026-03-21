@@ -22,6 +22,9 @@ import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfa
 const PaymentsPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/PaymentsPilotSurface")
 );
+const InvoicesPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/InvoicesPilotSurface")
+);
 import {
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
@@ -81,7 +84,15 @@ export default function AccountingWorkspacePage() {
         <AccountingDashboard embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="invoices">
-        <InvoicesWorkSurface />
+        {surfaceMode === "sheet-native" ? (
+          <PilotSurfaceBoundary fallback={<InvoicesWorkSurface />}>
+            <InvoicesPilotSurface
+              onOpenClassic={() => setSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
+        ) : (
+          <InvoicesWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bills">
         <Bills embedded />

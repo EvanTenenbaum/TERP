@@ -10,6 +10,12 @@ const OrdersSheetPilotSurface = lazy(
 const SalesSheetsPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/SalesSheetsPilotSurface")
 );
+const QuotesPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/QuotesPilotSurface")
+);
+const ReturnsPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/ReturnsPilotSurface")
+);
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -114,10 +120,26 @@ export default function SalesWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="quotes">
-        <QuotesWorkSurface />
+        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+          <PilotSurfaceBoundary fallback={<QuotesWorkSurface />}>
+            <QuotesPilotSurface
+              onOpenClassic={() => setSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
+        ) : (
+          <QuotesWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
-        <ReturnsPage embedded />
+        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+          <PilotSurfaceBoundary fallback={<ReturnsPage embedded />}>
+            <ReturnsPilotSurface
+              onOpenClassic={() => setSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
+        ) : (
+          <ReturnsPage embedded />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
         {sheetPilotEnabled && surfaceMode === "sheet-native" ? (

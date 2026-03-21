@@ -15,6 +15,11 @@ const FulfillmentPilotSurface = lazy(
 const IntakePilotSurface = lazy(
   () => import("@/components/spreadsheet-native/IntakePilotSurface")
 );
+const SamplesPilotSurface = lazy(() =>
+  import("@/components/spreadsheet-native/SamplesPilotSurface").then(m => ({
+    default: m.SamplesPilotSurface,
+  }))
+);
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
@@ -104,6 +109,20 @@ export default function InventoryWorkspacePage() {
     // is not active (TER-817).
     ready: fulfillmentAvailabilityReady && fulfillmentPilotSupported,
   });
+  // Samples tab pilot
+  const samplesPilotSupported = activeTab === "samples";
+  const {
+    sheetPilotEnabled: samplesPilotEnabled,
+    availabilityReady: samplesAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(samplesPilotSupported);
+  const {
+    surfaceMode: samplesSurfaceMode,
+    setSurfaceMode: setSamplesSurfaceMode,
+  } = useSpreadsheetSurfaceMode({
+    enabled: samplesPilotEnabled,
+    ready: samplesAvailabilityReady && samplesPilotSupported,
+  });
+
   const receivingDraftId = new URLSearchParams(search).get("draftId");
   useWorkspaceHomeTelemetry("inventory", activeTab);
 
@@ -195,9 +214,23 @@ export default function InventoryWorkspacePage() {
         </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="samples">
-        <Suspense fallback={<PageLoading message="Loading samples..." />}>
-          <SampleManagement embedded />
-        </Suspense>
+        {samplesSurfaceMode === "sheet-native" ? (
+          <PilotSurfaceBoundary
+            fallback={
+              <Suspense fallback={<PageLoading message="Loading samples..." />}>
+                <SampleManagement embedded />
+              </Suspense>
+            }
+          >
+            <SamplesPilotSurface
+              onOpenClassic={() => setSamplesSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
+        ) : (
+          <Suspense fallback={<PageLoading message="Loading samples..." />}>
+            <SampleManagement embedded />
+          </Suspense>
+        )}
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

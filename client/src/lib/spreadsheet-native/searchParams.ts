@@ -35,6 +35,19 @@ export const SHEET_NATIVE_DEFAULTS: Record<string, boolean> = {
   samples: false,
 };
 
+/** Build the availability config for useSpreadsheetSurfaceMode with the per-module default */
+export function buildSurfaceAvailability(
+  moduleId: string,
+  enabled: boolean,
+  ready?: boolean
+): SpreadsheetSurfaceAvailability {
+  return {
+    enabled,
+    ready,
+    defaultSheetNative: SHEET_NATIVE_DEFAULTS[moduleId] ?? false,
+  };
+}
+
 function buildUrl(pathname: string, params: URLSearchParams) {
   const query = params.toString();
   return `${pathname}${query ? `?${query}` : ""}`;

@@ -552,7 +552,11 @@ function QuoteInspectorContent({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function QuotesPilotSurface() {
+interface QuotesPilotSurfaceProps {
+  onOpenClassic?: () => void;
+}
+
+export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
   const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -926,6 +930,11 @@ export function QuotesPilotSurface() {
             <Plus className="mr-2 h-4 w-4" />
             New Quote
           </Button>
+          {onOpenClassic && (
+            <Button size="sm" variant="ghost" onClick={onOpenClassic}>
+              Classic
+            </Button>
+          )}
         </div>
       </div>
 
