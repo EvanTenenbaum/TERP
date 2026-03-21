@@ -16,6 +16,7 @@ import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
 import PaymentsPilotSurface from "@/components/spreadsheet-native/PaymentsPilotSurface";
+import InvoicesPilotSurface from "@/components/spreadsheet-native/InvoicesPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import {
   useSpreadsheetPilotAvailability,
@@ -35,8 +36,9 @@ export default function AccountingWorkspacePage() {
 
   useWorkspaceHomeTelemetry("accounting", activeTab);
 
-  // Sheet-native pilot: only supported on the payments tab
-  const pilotSurfaceSupported = activeTab === "payments";
+  // Sheet-native pilot: supported on payments and invoices tabs
+  const pilotSurfaceSupported =
+    activeTab === "payments" || activeTab === "invoices";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode({
@@ -63,7 +65,7 @@ export default function AccountingWorkspacePage() {
         },
       ]}
       commandStrip={
-        activeTab === "payments" ? (
+        pilotSurfaceSupported ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -76,7 +78,11 @@ export default function AccountingWorkspacePage() {
         <AccountingDashboard embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="invoices">
-        <InvoicesWorkSurface />
+        {surfaceMode === "sheet-native" ? (
+          <InvoicesPilotSurface onOpenClassic={() => setSurfaceMode("classic")} />
+        ) : (
+          <InvoicesWorkSurface />
+        )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bills">
         <Bills embedded />
