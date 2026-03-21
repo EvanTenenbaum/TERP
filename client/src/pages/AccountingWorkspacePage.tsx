@@ -15,8 +15,13 @@ import Expenses from "@/pages/accounting/Expenses";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
-import PaymentsPilotSurface from "@/components/spreadsheet-native/PaymentsPilotSurface";
+import { lazy } from "react";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
+import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+
+const PaymentsPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/PaymentsPilotSurface")
+);
 import {
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
@@ -83,9 +88,11 @@ export default function AccountingWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="payments">
         {surfaceMode === "sheet-native" ? (
-          <PaymentsPilotSurface
-            onOpenClassic={() => setSurfaceMode("classic")}
-          />
+          <PilotSurfaceBoundary fallback={<Payments embedded />}>
+            <PaymentsPilotSurface
+              onOpenClassic={() => setSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <Payments embedded />
         )}

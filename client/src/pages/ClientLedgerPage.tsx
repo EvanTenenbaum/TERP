@@ -11,13 +11,20 @@
  *   4. Conditionally renders ClientLedgerPilotSurface or ClientLedgerWorkSurface
  */
 
+import { lazy } from "react";
 import {
   useSpreadsheetPilotAvailability,
   useSpreadsheetSurfaceMode,
 } from "@/lib/spreadsheet-native";
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
-import { ClientLedgerPilotSurface } from "@/components/spreadsheet-native/ClientLedgerPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
+import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+
+const ClientLedgerPilotSurface = lazy(() =>
+  import("@/components/spreadsheet-native/ClientLedgerPilotSurface").then(
+    m => ({ default: m.ClientLedgerPilotSurface })
+  )
+);
 
 export default function ClientLedgerPage() {
   // The client ledger always supports the pilot surface — no tab gating needed.
@@ -51,7 +58,9 @@ export default function ClientLedgerPage() {
       {/* Surface — pilot or classic */}
       <div className="flex-1 overflow-hidden">
         {surfaceMode === "sheet-native" ? (
-          <ClientLedgerPilotSurface onOpenClassic={handleOpenClassic} />
+          <PilotSurfaceBoundary fallback={<ClientLedgerWorkSurface />}>
+            <ClientLedgerPilotSurface onOpenClassic={handleOpenClassic} />
+          </PilotSurfaceBoundary>
         ) : (
           <ClientLedgerWorkSurface />
         )}

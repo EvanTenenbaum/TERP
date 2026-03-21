@@ -3,10 +3,18 @@ import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface
 import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
-import InventorySheetPilotSurface from "@/components/spreadsheet-native/InventorySheetPilotSurface";
-import FulfillmentPilotSurface from "@/components/spreadsheet-native/FulfillmentPilotSurface";
-import IntakePilotSurface from "@/components/spreadsheet-native/IntakePilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
+import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+
+const InventorySheetPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/InventorySheetPilotSurface")
+);
+const FulfillmentPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/FulfillmentPilotSurface")
+);
+const IntakePilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/IntakePilotSurface")
+);
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
@@ -132,24 +140,28 @@ export default function InventoryWorkspacePage() {
     >
       <LinearWorkspacePanel value="inventory">
         {surfaceMode === "sheet-native" ? (
-          <InventorySheetPilotSurface
-            onOpenClassic={batchId =>
-              setLocation(
-                buildOperationsWorkspacePath("inventory", {
-                  batchId: batchId ?? undefined,
-                })
-              )
-            }
-          />
+          <PilotSurfaceBoundary fallback={<InventoryWorkSurface />}>
+            <InventorySheetPilotSurface
+              onOpenClassic={batchId =>
+                setLocation(
+                  buildOperationsWorkspacePath("inventory", {
+                    batchId: batchId ?? undefined,
+                  })
+                )
+              }
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <InventoryWorkSurface />
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="shipping">
         {fulfillmentSurfaceMode === "sheet-native" ? (
-          <FulfillmentPilotSurface
-            onOpenClassic={() => setFulfillmentSurfaceMode("classic")}
-          />
+          <PilotSurfaceBoundary fallback={<PickPackWorkSurface />}>
+            <FulfillmentPilotSurface
+              onOpenClassic={() => setFulfillmentSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <PickPackWorkSurface />
         )}
@@ -159,9 +171,11 @@ export default function InventoryWorkspacePage() {
           PO-linked receiving stays in the "receiving" panel. */}
       <LinearWorkspacePanel value="intake">
         {intakeSurfaceMode === "sheet-native" ? (
-          <IntakePilotSurface
-            onOpenClassic={() => setIntakeSurfaceMode("classic")}
-          />
+          <PilotSurfaceBoundary fallback={<DirectIntakeWorkSurface />}>
+            <IntakePilotSurface
+              onOpenClassic={() => setIntakeSurfaceMode("classic")}
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <DirectIntakeWorkSurface />
         )}

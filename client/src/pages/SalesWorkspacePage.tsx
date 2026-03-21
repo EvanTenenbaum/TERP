@@ -1,8 +1,15 @@
+import { lazy } from "react";
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
-import OrdersSheetPilotSurface from "@/components/spreadsheet-native/OrdersSheetPilotSurface";
-import SalesSheetsPilotSurface from "@/components/spreadsheet-native/SalesSheetsPilotSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
+import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+
+const OrdersSheetPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/OrdersSheetPilotSurface")
+);
+const SalesSheetsPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/SalesSheetsPilotSurface")
+);
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -91,15 +98,17 @@ export default function SalesWorkspacePage() {
     >
       <LinearWorkspacePanel value="orders">
         {surfaceMode === "sheet-native" ? (
-          <OrdersSheetPilotSurface
-            onOpenClassic={orderId =>
-              setLocation(
-                buildSalesWorkspacePath("orders", {
-                  orderId: orderId ?? undefined,
-                })
-              )
-            }
-          />
+          <PilotSurfaceBoundary fallback={<OrdersWorkSurface />}>
+            <OrdersSheetPilotSurface
+              onOpenClassic={orderId =>
+                setLocation(
+                  buildSalesWorkspacePath("orders", {
+                    orderId: orderId ?? undefined,
+                  })
+                )
+              }
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <OrdersWorkSurface />
         )}
@@ -112,11 +121,13 @@ export default function SalesWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
         {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
-          <SalesSheetsPilotSurface
-            onOpenClassic={() =>
-              setLocation(buildSalesWorkspacePath("sales-sheets"))
-            }
-          />
+          <PilotSurfaceBoundary fallback={<SalesSheetCreatorPage embedded />}>
+            <SalesSheetsPilotSurface
+              onOpenClassic={() =>
+                setLocation(buildSalesWorkspacePath("sales-sheets"))
+              }
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <SalesSheetCreatorPage embedded />
         )}
@@ -126,16 +137,18 @@ export default function SalesWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="create-order">
         {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
-          <OrdersSheetPilotSurface
-            forceDocumentMode
-            onOpenClassic={orderId =>
-              setLocation(
-                buildSalesWorkspacePath("create-order", {
-                  orderId: orderId ?? undefined,
-                })
-              )
-            }
-          />
+          <PilotSurfaceBoundary fallback={<OrderCreatorPage />}>
+            <OrdersSheetPilotSurface
+              forceDocumentMode
+              onOpenClassic={orderId =>
+                setLocation(
+                  buildSalesWorkspacePath("create-order", {
+                    orderId: orderId ?? undefined,
+                  })
+                )
+              }
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <OrderCreatorPage />
         )}

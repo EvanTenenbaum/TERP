@@ -67,7 +67,10 @@ export default defineConfig(async ({ mode }) => {
       );
       console.log("✅ Sentry source maps plugin configured");
     } catch (error) {
-      console.warn("⚠️ Failed to load/configure Sentry source maps plugin:", error);
+      console.warn(
+        "⚠️ Failed to load/configure Sentry source maps plugin:",
+        error
+      );
       console.log("   Build will continue without source map upload to Sentry");
       // Non-fatal - build continues without source map upload
     }
@@ -138,6 +141,13 @@ export default defineConfig(async ({ mode }) => {
               // Charting libraries
               if (id.includes("recharts") || id.includes("d3")) {
                 return "charts-vendor";
+              }
+              // AG Grid Enterprise — isolate from main vendor chunk
+              if (
+                id.includes("ag-grid-community") ||
+                id.includes("ag-grid-enterprise")
+              ) {
+                return "ag-grid-vendor";
               }
               // Remaining node_modules go to a general vendor chunk
               return "vendor";

@@ -6,8 +6,13 @@ import {
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
-import PurchaseOrdersPilotSurface from "@/components/spreadsheet-native/PurchaseOrdersPilotSurface";
+import { lazy } from "react";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
+import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+
+const PurchaseOrdersPilotSurface = lazy(
+  () => import("@/components/spreadsheet-native/PurchaseOrdersPilotSurface")
+);
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import {
   useSpreadsheetPilotAvailability,
@@ -100,13 +105,15 @@ export default function ProcurementWorkspacePage() {
     >
       <LinearWorkspacePanel value="purchase-orders">
         {surfaceMode === "sheet-native" ? (
-          <PurchaseOrdersPilotSurface
-            onOpenClassic={poId =>
-              setLocation(
-                `/purchase-orders${poId !== null && poId !== undefined ? `?poId=${poId}` : ""}`
-              )
-            }
-          />
+          <PilotSurfaceBoundary fallback={<PurchaseOrdersSlicePage />}>
+            <PurchaseOrdersPilotSurface
+              onOpenClassic={poId =>
+                setLocation(
+                  `/purchase-orders${poId !== null && poId !== undefined ? `?poId=${poId}` : ""}`
+                )
+              }
+            />
+          </PilotSurfaceBoundary>
         ) : (
           <PurchaseOrdersSlicePage />
         )}
