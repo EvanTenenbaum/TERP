@@ -1192,11 +1192,6 @@ export const invoices = mysqlTable(
   table => ({
     customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
     createdByIdx: index("idx_invoices_created_by").on(table.createdBy),
-    // IMP-5: Index for returns invoice lookups (was full table scan)
-    referenceIdx: index("idx_invoices_reference").on(
-      table.referenceType,
-      table.referenceId
-    ),
     // Composite indexes for common query patterns
     customerStatusIdx: index("idx_invoices_customer_status").on(
       table.customerId,

@@ -26,7 +26,18 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     payments: {
       recordPayment: {
-        useMutation: vi.fn(() => mockMutationConfig),
+        useMutation: vi.fn(config => {
+          mockMutationCallbacks = {
+            onSuccess: config?.onSuccess,
+            onError: config?.onError,
+          };
+          mockMutationConfig = {
+            ...mockMutationConfig,
+            mutate: mockMutate,
+            mutateAsync: vi.fn().mockResolvedValue({ paymentId: 123 }),
+          };
+          return mockMutationConfig;
+        }),
       },
     },
     accounting: {
@@ -46,20 +57,6 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
       payments: {
-        create: {
-          useMutation: vi.fn(config => {
-            mockMutationCallbacks = {
-              onSuccess: config?.onSuccess,
-              onError: config?.onError,
-            };
-            mockMutationConfig = {
-              ...mockMutationConfig,
-              mutate: mockMutate,
-              mutateAsync: vi.fn().mockResolvedValue({ paymentId: 123 }),
-            };
-            return mockMutationConfig;
-          }),
-        },
         list: {
           useQuery: vi.fn(() => ({
             data: { items: [] },
@@ -158,12 +155,12 @@ describe("InvoiceToPaymentFlow - GF-PHASE2-001", () => {
     );
   };
 
-  it("should call correct tRPC endpoint: trpc.accounting.payments.create", async () => {
+  it("should call correct tRPC endpoint: trpc.payments.recordPayment", async () => {
     renderComponent();
 
     // The mutation should be set up to call the correct endpoint
     const { trpc } = await import("@/lib/trpc");
-    expect(trpc.accounting.payments.create.useMutation).toHaveBeenCalled();
+    expect(trpc.payments.recordPayment.useMutation).toHaveBeenCalled();
   });
 
   it("should pass correct data shape to recordPayment mutation", async () => {
@@ -285,7 +282,7 @@ describe("InvoiceToPaymentFlow - GF-PHASE2-001", () => {
     expect(screen.getByText("$0.00")).toBeInTheDocument();
   });
 
-  it("keeps the send receipt path wired after toggling the receipt switch", async () => {
+  it("records payment with the runtime mutation contract", async () => {
     renderComponent();
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
@@ -296,25 +293,24 @@ describe("InvoiceToPaymentFlow - GF-PHASE2-001", () => {
     await waitFor(() => expect(nextButton).toBeEnabled());
     fireEvent.click(nextButton);
 
-    expect(await screen.findByText("Send payment receipt")).toBeInTheDocument();
+    expect(await screen.findByText("Receipt delivery")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /receipt email delivery is not available from this flow/i
+      )
+    ).toBeInTheDocument();
 
-    const receiptSwitch = screen.getByRole("switch");
-    expect(receiptSwitch).toHaveAttribute("aria-checked", "false");
-
-    fireEvent.click(receiptSwitch);
-    expect(receiptSwitch).toHaveAttribute("aria-checked", "true");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: /record & send receipt/i })
-    );
+    fireEvent.click(screen.getByRole("button", { name: /record payment/i }));
 
     await waitFor(() => {
-      expect(mockMutationConfig.mutate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          invoiceId: 1,
-          sendReceipt: true,
-        })
-      );
+      expect(mockMutationConfig.mutate).toHaveBeenCalledWith({
+        invoiceId: 1,
+        amount: 1000,
+        paymentMethod: "CHECK",
+        paymentDate: expect.any(String),
+        referenceNumber: undefined,
+        notes: undefined,
+      });
     });
   });
 
