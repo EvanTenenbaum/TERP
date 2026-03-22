@@ -20,6 +20,7 @@ import {
   clients,
   orders,
   credits,
+  ledgerEntries,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, ne } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -79,6 +80,93 @@ const returnStatusEnum = z.enum([
   "PROCESSED",
   "CANCELLED",
 ]);
+
+interface ReturnInvoiceCandidate {
+  id: number;
+  status: string;
+  hasLedgerEntries: number;
+}
+
+interface ReturnItemQuantity {
+  batchId: number;
+  quantity: string;
+}
+
+interface ReceivedReturnItemQuantity {
+  batchId: number;
+  receivedQuantity: string;
+}
+
+export function pickReturnAccountingInvoice<T extends ReturnInvoiceCandidate>(
+  candidates: T[]
+): T | undefined {
+  return (
+    candidates.find(
+      candidate =>
+        candidate.status !== "DRAFT" && Boolean(candidate.hasLedgerEntries)
+    ) ??
+    candidates.find(candidate => candidate.status !== "DRAFT") ??
+    candidates[0]
+  );
+}
+
+export function validateReceivedReturnQuantities(
+  originalItems: ReturnItemQuantity[],
+  receivedItems: ReceivedReturnItemQuantity[]
+): void {
+  if (originalItems.length === 0) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Return item data is invalid; cannot receive items safely.",
+    });
+  }
+
+  const maxReturnQtyByBatch = new Map<number, number>();
+  for (const item of originalItems) {
+    const qty = parseFloat(item.quantity || "0");
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Return item data is invalid; cannot receive items safely.",
+      });
+    }
+
+    maxReturnQtyByBatch.set(
+      item.batchId,
+      (maxReturnQtyByBatch.get(item.batchId) || 0) + qty
+    );
+  }
+
+  const requestedQtyByBatch = new Map<number, number>();
+  for (const item of receivedItems) {
+    const receivedQty = parseFloat(item.receivedQuantity);
+    if (!Number.isFinite(receivedQty) || receivedQty <= 0) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Received quantity for batch #${item.batchId} must be a positive number.`,
+      });
+    }
+
+    const maxAllowed = maxReturnQtyByBatch.get(item.batchId);
+    if (maxAllowed === undefined || maxAllowed <= 0) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Batch #${item.batchId} is not part of this return.`,
+      });
+    }
+
+    const nextRequested =
+      (requestedQtyByBatch.get(item.batchId) || 0) + receivedQty;
+    if (nextRequested > maxAllowed) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Received quantity for batch #${item.batchId} cannot exceed the original return quantity (${maxAllowed}).`,
+      });
+    }
+
+    requestedQtyByBatch.set(item.batchId, nextRequested);
+  }
+}
 
 // SM-003: Return status state machine
 // Defines valid transitions for return status workflow
@@ -435,8 +523,10 @@ export const returnsRouter = router({
           return total + parseFloat(item.quantity) * unitPrice;
         }, 0);
 
-        // ACC-003: Find the invoice associated with this order (IMP-2: exclude VOID)
-        const [orderInvoice] = await tx
+        // ACC-003: Prefer the most recent non-DRAFT invoice with posted ledger
+        // entries. Fall back to the newest non-DRAFT invoice, then the newest
+        // non-VOID invoice only when no better accounting target exists.
+        const orderInvoices = await tx
           .select()
           .from(invoices)
           .where(
@@ -446,7 +536,28 @@ export const returnsRouter = router({
               ne(invoices.status, "VOID")
             )
           )
-          .limit(1);
+          .orderBy(desc(invoices.createdAt));
+        const orderInvoice = pickReturnAccountingInvoice(
+          await Promise.all(
+            orderInvoices.map(async invoice => {
+              const [postedEntry] = await tx
+                .select({ id: ledgerEntries.id })
+                .from(ledgerEntries)
+                .where(
+                  and(
+                    eq(ledgerEntries.referenceType, "INVOICE"),
+                    eq(ledgerEntries.referenceId, invoice.id)
+                  )
+                )
+                .limit(1);
+
+              return {
+                ...invoice,
+                hasLedgerEntries: postedEntry ? 1 : 0,
+              };
+            })
+          )
+        );
 
         let creditId: number | undefined;
 
@@ -696,6 +807,23 @@ export const returnsRouter = router({
       if (!isValidReturnStatusTransition(currentStatus, "RECEIVED")) {
         throw new Error(getReturnTransitionError(currentStatus, "RECEIVED"));
       }
+
+      let originalReturnItems: ReturnItemQuantity[] = [];
+      try {
+        originalReturnItems =
+          typeof returnRecord.items === "string"
+            ? JSON.parse(returnRecord.items)
+            : (returnRecord.items as ReturnItemQuantity[]) || [];
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Return item data is invalid; cannot receive items safely.",
+        });
+      }
+      validateReceivedReturnQuantities(
+        originalReturnItems,
+        input.receivedItems
+      );
 
       // Process each received item
       await db.transaction(async tx => {
@@ -948,9 +1076,12 @@ export const returnsRouter = router({
         // DISC-RET-001: Guard against double credit issuance.
         // returns.create auto-issues credit (linked via transactionId → invoice).
         // If a RETURN credit already exists for this order's invoice, skip.
-        // IMP-2: Exclude VOID invoices — voided invoices should not generate credits
-        const [orderInvoice] = await tx
-          .select({ id: invoices.id })
+        // IMP-2: Exclude VOID invoices — voided invoices should not generate credits.
+        // Prefer the most recent posted invoice rather than whichever invoice was
+        // created last, so we match the actual financial posting when drafts or
+        // reissued invoices coexist on the same order.
+        const orderInvoices = await tx
+          .select({ id: invoices.id, status: invoices.status })
           .from(invoices)
           .where(
             and(
@@ -959,7 +1090,28 @@ export const returnsRouter = router({
               ne(invoices.status, "VOID")
             )
           )
-          .limit(1);
+          .orderBy(desc(invoices.createdAt));
+        const orderInvoice = pickReturnAccountingInvoice(
+          await Promise.all(
+            orderInvoices.map(async invoice => {
+              const [postedEntry] = await tx
+                .select({ id: ledgerEntries.id })
+                .from(ledgerEntries)
+                .where(
+                  and(
+                    eq(ledgerEntries.referenceType, "INVOICE"),
+                    eq(ledgerEntries.referenceId, invoice.id)
+                  )
+                )
+                .limit(1);
+
+              return {
+                ...invoice,
+                hasLedgerEntries: postedEntry ? 1 : 0,
+              };
+            })
+          )
+        );
 
         let creditAlreadyExists = false;
         if (orderInvoice) {

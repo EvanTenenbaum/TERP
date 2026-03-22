@@ -124,7 +124,7 @@ _Agent 1: Payments (TER-812)_ — family leader for ledger+inspector
 - Input: `docs/specs/spreadsheet-native-ledgers/payments-capability-ledger-summary.md`
 - Build: `PaymentsPilotSurface.tsx` — registry grid + guided commit sidecar
 - 8 P0 capabilities (PAY-001/002/006/007/008/011/012/014)
-- Fixes: wire `previewPaymentBalance`, add void UI, fix dead sendReceipt toggle
+- Fixes: wire `previewPaymentBalance`, add void UI, align the guided payment mutation with `payments.recordPayment`, and remove the misleading receipt-send promise until backend support exists
 - Toggle: AccountingWorkspacePage payments tab
 - Family output: document "ledger+inspector family" reuse patterns
 

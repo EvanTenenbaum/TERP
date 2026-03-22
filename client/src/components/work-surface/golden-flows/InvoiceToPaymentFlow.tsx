@@ -49,7 +49,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Work Surface Hooks
@@ -69,7 +68,6 @@ import {
   DollarSign,
   Receipt,
   Loader2,
-  Send,
   Sparkles,
   Clock,
   AlertTriangle,
@@ -110,7 +108,6 @@ interface PaymentConfig {
   paymentDate: string;
   reference: string;
   notes: string;
-  sendReceipt: boolean;
 }
 
 interface PaymentHistoryItem {
@@ -157,7 +154,7 @@ const PAYMENT_METHODS = [
   { value: "CASH", label: "Cash", icon: Banknote },
   { value: "CHECK", label: "Check", icon: Receipt },
   { value: "CREDIT_CARD", label: "Credit Card", icon: CreditCard },
-  { value: "BANK_TRANSFER", label: "Bank Transfer", icon: Building2 },
+  { value: "DEBIT_CARD", label: "Debit Card", icon: CreditCard },
   { value: "ACH", label: "ACH", icon: Building2 },
   { value: "WIRE", label: "Wire Transfer", icon: Building2 },
   { value: "OTHER", label: "Other", icon: DollarSign },
@@ -414,10 +411,16 @@ function PaymentDetailsStep({
   config,
   amountDue,
   onUpdate,
+  balancePreview,
 }: {
   config: PaymentConfig;
   amountDue: number;
   onUpdate: PaymentConfigUpdate;
+  balancePreview?: {
+    currentBalance: number;
+    projectedBalance: number;
+    willCreateCredit: boolean;
+  };
 }) {
   const [quickAmount, setQuickAmount] = useState<string>("full");
 
@@ -467,6 +470,23 @@ function PaymentDetailsStep({
         <p className="text-sm text-muted-foreground">
           Amount due: {formatCurrency(amountDue)}
         </p>
+        {balancePreview && (
+          <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Current balance</span>
+              <span>{formatCurrency(balancePreview.currentBalance)}</span>
+            </div>
+            <div className="flex justify-between font-medium">
+              <span className="text-muted-foreground">After payment</span>
+              <span>{formatCurrency(balancePreview.projectedBalance)}</span>
+            </div>
+            {balancePreview.willCreateCredit && (
+              <p className="text-xs text-amber-600 mt-1">
+                This will create a credit on the account
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Payment Method */}
@@ -550,7 +570,7 @@ function ConfirmStep({
 }: {
   invoice: Invoice;
   config: PaymentConfig;
-  onRecord: (sendReceipt: boolean) => void;
+  onRecord: () => void;
   isRecording: boolean;
 }) {
   const paymentAmount = parseFloat(config.amount) || 0;
@@ -633,41 +653,25 @@ function ConfirmStep({
 
       <div className="flex items-center justify-between p-4 border rounded-lg">
         <div>
-          <p className="font-medium">Send payment receipt</p>
+          <p className="font-medium">Receipt delivery</p>
           <p className="text-sm text-muted-foreground">
-            Email a receipt to the customer
+            Record the payment here. Receipt email delivery is not available
+            from this flow yet.
           </p>
         </div>
-        <Switch checked={config.sendReceipt} onCheckedChange={() => {}} />
+        <AlertTriangle className="h-5 w-5 text-amber-500" />
       </div>
 
-      <div className="flex gap-4">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={() => onRecord(false)}
-          disabled={isRecording}
-        >
-          Record Only
-        </Button>
-        <Button
-          className="flex-1"
-          onClick={() => onRecord(true)}
-          disabled={isRecording}
-        >
-          {isRecording ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Recording...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-2" />
-              Record & Send Receipt
-            </>
-          )}
-        </Button>
-      </div>
+      <Button className="w-full" onClick={onRecord} disabled={isRecording}>
+        {isRecording ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Recording...
+          </>
+        ) : (
+          "Record Payment"
+        )}
+      </Button>
     </div>
   );
 }
@@ -697,7 +701,6 @@ export function InvoiceToPaymentFlow({
     paymentDate: format(new Date(), "yyyy-MM-dd"),
     reference: "",
     notes: "",
-    sendReceipt: false,
   });
 
   // Work Surface hooks
@@ -717,6 +720,20 @@ export function InvoiceToPaymentFlow({
     { invoiceId },
     { enabled: open && !!invoiceId }
   );
+  const { data: balancePreview } =
+    trpc.accounting.quickActions.previewPaymentBalance.useQuery(
+      {
+        clientId: invoiceData?.customerId ?? -1,
+        amount: parseFloat(config.amount) || 0,
+      },
+      {
+        enabled:
+          open &&
+          !!invoiceData?.customerId &&
+          parseFloat(config.amount) > 0 &&
+          currentStep >= 2,
+      }
+    );
 
   const invoice = useMemo<Invoice | null>(() => {
     if (!invoiceData) return null;
@@ -764,12 +781,12 @@ export function InvoiceToPaymentFlow({
   }, []);
 
   // Record payment mutation
-  const recordPaymentMutation = trpc.accounting.payments.create.useMutation({
+  const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
     onMutate: () => setSaving("Recording payment..."),
     onSuccess: data => {
       setSaved();
       toast.success("Payment recorded successfully!");
-      onPaymentRecorded?.(data);
+      onPaymentRecorded?.(data.paymentId);
       onOpenChange(false);
       setCurrentStep(1);
     },
@@ -779,43 +796,39 @@ export function InvoiceToPaymentFlow({
     },
   });
 
-  const handleRecord = useCallback(
-    (sendReceipt: boolean) => {
-      if (!invoice) return;
+  const handleRecord = useCallback(() => {
+    if (!invoice) return;
 
-      const paymentAmount = parseFloat(config.amount) || 0;
-      if (paymentAmount <= 0) {
-        toast.error(
-          "Field: Payment Amount. Rule: must be greater than zero. Fix: enter a positive dollar amount."
-        );
-        return;
-      }
-      if (paymentAmount > amountDue) {
-        toast.error(
-          `Field: Payment Amount. Rule: cannot exceed amount due (${formatCurrency(amountDue)}). Fix: reduce the payment amount or select a quick-amount preset.`
-        );
-        return;
-      }
+    const paymentAmount = parseFloat(config.amount) || 0;
+    if (paymentAmount <= 0) {
+      toast.error(
+        "Field: Payment Amount. Rule: must be greater than zero. Fix: enter a positive dollar amount."
+      );
+      return;
+    }
+    if (paymentAmount > amountDue) {
+      toast.error(
+        `Field: Payment Amount. Rule: cannot exceed amount due (${formatCurrency(amountDue)}). Fix: reduce the payment amount or select a quick-amount preset.`
+      );
+      return;
+    }
 
-      recordPaymentMutation.mutate({
-        invoiceId: invoice.id,
-        amount: paymentAmount.toString(),
-        paymentMethod: config.paymentMethod as
-          | "CASH"
-          | "CHECK"
-          | "WIRE"
-          | "ACH"
-          | "CREDIT_CARD"
-          | "DEBIT_CARD"
-          | "OTHER",
-        paymentDate: new Date(config.paymentDate),
-        reference: config.reference || undefined,
-        notes: config.notes || undefined,
-        sendReceipt,
-      } as unknown as Parameters<typeof recordPaymentMutation.mutate>[0]);
-    },
-    [invoice, config, amountDue, recordPaymentMutation]
-  );
+    recordPaymentMutation.mutate({
+      invoiceId: invoice.id,
+      amount: paymentAmount,
+      paymentMethod: config.paymentMethod as
+        | "CASH"
+        | "CHECK"
+        | "WIRE"
+        | "ACH"
+        | "CREDIT_CARD"
+        | "DEBIT_CARD"
+        | "OTHER",
+      paymentDate: config.paymentDate,
+      referenceNumber: config.reference || undefined,
+      notes: config.notes || undefined,
+    });
+  }, [invoice, config, amountDue, recordPaymentMutation]);
 
   // Validation
   const canProceed =
@@ -886,6 +899,7 @@ export function InvoiceToPaymentFlow({
                 config={config}
                 amountDue={amountDue}
                 onUpdate={updateConfig}
+                balancePreview={balancePreview}
               />
             )}
             {currentStep === 3 && invoice && (

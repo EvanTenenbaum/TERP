@@ -37,16 +37,16 @@ Adjacent but not absorbed: Invoices sheet, Client Ledger, Crypto payments (API-o
 | PAY-005 | Summary cards (count, total received, total sent) | View           | P1          | Adapt                  | Header metrics band                             |
 | PAY-006 | Review invoice before committing (Step 1)         | Query          | P0          | Preserve               | TRUST-CRITICAL context                          |
 | PAY-007 | Payment amount with quick presets                 | Mutation-stage | P0          | Preserve               | Full/50%/25%/custom presets                     |
-| PAY-008 | Select payment method                             | Mutation-stage | P0          | Preserve               | 6 of 7 methods shown (DEBIT_CARD excluded)      |
+| PAY-008 | Select payment method                             | Mutation-stage | P0          | Preserve               | 7 supported methods shown                       |
 | PAY-009 | Set payment date and reference                    | Mutation-stage | P1          | Preserve               | Date capped to today; drives fiscal period      |
 | PAY-010 | Add payment notes                                 | Mutation-stage | P2          | Adopt                  | Optional free-text                              |
 | PAY-011 | Confirm step: before/after invoice impact         | View           | P0          | Preserve               | TRUST-CRITICAL. Non-skippable.                  |
-| PAY-012 | Record payment commit (Record Only)               | Mutation       | P0          | Preserve               | Explicit commit via accounting.payments.create  |
-| PAY-013 | Record with receipt (Record & Send Receipt)       | Mutation       | P1          | Adapt                  | Two commit variants                             |
+| PAY-012 | Record payment commit                             | Mutation       | P0          | Preserve               | Explicit commit via payments.recordPayment      |
+| PAY-013 | Receipt delivery follow-up                        | Adjacent flow  | P1          | Deferred-with-evidence | Receipt email is not available in this flow yet |
 | PAY-014 | Void a payment                                    | Mutation       | P0          | Preserve               | TER-581 concurrency lock; NO current UI surface |
 | PAY-015 | Legacy inspector payment                          | Mutation       | P1          | Reject-with-evidence   | Per launch matrix                               |
 | PAY-016 | Quick receive client payment                      | Mutation       | P1          | Intentionally deferred | API-only, no UI                                 |
-| PAY-017 | Preview payment balance                           | Query          | P1          | Adapt                  | Should wire into confirm step                   |
+| PAY-017 | Preview payment balance                           | Query          | P1          | Adapt                  | Wired into payment details step                 |
 | PAY-018 | Multi-invoice allocation (FEAT-007)               | Mutation       | P1          | Intentionally deferred | Defer to Wave 2                                 |
 | PAY-019 | Crypto payment tracking (DF-030)                  | Mutation/Query | P2          | Intentionally deferred | API-only                                        |
 | PAY-020 | Installment payment plans (DF-031)                | Mutation/Query | P2          | Intentionally deferred | API-only                                        |
@@ -60,19 +60,19 @@ Adjacent but not absorbed: Invoices sheet, Client Ledger, Crypto payments (API-o
 
 ## Discrepancies
 
-| ID           | Description                                                                                         | Severity |
-| ------------ | --------------------------------------------------------------------------------------------------- | -------- |
-| DISC-PAY-001 | sendReceipt toggle switch has dead onCheckedChange; two-button pattern works correctly bypassing it | Medium   |
-| DISC-PAY-002 | Two payment routers have different input schemas (amount: string vs number)                         | High     |
-| DISC-PAY-003 | BANK_TRANSFER label may not map to valid enum; DEBIT_CARD missing from guided flow                  | Medium   |
-| DISC-PAY-004 | previewPaymentBalance exists but not wired to any UI; credit-creation risk invisible                | High     |
-| DISC-PAY-005 | payments.void has no UI surface; API-only, inaccessible to staff                                    | High     |
-| DISC-PAY-006 | crypto and installment routers use sprint5-trackd schema; migration status unconfirmed              | Medium   |
+| ID           | Description                                                                                              | Severity |
+| ------------ | -------------------------------------------------------------------------------------------------------- | -------- |
+| DISC-PAY-001 | Receipt email delivery is still unavailable from InvoiceToPaymentFlow; the UI now states that explicitly | Medium   |
+| DISC-PAY-002 | Guided flow previously used the wrong payment mutation contract; fixed to use payments.recordPayment     | Closed   |
+| DISC-PAY-003 | Guided flow previously omitted DEBIT_CARD and exposed BANK_TRANSFER; fixed to align with valid enum      | Closed   |
+| DISC-PAY-004 | previewPaymentBalance was previously API-only; fixed and surfaced in the payment details step            | Closed   |
+| DISC-PAY-005 | payments.void has no UI surface; API-only, inaccessible to staff                                         | High     |
+| DISC-PAY-006 | crypto and installment routers use sprint5-trackd schema; migration status unconfirmed                   | Medium   |
 
 ## Hidden Dependencies
 
 - Chart of accounts must be seeded (CASH + ACCOUNTS_RECEIVABLE accounts)
 - Fiscal periods must be configured for the payment date
-- payments.recordPayment (legacy) uses different schema than accounting.payments.create (modern)
+- Receipt email delivery still requires a separate receipts flow after payment recording
 - TER-581: invoice rows locked in ascending ID order during void to prevent deadlocks
 - clientLedger balance and payment balance are related but separately calculated

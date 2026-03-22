@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
+import { trackFallbackToClassic } from "./surfaceTelemetry";
 
 export type SpreadsheetSurfaceMode = "classic" | "sheet-native";
 
@@ -16,23 +17,21 @@ const SHEET_NATIVE_VALUE = "sheet-native";
  * low fallback rate (<5% classic usage over 2 weeks).
  */
 export const SHEET_NATIVE_DEFAULTS: Record<string, boolean> = {
-  // Wave 0 (pilot — proven, flipped Phase 5)
+  // Wave 0 (pilot — G1-G5 closed, G6 partial)
   orders: true,
   "create-order": false,
-  // Wave 1 (flipped Phase 5-6)
-  inventory: true,
-  "sales-sheets": true,
-  payments: true,
-  "client-ledger": true,
-  // Wave 2 (flipped Phase 6)
-  intake: true,
-  "purchase-orders": true,
-  fulfillment: true,
-  // Wave 3 (flipped Phase 6)
-  invoices: true,
-  returns: true,
-  quotes: true,
-  samples: true,
+  // Wave 1-3: flip individually after <5% fallback over 2 weeks
+  inventory: false,
+  "sales-sheets": false,
+  payments: false,
+  "client-ledger": false,
+  intake: false,
+  "purchase-orders": false,
+  fulfillment: false,
+  invoices: false,
+  returns: false,
+  quotes: false,
+  samples: false,
 };
 
 /** Build the availability config for useSpreadsheetSurfaceMode with the per-module default */
@@ -128,9 +127,7 @@ export function useSpreadsheetSurfaceMode(
 
     if (previousMode === "sheet-native" && surfaceMode === "classic") {
       const module = pathname.split("/").filter(Boolean)[0] ?? "unknown";
-      console.info(
-        `[surface-mode-fallback] module=${module} from=sheet-native to=classic path=${pathname}`
-      );
+      trackFallbackToClassic(module, pathname);
     }
   }, [pathname, surfaceMode]);
 
