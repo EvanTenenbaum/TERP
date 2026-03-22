@@ -1205,6 +1205,10 @@ export const invoices = mysqlTable(
       table.status,
       table.createdAt
     ),
+    referenceIdx: index("idx_invoices_reference").on(
+      table.referenceType,
+      table.referenceId
+    ),
   })
 );
 
