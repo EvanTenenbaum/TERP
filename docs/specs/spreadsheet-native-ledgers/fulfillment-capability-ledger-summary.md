@@ -17,7 +17,7 @@ Queue + Detail — queue of orders, selected-order detail with item-level pack a
 3. **`orders.shipOrder` is a fulfillment mutation** — triggers inventory release (INV-001), FOR UPDATE locks
 4. **`markAllPacked` has legacy JSON fallback** — must survive migration
 5. **Concurrent-edit detection is inert** — version field never populated (DISC-FUL-005)
-6. **Ship button permission mismatch** — UI enables for `orders:fulfill` but server requires `orders:update` (DISC-FUL-006)
+6. **Ship button permission mismatch** — Resolved in pilot (FulfillmentPilotSurface.tsx:607-610). Classic PickPackWorkSurface may still have the mismatch (DISC-FUL-006)
 7. **Mobile-first: 44px touch targets required** — partially implemented, needs validation
 8. **Queue capped at 50 orders, no pagination UI**
 
@@ -56,18 +56,18 @@ Queue + Detail — queue of orders, selected-order detail with item-level pack a
 
 ## Discrepancies
 
-| ID           | Description                                                                | Severity |
-| ------------ | -------------------------------------------------------------------------- | -------- |
-| DISC-FUL-001 | "Shipping" label used everywhere — must become "Fulfillment"               | High     |
-| DISC-FUL-002 | dateFrom/dateTo/customerId filters exist in API but no UI                  | Medium   |
-| DISC-FUL-003 | packItems and markAllPacked have no audit log; only unpackItems logs       | High     |
-| DISC-FUL-004 | Ship button shown for RESTOCKED orders (server blocks but UI doesn't)      | Low      |
-| DISC-FUL-005 | useConcurrentEditDetection wired but version field never populated — inert | High     |
-| DISC-FUL-006 | shipOrder requires orders:update but UI enables for orders:fulfill         | High     |
-| DISC-FUL-007 | Dormant PickPackGrid.tsx prototype may confuse migration teams             | Medium   |
-| DISC-FUL-008 | KeyboardHintBar shows 5 of 9 shortcuts                                     | Low      |
-| DISC-FUL-009 | trackingNumber/carrier/notes fields on shipOrder not exposed in UI         | Medium   |
-| DISC-FUL-010 | SHIPPED status has no token — renders as Pending color                     | Low      |
+| ID           | Description                                                                                                                                                                                           | Severity                                   |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| DISC-FUL-001 | "Shipping" label used everywhere — must become "Fulfillment"                                                                                                                                          | High                                       |
+| DISC-FUL-002 | dateFrom/dateTo/customerId filters exist in API but no UI                                                                                                                                             | Medium                                     |
+| DISC-FUL-003 | packItems and markAllPacked have no audit log; only unpackItems logs                                                                                                                                  | High                                       |
+| DISC-FUL-004 | Ship button shown for RESTOCKED orders (server blocks but UI doesn't)                                                                                                                                 | Low                                        |
+| DISC-FUL-005 | useConcurrentEditDetection wired but version field never populated — inert                                                                                                                            | High                                       |
+| DISC-FUL-006 | Resolved in pilot (FulfillmentPilotSurface.tsx:607-610). Pilot now gates management with `orders:update` consistent with server requirement. Classic PickPackWorkSurface may still have the mismatch. | Resolved in pilot — regression test needed |
+| DISC-FUL-007 | Dormant PickPackGrid.tsx prototype may confuse migration teams                                                                                                                                        | Medium                                     |
+| DISC-FUL-008 | KeyboardHintBar shows 5 of 9 shortcuts                                                                                                                                                                | Low                                        |
+| DISC-FUL-009 | trackingNumber/carrier/notes fields on shipOrder not exposed in UI                                                                                                                                    | Medium                                     |
+| DISC-FUL-010 | SHIPPED status has no token — renders as Pending color                                                                                                                                                | Low                                        |
 
 ## Classification
 
