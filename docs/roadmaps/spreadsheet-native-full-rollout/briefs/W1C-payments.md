@@ -9,7 +9,7 @@ Payments — trust-critical accounting surface. PACK-ONLY ledger, needs architec
 - Detailed capability ledger: DOES NOT EXIST (pack-level only: `ACCT-PAY-001` to `ACCT-PAY-004`)
 - Extraction CSV: NOT YET RUN (Payments lives in `client/src/pages/accounting/Payments.tsx` + `InvoiceToPaymentFlow.tsx`)
 - Figma golden flow: `docs/design/spreadsheet-native-golden-flows-2026-03-18/payments-sheet.svg`
-- Pilot surface: DOES NOT EXIST
+- Pilot surface: EXISTS — PaymentsPilotSurface.tsx (client/src/components/spreadsheet-native/PaymentsPilotSurface.tsx). QA verdict: NO-SHIP (PAY-P1: cache namespace causes stale grids across Payments and Invoices surfaces). See docs/qa/2026-03-21-pilot-surface-review/consolidated-verdict.md.
 
 ## BLOCKER: Needs Architect Pass
 

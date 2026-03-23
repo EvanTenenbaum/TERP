@@ -10,7 +10,7 @@ Client Ledger — small surface (39KB, 11 extracted capabilities). PACK-ONLY led
 - Extraction CSV: EXISTS (`docs/specs/spreadsheet-native-ledgers/extracted/client-ledger-capabilities.csv`, 11 rows)
 - Cross-check: 1 mutation, 4 queries — small surface
 - Figma golden flow: `docs/design/spreadsheet-native-golden-flows-2026-03-18/client-ledger-sheet.svg`
-- Pilot surface: DOES NOT EXIST
+- Pilot surface: EXISTS — ClientLedgerPilotSurface.tsx (client/src/components/spreadsheet-native/ClientLedgerPilotSurface.tsx). QA verdict: SHIP (2 P2, 1 P3). See docs/qa/2026-03-21-pilot-surface-review/consolidated-verdict.md.
 
 ## Extracted Capabilities (from CSV)
 
