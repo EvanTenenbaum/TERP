@@ -419,3 +419,5 @@ Every claim in this document is traced to a specific file and line number. If a 
 7. **Phase 0 scope too small** → Added 4 additional ledger updates (returns, invoices, payments, fulfillment) where pilot code has resolved discrepancies but ledgers are stale
 8. **Entry-path topology under-covered** → Noted: `/client-ledger` vs `/clients/:clientId/ledger`, `pick-pack` normalization to `shipping`, procurement aliases need route audit in Phase 2
 9. **Phase 3.2 not executable as written** → Acknowledged: Orders proof plan has runtime tranche dependencies; "re-run all" oversimplifies the sequencing
+
+<!-- Tranche 1 execution started 2026-03-22 -->
