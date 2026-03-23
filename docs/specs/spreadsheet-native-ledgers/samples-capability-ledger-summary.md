@@ -14,7 +14,7 @@ The expiring-samples widget uses its own independent query (samples.getExpiring,
 
 ## Critical Findings
 
-1. **DISC-SAM-001 (Critical):** `samples.fulfillRequest` is fully implemented with FOR UPDATE batch lock that decrements live inventory — but SampleManagement.tsx never wires this mutation. GF-008 golden flow is untestable end-to-end from UI.
+1. **DISC-SAM-001 (High):** `samples.fulfillRequest` implemented with FOR UPDATE lock. **Partially resolved:** SamplesPilotSurface.tsx:445 wires fulfillRequest with inventory decrement. Classic SampleManagement.tsx still lacks this action. Pilot is reachable (pilotSurfaceSupported=true) but toggle is missing from command strip.
 2. **DISC-SAM-002 (High):** `samples.setExpirationDate` exists with no UI — operators cannot set expiration dates after creation.
 3. **DISC-SAM-003 (High):** Due date stored inside `notes` free-text as parseable substring (`Due Date: YYYY-MM-DD`). Only `extractDueDate` regex stands between this and invisible data.
 
@@ -51,11 +51,11 @@ The expiring-samples widget uses its own independent query (samples.getExpiring,
 
 ## Discrepancies
 
-| ID           | Description                                                                   | Severity |
-| ------------ | ----------------------------------------------------------------------------- | -------- |
-| DISC-SAM-001 | samples.fulfillRequest implemented with FOR UPDATE lock but never wired in UI | Critical |
-| DISC-SAM-002 | samples.setExpirationDate exists, no UI to set dates after creation           | High     |
-| DISC-SAM-003 | Due date stored in notes text as parseable substring                          | High     |
+| ID           | Description                                                                                                                                                                                                                                                                                                 | Severity                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| DISC-SAM-001 | samples.fulfillRequest implemented with FOR UPDATE lock. **Partially resolved:** SamplesPilotSurface.tsx:445 wires fulfillRequest with inventory decrement. Classic SampleManagement.tsx still lacks this action. Pilot is reachable (pilotSurfaceSupported=true) but toggle is missing from command strip. | High (Classic path still affected) |
+| DISC-SAM-002 | samples.setExpirationDate exists, no UI to set dates after creation                                                                                                                                                                                                                                         | High                               |
+| DISC-SAM-003 | Due date stored in notes text as parseable substring                                                                                                                                                                                                                                                        | High                               |
 
 ## Classification
 
