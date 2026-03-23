@@ -461,9 +461,17 @@ export function QuotesWorkSurface() {
     data: quotesData,
     isLoading,
     refetch: refetchQuotes,
-  } = trpc.orders.getAll.useQuery({
-    orderType: "QUOTE",
-    quoteStatus: statusFilter === "ALL" ? undefined : statusFilter,
+  } = trpc.quotes.list.useQuery({
+    status:
+      statusFilter === "ALL"
+        ? undefined
+        : (statusFilter as
+            | "UNSENT"
+            | "SENT"
+            | "VIEWED"
+            | "REJECTED"
+            | "EXPIRED"
+            | "CONVERTED"),
   });
   const quotes: Quote[] = useMemo(() => {
     if (Array.isArray(quotesData)) return quotesData;

@@ -588,9 +588,17 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
     [clientsQuery.data]
   );
 
-  const quotesQuery = trpc.orders.getAll.useQuery({
-    orderType: "QUOTE",
-    quoteStatus: statusFilter === "ALL" ? undefined : statusFilter,
+  const quotesQuery = trpc.quotes.list.useQuery({
+    status:
+      statusFilter === "ALL"
+        ? undefined
+        : (statusFilter as
+            | "UNSENT"
+            | "SENT"
+            | "VIEWED"
+            | "REJECTED"
+            | "EXPIRED"
+            | "CONVERTED"),
   });
   const quotesRaw: QuoteRecord[] = useMemo(
     () => extractItems(quotesQuery.data) as QuoteRecord[],
