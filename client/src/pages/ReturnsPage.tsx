@@ -28,7 +28,13 @@ import {
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useToast } from "../hooks/use-toast";
-import { PackageX, Plus, TrendingDown } from "lucide-react";
+import {
+  CheckCircle,
+  PackageX,
+  Plus,
+  TrendingDown,
+  XCircle,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { Checkbox } from "../components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,6 +67,28 @@ const RETURN_REASONS: ReturnReason[] = [
 
 const isReturnReason = (value: string): value is ReturnReason =>
   RETURN_REASONS.includes(value as ReturnReason);
+
+type ItemCondition = "SELLABLE" | "DAMAGED" | "QUARANTINE" | "DESTROYED";
+
+const ITEM_CONDITIONS: { value: ItemCondition; label: string }[] = [
+  { value: "SELLABLE", label: "Sellable" },
+  { value: "DAMAGED", label: "Damaged" },
+  { value: "QUARANTINE", label: "Quarantine" },
+  { value: "DESTROYED", label: "Destroyed" },
+];
+
+interface ReturnItemData {
+  batchId: number;
+  quantity: string;
+  reason?: string;
+}
+
+interface ReceivedItemEntry {
+  batchId: number;
+  receivedQuantity: string;
+  actualCondition: ItemCondition;
+  notes: string;
+}
 
 /**
  * Derive GL-relevant status from return notes markers.
@@ -102,6 +130,20 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
   >(null);
   const [expandedReturnId, setExpandedReturnId] = useState<number | null>(null);
 
+  // Workflow action state
+  const [approveDialogReturn, setApproveDialogReturn] = useState<{
+    id: number;
+    notes: string;
+  } | null>(null);
+  const [rejectDialogReturn, setRejectDialogReturn] = useState<{
+    id: number;
+    reason: string;
+  } | null>(null);
+  const [receiveDialogReturn, setReceiveDialogReturn] = useState<{
+    id: number;
+    items: ReceivedItemEntry[];
+  } | null>(null);
+
   const {
     data: returns,
     isLoading,
@@ -125,6 +167,51 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
     onError: error => {
       toast({
         title: "Error processing return",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const approveReturn = trpc.returns.approve.useMutation({
+    onSuccess: () => {
+      toast({ title: "Return approved successfully" });
+      setApproveDialogReturn(null);
+      refetch();
+    },
+    onError: error => {
+      toast({
+        title: "Error approving return",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectReturn = trpc.returns.reject.useMutation({
+    onSuccess: () => {
+      toast({ title: "Return rejected" });
+      setRejectDialogReturn(null);
+      refetch();
+    },
+    onError: error => {
+      toast({
+        title: "Error rejecting return",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const receiveReturn = trpc.returns.receive.useMutation({
+    onSuccess: () => {
+      toast({ title: "Return items received successfully" });
+      setReceiveDialogReturn(null);
+      refetch();
+    },
+    onError: error => {
+      toast({
+        title: "Error receiving return items",
         description: error.message,
         variant: "destructive",
       });
@@ -208,6 +295,46 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
     setReturnItems(returnItems.filter((_, i) => i !== index));
   };
 
+  const parseReturnItems = (items: unknown): ReturnItemData[] => {
+    try {
+      const parsed = typeof items === "string" ? JSON.parse(items) : items;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const openReceiveDialog = (returnRecord: { id: number; items: unknown }) => {
+    const items = parseReturnItems(returnRecord.items);
+    setReceiveDialogReturn({
+      id: returnRecord.id,
+      items: items.map(item => ({
+        batchId: item.batchId,
+        receivedQuantity: item.quantity,
+        actualCondition: "SELLABLE" as ItemCondition,
+        notes: "",
+      })),
+    });
+  };
+
+  const updateReceivedItem = (
+    index: number,
+    field: keyof ReceivedItemEntry,
+    value: string
+  ) => {
+    if (!receiveDialogReturn) return;
+    const updated = [...receiveDialogReturn.items];
+    if (field === "actualCondition") {
+      updated[index] = {
+        ...updated[index],
+        actualCondition: value as ItemCondition,
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setReceiveDialogReturn({ ...receiveDialogReturn, items: updated });
+  };
+
   if (isLoading) {
     return <div className="p-4 md:p-8">Loading returns...</div>;
   }
@@ -275,6 +402,7 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
               <TableHead>Processed At</TableHead>
               <TableHead>Notes</TableHead>
               <TableHead>GL Status</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -313,10 +441,59 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
                           : "View GL"}
                       </Button>
                     </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const status = deriveGLStatus(returnRecord.notes);
+                        return (
+                          <div className="flex gap-1">
+                            {status === "PENDING" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setApproveDialogReturn({
+                                      id: returnRecord.id,
+                                      notes: "",
+                                    })
+                                  }
+                                >
+                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setRejectDialogReturn({
+                                      id: returnRecord.id,
+                                      reason: "",
+                                    })
+                                  }
+                                >
+                                  <XCircle className="mr-1 h-3 w-3" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            {status === "APPROVED" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openReceiveDialog(returnRecord)}
+                              >
+                                <PackageX className="mr-1 h-3 w-3" />
+                                Receive
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                   </TableRow>
                   {expandedReturnId === returnRecord.id && (
                     <TableRow>
-                      <TableCell colSpan={7} className="p-4 bg-muted/30">
+                      <TableCell colSpan={8} className="p-4 bg-muted/30">
                         <ReturnGLStatus
                           returnId={returnRecord.id}
                           returnNumber={`RET-${returnRecord.id}`}
@@ -332,7 +509,7 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center text-muted-foreground"
                 >
                   No returns found
@@ -572,6 +749,223 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
           setDeleteReturnItemConfirm(null);
         }}
       />
+
+      {/* Approve Return Dialog */}
+      <Dialog
+        open={approveDialogReturn !== null}
+        onOpenChange={open => !open && setApproveDialogReturn(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve Return</DialogTitle>
+            <DialogDescription>
+              Mark return #{approveDialogReturn?.id} as approved. This is
+              required before items can be received.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="approvalNotes">Approval notes (optional)</Label>
+              <Textarea
+                id="approvalNotes"
+                value={approveDialogReturn?.notes ?? ""}
+                onChange={e =>
+                  setApproveDialogReturn(prev =>
+                    prev ? { ...prev, notes: e.target.value } : null
+                  )
+                }
+                placeholder="Add approval notes..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setApproveDialogReturn(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!approveDialogReturn) return;
+                approveReturn.mutate({
+                  id: approveDialogReturn.id,
+                  approvalNotes: approveDialogReturn.notes || undefined,
+                });
+              }}
+              disabled={approveReturn.isPending}
+            >
+              {approveReturn.isPending ? "Approving..." : "Approve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Return Dialog */}
+      <Dialog
+        open={rejectDialogReturn !== null}
+        onOpenChange={open => !open && setRejectDialogReturn(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Return</DialogTitle>
+            <DialogDescription>
+              Reject return #{rejectDialogReturn?.id}. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="rejectReason">
+                Rejection reason <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="rejectReason"
+                value={rejectDialogReturn?.reason ?? ""}
+                onChange={e =>
+                  setRejectDialogReturn(prev =>
+                    prev ? { ...prev, reason: e.target.value } : null
+                  )
+                }
+                placeholder="Reason for rejection..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRejectDialogReturn(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!rejectDialogReturn) return;
+                rejectReturn.mutate({
+                  id: rejectDialogReturn.id,
+                  rejectionReason: rejectDialogReturn.reason,
+                });
+              }}
+              disabled={
+                rejectReturn.isPending || !rejectDialogReturn?.reason.trim()
+              }
+            >
+              {rejectReturn.isPending ? "Rejecting..." : "Reject"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receive Return Items Dialog */}
+      <Dialog
+        open={receiveDialogReturn !== null}
+        onOpenChange={open => !open && setReceiveDialogReturn(null)}
+      >
+        <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Receive Return Items</DialogTitle>
+            <DialogDescription>
+              Record physical receipt of returned items for return #
+              {receiveDialogReturn?.id}. Item condition determines the restock
+              path.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {receiveDialogReturn?.items.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No items to receive for this return.
+              </p>
+            )}
+            {receiveDialogReturn?.items.map((item, index) => (
+              <div
+                key={`receive-item-${item.batchId}`}
+                className="border rounded-lg p-3 space-y-2"
+              >
+                <div className="font-medium text-sm">Batch #{item.batchId}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Qty received</Label>
+                    <Input
+                      type="number"
+                      value={item.receivedQuantity}
+                      onChange={e =>
+                        updateReceivedItem(
+                          index,
+                          "receivedQuantity",
+                          e.target.value
+                        )
+                      }
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Condition</Label>
+                    <Select
+                      value={item.actualCondition}
+                      onValueChange={value =>
+                        updateReceivedItem(index, "actualCondition", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ITEM_CONDITIONS.map(c => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Notes (optional)</Label>
+                  <Input
+                    value={item.notes}
+                    onChange={e =>
+                      updateReceivedItem(index, "notes", e.target.value)
+                    }
+                    placeholder="Condition notes..."
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReceiveDialogReturn(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!receiveDialogReturn) return;
+                receiveReturn.mutate({
+                  id: receiveDialogReturn.id,
+                  receivedItems: receiveDialogReturn.items.map(item => ({
+                    batchId: item.batchId,
+                    receivedQuantity: item.receivedQuantity,
+                    actualCondition: item.actualCondition,
+                    notes: item.notes || undefined,
+                  })),
+                });
+              }}
+              disabled={
+                receiveReturn.isPending || !receiveDialogReturn?.items.length
+              }
+            >
+              {receiveReturn.isPending
+                ? "Recording receipt..."
+                : "Record Receipt"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
