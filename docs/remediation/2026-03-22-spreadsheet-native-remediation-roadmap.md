@@ -116,7 +116,19 @@ Quotes and Returns fail checkpoint 1, making them **unreachable** (not "indirect
 | Quotes: uses `orders.getAll`, no rejection UI                              | Pilot has `quotes.reject` mutation                                  | `QuotesWorkSurface.tsx:460-467`, `QuotesPilotSurface.tsx:746-756`                                                                                                          |
 | Samples: no fulfill/expiration in classic                                  | Pilot wires `samples.fulfillRequest` only (not `setExpirationDate`) | `SampleManagement.tsx:375-420` vs `SamplesPilotSurface.tsx:445`. `setExpirationDate` exists server-side (`samples.ts:554`) but is not wired in either surface.             |
 
-### E. User-Visible Integrity Risks (CONFIRMED, ranked)
+### E. Adversarial Review Open Risks Not Captured Elsewhere (added by Phase 0 cross-check, 2026-03-22)
+
+These items were called out in `docs/specs/spreadsheet-native-ledgers/pilot-ledgers-adversarial-review.md` but were absent from earlier versions of this document.
+
+| Risk ID              | Adversarial Finding                                                                                                                                                                                                                                                                  | Severity              | Action                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------- |
+| AR-003 / INV-D005    | Gallery mode reads `photography.getBatchImages`; saved views have shared/private ownership rules. A spreadsheet-native fork could lose thumbnails, leak saved views across users, or swallow photography ownership. Not visible in the Inventory matrix row or any prior phase task. | **Medium**            | Cover in Inventory adversarial review (Phase 3.1) |
+| AR-004 / OPS-INV-005 | Bulk delete undo window (10-second) and zero-on-hand delete eligibility guard. Inventory matrix row only tracks the staging 500 (OPS-INV-006); undo/eligibility guardrails are not tracked separately.                                                                               | **Medium**            | Cover in Inventory adversarial review (Phase 3.1) |
+| INV-D006             | Open and non-blueprint-blocking per adversarial review "Remaining Open Risks." INV-D004 and INV-D007 were closed by the 2026-03-14 ownership seams memo.                                                                                                                             | **Low**               | Tracked here; no Phase 0-3 action required        |
+| ORD-D010             | Download Invoice button is visually present in the orders inspector but has no wired workbook handler. Confirmed inert by live staging proof. Open and non-blueprint-blocking per adversarial review.                                                                                | **Low**               | Tracked here; no Phase 0-3 action required        |
+| AR-009 process risk  | Summary `.md` classification counts had drifted from the CSV rows they described; both summaries were rebuilt from CSV state. The specific failure mode — trusting a summary over its source CSV — was not previously codified as a prevention rule.                                 | **High process risk** | See Rule 8 added to Section 4                     |
+
+### F. User-Visible Integrity Risks (CONFIRMED, ranked)
 
 | Risk | Severity     | Module        | Description                                                                                                                                                      |
 | ---- | ------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -138,19 +150,19 @@ Quotes and Returns fail checkpoint 1, making them **unreachable** (not "indirect
 
 **Goal**: One trustworthy operating picture before any code. This document becomes canonical only AFTER Phase 0 verifies it.
 
-| #    | Task                                                                                                                                               | Deliverable                           | Effort |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------ |
-| 0.1  | Update roadmap README.md to reflect actual implementation state for all 13 modules                                                                 | Roadmap matches repo                  | M      |
-| 0.2  | Update W1C-payments.md and W1D-client-ledger.md briefs                                                                                             | Briefs reflect pilots exist + verdict | S      |
-| 0.3  | Update quotes-capability-ledger-summary.md (DISC-QUO-003 resolved in pilot; add DISC-QUO-004/006)                                                  | Ledger accurate                       | S      |
-| 0.4  | Update samples-capability-ledger-summary.md (DISC-SAM-001 partially resolved in pilot; add SAM-003)                                                | Ledger accurate                       | S      |
-| 0.5  | Update returns-capability-ledger-summary.md — pilot now has approve/reject/receive UI (ReturnsPilotSurface.tsx:1008) but ledger still says "no UI" | Ledger accurate                       | S      |
-| 0.5b | Update invoices-capability-ledger-summary.md — pilot fixes documented but ledger still shows pre-fix state                                         | Ledger accurate                       | S      |
-| 0.5c | Update payments-capability-ledger-summary.md — pilot has void UI (PaymentsPilotSurface.tsx:881) but DISC-PAY-005 says "no UI surface"              | Ledger accurate                       | S      |
-| 0.5d | Update fulfillment-capability-ledger-summary.md — DISC-FUL-006 already resolved in pilot (FulfillmentPilotSurface.tsx:607)                         | Ledger accurate                       | S      |
-| 0.6  | Reclassify wave structure in README to match reality (implementation has outrun waves)                                                             | Wave structure honest                 | M      |
-| 0.7  | Review `pilot-ledgers-adversarial-review.md` and incorporate its classification-drift warnings                                                     | Cross-check complete                  | S      |
-| 0.8  | Document shared contracts (CROSS-001 through CROSS-005) status                                                                                     | Cross-cutting gaps visible            | S      |
+| #    | Task                                                                                                                                                                                        | Deliverable                           | Effort |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------ |
+| 0.1  | Update roadmap README.md to reflect actual implementation state for all 13 modules                                                                                                          | Roadmap matches repo                  | M      |
+| 0.2  | Update W1C-payments.md and W1D-client-ledger.md briefs                                                                                                                                      | Briefs reflect pilots exist + verdict | S      |
+| 0.3  | Update quotes-capability-ledger-summary.md (DISC-QUO-003 resolved in pilot; add DISC-QUO-004/006)                                                                                           | Ledger accurate                       | S      |
+| 0.4  | Update samples-capability-ledger-summary.md (DISC-SAM-001 partially resolved in pilot; add SAM-003)                                                                                         | Ledger accurate                       | S      |
+| 0.5  | Update returns-capability-ledger-summary.md — pilot now has approve/reject/receive UI (ReturnsPilotSurface.tsx:1008) but ledger still says "no UI"                                          | Ledger accurate                       | S      |
+| 0.5b | Update invoices-capability-ledger-summary.md — pilot fixes documented but ledger still shows pre-fix state                                                                                  | Ledger accurate                       | S      |
+| 0.5c | Update payments-capability-ledger-summary.md — pilot has void UI (PaymentsPilotSurface.tsx:881) but DISC-PAY-005 says "no UI surface"                                                       | Ledger accurate                       | S      |
+| 0.5d | Update fulfillment-capability-ledger-summary.md — DISC-FUL-006 already resolved in pilot (FulfillmentPilotSurface.tsx:607)                                                                  | Ledger accurate                       | S      |
+| 0.6  | Reclassify wave structure in README to match reality (implementation has outrun waves)                                                                                                      | Wave structure honest                 | M      |
+| 0.7  | Review `pilot-ledgers-adversarial-review.md` and incorporate its classification-drift warnings — **DONE** (2026-03-22): 5 gaps added to crack registry Section E; Rule 8 added to Section 4 | Cross-check complete                  | S      |
+| 0.8  | Document shared contracts (CROSS-001 through CROSS-005) status                                                                                                                              | Cross-cutting gaps visible            | S      |
 
 **Stop/go**: Phase 0 complete when all doc claims verified against code. Matrix corrections applied. No code changes needed.
 
@@ -297,6 +309,10 @@ Waves describe intended order. If implementation outran waves (as happened here)
 #### Rule 7: Ledger Currency
 
 Capability ledgers must be refreshed after any pilot implements a discrepancy fix. If DISC-XXX-NNN is resolved in code, update the ledger within the same PR.
+
+#### Rule 8: Summaries Must Be Rebuilt from CSV State, Not from Other Summaries
+
+When verifying or updating a capability ledger summary, always recount classification rows directly from the source CSV. Never copy or infer counts from a prior summary document. Summary `.md` files can silently drift from their source CSVs — this was the root cause of the `AR-009` finding in the adversarial review, where both inventory and orders summary counts had diverged from the actual CSV rows. If a summary count disagrees with a direct CSV count, the CSV is authoritative.
 
 ---
 
