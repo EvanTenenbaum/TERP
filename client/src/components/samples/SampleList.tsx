@@ -26,6 +26,7 @@ import {
   Truck,
   CheckCircle,
   AlertTriangle,
+  PackageCheck,
 } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
 
@@ -68,6 +69,7 @@ export interface SampleListProps {
   statusFilter: SampleOperatorFilter;
   searchQuery: string;
   isLoading?: boolean;
+  onFulfill?: (sampleId: number) => void;
   onDelete?: (sampleId: number) => void;
   onRequestReturn?: (sampleId: number) => void;
   onApproveReturn?: (sampleId: number) => void;
@@ -166,6 +168,7 @@ export const SampleList = React.memo(function SampleList({
   statusFilter,
   searchQuery,
   isLoading = false,
+  onFulfill,
   onDelete,
   onRequestReturn,
   onApproveReturn,
@@ -431,6 +434,15 @@ export const SampleList = React.memo(function SampleList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {/* Fulfill - only for PENDING samples */}
+                        {sample.status === "PENDING" && onFulfill && (
+                          <DropdownMenuItem
+                            onClick={() => onFulfill(sample.id)}
+                          >
+                            <PackageCheck className="h-4 w-4 mr-2" />
+                            Fulfill
+                          </DropdownMenuItem>
+                        )}
                         {/* Request Return - only for FULFILLED samples */}
                         {sample.status === "FULFILLED" && onRequestReturn && (
                           <DropdownMenuItem

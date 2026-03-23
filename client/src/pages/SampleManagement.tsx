@@ -129,6 +129,7 @@ export default function SampleManagement({
     useState<SampleLocation | null>(null);
   const { hasPermission } = usePermissions();
   const canCreateSamples = hasPermission("samples:create");
+  const canFulfillSamples = hasPermission("samples:allocate");
   const canDeleteSamples = hasPermission("samples:delete");
   const canRequestSampleReturn = hasPermission("samples:return");
   const canApproveSampleReturn = hasPermission("samples:approve");
@@ -346,6 +347,16 @@ export default function SampleManagement({
     },
   });
 
+  const fulfillSampleMutation = trpc.samples.fulfillRequest.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Sample fulfilled — inventory decremented.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
   const requestReturnMutation = trpc.samples.requestReturn.useMutation({
     onSuccess: async () => {
       await utils.samples.getAll.invalidate();
@@ -456,6 +467,21 @@ export default function SampleManagement({
       });
     },
     [deleteSampleMutation, user?.id]
+  );
+
+  const handleFulfill = useCallback(
+    async (sampleId: number) => {
+      if (!user?.id) {
+        toast.error("You need to be logged in to fulfill a sample.");
+        return;
+      }
+
+      await fulfillSampleMutation.mutateAsync({
+        requestId: sampleId,
+        fulfilledBy: user.id,
+      });
+    },
+    [fulfillSampleMutation, user?.id]
   );
 
   const handleRequestReturn = useCallback((sampleId: number) => {
@@ -774,6 +800,7 @@ export default function SampleManagement({
         statusFilter={statusFilter}
         searchQuery={searchQuery}
         isLoading={samplesLoading}
+        onFulfill={canFulfillSamples ? handleFulfill : undefined}
         onDelete={canDeleteSamples ? handleDelete : undefined}
         onRequestReturn={
           canRequestSampleReturn ? handleRequestReturn : undefined
