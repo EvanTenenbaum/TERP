@@ -561,8 +561,39 @@ export const returnsRouter = router({
 
         let creditId: number | undefined;
 
-        // ACC-003: Create credit memo if there was an invoice and return has value
+        // DISC-RET-001: Idempotency guard — check if a RETURN credit already
+        // exists for this order's invoice before issuing a new one.  This
+        // prevents double-credit when returns.create is retried or when
+        // returns.process later attempts to issue credit for the same return.
+        let creditAlreadyExistsOnCreate = false;
         if (orderInvoice && returnValue > 0) {
+          const [existingCredit] = await tx
+            .select({ id: credits.id })
+            .from(credits)
+            .where(
+              and(
+                eq(credits.clientId, order.clientId),
+                eq(credits.creditReason, "RETURN"),
+                eq(credits.transactionId, orderInvoice.id)
+              )
+            )
+            .limit(1);
+
+          if (existingCredit) {
+            creditAlreadyExistsOnCreate = true;
+            creditId = existingCredit.id;
+            logger.warn({
+              msg: "[Returns] DISC-RET-001: Credit already exists for this order invoice — skipping duplicate in create",
+              returnId: returnRecord.insertId,
+              existingCreditId: existingCredit.id,
+              invoiceId: orderInvoice.id,
+            });
+          }
+        }
+
+        // ACC-003: Create credit memo if there was an invoice, return has value,
+        // and no credit has already been issued (DISC-RET-001)
+        if (orderInvoice && returnValue > 0 && !creditAlreadyExistsOnCreate) {
           const creditNumber = await creditsDb.generateCreditNumber(
             "CR-RTN",
             tx
@@ -636,7 +667,8 @@ export const returnsRouter = router({
           msg: "[Returns] Return created",
           returnId: returnRecord.insertId,
           creditId,
-          glEntriesReversed: !!orderInvoice,
+          creditSkippedAsDuplicate: creditAlreadyExistsOnCreate,
+          glEntriesReversed: !!orderInvoice && !creditAlreadyExistsOnCreate,
         });
 
         return { id: returnRecord.insertId, creditId };
