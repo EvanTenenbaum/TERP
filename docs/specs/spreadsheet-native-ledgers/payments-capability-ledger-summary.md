@@ -60,14 +60,14 @@ Adjacent but not absorbed: Invoices sheet, Client Ledger, Crypto payments (API-o
 
 ## Discrepancies
 
-| ID           | Description                                                                                              | Severity |
-| ------------ | -------------------------------------------------------------------------------------------------------- | -------- |
-| DISC-PAY-001 | Receipt email delivery is still unavailable from InvoiceToPaymentFlow; the UI now states that explicitly | Medium   |
-| DISC-PAY-002 | Guided flow previously used the wrong payment mutation contract; fixed to use payments.recordPayment     | Closed   |
-| DISC-PAY-003 | Guided flow previously omitted DEBIT_CARD and exposed BANK_TRANSFER; fixed to align with valid enum      | Closed   |
-| DISC-PAY-004 | previewPaymentBalance was previously API-only; fixed and surfaced in the payment details step            | Closed   |
-| DISC-PAY-005 | payments.void has no UI surface; API-only, inaccessible to staff                                         | High     |
-| DISC-PAY-006 | crypto and installment routers use sprint5-trackd schema; migration status unconfirmed                   | Medium   |
+| ID           | Description                                                                                                                      | Severity |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| DISC-PAY-001 | Receipt email delivery is still unavailable from InvoiceToPaymentFlow; the UI now states that explicitly                         | Medium   |
+| DISC-PAY-002 | Guided flow previously used the wrong payment mutation contract; fixed to use payments.recordPayment                             | Closed   |
+| DISC-PAY-003 | Guided flow previously omitted DEBIT_CARD and exposed BANK_TRANSFER; fixed to align with valid enum                              | Closed   |
+| DISC-PAY-004 | previewPaymentBalance was previously API-only; fixed and surfaced in the payment details step                                    | Closed   |
+| DISC-PAY-005 | Resolved in pilot (PaymentsPilotSurface.tsx:~881 wires void action). Classic Payments page routes void through a different path. | Closed   |
+| DISC-PAY-006 | crypto and installment routers use sprint5-trackd schema; migration status unconfirmed                                           | Medium   |
 
 ## Hidden Dependencies
 
