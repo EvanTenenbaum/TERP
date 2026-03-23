@@ -585,11 +585,10 @@ export function InvoicesWorkSurface() {
     () => extractItems<Invoice>(invoicesResponse),
     [invoicesResponse]
   );
-  const { data: deepLinkedInvoice } =
-    trpc.accounting.invoices.getById.useQuery(
-      { id: deepLink.invoiceId ?? 0 },
-      { enabled: deepLink.invoiceId !== null }
-    );
+  const { data: deepLinkedInvoice } = trpc.accounting.invoices.getById.useQuery(
+    { id: deepLink.invoiceId ?? 0 },
+    { enabled: deepLink.invoiceId !== null }
+  );
   const normalizedDeepLinkedInvoice = useMemo<Invoice | null>(() => {
     if (!deepLinkedInvoice) {
       return null;
@@ -614,6 +613,12 @@ export function InvoicesWorkSurface() {
       enabled: showAging,
     }
   );
+
+  // DISC-INV-003: Invoice number generated server-side (no client-side collision risk)
+  const { data: generatedInvoiceNumber } =
+    trpc.accounting.invoices.generateNumber.useQuery(undefined, {
+      enabled: showCreateDialog,
+    });
 
   // Helpers
   const getCustomerName = useCallback(
@@ -1243,13 +1248,15 @@ export function InvoicesWorkSurface() {
               disabled={
                 !createForm.customerId ||
                 !createForm.dueDate ||
+                !generatedInvoiceNumber ||
                 createInvoiceMutation.isPending
               }
               onClick={() => {
                 if (!createForm.customerId || !createForm.dueDate) return;
+                const invoiceNumber = generatedInvoiceNumber ?? "";
+                if (!invoiceNumber) return;
                 const today = new Date();
                 const due = new Date(createForm.dueDate);
-                const invoiceNumber = `INV-${Date.now()}`;
                 createInvoiceMutation.mutate({
                   invoiceNumber,
                   customerId: createForm.customerId,

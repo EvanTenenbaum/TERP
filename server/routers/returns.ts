@@ -563,73 +563,98 @@ export const returnsRouter = router({
 
         // ACC-003: Create credit memo if there was an invoice and return has value
         if (orderInvoice && returnValue > 0) {
-          const creditNumber = await creditsDb.generateCreditNumber(
-            "CR-RTN",
-            tx
-          );
-          const creditAmount = returnValue.toFixed(2);
-          const credit = await creditsDb.createCredit(
-            {
-              creditNumber,
-              clientId: order.clientId,
-              creditAmount,
-              amountRemaining: creditAmount,
-              creditReason: "RETURN",
-              transactionId: orderInvoice.id,
-              notes: `Return for order #${order.orderNumber || order.id}: ${input.notes || input.reason}`,
-              createdBy: userId,
-            },
-            tx
-          );
-          creditId = credit.id;
+          // DISC-RET-001: Idempotency guard — prevent double credit issuance.
+          // returns.process also issues credit; check if one already exists for
+          // this client + invoice + RETURN reason before creating a new one.
+          const [existingCredit] = await tx
+            .select({ id: credits.id })
+            .from(credits)
+            .where(
+              and(
+                eq(credits.clientId, order.clientId),
+                eq(credits.creditReason, "RETURN"),
+                eq(credits.transactionId, orderInvoice.id)
+              )
+            )
+            .limit(1);
 
-          logger.info({
-            msg: "[Returns] Credit memo created for return",
-            creditId,
-            creditNumber,
-            amount: returnValue,
-            returnId: returnRecord.insertId,
-          });
-
-          // ACC-003: Create reversing GL entries
-          try {
-            await reverseGLEntries(
-              "INVOICE",
-              orderInvoice.id,
-              `Return: ${input.reason}`,
-              userId
-            );
-            logger.info({
-              msg: "[Returns] GL entries reversed for return",
+          if (existingCredit) {
+            creditId = existingCredit.id;
+            logger.warn({
+              msg: "[Returns] DISC-RET-001: Credit already exists for this invoice — skipping duplicate",
+              returnId: returnRecord.insertId,
+              existingCreditId: existingCredit.id,
               invoiceId: orderInvoice.id,
+            });
+          } else {
+            const creditNumber = await creditsDb.generateCreditNumber(
+              "CR-RTN",
+              tx
+            );
+            const creditAmount = returnValue.toFixed(2);
+            const credit = await creditsDb.createCredit(
+              {
+                creditNumber,
+                clientId: order.clientId,
+                creditAmount,
+                amountRemaining: creditAmount,
+                creditReason: "RETURN",
+                transactionId: orderInvoice.id,
+                notes: `Return for order #${order.orderNumber || order.id}: ${input.notes || input.reason}`,
+                createdBy: userId,
+              },
+              tx
+            );
+            creditId = credit.id;
+
+            logger.info({
+              msg: "[Returns] Credit memo created for return",
+              creditId,
+              creditNumber,
+              amount: returnValue,
               returnId: returnRecord.insertId,
             });
-          } catch (error) {
-            if (
-              error instanceof GLPostingError &&
-              error.code === "NO_ENTRIES_TO_REVERSE"
-            ) {
-              logger.warn({
-                msg: "[Returns] No GL entries to reverse (may be draft invoice)",
+
+            // ACC-003: Create reversing GL entries
+            try {
+              await reverseGLEntries(
+                "INVOICE",
+                orderInvoice.id,
+                `Return: ${input.reason}`,
+                userId
+              );
+              logger.info({
+                msg: "[Returns] GL entries reversed for return",
                 invoiceId: orderInvoice.id,
+                returnId: returnRecord.insertId,
               });
-            } else {
-              throw error;
+            } catch (error) {
+              if (
+                error instanceof GLPostingError &&
+                error.code === "NO_ENTRIES_TO_REVERSE"
+              ) {
+                logger.warn({
+                  msg: "[Returns] No GL entries to reverse (may be draft invoice)",
+                  invoiceId: orderInvoice.id,
+                });
+              } else {
+                throw error;
+              }
             }
+
+            // ACC-003: Update client totalOwed (reduce AR balance)
+            await tx.execute(sql`
+              UPDATE clients
+              SET totalOwed = GREATEST(0, CAST(totalOwed AS DECIMAL(15,2)) - ${returnValue})
+              WHERE id = ${order.clientId}
+            `);
+
+            logger.info({
+              msg: "[Returns] Client AR balance reduced for return",
+              clientId: order.clientId,
+              amountReduced: returnValue,
+            });
           }
-
-          // ACC-003: Update client totalOwed (reduce AR balance)
-          await tx.execute(sql`
-            UPDATE clients
-            SET totalOwed = GREATEST(0, CAST(totalOwed AS DECIMAL(15,2)) - ${returnValue})
-            WHERE id = ${order.clientId}
-          `);
-
-          logger.info({
-            msg: "[Returns] Client AR balance reduced for return",
-            clientId: order.clientId,
-            amountReduced: returnValue,
-          });
         }
 
         logger.info({
