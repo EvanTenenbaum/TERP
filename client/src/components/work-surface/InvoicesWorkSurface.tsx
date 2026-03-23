@@ -841,11 +841,7 @@ export function InvoicesWorkSurface() {
 
   // Handlers
   const handleMarkPaid = (invoiceId: number) => {
-    markPaidMutation.mutate({
-      id: invoiceId,
-      status: "PAID",
-      version: selectedInvoice?.version,
-    });
+    markPaidMutation.mutate({ id: invoiceId, status: "PAID" });
   };
 
   const handleSendReminder = (invoiceId: number) => {
@@ -1300,11 +1296,7 @@ export function InvoicesWorkSurface() {
               variant="destructive"
               onClick={() =>
                 selectedInvoice &&
-                voidMutation.mutate({
-                  id: selectedInvoice.id,
-                  status: "VOID",
-                  version: selectedInvoice.version,
-                })
+                voidMutation.mutate({ id: selectedInvoice.id, status: "VOID" })
               }
               disabled={voidMutation.isPending}
             >
