@@ -3,6 +3,8 @@
 Date: `2026-03-20`
 Status: `planning`
 
+> **Implementation note (2026-03-22):** Implementation outran wave gates. All 13 modules have pilot surfaces. 5 have formal QA verdicts. See `docs/remediation/2026-03-22-spreadsheet-native-remediation-roadmap.md` for verified state.
+
 ## Purpose
 
 Roll out the PowersheetGrid spreadsheet-native runtime to every TERP module where it adds value, without losing any functionality users currently have.
@@ -51,13 +53,13 @@ Every module follows this sequence BEFORE any code is written:
 
 These need detailed capability ledgers before implementation:
 
-- Fulfillment / Pick & Pack (`FUL-PK-001` to `FUL-PK-004`)
-- Invoices (`ACCT-INV-001` to `ACCT-INV-003`)
-- Payments (`ACCT-PAY-001` to `ACCT-PAY-004`)
-- Client Ledger (`ACCT-LED-001` to `ACCT-LED-003`)
-- Returns (`SALE-RET-001` to `SALE-RET-004`)
-- Samples (`OPS-SMP-001` to `OPS-SMP-004`)
-- Shared contracts (`CROSS-001` to `CROSS-005`)
+- Fulfillment / Pick & Pack (`FUL-PK-001` to `FUL-PK-004`) — **[2026-03-22 actual state]** Pilot `FulfillmentPilotSurface.tsx` exists, route-wired, toggle rendered. QA verdict: **SHIP** (2 P3). 10 discrepancies on record including permission mismatch (DISC-FUL-006) and inert concurrent-edit detection (DISC-FUL-005).
+- Invoices (`ACCT-INV-001` to `ACCT-INV-003`) — **[2026-03-22 actual state]** Pilot `InvoicesPilotSurface.tsx` exists, route-wired. QA verdict: **NO-SHIP** (P1: Mark Paid bypasses GL version check). Note: `pilotSurfaceSupported` excludes invoices tab — toggle is not rendered.
+- Payments (`ACCT-PAY-001` to `ACCT-PAY-004`) — **[2026-03-22 actual state]** Pilot `PaymentsPilotSurface.tsx` exists, route-wired, toggle rendered. QA verdict: **NO-SHIP** (P1: cache namespace produces stale grids).
+- Client Ledger (`ACCT-LED-001` to `ACCT-LED-003`) — **[2026-03-22 actual state]** Pilot `ClientLedgerPilotSurface.tsx` exists, route-wired, toggle rendered. QA verdict: **SHIP** (2 P2, 1 P3).
+- Returns (`SALE-RET-001` to `SALE-RET-004`) — **[2026-03-22 actual state]** Pilot `ReturnsPilotSurface.tsx` exists, route-wired. QA verdict: **CONDITIONAL SHIP** (1 P2, 2 P3). Note: not in `pilotSurfaceSupported` — toggle is not rendered, pilot is unreachable without direct URL manipulation.
+- Samples (`OPS-SMP-001` to `OPS-SMP-004`) — **[2026-03-22 actual state]** Pilot `SamplesPilotSurface.tsx` exists, route-wired, in `pilotSurfaceSupported`. No formal QA verdict yet. Note: toggle missing from command strip conditional — effectively unreachable via UI.
+- Shared contracts (`CROSS-001` to `CROSS-005`) — **[2026-03-22 actual state]** Still pack-level only. No pilot surface. Unresolved prerequisite for multiple modules.
 
 ## Rollout Waves
 
@@ -81,12 +83,12 @@ Orders is the pilot. G1-G5 closed. G6 `partial` — 5 accepted-limitations, ORD-
 
 **Prerequisite:** Wave 0 complete (done)
 
-| #   | Module            | Classic Component                           | Detailed Ledger | Figma Design              | Agent Team             |
-| --- | ----------------- | ------------------------------------------- | --------------- | ------------------------- | ---------------------- |
-| 1   | **Inventory**     | `InventoryWorkSurface.tsx` (97KB)           | EXISTS          | `inventory-sheet.svg`     | Coder + QA             |
-| 2   | **Sales Sheets**  | `SalesSheetCreatorPage.tsx`                 | EXISTS          | `sales-sheet.svg`         | Coder + QA             |
-| 3   | **Payments**      | `Payments.tsx` + `InvoiceToPaymentFlow.tsx` | PACK-ONLY       | `payments-sheet.svg`      | Architect + Coder + QA |
-| 4   | **Client Ledger** | `ClientLedgerWorkSurface.tsx` (39KB)        | PACK-ONLY       | `client-ledger-sheet.svg` | Architect + Coder + QA |
+| #   | Module            | Classic Component                           | Detailed Ledger | Figma Design              | Agent Team             | 2026-03-22 Actual State                                                               |
+| --- | ----------------- | ------------------------------------------- | --------------- | ------------------------- | ---------------------- | ------------------------------------------------------------------------------------- |
+| 1   | **Inventory**     | `InventoryWorkSurface.tsx` (97KB)           | EXISTS          | `inventory-sheet.svg`     | Coder + QA             | Pilot built, toggle rendered, no formal QA verdict                                    |
+| 2   | **Sales Sheets**  | `SalesSheetCreatorPage.tsx`                 | EXISTS          | `sales-sheet.svg`         | Coder + QA             | Pilot built, toggle rendered, no formal QA verdict                                    |
+| 3   | **Payments**      | `Payments.tsx` + `InvoiceToPaymentFlow.tsx` | PACK-ONLY       | `payments-sheet.svg`      | Architect + Coder + QA | **Pilot built** (`PaymentsPilotSurface.tsx`), QA: **NO-SHIP** (P1: cache stale grids) |
+| 4   | **Client Ledger** | `ClientLedgerWorkSurface.tsx` (39KB)        | PACK-ONLY       | `client-ledger-sheet.svg` | Architect + Coder + QA | **Pilot built** (`ClientLedgerPilotSurface.tsx`), QA: **SHIP** (2 P2, 1 P3)           |
 
 #### Wave 1 Execution Order
 
@@ -124,11 +126,11 @@ Orders is the pilot. G1-G5 closed. G6 `partial` — 5 accepted-limitations, ORD-
 
 **Prerequisite:** Wave 1 Inventory and Sales Sheets complete (shared grammar proven on secondary surfaces)
 
-| #   | Module              | Classic Component                       | Detailed Ledger | Figma Design                | Agent Team             |
-| --- | ------------------- | --------------------------------------- | --------------- | --------------------------- | ---------------------- |
-| 5   | **Direct Intake**   | `DirectIntakeWorkSurface.tsx` (85KB)    | EXISTS          | `receiving-sheet.svg`       | Coder + QA             |
-| 6   | **Purchase Orders** | `PurchaseOrdersWorkSurface.tsx` (104KB) | EXISTS          | `purchase-orders-sheet.svg` | Coder + QA             |
-| 7   | **Fulfillment**     | `PickPackWorkSurface.tsx` (53KB)        | PACK-ONLY       | `shipping-sheet.svg`        | Architect + Coder + QA |
+| #   | Module              | Classic Component                       | Detailed Ledger | Figma Design                | Agent Team             | 2026-03-22 Actual State                                                                          |
+| --- | ------------------- | --------------------------------------- | --------------- | --------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------ |
+| 5   | **Direct Intake**   | `DirectIntakeWorkSurface.tsx` (85KB)    | EXISTS          | `receiving-sheet.svg`       | Coder + QA             | Pilot built, toggle rendered, no formal QA verdict                                               |
+| 6   | **Purchase Orders** | `PurchaseOrdersWorkSurface.tsx` (104KB) | EXISTS          | `purchase-orders-sheet.svg` | Coder + QA             | Pilot built, toggle rendered, no formal QA verdict                                               |
+| 7   | **Fulfillment**     | `PickPackWorkSurface.tsx` (53KB)        | PACK-ONLY       | `shipping-sheet.svg`        | Architect + Coder + QA | **Pilot built** (`FulfillmentPilotSurface.tsx`), QA: **SHIP** (2 P3); 10 discrepancies on record |
 
 #### Wave 2 Execution Order
 
@@ -154,12 +156,12 @@ Orders is the pilot. G1-G5 closed. G6 `partial` — 5 accepted-limitations, ORD-
 
 **Prerequisite:** Wave 2 complete
 
-| #   | Module       | Classic Component                | Detailed Ledger | Figma Design         | Agent Team             |
-| --- | ------------ | -------------------------------- | --------------- | -------------------- | ---------------------- |
-| 8   | **Invoices** | `InvoicesWorkSurface.tsx` (43KB) | PACK-ONLY       | `invoices-sheet.svg` | Architect + Coder + QA |
-| 9   | **Returns**  | `ReturnsPage.tsx`                | PACK-ONLY       | `returns-sheet.svg`  | Architect + Coder + QA |
-| 10  | **Quotes**   | `QuotesWorkSurface.tsx` (30KB)   | NONE            | N/A                  | Architect + Coder + QA |
-| 11  | **Samples**  | `SampleManagement.tsx`           | PACK-ONLY       | `samples-sheet.svg`  | Architect + Coder + QA |
+| #   | Module       | Classic Component                | Detailed Ledger | Figma Design         | Agent Team             | 2026-03-22 Actual State                                                                                                                                |
+| --- | ------------ | -------------------------------- | --------------- | -------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 8   | **Invoices** | `InvoicesWorkSurface.tsx` (43KB) | PACK-ONLY       | `invoices-sheet.svg` | Architect + Coder + QA | **Pilot built** (`InvoicesPilotSurface.tsx`), QA: **NO-SHIP** (P1: Mark Paid bypasses GL); toggle NOT rendered (excluded from `pilotSurfaceSupported`) |
+| 9   | **Returns**  | `ReturnsPage.tsx`                | PACK-ONLY       | `returns-sheet.svg`  | Architect + Coder + QA | **Pilot built** (`ReturnsPilotSurface.tsx`), QA: **CONDITIONAL SHIP** (1 P2, 2 P3); toggle NOT rendered (not in `pilotSurfaceSupported`)               |
+| 10  | **Quotes**   | `QuotesWorkSurface.tsx` (30KB)   | NONE            | N/A                  | Architect + Coder + QA | **Pilot built** (`QuotesPilotSurface.tsx`), no formal QA verdict; toggle NOT rendered (not in `pilotSurfaceSupported`)                                 |
+| 11  | **Samples**  | `SampleManagement.tsx`           | PACK-ONLY       | `samples-sheet.svg`  | Architect + Coder + QA | **Pilot built** (`SamplesPilotSurface.tsx`), no formal QA verdict; in `pilotSurfaceSupported` but toggle missing from command strip                    |
 
 ### Wave 4: Classic Sunset
 
