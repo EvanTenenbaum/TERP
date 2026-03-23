@@ -438,6 +438,7 @@ export function PaymentsPilotSurface({
   onOpenClassic,
 }: PaymentsPilotSurfaceProps) {
   const search = useSearch();
+  const utils = trpc.useUtils();
 
   // PAY-004: Deep-link support (?id=, ?invoiceId= only — orderId not supported by API)
   const routeParams = useMemo(() => {
@@ -480,6 +481,9 @@ export function PaymentsPilotSurface({
       setVoidDialogOpen(false);
       setSelectedRowId(null);
       void paymentsQuery.refetch();
+      // Cross-namespace cache invalidation — both query paths must stay in sync
+      void utils.accounting.payments.list.invalidate();
+      void utils.payments.list.invalidate();
     },
     onError: err => {
       console.error("[PaymentsPilotSurface] void mutation error:", err);
@@ -575,8 +579,11 @@ export function PaymentsPilotSurface({
   const handlePaymentRecorded = useCallback(
     (_paymentId: number) => {
       void paymentsQuery.refetch();
+      // Cross-namespace cache invalidation — both query paths must stay in sync
+      void utils.accounting.payments.list.invalidate();
+      void utils.payments.list.invalidate();
     },
-    [paymentsQuery]
+    [paymentsQuery, utils]
   );
 
   // Status bar copy

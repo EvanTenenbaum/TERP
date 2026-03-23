@@ -1348,6 +1348,8 @@ export function InvoicesPilotSurface({
             void utils.invoices.list.invalidate();
             void utils.invoices.getSummary.invalidate();
             void utils.payments.list.invalidate();
+            // Cross-namespace cache invalidation — PaymentsPilotSurface queries accounting.payments.list
+            void utils.accounting.payments.list.invalidate();
             setShowPaymentDialog(false);
           }}
         />
