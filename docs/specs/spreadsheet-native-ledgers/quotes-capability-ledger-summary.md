@@ -60,14 +60,14 @@ The `quotes.*` router (list, getById, create, accept, reject, checkExpired) is u
 
 ## Discrepancies
 
-| ID           | Description                                                                     | Severity |
-| ------------ | ------------------------------------------------------------------------------- | -------- |
-| DISC-QUO-001 | UI uses orders.getAll not quotes.list — entire quotes.\* router is dead from UI | High     |
-| DISC-QUO-002 | Three conversion endpoints route to same function — maintenance liability       | Medium   |
-| DISC-QUO-003 | quotes.reject exists but no UI — staff cannot reject quotes                     | High     |
-| DISC-QUO-004 | quotes.checkExpired has no scheduler — quotes never auto-expire                 | High     |
-| DISC-QUO-005 | Quotes via OrderCreatorPage have NULL validUntil — bypass expiry enforcement    | High     |
-| DISC-QUO-006 | Send dialog custom message not persisted to quote record                        | Medium   |
+| ID           | Description                                                                                                                                                                                                                                                                                       | Severity                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| DISC-QUO-001 | UI uses orders.getAll not quotes.list — entire quotes.\* router is dead from UI                                                                                                                                                                                                                   | High                                       |
+| DISC-QUO-002 | Three conversion endpoints route to same function — maintenance liability                                                                                                                                                                                                                         | Medium                                     |
+| DISC-QUO-003 | quotes.reject exists but no UI in classic QuotesWorkSurface — staff cannot reject quotes from the visible classic path. **Partially resolved:** QuotesPilotSurface.tsx:746-756 implements rejection with full UI handlers, but the pilot is currently unreachable (not in pilotSurfaceSupported). | Medium — pilot fix exists but not surfaced |
+| DISC-QUO-004 | quotes.checkExpired has no scheduler — quotes never auto-expire                                                                                                                                                                                                                                   | High                                       |
+| DISC-QUO-005 | Quotes via OrderCreatorPage have NULL validUntil — bypass expiry enforcement                                                                                                                                                                                                                      | High                                       |
+| DISC-QUO-006 | Send dialog custom message not persisted to quote record                                                                                                                                                                                                                                          | Medium                                     |
 
 ## Classification
 
