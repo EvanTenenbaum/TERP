@@ -25,6 +25,10 @@ vi.mock("@/hooks/work-surface/useExport", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      accounting: { payments: { list: { invalidate: vi.fn() } } },
+      payments: { list: { invalidate: vi.fn() } },
+    }),
     accounting: {
       payments: {
         list: {
