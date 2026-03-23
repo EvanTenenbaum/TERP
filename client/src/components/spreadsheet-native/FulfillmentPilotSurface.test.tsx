@@ -11,10 +11,12 @@ vi.mock("wouter", () => ({
   useLocation: () => ["/operations?tab=fulfillment", vi.fn()],
 }));
 
+const hasAnyPermissionSpy = vi.fn(() => true);
+
 vi.mock("@/hooks/usePermissions", () => ({
   usePermissions: () => ({
     hasPermission: () => true,
-    hasAnyPermission: () => true,
+    hasAnyPermission: hasAnyPermissionSpy,
     isLoading: false,
   }),
 }));
@@ -264,5 +266,24 @@ describe("FulfillmentPilotSurface", () => {
   it("renders the status filter dropdown", () => {
     render(<FulfillmentPilotSurface onOpenClassic={vi.fn()} />);
     expect(screen.getByTestId("fulfillment-status-filter")).toBeInTheDocument();
+  });
+
+  // DISC-FUL-006 regression: management permission must use orders:update, not orders:fulfill
+  it("uses orders:update (not orders:fulfill) for management permission tier", () => {
+    hasAnyPermissionSpy.mockClear();
+    render(<FulfillmentPilotSurface onOpenClassic={vi.fn()} />);
+
+    // Collect all permission arrays passed to hasAnyPermission
+    const allCalls = hasAnyPermissionSpy.mock.calls.map(
+      (call: unknown[]) => call[0] as string[]
+    );
+
+    // The first call is for canAccessPickPack (view tier) — broad set
+    // The second call is for canManagePickPack (management tier) — must NOT include orders:fulfill
+    const managementCall = allCalls[1];
+    expect(managementCall).toBeDefined();
+    expect(managementCall).toContain("orders:update");
+    expect(managementCall).toContain("pick-pack:manage");
+    expect(managementCall).not.toContain("orders:fulfill");
   });
 });
