@@ -29,29 +29,6 @@ vi.mock("@/hooks/work-surface/useExport", () => ({
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     orders: {
-      getAll: {
-        useQuery: () => ({
-          data: {
-            items: [
-              {
-                id: 1,
-                orderNumber: "QUO-001",
-                clientId: 10,
-                orderType: "QUOTE",
-                quoteStatus: "UNSENT",
-                orderDate: "2026-03-01T00:00:00.000Z",
-                validUntil: "2026-04-01T00:00:00.000Z",
-                total: "2500",
-                createdAt: "2026-03-01T00:00:00.000Z",
-              },
-            ],
-            pagination: { hasMore: false },
-          },
-          isLoading: false,
-          error: null,
-          refetch: vi.fn(),
-        }),
-      },
       convertQuoteToSale: {
         useMutation: () => ({
           mutate: vi.fn(),
@@ -76,6 +53,31 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     quotes: {
+      list: {
+        useQuery: () => ({
+          data: {
+            items: [
+              {
+                id: 1,
+                orderNumber: "QUO-001",
+                clientId: 10,
+                orderType: "QUOTE",
+                quoteStatus: "UNSENT",
+                orderDate: "2026-03-01T00:00:00.000Z",
+                validUntil: "2026-04-01T00:00:00.000Z",
+                total: "2500",
+                createdAt: "2026-03-01T00:00:00.000Z",
+              },
+            ],
+            total: 1,
+            limit: 50,
+            offset: 0,
+          },
+          isLoading: false,
+          error: null,
+          refetch: vi.fn(),
+        }),
+      },
       isEmailEnabled: {
         useQuery: () => ({
           data: { enabled: true },
