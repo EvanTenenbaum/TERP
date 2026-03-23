@@ -243,6 +243,7 @@ interface QuoteInspectorProps {
   onConvert: (quoteId: number) => void;
   onDuplicate: (quoteId: number) => void;
   onDelete: (quoteId: number) => void;
+  onReject: (quoteId: number) => void;
 }
 
 function QuoteInspectorContent({
@@ -253,6 +254,7 @@ function QuoteInspectorContent({
   onConvert,
   onDuplicate,
   onDelete,
+  onReject,
 }: QuoteInspectorProps) {
   if (!quote) {
     return (
@@ -411,6 +413,16 @@ function QuoteInspectorContent({
             <Copy className="h-4 w-4 mr-2" />
             Duplicate Quote
           </Button>
+          {(effectiveStatus === "SENT" || effectiveStatus === "VIEWED") && (
+            <Button
+              variant="outline"
+              className="w-full justify-start text-orange-600 hover:text-orange-700"
+              onClick={() => onReject(quote.id)}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Reject Quote
+            </Button>
+          )}
           {effectiveStatus === "UNSENT" && (
             <Button
               variant="outline"
@@ -444,6 +456,8 @@ export function QuotesWorkSurface() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false); // API-016
   const [sendCustomMessage, setSendCustomMessage] = useState(""); // API-016
+  const [showRejectDialog, setShowRejectDialog] = useState(false); // QUO-026
+  const [rejectReason, setRejectReason] = useState(""); // QUO-026
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -574,6 +588,23 @@ export function QuotesWorkSurface() {
     },
   });
 
+  // QUO-026: Reject quote
+  const rejectMutation = trpc.quotes.reject.useMutation({
+    onMutate: () => setSaving("Rejecting quote..."),
+    onSuccess: () => {
+      toast.success("Quote rejected");
+      setSaved();
+      refetchQuotes();
+      setShowRejectDialog(false);
+      setRejectReason("");
+      inspector.close();
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to reject quote");
+      setError(err.message);
+    },
+  });
+
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: false,
@@ -617,6 +648,7 @@ export function QuotesWorkSurface() {
       if (showSendDialog) setShowSendDialog(false);
       else if (showConvertDialog) setShowConvertDialog(false);
       else if (showDeleteDialog) setShowDeleteDialog(false);
+      else if (showRejectDialog) setShowRejectDialog(false);
       else if (inspector.isOpen) inspector.close();
     },
   });
@@ -644,6 +676,12 @@ export function QuotesWorkSurface() {
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);
+  };
+  // QUO-026: Open reject dialog
+  const handleReject = (quoteId: number) => {
+    setSelectedQuoteId(quoteId);
+    setRejectReason("");
+    setShowRejectDialog(true);
   };
 
   return (
@@ -813,6 +851,7 @@ export function QuotesWorkSurface() {
             onConvert={handleConvert}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            onReject={handleReject}
           />
         </InspectorPanel>
       </div>
@@ -926,6 +965,63 @@ export function QuotesWorkSurface() {
                 <>
                   <Send className="h-4 w-4 mr-2" />
                   Send Quote
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QUO-026: Reject Quote Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Quote</DialogTitle>
+            <DialogDescription>
+              Mark this quote as rejected. Optionally provide a reason — it will
+              be appended to the quote notes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="reject-reason">Reason (optional)</Label>
+              <Textarea
+                id="reject-reason"
+                placeholder="Explain why this quote is being rejected..."
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectDialog(false)}
+              disabled={rejectMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!selectedQuoteId) return;
+                rejectMutation.mutate({
+                  id: selectedQuoteId,
+                  reason: rejectReason || undefined,
+                });
+              }}
+              disabled={rejectMutation.isPending || !selectedQuoteId}
+            >
+              {rejectMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reject Quote
                 </>
               )}
             </Button>
