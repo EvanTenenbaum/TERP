@@ -14,12 +14,13 @@ The payment commit is trust-critical (InvoiceToPaymentFlow). PDF generation is s
 
 ## Critical Constraints
 
-1. **DISC-INV-001 (CRITICAL): Void UI calls wrong endpoint.** `accounting.invoices.updateStatus({status:"VOID"})` has NO GL reversal, no reason, no AR sync. `invoices.void` (correct path) is never called from UI. Financial integrity risk.
-2. **DISC-INV-002 (HIGH): Mark as Sent is a toast stub.** `invoices.markSent` exists but is never called.
-3. **DISC-INV-003 (HIGH): Invoice number generated client-side** as `INV-${Date.now()}`. `accounting.invoices.generateNumber` exists and should be used.
+1. **DISC-INV-001 (CRITICAL): Void UI calls wrong endpoint.** `accounting.invoices.updateStatus({status:"VOID"})` has NO GL reversal, no reason, no AR sync. `invoices.void` (correct path) is never called from UI. Financial integrity risk. **Resolved in pilot (InvoicesPilotSurface.tsx) — classic InvoicesWorkSurface still affected. Pilot is NO-SHIP (P1: Mark Paid bypasses GL).**
+2. **DISC-INV-002 (HIGH): Mark as Sent is a toast stub.** `invoices.markSent` exists but is never called. **Resolved in pilot (InvoicesPilotSurface.tsx) — classic InvoicesWorkSurface still affected. Pilot is NO-SHIP (P1: Mark Paid bypasses GL).**
+3. **DISC-INV-003 (HIGH): Invoice number generated client-side** as `INV-${Date.now()}`. `accounting.invoices.generateNumber` exists and should be used. **Resolved in pilot (InvoicesPilotSurface.tsx) — classic InvoicesWorkSurface still affected. Pilot is NO-SHIP (P1: Mark Paid bypasses GL).**
 4. Payment commit owned by InvoiceToPaymentFlow — not absorbed into sheet
 5. PDF has 30s server timeout, returns base64
-6. Summary metrics computed from loaded page (max 50), not full AR book
+6. Summary metrics computed from loaded page (max 50), not full AR book. **Resolved in pilot (InvoicesPilotSurface.tsx) via trpc.invoices.getSummary — classic InvoicesWorkSurface still affected. Pilot is NO-SHIP (P1: Mark Paid bypasses GL).**
+7. **PILOT P1 (NO-SHIP): Mark Paid in pilot calls `invoices.updateStatus` with no GL entry.** The payment path bypasses double-entry bookkeeping. Pilot verdict is NO-SHIP until this is corrected.
 
 ## Capabilities (24 total, vs 15 from extraction — 1 false positive)
 
@@ -52,16 +53,16 @@ The payment commit is trust-critical (InvoiceToPaymentFlow). PDF generation is s
 
 ## Discrepancies
 
-| ID           | Description                                                          | Severity     |
-| ------------ | -------------------------------------------------------------------- | ------------ |
-| DISC-INV-001 | Void UI calls updateStatus (no GL reversal) instead of invoices.void | **Critical** |
-| DISC-INV-002 | Mark as Sent is toast stub, markSent mutation never called           | High         |
-| DISC-INV-003 | Invoice number client-generated via Date.now(), not sequential       | High         |
-| DISC-INV-004 | Export in extraction CSV is false positive (JS export keyword)       | Medium       |
-| DISC-INV-005 | Summary metrics from loaded page only (50 max), not full book        | Medium       |
-| DISC-INV-006 | Client/date/search filters exist in API but no list UI controls      | Medium       |
-| DISC-INV-007 | UI updateStatus has no version check; standalone router does         | Medium       |
-| DISC-INV-008 | Create dialog allows zero-amount empty-item invoice                  | Low          |
+| ID           | Description                                                                                                                                                                                                                                                                                                                              | Severity     |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| DISC-INV-001 | Void UI calls updateStatus (no GL reversal) instead of invoices.void. Resolved in pilot (InvoicesPilotSurface.tsx) — voidMutation calls trpc.invoices.void with reason + GL reversal. Classic InvoicesWorkSurface still affected. Note: pilot is NO-SHIP (P1: Mark Paid bypasses GL).                                                    | **Critical** |
+| DISC-INV-002 | Mark as Sent is toast stub, markSent mutation never called. Resolved in pilot (InvoicesPilotSurface.tsx) — markSentMutation calls trpc.invoices.markSent. Classic InvoicesWorkSurface still affected. Note: pilot is NO-SHIP (P1: Mark Paid bypasses GL).                                                                                | High         |
+| DISC-INV-003 | Invoice number client-generated via Date.now(), not sequential. Resolved in pilot (InvoicesPilotSurface.tsx) — generateNumberQuery uses trpc.accounting.invoices.generateNumber; Date.now() fallback remains if query is not yet loaded. Classic InvoicesWorkSurface still affected. Note: pilot is NO-SHIP (P1: Mark Paid bypasses GL). | High         |
+| DISC-INV-004 | Export in extraction CSV is false positive (JS export keyword)                                                                                                                                                                                                                                                                           | Medium       |
+| DISC-INV-005 | Summary metrics from loaded page only (50 max), not full book. Resolved in pilot (InvoicesPilotSurface.tsx) — summaryQuery calls trpc.invoices.getSummary (server-side full book). Classic InvoicesWorkSurface still affected. Note: pilot is NO-SHIP (P1: Mark Paid bypasses GL).                                                       | Medium       |
+| DISC-INV-006 | Client/date/search filters exist in API but no list UI controls                                                                                                                                                                                                                                                                          | Medium       |
+| DISC-INV-007 | UI updateStatus has no version check; standalone router does                                                                                                                                                                                                                                                                             | Medium       |
+| DISC-INV-008 | Create dialog allows zero-amount empty-item invoice                                                                                                                                                                                                                                                                                      | Low          |
 
 ## Classification
 
