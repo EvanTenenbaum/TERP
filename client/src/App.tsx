@@ -691,7 +691,7 @@ function Router() {
                   path="/product-intake"
                   component={RedirectToOperationsTab(
                     "/product-intake",
-                    "receiving"
+                    "intake"
                   )}
                 />
                 <Route
@@ -719,7 +719,7 @@ function Router() {
                   path="/slice-v1/product-intake"
                   component={RedirectToOperationsTab(
                     "/slice-v1/product-intake",
-                    "receiving"
+                    "intake"
                   )}
                 />
                 <Route
@@ -758,13 +758,13 @@ function Router() {
                 />
                 <Route
                   path="/intake"
-                  component={RedirectToOperationsTab("/intake", "receiving")}
+                  component={RedirectToOperationsTab("/intake", "intake")}
                 />
                 <Route
                   path="/direct-intake"
                   component={RedirectToOperationsTab(
                     "/direct-intake",
-                    "receiving"
+                    "intake"
                   )}
                 />
                 <Route

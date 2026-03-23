@@ -48,14 +48,17 @@ function normalizeNavRoute(path: string) {
     pathname = "/operations";
     params.set("tab", "shipping");
   }
+  if (pathname === "/receiving") {
+    pathname = "/operations";
+    params.set("tab", "receiving");
+  }
   if (
-    pathname === "/receiving" ||
     pathname === "/intake" ||
     pathname === "/direct-intake" ||
     pathname === "/product-intake"
   ) {
     pathname = "/operations";
-    params.set("tab", "receiving");
+    params.set("tab", "intake");
   }
   if (pathname === "/inventory") {
     pathname = "/operations";
