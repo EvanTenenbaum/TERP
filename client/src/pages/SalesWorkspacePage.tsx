@@ -67,7 +67,9 @@ export default function SalesWorkspacePage() {
   const pilotSurfaceSupported =
     activeTab === "orders" ||
     activeTab === "create-order" ||
-    activeTab === "sales-sheets";
+    activeTab === "sales-sheets" ||
+    activeTab === "quotes" ||
+    activeTab === "returns";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
@@ -93,7 +95,9 @@ export default function SalesWorkspacePage() {
       commandStrip={
         activeTab === "orders" ||
         activeTab === "create-order" ||
-        activeTab === "sales-sheets" ? (
+        activeTab === "sales-sheets" ||
+        activeTab === "quotes" ||
+        activeTab === "returns" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}

@@ -44,8 +44,9 @@ export default function AccountingWorkspacePage() {
 
   useWorkspaceHomeTelemetry("accounting", activeTab);
 
-  // Sheet-native pilot: only supported on the payments tab
-  const pilotSurfaceSupported = activeTab === "payments";
+  // Sheet-native pilot: supported on payments and invoices tabs
+  const pilotSurfaceSupported =
+    activeTab === "payments" || activeTab === "invoices";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(pilotSurfaceSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
@@ -71,7 +72,7 @@ export default function AccountingWorkspacePage() {
         },
       ]}
       commandStrip={
-        activeTab === "payments" ? (
+        activeTab === "payments" || activeTab === "invoices" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
