@@ -157,6 +157,12 @@ export default function InventoryWorkspacePage() {
             surfaceMode={fulfillmentSurfaceMode}
             onSurfaceModeChange={setFulfillmentSurfaceMode}
           />
+        ) : activeTab === "samples" ? (
+          <SheetModeToggle
+            enabled={samplesPilotEnabled}
+            surfaceMode={samplesSurfaceMode}
+            onSurfaceModeChange={setSamplesSurfaceMode}
+          />
         ) : null
       }
     >
