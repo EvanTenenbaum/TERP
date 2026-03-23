@@ -132,7 +132,9 @@ const QUOTE_STATUSES = [
   { value: "CONVERTED", label: "Converted" },
   { value: "REJECTED", label: "Rejected" },
   { value: "EXPIRED", label: "Expired" },
-];
+] as const;
+
+type QuoteStatusFilter = (typeof QUOTE_STATUSES)[number]["value"];
 
 const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   UNSENT: {
@@ -437,7 +439,7 @@ export function QuotesWorkSurface() {
 
   // State
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>("ALL");
   const [selectedQuoteId, setSelectedQuoteId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
@@ -461,14 +463,13 @@ export function QuotesWorkSurface() {
     data: quotesData,
     isLoading,
     refetch: refetchQuotes,
-  } = trpc.orders.getAll.useQuery({
-    orderType: "QUOTE",
-    quoteStatus: statusFilter === "ALL" ? undefined : statusFilter,
+  } = trpc.quotes.list.useQuery({
+    status: statusFilter === "ALL" ? undefined : statusFilter,
   });
   const quotes: Quote[] = useMemo(() => {
-    if (Array.isArray(quotesData)) return quotesData;
-    const paginated = quotesData as { items?: Quote[] } | undefined;
-    return paginated?.items ?? [];
+    if (!quotesData) return [];
+    const items = "items" in quotesData ? quotesData.items : [];
+    return items as unknown as Quote[];
   }, [quotesData]);
 
   // Helpers
@@ -687,7 +688,10 @@ export function QuotesWorkSurface() {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={v => setStatusFilter(v as QuoteStatusFilter)}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
