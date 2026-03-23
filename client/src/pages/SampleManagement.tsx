@@ -27,6 +27,10 @@ import {
   LocationUpdateDialog,
   type LocationUpdateFormValues,
 } from "@/components/samples/LocationUpdateDialog";
+import {
+  ExpirationDateDialog,
+  type ExpirationDateFormValues,
+} from "@/components/samples/ExpirationDateDialog";
 import { ExpiringSamplesWidget } from "@/components/samples/ExpiringSamplesWidget";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -125,8 +129,12 @@ export default function SampleManagement({
   const [selectedSampleId, setSelectedSampleId] = useState<number | null>(null);
   const [vendorShipDialogOpen, setVendorShipDialogOpen] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [expirationDateDialogOpen, setExpirationDateDialogOpen] =
+    useState(false);
   const [selectedSampleLocation, setSelectedSampleLocation] =
     useState<SampleLocation | null>(null);
+  const [selectedSampleExpirationDate, setSelectedSampleExpirationDate] =
+    useState<string | null>(null);
   const { hasPermission } = usePermissions();
   const canCreateSamples = hasPermission("samples:create");
   const canFulfillSamples = hasPermission("samples:allocate");
@@ -347,10 +355,20 @@ export default function SampleManagement({
     },
   });
 
-  const fulfillSampleMutation = trpc.samples.fulfillRequest.useMutation({
+  const fulfillRequestMutation = trpc.samples.fulfillRequest.useMutation({
     onSuccess: async () => {
       await utils.samples.getAll.invalidate();
       toast.success("Sample fulfilled — inventory decremented.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const setExpirationDateMutation = trpc.samples.setExpirationDate.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Expiration date updated.");
     },
     onError: error => {
       toast.error(error.message);
@@ -476,12 +494,37 @@ export default function SampleManagement({
         return;
       }
 
-      await fulfillSampleMutation.mutateAsync({
+      await fulfillRequestMutation.mutateAsync({
         requestId: sampleId,
         fulfilledBy: user.id,
       });
     },
-    [fulfillSampleMutation, user?.id]
+    [fulfillRequestMutation, user?.id]
+  );
+
+  const handleSetExpirationDate = useCallback(
+    (sampleId: number) => {
+      const sample = samples.find(s => s.id === sampleId);
+      setSelectedSampleId(sampleId);
+      setSelectedSampleExpirationDate(sample?.expirationDate ?? null);
+      setExpirationDateDialogOpen(true);
+    },
+    [samples]
+  );
+
+  const handleExpirationDateSubmit = useCallback(
+    async (values: ExpirationDateFormValues) => {
+      if (!selectedSampleId) {
+        toast.error("No sample selected.");
+        return;
+      }
+
+      await setExpirationDateMutation.mutateAsync({
+        requestId: selectedSampleId,
+        expirationDate: values.expirationDate,
+      });
+    },
+    [selectedSampleId, setExpirationDateMutation]
   );
 
   const handleRequestReturn = useCallback((sampleId: number) => {
@@ -819,6 +862,9 @@ export default function SampleManagement({
           canManageVendorReturn ? handleConfirmVendorReturn : undefined
         }
         onUpdateLocation={canTrackSamples ? handleUpdateLocation : undefined}
+        onSetExpirationDate={
+          canTrackSamples ? handleSetExpirationDate : undefined
+        }
         pageSize={10}
       />
 
@@ -860,6 +906,15 @@ export default function SampleManagement({
         sampleId={selectedSampleId}
         currentLocation={selectedSampleLocation}
         isSubmitting={updateLocationMutation.isPending}
+      />
+
+      <ExpirationDateDialog
+        open={expirationDateDialogOpen}
+        onOpenChange={setExpirationDateDialogOpen}
+        onSubmit={handleExpirationDateSubmit}
+        sampleId={selectedSampleId}
+        currentExpirationDate={selectedSampleExpirationDate}
+        isSubmitting={setExpirationDateMutation.isPending}
       />
     </div>
   );

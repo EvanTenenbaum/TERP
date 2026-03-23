@@ -27,6 +27,7 @@ import {
   CheckCircle,
   AlertTriangle,
   PackageCheck,
+  Calendar,
 } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
 
@@ -78,6 +79,7 @@ export interface SampleListProps {
   onShipToVendor?: (sampleId: number) => void;
   onConfirmVendorReturn?: (sampleId: number) => void;
   onUpdateLocation?: (sampleId: number) => void;
+  onSetExpirationDate?: (sampleId: number) => void;
   pageSize?: number;
 }
 
@@ -177,12 +179,14 @@ export const SampleList = React.memo(function SampleList({
   onShipToVendor,
   onConfirmVendorReturn,
   onUpdateLocation,
+  onSetExpirationDate,
   pageSize = 10,
 }: SampleListProps) {
   const [sortKey, setSortKey] = useState<SortKey>("requestedDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [pendingFulfillId, setPendingFulfillId] = useState<number | null>(null);
 
   const handleSort = useCallback(
     (key: SortKey) => {
@@ -268,6 +272,13 @@ export const SampleList = React.memo(function SampleList({
     }
     setPendingDeleteId(null);
   }, [onDelete, pendingDeleteId]);
+
+  const handleFulfillConfirm = useCallback(() => {
+    if (onFulfill && pendingFulfillId !== null) {
+      onFulfill(pendingFulfillId);
+    }
+    setPendingFulfillId(null);
+  }, [onFulfill, pendingFulfillId]);
 
   const handlePageChange = useCallback(
     (direction: "prev" | "next") => {
@@ -437,10 +448,10 @@ export const SampleList = React.memo(function SampleList({
                         {/* Fulfill - only for PENDING samples */}
                         {sample.status === "PENDING" && onFulfill && (
                           <DropdownMenuItem
-                            onClick={() => onFulfill(sample.id)}
+                            onClick={() => setPendingFulfillId(sample.id)}
                           >
                             <PackageCheck className="h-4 w-4 mr-2" />
-                            Fulfill
+                            Fulfill Request
                           </DropdownMenuItem>
                         )}
                         {/* Request Return - only for FULFILLED samples */}
@@ -501,6 +512,18 @@ export const SampleList = React.memo(function SampleList({
                             >
                               <CheckCircle className="h-4 w-4 mr-2" />
                               Confirm Supplier Received
+                            </DropdownMenuItem>
+                          )}
+                        {/* Set Expiration Date - available for non-cancelled, non-confirmed samples */}
+                        {!["CANCELLED", "VENDOR_CONFIRMED"].includes(
+                          sample.status
+                        ) &&
+                          onSetExpirationDate && (
+                            <DropdownMenuItem
+                              onClick={() => onSetExpirationDate(sample.id)}
+                            >
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Set Expiration Date
                             </DropdownMenuItem>
                           )}
                         {/* Update Location - available for most active samples */}
@@ -567,6 +590,16 @@ export const SampleList = React.memo(function SampleList({
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+      />
+
+      <ConfirmDialog
+        open={pendingFulfillId !== null}
+        onOpenChange={open => !open && setPendingFulfillId(null)}
+        title="Fulfill sample request"
+        description="Fulfill this sample request? Live inventory will be decremented."
+        confirmLabel="Fulfill Request"
+        variant="default"
+        onConfirm={handleFulfillConfirm}
       />
     </Card>
   );

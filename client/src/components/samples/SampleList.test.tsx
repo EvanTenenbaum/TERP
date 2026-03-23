@@ -3,7 +3,7 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SampleList, type SampleListItem } from "./SampleList";
 
@@ -104,5 +104,67 @@ describe("SampleList", () => {
 
     expect(screen.getByText("Product Delta")).toBeInTheDocument();
     expect(screen.queryByText("Product Gamma")).not.toBeInTheDocument();
+  });
+
+  it("renders without errors when onFulfill prop is provided", () => {
+    const onFulfill = vi.fn();
+    const { container } = render(
+      <SampleList
+        samples={sampleData}
+        statusFilter="PENDING"
+        searchQuery=""
+        onFulfill={onFulfill}
+      />
+    );
+
+    // The PENDING sample should be rendered
+    expect(screen.getByText("Product Alpha")).toBeInTheDocument();
+    // The action button for PENDING sample should be in the DOM
+    expect(
+      screen.getByRole("button", { name: /actions for sample 1/i })
+    ).toBeInTheDocument();
+    // Component should render without crashing
+    expect(container).toBeTruthy();
+  });
+
+  it("renders without errors when onSetExpirationDate prop is provided", () => {
+    const onSetExpirationDate = vi.fn();
+    const { container } = render(
+      <SampleList
+        samples={sampleData}
+        statusFilter="ALL"
+        searchQuery=""
+        onSetExpirationDate={onSetExpirationDate}
+      />
+    );
+
+    // Multiple samples should render
+    expect(screen.getByText("Product Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Product Beta")).toBeInTheDocument();
+    // Component should render without crashing
+    expect(container).toBeTruthy();
+  });
+
+  it("renders fulfill confirmation dialog state management", () => {
+    const onFulfill = vi.fn();
+    render(
+      <SampleList
+        samples={sampleData}
+        statusFilter="ALL"
+        searchQuery=""
+        onFulfill={onFulfill}
+        onDelete={vi.fn()}
+        onSetExpirationDate={vi.fn()}
+      />
+    );
+
+    // Both PENDING and FULFILLED samples should be visible in ALL filter
+    expect(screen.getByText("Product Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Product Beta")).toBeInTheDocument();
+
+    // Verify the fulfill confirm dialog starts closed
+    expect(
+      screen.queryByText("Fulfill this sample request?")
+    ).not.toBeInTheDocument();
   });
 });
