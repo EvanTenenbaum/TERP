@@ -767,7 +767,7 @@ test.describe("Negative Paths: Inventory Adjustment Boundaries", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Negative Paths: Authorization Boundaries", () => {
-  test.describe.configure({ tag: "@deep" });
+  test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsSalesRep(page);

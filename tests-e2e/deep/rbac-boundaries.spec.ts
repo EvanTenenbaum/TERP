@@ -7,7 +7,7 @@
  *
  * Roles tested: salesRep, warehouse, accountant, fulfillment, auditor
  *
- * Tag: @deep
+ * Tag: @rbac (runs AFTER @deep business logic tests)
  */
 
 import { expect, test } from "@playwright/test";
@@ -48,7 +48,7 @@ async function expectForbidden(fn: () => Promise<unknown>, label: string) {
 // ---------------------------------------------------------------------------
 
 test.describe("RBAC: Warehouse Staff Boundaries", () => {
-  test.describe.configure({ tag: "@deep" });
+  test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsWarehouseStaff(page);
@@ -102,7 +102,7 @@ test.describe("RBAC: Warehouse Staff Boundaries", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("RBAC: Accountant Boundaries", () => {
-  test.describe.configure({ tag: "@deep" });
+  test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsAccountant(page);
@@ -148,7 +148,7 @@ test.describe("RBAC: Accountant Boundaries", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("RBAC: Fulfillment Staff Boundaries", () => {
-  test.describe.configure({ tag: "@deep" });
+  test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsFulfillment(page);
@@ -197,7 +197,7 @@ test.describe("RBAC: Fulfillment Staff Boundaries", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("RBAC: Auditor Read-Only Boundaries", () => {
-  test.describe.configure({ tag: "@deep" });
+  test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsAuditor(page);
@@ -280,7 +280,7 @@ test.describe("RBAC: Auditor Read-Only Boundaries", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("RBAC: SalesRep Extended Boundaries", () => {
-  test.describe.configure({ tag: "@deep" });
+  test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsSalesRep(page);
