@@ -131,12 +131,6 @@ type SupplierLike = {
   name?: string | null;
 };
 
-type VendorLike = {
-  id: number;
-  name?: string | null;
-  _clientId?: number | null;
-};
-
 type CreatePoItemForm = PurchaseOrdersSliceFormItem & {
   id: string;
 };
@@ -226,9 +220,7 @@ export function PurchaseOrdersSlicePage({
       return;
     }
 
-    setSelectedPoId(current =>
-      current === poId ? current : poId
-    );
+    setSelectedPoId(current => (current === poId ? current : poId));
     setSelectedPoIds(current => {
       if (current.size === 1 && current.has(poId)) {
         return current;
@@ -274,26 +266,12 @@ export function PurchaseOrdersSlicePage({
     clientTypes: ["seller"],
     limit: 1000,
   });
-  const vendorsQuery = trpc.vendors.getAll.useQuery();
 
   const suppliers = useMemo(() => {
     const data = suppliersQuery.data;
     if (Array.isArray(data)) return data;
     return data?.items ?? [];
   }, [suppliersQuery.data]);
-
-  const vendors = useMemo(() => {
-    const data = vendorsQuery.data;
-    if (!data || typeof data !== "object") return [];
-    const payload = data as Record<string, unknown>;
-    if (Array.isArray(payload.data)) {
-      return payload.data as VendorLike[];
-    }
-    if (Array.isArray(payload.items)) {
-      return payload.items as VendorLike[];
-    }
-    return [];
-  }, [vendorsQuery.data]);
 
   const getSupplierName = useCallback(
     (po: {
@@ -310,23 +288,10 @@ export function PurchaseOrdersSlicePage({
       ) as SupplierLike | undefined;
       if (supplierByClient?.name?.trim()) return supplierByClient.name.trim();
 
-      const vendorByLegacyId = vendors.find(
-        vendor => vendor.id === po.vendorId
-      );
-      if (vendorByLegacyId?.name?.trim()) return vendorByLegacyId.name.trim();
-
-      const vendorByClient = vendors.find(
-        vendor =>
-          vendor._clientId !== undefined &&
-          vendor._clientId !== null &&
-          vendor._clientId === po.supplierClientId
-      );
-      if (vendorByClient?.name?.trim()) return vendorByClient.name.trim();
-
       if (po.vendorId) return `Supplier #${po.vendorId}`;
       return "Unknown Supplier";
     },
-    [suppliers, vendors]
+    [suppliers]
   );
 
   const productsQuery = trpc.purchaseOrders.products.useQuery({ limit: 500 });
@@ -549,7 +514,9 @@ export function PurchaseOrdersSlicePage({
     }
 
     if (!canReceivePurchaseOrder(po.purchaseOrderStatus)) {
-      toast.error("Only confirmed or partially received POs can enter Receiving.");
+      toast.error(
+        "Only confirmed or partially received POs can enter Receiving."
+      );
       return;
     }
 
@@ -697,12 +664,8 @@ export function PurchaseOrdersSlicePage({
   return (
     <div className="h-full flex flex-col">
       <div className="px-6 py-4 border-b">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {pageTitle}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {pageDescription}
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{pageDescription}</p>
       </div>
 
       <div className="px-6 py-3 border-b flex items-center gap-3 flex-wrap">
@@ -1171,154 +1134,154 @@ export function PurchaseOrdersSlicePage({
                       key={line.id}
                       className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.55fr_0.7fr_auto] gap-2"
                     >
-                    <Select
-                      value={line.productId}
-                      onValueChange={value => {
-                        const selectedProduct = products.find(
-                          product => String(product.id) === value
-                        );
-                        setCreateForm(prev => ({
-                          ...prev,
-                          items: prev.items.map((item, i) =>
-                            i === index
-                              ? applySliceProductSelection(
-                                  item,
-                                  value,
-                                  selectedProduct,
-                                  getSubcategoryOptions
-                                )
-                              : item
-                          ),
-                        }));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map(product => (
-                          <SelectItem
-                            key={product.id}
-                            value={String(product.id)}
-                          >
-                            {product.nameCanonical}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select
+                        value={line.productId}
+                        onValueChange={value => {
+                          const selectedProduct = products.find(
+                            product => String(product.id) === value
+                          );
+                          setCreateForm(prev => ({
+                            ...prev,
+                            items: prev.items.map((item, i) =>
+                              i === index
+                                ? applySliceProductSelection(
+                                    item,
+                                    value,
+                                    selectedProduct,
+                                    getSubcategoryOptions
+                                  )
+                                : item
+                            ),
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map(product => (
+                            <SelectItem
+                              key={product.id}
+                              value={String(product.id)}
+                            >
+                              {product.nameCanonical}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Select
-                      value={line.category || undefined}
-                      onValueChange={value => {
-                        setCreateForm(prev => ({
-                          ...prev,
-                          items: prev.items.map((item, i) =>
-                            i === index
-                              ? applySliceCategorySelection(
-                                  item,
-                                  value,
-                                  getSubcategoryOptions
-                                )
-                              : item
-                          ),
-                        }));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select
+                        value={line.category || undefined}
+                        onValueChange={value => {
+                          setCreateForm(prev => ({
+                            ...prev,
+                            items: prev.items.map((item, i) =>
+                              i === index
+                                ? applySliceCategorySelection(
+                                    item,
+                                    value,
+                                    getSubcategoryOptions
+                                  )
+                                : item
+                            ),
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Select
-                      value={line.subcategory || undefined}
-                      onValueChange={value => {
-                        setCreateForm(prev => ({
-                          ...prev,
-                          items: prev.items.map((item, i) =>
-                            i === index
-                              ? { ...item, subcategory: value }
-                              : item
-                          ),
-                        }));
-                      }}
-                      disabled={subcategoryOptions.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            subcategoryOptions.length > 0
-                              ? "Subcategory"
-                              : "No subcategories"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subcategoryOptions.map(subcategory => (
-                          <SelectItem
-                            key={`${line.category}-${subcategory}`}
-                            value={subcategory}
-                          >
-                            {subcategory}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select
+                        value={line.subcategory || undefined}
+                        onValueChange={value => {
+                          setCreateForm(prev => ({
+                            ...prev,
+                            items: prev.items.map((item, i) =>
+                              i === index
+                                ? { ...item, subcategory: value }
+                                : item
+                            ),
+                          }));
+                        }}
+                        disabled={subcategoryOptions.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              subcategoryOptions.length > 0
+                                ? "Subcategory"
+                                : "No subcategories"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subcategoryOptions.map(subcategory => (
+                            <SelectItem
+                              key={`${line.category}-${subcategory}`}
+                              value={subcategory}
+                            >
+                              {subcategory}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      placeholder="Qty"
-                      value={line.quantityOrdered}
-                      onChange={e => {
-                        const value = e.target.value;
-                        setCreateForm(prev => ({
-                          ...prev,
-                          items: prev.items.map((item, i) =>
-                            i === index
-                              ? { ...item, quantityOrdered: value }
-                              : item
-                          ),
-                        }));
-                      }}
-                    />
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Qty"
+                        value={line.quantityOrdered}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setCreateForm(prev => ({
+                            ...prev,
+                            items: prev.items.map((item, i) =>
+                              i === index
+                                ? { ...item, quantityOrdered: value }
+                                : item
+                            ),
+                          }));
+                        }}
+                      />
 
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Unit Cost"
-                      value={line.unitCost}
-                      onChange={e => {
-                        const value = e.target.value;
-                        setCreateForm(prev => ({
-                          ...prev,
-                          items: prev.items.map((item, i) =>
-                            i === index ? { ...item, unitCost: value } : item
-                          ),
-                        }));
-                      }}
-                    />
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Unit Cost"
+                        value={line.unitCost}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setCreateForm(prev => ({
+                            ...prev,
+                            items: prev.items.map((item, i) =>
+                              i === index ? { ...item, unitCost: value } : item
+                            ),
+                          }));
+                        }}
+                      />
 
-                    <Button
-                      variant="ghost"
-                      disabled={createForm.items.length <= 1}
-                      onClick={() => {
-                        setCreateForm(prev => ({
-                          ...prev,
-                          items: prev.items.filter((_, i) => i !== index),
-                        }));
-                      }}
-                    >
-                      Remove
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        disabled={createForm.items.length <= 1}
+                        onClick={() => {
+                          setCreateForm(prev => ({
+                            ...prev,
+                            items: prev.items.filter((_, i) => i !== index),
+                          }));
+                        }}
+                      >
+                        Remove
+                      </Button>
                     </div>
                   );
                 })}
