@@ -15,6 +15,7 @@ on:
           - full
           - critical-paths
           - golden-flows
+          - deep
 
 permissions:
   contents: read
@@ -101,9 +102,13 @@ jobs:
               echo "Running golden-flows E2E suite..."
               pnpm exec playwright test tests-e2e/golden-flows/ --reporter=list 2>&1 | tee e2e-output.txt
               ;;
+            deep)
+              echo "Running deep business logic + RBAC E2E suite..."
+              pnpm exec playwright test --project=deep --project=deep-rbac --reporter=list 2>&1 | tee e2e-output.txt
+              ;;
             full)
-              echo "Running FULL E2E suite..."
-              CI=true pnpm playwright test 2>&1 | tee e2e-output.txt
+              echo "Running FULL E2E suite (includes deep + RBAC)..."
+              CI=true pnpm exec playwright test --project=deep --project=deep-rbac --project=chromium 2>&1 | tee e2e-output.txt
               ;;
           esac
 
