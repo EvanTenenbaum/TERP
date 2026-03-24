@@ -3065,6 +3065,16 @@ export const returnReasonEnum = mysqlEnum("returnReason", [
   "OTHER",
 ]);
 
+// DISC-RET-002: Dedicated status column for returns (replaces notes-embedded status)
+export const returnStatusEnum = mysqlEnum("status", [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "RECEIVED",
+  "PROCESSED",
+  "CANCELLED",
+]);
+
 /**
  * Returns Table
  * Tracks returns for orders with automatic inventory restocking
@@ -3078,6 +3088,7 @@ export const returns = mysqlTable(
       .references(() => orders.id, { onDelete: "cascade" }),
     items: json("items").notNull(), // Array of { batchId, quantity, reason }
     returnReason: returnReasonEnum.notNull(),
+    status: returnStatusEnum.notNull().default("PENDING"), // DISC-RET-002
     notes: text("notes"),
     processedBy: int("processed_by")
       .notNull()
@@ -3087,6 +3098,7 @@ export const returns = mysqlTable(
   table => ({
     orderIdIdx: index("idx_order_id").on(table.orderId),
     processedAtIdx: index("idx_processed_at").on(table.processedAt),
+    statusIdx: index("idx_returns_status").on(table.status), // DISC-RET-002
   })
 );
 
@@ -3584,6 +3596,7 @@ export const sampleRequests = mysqlTable(
     cancelledBy: int("cancelledBy").references(() => users.id),
     cancellationReason: text("cancellationReason"),
     notes: text("notes"),
+    dueDate: date("dueDate"), // DISC-SAM-003: dedicated column (replaces notes-embedded due date)
     totalCost: decimal("totalCost", { precision: 10, scale: 2 }), // COGS of samples
     relatedOrderId: int("relatedOrderId").references(() => orders.id), // If sample led to order
     conversionDate: timestamp("conversionDate"), // When sample converted to sale
@@ -3621,6 +3634,7 @@ export const sampleRequests = mysqlTable(
     expirationIdx: index("idx_sample_requests_expiration").on(
       table.expirationDate
     ),
+    dueDateIdx: index("idx_sample_requests_due_date").on(table.dueDate), // DISC-SAM-003
   })
 );
 

@@ -15,7 +15,7 @@
  *   7. Return composition dialog (RET-007 through RET-015, preserved as sidecar)
  *
  * Accepted limitations:
- *   - RET-002: Status filter blocked (schema migration needed, DISC-RET-002)
+ *   - RET-002: Status filter enabled (DISC-RET-002 resolved — dedicated status column)
  *   - RET-004: Client ID filter blocked (schema migration needed)
  *   - RET-020: Process/credit sidecar deferred — DISC-RET-001 unresolved
  *   - RET-021: Cancel procedure not yet in router — deferred
@@ -136,8 +136,8 @@ interface ReturnQueueRow {
 // ============================================================================
 
 /**
- * Derive workflow status from notes bracket markers.
- * DISC-RET-002: No status column — status is embedded in notes text.
+ * Legacy fallback: derive workflow status from notes bracket markers.
+ * DISC-RET-002: Prefer the dedicated `status` column; this is kept for pre-migration rows.
  * Terminal states take precedence (CANCELLED, REJECTED, PROCESSED).
  */
 function extractWorkflowStatus(
@@ -159,9 +159,22 @@ function extractWorkflowStatus(
  * DISC-RET-006: Client-side GL status derivation — no shared server code.
  */
 function deriveGLStatus(
-  notes: string | null
+  statusOrNotes: string | null,
+  notes?: string | null
 ): "PENDING" | "APPROVED" | "PROCESSED" | "CANCELLED" {
-  const status = extractWorkflowStatus(notes);
+  // DISC-RET-002: If first arg is a known status value, use it directly; otherwise parse notes
+  const knownStatuses = [
+    "PENDING",
+    "APPROVED",
+    "REJECTED",
+    "RECEIVED",
+    "PROCESSED",
+    "CANCELLED",
+  ];
+  const status =
+    statusOrNotes && knownStatuses.includes(statusOrNotes)
+      ? (statusOrNotes as ReturnQueueRow["derivedStatus"])
+      : extractWorkflowStatus(notes ?? statusOrNotes);
   if (status === "CANCELLED" || status === "REJECTED") return "CANCELLED";
   if (status === "PROCESSED") return "PROCESSED";
   if (status === "RECEIVED" || status === "APPROVED") return "APPROVED";
@@ -217,6 +230,7 @@ interface ReturnListItem {
   id: number;
   orderId: number;
   returnReason: string;
+  status: string; // DISC-RET-002: dedicated column
   processedBy: number;
   processedAt: string | Date;
   notes: string | null;
@@ -235,7 +249,9 @@ function mapReturnsToQueueRows(items: ReturnListItem[]): ReturnQueueRow[] {
         ? item.processedAt.toISOString()
         : item.processedAt,
     notes: item.notes,
-    derivedStatus: extractWorkflowStatus(item.notes),
+    derivedStatus:
+      (item.status as ReturnQueueRow["derivedStatus"]) ??
+      extractWorkflowStatus(item.notes),
   }));
 }
 
@@ -1118,7 +1134,10 @@ export function ReturnsPilotSurface({
               <ReturnGLStatus
                 returnId={selectedRow.returnId}
                 returnNumber={selectedRow.returnNumber}
-                status={deriveGLStatus(selectedRow.notes)}
+                status={deriveGLStatus(
+                  selectedRow.derivedStatus,
+                  selectedRow.notes
+                )}
                 processedAt={new Date(selectedRow.processedAt)}
                 reason={selectedRow.returnReason}
               />

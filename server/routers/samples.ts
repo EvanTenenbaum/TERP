@@ -152,6 +152,7 @@ export const samplesRouter = router({
           })
         ),
         notes: z.string().optional(),
+        dueDate: z.string().optional(), // DISC-SAM-003: dedicated due date column (YYYY-MM-DD)
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -160,7 +161,8 @@ export const samplesRouter = router({
         input.clientId,
         requestedBy,
         input.products,
-        input.notes
+        input.notes,
+        input.dueDate
       );
     }),
 
