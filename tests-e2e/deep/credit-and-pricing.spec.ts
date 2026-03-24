@@ -146,7 +146,6 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       const message = err instanceof Error ? err.message : String(err);
       if (
         message.includes("status 404") ||
-        message.includes("status 500") ||
         message.includes("NOT_FOUND") ||
         message.includes("not found")
       ) {
@@ -220,7 +219,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("status 404") || message.includes("status 500")) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(
           true,
           `credit.calculate unavailable, skipping sync test: ${message}`
@@ -240,7 +239,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("status 404") || message.includes("status 500")) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(true, `credit.syncToClient unavailable: ${message}`);
         return;
       }
@@ -252,22 +251,15 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
     expect(syncResult.creditLimit).toBeGreaterThanOrEqual(0);
 
     // Step 3 — query the client record and confirm the value was written
-    let clientRecord: ClientRecord | null = null;
-    try {
-      clientRecord = await trpcQuery<ClientRecord>(page, "clients.getById", {
-        clientId: client.id,
-      });
-    } catch {
-      // getById unavailable — skip the verification portion but still pass
-      // the sync assertion above
-    }
-
-    if (clientRecord !== null) {
-      const storedLimit = toNumber(clientRecord.creditLimit);
-      expect(storedLimit).toBeGreaterThanOrEqual(0);
-      // The stored value should match what syncToClient reported
-      expect(storedLimit).toBeCloseTo(syncResult.creditLimit, 0);
-    }
+    const clientRecord = await trpcQuery<ClientRecord>(
+      page,
+      "clients.getById",
+      { clientId: client.id }
+    );
+    const storedLimit = toNumber(clientRecord.creditLimit);
+    expect(storedLimit).toBeGreaterThanOrEqual(0);
+    // The stored value should match what syncToClient reported
+    expect(storedLimit).toBeCloseTo(syncResult.creditLimit, 0);
   });
 
   // -------------------------------------------------------------------------
@@ -290,11 +282,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (
-        message.includes("status 404") ||
-        message.includes("status 500") ||
-        message.includes("NOT_FOUND")
-      ) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(true, `credit.checkOrderCredit unavailable: ${message}`);
         return;
       }
@@ -356,7 +344,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("status 404") || message.includes("status 500")) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(true, `credit.manualOverride unavailable: ${message}`);
         return;
       }
@@ -366,39 +354,20 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
     expect(overrideResult.success).toBe(true);
 
     // Verify the stored credit limit reflects the manual override
-    let storedRecord: { creditLimit?: string | number | null } | null = null;
-    try {
-      storedRecord = await trpcQuery<{ creditLimit?: string | number | null }>(
-        page,
-        "credit.getByClientId",
-        { clientId: client.id }
-      );
-    } catch {
-      // Endpoint optional — skip stored-record check if unavailable
-    }
-
-    if (storedRecord !== null) {
-      const storedLimit = toNumber(storedRecord.creditLimit);
-      expect(storedLimit).toBe(overrideLimit);
-    }
+    const storedRecord = await trpcQuery<{
+      creditLimit?: string | number | null;
+    }>(page, "credit.getByClientId", { clientId: client.id });
+    const storedLimit = toNumber(storedRecord.creditLimit);
+    expect(storedLimit).toBe(overrideLimit);
 
     // Run a fresh calculation — the manual override should be reflected
-    let calcResult: CreditCalculationResult | null = null;
-    try {
-      calcResult = await trpcMutation<CreditCalculationResult>(
-        page,
-        "credit.calculate",
-        { clientId: client.id }
-      );
-    } catch {
-      // calculation may fail for clients without transaction history; acceptable
-    }
-
-    if (calcResult !== null) {
-      // After a manual override the credit engine should honour the override
-      // value (or at minimum return a non-negative limit)
-      expect(calcResult.creditLimit).toBeGreaterThanOrEqual(0);
-    }
+    const calcResult = await trpcMutation<CreditCalculationResult>(
+      page,
+      "credit.calculate",
+      { clientId: client.id }
+    );
+    // After a manual override the credit engine should honour the override
+    expect(calcResult.creditLimit).toBeGreaterThanOrEqual(0);
   });
 
   // -------------------------------------------------------------------------
@@ -421,12 +390,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (
-        message.includes("status 404") ||
-        message.includes("status 500") ||
-        message.includes("FORBIDDEN") ||
-        message.includes("UNAUTHORIZED")
-      ) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(true, `pricing.getClientContext unavailable: ${message}`);
         return;
       }
@@ -497,7 +461,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("status 404") || message.includes("status 500")) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(true, `orders.getById unavailable: ${message}`);
         return;
       }
@@ -551,7 +515,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
       tiers = await trpcQuery<VipTier[]>(page, "vipTiers.list", {});
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("status 404") || message.includes("status 500")) {
+      if (message.includes("status 404") || message.includes("NOT_FOUND")) {
         test.skip(true, `vipTiers.list unavailable: ${message}`);
         return;
       }

@@ -324,19 +324,14 @@ test.describe("Cross-Domain Integration", () => {
       // Best effort — pick/pack may not be required
     }
 
-    try {
-      await trpcMutation(page, "orders.updateOrderStatus", {
-        orderId: order.id,
-        newStatus: "SHIPPED",
-      });
-      await trpcMutation(page, "orders.updateOrderStatus", {
-        orderId: order.id,
-        newStatus: "DELIVERED",
-      });
-    } catch {
-      test.skip(true, "Could not advance order to DELIVERED");
-      return;
-    }
+    await trpcMutation(page, "orders.updateOrderStatus", {
+      orderId: order.id,
+      newStatus: "SHIPPED",
+    });
+    await trpcMutation(page, "orders.updateOrderStatus", {
+      orderId: order.id,
+      newStatus: "DELIVERED",
+    });
 
     // Check inventory was reduced
     const qtyAfterSale = await getBatchQty(page, batch.id);
@@ -348,46 +343,38 @@ test.describe("Cross-Domain Integration", () => {
     });
 
     // Create return
-    try {
-      const lineItems = orderDetail.items ?? [];
-      if (lineItems.length === 0) {
-        test.skip(true, "Order has no line items for return");
-        return;
-      }
-
-      const returnResult = await trpcMutation<{
-        id: number;
-        status?: string;
-      }>(page, "returns.create", {
-        orderId: order.id,
-        reason: "QUALITY_ISSUE",
-        restockInventory: true,
-        items: lineItems.map(item => ({
-          orderLineItemId: item.id,
-          quantity: item.quantity ?? 1,
-        })),
-      });
-      expect(returnResult.id).toBeGreaterThan(0);
-
-      // Process the return (issues credit and restocks)
-      await trpcMutation(page, "returns.process", {
-        id: returnResult.id,
-        issueCredit: true,
-      });
-
-      // Verify inventory restored
-      const qtyAfterReturn = await getBatchQty(page, batch.id);
-      // After restock, qty should be >= what it was after sale
-      expect(qtyAfterReturn).toBeGreaterThanOrEqual(qtyAfterSale);
-      // Qty should be closer to original
-      expect(qtyAfterReturn).toBeGreaterThanOrEqual(qtyBefore - 1);
-    } catch (error) {
-      // Returns API shape may differ — document behavior
-      console.warn(
-        "Returns API call failed, may need different input shape:",
-        String(error)
-      );
+    const lineItems = orderDetail.items ?? [];
+    if (lineItems.length === 0) {
+      test.skip(true, "Order has no line items for return");
+      return;
     }
+
+    const returnResult = await trpcMutation<{
+      id: number;
+      status?: string;
+    }>(page, "returns.create", {
+      orderId: order.id,
+      reason: "QUALITY_ISSUE",
+      restockInventory: true,
+      items: lineItems.map(item => ({
+        orderLineItemId: item.id,
+        quantity: item.quantity ?? 1,
+      })),
+    });
+    expect(returnResult.id).toBeGreaterThan(0);
+
+    // Process the return (issues credit and restocks)
+    await trpcMutation(page, "returns.process", {
+      id: returnResult.id,
+      issueCredit: true,
+    });
+
+    // Verify inventory restored
+    const qtyAfterReturn = await getBatchQty(page, batch.id);
+    // After restock, qty should be >= what it was after sale
+    expect(qtyAfterReturn).toBeGreaterThanOrEqual(qtyAfterSale);
+    // Qty should be restored to original (within tolerance for rounding)
+    expect(qtyAfterReturn).toBeCloseTo(qtyBefore, 0);
   });
 
   // -----------------------------------------------------------------------
@@ -524,15 +511,23 @@ test.describe("Cross-Domain Integration", () => {
         "accounting.arApDashboard.getARSummary",
         {}
       );
-      // Total outstanding should have decreased or stayed same
-      // (other invoices may exist, so we just verify structure)
       expect(arAfter).toBeTruthy();
-      expect(
-        typeof arAfter.total === "number" ||
-          typeof arAfter.total === "string" ||
-          typeof arAfter.totalOutstanding === "number" ||
-          typeof arAfter.totalOutstanding === "string"
-      ).toBe(true);
+
+      // Outstanding should have decreased by at least the invoice amount
+      const outstandingBefore = toNumber(
+        arBefore.totalOutstanding ?? arBefore.total
+      );
+      const outstandingAfter = toNumber(
+        arAfter.totalOutstanding ?? arAfter.total
+      );
+      // Payment of `total` should reduce outstanding (other tests may run concurrently,
+      // so we verify it decreased by at least 90% of the payment amount)
+      if (outstandingBefore > 0) {
+        expect(outstandingAfter).toBeLessThanOrEqual(outstandingBefore);
+        expect(outstandingBefore - outstandingAfter).toBeGreaterThanOrEqual(
+          total * 0.9
+        );
+      }
     }
 
     // Verify invoice is PAID

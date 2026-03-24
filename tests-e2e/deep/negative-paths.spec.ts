@@ -472,7 +472,7 @@ test.describe("Negative Paths: Duplicate Operation Prevention", () => {
 
     await confirmSaleOrder(page, order.id);
 
-    // Second confirm attempt
+    // Second confirm attempt — should error or be idempotent (not corrupt state)
     let secondConfirmError = false;
     try {
       await trpcMutation(page, "orders.confirmOrder", { id: order.id });
@@ -481,14 +481,24 @@ test.describe("Negative Paths: Duplicate Operation Prevention", () => {
       expect(String(error)).toMatch(/fail|error|invalid|400|409|422|already/i);
     }
 
-    // Either an error was thrown, or the call silently succeeded (idempotent).
-    // Both document that the system handled the double-confirm without corrupting state.
+    // Verify the order is still in a valid CONFIRMED state regardless of outcome
+    const orderAfter = await trpcQuery<{
+      id: number;
+      fulfillmentStatus?: string | null;
+      saleStatus?: string | null;
+      isDraft?: boolean | null;
+    }>(page, "orders.getById", { id: order.id });
+    expect(orderAfter.id).toBe(order.id);
+    // Order must not be reverted to DRAFT or corrupted
+    expect(orderAfter.isDraft).not.toBe(true);
+
     if (!secondConfirmError) {
-      console.info(
-        "[negative-paths] double-confirm on order was idempotent (no error)"
-      );
+      // Idempotent path — confirm succeeded silently, verify state is consistent
+      test.info().annotations.push({
+        type: "behavior",
+        description: "double-confirm was idempotent (no error thrown)",
+      });
     }
-    expect(true).toBe(true); // Test always passes — the goal is to document behavior
   });
 });
 
@@ -716,7 +726,7 @@ test.describe("Negative Paths: Authorization Boundaries", () => {
     await loginAsSalesRep(page);
   });
 
-  test("salesRep cannot call inventory.adjustInventory (expects 401/403)", async ({
+  test("salesRep cannot call inventory.adjustQty (expects 401/403)", async ({
     page,
   }) => {
     test.setTimeout(120_000);
