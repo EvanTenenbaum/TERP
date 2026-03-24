@@ -13,6 +13,7 @@ type InventoryListResponse = {
       sku?: string | null;
       totalQty?: string | number | null;
       onHandQty?: string | number | null;
+      reservedQty?: string | number | null;
       unitCogs?: string | number | null;
       batchStatus?: string | null;
     };
@@ -103,28 +104,34 @@ export async function findBatchWithStock(page: Page): Promise<StockBatch> {
     }
   );
   const batches = Array.isArray(result.items) ? result.items : [];
-  const match = batches
+  const candidates = batches
     .map(item => {
       const batch = item.batch;
       if (typeof batch?.id !== "number") {
         return null;
       }
+      const onHandQty = toNumber(batch.onHandQty);
+      const reservedQty = toNumber(batch.reservedQty);
       return {
         id: batch.id,
         sku: batch.sku ?? `BATCH-${batch.id}`,
         totalQty: toNumber(batch.totalQty),
-        onHandQty: toNumber(batch.onHandQty),
+        onHandQty,
         unitCogs: toNumber(batch.unitCogs),
         batchStatus: batch.batchStatus ?? "UNKNOWN",
+        availableQty: onHandQty - reservedQty,
       };
     })
-    .find(
-      (batch): batch is StockBatch =>
+    .filter(
+      (batch): batch is StockBatch & { availableQty: number } =>
         !!batch &&
         batch.batchStatus === "LIVE" &&
-        batch.totalQty > 0 &&
-        batch.onHandQty > 0
-    );
+        batch.onHandQty > 0 &&
+        batch.onHandQty - toNumber(0) > 0
+    )
+    // Prefer batch with most available stock to reduce cross-test interference
+    .sort((a, b) => b.availableQty - a.availableQty);
+  const match = candidates.find(b => b.availableQty > 0) ?? candidates[0];
 
   if (!match) {
     throw new Error(
