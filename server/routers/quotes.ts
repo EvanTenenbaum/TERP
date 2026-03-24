@@ -601,10 +601,12 @@ export const quotesRouter = router({
         notes: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       logger.info({
         msg: "[Quotes] Converting quote to order",
         quoteId: input.id,
+        actorId,
       });
 
       // Use the existing ordersDb function
@@ -619,6 +621,7 @@ export const quotesRouter = router({
         msg: "[Quotes] Quote converted to order",
         quoteId: input.id,
         orderId: order.id,
+        convertedBy: actorId,
       });
 
       return order;
