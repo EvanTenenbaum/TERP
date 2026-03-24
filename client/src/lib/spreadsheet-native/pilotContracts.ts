@@ -165,7 +165,16 @@ export function mapInventoryItemsToPilotRows(
     const holdQty = toNumber(item.holdQty);
 
     return {
-      identity: createIdentity("batch", item.id, "primary"),
+      identity: createIdentity(
+        "batch",
+        item.id,
+        "primary",
+        (item as Record<string, unknown>).version as
+          | string
+          | number
+          | null
+          | undefined
+      ),
       batchId: item.id,
       sku: item.sku,
       productName: item.productName || "Unknown Product",
