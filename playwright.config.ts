@@ -21,7 +21,7 @@ const isCloud =
 const isRemoteExecution = isRemoteBaseURL || isCloud;
 const isOracleRun = Boolean(process.env.ORACLE_RUN_MODE);
 const envTaggedPattern =
-  /@prod-smoke|@prod-regression|@dev-only|@staging-critical/;
+  /@prod-smoke|@prod-regression|@dev-only|@staging-critical|@deep|@rbac/;
 const shouldUploadToArgos = Boolean(process.env.CI && process.env.ARGOS_TOKEN);
 
 // Parse HTTP(S) proxy for Playwright browser context when running in proxied environments
@@ -104,6 +104,21 @@ export default defineConfig({
         // Accept proxy TLS certificates in sandboxed environments
         ignoreHTTPSErrors: !!proxyConfig,
       },
+    },
+    // Deep business-logic tests run first with full admin access.
+    // RBAC permission tests run separately after, so auth issues never
+    // block accurate findings about business logic.
+    {
+      name: "deep",
+      grep: /@deep/,
+      grepInvert: /@rbac/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "deep-rbac",
+      grep: /@rbac/,
+      dependencies: ["deep"],
+      use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "smoke",

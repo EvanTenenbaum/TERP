@@ -27,6 +27,28 @@ pnpm build          # Production build
   - `pnpm qa:stress:preflight --env=staging`
 - Stress runs are strict **NO_REPAIR** runs: no automatic infrastructure repair during test execution.
 
+## E2E / Browser Testing
+
+All E2E tests use Playwright. The canonical reference is `docs/TESTING.md`.
+
+```bash
+# Deep business logic tests (state machines, financial integrity, edge cases)
+pnpm test:e2e:deep           # @deep tagged tests — full admin access
+pnpm test:e2e:deep:rbac      # @rbac tagged tests — role permission boundaries
+pnpm test:e2e:deep:all       # Both: business logic first, then RBAC
+
+# Other E2E suites
+pnpm test:e2e                # All E2E tests
+pnpm test:e2e:prod-smoke     # Production smoke
+pnpm test:staging-critical   # Staging gate tests
+pnpm qa:test:core            # Oracle-based flow tests
+```
+
+- **Deep tests** (`tests-e2e/deep/`) are the primary E2E suite for business logic verification. They test tRPC endpoints directly via `trpcQuery`/`trpcMutation` helpers.
+- **Execution order**: `@deep` tests run first with admin access, `@rbac` tests run after (uses Playwright project dependencies).
+- **When asked to "run E2E tests" or "run browser tests"**, use `pnpm test:e2e:deep:all` for business logic + RBAC, or `pnpm test:e2e` for everything.
+- **Do NOT default to** `tests-e2e/ai-generated/` or root-level specs — these are legacy/supplementary. The `deep/` suite is the current standard.
+
 ## Forbidden Patterns (CI-Enforced)
 
 ```typescript
@@ -118,13 +140,13 @@ Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run a
 
 ## Essential References
 
-| File                                            | Purpose                                    |
-| ----------------------------------------------- | ------------------------------------------ |
-| `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear)    |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` | Machine-readable TER-795 row-status and build snapshot |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` | Generated local advisory proof-budget snapshot |
-| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work                |
-| `.claude/known-bug-patterns.md`                 | Recurring bug catalog                      |
-| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures                  |
-| `docs/TESTING.md`                               | Testing guide — all test commands & layers |
+| File                                                                            | Purpose                                                |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `docs/roadmaps/MASTER_ROADMAP.md`                                               | Task source of truth (backup to Linear)                |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`    | Machine-readable TER-795 row-status and build snapshot |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot           |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md`       | Generated local advisory proof-budget snapshot         |
+| `docs/ACTIVE_SESSIONS.md`                                                       | Currently active agent work                            |
+| `.claude/known-bug-patterns.md`                                                 | Recurring bug catalog                                  |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md`                                 | Prod migration procedures                              |
+| `docs/TESTING.md`                                                               | Testing guide — all test commands & layers             |

@@ -184,6 +184,106 @@ export async function confirmSaleOrder(
   return result;
 }
 
+type InvoiceRecord = {
+  id: number;
+  status?: string | null;
+  totalAmount?: string | number | null;
+  amountDue?: string | number | null;
+};
+
+type PaymentResponse = {
+  success: boolean;
+  invoiceStatus?: string;
+  paymentId?: number;
+};
+
+/**
+ * Advance an order through confirm → ship → deliver.
+ * Pick/pack steps are attempted but not required.
+ */
+export async function advanceOrderToDelivered(
+  page: Page,
+  orderId: number
+): Promise<void> {
+  await confirmSaleOrder(page, orderId);
+
+  // Best-effort pick/pack (not required for all flows)
+  try {
+    await trpcMutation(page, "pickPack.markAllPacked", { orderId });
+    await trpcMutation(page, "pickPack.markOrderReady", { orderId });
+  } catch {
+    // Pick/pack may not be required
+  }
+
+  await trpcMutation(page, "orders.updateOrderStatus", {
+    orderId,
+    newStatus: "SHIPPED",
+  });
+  await trpcMutation(page, "orders.updateOrderStatus", {
+    orderId,
+    newStatus: "DELIVERED",
+  });
+}
+
+/**
+ * Create an order, confirm it, generate an invoice, mark SENT, pay in full.
+ * Returns the invoice ID and total amount.
+ */
+export async function createPaidInvoice(
+  page: Page,
+  opts: {
+    clientId: number;
+    batchId: number;
+    quantity?: number;
+    unitPrice: number;
+  }
+): Promise<{
+  orderId: number;
+  invoiceId: number;
+  totalAmount: number;
+  paymentId: number;
+}> {
+  const order = await createSaleOrder(page, {
+    clientId: opts.clientId,
+    batchId: opts.batchId,
+    quantity: opts.quantity ?? 1,
+    unitPrice: opts.unitPrice,
+  });
+
+  await confirmSaleOrder(page, order.id);
+
+  const invoice = await trpcMutation<InvoiceRecord>(
+    page,
+    "invoices.generateFromOrder",
+    { orderId: order.id }
+  );
+
+  await trpcMutation(page, "invoices.markSent", { id: invoice.id });
+
+  const sentInvoice = await trpcQuery<InvoiceRecord>(page, "invoices.getById", {
+    id: invoice.id,
+  });
+  const totalAmount = toNumber(sentInvoice.totalAmount);
+
+  const payment = await trpcMutation<PaymentResponse>(
+    page,
+    "payments.recordPayment",
+    {
+      invoiceId: invoice.id,
+      amount: totalAmount,
+      paymentMethod: "ACH",
+      referenceNumber: `HELPER-${Date.now()}`,
+    }
+  );
+
+  return {
+    orderId: order.id,
+    invoiceId: invoice.id,
+    totalAmount,
+    paymentId: payment.paymentId ?? 0,
+  };
+}
+
 export async function cleanupOrder(
   page: Page,
   orderId: number | null

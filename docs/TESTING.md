@@ -11,6 +11,7 @@
 | Before every commit    | `pnpm check && pnpm lint && pnpm test && pnpm build`              | ~2 min  |
 | Schema changes         | `pnpm test:schema:ci`                                             | ~3 min  |
 | UI/flow changes        | `pnpm test:e2e` (local) or `pnpm test:staging-critical` (staging) | ~5 min  |
+| Deep business logic    | `pnpm test:e2e:deep:all`                                          | ~10 min |
 | Pre-production deploy  | `pnpm test:smoke:prod`                                            | ~2 min  |
 | Stress testing staging | `pnpm qa:stress --env=staging --profile=smoke`                    | ~5 min  |
 | Full QA pipeline       | `pnpm qa:pipeline`                                                | ~15 min |
@@ -92,6 +93,7 @@ pnpm test:smoke              # Smoke suite
 | ----------------- | ------------------------------------------------ | ------------------------- |
 | `golden-flows/`   | Core business flow tests (gf-001 through gf-008) | 10 specs                  |
 | `critical-paths/` | Feature-specific critical paths                  | 15 specs                  |
+| `deep/`           | Deep business logic, edge cases, state machines  | 7 specs                   |
 | `rbac/`           | Role-based access control tests                  | 5 specs                   |
 | `mega/`           | Comprehensive sprint feature tests               | 2 specs                   |
 | `ai-generated/`   | AI-agent generated scenario tests                | 2 specs                   |
@@ -109,6 +111,29 @@ pnpm test:smoke              # Smoke suite
 - `gf-006` — Client Ledger Review
 - `gf-007` — Inventory Management
 - `gf-008` — Sample Request
+
+**Deep tests (business logic + edge cases + RBAC):**
+
+Tests under `tests-e2e/deep/` exercise the tRPC API at depth with admin access first, RBAC second:
+
+```bash
+pnpm test:e2e:deep           # Business logic tests (@deep tag)
+pnpm test:e2e:deep:rbac      # RBAC permission boundary tests (@rbac tag, runs after deep)
+pnpm test:e2e:deep:all       # Both: business logic first, then RBAC
+pnpm test:e2e:deep:headed    # Business logic with visible browser
+```
+
+Deep test specs:
+
+- `state-machines.spec.ts` — Order, invoice, and batch state machine transitions
+- `financial-integrity.spec.ts` — Payment tracking, GL entries, bad debt write-off
+- `cross-domain-integration.spec.ts` — Order-to-cash, fulfillment chain, AR dashboard
+- `credit-and-pricing.spec.ts` — Credit engine, margins, VIP tiers, pricing context
+- `negative-paths.spec.ts` — Invalid inputs, boundary conditions, race conditions
+- `critical-edge-cases.spec.ts` — Partial invoice void, returns, concurrent oversell
+- `rbac-boundaries.spec.ts` — Per-role mutation boundaries (warehouse, accountant, fulfillment, auditor, salesRep)
+
+Execution order: The `deep` project runs all `@deep` tests with full admin access. The `deep-rbac` project runs `@rbac` tests only after the deep project completes, ensuring auth infrastructure issues never block business logic findings.
 
 **Config:** `playwright.config.ts`
 
