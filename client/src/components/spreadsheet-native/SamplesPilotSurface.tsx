@@ -21,13 +21,16 @@ import { format } from "date-fns";
 import type { ColDef } from "ag-grid-community";
 import {
   Beaker,
+  CalendarIcon,
   Download,
+  Loader2,
   Plus,
   RefreshCw,
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useExport } from "@/hooks/work-surface/useExport";
@@ -35,7 +38,13 @@ import type { ExportColumn } from "@/hooks/work-surface/useExport";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   InspectorField,
@@ -533,6 +542,17 @@ export function SamplesPilotSurface({
       await utils.samples.getAll.invalidate();
       toast.success("Location updated.");
       setLocationDialogOpen(false);
+    },
+    onError: error => {
+      notifyToast("error", error.message);
+    },
+  });
+
+  // DISC-SAM-002: Set expiration date
+  const setExpirationDateMutation = trpc.samples.setExpirationDate.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Expiration date updated.");
     },
     onError: error => {
       notifyToast("error", error.message);
@@ -1132,8 +1152,56 @@ export function SamplesPilotSurface({
                 {/* DISC-SAM-003 */}
                 <p>{selectedRow.dueDate ?? "—"}</p>
               </InspectorField>
+              {/* DISC-SAM-002: Editable expiration date */}
               <InspectorField label="Expires">
-                <p>{selectedRow.expirationDate ?? "—"}</p>
+                {canTrackSamples ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !selectedRow.expirationDate && "text-muted-foreground"
+                        )}
+                        disabled={setExpirationDateMutation.isPending}
+                      >
+                        {setExpirationDateMutation.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                        )}
+                        {selectedRow.expirationDate
+                          ? format(
+                              new Date(selectedRow.expirationDate),
+                              "MMM dd, yyyy"
+                            )
+                          : "Set expiration date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={
+                          selectedRow.expirationDate
+                            ? new Date(selectedRow.expirationDate)
+                            : undefined
+                        }
+                        onSelect={date => {
+                          if (date) {
+                            setExpirationDateMutation.mutate({
+                              requestId: selectedRow.sampleId,
+                              expirationDate: format(date, "yyyy-MM-dd"),
+                            });
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <p>{selectedRow.expirationDate ?? "—"}</p>
+                )}
               </InspectorField>
             </InspectorSection>
 
