@@ -115,7 +115,6 @@ import { officeSupplyRouter } from "./routers/officeSupply"; // Sprint 4 Track B
 import { storageRouter } from "./routers/storage"; // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
 import { productCategoriesRouter } from "./routers/productCategories"; // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
 import { hourTrackingRouter } from "./routers/hourTracking"; // Sprint 5 Track E: Hour Tracking (MEET-048)
-// Note: rbacEnhancedRouter is imported for future use in Sprint 5 Track E
 import { gamificationRouter } from "./routers/gamification"; // Sprint 5 Track B: Gamification (MEET-044, MEET-045, FEAT-006)
 
 // Sprint 5 Track D: Transaction & Product Features
