@@ -23,7 +23,7 @@ import {
   ledgerEntries,
   orderLineItems,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and, ne } from "drizzle-orm";
+import { eq, desc, sql, and, ne, like, isNull, or, not } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -275,8 +275,29 @@ export const returnsRouter = router({
       if (input.orderId) {
         conditions.push(eq(returns.orderId, input.orderId));
       }
-      // Note: status and clientId filtering would require schema changes
-      // For now, we'll fetch all and filter in-memory for status if provided
+
+      // Status is tracked in the notes field via SM-003 state machine markers.
+      // Use SQL LIKE conditions to filter by status without a schema change.
+      if (input.status) {
+        if (input.status === "PENDING") {
+          // PENDING means no status markers present in notes
+          conditions.push(
+            or(
+              isNull(returns.notes),
+              and(
+                not(like(returns.notes, "%[APPROVED%")),
+                not(like(returns.notes, "%[RECEIVED%")),
+                not(like(returns.notes, "%[PROCESSED%")),
+                not(like(returns.notes, "%[REJECTED%")),
+                not(like(returns.notes, "%[CANCELLED%"))
+              )
+            )
+          );
+        } else {
+          // All other statuses have an explicit marker in notes
+          conditions.push(like(returns.notes, `%[${input.status}%`));
+        }
+      }
 
       let query = db
         .select({
