@@ -298,7 +298,7 @@ describe("OrdersSheetPilotSurface", () => {
       screen.getByRole("button", { name: /accounting/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /shipping/i })
+      screen.getByRole("button", { name: /fulfillment/i })
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /new draft/i })
@@ -343,7 +343,7 @@ describe("OrdersSheetPilotSurface", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /new draft/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /accounting/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /shipping/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /fulfillment/i })).toBeDisabled();
   });
 
   it("tolerates detail payloads that omit lineItems without crashing the queue surface", () => {
@@ -385,7 +385,7 @@ describe("OrdersSheetPilotSurface", () => {
     ).toBeInTheDocument();
 
     const accountingBtn = screen.getByRole("button", { name: /accounting/i });
-    const shippingBtn = screen.getByRole("button", { name: /shipping/i });
+    const shippingBtn = screen.getByRole("button", { name: /fulfillment/i });
 
     expect(accountingBtn).not.toBeDisabled();
     expect(shippingBtn).not.toBeDisabled();
@@ -457,7 +457,7 @@ describe("OrdersSheetPilotSurface", () => {
     expect(mockLedgerRefetch).toHaveBeenCalledTimes(1);
   });
 
-  it("enables accounting and shipping handoffs for confirmed orders with invoices (SALE-ORD-007)", () => {
+  it("enables accounting and fulfillment handoffs for confirmed orders with invoices (SALE-ORD-007)", () => {
     mockQueueSelectionSummary = {
       selectedCellCount: 4,
       selectedRowCount: 1,
@@ -468,7 +468,7 @@ describe("OrdersSheetPilotSurface", () => {
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
     const accountingBtn = screen.getByRole("button", { name: /accounting/i });
-    const shippingBtn = screen.getByRole("button", { name: /shipping/i });
+    const shippingBtn = screen.getByRole("button", { name: /fulfillment/i });
 
     expect(accountingBtn).not.toBeDisabled();
     expect(shippingBtn).not.toBeDisabled();

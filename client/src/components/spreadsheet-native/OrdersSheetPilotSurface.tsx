@@ -586,7 +586,7 @@ export function OrdersSheetPilotSurface({
             }}
           >
             <Truck className="mr-2 h-4 w-4" />
-            Shipping
+            Fulfillment
           </Button>
           <Button
             size="sm"
