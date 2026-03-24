@@ -22,6 +22,54 @@ import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
  * - Predicted reorder opportunities
  */
 
+interface ActiveMatch {
+  clientId: number;
+  needId?: number;
+  clientName?: string;
+  strain?: string;
+  grade?: string;
+  confidence: number;
+  reasons?: string[];
+}
+
+interface HistoricalBuyer {
+  clientId?: number;
+  clientName?: string;
+  purchaseCount?: number;
+  lastPurchaseDate?: Date | string;
+  totalQuantity?: number;
+  confidence?: number;
+  isLapsedBuyer?: boolean;
+  reasons?: string[];
+  sourceData?: {
+    client?: {
+      id: number;
+      name: string;
+    };
+  };
+  pattern?: {
+    purchaseCount?: number;
+    daysSinceLastPurchase?: number;
+  };
+}
+
+interface PurchasePrediction {
+  id?: number;
+  clientId: number;
+  clientName: string;
+  productId?: number;
+  productName?: string;
+  strain?: string;
+  category?: string;
+  lastPurchaseDate?: Date | string;
+  predictedReorderDate?: Date | string;
+  orderFrequencyDays?: number;
+  daysUntilPredictedOrder?: number;
+  confidence?: number;
+  averageQuantity?: number;
+  reasons?: string[];
+}
+
 interface PotentialBuyersWidgetProps {
   batchId: number;
   productData?: {
@@ -161,8 +209,7 @@ export function PotentialBuyersWidget({
               </div>
             </Card>
           ) : (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            activeMatches.slice(0, 5).map((match: any, idx: number) => (
+            (activeMatches as ActiveMatch[]).slice(0, 5).map((match, idx) => (
               <Card
                 key={`match-${match.clientId}-${match.needId || idx}`}
                 className="p-3 hover:bg-accent cursor-pointer transition-colors"
@@ -219,49 +266,52 @@ export function PotentialBuyersWidget({
               </div>
             </Card>
           ) : (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            historicalBuyers.slice(0, 5).map((buyer: any, idx: number) => (
-              <Card
-                key={`buyer-${buyer.sourceData?.client?.id || idx}`}
-                className="p-3 hover:bg-accent cursor-pointer transition-colors"
-                onClick={() => {
-                  const targetId = buyer.sourceData?.client?.id;
-                  if (targetId) {
-                    setLocation(buildRelationshipProfilePath(targetId));
-                  }
-                }}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">
-                      {buyer.sourceData?.client?.name || "Unknown Client"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {buyer.pattern?.purchaseCount}x purchases •{" "}
-                      {buyer.pattern?.daysSinceLastPurchase} days ago
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge
-                      variant={getConfidenceBadgeVariant(buyer.confidence)}
-                    >
-                      {buyer.confidence}%
-                    </Badge>
-                    {buyer.isLapsedBuyer && (
-                      <Badge variant="outline" className="text-xs">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Lapsed
+            (historicalBuyers as HistoricalBuyer[])
+              .slice(0, 5)
+              .map((buyer, idx) => (
+                <Card
+                  key={`buyer-${buyer.sourceData?.client?.id || idx}`}
+                  className="p-3 hover:bg-accent cursor-pointer transition-colors"
+                  onClick={() => {
+                    const targetId = buyer.sourceData?.client?.id;
+                    if (targetId) {
+                      setLocation(buildRelationshipProfilePath(targetId));
+                    }
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">
+                        {buyer.sourceData?.client?.name || "Unknown Client"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {buyer.pattern?.purchaseCount}x purchases •{" "}
+                        {buyer.pattern?.daysSinceLastPurchase} days ago
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge
+                        variant={getConfidenceBadgeVariant(
+                          buyer.confidence ?? 0
+                        )}
+                      >
+                        {buyer.confidence}%
                       </Badge>
-                    )}
+                      {buyer.isLapsedBuyer && (
+                        <Badge variant="outline" className="text-xs">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Lapsed
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {buyer.reasons && buyer.reasons.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {buyer.reasons[0]}
-                  </p>
-                )}
-              </Card>
-            ))
+                  {buyer.reasons && buyer.reasons.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {buyer.reasons[0]}
+                    </p>
+                  )}
+                </Card>
+              ))
           )}
         </TabsContent>
 
@@ -275,14 +325,13 @@ export function PotentialBuyersWidget({
               </div>
             </Card>
           ) : (
-            relevantPredictions
+            (relevantPredictions as PurchasePrediction[])
               .slice(0, 5)
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .map((prediction: any, idx: number) => (
+              .map((prediction, idx) => (
                 <Card
                   key={`prediction-${prediction.clientId}-${prediction.id || idx}`}
                   className={`p-3 hover:bg-accent cursor-pointer transition-colors ${
-                    prediction.daysUntilPredictedOrder < 0
+                    (prediction.daysUntilPredictedOrder ?? 0) < 0
                       ? "border-destructive/30"
                       : ""
                   }`}
@@ -305,14 +354,14 @@ export function PotentialBuyersWidget({
                     <div className="flex flex-col items-end gap-1">
                       <Badge
                         variant={
-                          prediction.daysUntilPredictedOrder < 0
+                          (prediction.daysUntilPredictedOrder ?? 0) < 0
                             ? "destructive"
                             : "secondary"
                         }
                       >
-                        {prediction.daysUntilPredictedOrder < 0
-                          ? `${Math.abs(prediction.daysUntilPredictedOrder)}d overdue`
-                          : `${prediction.daysUntilPredictedOrder}d`}
+                        {(prediction.daysUntilPredictedOrder ?? 0) < 0
+                          ? `${Math.abs(prediction.daysUntilPredictedOrder ?? 0)}d overdue`
+                          : `${prediction.daysUntilPredictedOrder ?? 0}d`}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
                         {prediction.confidence}% confidence

@@ -21,8 +21,9 @@ import {
   orders,
   credits,
   ledgerEntries,
+  orderLineItems,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and, ne } from "drizzle-orm";
+import { eq, desc, sql, and, ne, like, isNull, or, not } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -274,8 +275,29 @@ export const returnsRouter = router({
       if (input.orderId) {
         conditions.push(eq(returns.orderId, input.orderId));
       }
-      // Note: status and clientId filtering would require schema changes
-      // For now, we'll fetch all and filter in-memory for status if provided
+
+      // Status is tracked in the notes field via SM-003 state machine markers.
+      // Use SQL LIKE conditions to filter by status without a schema change.
+      if (input.status) {
+        if (input.status === "PENDING") {
+          // PENDING means no status markers present in notes
+          conditions.push(
+            or(
+              isNull(returns.notes),
+              and(
+                not(like(returns.notes, "%[APPROVED%")),
+                not(like(returns.notes, "%[RECEIVED%")),
+                not(like(returns.notes, "%[PROCESSED%")),
+                not(like(returns.notes, "%[REJECTED%")),
+                not(like(returns.notes, "%[CANCELLED%"))
+              )
+            )
+          );
+        } else {
+          // All other statuses have an explicit marker in notes
+          conditions.push(like(returns.notes, `%[${input.status}%`));
+        }
+      }
 
       let query = db
         .select({
@@ -441,6 +463,78 @@ export const returnsRouter = router({
 
         if (!order) {
           throw new Error("Order not found");
+        }
+
+        // Validate return quantities against order line items
+        const lineItems = await tx
+          .select({
+            batchId: orderLineItems.batchId,
+            quantity: orderLineItems.quantity,
+          })
+          .from(orderLineItems)
+          .where(eq(orderLineItems.orderId, input.orderId));
+
+        // Build map of ordered quantities per batch
+        const orderedQtyByBatch = new Map<number, number>();
+        for (const li of lineItems) {
+          const qty = parseFloat(li.quantity);
+          orderedQtyByBatch.set(
+            li.batchId,
+            (orderedQtyByBatch.get(li.batchId) || 0) + qty
+          );
+        }
+
+        // Get previously returned quantities for this order
+        const previousReturns = await tx
+          .select({ items: returns.items })
+          .from(returns)
+          .where(eq(returns.orderId, input.orderId));
+
+        const previouslyReturnedByBatch = new Map<number, number>();
+        for (const prev of previousReturns) {
+          const prevItems = prev.items as Array<{
+            batchId: number;
+            quantity: string;
+          }>;
+          if (Array.isArray(prevItems)) {
+            for (const pi of prevItems) {
+              const qty = parseFloat(pi.quantity || "0");
+              if (qty > 0) {
+                previouslyReturnedByBatch.set(
+                  pi.batchId,
+                  (previouslyReturnedByBatch.get(pi.batchId) || 0) + qty
+                );
+              }
+            }
+          }
+        }
+
+        // Validate each return item
+        for (const item of input.items) {
+          const returnQty = parseFloat(item.quantity);
+          if (!Number.isFinite(returnQty) || returnQty <= 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Return quantity for batch #${item.batchId} must be a positive number.`,
+            });
+          }
+
+          const orderedQty = orderedQtyByBatch.get(item.batchId);
+          if (orderedQty === undefined) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Batch #${item.batchId} was not part of order #${input.orderId}.`,
+            });
+          }
+
+          const alreadyReturned =
+            previouslyReturnedByBatch.get(item.batchId) || 0;
+          if (alreadyReturned + returnQty > orderedQty) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Return quantity for batch #${item.batchId} exceeds remaining returnable quantity. Ordered: ${orderedQty}, already returned: ${alreadyReturned}, requested: ${returnQty}.`,
+            });
+          }
         }
 
         // Create return record - map extended reasons to database-compatible values

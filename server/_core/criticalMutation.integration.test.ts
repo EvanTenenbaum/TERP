@@ -11,7 +11,6 @@
  * Task: QA-011
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 
@@ -86,7 +85,7 @@ describe("criticalMutation Integration Tests", () => {
     });
 
     it("should pass transaction context to mutation function", async () => {
-      let receivedTx: any = null;
+      let receivedTx: unknown = null;
 
       const mutationFn = vi.fn().mockImplementation(tx => {
         receivedTx = tx;

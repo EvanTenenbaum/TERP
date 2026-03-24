@@ -12,7 +12,7 @@ export async function seedInventoryData() {
   ];
 
   for (const vendor of vendors) {
-    await inventoryDb.createVendor(vendor);
+    await inventoryDb.createSupplier(vendor);
   }
 
   logger.info("✓ Created vendors");
@@ -33,12 +33,42 @@ export async function seedInventoryData() {
 
   // Create products
   const products = [
-    { brandId: 1, nameCanonical: "Gelato #41", category: "Flower", subcategory: "Hybrid" },
-    { brandId: 1, nameCanonical: "Blue Dream", category: "Flower", subcategory: "Sativa" },
-    { brandId: 2, nameCanonical: "Wedding Cake", category: "Flower", subcategory: "Indica" },
-    { brandId: 2, nameCanonical: "Live Resin Cart", category: "Vape", subcategory: "Concentrate" },
-    { brandId: 3, nameCanonical: "OG Kush", category: "Flower", subcategory: "Indica" },
-    { brandId: 4, nameCanonical: "Sour Diesel", category: "Flower", subcategory: "Sativa" },
+    {
+      brandId: 1,
+      nameCanonical: "Gelato #41",
+      category: "Flower",
+      subcategory: "Hybrid",
+    },
+    {
+      brandId: 1,
+      nameCanonical: "Blue Dream",
+      category: "Flower",
+      subcategory: "Sativa",
+    },
+    {
+      brandId: 2,
+      nameCanonical: "Wedding Cake",
+      category: "Flower",
+      subcategory: "Indica",
+    },
+    {
+      brandId: 2,
+      nameCanonical: "Live Resin Cart",
+      category: "Vape",
+      subcategory: "Concentrate",
+    },
+    {
+      brandId: 3,
+      nameCanonical: "OG Kush",
+      category: "Flower",
+      subcategory: "Indica",
+    },
+    {
+      brandId: 4,
+      nameCanonical: "Sour Diesel",
+      category: "Flower",
+      subcategory: "Sativa",
+    },
   ];
 
   for (const product of products) {
@@ -51,7 +81,11 @@ export async function seedInventoryData() {
   const today = new Date();
   const lots = [
     { code: "LOT-WH1-20250123", vendorId: 1, date: today },
-    { code: "LOT-WH1-20250122", vendorId: 2, date: new Date(today.getTime() - 86400000) },
+    {
+      code: "LOT-WH1-20250122",
+      vendorId: 2,
+      date: new Date(today.getTime() - 86400000),
+    },
     { code: "LOT-WH2-20250123", vendorId: 3, date: today },
   ];
 
@@ -160,10 +194,42 @@ export async function seedInventoryData() {
 
   // Create batch locations
   const locations = [
-    { batchId: 1, site: "Warehouse 1", zone: "A", rack: "R1", shelf: "S3", bin: "B12", qty: "1000.00" },
-    { batchId: 2, site: "Warehouse 1", zone: "A", rack: "R1", shelf: "S4", bin: "B13", qty: "750.00" },
-    { batchId: 3, site: "Warehouse 1", zone: "B", rack: "R2", shelf: "S1", bin: "B5", qty: "500.00" },
-    { batchId: 4, site: "Warehouse 2", zone: "A", rack: "R1", shelf: "S2", bin: "B8", qty: "300.00" },
+    {
+      batchId: 1,
+      site: "Warehouse 1",
+      zone: "A",
+      rack: "R1",
+      shelf: "S3",
+      bin: "B12",
+      qty: "1000.00",
+    },
+    {
+      batchId: 2,
+      site: "Warehouse 1",
+      zone: "A",
+      rack: "R1",
+      shelf: "S4",
+      bin: "B13",
+      qty: "750.00",
+    },
+    {
+      batchId: 3,
+      site: "Warehouse 1",
+      zone: "B",
+      rack: "R2",
+      shelf: "S1",
+      bin: "B5",
+      qty: "500.00",
+    },
+    {
+      batchId: 4,
+      site: "Warehouse 2",
+      zone: "A",
+      rack: "R1",
+      shelf: "S2",
+      bin: "B8",
+      qty: "300.00",
+    },
   ];
 
   for (const location of locations) {

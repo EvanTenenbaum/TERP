@@ -10,9 +10,12 @@ export const features = {
    */
   liveShopping: {
     /**
-     * Master switch to enable/disable the feature globally.
+     * Environment-variable fallback for when the "live-shopping" DB feature
+     * flag has not yet been seeded. The database flag always takes precedence
+     * when a record exists. Do NOT use this value directly to gate features —
+     * always call featureFlagService.isEnabled("live-shopping") instead.
      */
-    enabled: (process.env.FEATURE_LIVE_SHOPPING_ENABLED === "true") || false,
+    enabled: process.env.FEATURE_LIVE_SHOPPING_ENABLED === "true",
 
     /**
      * Heartbeat interval for SSE connections in milliseconds.
@@ -38,12 +41,12 @@ export const features = {
       provider: "agora",
       appId: process.env.AGORA_APP_ID || "",
     },
-    
+
     /**
      * Rate limiting for socket events per minute per IP.
      */
     rateLimit: {
       eventsPerMinute: 60,
-    }
+    },
   },
 };

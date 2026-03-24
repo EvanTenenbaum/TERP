@@ -17,6 +17,17 @@ import { featureFlagsDb } from "../featureFlagsDb";
 import cache, { CacheKeys, CacheTTL } from "../_core/cache";
 import type { FeatureFlag } from "../../drizzle/schema";
 import { logger } from "../_core/logger";
+import { features } from "../_core/features";
+
+/**
+ * Environment-variable fallback values keyed by flag key.
+ * These are ONLY consulted when no DB record exists for the flag
+ * (i.e., the flag has not yet been seeded). The DB flag always wins
+ * when present.
+ */
+const ENV_FALLBACKS: Record<string, boolean> = {
+  "live-shopping": features.liveShopping.enabled,
+};
 
 /**
  * Context for evaluating feature flags
@@ -87,8 +98,15 @@ export const featureFlagService = {
     }
 
     if (!flag) {
-      logger.warn({ key }, "[FeatureFlags] Flag not found");
-      return { enabled: false, reason: "not_found", flag: null };
+      // DB flag not found — use env-var fallback if one is registered,
+      // otherwise default to disabled. This ensures the DB flag is always
+      // authoritative when it exists; the env var is a fallback only.
+      const fallback = ENV_FALLBACKS[key] ?? false;
+      logger.warn(
+        { key, fallback },
+        "[FeatureFlags] Flag not found in DB, using env fallback"
+      );
+      return { enabled: fallback, reason: "not_found", flag: null };
     }
 
     // 1. System disabled check

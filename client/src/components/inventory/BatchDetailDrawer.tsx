@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { LucideIcon } from "lucide-react";
 import {
   Clock,
   CheckCircle,
@@ -507,8 +508,11 @@ export function BatchDetailDrawer({
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<
       string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { variant: any; icon: any; label: string }
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        icon: LucideIcon;
+        label: string;
+      }
     > = {
       AWAITING_INTAKE: {
         variant: "secondary",

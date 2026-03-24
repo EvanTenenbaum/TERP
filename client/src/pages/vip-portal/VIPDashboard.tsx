@@ -80,6 +80,18 @@ interface VipPortalConfig {
       showBillDetails?: boolean;
       highlightOverdue?: boolean;
     };
+    transactionHistory?: {
+      showSummaryTotals?: boolean;
+      allowFilters?: boolean;
+      showTransactionDetails?: boolean;
+      allowPdfDownload?: boolean;
+    };
+    marketplaceNeeds?: {
+      allowCreate?: boolean;
+      showActiveListings?: boolean;
+      allowEdit?: boolean;
+      allowCancel?: boolean;
+    };
   } | null;
   advancedOptions: Record<string, unknown> | null;
   createdAt: Date;

@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { clientNeeds } from "../drizzle/schema";
 import type { ClientNeed, InsertClientNeed } from "../drizzle/schema";
@@ -24,6 +24,7 @@ export async function findSimilarActiveNeed(need: {
     const conditions = [
       eq(clientNeeds.clientId, need.clientId),
       eq(clientNeeds.status, "ACTIVE"),
+      isNull(clientNeeds.deletedAt),
     ];
 
     // Check for exact match on key fields
@@ -149,7 +150,7 @@ export async function getClientNeedById(
     const [need] = await db
       .select()
       .from(clientNeeds)
-      .where(eq(clientNeeds.id, id));
+      .where(and(eq(clientNeeds.id, id), isNull(clientNeeds.deletedAt)));
 
     return need || null;
   } catch (error) {
@@ -182,7 +183,7 @@ export async function getClientNeeds(filters?: {
   try {
     let query = db.select().from(clientNeeds);
 
-    const conditions = [];
+    const conditions = [isNull(clientNeeds.deletedAt)];
     if (filters?.status) {
       conditions.push(eq(clientNeeds.status, filters.status));
     }
@@ -199,10 +200,8 @@ export async function getClientNeeds(filters?: {
       conditions.push(eq(clientNeeds.category, filters.category));
     }
 
-    if (conditions.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      query = query.where(and(...conditions)) as any;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query = query.where(and(...conditions)) as any;
 
     const needs = await query.orderBy(desc(clientNeeds.createdAt));
     return needs;
@@ -236,7 +235,8 @@ export async function getActiveClientNeeds(
       .where(
         and(
           eq(clientNeeds.clientId, clientId),
-          eq(clientNeeds.status, "ACTIVE")
+          eq(clientNeeds.status, "ACTIVE"),
+          isNull(clientNeeds.deletedAt)
         )
       )
       .orderBy(desc(clientNeeds.priority), desc(clientNeeds.createdAt));
@@ -365,7 +365,10 @@ export async function deleteClientNeed(id: number): Promise<boolean> {
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.delete(clientNeeds).where(eq(clientNeeds.id, id));
+    await db
+      .update(clientNeeds)
+      .set({ deletedAt: new Date() })
+      .where(eq(clientNeeds.id, id));
     return true;
   } catch (error) {
     logger.error({

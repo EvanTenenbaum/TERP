@@ -870,34 +870,38 @@ describe("Inventory Router", () => {
 
   describe("vendors", () => {
     it("should list all vendors when no query provided", async () => {
-      // Arrange
+      // Arrange - minimal supplier shape for mock purposes
       const mockVendors = [
-        { id: 1, name: "Vendor A" },
-        { id: 2, name: "Vendor B" },
-      ];
+        { id: 1, name: "Vendor A", supplierProfile: null },
+        { id: 2, name: "Vendor B", supplierProfile: null },
+      ] as Awaited<ReturnType<typeof inventoryDb.getAllSuppliers>>;
 
-      vi.mocked(inventoryDb.getAllVendors).mockResolvedValue(mockVendors);
+      vi.mocked(inventoryDb.getAllSuppliers).mockResolvedValue(mockVendors);
 
       // Act
       const result = await caller.inventory.vendors({});
 
       // Assert - Now returns paginated response
       expect(result.items).toEqual(mockVendors);
-      expect(inventoryDb.getAllVendors).toHaveBeenCalled();
+      expect(inventoryDb.getAllSuppliers).toHaveBeenCalled();
     });
 
     it("should search vendors by query", async () => {
-      // Arrange
-      const mockSearchResults = [{ id: 1, name: "Vendor ABC" }];
+      // Arrange - minimal supplier shape for mock purposes
+      const mockSearchResults = [
+        { id: 1, name: "Vendor ABC", supplierProfile: null },
+      ] as Awaited<ReturnType<typeof inventoryDb.searchSuppliers>>;
 
-      vi.mocked(inventoryDb.searchVendors).mockResolvedValue(mockSearchResults);
+      vi.mocked(inventoryDb.searchSuppliers).mockResolvedValue(
+        mockSearchResults
+      );
 
       // Act
       const result = await caller.inventory.vendors({ query: "ABC" });
 
       // Assert - Now returns paginated response
       expect(result.items).toEqual(mockSearchResults);
-      expect(inventoryDb.searchVendors).toHaveBeenCalledWith("ABC");
+      expect(inventoryDb.searchSuppliers).toHaveBeenCalledWith("ABC");
     });
   });
 

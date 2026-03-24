@@ -5,9 +5,11 @@ import { updateMatchAction, markMatchAsConverted } from "./matchRecordsDb";
 import { logger } from "./_core/logger";
 import type {
   Match,
+  MatchResult,
   EnhancedBatchSourceData,
   EnhancedVendorSourceData,
 } from "./matchingEngineEnhanced";
+import type { InsertClientNeed, ClientNeed } from "../drizzle/schema";
 
 /**
  * Needs & Matching Service Layer
@@ -43,8 +45,11 @@ export async function createQuoteFromMatch(matchData: {
   matches: Match[];
   userId: number;
   matchRecordId?: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}): Promise<any> {
+}): Promise<{
+  success: boolean;
+  quote: Record<string, unknown>;
+  message: string;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -120,8 +125,7 @@ export async function createQuoteFromMatch(matchData: {
       orderNumber,
       orderType: "QUOTE",
       clientId: matchData.clientId,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      items: items as any,
+      items: items as unknown as (typeof orders.$inferInsert)["items"],
       subtotal: subtotal.toString(),
       tax: "0",
       discount: "0",
@@ -130,8 +134,7 @@ export async function createQuoteFromMatch(matchData: {
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       paymentTerms: "NET_30",
       clientNeedId: matchData.clientNeedId, // Link to client need if exists
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    } as typeof orders.$inferInsert);
 
     const quoteId = inserted.insertId as number;
 
@@ -172,8 +175,11 @@ export async function createQuoteFromMatch(matchData: {
 export async function convertQuoteToSale(
   quoteId: number,
   matchRecordId?: number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> {
+): Promise<{
+  success: boolean;
+  sale: Record<string, unknown>;
+  message: string;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -231,8 +237,7 @@ export async function convertQuoteToSale(
 export async function dismissMatch(
   matchRecordId: number,
   userId: number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> {
+): Promise<{ success: boolean; matchRecord: unknown; message: string }> {
   try {
     const updated = await updateMatchAction(matchRecordId, "DISMISSED", userId);
 
@@ -254,8 +259,15 @@ export async function dismissMatch(
  * @param needData - Client need data
  * @returns Created need with matches
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createNeedAndFindMatches(needData: any): Promise<any> {
+export async function createNeedAndFindMatches(
+  needData: InsertClientNeed
+): Promise<{
+  success: boolean;
+  need: ClientNeed;
+  matches: MatchResult;
+  isDuplicate: boolean;
+  message?: string;
+}> {
   const { createClientNeed } = await import("./clientNeedsDbEnhanced");
   const { findMatchesForNeed } = await import("./matchingEngineEnhanced");
 

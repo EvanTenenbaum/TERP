@@ -70,39 +70,50 @@ vi.mock("sonner", () => ({
 vi.mock("@/components/ui/input", () => {
   const React = require("react");
   return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Input: React.forwardRef((props: any, ref: any) => (
-      <input ref={ref} {...props} />
-    )),
+    Input: React.forwardRef(
+      (
+        props: React.ComponentPropsWithRef<"input">,
+        ref: React.Ref<HTMLInputElement>
+      ) => <input ref={ref} {...props} />
+    ),
   };
 });
 
 vi.mock("@/components/ui/textarea", () => {
   const React = require("react");
   return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Textarea: React.forwardRef((props: any, ref: any) => (
-      <textarea ref={ref} {...props} />
-    )),
+    Textarea: React.forwardRef(
+      (
+        props: React.ComponentPropsWithRef<"textarea">,
+        ref: React.Ref<HTMLTextAreaElement>
+      ) => <textarea ref={ref} {...props} />
+    ),
   };
 });
 
 vi.mock("@/components/ui/label", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Label: ({ children, htmlFor }: any) => (
-    <label htmlFor={htmlFor}>{children}</label>
-  ),
+  Label: ({
+    children,
+    htmlFor,
+  }: {
+    children: React.ReactNode;
+    htmlFor?: string;
+  }) => <label htmlFor={htmlFor}>{children}</label>,
 }));
 
 vi.mock("@/components/ui/button", () => {
   const React = require("react");
   return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Button: React.forwardRef(({ children, ...props }: any, ref: any) => (
-      <button ref={ref} {...props}>
-        {children}
-      </button>
-    )),
+    Button: React.forwardRef(
+      (
+        { children, ...props }: React.ComponentPropsWithRef<"button">,
+        ref: React.Ref<HTMLButtonElement>
+      ) => (
+        <button ref={ref} {...props}>
+          {children}
+        </button>
+      )
+    ),
   };
 });
 

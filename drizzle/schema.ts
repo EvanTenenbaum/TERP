@@ -3854,6 +3854,7 @@ export const tagHierarchy = mysqlTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
+    deletedAt: timestamp("deletedAt"),
   },
   table => ({
     parentChildIdx: index("idx_tag_hierarchy_parent_child").on(
@@ -4207,6 +4208,7 @@ export const clientNeeds = mysqlTable(
       () => clients.id,
       { onDelete: "restrict" }
     ), // VIP portal client (nullable for internal)
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
@@ -4755,6 +4757,7 @@ export const todoLists = mysqlTable(
     isShared: boolean("is_shared").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     ownerIdIdx: index("idx_owner_id").on(table.ownerId),
@@ -4837,6 +4840,7 @@ export const todoTasks = mysqlTable(
     }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     listIdIdx: index("idx_list_id").on(table.listId),
@@ -4912,6 +4916,7 @@ export const comments = mysqlTable(
     }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     commentableIdx: index("idx_commentable").on(
@@ -5093,6 +5098,7 @@ export const inboxItems = mysqlTable(
     isArchived: boolean("is_archived").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     userIdIdx: index("idx_user_id").on(table.userId),
@@ -5989,6 +5995,7 @@ export const appointmentTypes = mysqlTable(
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     calendarIdx: index("idx_appointment_types_calendar").on(table.calendarId),
@@ -6042,6 +6049,7 @@ export const calendarBlockedDates = mysqlTable(
     reason: varchar("reason", { length: 255 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     calendarIdx: index("idx_blocked_dates_calendar").on(table.calendarId),
@@ -6546,6 +6554,7 @@ export const leaderboardMetricCache = mysqlTable(
     }>(),
     calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
     expiresAt: timestamp("expires_at").notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     clientMetricIdx: unique("idx_client_metric").on(

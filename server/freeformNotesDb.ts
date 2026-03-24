@@ -3,16 +3,16 @@
  * Handles all database operations for advanced rich-text notes
  */
 
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { 
-  freeformNotes, 
-  noteComments, 
+import {
+  freeformNotes,
+  noteComments,
   noteActivity,
   InsertFreeformNote,
   InsertNoteComment,
   InsertNoteActivity,
-  users
+  users,
 } from "../drizzle/schema";
 
 // ============================================================================
@@ -32,8 +32,12 @@ export async function getUserNotes(
   if (!db) throw new Error("Database not available");
 
   const conditions = includeArchived
-    ? [eq(freeformNotes.userId, userId)]
-    : [eq(freeformNotes.userId, userId), eq(freeformNotes.isArchived, false)];
+    ? [eq(freeformNotes.userId, userId), isNull(freeformNotes.deletedAt)]
+    : [
+        eq(freeformNotes.userId, userId),
+        eq(freeformNotes.isArchived, false),
+        isNull(freeformNotes.deletedAt),
+      ];
 
   const notes = await db
     .select()
@@ -56,7 +60,7 @@ export async function getNoteById(noteId: number, userId: number) {
   const note = await db
     .select()
     .from(freeformNotes)
-    .where(eq(freeformNotes.id, noteId))
+    .where(and(eq(freeformNotes.id, noteId), isNull(freeformNotes.deletedAt)))
     .limit(1);
 
   if (note.length === 0) return null;
@@ -64,7 +68,7 @@ export async function getNoteById(noteId: number, userId: number) {
   // Access check: user must be owner or in sharedWith list
   const noteData = note[0];
   const sharedWith = (noteData.sharedWith as number[] | null) || [];
-  
+
   if (noteData.userId !== userId && !sharedWith.includes(userId)) {
     throw new Error("Access denied");
   }
@@ -75,12 +79,15 @@ export async function getNoteById(noteId: number, userId: number) {
 /**
  * Create a new note
  */
-export async function createNote(userId: number, data: {
-  title: string;
-  content?: string | Record<string, unknown> | unknown[];
-  templateType?: string;
-  tags?: string[];
-}) {
+export async function createNote(
+  userId: number,
+  data: {
+    title: string;
+    content?: string | Record<string, unknown> | unknown[];
+    templateType?: string;
+    tags?: string[];
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -120,7 +127,12 @@ export async function updateNote(
   const note = await getNoteById(noteId, userId);
   if (!note) throw new Error("Note not found or access denied");
 
-  const updateData: { updatedAt: Date; title?: string; content?: string | Record<string, unknown> | unknown[] | null; tags?: string[] | null } = {
+  const updateData: {
+    updatedAt: Date;
+    title?: string;
+    content?: string | Record<string, unknown> | unknown[] | null;
+    tags?: string[] | null;
+  } = {
     updatedAt: new Date(),
   };
 
@@ -157,7 +169,10 @@ export async function deleteNote(noteId: number, userId: number) {
     throw new Error("Note not found or you don't have permission to delete");
   }
 
-  await db.delete(freeformNotes).where(eq(freeformNotes.id, noteId));
+  await db
+    .update(freeformNotes)
+    .set({ deletedAt: new Date() })
+    .where(eq(freeformNotes.id, noteId));
 
   return true;
 }
@@ -203,7 +218,12 @@ export async function toggleArchive(noteId: number, userId: number) {
     .where(eq(freeformNotes.id, noteId));
 
   // Log activity
-  await logActivity(noteId, userId, newArchiveStatus ? "ARCHIVED" : "RESTORED", null);
+  await logActivity(
+    noteId,
+    userId,
+    newArchiveStatus ? "ARCHIVED" : "RESTORED",
+    null
+  );
 
   return newArchiveStatus;
 }
@@ -348,7 +368,16 @@ export async function resolveComment(commentId: number, _userId: number) {
 export async function logActivity(
   noteId: number,
   userId: number,
-  activityType: "CREATED" | "UPDATED" | "COMMENTED" | "SHARED" | "ARCHIVED" | "RESTORED" | "PINNED" | "UNPINNED" | "TEMPLATE_APPLIED",
+  activityType:
+    | "CREATED"
+    | "UPDATED"
+    | "COMMENTED"
+    | "SHARED"
+    | "ARCHIVED"
+    | "RESTORED"
+    | "PINNED"
+    | "UNPINNED"
+    | "TEMPLATE_APPLIED",
   metadata: Record<string, unknown> | null | undefined
 ) {
   const db = await getDb();
@@ -369,7 +398,11 @@ export async function logActivity(
 /**
  * Get activity log for a note
  */
-export async function getNoteActivity(noteId: number, userId: number, limit: number = 50) {
+export async function getNoteActivity(
+  noteId: number,
+  userId: number,
+  limit: number = 50
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -403,7 +436,11 @@ export async function getNoteActivity(noteId: number, userId: number, limit: num
 /**
  * Search notes by title or content
  */
-export async function searchNotes(userId: number, query: string, limit: number = 20) {
+export async function searchNotes(
+  userId: number,
+  query: string,
+  limit: number = 20
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -415,6 +452,7 @@ export async function searchNotes(userId: number, query: string, limit: number =
       and(
         eq(freeformNotes.userId, userId),
         eq(freeformNotes.isArchived, false),
+        isNull(freeformNotes.deletedAt),
         sql`${freeformNotes.title} LIKE ${`%${query}%`}`
       )
     )
@@ -438,6 +476,7 @@ export async function getNotesByTemplate(userId: number, templateType: string) {
       and(
         eq(freeformNotes.userId, userId),
         eq(freeformNotes.isArchived, false),
+        isNull(freeformNotes.deletedAt),
         eq(freeformNotes.templateType, templateType)
       )
     )
@@ -468,4 +507,3 @@ export async function getNotesByTag(userId: number, tag: string) {
 
   return notes;
 }
-

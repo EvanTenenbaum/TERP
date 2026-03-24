@@ -1,6 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,18 +27,42 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Package, Edit, XCircle, Calendar, DollarSign } from "lucide-react";
+import {
+  Plus,
+  Package,
+  Edit,
+  XCircle,
+  Calendar,
+  DollarSign,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-interface MarketplaceSupplyProps {
-  clientId: number;
-  config: any;
+interface SupplyItem {
+  id: number;
+  strain?: string;
+  productName?: string;
+  category: string;
+  quantity: number | string;
+  unit?: string;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  notes?: string | null;
+  expiresAt?: string | Date | null;
+  status?: string;
 }
 
-export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupplyProps) {
+interface MarketplaceSupplyProps {
+  clientId: number;
+  config: unknown;
+}
+
+export function MarketplaceSupply({
+  clientId,
+  config: _config,
+}: MarketplaceSupplyProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingSupply, setEditingSupply] = useState<any | null>(null);
+  const [editingSupply, setEditingSupply] = useState<SupplyItem | null>(null);
   const [cancelSupplyId, setCancelSupplyId] = useState<number | null>(null);
 
   // Form state
@@ -50,7 +79,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
   });
 
   const utils = trpc.useUtils();
-  const { data: supplyData } = trpc.vipPortal.marketplace.getSupply.useQuery({ clientId });
+  const { data: supplyData } = trpc.vipPortal.marketplace.getSupply.useQuery({
+    clientId,
+  });
   const createSupply = trpc.vipPortal.marketplace.createSupply.useMutation({
     onSuccess: () => {
       utils.vipPortal.marketplace.getSupply.invalidate();
@@ -87,7 +118,7 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const payload = {
       clientId,
       strain: formData.strain,
@@ -107,14 +138,14 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
     }
   };
 
-  const handleEdit = (supply: any) => {
+  const handleEdit = (supply: SupplyItem) => {
     setEditingSupply(supply);
     setFormData({
-      strain: supply.strain,
+      strain: supply.strain || "",
       productName: supply.productName || "",
       category: supply.category,
       quantity: supply.quantity.toString(),
-      unit: supply.unit,
+      unit: supply.unit || "lb",
       priceMin: supply.priceMin?.toString() || "",
       priceMax: supply.priceMax?.toString() || "",
       notes: supply.notes || "",
@@ -133,15 +164,21 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
     }
   };
 
-  const getStatusBadge = (expiresAt: string) => {
+  const getStatusBadge = (expiresAt: string | Date | null | undefined) => {
+    if (!expiresAt) return <Badge variant="secondary">Active</Badge>;
     const daysUntilExpiry = Math.ceil(
-      (new Date(expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      (new Date(expiresAt).getTime() - new Date().getTime()) /
+        (1000 * 60 * 60 * 24)
     );
 
     if (daysUntilExpiry < 0) {
       return <Badge variant="destructive">Expired</Badge>;
     } else if (daysUntilExpiry <= 1) {
-      return <Badge variant="outline" className="border-orange-500 text-orange-500">Expires Soon</Badge>;
+      return (
+        <Badge variant="outline" className="border-orange-500 text-orange-500">
+          Expires Soon
+        </Badge>
+      );
     } else {
       return <Badge variant="secondary">Active</Badge>;
     }
@@ -153,7 +190,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold">What I Have to Sell</h2>
-          <p className="text-sm text-muted-foreground">Post your available inventory</p>
+          <p className="text-sm text-muted-foreground">
+            Post your available inventory
+          </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -175,7 +214,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                 <Label htmlFor="category">Category *</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  onValueChange={value =>
+                    setFormData({ ...formData, category: value })
+                  }
                   required
                 >
                   <SelectTrigger id="category">
@@ -198,7 +239,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                   <Input
                     id="strain"
                     value={formData.strain}
-                    onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, strain: e.target.value })
+                    }
                     placeholder="e.g., Blue Dream"
                     required
                   />
@@ -206,11 +249,18 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
               ) : formData.category ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="productName">Product Name (or Strain) *</Label>
+                    <Label htmlFor="productName">
+                      Product Name (or Strain) *
+                    </Label>
                     <Input
                       id="productName"
                       value={formData.productName}
-                      onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          productName: e.target.value,
+                        })
+                      }
                       placeholder="e.g., Ceramic 510 Cart"
                       required
                     />
@@ -220,7 +270,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                     <Input
                       id="strain"
                       value={formData.strain}
-                      onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                      onChange={e =>
+                        setFormData({ ...formData, strain: e.target.value })
+                      }
                       placeholder="e.g., OG Kush"
                     />
                   </div>
@@ -240,7 +292,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                     type="number"
                     step="0.01"
                     value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, quantity: e.target.value })
+                    }
                     placeholder="100"
                     required
                   />
@@ -249,7 +303,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                   <Label htmlFor="unit">Unit *</Label>
                   <Select
                     value={formData.unit}
-                    onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                    onValueChange={value =>
+                      setFormData({ ...formData, unit: value })
+                    }
                   >
                     <SelectTrigger id="unit">
                       <SelectValue />
@@ -272,7 +328,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                     type="number"
                     step="0.01"
                     value={formData.priceMin}
-                    onChange={(e) => setFormData({ ...formData, priceMin: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, priceMin: e.target.value })
+                    }
                     placeholder="50.00"
                   />
                 </div>
@@ -283,7 +341,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                     type="number"
                     step="0.01"
                     value={formData.priceMax}
-                    onChange={(e) => setFormData({ ...formData, priceMax: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, priceMax: e.target.value })
+                    }
                     placeholder="75.00"
                   />
                 </div>
@@ -295,7 +355,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                   id="expiresInDays"
                   type="number"
                   value={formData.expiresInDays}
-                  onChange={(e) => setFormData({ ...formData, expiresInDays: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, expiresInDays: e.target.value })
+                  }
                   placeholder="5"
                 />
               </div>
@@ -305,14 +367,20 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
                   placeholder="COA available, indoor grown, etc."
                   rows={3}
                 />
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createSupply.isPending}>
@@ -327,7 +395,7 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
       {/* Supply Listings - Mobile-First Card Layout */}
       <div className="space-y-3">
         {supplyData && supplyData.length > 0 ? (
-          supplyData.map((supply: any) => (
+          (supplyData as SupplyItem[]).map(supply => (
             <Card key={supply.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
@@ -337,7 +405,8 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                       <span className="truncate">{supply.strain}</span>
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">
-                      {supply.category.charAt(0).toUpperCase() + supply.category.slice(1)}
+                      {supply.category.charAt(0).toUpperCase() +
+                        supply.category.slice(1)}
                     </CardDescription>
                   </div>
                   {getStatusBadge(supply.expiresAt)}
@@ -354,13 +423,17 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                   </div>
                   {(supply.priceMin || supply.priceMax) && (
                     <div>
-                      <p className="text-muted-foreground text-xs">Price Range</p>
+                      <p className="text-muted-foreground text-xs">
+                        Price Range
+                      </p>
                       <p className="font-medium text-base flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
                         {supply.priceMin && supply.priceMax
                           ? `${supply.priceMin} - ${supply.priceMax}`
                           : supply.priceMin || supply.priceMax}
-                        <span className="text-xs text-muted-foreground">/{supply.unit}</span>
+                        <span className="text-xs text-muted-foreground">
+                          /{supply.unit}
+                        </span>
                       </p>
                     </div>
                   )}
@@ -370,7 +443,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                       Expires
                     </p>
                     <p className="font-medium text-sm">
-                      {new Date(supply.expiresAt).toLocaleDateString()}
+                      {supply.expiresAt
+                        ? new Date(supply.expiresAt).toLocaleDateString()
+                        : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -385,7 +460,10 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Dialog open={editingSupply?.id === supply.id} onOpenChange={(open) => !open && setEditingSupply(null)}>
+                  <Dialog
+                    open={editingSupply?.id === supply.id}
+                    onOpenChange={open => !open && setEditingSupply(null)}
+                  >
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
@@ -411,7 +489,12 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                           <Input
                             id="edit-strain"
                             value={formData.strain}
-                            onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                            onChange={e =>
+                              setFormData({
+                                ...formData,
+                                strain: e.target.value,
+                              })
+                            }
                             required
                           />
                         </div>
@@ -420,7 +503,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                           <Label htmlFor="edit-category">Category *</Label>
                           <Select
                             value={formData.category}
-                            onValueChange={(value) => setFormData({ ...formData, category: value })}
+                            onValueChange={value =>
+                              setFormData({ ...formData, category: value })
+                            }
                             required
                           >
                             <SelectTrigger id="edit-category">
@@ -431,7 +516,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                               <SelectItem value="trim">Trim</SelectItem>
                               <SelectItem value="biomass">Biomass</SelectItem>
                               <SelectItem value="isolate">Isolate</SelectItem>
-                              <SelectItem value="distillate">Distillate</SelectItem>
+                              <SelectItem value="distillate">
+                                Distillate
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -444,7 +531,12 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                               type="number"
                               step="0.01"
                               value={formData.quantity}
-                              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                              onChange={e =>
+                                setFormData({
+                                  ...formData,
+                                  quantity: e.target.value,
+                                })
+                              }
                               required
                             />
                           </div>
@@ -452,14 +544,18 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                             <Label htmlFor="edit-unit">Unit *</Label>
                             <Select
                               value={formData.unit}
-                              onValueChange={(value) => setFormData({ ...formData, unit: value })}
+                              onValueChange={value =>
+                                setFormData({ ...formData, unit: value })
+                              }
                             >
                               <SelectTrigger id="edit-unit">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="lb">Pounds (lb)</SelectItem>
-                                <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                                <SelectItem value="kg">
+                                  Kilograms (kg)
+                                </SelectItem>
                                 <SelectItem value="g">Grams (g)</SelectItem>
                                 <SelectItem value="oz">Ounces (oz)</SelectItem>
                               </SelectContent>
@@ -475,7 +571,12 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                               type="number"
                               step="0.01"
                               value={formData.priceMin}
-                              onChange={(e) => setFormData({ ...formData, priceMin: e.target.value })}
+                              onChange={e =>
+                                setFormData({
+                                  ...formData,
+                                  priceMin: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div className="space-y-2">
@@ -485,7 +586,12 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                               type="number"
                               step="0.01"
                               value={formData.priceMax}
-                              onChange={(e) => setFormData({ ...formData, priceMax: e.target.value })}
+                              onChange={e =>
+                                setFormData({
+                                  ...formData,
+                                  priceMax: e.target.value,
+                                })
+                              }
                             />
                           </div>
                         </div>
@@ -495,17 +601,31 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
                           <Textarea
                             id="edit-notes"
                             value={formData.notes}
-                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                            onChange={e =>
+                              setFormData({
+                                ...formData,
+                                notes: e.target.value,
+                              })
+                            }
                             rows={3}
                           />
                         </div>
 
                         <DialogFooter>
-                          <Button type="button" variant="outline" onClick={() => setEditingSupply(null)}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setEditingSupply(null)}
+                          >
                             Cancel
                           </Button>
-                          <Button type="submit" disabled={updateSupply.isPending}>
-                            {updateSupply.isPending ? "Updating..." : "Update Supply"}
+                          <Button
+                            type="submit"
+                            disabled={updateSupply.isPending}
+                          >
+                            {updateSupply.isPending
+                              ? "Updating..."
+                              : "Update Supply"}
                           </Button>
                         </DialogFooter>
                       </form>
@@ -529,7 +649,9 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
           <Card>
             <CardContent className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground mb-4">No supply listings yet</p>
+              <p className="text-muted-foreground mb-4">
+                No supply listings yet
+              </p>
               <Button onClick={() => setIsCreateOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Post Your First Supply
@@ -541,7 +663,7 @@ export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupp
 
       <ConfirmDialog
         open={!!cancelSupplyId}
-        onOpenChange={(open) => !open && setCancelSupplyId(null)}
+        onOpenChange={open => !open && setCancelSupplyId(null)}
         title="Cancel Listing"
         description="Are you sure you want to cancel this listing? This action cannot be undone."
         confirmLabel="Cancel Listing"

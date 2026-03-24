@@ -53,10 +53,12 @@ function createMockTransaction(batchData: LockedBatch | LockedBatch[] | null) {
   const sqlOperations: string[] = [];
   let executeCallCount = 0;
 
-  const mockExecute = vi.fn().mockImplementation((query: any) => {
+  const mockExecute = vi.fn().mockImplementation((query: unknown) => {
     executeCallCount++;
     // Store query for potential debugging (prefixed with _ to indicate intentionally unused)
-    const _queryStr = query?.toString?.() || JSON.stringify(query);
+    const _queryStr =
+      (query as { toString?: () => string } | null)?.toString?.() ||
+      JSON.stringify(query);
 
     // First call is SET SESSION (timeout configuration)
     if (executeCallCount === 1) {

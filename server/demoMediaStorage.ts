@@ -85,7 +85,10 @@ export async function deleteDemoMediaBlob(id: string): Promise<boolean> {
   }
 
   const db = await getDb();
-  await db.delete(demoMediaBlobs).where(eq(demoMediaBlobs.id, id));
+  await db
+    .update(demoMediaBlobs)
+    .set({ deletedAt: new Date() })
+    .where(eq(demoMediaBlobs.id, id));
   return true;
 }
 
@@ -105,7 +108,9 @@ export function buildDemoMediaUrl(req: Request, id: string): string {
   return `${protocol}://${host}${DEMO_MEDIA_PATH_PREFIX}/${id}`;
 }
 
-export function extractDemoMediaBlobIdFromUrl(urlOrPath: string): string | null {
+export function extractDemoMediaBlobIdFromUrl(
+  urlOrPath: string
+): string | null {
   try {
     const parsed = new URL(urlOrPath, "http://local");
     const match = parsed.pathname.match(

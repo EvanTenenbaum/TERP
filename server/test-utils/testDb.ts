@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, eqeqeq */
+/* eslint-disable @typescript-eslint/no-unused-vars, eqeqeq */
 /**
  * Test Database Utility
  *
@@ -7,6 +7,16 @@
  */
 
 import { vi } from "vitest";
+
+type MockRow = Record<string, unknown>;
+
+interface MockCondition {
+  op: string;
+  col: { table?: unknown; name: string };
+  val?: unknown;
+  values?: unknown[];
+  args?: MockCondition[];
+}
 
 // Helper to get table name from object
 function getTableName(table: unknown): string {
@@ -37,7 +47,7 @@ function getColValue(
 }
 
 export function createMockDb() {
-  const storage: Record<string, any[]> = {};
+  const storage: Record<string, MockRow[]> = {};
 
   const getStorage = (key: string) => {
     if (storage[key]) return storage[key];
@@ -68,7 +78,7 @@ export function createMockDb() {
           const joinTableName = getTableName(table);
           const joinRows = storage[joinTableName] || [];
 
-          const newRows: any[] = [];
+          const newRows: Array<Record<string, unknown>> = [];
           currentRows.forEach(mainRow => {
             let matchFound = false;
 
@@ -152,7 +162,7 @@ export function createMockDb() {
           return builder;
         }),
         where: vi.fn(condition => {
-          const applyCondition = (cond: any) => {
+          const applyCondition = (cond: MockCondition) => {
             if (!cond) return;
             if (cond.op === "eq") {
               currentRows = currentRows.filter(rowCtx => {
@@ -165,15 +175,15 @@ export function createMockDb() {
                 return val === null || val === undefined;
               });
             } else if (cond.op === "and") {
-              cond.args.forEach(applyCondition);
+              cond.args?.forEach(applyCondition);
             } else if (cond.op === "inArray") {
               currentRows = currentRows.filter(rowCtx => {
                 const val = getColValue(rowCtx, cond.col);
-                return cond.values.includes(val);
+                return (cond.values as unknown[])?.includes(val);
               });
             }
           };
-          applyCondition(condition);
+          applyCondition(condition as MockCondition);
           return builder;
         }),
         for: vi.fn(() => builder),
@@ -185,13 +195,15 @@ export function createMockDb() {
         orderBy: vi.fn(() => builder),
         groupBy: vi.fn(() => builder),
         innerJoin: vi.fn(() => builder),
-        then: (resolve: any) => {
+        then: (resolve: (rows: unknown) => unknown) => {
           if (isJoined) {
             if (selection && typeof selection === "object") {
               const mappedRows = currentRows.map(row => {
-                const mapped: any = {};
+                const mapped: Record<string, unknown> = {};
                 for (const key in selection) {
-                  const targetTable = getTableName(selection[key]);
+                  const targetTable = getTableName(
+                    (selection as Record<string, unknown>)[key]
+                  );
                   mapped[key] = row[targetTable];
                 }
                 return mapped;
@@ -209,10 +221,10 @@ export function createMockDb() {
       return builder;
     }),
 
-    selectDistinct: vi.fn(selection => {
-      let currentRows: any[] = [];
+    selectDistinct: vi.fn(_selection => {
+      let currentRows: Array<Record<string, unknown>> = [];
 
-      const builder: any = {
+      const builder: Record<string, unknown> = {
         from: vi.fn((table: unknown) => {
           const tableName = getTableName(table);
           currentRows = (storage[tableName] || []).map(row => ({
@@ -223,10 +235,10 @@ export function createMockDb() {
         where: vi.fn(() => builder),
         orderBy: vi.fn(() => builder),
         groupBy: vi.fn(() => builder),
-        then: (resolve: any) => {
+        then: (resolve: (rows: unknown) => unknown) => {
           const flatRows = currentRows.map(r => Object.values(r)[0]);
           // Simple dedup based on JSON string
-          const seen = new Set();
+          const seen = new Set<string>();
           const unique = flatRows.filter(row => {
             const key = JSON.stringify(row);
             if (seen.has(key)) return false;
@@ -245,12 +257,17 @@ export function createMockDb() {
         values: vi.fn(values => {
           const rows = Array.isArray(values) ? values : [values];
 
-          const mappedRows = rows.map((row: any) => {
-            const mapped: any = { ...row };
+          const mappedRows = rows.map((row: MockRow) => {
+            const mapped: MockRow = { ...row };
             for (const key of Object.keys(row)) {
-              const col = table[key];
-              if (col && typeof col === "object" && col.name) {
-                mapped[col.name] = row[key];
+              const col = (table as Record<string, unknown>)[key];
+              if (
+                col &&
+                typeof col === "object" &&
+                (col as Record<string, unknown>).name
+              ) {
+                mapped[(col as Record<string, unknown>).name as string] =
+                  row[key];
               }
             }
             return mapped;
@@ -259,7 +276,7 @@ export function createMockDb() {
           if (!storage[tableName]) storage[tableName] = [];
           const startId = storage[tableName].length + 1;
 
-          const newRows = mappedRows.map((r: any, i: number) => ({
+          const newRows = mappedRows.map((r: MockRow, i: number) => ({
             ...r,
             id: r.id || startId + i,
           }));
@@ -271,7 +288,7 @@ export function createMockDb() {
           return {
             onDuplicateKeyUpdate: vi.fn().mockResolvedValue(result),
             $returningId: vi.fn(() => Promise.resolve(returningIds)),
-            then: (resolve: any) => resolve(result),
+            then: (resolve: (result: unknown) => unknown) => resolve(result),
           };
         }),
       };
@@ -288,28 +305,37 @@ export function createMockDb() {
 
               const newRows = rows.map(row => {
                 let match = false;
-                const checkCondition = (cond: any): boolean => {
+                const checkCondition = (cond: MockCondition): boolean => {
                   if (!cond) return true;
                   if (cond.op === "eq") {
-                    return row[cond.col.name] == cond.val;
+                    return (
+                      (row as Record<string, unknown>)[cond.col.name] ==
+                      cond.val
+                    );
                   } else if (cond.op === "and") {
-                    return cond.args.every(checkCondition);
+                    return cond.args?.every(checkCondition) ?? true;
                   }
                   return true;
                 };
 
-                if (checkCondition(condition)) {
+                if (checkCondition(condition as MockCondition)) {
                   match = true;
                 }
 
                 if (match) {
                   updatedCount++;
-                  const updatedRow = { ...row };
+                  const updatedRow: Record<string, unknown> = { ...row };
                   for (const key in values) {
-                    updatedRow[key] = values[key];
-                    const col = table[key];
-                    if (col && typeof col === "object" && col.name) {
-                      updatedRow[col.name] = values[key];
+                    updatedRow[key] = (values as Record<string, unknown>)[key];
+                    const col = (table as Record<string, unknown>)[key];
+                    if (
+                      col &&
+                      typeof col === "object" &&
+                      (col as Record<string, unknown>).name
+                    ) {
+                      updatedRow[
+                        (col as Record<string, unknown>).name as string
+                      ] = (values as Record<string, unknown>)[key];
                     }
                   }
                   return updatedRow;
@@ -319,7 +345,10 @@ export function createMockDb() {
 
               storage[tableName] = newRows;
 
-              return { then: (r: any) => r({ changes: updatedCount }) };
+              return {
+                then: (r: (result: { changes: number }) => unknown) =>
+                  r({ changes: updatedCount }),
+              };
             }),
           };
         }),
@@ -330,18 +359,23 @@ export function createMockDb() {
       const tableName = getTableName(table);
       return {
         where: vi.fn(condition => {
-          if (condition && condition.op === "eq") {
-            const colName = condition.col.name;
+          if (condition && (condition as MockCondition).op === "eq") {
+            const colName = (condition as MockCondition).col.name;
             const initialLen = (storage[tableName] || []).length;
             storage[tableName] = (storage[tableName] || []).filter(
-              (r: any) => r[colName] != condition.val
+              (r: MockRow) =>
+                (r as Record<string, unknown>)[colName] !=
+                (condition as MockCondition).val
             );
             return {
-              then: (r: any) =>
+              then: (r: (result: { changes: number }) => unknown) =>
                 r({ changes: initialLen - storage[tableName].length }),
             };
           }
-          return { then: (r: any) => r({ changes: 0 }) };
+          return {
+            then: (r: (result: { changes: number }) => unknown) =>
+              r({ changes: 0 }),
+          };
         }),
       };
     }),
@@ -355,28 +389,29 @@ export function createMockDb() {
               const rows = getStorage(prop);
               let result = rows;
               if (args?.where) {
-                const applyCondition = (cond: any) => {
+                const applyCondition = (cond: MockCondition) => {
                   if (!cond) return;
                   if (cond.op === "eq") {
                     const colName = cond.col.name;
                     const initialLen = result.length;
-                    result = result.filter((r: any) => {
-                      const val = r[colName];
+                    result = result.filter((r: MockRow) => {
+                      const val = (r as Record<string, unknown>)[colName];
                       const match = val == cond.val;
                       process.stdout.write(
-                        `[findFirst] Filter ${prop}: ${colName}=${val} vs ${cond.val} -> ${match}\n`
+                        `[findFirst] Filter ${prop}: ${colName}=${String(val)} vs ${String(cond.val)} -> ${String(match)}\n`
                       );
                       return match;
                     });
+                    void initialLen;
                   } else if (cond.op === "and") {
-                    cond.args.forEach(applyCondition);
+                    cond.args?.forEach(applyCondition);
                   } else {
                     process.stdout.write(
                       `[findFirst] Unknown Op: ${cond.op}\n`
                     );
                   }
                 };
-                applyCondition(args.where);
+                applyCondition(args.where as MockCondition);
               } else {
                 process.stdout.write(`[findFirst] No where args\n`);
               }
@@ -385,16 +420,19 @@ export function createMockDb() {
             findMany: vi.fn(args => {
               let result = getStorage(prop);
               if (args?.where) {
-                const applyCondition = (cond: any) => {
+                const applyCondition = (cond: MockCondition) => {
                   if (!cond) return;
                   if (cond.op === "eq") {
                     const colName = cond.col.name;
-                    result = result.filter((r: any) => r[colName] == cond.val);
+                    result = result.filter(
+                      (r: MockRow) =>
+                        (r as Record<string, unknown>)[colName] == cond.val
+                    );
                   } else if (cond.op === "and") {
-                    cond.args.forEach(applyCondition);
+                    cond.args?.forEach(applyCondition);
                   }
                 };
-                applyCondition(args.where);
+                applyCondition(args.where as MockCondition);
               }
               if (args?.limit) result = result.slice(0, args.limit);
               return Promise.resolve(result);
@@ -418,6 +456,11 @@ export function setupDbMock() {
   };
 }
 
-export function mockSelectQuery(mockDb: any, results: any[]) {
+export function mockSelectQuery(
+  mockDb: ReturnType<typeof createMockDb>,
+  results: MockRow[]
+) {
   // Basic mock
+  void mockDb;
+  void results;
 }

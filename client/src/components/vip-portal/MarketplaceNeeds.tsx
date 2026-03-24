@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,21 +31,65 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+interface VipMarketplaceConfig {
+  advancedOptions?: {
+    defaultNeedsExpiration?: string;
+    [key: string]: unknown;
+  } | null;
+  featuresConfig?: {
+    marketplaceNeeds?: {
+      allowCreate?: boolean;
+      showActiveListings?: boolean;
+      allowEdit?: boolean;
+      allowCancel?: boolean;
+    };
+    [key: string]: unknown;
+  } | null;
+}
+
+interface ClientNeedItem {
+  id: number;
+  strain?: string | null;
+  productName?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  grade?: string | null;
+  quantityMin?: number | null;
+  quantityMax?: number | null;
+  priceMax?: number | null;
+  notes?: string | null;
+  expiresAt?: string | Date | null;
+  status?: string | null;
+}
+
+interface NeedFormData {
+  strain?: string;
+  productName?: string;
+  category?: string;
+  subcategory?: string;
+  grade?: string;
+  quantityMin?: number;
+  quantityMax?: number;
+  priceMax?: number;
+  notes?: string;
+}
+
 interface MarketplaceNeedsProps {
   clientId: number;
-  config: any;
+  config: VipMarketplaceConfig;
 }
 
 export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedNeed, setSelectedNeed] = useState<any | null>(null);
+  const [selectedNeed, setSelectedNeed] = useState<ClientNeedItem | null>(null);
   const [cancelNeedId, setCancelNeedId] = useState<number | null>(null);
 
-  const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery({
-    clientId,
-  });
+  const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery(
+    {
+      clientId,
+    }
+  );
 
   const createMutation = trpc.vipPortal.marketplace.createNeed.useMutation({
     onSuccess: () => {
@@ -73,19 +123,20 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
     },
   });
 
-  const handleCreate = (formData: any) => {
-    const expirationDays = config.advancedOptions?.defaultNeedsExpiration === "1_DAY" ? 1 :
-                           config.advancedOptions?.defaultNeedsExpiration === "1_WEEK" ? 7 :
-                           config.advancedOptions?.defaultNeedsExpiration === "1_MONTH" ? 30 : 5;
-    
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + expirationDays);
+  const handleCreate = (formData: NeedFormData) => {
+    const expiresInDays =
+      config.advancedOptions?.defaultNeedsExpiration === "1_DAY"
+        ? 1
+        : config.advancedOptions?.defaultNeedsExpiration === "1_WEEK"
+          ? 7
+          : config.advancedOptions?.defaultNeedsExpiration === "1_MONTH"
+            ? 30
+            : 5;
 
     createMutation.mutate({
-      clientId,
       ...formData,
-      expiresAt,
-    });
+      expiresInDays,
+    } as Parameters<typeof createMutation.mutate>[0]);
   };
 
   const handleCancel = (needId: number) => {
@@ -105,10 +156,15 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl md:text-2xl font-bold">My Needs</h2>
-          <p className="text-sm text-muted-foreground">Products you're looking to purchase</p>
+          <p className="text-sm text-muted-foreground">
+            Products you're looking to purchase
+          </p>
         </div>
         {config.featuresConfig?.marketplaceNeeds?.allowCreate && (
-          <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="w-full sm:w-auto"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Post a Need
           </Button>
@@ -119,20 +175,27 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
       {config.featuresConfig?.marketplaceNeeds?.showActiveListings && (
         <div className="space-y-3">
           {needs && needs.length > 0 ? (
-            needs.map((need: any) => (
+            (needs as ClientNeedItem[]).map(need => (
               <Card key={need.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
                         <Package className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{need.strain || "Any Strain"}</span>
+                        <span className="truncate">
+                          {need.strain || "Any Strain"}
+                        </span>
                       </CardTitle>
                       <CardDescription className="text-sm mt-1">
                         {need.category || "Any Category"}
                       </CardDescription>
                     </div>
-                    <Badge variant={need.status === "ACTIVE" ? "default" : "secondary"} className="flex-shrink-0">
+                    <Badge
+                      variant={
+                        need.status === "ACTIVE" ? "default" : "secondary"
+                      }
+                      className="flex-shrink-0"
+                    >
                       {need.status}
                     </Badge>
                   </div>
@@ -146,8 +209,8 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
                         {need.quantityMin && need.quantityMax
                           ? `${need.quantityMin}-${need.quantityMax} lbs`
                           : need.quantityMin
-                          ? `${need.quantityMin}+ lbs`
-                          : "Any"}
+                            ? `${need.quantityMin}+ lbs`
+                            : "Any"}
                       </p>
                     </div>
                     <div>
@@ -171,7 +234,9 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
                   {/* Notes */}
                   {need.notes && (
                     <div className="text-sm">
-                      <p className="text-muted-foreground text-xs mb-1">Notes</p>
+                      <p className="text-muted-foreground text-xs mb-1">
+                        Notes
+                      </p>
                       <p className="text-sm line-clamp-2">{need.notes}</p>
                     </div>
                   )}
@@ -238,14 +303,19 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           need={selectedNeed}
-          onSubmit={(data: any) => updateMutation.mutate({ needId: selectedNeed.id, clientId, ...data })}
+          onSubmit={(data: NeedFormData) =>
+            updateMutation.mutate({
+              id: selectedNeed.id,
+              ...data,
+            } as Parameters<typeof updateMutation.mutate>[0])
+          }
           config={config}
         />
       )}
 
       <ConfirmDialog
         open={!!cancelNeedId}
-        onOpenChange={(open) => !open && setCancelNeedId(null)}
+        onOpenChange={open => !open && setCancelNeedId(null)}
         title="Cancel Need"
         description="Are you sure you want to cancel this need? This action cannot be undone."
         confirmLabel="Cancel Need"
@@ -257,7 +327,17 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   );
 }
 
-function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any) {
+function CreateNeedDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  config: _config,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: NeedFormData) => void;
+  config?: VipMarketplaceConfig;
+}) {
   const [formData, setFormData] = useState({
     strain: "",
     productName: "",
@@ -274,8 +354,12 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
     e.preventDefault();
     onSubmit({
       ...formData,
-      quantityMin: formData.quantityMin ? parseFloat(formData.quantityMin) : undefined,
-      quantityMax: formData.quantityMax ? parseFloat(formData.quantityMax) : undefined,
+      quantityMin: formData.quantityMin
+        ? parseFloat(formData.quantityMin)
+        : undefined,
+      quantityMax: formData.quantityMax
+        ? parseFloat(formData.quantityMax)
+        : undefined,
       priceMax: formData.priceMax ? parseFloat(formData.priceMax) : undefined,
     });
     setFormData({
@@ -306,7 +390,9 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
               <Label htmlFor="category">Category</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={value =>
+                  setFormData({ ...formData, category: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -329,7 +415,9 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
                 <Input
                   id="strain"
                   value={formData.strain}
-                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, strain: e.target.value })
+                  }
                   placeholder="e.g., Blue Dream"
                   required
                 />
@@ -338,11 +426,15 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
               // NON-FLOWER: Product name + optional strain
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="productName">Product Name (or Strain) *</Label>
+                  <Label htmlFor="productName">
+                    Product Name (or Strain) *
+                  </Label>
                   <Input
                     id="productName"
                     value={formData.productName}
-                    onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, productName: e.target.value })
+                    }
                     placeholder="e.g., Ceramic 510 Cart, Mixed Fruit Gummies"
                     required
                   />
@@ -352,7 +444,9 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
                   <Input
                     id="strain"
                     value={formData.strain}
-                    onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, strain: e.target.value })
+                    }
                     placeholder="e.g., OG Kush"
                   />
                 </div>
@@ -361,33 +455,38 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
               // No category selected yet
               <div className="space-y-2">
                 <Label>Strain or Product Name</Label>
-                <Input
-                  disabled
-                  placeholder="Select a category first"
-                />
+                <Input disabled placeholder="Select a category first" />
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="quantityMin" className="text-sm">Min Qty (lbs)</Label>
+                <Label htmlFor="quantityMin" className="text-sm">
+                  Min Qty (lbs)
+                </Label>
                 <Input
                   id="quantityMin"
                   type="number"
                   step="0.01"
                   value={formData.quantityMin}
-                  onChange={(e) => setFormData({ ...formData, quantityMin: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, quantityMin: e.target.value })
+                  }
                   placeholder="10"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="quantityMax" className="text-sm">Max Qty (lbs)</Label>
+                <Label htmlFor="quantityMax" className="text-sm">
+                  Max Qty (lbs)
+                </Label>
                 <Input
                   id="quantityMax"
                   type="number"
                   step="0.01"
                   value={formData.quantityMax}
-                  onChange={(e) => setFormData({ ...formData, quantityMax: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, quantityMax: e.target.value })
+                  }
                   placeholder="100"
                 />
               </div>
@@ -400,7 +499,9 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
                 type="number"
                 step="0.01"
                 value={formData.priceMax}
-                onChange={(e) => setFormData({ ...formData, priceMax: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, priceMax: e.target.value })
+                }
                 placeholder="500"
               />
             </div>
@@ -410,7 +511,9 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
               <Textarea
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 placeholder="Any specific requirements..."
                 rows={3}
                 className="resize-none"
@@ -418,10 +521,17 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button type="submit" className="w-full sm:w-auto">Post Need</Button>
+            <Button type="submit" className="w-full sm:w-auto">
+              Post Need
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -429,7 +539,18 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any
   );
 }
 
-function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
+function EditNeedDialog({
+  open,
+  onOpenChange,
+  need,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  need: ClientNeedItem;
+  onSubmit: (data: NeedFormData) => void;
+  config?: VipMarketplaceConfig;
+}) {
   const [formData, setFormData] = useState({
     strain: need.strain || "",
     productName: need.productName || "",
@@ -444,8 +565,12 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
     e.preventDefault();
     onSubmit({
       ...formData,
-      quantityMin: formData.quantityMin ? parseFloat(formData.quantityMin) : undefined,
-      quantityMax: formData.quantityMax ? parseFloat(formData.quantityMax) : undefined,
+      quantityMin: formData.quantityMin
+        ? parseFloat(formData.quantityMin)
+        : undefined,
+      quantityMax: formData.quantityMax
+        ? parseFloat(formData.quantityMax)
+        : undefined,
       priceMax: formData.priceMax ? parseFloat(formData.priceMax) : undefined,
     });
   };
@@ -463,7 +588,9 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
               <Label htmlFor="edit-category">Category</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={value =>
+                  setFormData({ ...formData, category: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -485,18 +612,24 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
                 <Input
                   id="edit-strain"
                   value={formData.strain}
-                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, strain: e.target.value })
+                  }
                   required
                 />
               </div>
             ) : formData.category ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-productName">Product Name (or Strain) *</Label>
+                  <Label htmlFor="edit-productName">
+                    Product Name (or Strain) *
+                  </Label>
                   <Input
                     id="edit-productName"
                     value={formData.productName}
-                    onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, productName: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -505,7 +638,9 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
                   <Input
                     id="edit-strain"
                     value={formData.strain}
-                    onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, strain: e.target.value })
+                    }
                   />
                 </div>
               </>
@@ -515,30 +650,40 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
                 <Input
                   id="edit-strain"
                   value={formData.strain}
-                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, strain: e.target.value })
+                  }
                 />
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="edit-quantityMin" className="text-sm">Min Qty (lbs)</Label>
+                <Label htmlFor="edit-quantityMin" className="text-sm">
+                  Min Qty (lbs)
+                </Label>
                 <Input
                   id="edit-quantityMin"
                   type="number"
                   step="0.01"
                   value={formData.quantityMin}
-                  onChange={(e) => setFormData({ ...formData, quantityMin: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, quantityMin: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-quantityMax" className="text-sm">Max Qty (lbs)</Label>
+                <Label htmlFor="edit-quantityMax" className="text-sm">
+                  Max Qty (lbs)
+                </Label>
                 <Input
                   id="edit-quantityMax"
                   type="number"
                   step="0.01"
                   value={formData.quantityMax}
-                  onChange={(e) => setFormData({ ...formData, quantityMax: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, quantityMax: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -550,7 +695,9 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
                 type="number"
                 step="0.01"
                 value={formData.priceMax}
-                onChange={(e) => setFormData({ ...formData, priceMax: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, priceMax: e.target.value })
+                }
               />
             </div>
 
@@ -559,17 +706,26 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
               <Textarea
                 id="edit-notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 rows={3}
                 className="resize-none"
               />
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button type="submit" className="w-full sm:w-auto">Update Need</Button>
+            <Button type="submit" className="w-full sm:w-auto">
+              Update Need
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

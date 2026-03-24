@@ -11,7 +11,6 @@
  * @see ATOMIC_UX_STRATEGY.md for bulk operation requirements
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
@@ -125,8 +124,8 @@ const DEFAULT_LIMITS: BulkOperationLimits = {
  */
 export function useBulkOperationLimits<T>(
   options: UseBulkOperationLimitsOptions = {},
-  getItemId: (item: T) => string | number = (item: any) =>
-    item.id as string | number
+  getItemId: (item: T) => string | number = (item: T) =>
+    (item as { id: string | number }).id
 ): UseBulkOperationLimitsReturn<T> {
   const {
     limits: customLimits,

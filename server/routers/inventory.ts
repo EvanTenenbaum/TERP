@@ -1624,11 +1624,11 @@ export const inventoryRouter = router({
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
-        const result = await inventoryDb.searchVendors(input.query);
+        const result = await inventoryDb.searchSuppliers(input.query);
         // BUG-034: Standardized pagination response
         return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
       }
-      const result = await inventoryDb.getAllVendors();
+      const result = await inventoryDb.getAllSuppliers();
       // BUG-034: Standardized pagination response
       return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
     }),
