@@ -112,14 +112,26 @@ export default defineConfig({
       name: "deep",
       testDir: "./tests-e2e/deep",
       grepInvert: /@rbac/,
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        ignoreHTTPSErrors: !!proxyConfig,
+      },
     },
     {
       name: "deep-rbac",
       testDir: "./tests-e2e/deep",
       grep: /@rbac/,
       dependencies: ["deep"],
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        ignoreHTTPSErrors: !!proxyConfig,
+      },
     },
     {
       name: "smoke",
