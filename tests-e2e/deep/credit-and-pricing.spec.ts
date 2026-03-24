@@ -472,32 +472,41 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
     expect(orderDetail).toBeTruthy();
     expect(orderDetail?.id).toBe(order.id);
 
-    // If the server stores margin on line items, verify the values
+    // Verify the order has line items and pricing data
     const items = orderDetail?.items;
-    if (Array.isArray(items) && items.length > 0) {
-      const item = items[0];
-      const storedPrice = toNumber(item.unitPrice);
-      const storedCogs = toNumber(item.unitCogs);
+    expect(
+      Array.isArray(items) && items.length > 0,
+      "Order must have at least one line item"
+    ).toBe(true);
 
-      // Only assert margin math if the server returned COGS on the item
-      if (storedCogs > 0 && storedPrice > 0) {
-        const expectedMarginPct =
-          ((storedPrice - storedCogs) / storedPrice) * 100;
-        const expectedMarginDollar = (storedPrice - storedCogs) * quantity;
+    const item = (items ?? [])[0];
+    const storedPrice = toNumber(item.unitPrice);
+    const storedCogs = toNumber(item.unitCogs);
 
-        if (item.marginPercent !== undefined && item.marginPercent !== null) {
-          const storedMarginPct = toNumber(item.marginPercent);
-          expect(storedMarginPct).toBeCloseTo(expectedMarginPct, 0);
-        }
+    // Unit price must be stored correctly
+    expect(storedPrice).toBeGreaterThan(0);
 
-        if (item.marginDollar !== undefined && item.marginDollar !== null) {
-          const storedMarginDollar = toNumber(item.marginDollar);
-          expect(storedMarginDollar).toBeCloseTo(expectedMarginDollar, 1);
-        }
+    // If COGS is stored on the line item, verify margin math
+    if (storedCogs > 0) {
+      const expectedMarginPct =
+        ((storedPrice - storedCogs) / storedPrice) * 100;
+      const expectedMarginDollar = (storedPrice - storedCogs) * quantity;
 
-        // At 1.5x COGS the theoretical margin is 33.33%
-        expect(expectedMarginPct).toBeCloseTo(33.33, 0);
+      if (item.marginPercent !== undefined && item.marginPercent !== null) {
+        const storedMarginPct = toNumber(item.marginPercent);
+        expect(storedMarginPct).toBeCloseTo(expectedMarginPct, 0);
       }
+
+      if (item.marginDollar !== undefined && item.marginDollar !== null) {
+        const storedMarginDollar = toNumber(item.marginDollar);
+        expect(storedMarginDollar).toBeCloseTo(expectedMarginDollar, 1);
+      }
+
+      // At 1.5x COGS the theoretical margin is 33.33%
+      expect(expectedMarginPct).toBeCloseTo(33.33, 0);
+    } else {
+      // COGS not stored on line items — verify at least the price is correct
+      expect(storedPrice).toBeCloseTo(unitPrice, 1);
     }
   });
 
@@ -526,7 +535,7 @@ test.describe("Credit and Pricing Deep Tests @deep", () => {
     expect(Array.isArray(tiers)).toBe(true);
 
     if (tiers.length === 0) {
-      // Nothing to assert structurally — pass the test
+      test.skip(true, "No VIP tiers seeded — cannot validate structure");
       return;
     }
 

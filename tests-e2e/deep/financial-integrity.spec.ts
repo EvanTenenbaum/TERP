@@ -200,7 +200,9 @@ test.describe("Financial Integrity", () => {
     expect(hasSaleTx).toBe(true);
 
     const hasPaymentTx = ledger.transactions.some(
-      tx => tx.type === "PAYMENT_RECEIVED"
+      tx =>
+        tx.type === "PAYMENT_RECEIVED" &&
+        (tx.referenceId === invoice.id || tx.referenceId === order.id)
     );
     expect(hasPaymentTx).toBe(true);
   });
@@ -603,12 +605,16 @@ test.describe("Financial Integrity", () => {
     );
     expect(saleTx).toBeDefined();
 
-    // Extract numeric transactionId from the ledger entry id (format: "source_type:id")
-    // Fall back to the invoice id if no matching SALE transaction can be parsed.
+    // Extract numeric transactionId from the ledger entry
+    // Use invoice.id as fallback since badDebt.writeOff accepts invoice references
     let transactionId = invoice.id;
     if (saleTx) {
-      const ledgerEntry = saleTx as LedgerTransaction & { id?: string };
-      if (typeof ledgerEntry.id === "string") {
+      const ledgerEntry = saleTx as LedgerTransaction & {
+        id?: string | number;
+      };
+      if (typeof ledgerEntry.id === "number" && ledgerEntry.id > 0) {
+        transactionId = ledgerEntry.id;
+      } else if (typeof ledgerEntry.id === "string") {
         const parts = ledgerEntry.id.split(":");
         const parsed = Number(parts[parts.length - 1]);
         if (Number.isFinite(parsed) && parsed > 0) {

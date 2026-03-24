@@ -213,7 +213,9 @@ test.describe("Cross-Domain Integration", () => {
     expect(hasSale).toBe(true);
 
     const hasPayment = ledger.transactions.some(
-      t => t.type === "PAYMENT_RECEIVED"
+      t =>
+        t.type === "PAYMENT_RECEIVED" &&
+        (t.referenceId === invoice.id || t.referenceId === order.id)
     );
     expect(hasPayment).toBe(true);
   });
@@ -335,7 +337,10 @@ test.describe("Cross-Domain Integration", () => {
 
     // Check inventory was reduced
     const qtyAfterSale = await getBatchQty(page, batch.id);
-    // Inventory should have decreased (allocation may happen at confirm or ship)
+    expect(
+      qtyAfterSale,
+      `Inventory should decrease after sale: before=${qtyBefore}, after=${qtyAfterSale}`
+    ).toBeLessThan(qtyBefore);
 
     // Get order line items for return
     const orderDetail = await trpcQuery<OrderDetail>(page, "orders.getById", {
@@ -514,13 +519,14 @@ test.describe("Cross-Domain Integration", () => {
     const outstandingAfter = toNumber(
       arAfter.totalOutstanding ?? arAfter.total
     );
-    // Payment of `total` should reduce outstanding (other tests may run concurrently,
-    // so we verify it decreased by at least 90% of the payment amount)
+    // Payment of `total` should reduce outstanding
+    expect(outstandingAfter).toBeLessThanOrEqual(outstandingBefore);
     if (outstandingBefore > 0) {
-      expect(outstandingAfter).toBeLessThanOrEqual(outstandingBefore);
-      expect(outstandingBefore - outstandingAfter).toBeGreaterThanOrEqual(
-        total * 0.9
-      );
+      const decrease = outstandingBefore - outstandingAfter;
+      expect(
+        decrease,
+        `AR outstanding should decrease by payment amount (${total}), decreased by ${decrease}`
+      ).toBeGreaterThanOrEqual(total * 0.9);
     }
 
     // Verify invoice is PAID

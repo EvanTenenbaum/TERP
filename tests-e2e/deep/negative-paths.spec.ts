@@ -621,21 +621,24 @@ test.describe("Negative Paths: Overpayment Handling", () => {
       );
     }
 
-    // Regardless of whether the API accepted or rejected the overpayment,
-    // verify the invoice is not in an inconsistent state
+    // Verify the invoice is not in an inconsistent state
     const finalInvoice = await trpcQuery<InvoiceRecord>(
       page,
       "invoices.getById",
       { id: invoice.id }
     );
 
-    const validStatuses = ["SENT", "PARTIAL", "PAID", "OVERPAID"];
-    expect(validStatuses).toContain(finalInvoice.status);
-
-    if (!overpaymentErrorThrown) {
-      console.info(
-        `[negative-paths] overpayment accepted; invoice status after: ${finalInvoice.status}`
-      );
+    if (overpaymentErrorThrown) {
+      // Overpayment rejected — invoice should remain SENT (unpaid)
+      expect(finalInvoice.status).toBe("SENT");
+    } else {
+      // Overpayment accepted — verify the system capped or handled it
+      const validStatuses = ["PAID", "OVERPAID"];
+      expect(validStatuses).toContain(finalInvoice.status);
+      // amountPaid must not exceed 2x totalAmount (sanity bound)
+      const amountPaid = toNumber(finalInvoice.amountPaid);
+      expect(amountPaid).toBeLessThanOrEqual(overpaymentAmount + 0.01);
+      expect(amountPaid).toBeGreaterThan(0);
     }
   });
 });
@@ -681,7 +684,7 @@ test.describe("Negative Paths: Inventory Adjustment Boundaries", () => {
     }
 
     if (!adjustmentErrorThrown) {
-      // API allowed negative inventory — document the actual resulting qty
+      // API allowed the adjustment — verify inventory did NOT go negative
       const afterList = await trpcQuery<InventoryListResponse>(
         page,
         "inventory.list",
@@ -692,12 +695,15 @@ test.describe("Negative Paths: Inventory Adjustment Boundaries", () => {
       )?.batch;
 
       const resultingQty = toNumber(updatedBatch?.onHandQty);
-      console.warn(
-        `[negative-paths] below-zero adjustment was ACCEPTED; resulting onHandQty=${resultingQty}. Negative inventory IS permitted by this API.`
-      );
+
+      // CRITICAL: inventory must never be negative
+      expect(
+        resultingQty,
+        `onHandQty went to ${resultingQty} after below-zero adjustment — negative inventory must not be allowed`
+      ).toBeGreaterThanOrEqual(0);
 
       // Roll back to avoid polluting other tests
-      const rollbackAdj = onHandQty - resultingQty; // restore original qty
+      const rollbackAdj = onHandQty - resultingQty;
       await trpcMutation<{ success: boolean }>(page, "inventory.adjustQty", {
         id: batch.id,
         field: "onHandQty",
@@ -726,7 +732,6 @@ test.describe("Negative Paths: Inventory Adjustment Boundaries", () => {
     )?.batch;
     const beforeQty = toNumber(beforeBatch?.onHandQty);
 
-    let zeroAdjustmentErrorThrown = false;
     try {
       await trpcMutation<{ success: boolean }>(page, "inventory.adjustQty", {
         id: batch.id,
@@ -735,30 +740,26 @@ test.describe("Negative Paths: Inventory Adjustment Boundaries", () => {
         adjustmentReason: "COUNT_DISCREPANCY",
         notes: "negative-paths: zero adjustment boundary test",
       });
-    } catch (error) {
-      zeroAdjustmentErrorThrown = true;
-      // Error is a valid response for a no-op adjustment
-      expect(String(error)).toMatch(/fail|error|invalid|400|422/i);
+    } catch {
+      // Error is a valid response for a no-op adjustment — either path is acceptable
     }
 
-    if (!zeroAdjustmentErrorThrown) {
-      // Verify qty was unchanged
-      const afterList = await trpcQuery<InventoryListResponse>(
-        page,
-        "inventory.list",
-        { limit: 200 }
-      );
-      const afterBatch = (afterList.items ?? []).find(
-        item => item.batch?.id === batch.id
-      )?.batch;
-      const afterQty = toNumber(afterBatch?.onHandQty);
+    // Regardless of error or success, qty must be unchanged
+    const afterList = await trpcQuery<InventoryListResponse>(
+      page,
+      "inventory.list",
+      { limit: 200 }
+    );
+    const afterBatch = (afterList.items ?? []).find(
+      item => item.batch?.id === batch.id
+    )?.batch;
+    const afterQty = toNumber(afterBatch?.onHandQty);
 
-      console.info(
-        `[negative-paths] zero adjustment accepted; onHandQty before=${beforeQty}, after=${afterQty}`
-      );
-      // Qty must be unchanged — a zero adjustment must not modify state
-      expect(afterQty).toBeCloseTo(beforeQty, 6);
-    }
+    // CRITICAL: zero adjustment must never change inventory
+    expect(
+      afterQty,
+      `onHandQty changed from ${beforeQty} to ${afterQty} after zero adjustment`
+    ).toBeCloseTo(beforeQty, 6);
   });
 });
 

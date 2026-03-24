@@ -327,8 +327,8 @@ test.describe("Order Fulfillment State Machine — valid transitions", () => {
       "orders.getOrderStatusHistory",
       { orderId: order.id }
     );
-    // At minimum the transitions we drove should be recorded
-    expect(history.length).toBeGreaterThanOrEqual(1);
+    // We drove at least 3 explicit transitions (READY_FOR_PACKING, PACKED, and earlier states)
+    expect(history.length).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -1154,8 +1154,11 @@ test.describe("Batch Status Lifecycle", () => {
         reason: "State machine test: placing batch on hold",
       }
     );
-    // The mutation returns the updated batch; tolerate either shape
-    expect(toHoldResult).toBeDefined();
+    // Mutation must return a truthy result (not an error payload)
+    expect(toHoldResult).toBeTruthy();
+    if ("success" in toHoldResult) {
+      expect(toHoldResult.success).not.toBe(false);
+    }
 
     const onHoldBatch = await fetchBatch(page, batch.id);
     expect(onHoldBatch.batchStatus).toBe("ON_HOLD");
@@ -1170,7 +1173,10 @@ test.describe("Batch Status Lifecycle", () => {
         reason: "State machine test: reinstating batch to LIVE",
       }
     );
-    expect(toLiveResult).toBeDefined();
+    expect(toLiveResult).toBeTruthy();
+    if ("success" in toLiveResult) {
+      expect(toLiveResult.success).not.toBe(false);
+    }
 
     const liveBatch = await fetchBatch(page, batch.id);
     expect(liveBatch.batchStatus).toBe("LIVE");
