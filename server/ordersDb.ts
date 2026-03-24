@@ -965,6 +965,7 @@ export async function getAllOrders(filters?: {
     return {
       ...normalizeOrderRecord(row.orders),
       items: parsedItems,
+      lineItemCount: parsedItems.length,
       client: row.clients,
     } as Order;
   });

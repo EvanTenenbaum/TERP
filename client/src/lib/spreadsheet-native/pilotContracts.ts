@@ -275,11 +275,11 @@ export function mapOrdersToPilotRows(input: {
           ? "DRAFT"
           : order.fulfillmentStatus || order.saleStatus || "READY_FOR_PACKING",
       total: toNumber(order.total),
-      lineItemCount: Array.isArray(
-        (order as { lineItems?: unknown[] }).lineItems
-      )
-        ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
-        : 0,
+      lineItemCount:
+        (order as unknown as { lineItemCount?: number }).lineItemCount ??
+        (Array.isArray((order as { lineItems?: unknown[] }).lineItems)
+          ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
+          : 0),
       createdAt,
       ageLabel: formatAgeLabel(createdAt),
       confirmedAt: toDateString(order.confirmedAt),
