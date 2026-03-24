@@ -265,16 +265,16 @@ test.describe("Cross-Domain Integration", () => {
     // Ship
     const shipped = await trpcMutation<StatusUpdateResponse>(
       page,
-      "orders.updateStatus",
-      { id: order.id, status: "SHIPPED" }
+      "orders.updateOrderStatus",
+      { orderId: order.id, newStatus: "SHIPPED" }
     );
     expect(shipped.success).toBe(true);
 
     // Deliver
     const delivered = await trpcMutation<StatusUpdateResponse>(
       page,
-      "orders.updateStatus",
-      { id: order.id, status: "DELIVERED" }
+      "orders.updateOrderStatus",
+      { orderId: order.id, newStatus: "DELIVERED" }
     );
     expect(delivered.success).toBe(true);
 
@@ -301,7 +301,7 @@ test.describe("Cross-Domain Integration", () => {
 
     const batch = await findBatchWithStock(page);
     const client = await findBuyerClient(page);
-    const _qtyBefore = await getBatchQty(page, batch.id);
+    const qtyBefore = await getBatchQty(page, batch.id);
 
     // Create order → confirm → ship → deliver
     const order = await createSaleOrder(page, {
@@ -321,17 +321,17 @@ test.describe("Cross-Domain Integration", () => {
         orderId: order.id,
       });
     } catch {
-      // Best effort
+      // Best effort — pick/pack may not be required
     }
 
     try {
-      await trpcMutation(page, "orders.updateStatus", {
-        id: order.id,
-        status: "SHIPPED",
+      await trpcMutation(page, "orders.updateOrderStatus", {
+        orderId: order.id,
+        newStatus: "SHIPPED",
       });
-      await trpcMutation(page, "orders.updateStatus", {
-        id: order.id,
-        status: "DELIVERED",
+      await trpcMutation(page, "orders.updateOrderStatus", {
+        orderId: order.id,
+        newStatus: "DELIVERED",
       });
     } catch {
       test.skip(true, "Could not advance order to DELIVERED");
@@ -361,6 +361,7 @@ test.describe("Cross-Domain Integration", () => {
       }>(page, "returns.create", {
         orderId: order.id,
         reason: "QUALITY_ISSUE",
+        restockInventory: true,
         items: lineItems.map(item => ({
           orderLineItemId: item.id,
           quantity: item.quantity ?? 1,
@@ -368,21 +369,18 @@ test.describe("Cross-Domain Integration", () => {
       });
       expect(returnResult.id).toBeGreaterThan(0);
 
-      // Approve return
-      await trpcMutation(page, "returns.updateStatus", {
-        returnId: returnResult.id,
-        status: "APPROVED",
-      });
-
-      // Process restock
-      await trpcMutation(page, "returns.processRestock", {
-        returnId: returnResult.id,
+      // Process the return (issues credit and restocks)
+      await trpcMutation(page, "returns.process", {
+        id: returnResult.id,
+        issueCredit: true,
       });
 
       // Verify inventory restored
       const qtyAfterReturn = await getBatchQty(page, batch.id);
-      // After restock, qty should be closer to original
+      // After restock, qty should be >= what it was after sale
       expect(qtyAfterReturn).toBeGreaterThanOrEqual(qtyAfterSale);
+      // Qty should be closer to original
+      expect(qtyAfterReturn).toBeGreaterThanOrEqual(qtyBefore - 1);
     } catch (error) {
       // Returns API shape may differ — document behavior
       console.warn(
@@ -559,20 +557,22 @@ test.describe("Cross-Domain Integration", () => {
     expect(qtyBefore).toBeGreaterThan(0);
 
     // Adjust +3
-    await trpcMutation(page, "inventory.adjustInventory", {
-      batchId: batch.id,
+    await trpcMutation(page, "inventory.adjustQty", {
+      id: batch.id,
+      field: "onHandQty",
       adjustment: 3,
-      reason: "COUNT_DISCREPANCY",
+      adjustmentReason: "COUNT_DISCREPANCY",
     });
 
     const qtyAfterAdd = await getBatchQty(page, batch.id);
     expect(qtyAfterAdd).toBeCloseTo(qtyBefore + 3, 1);
 
     // Reverse: adjust -3
-    await trpcMutation(page, "inventory.adjustInventory", {
-      batchId: batch.id,
+    await trpcMutation(page, "inventory.adjustQty", {
+      id: batch.id,
+      field: "onHandQty",
       adjustment: -3,
-      reason: "COUNT_DISCREPANCY",
+      adjustmentReason: "COUNT_DISCREPANCY",
     });
 
     const qtyAfterReverse = await getBatchQty(page, batch.id);

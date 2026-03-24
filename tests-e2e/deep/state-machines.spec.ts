@@ -91,6 +91,39 @@ type BatchStatusUpdateResponse = {
 };
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+type InventoryListResponse = {
+  items: Array<{
+    batch: {
+      id: number;
+      batchStatus?: string | null;
+      sku?: string | null;
+    };
+  }>;
+};
+
+/** Fetch a single batch by ID using inventory.list (getById takes a bare int, incompatible with trpcQuery helper) */
+async function fetchBatch(
+  page: import("@playwright/test").Page,
+  batchId: number
+): Promise<BatchRecord> {
+  const result = await trpcQuery<InventoryListResponse>(
+    page,
+    "inventory.list",
+    { limit: 200 }
+  );
+  const match = result.items.find(i => i.batch.id === batchId);
+  if (!match) throw new Error(`Batch ${batchId} not found in inventory.list`);
+  return {
+    id: match.batch.id,
+    batchStatus: match.batch.batchStatus,
+    sku: match.batch.sku,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Suite 1: Order Fulfillment State Machine — valid happy-path transitions
 // ---------------------------------------------------------------------------
 
@@ -1000,11 +1033,7 @@ test.describe("Batch Status Lifecycle", () => {
     // The mutation returns the updated batch; tolerate either shape
     expect(toHoldResult).toBeDefined();
 
-    const onHoldBatch = await trpcQuery<BatchRecord>(
-      page,
-      "inventory.getBatchById",
-      { id: batch.id }
-    );
+    const onHoldBatch = await fetchBatch(page, batch.id);
     expect(onHoldBatch.batchStatus).toBe("ON_HOLD");
 
     // ON_HOLD → LIVE
@@ -1019,11 +1048,7 @@ test.describe("Batch Status Lifecycle", () => {
     );
     expect(toLiveResult).toBeDefined();
 
-    const liveBatch = await trpcQuery<BatchRecord>(
-      page,
-      "inventory.getBatchById",
-      { id: batch.id }
-    );
+    const liveBatch = await fetchBatch(page, batch.id);
     expect(liveBatch.batchStatus).toBe("LIVE");
   });
 
@@ -1108,11 +1133,7 @@ test.describe("Batch Status Lifecycle", () => {
       }
     );
 
-    const quarantinedBatch = await trpcQuery<BatchRecord>(
-      page,
-      "inventory.getBatchById",
-      { id: batch.id }
-    );
+    const quarantinedBatch = await fetchBatch(page, batch.id);
     expect(quarantinedBatch.batchStatus).toBe("QUARANTINED");
 
     // Restore to LIVE so we do not leave the batch in a quarantined state
@@ -1127,11 +1148,7 @@ test.describe("Batch Status Lifecycle", () => {
       }
     );
 
-    const restoredBatch = await trpcQuery<BatchRecord>(
-      page,
-      "inventory.getBatchById",
-      { id: batch.id }
-    );
+    const restoredBatch = await fetchBatch(page, batch.id);
     expect(restoredBatch.batchStatus).toBe("LIVE");
   });
 });

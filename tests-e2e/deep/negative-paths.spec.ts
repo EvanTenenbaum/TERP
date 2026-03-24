@@ -852,9 +852,9 @@ test.describe("Negative Paths: Stale Data / Race Condition Simulation", () => {
     await confirmSaleOrder(page, order.id);
 
     // Cancel the confirmed order
-    await trpcMutation(page, "orders.updateStatus", {
-      id: order.id,
-      status: "CANCELLED",
+    await trpcMutation(page, "orders.updateOrderStatus", {
+      orderId: order.id,
+      newStatus: "CANCELLED",
     });
 
     // Attempt to generate an invoice from the now-cancelled order
@@ -893,9 +893,9 @@ test.describe("Negative Paths: Stale Data / Race Condition Simulation", () => {
     await confirmSaleOrder(page, order.id);
 
     // Cancel the order
-    await trpcMutation(page, "orders.updateStatus", {
-      id: order.id,
-      status: "CANCELLED",
+    await trpcMutation(page, "orders.updateOrderStatus", {
+      orderId: order.id,
+      newStatus: "CANCELLED",
     });
 
     // Try to confirm the already-cancelled order (simulates stale UI state)
