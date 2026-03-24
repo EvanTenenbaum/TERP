@@ -270,8 +270,8 @@ test.describe("Critical Edge Cases", () => {
         reason: "QUALITY_ISSUE",
         restockInventory: false,
         items: lineItems.map(item => ({
-          orderLineItemId: item.id,
-          quantity: item.quantity ?? 1,
+          batchId: item.batchId ?? 0,
+          quantity: String(item.quantity ?? 1),
         })),
       }
     );

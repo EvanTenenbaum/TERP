@@ -868,7 +868,7 @@ test.describe("Negative Paths: Authorization Boundaries", () => {
 
     let permissionErrorThrown = false;
     try {
-      await trpcQuery(page, "users.list", { limit: 10 });
+      await trpcQuery(page, "users.list", {});
       console.warn(
         "[negative-paths] users.list succeeded for salesRep — RBAC may not be enforced on admin endpoints"
       );

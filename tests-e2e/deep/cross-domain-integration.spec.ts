@@ -362,8 +362,8 @@ test.describe("Cross-Domain Integration", () => {
       reason: "QUALITY_ISSUE",
       restockInventory: true,
       items: lineItems.map(item => ({
-        orderLineItemId: item.id,
-        quantity: item.quantity ?? 1,
+        batchId: item.batchId ?? 0,
+        quantity: String(item.quantity ?? 1),
       })),
     });
     expect(returnResult.id).toBeGreaterThan(0);

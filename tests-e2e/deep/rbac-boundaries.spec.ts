@@ -318,7 +318,7 @@ test.describe("RBAC: SalesRep Extended Boundaries", () => {
     test.setTimeout(120_000);
 
     await expectForbidden(
-      () => trpcQuery(page, "users.list", { limit: 10 }),
+      () => trpcQuery(page, "users.list", {}),
       "users.list as salesRep"
     );
   });
