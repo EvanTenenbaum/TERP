@@ -306,6 +306,7 @@ export function OrdersSheetPilotSurface({
         headerName: "Total",
         minWidth: 120,
         maxWidth: 140,
+        sortable: true,
         valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
       },
       {
@@ -340,6 +341,7 @@ export function OrdersSheetPilotSurface({
         field: "lineTotal",
         headerName: "Line Total",
         minWidth: 120,
+        sortable: true,
         valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
       },
     ],
