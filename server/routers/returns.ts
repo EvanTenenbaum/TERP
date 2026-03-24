@@ -23,7 +23,7 @@ import {
   ledgerEntries,
   orderLineItems,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and, ne, like, isNull, or, not } from "drizzle-orm";
+import { eq, desc, sql, and, ne } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -191,8 +191,9 @@ function sanitizeNotesText(text: string): string {
 }
 
 /**
- * SM-003: Extract current status from return notes
- * Since the schema doesn't have a status field, we track it in notes
+ * SM-003: Extract current status from return notes (legacy fallback)
+ * DISC-RET-002: Prefer the dedicated `status` column when available.
+ * Notes-based extraction retained for backward compatibility with pre-migration rows.
  * Exported for unit testing
  */
 export function extractReturnStatus(notes: string | null): string {
@@ -276,27 +277,9 @@ export const returnsRouter = router({
         conditions.push(eq(returns.orderId, input.orderId));
       }
 
-      // Status is tracked in the notes field via SM-003 state machine markers.
-      // Use SQL LIKE conditions to filter by status without a schema change.
+      // DISC-RET-002: Filter by dedicated status column
       if (input.status) {
-        if (input.status === "PENDING") {
-          // PENDING means no status markers present in notes
-          conditions.push(
-            or(
-              isNull(returns.notes),
-              and(
-                not(like(returns.notes, "%[APPROVED%")),
-                not(like(returns.notes, "%[RECEIVED%")),
-                not(like(returns.notes, "%[PROCESSED%")),
-                not(like(returns.notes, "%[REJECTED%")),
-                not(like(returns.notes, "%[CANCELLED%"))
-              )
-            )
-          );
-        } else {
-          // All other statuses have an explicit marker in notes
-          conditions.push(like(returns.notes, `%[${input.status}%`));
-        }
+        conditions.push(eq(returns.status, input.status));
       }
 
       let query = db
@@ -305,6 +288,7 @@ export const returnsRouter = router({
           orderId: returns.orderId,
           items: returns.items,
           returnReason: returns.returnReason,
+          status: returns.status,
           notes: returns.notes,
           processedBy: returns.processedBy,
           processedAt: returns.processedAt,
@@ -770,8 +754,9 @@ export const returnsRouter = router({
         throw new Error("Return not found");
       }
 
-      // SM-003: Validate status transition
-      const currentStatus = extractReturnStatus(returnRecord.notes);
+      // SM-003: Validate status transition (DISC-RET-002: use column, fallback to notes)
+      const currentStatus =
+        returnRecord.status ?? extractReturnStatus(returnRecord.notes);
       if (!isValidReturnStatusTransition(currentStatus, "APPROVED")) {
         throw new Error(getReturnTransitionError(currentStatus, "APPROVED"));
       }
@@ -787,11 +772,10 @@ export const returnsRouter = router({
         .filter(Boolean)
         .join(" | ");
 
-      // Update the return record (note: current schema doesn't have status field)
-      // For now, we append to notes as a workaround
+      // DISC-RET-002: Set status column alongside notes audit trail
       await db
         .update(returns)
-        .set({ notes: updatedNotes })
+        .set({ status: "APPROVED", notes: updatedNotes })
         .where(eq(returns.id, input.id));
 
       logger.info({ msg: "[Returns] Return approved", returnId: input.id });
@@ -830,8 +814,9 @@ export const returnsRouter = router({
         throw new Error("Return not found");
       }
 
-      // SM-003: Validate status transition
-      const currentStatus = extractReturnStatus(returnRecord.notes);
+      // SM-003: Validate status transition (DISC-RET-002: use column, fallback to notes)
+      const currentStatus =
+        returnRecord.status ?? extractReturnStatus(returnRecord.notes);
       if (!isValidReturnStatusTransition(currentStatus, "REJECTED")) {
         throw new Error(getReturnTransitionError(currentStatus, "REJECTED"));
       }
@@ -845,9 +830,10 @@ export const returnsRouter = router({
         .filter(Boolean)
         .join(" | ");
 
+      // DISC-RET-002: Set status column alongside notes audit trail
       await db
         .update(returns)
-        .set({ notes: updatedNotes })
+        .set({ status: "REJECTED", notes: updatedNotes })
         .where(eq(returns.id, input.id));
 
       logger.info({ msg: "[Returns] Return rejected", returnId: input.id });
@@ -896,8 +882,9 @@ export const returnsRouter = router({
         throw new Error("Return not found");
       }
 
-      // SM-003: Validate status transition
-      const currentStatus = extractReturnStatus(returnRecord.notes);
+      // SM-003: Validate status transition (DISC-RET-002: use column, fallback to notes)
+      const currentStatus =
+        returnRecord.status ?? extractReturnStatus(returnRecord.notes);
       if (!isValidReturnStatusTransition(currentStatus, "RECEIVED")) {
         throw new Error(getReturnTransitionError(currentStatus, "RECEIVED"));
       }
@@ -1087,9 +1074,10 @@ export const returnsRouter = router({
           .filter(Boolean)
           .join(" | ");
 
+        // DISC-RET-002: Set status column alongside notes audit trail
         await tx
           .update(returns)
-          .set({ notes: updatedNotes })
+          .set({ status: "RECEIVED", notes: updatedNotes })
           .where(eq(returns.id, input.id));
       });
 
@@ -1141,8 +1129,9 @@ export const returnsRouter = router({
           throw new Error("Return not found");
         }
 
-        // SM-003: Validate status transition
-        const currentStatus = extractReturnStatus(returnRecord.notes);
+        // SM-003: Validate status transition (DISC-RET-002: use column, fallback to notes)
+        const currentStatus =
+          returnRecord.status ?? extractReturnStatus(returnRecord.notes);
         if (!isValidReturnStatusTransition(currentStatus, "PROCESSED")) {
           throw new Error(getReturnTransitionError(currentStatus, "PROCESSED"));
         }
@@ -1294,9 +1283,10 @@ export const returnsRouter = router({
           .filter(Boolean)
           .join(" | ");
 
+        // DISC-RET-002: Set status column alongside notes audit trail
         await tx
           .update(returns)
-          .set({ notes: updatedNotes })
+          .set({ status: "PROCESSED", notes: updatedNotes })
           .where(eq(returns.id, input.id));
 
         return { creditId };

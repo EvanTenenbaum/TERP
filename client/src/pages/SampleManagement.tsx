@@ -294,7 +294,7 @@ export default function SampleManagement({
             typeof sample.requestDate === "string"
               ? sample.requestDate
               : format(sample.requestDate, "yyyy-MM-dd"),
-          dueDate: extractDueDate(sample.notes),
+          dueDate: sample.dueDate ?? extractDueDate(sample.notes),
           notes: sample.notes ?? null,
           location: normalizeLocation(sample.location),
           expirationDate: sample.expirationDate
@@ -426,6 +426,7 @@ export default function SampleManagement({
         return;
       }
 
+      // DISC-SAM-003: Pass dueDate as dedicated field + keep in notes for backward compat
       const notesWithDueDate =
         values.dueDate && values.dueDate.length > 0
           ? [values.notes, `Due Date: ${values.dueDate}`]
@@ -437,6 +438,10 @@ export default function SampleManagement({
         clientId: values.clientId,
         products: [{ productId: values.productId, quantity: values.quantity }],
         notes: notesWithDueDate,
+        dueDate:
+          values.dueDate && values.dueDate.length > 0
+            ? values.dueDate
+            : undefined,
       });
     },
     [createSampleMutation, user?.id]
