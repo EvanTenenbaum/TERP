@@ -17,12 +17,7 @@ import {
   createSafeUnifiedResponse,
 } from "../_core/pagination";
 import { getDb } from "../db";
-import {
-  invoices,
-  bills,
-  payments,
-  clients,
-} from "../../drizzle/schema";
+import { invoices, bills, payments, clients } from "../../drizzle/schema";
 import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import {
@@ -911,10 +906,39 @@ export const accountingRouter = router({
             "OVERDUE",
             "VOID",
           ]),
+          version: z.number().optional(), // DISC-INV-007: Optional for optimistic locking
         })
       )
       .mutation(async ({ input }) => {
-        return await arApDb.updateInvoiceStatus(input.id, input.status);
+        // DISC-INV-007: Check version if provided for concurrent edit detection
+        if (input.version !== undefined) {
+          const db = await getDb();
+          if (db) {
+            const { checkVersion } = await import("../_core/optimisticLocking");
+            await checkVersion(
+              db,
+              invoices,
+              "Invoice",
+              input.id,
+              input.version
+            );
+          }
+        }
+
+        const result = await arApDb.updateInvoiceStatus(input.id, input.status);
+
+        // DISC-INV-007: Increment version if optimistic locking was used
+        if (input.version !== undefined) {
+          const db = await getDb();
+          if (db) {
+            await db
+              .update(invoices)
+              .set({ version: sql`version + 1` })
+              .where(eq(invoices.id, input.id));
+          }
+        }
+
+        return result;
       }),
 
     recordPayment: protectedProcedure
