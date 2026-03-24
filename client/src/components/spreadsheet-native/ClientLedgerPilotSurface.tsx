@@ -72,6 +72,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -765,16 +766,7 @@ export function ClientLedgerPilotSurface({
     { enabled: selectedClientId !== null }
   );
 
-  // Export query — fetched on demand
-  const exportQuery = trpc.clientLedger.exportLedger.useQuery(
-    {
-      clientId: selectedClientId ?? 0,
-      startDate: dateRange.from,
-      endDate: dateRange.to,
-      transactionTypes: selectedTypes.length > 0 ? selectedTypes : undefined,
-    },
-    { enabled: false }
-  );
+  const utils = trpc.useUtils();
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const clientOptions: ClientOption[] = useMemo(() => {
@@ -836,28 +828,34 @@ export function ClientLedgerPilotSurface({
     }
     setIsExporting(true);
     try {
-      const result = await exportQuery.refetch();
-      if (result.data) {
-        const blob = new Blob([result.data.content], {
+      // Always fetch fresh data with current filter state to avoid stale cache
+      const data = await utils.clientLedger.exportLedger.fetch({
+        clientId: selectedClientId,
+        startDate: dateRange.from,
+        endDate: dateRange.to,
+        transactionTypes: selectedTypes.length > 0 ? selectedTypes : undefined,
+      });
+      if (data) {
+        const blob = new Blob([data.content], {
           type: "text/csv;charset=utf-8;",
         });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", result.data.filename);
+        link.setAttribute("download", data.filename);
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        toast.success(`Exported ${result.data.totalTransactions} transactions`);
+        toast.success(`Exported ${data.totalTransactions} transactions`);
       }
     } catch {
       toast.error("Failed to export ledger");
     } finally {
       setIsExporting(false);
     }
-  }, [selectedClientId, exportQuery]);
+  }, [selectedClientId, dateRange, selectedTypes, utils]);
 
   const navigateToReference = useCallback(
     (refType: string, refId: number) => {
@@ -865,6 +863,9 @@ export function ClientLedgerPilotSurface({
       switch (refType) {
         case "ORDER":
           path = buildSalesWorkspacePath("orders", { id: refId });
+          break;
+        case "INVOICE":
+          path = `/accounting?tab=invoices&id=${refId}`;
           break;
         case "PAYMENT":
           path = `/accounting/payments?id=${refId}`;
@@ -1084,41 +1085,60 @@ export function ClientLedgerPilotSurface({
             </Popover>
           </div>
 
-          {/* Transaction type filter */}
+          {/* Transaction type filter (multi-select via Popover+Checkbox) */}
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">
               Transaction Type
             </Label>
-            <Select
-              value={selectedTypes.length > 0 ? selectedTypes[0] : "all"}
-              onValueChange={v => {
-                setPage(0);
-                if (v === "all") {
-                  setSelectedTypes([]);
-                } else {
-                  setSelectedTypes(prev =>
-                    prev.includes(v) ? prev.filter(t => t !== v) : [...prev, v]
-                  );
-                }
-              }}
-            >
-              <SelectTrigger className="w-[180px] h-8">
-                <div className="flex items-center">
-                  <Filter className="h-3.5 w-3.5 mr-1.5" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-[180px] h-8 justify-start text-left font-normal"
+                >
+                  <Filter className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                   {selectedTypes.length > 0
                     ? `${selectedTypes.length} selected`
                     : "All types"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-2" align="start">
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                    onClick={() => {
+                      setSelectedTypes([]);
+                      setPage(0);
+                    }}
+                  >
+                    All Types
+                  </button>
+                  {transactionTypes?.map(t => (
+                    <label
+                      key={t.value}
+                      className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedTypes.includes(t.value)}
+                        onCheckedChange={checked => {
+                          setPage(0);
+                          if (checked) {
+                            setSelectedTypes(prev => [...prev, t.value]);
+                          } else {
+                            setSelectedTypes(prev =>
+                              prev.filter(v => v !== t.value)
+                            );
+                          }
+                        }}
+                      />
+                      {t.label}
+                    </label>
+                  ))}
                 </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {transactionTypes?.map(t => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Clear filters */}
