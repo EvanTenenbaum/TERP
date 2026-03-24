@@ -3566,15 +3566,24 @@ export const sampleRequestStatusEnum = mysqlEnum("sampleRequestStatus", [
 ]);
 
 /**
- * Sample Location Enum (SAMPLE-008)
- * Tracks where each sample is physically located
+ * Sample Location Values (SAMPLE-008)
+ * Shared values used by location columns across sample tables.
+ * Each column must define its own mysqlEnum with the correct DB column name.
  */
-export const sampleLocationEnum = mysqlEnum("sampleLocation", [
+export const SAMPLE_LOCATION_VALUES = [
   "WAREHOUSE",
   "WITH_CLIENT",
   "WITH_SALES_REP",
   "RETURNED",
   "LOST",
+] as const;
+
+/**
+ * Sample Location Enum for sampleRequests.location column
+ * First arg MUST match the actual DB column name (see autoMigrate TER-98)
+ */
+export const sampleLocationEnum = mysqlEnum("location", [
+  ...SAMPLE_LOCATION_VALUES,
 ]);
 
 /**
@@ -3701,8 +3710,8 @@ export const sampleLocationHistory = mysqlTable(
     sampleRequestId: int("sampleRequestId")
       .notNull()
       .references(() => sampleRequests.id, { onDelete: "cascade" }),
-    fromLocation: sampleLocationEnum,
-    toLocation: sampleLocationEnum.notNull(),
+    fromLocation: mysqlEnum("fromLocation", [...SAMPLE_LOCATION_VALUES]),
+    toLocation: mysqlEnum("toLocation", [...SAMPLE_LOCATION_VALUES]).notNull(),
     changedBy: int("changedBy")
       .notNull()
       .references(() => users.id),

@@ -126,13 +126,12 @@ export function RoomBookingModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Backdrop — z-[-1] ensures it sits behind the modal content */}
+      <div
+        className="fixed inset-0 bg-black/50 transition-opacity z-[-1]"
+        onClick={handleClose}
+      />
       <div className="flex min-h-full items-center justify-center p-4">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
-          onClick={handleClose}
-        />
-
         {/* Modal */}
         <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
           {/* Header */}

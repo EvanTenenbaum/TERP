@@ -54,6 +54,8 @@ export const INVENTORY_STATUS_TOKENS: Record<string, string> = {
   LIVE: STATUS_SUCCESS,
   ON_HOLD: STATUS_CAUTION,
   QUARANTINED: STATUS_DANGER,
+  SOLD_OUT: STATUS_NEUTRAL,
+  CLOSED: STATUS_NEUTRAL,
 };
 
 /** Invoice status → token */

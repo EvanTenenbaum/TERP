@@ -48,11 +48,18 @@ export type BatchStatus =
   | "QUARANTINED"
   | "SOLD_OUT"
   | "CLOSED";
-export type NonSellableStatus = "AWAITING_INTAKE" | "ON_HOLD" | "QUARANTINED";
+export type NonSellableStatus =
+  | "AWAITING_INTAKE"
+  | "ON_HOLD"
+  | "QUARANTINED"
+  | "SOLD_OUT"
+  | "CLOSED";
 export const NON_SELLABLE_STATUSES: readonly NonSellableStatus[] = [
   "AWAITING_INTAKE",
   "ON_HOLD",
   "QUARANTINED",
+  "SOLD_OUT",
+  "CLOSED",
 ] as const;
 
 // ============================================================================

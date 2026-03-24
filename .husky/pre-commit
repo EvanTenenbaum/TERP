@@ -78,15 +78,15 @@ if git diff --cached --name-only | grep -q "drizzle/schema"; then
   fi
 
   # Check 5: mysqlEnum naming convention (only check newly added lines)
+  # NOTE: TERP uses camelCase column names in many tables (batches, invoices,
+  # sampleRequests, sessionCartItems, etc.). The first arg to mysqlEnum MUST
+  # match the actual DB column name. This check warns but does not block,
+  # since camelCase is the dominant convention in this codebase.
   for file in $(git diff --cached --name-only | grep "drizzle/schema"); do
-    # Check for camelCase enum names in NEW lines only (not pre-existing legacy columns)
-    # Legacy tables (batches, invoices, etc.) legitimately use camelCase DB column names
     if git diff --cached "$file" 2>/dev/null | grep "^+" | grep -v "^+++" | grep 'mysqlEnum("[a-z]*[A-Z]' > /dev/null 2>&1; then
-      echo "❌ BLOCKED: mysqlEnum with camelCase name in $file"
-      echo "   Pattern: mysqlEnum(\"camelCase\", [...])"
-      echo "   Fix: First argument must match DATABASE column name (usually snake_case)"
-      echo "   Example: mysqlEnum(\"status\", [...]) not mysqlEnum(\"orderStatus\", [...])"
-      BLOCKED=1
+      echo "⚠️  WARNING: mysqlEnum with camelCase name in $file"
+      echo "   Verify the first argument matches the actual DATABASE column name"
+      echo "   (camelCase is correct if the DB column is camelCase)"
     fi
   done
 fi

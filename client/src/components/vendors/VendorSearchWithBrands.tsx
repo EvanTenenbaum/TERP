@@ -47,7 +47,11 @@ interface VendorSearchWithBrandsProps {
   /**
    * Callback when a specific brand is clicked
    */
-  onBrandSelect?: (vendorId: number, brandId: number, brandName: string) => void;
+  onBrandSelect?: (
+    vendorId: number,
+    brandId: number,
+    brandName: string
+  ) => void;
   /**
    * Optional placeholder text
    */
@@ -88,7 +92,11 @@ function VendorResultItem({
   category?: string;
   autoExpandBrands?: boolean;
   onVendorSelect: (vendor: VendorSearchResult["vendor"]) => void;
-  onBrandSelect?: (vendorId: number, brandId: number, brandName: string) => void;
+  onBrandSelect?: (
+    vendorId: number,
+    brandId: number,
+    brandName: string
+  ) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(autoExpandBrands || false);
   const brandLabel = getBrandLabel(category);
@@ -122,7 +130,7 @@ function VendorResultItem({
             variant="ghost"
             size="sm"
             className="h-8"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
@@ -148,7 +156,7 @@ function VendorResultItem({
             {brandLabel}s from this vendor:
           </div>
           <div className="flex flex-wrap gap-2">
-            {result.brands.map((brand) => (
+            {result.brands.map(brand => (
               <Badge
                 key={brand.id}
                 variant="secondary"
@@ -157,13 +165,9 @@ function VendorResultItem({
                     ? "cursor-pointer hover:bg-secondary/80"
                     : undefined
                 }
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
-                  onBrandSelect?.(
-                    result.vendor.clientId,
-                    brand.id,
-                    brand.name
-                  );
+                  onBrandSelect?.(result.vendor.clientId, brand.id, brand.name);
                 }}
               >
                 {brand.name}
@@ -197,13 +201,14 @@ export function VendorSearchWithBrands({
   const debouncedSearch = useDebounce(searchValue, 300);
 
   // Search vendors with brands
-  const { data, isLoading, isFetching } = trpc.vendors.searchWithBrands.useQuery(
-    { query: debouncedSearch, limit: maxResults },
-    {
-      enabled: debouncedSearch.length >= 2,
-      staleTime: 30000, // 30 seconds
-    }
-  );
+  const { data, isLoading, isFetching } =
+    trpc.vendors.searchWithBrands.useQuery(
+      { query: debouncedSearch, limit: maxResults },
+      {
+        enabled: debouncedSearch.length >= 2,
+        staleTime: 30000, // 30 seconds
+      }
+    );
 
   const results = useMemo(() => {
     if (!data?.data) return [];
@@ -241,7 +246,7 @@ export function VendorSearchWithBrands({
           type="text"
           placeholder={placeholder}
           value={searchValue}
-          onChange={(e) => {
+          onChange={e => {
             setSearchValue(e.target.value);
             setIsDropdownOpen(true);
           }}
@@ -249,7 +254,9 @@ export function VendorSearchWithBrands({
           className="pl-9 pr-20"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {isFetching && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
           {showClear && searchValue && (
             <Button
               variant="ghost"
@@ -263,14 +270,22 @@ export function VendorSearchWithBrands({
         </div>
       </div>
 
-      {/* Results dropdown */}
+      {/* Backdrop to close dropdown when clicking outside — must render before dropdown so dropdown sits on top */}
+      {showResults && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsDropdownOpen(false)}
+        />
+      )}
+
+      {/* Results dropdown — z-50 above backdrop z-40 */}
       {showResults && (
         <Card className="absolute z-50 w-full mt-1 max-h-96 overflow-y-auto shadow-lg">
           <CardContent className="p-2 space-y-2">
             {isLoading ? (
               // Loading state
               <>
-                {[1, 2, 3].map((i) => (
+                {[1, 2, 3].map(i => (
                   <div key={`skeleton-${i}`} className="p-3 space-y-2">
                     <Skeleton className="h-5 w-32" />
                     <Skeleton className="h-3 w-24" />
@@ -284,7 +299,7 @@ export function VendorSearchWithBrands({
               </div>
             ) : (
               // Results list
-              results.map((result) => (
+              results.map(result => (
                 <VendorResultItem
                   key={result.vendor.clientId}
                   result={result}
@@ -297,14 +312,6 @@ export function VendorSearchWithBrands({
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Backdrop to close dropdown when clicking outside */}
-      {showResults && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsDropdownOpen(false)}
-        />
       )}
     </div>
   );
