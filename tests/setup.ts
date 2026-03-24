@@ -50,12 +50,13 @@ const testJwtValue = "test-jwt-value-for-testing-minimum-32-chars";
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = testJwtValue;
 }
-// Set a test DATABASE_URL to allow modules that check for it to load
-// This is a placeholder - actual database connections will fail but pure function tests will work
-// NOTE: Some server modules will attempt to connect and log CRITICAL errors - this is expected
-// in unit tests and does not affect test results. For integration tests, use a real database.
+// Default to the shared local test DB so full local runs exercise real DB-backed tests.
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = "mysql://test:test@localhost:3306/terp_test";
+  process.env.DATABASE_URL =
+    "mysql://root:rootpassword@127.0.0.1:3307/terp-test";
+}
+if (!process.env.TEST_DATABASE_URL) {
+  process.env.TEST_DATABASE_URL = process.env.DATABASE_URL;
 }
 // Mark this as a test environment to allow server modules to skip health checks
 process.env.VITEST = "true";

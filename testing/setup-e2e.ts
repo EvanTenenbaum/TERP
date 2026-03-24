@@ -54,8 +54,7 @@ async function globalSetup() {
   }
 
   // Local dev mode: start Docker test DB and reset seed data.
-  execSync("pnpm test:env:up", { stdio: "inherit" });
-  execSync("pnpm test:db:reset:full", { stdio: "inherit" });
+  execSync("pnpm test:db:fresh:full", { stdio: "inherit" });
 
   console.info("✅ E2E test environment ready.\n");
 }

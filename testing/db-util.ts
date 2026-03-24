@@ -10,8 +10,8 @@
  */
 
 import { execSync, spawnSync } from "child_process";
+import { mkdirSync, rmSync } from "fs";
 import mysql from "mysql2/promise";
-import { seedDefaultChartOfAccounts } from "../server/services/seedDefaults";
 
 const TEST_DB_CONFIG = {
   host: "127.0.0.1",
@@ -26,7 +26,16 @@ const TRANSIENT_DB_PATTERNS = [
   /Connection lost: The server closed the connection/i,
   /server closed the connection/i,
 ];
+const TEST_DB_LOCK_DIR = "/tmp/terp-test-db.lock";
+const TEST_DB_LOCK_WAIT_MS = 120000;
+const DEFAULT_LOCAL_DB_SCENARIO = "light";
+const BASELINE_TABLES = ["users", "products", "strains", "brands"];
 type CommandEnv = Record<string, string | undefined>;
+type EnsureTestDatabaseOptions = {
+  scenario?: string;
+  reset?: boolean;
+  ensureSeed?: boolean;
+};
 
 function hasTransientDbFailure(output: string): boolean {
   return TRANSIENT_DB_PATTERNS.some(pattern => pattern.test(output));
@@ -83,6 +92,10 @@ function isTruthy(value: string | undefined): boolean {
   return value === "1" || value === "true" || value === "yes";
 }
 
+function sleep(seconds: number): void {
+  execSync(`sleep ${seconds}`);
+}
+
 function getTestDatabaseUrl(): string {
   // Prefer a dedicated test DB URL, but allow DATABASE_URL (cloud / live DB)
   return process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || "";
@@ -90,6 +103,22 @@ function getTestDatabaseUrl(): string {
 
 function getLocalTestDatabaseUrl(): string {
   return `mysql://${TEST_DB_CONFIG.user}:${TEST_DB_CONFIG.password}@${TEST_DB_CONFIG.host}:${TEST_DB_CONFIG.port}/${TEST_DB_CONFIG.database}`;
+}
+
+function applyLocalTestDatabaseEnv(
+  env: CommandEnv = process.env
+): Required<Pick<CommandEnv, "DATABASE_URL" | "TEST_DATABASE_URL">> {
+  const localUrl = getLocalTestDatabaseUrl();
+  const testDatabaseUrl = env.TEST_DATABASE_URL || env.DATABASE_URL || localUrl;
+  const databaseUrl = env.DATABASE_URL || testDatabaseUrl;
+
+  process.env.TEST_DATABASE_URL = testDatabaseUrl;
+  process.env.DATABASE_URL = databaseUrl;
+
+  return {
+    TEST_DATABASE_URL: testDatabaseUrl,
+    DATABASE_URL: databaseUrl,
+  };
 }
 
 function isRemoteDatabaseUrl(databaseUrl: string): boolean {
@@ -100,6 +129,114 @@ function isRemoteDatabaseUrl(databaseUrl: string): boolean {
     return host !== "localhost" && host !== "127.0.0.1";
   } catch {
     return false;
+  }
+}
+
+async function withTestDatabaseLock<T>(callback: () => Promise<T>): Promise<T> {
+  const deadline = Date.now() + TEST_DB_LOCK_WAIT_MS;
+  let announcedWait = false;
+
+  while (true) {
+    try {
+      mkdirSync(TEST_DB_LOCK_DIR);
+      break;
+    } catch {
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `Timed out waiting for local test DB lock at ${TEST_DB_LOCK_DIR}`
+        );
+      }
+
+      if (!announcedWait) {
+        console.info("⏳ Waiting for another local DB task to finish...");
+        announcedWait = true;
+      }
+
+      sleep(1);
+    }
+  }
+
+  try {
+    return await callback();
+  } finally {
+    rmSync(TEST_DB_LOCK_DIR, { recursive: true, force: true });
+  }
+}
+
+async function canConnectWithOptions(
+  options: mysql.ConnectionOptions
+): Promise<boolean> {
+  let connection: mysql.Connection | null = null;
+
+  try {
+    connection = await mysql.createConnection(options);
+    await connection.query("SELECT 1 as health_check");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await connection?.end().catch(() => undefined);
+  }
+}
+
+async function canConnectToLocalTestDatabase(): Promise<boolean> {
+  return canConnectWithOptions({
+    ...TEST_DB_CONFIG,
+    connectTimeout: 5000,
+  });
+}
+
+async function waitForLocalTestDatabaseReady(
+  timeoutMs: number = 90000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    if (await canConnectToLocalTestDatabase()) {
+      console.info("✅ Local test database is ready");
+      return;
+    }
+
+    sleep(2);
+  }
+
+  throw new Error(
+    `Local test database did not become ready within ${timeoutMs}ms`
+  );
+}
+
+async function getBaselineHealth(databaseUrl: string): Promise<{
+  ready: boolean;
+  missing: string[];
+}> {
+  const connection = await mysql.createConnection(
+    buildMySqlConnectionOptionsFromUrl(databaseUrl)
+  );
+
+  try {
+    const missing: string[] = [];
+
+    for (const table of BASELINE_TABLES) {
+      try {
+        const [rows] = await connection.execute(
+          `SELECT COUNT(*) as count FROM \`${table}\``
+        );
+        const count = Number((rows as Array<{ count: number }>)[0]?.count || 0);
+
+        if (count === 0) {
+          missing.push(`${table}:empty`);
+        }
+      } catch {
+        missing.push(`${table}:missing`);
+      }
+    }
+
+    return {
+      ready: missing.length === 0,
+      missing,
+    };
+  } finally {
+    await connection.end();
   }
 }
 
@@ -174,11 +311,6 @@ export function startTestDatabase() {
       stdio: "inherit",
     });
     console.info("✅ Test database started successfully");
-
-    // Wait for database to be ready
-    console.info("⏳ Waiting for database to be ready...");
-    execSync("sleep 5"); // Give MySQL time to initialize
-    console.info("✅ Database is ready");
   } catch (error) {
     console.error("❌ Failed to start test database:", error);
     throw error;
@@ -292,6 +424,9 @@ export async function seedDefaultAccountingAccounts() {
   try {
     const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
     process.env.DATABASE_URL = databaseUrl;
+    const { seedDefaultChartOfAccounts } = await import(
+      "../server/services/seedDefaults"
+    );
     await seedDefaultChartOfAccounts();
     console.info("✅ Default chart of accounts ready");
   } catch (error) {
@@ -334,6 +469,106 @@ export async function seedDefaultFiscalPeriod() {
     throw error;
   } finally {
     await connection.end();
+  }
+}
+
+export async function ensureTestDatabase(
+  options: EnsureTestDatabaseOptions = {}
+): Promise<void> {
+  const scenario = options.scenario || DEFAULT_LOCAL_DB_SCENARIO;
+  const ensureSeed = options.ensureSeed ?? true;
+
+  applyLocalTestDatabaseEnv();
+
+  const databaseUrl = getTestDatabaseUrl();
+  if (databaseUrl && isRemoteDatabaseUrl(databaseUrl)) {
+    console.info("🌐 Using remote test database target; skipping local bootstrap");
+    await preflightTestDatabase();
+    return;
+  }
+
+  await withTestDatabaseLock(async () => {
+    if (!(await canConnectToLocalTestDatabase())) {
+      startTestDatabase();
+      console.info("⏳ Waiting for local test database container...");
+      await waitForLocalTestDatabaseReady();
+    }
+
+    if (options.reset) {
+      await resetTestDatabase(scenario);
+      await preflightTestDatabase();
+      return;
+    }
+
+    runMigrations();
+
+    if (ensureSeed) {
+      const baseline = await getBaselineHealth(
+        getTestDatabaseUrl() || getLocalTestDatabaseUrl()
+      );
+
+      if (!baseline.ready) {
+        console.info(
+          `🧼 Local test DB baseline missing (${baseline.missing.join(", ")}); rebuilding ${scenario} dataset...`
+        );
+        await resetTestDatabase(scenario);
+      } else {
+        await seedDefaultAccountingAccounts();
+        await seedDefaultFiscalPeriod();
+        seedQaAuthAccounts();
+      }
+    }
+
+    await preflightTestDatabase();
+  });
+}
+
+export async function statusTestDatabase(): Promise<void> {
+  const databaseUrl = getTestDatabaseUrl();
+  const localUrl = getLocalTestDatabaseUrl();
+  const targetUrl = databaseUrl || localUrl;
+  const localTarget = !databaseUrl || !isRemoteDatabaseUrl(databaseUrl);
+  const maskedUrl = targetUrl.replace(/:[^:@]+@/, ":****@");
+
+  console.info("🧭 Test database status");
+  console.info(`   Target: ${localTarget ? "local" : "remote"}`);
+  console.info(`   URL:    ${maskedUrl}`);
+
+  if (!localTarget) {
+    await preflightTestDatabase();
+    return;
+  }
+
+  const localReachable = await canConnectToLocalTestDatabase();
+  console.info(`   Reachable: ${localReachable ? "yes" : "no"}`);
+
+  try {
+    const dockerBinary = getDockerBinary();
+    const result = spawnSync(
+      dockerBinary,
+      [
+        "ps",
+        "--filter",
+        "name=terp-test-db",
+        "--format",
+        "{{.Names}}\t{{.Status}}",
+      ],
+      {
+        encoding: "utf8",
+      }
+    );
+    const output = result.stdout?.trim() || "terp-test-db\tnot running";
+    console.info(`   Container: ${output}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.info(`   Container: unavailable (${message})`);
+  }
+
+  if (localReachable) {
+    const baseline = await getBaselineHealth(targetUrl);
+    console.info(
+      `   Baseline: ${baseline.ready ? "ready" : `missing ${baseline.missing.join(", ")}`}`
+    );
   }
 }
 
@@ -415,7 +650,7 @@ export async function runPreflight() {
     });
 
     // Tables that should have data after a basic seed
-    const tablesToCheck = ["users", "products", "strains", "brands"];
+    const tablesToCheck = BASELINE_TABLES;
     let allPassed = true;
 
     for (const table of tablesToCheck) {
@@ -465,6 +700,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       switch (command) {
         case "start":
           startTestDatabase();
+          await waitForLocalTestDatabaseReady();
           break;
         case "stop":
           stopTestDatabase();
@@ -478,8 +714,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         case "seed":
           seedDatabase(scenario);
           break;
+        case "ensure":
+          await ensureTestDatabase({
+            scenario,
+            reset:
+              process.argv.includes("--reset") ||
+              isTruthy(process.env.TEST_DB_FORCE_RESET),
+          });
+          break;
         case "preflight":
           await preflightTestDatabase();
+          break;
+        case "status":
+          await statusTestDatabase();
           break;
         default:
           console.info("Usage: tsx testing/db-util.ts <command> [scenario]");
@@ -487,8 +734,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           console.info("  start         - Start test database");
           console.info("  stop          - Stop test database");
           console.info("  reset [scenario] - Reset database (default: light)");
+          console.info(
+            "  ensure [scenario] - Auto-start, migrate, and seed the configured test DB"
+          );
           console.info("  migrate       - Run migrations");
           console.info("  seed [scenario]  - Seed database (default: light)");
+          console.info("  status        - Show target, container, and baseline status");
           console.info(
             "  preflight     - Verify database connectivity (local or remote)"
           );
