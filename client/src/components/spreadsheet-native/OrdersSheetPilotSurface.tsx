@@ -723,6 +723,18 @@ export function OrdersSheetPilotSurface({
             </Badge>
           ) : null
         }
+        footer={
+          selectedOrderRow ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => onOpenClassic(selectedOrderRow.orderId)}
+            >
+              <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+              Open Classic Sales Context
+            </Button>
+          ) : null
+        }
       >
         {selectedOrderRow ? (
           <div className="space-y-4">
@@ -763,17 +775,6 @@ export function OrdersSheetPilotSurface({
               </InspectorField>
             </InspectorSection>
           </div>
-        ) : null}
-        footer=
-        {selectedOrderRow ? (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => onOpenClassic(selectedOrderRow.orderId)}
-          >
-            <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-            Open Classic Sales Context
-          </Button>
         ) : null}
       </InspectorPanel>
 
