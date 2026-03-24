@@ -246,6 +246,7 @@ export function InventorySheetPilotSurface({
       toast.success("Batch status updated");
       void enhancedQuery.refetch();
       void detailQuery.refetch();
+      void dashboardQuery.refetch();
     },
     onError: error => {
       toast.error(error.message || "Failed to update status");
@@ -490,10 +491,15 @@ export function InventorySheetPilotSurface({
       return;
     }
 
+    const version =
+      typeof event.data.identity.recordVersion === "number"
+        ? event.data.identity.recordVersion
+        : undefined;
     updateStatusMutation.mutate({
       id: event.data.batchId,
       status: nextStatus,
       reason: "Spreadsheet-native status update",
+      version,
     });
   };
 

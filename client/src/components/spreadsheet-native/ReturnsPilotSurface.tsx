@@ -85,6 +85,14 @@ type ReturnReason =
   | "CUSTOMER_CHANGED_MIND"
   | "OTHER";
 
+type ExpectedCondition = "SELLABLE" | "DAMAGED" | "DESTROYED";
+
+const EXPECTED_CONDITIONS: { value: ExpectedCondition; label: string }[] = [
+  { value: "SELLABLE", label: "Sellable" },
+  { value: "DAMAGED", label: "Damaged" },
+  { value: "DESTROYED", label: "Destroyed" },
+];
+
 const RETURN_REASONS: ReturnReason[] = [
   "DEFECTIVE",
   "WRONG_ITEM",
@@ -625,7 +633,12 @@ export function ReturnsPilotSurface({
   const [returnReason, setReturnReason] = useState<ReturnReason | "">("");
   const [notes, setNotes] = useState("");
   const [returnItems, setReturnItems] = useState<
-    Array<{ batchId: number; quantity: string; reason?: string }>
+    Array<{
+      batchId: number;
+      quantity: string;
+      reason?: string;
+      expectedCondition?: ExpectedCondition;
+    }>
   >([]);
   const [restockInventory, setRestockInventory] = useState(true);
   const [deleteReturnItemConfirm, setDeleteReturnItemConfirm] = useState<
@@ -787,13 +800,14 @@ export function ReturnsPilotSurface({
         batchId: lineItem.batchId,
         quantity: lineItem.quantity.toString(),
         reason: "",
+        expectedCondition: undefined,
       },
     ]);
   };
 
   const updateReturnItem = (
     index: number,
-    field: "quantity" | "reason",
+    field: "quantity" | "reason" | "expectedCondition",
     value: string
   ) => {
     setReturnItems(prev => {
@@ -817,7 +831,12 @@ export function ReturnsPilotSurface({
 
     createReturnMutation.mutate({
       orderId: selectedOrderId,
-      items: returnItems,
+      items: returnItems.map(item => ({
+        batchId: item.batchId,
+        quantity: item.quantity,
+        reason: item.reason || undefined,
+        expectedCondition: item.expectedCondition || undefined,
+      })),
       reason: returnReason,
       notes,
       restockInventory,
@@ -1019,8 +1038,9 @@ export function ReturnsPilotSurface({
             currentStatus={selectedRow.derivedStatus}
             onSuccess={handleWorkflowSuccess}
           />
-          {/* RET-019: Receive */}
+          {/* RET-019: Receive — key forces state reset on return change (RET-P3-B) */}
           <ReceiveCard
+            key={selectedRow.returnId}
             returnId={selectedRow.returnId}
             returnNumber={selectedRow.returnNumber}
             currentStatus={selectedRow.derivedStatus}
@@ -1306,34 +1326,59 @@ export function ReturnsPilotSurface({
                     return (
                       <div
                         key={`dialog-item-${item.batchId}`}
-                        className="flex gap-2 items-center p-2 border rounded-lg"
+                        className="p-2 border rounded-lg space-y-2"
                       >
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">
-                            {lineItem?.productDisplayName ||
-                              `Batch #${item.batchId}`}
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">
+                              {lineItem?.productDisplayName ||
+                                `Batch #${item.batchId}`}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Qty: {item.quantity}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            Qty: {item.quantity}
-                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeleteReturnItemConfirm(index)}
+                          >
+                            Remove
+                          </Button>
                         </div>
-                        <Input
-                          type="text"
-                          placeholder="Item reason (optional)"
-                          value={item.reason || ""}
-                          onChange={e =>
-                            updateReturnItem(index, "reason", e.target.value)
-                          }
-                          className="flex-1 text-sm"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeleteReturnItemConfirm(index)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="text"
+                            placeholder="Item reason (optional)"
+                            value={item.reason || ""}
+                            onChange={e =>
+                              updateReturnItem(index, "reason", e.target.value)
+                            }
+                            className="flex-1 text-sm"
+                          />
+                          <Select
+                            value={item.expectedCondition ?? ""}
+                            onValueChange={value =>
+                              updateReturnItem(
+                                index,
+                                "expectedCondition",
+                                value
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-[140px] text-sm">
+                              <SelectValue placeholder="Condition" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {EXPECTED_CONDITIONS.map(c => (
+                                <SelectItem key={c.value} value={c.value}>
+                                  {c.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     );
                   })}

@@ -9,8 +9,9 @@
  *   1. KPI summary band (invoices.getSummary — DISC-INV-005 fix)
  *   2. Status filter tabs + search bar (INV-001, INV-002, INV-003)
  *   3. PowersheetGrid registry, read-only (INV-001)
- *   4. Workflow action bar: Mark Paid, Void (with reason), Mark Sent,
+ *   4. Workflow action bar: Void (with reason), Mark Sent,
  *      Record Payment, Download PDF, Print (INV-013–INV-018)
+ *      (INV-P1: "Mark Paid" removed — bypassed GL; use Record Payment instead)
  *   5. AR Aging toggle panel (INV-007)
  *   6. WorkSurfaceStatusBar + KeyboardHintBar (INV-020)
  *   7. InvoiceToPaymentFlow sidecar dialog (INV-016)
@@ -34,7 +35,6 @@ import {
   FileText,
   Send,
   CreditCard,
-  CheckCircle2,
   AlertTriangle,
   XCircle,
   CalendarClock,
@@ -555,26 +555,22 @@ function AgingPanel({ isVisible, onToggle }: AgingPanelProps) {
 
 interface InspectorContentProps {
   selectedRow: InvoiceGridRow | null;
-  onMarkPaid: () => void;
   onMarkSent: () => void;
   onVoid: () => void;
   onRecordPayment: () => void;
   onDownloadPdf: () => void;
   onPrint: () => void;
-  isMarkPaidPending: boolean;
   isMarkSentPending: boolean;
   isDownloadPending: boolean;
 }
 
 function InspectorContent({
   selectedRow,
-  onMarkPaid,
   onMarkSent,
   onVoid,
   onRecordPayment,
   onDownloadPdf,
   onPrint,
-  isMarkPaidPending,
   isMarkSentPending,
   isDownloadPending,
 }: InspectorContentProps) {
@@ -700,27 +696,15 @@ function InspectorContent({
       <InspectorSection title="Quick Actions" defaultOpen>
         <div className="space-y-2">
           {canPay && (
-            <>
-              <Button
-                variant="default"
-                className="w-full justify-start"
-                onClick={onRecordPayment}
-                data-testid="inspector-record-payment"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Record Payment
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={onMarkPaid}
-                disabled={isMarkPaidPending}
-                data-testid="inspector-mark-paid"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {isMarkPaidPending ? "Marking…" : "Mark as Paid (Full)"}
-              </Button>
-            </>
+            <Button
+              variant="default"
+              className="w-full justify-start"
+              onClick={onRecordPayment}
+              data-testid="inspector-record-payment"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Record Payment
+            </Button>
           )}
           {canSend && (
             <Button
@@ -896,18 +880,6 @@ export function InvoicesPilotSurface({
   // Mutations
   // -------------------------------------------------------------------------
 
-  // Mark as Paid — uses updateStatus (no GL reversal needed for payment)
-  const markPaidMutation = trpc.invoices.updateStatus.useMutation({
-    onSuccess: () => {
-      toast.success("Invoice marked as paid");
-      void utils.invoices.list.invalidate();
-      void utils.invoices.getSummary.invalidate();
-    },
-    onError: err => {
-      toast.error(err.message || "Failed to mark as paid");
-    },
-  });
-
   // DISC-INV-002: Mark as Sent uses invoices.markSent mutation
   const markSentMutation = trpc.invoices.markSent.useMutation({
     onSuccess: () => {
@@ -966,11 +938,6 @@ export function InvoicesPilotSurface({
   // -------------------------------------------------------------------------
   // Handlers
   // -------------------------------------------------------------------------
-
-  const handleMarkPaid = useCallback(() => {
-    if (!selectedRow) return;
-    markPaidMutation.mutate({ id: selectedRow.invoiceId, status: "PAID" });
-  }, [selectedRow, markPaidMutation]);
 
   const handleMarkSent = useCallback(() => {
     if (!selectedRow) return;
@@ -1169,21 +1136,6 @@ export function InvoicesPilotSurface({
             variant="outline"
             disabled={
               !selectedRow ||
-              selectedRow.status === "PAID" ||
-              selectedRow.status === "VOID" ||
-              markPaidMutation.isPending
-            }
-            onClick={handleMarkPaid}
-            data-testid="action-mark-paid"
-          >
-            <CheckCircle2 className="mr-2 h-4 w-4" />
-            Mark Paid
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={
-              !selectedRow ||
               selectedRow.status !== "DRAFT" ||
               markSentMutation.isPending
             }
@@ -1326,13 +1278,11 @@ export function InvoicesPilotSurface({
       >
         <InspectorContent
           selectedRow={selectedRow}
-          onMarkPaid={handleMarkPaid}
           onMarkSent={handleMarkSent}
           onVoid={handleOpenVoidDialog}
           onRecordPayment={handleRecordPayment}
           onDownloadPdf={handleDownloadPdf}
           onPrint={handlePrint}
-          isMarkPaidPending={markPaidMutation.isPending}
           isMarkSentPending={markSentMutation.isPending}
           isDownloadPending={downloadPdfMutation.isPending}
         />

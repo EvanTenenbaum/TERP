@@ -552,7 +552,7 @@ export const pickPackRouter = router({
           message: "Database not available",
         });
 
-      const { orders, orderBags, orderItemBags } =
+      const { orders, orderBags, orderItemBags, auditLogs } =
         await import("../../drizzle/schema");
       const { eq, and, sql } = await import("drizzle-orm");
 
@@ -666,6 +666,25 @@ export const pickPackRouter = router({
           .set({ pickPackStatus: "PICKING" })
           .where(eq(orders.id, input.orderId));
       }
+
+      // DISC-FUL-003: Audit log for pack operation
+      await db.insert(auditLogs).values({
+        actorId,
+        entity: "ORDER_ITEM_BAG",
+        entityId: input.orderId,
+        action: "PACK_ITEMS",
+        before: JSON.stringify({
+          orderId: input.orderId,
+          orderNumber: order.orderNumber,
+          itemIds: input.itemIds,
+          itemCount: input.itemIds.length,
+        }),
+        after: JSON.stringify({
+          status: "PACKED",
+          bagIdentifier,
+          packedCount,
+        }),
+      });
 
       return {
         bagId,
@@ -807,7 +826,7 @@ export const pickPackRouter = router({
           message: "Database not available",
         });
 
-      const { orders, orderBags, orderItemBags, orderLineItems } =
+      const { orders, orderBags, orderItemBags, orderLineItems, auditLogs } =
         await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
 
@@ -912,6 +931,24 @@ export const pickPackRouter = router({
           bagIdentifier,
           packedItemCount: packedCount,
         };
+      });
+
+      // DISC-FUL-003: Audit log for mark-all-packed operation
+      await db.insert(auditLogs).values({
+        actorId,
+        entity: "ORDER_ITEM_BAG",
+        entityId: input.orderId,
+        action: "MARK_ALL_PACKED",
+        before: JSON.stringify({
+          orderId: input.orderId,
+          orderNumber: order.orderNumber,
+          itemCount: itemIds.length,
+        }),
+        after: JSON.stringify({
+          status: "PACKED",
+          bagIdentifier: result.bagIdentifier,
+          packedCount: result.packedItemCount,
+        }),
       });
 
       return result;

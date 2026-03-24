@@ -1791,8 +1791,7 @@ export const inventoryRouter = router({
       .input(z.array(z.number()))
       .mutation(async ({ input, ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           return await inventoryDb.bulkDeleteBatches(input, userId);
         } catch (error) {
           handleError(error, "inventory.bulk.delete");
@@ -1820,8 +1819,7 @@ export const inventoryRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           return await inventoryDb.bulkRestoreBatches(input, userId);
         } catch (error) {
           handleError(error, "inventory.bulk.restore");

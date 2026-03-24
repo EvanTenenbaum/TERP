@@ -149,6 +149,19 @@ const PO_STATUS_LABELS: Record<string, string> = {
 
 const RECEIVABLE_STATUSES = new Set(["CONFIRMED", "RECEIVING"]);
 
+/**
+ * PO-P2: Client-side state machine for valid PO status transitions.
+ * Prevents invalid transitions before hitting the server.
+ */
+const PO_ALLOWED_TRANSITIONS: Record<string, POStatus[]> = {
+  DRAFT: ["SENT", "CANCELLED"],
+  SENT: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["RECEIVING", "CANCELLED"],
+  RECEIVING: ["RECEIVED", "CANCELLED"],
+  RECEIVED: [], // terminal
+  CANCELLED: [], // terminal
+};
+
 const isMac =
   typeof navigator !== "undefined" &&
   /mac/i.test(navigator.platform || navigator.userAgent);
@@ -498,6 +511,15 @@ export function PurchaseOrdersPilotSurface({
 
   const handleStatusTransition = (status: POStatus) => {
     if (!selectedRow) return;
+    const currentStatus = selectedRow.status;
+    const allowed = PO_ALLOWED_TRANSITIONS[currentStatus] ?? [];
+    if (!allowed.includes(status)) {
+      notifyToast(
+        "error",
+        `Cannot transition from ${PO_STATUS_LABELS[currentStatus] ?? currentStatus} to ${PO_STATUS_LABELS[status] ?? status}`
+      );
+      return;
+    }
     setPendingStatusChange({ poId: selectedRow.poId, status });
     setShowStatusDialog(true);
   };
@@ -704,19 +726,10 @@ export function PurchaseOrdersPilotSurface({
     ? "Selection spans multiple rows — workflow actions stay locked until focused row is the only selection."
     : "Workflow actions are row-scoped. Cell selections do not change ownership.";
 
-  // Status transition options for selected PO
+  // Status transition options for selected PO — filtered by state machine
   const availableTransitions = useMemo<POStatus[]>(() => {
     if (!selectedRow) return [];
-    const current = selectedRow.status as POStatus;
-    const allStatuses: POStatus[] = [
-      "DRAFT",
-      "SENT",
-      "CONFIRMED",
-      "RECEIVING",
-      "RECEIVED",
-      "CANCELLED",
-    ];
-    return allStatuses.filter(s => s !== current);
+    return PO_ALLOWED_TRANSITIONS[selectedRow.status] ?? [];
   }, [selectedRow]);
 
   // ---------------------------------------------------------------------------

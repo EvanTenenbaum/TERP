@@ -120,6 +120,11 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
     },
+    useUtils: () => ({
+      clientLedger: {
+        getLedger: { invalidate: vi.fn() },
+      },
+    }),
   },
 }));
 

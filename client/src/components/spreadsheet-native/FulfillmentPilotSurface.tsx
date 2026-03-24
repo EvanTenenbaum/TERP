@@ -54,6 +54,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -169,7 +171,7 @@ function statusToken(status: FulfillmentStatus): string {
     case "READY":
       return PICK_PACK_STATUS_TOKENS.READY ?? STATUS_NEUTRAL;
     case "SHIPPED":
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "bg-indigo-100 text-indigo-700 border-indigo-200";
   }
 }
 
@@ -625,6 +627,12 @@ export function FulfillmentPilotSurface({
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
   const [unpackReason, setUnpackReason] = useState("");
 
+  // DISC-FUL-009: ship dialog state
+  const [showShipDialog, setShowShipDialog] = useState(false);
+  const [shipTrackingNumber, setShipTrackingNumber] = useState("");
+  const [shipCarrier, setShipCarrier] = useState("");
+  const [shipNotes, setShipNotes] = useState("");
+
   // Dedup toast refs
   const lastToastKeyRef = useRef<string | null>(null);
   const lastToastTimeRef = useRef(0);
@@ -721,9 +729,13 @@ export function FulfillmentPilotSurface({
   const canShipSelectedOrder =
     orderDetails !== null &&
     orderDetails.order.pickPackStatus === "READY" &&
-    !["SHIPPED", "DELIVERED", "RETURNED"].includes(
-      (orderDetails.order.fulfillmentStatus ?? "").toUpperCase()
-    );
+    ![
+      "SHIPPED",
+      "DELIVERED",
+      "RETURNED",
+      "RESTOCKED",
+      "RETURNED_TO_VENDOR",
+    ].includes((orderDetails.order.fulfillmentStatus ?? "").toUpperCase());
 
   const hasActiveFilters =
     statusFilter !== "ALL" || searchLower.length > 0 || sortKey !== "newest";
@@ -938,8 +950,30 @@ export function FulfillmentPilotSurface({
 
   const handleShip = useCallback(() => {
     if (!canManagePickPack || !selectedOrderId) return;
-    shipOrderMutation.mutate({ id: selectedOrderId });
-  }, [canManagePickPack, selectedOrderId, shipOrderMutation]);
+    setShowShipDialog(true);
+  }, [canManagePickPack, selectedOrderId]);
+
+  const handleShipConfirm = useCallback(() => {
+    if (!selectedOrderId) return;
+    shipOrderMutation.mutate({
+      id: selectedOrderId,
+      ...(shipTrackingNumber.trim() && {
+        trackingNumber: shipTrackingNumber.trim(),
+      }),
+      ...(shipCarrier.trim() && { carrier: shipCarrier.trim() }),
+      ...(shipNotes.trim() && { notes: shipNotes.trim() }),
+    });
+    setShowShipDialog(false);
+    setShipTrackingNumber("");
+    setShipCarrier("");
+    setShipNotes("");
+  }, [
+    selectedOrderId,
+    shipOrderMutation,
+    shipTrackingNumber,
+    shipCarrier,
+    shipNotes,
+  ]);
 
   const handleExportManifest = useCallback(() => {
     if (!orderDetails || manifestRows.length === 0) {
@@ -1024,7 +1058,10 @@ export function FulfillmentPilotSurface({
           selectAllUnpacked();
           break;
         case "r":
-          handleMarkReady();
+          // FUL-P3-A: guard — only fire if the order has packed items
+          if (orderDetails && orderDetails.summary.packedItems > 0) {
+            handleMarkReady();
+          }
           break;
         case "i":
           if (selectedOrderId) setInspectorMode("order");
@@ -1035,7 +1072,13 @@ export function FulfillmentPilotSurface({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedOrderId, handlePackSelected, selectAllUnpacked, handleMarkReady]);
+  }, [
+    selectedOrderId,
+    handlePackSelected,
+    selectAllUnpacked,
+    handleMarkReady,
+    orderDetails,
+  ]);
 
   // ── Column definitions ─────────────────────────────────────────────────────
 
@@ -1641,6 +1684,73 @@ export function FulfillmentPilotSurface({
         confirmLabel="Unpack"
         variant="destructive"
         onConfirm={handleUnpackConfirm}
+      />
+
+      {/* ── Ship dialog (DISC-FUL-009) ── */}
+      <ConfirmDialog
+        open={showShipDialog}
+        onOpenChange={open => {
+          setShowShipDialog(open);
+          if (!open) {
+            setShipTrackingNumber("");
+            setShipCarrier("");
+            setShipNotes("");
+          }
+        }}
+        title="Ship Order"
+        description={
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Confirm shipment for order{" "}
+              <span className="font-semibold">
+                {orderDetails?.order.orderNumber}
+              </span>
+              . All fields are optional.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="ship-tracking-number">Tracking Number</Label>
+              <Input
+                id="ship-tracking-number"
+                placeholder="e.g. 1Z999AA10123456784"
+                value={shipTrackingNumber}
+                onChange={e => setShipTrackingNumber(e.target.value)}
+                className="min-h-[44px]"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ship-carrier">Carrier</Label>
+              <Select value={shipCarrier} onValueChange={setShipCarrier}>
+                <SelectTrigger id="ship-carrier" className="min-h-[44px]">
+                  <SelectValue placeholder="Select carrier (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UPS">UPS</SelectItem>
+                  <SelectItem value="FedEx">FedEx</SelectItem>
+                  <SelectItem value="USPS">USPS</SelectItem>
+                  <SelectItem value="DHL">DHL</SelectItem>
+                  <SelectItem value="Local Delivery">Local Delivery</SelectItem>
+                  <SelectItem value="Customer Pickup">
+                    Customer Pickup
+                  </SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ship-notes">Notes</Label>
+              <Textarea
+                id="ship-notes"
+                placeholder="Optional shipping notes..."
+                value={shipNotes}
+                onChange={e => setShipNotes(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+        }
+        confirmLabel="Mark Shipped"
+        onConfirm={handleShipConfirm}
       />
     </div>
   );

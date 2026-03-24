@@ -59,6 +59,8 @@ import {
 } from "@/components/work-surface/KeyboardHintBar";
 import { InvoiceToPaymentFlow } from "@/components/work-surface/golden-flows/InvoiceToPaymentFlow";
 
+import { usePermissions } from "@/hooks/usePermissions";
+
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
@@ -438,6 +440,8 @@ export function PaymentsPilotSurface({
   onOpenClassic,
 }: PaymentsPilotSurfaceProps) {
   const search = useSearch();
+  const { hasPermission } = usePermissions();
+  const canVoid = hasPermission("accounting:delete");
 
   // PAY-004: Deep-link support (?id=, ?invoiceId= only — orderId not supported by API)
   const routeParams = useMemo(() => {
@@ -702,16 +706,18 @@ export function PaymentsPilotSurface({
             Record Payment
           </Button>
 
-          {/* PAY-014: Void payment */}
+          {/* PAY-014: Void payment (gated on accounting:delete — PAY-P2-PERM) */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setVoidDialogOpen(true)}
-            disabled={selectedRow === null}
+            disabled={selectedRow === null || !canVoid}
             title={
-              selectedRow === null
-                ? "Select a payment row to void"
-                : `Void ${selectedRow.paymentNumber}`
+              !canVoid
+                ? "You don't have permission to void payments"
+                : selectedRow === null
+                  ? "Select a payment row to void"
+                  : `Void ${selectedRow.paymentNumber}`
             }
           >
             <Ban className="h-4 w-4 mr-1" />
@@ -811,6 +817,12 @@ export function PaymentsPilotSurface({
                 size="sm"
                 className="flex-1"
                 onClick={() => setVoidDialogOpen(true)}
+                disabled={!canVoid}
+                title={
+                  !canVoid
+                    ? "You don't have permission to void payments"
+                    : undefined
+                }
               >
                 <Ban className="h-4 w-4 mr-1" />
                 Void

@@ -558,7 +558,11 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       totalCogs: totalCogs.toString(),
       totalMargin: totalMargin.toString(),
       avgMarginPercent: avgMarginPercent.toString(),
-      validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+      validUntil: input.validUntil
+        ? new Date(input.validUntil)
+        : input.orderType === "QUOTE"
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          : undefined,
       quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
       paymentTerms: input.paymentTerms || "NET_30",
       cashPayment: input.cashPayment?.toString() || "0",
@@ -965,6 +969,7 @@ export async function getAllOrders(filters?: {
     return {
       ...normalizeOrderRecord(row.orders),
       items: parsedItems,
+      lineItemCount: parsedItems.length,
       client: row.clients,
     } as Order;
   });

@@ -306,6 +306,7 @@ export function OrdersSheetPilotSurface({
         headerName: "Total",
         minWidth: 120,
         maxWidth: 140,
+        sortable: true,
         valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
       },
       {
@@ -340,6 +341,7 @@ export function OrdersSheetPilotSurface({
         field: "lineTotal",
         headerName: "Line Total",
         minWidth: 120,
+        sortable: true,
         valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
       },
     ],
@@ -584,7 +586,7 @@ export function OrdersSheetPilotSurface({
             }}
           >
             <Truck className="mr-2 h-4 w-4" />
-            Shipping
+            Fulfillment
           </Button>
           <Button
             size="sm"
@@ -723,6 +725,18 @@ export function OrdersSheetPilotSurface({
             </Badge>
           ) : null
         }
+        footer={
+          selectedOrderRow ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => onOpenClassic(selectedOrderRow.orderId)}
+            >
+              <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+              Open Classic Sales Context
+            </Button>
+          ) : null
+        }
       >
         {selectedOrderRow ? (
           <div className="space-y-4">
@@ -763,17 +777,6 @@ export function OrdersSheetPilotSurface({
               </InspectorField>
             </InspectorSection>
           </div>
-        ) : null}
-        footer=
-        {selectedOrderRow ? (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => onOpenClassic(selectedOrderRow.orderId)}
-          >
-            <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-            Open Classic Sales Context
-          </Button>
         ) : null}
       </InspectorPanel>
 

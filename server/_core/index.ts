@@ -50,6 +50,7 @@ import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
 import { startNotificationQueueCron } from "../cron/notificationQueueCron.js";
 import { startDebtAgingCron } from "../cron/debtAgingCron.js";
+import { startQuoteExpiryCron } from "../cron/quoteExpiryCron.js";
 import {
   startLeaderElection,
   stopLeaderElection,
@@ -624,6 +625,15 @@ async function startServer() {
         logger.info("✅ Debt aging notification cron job started");
       } catch (error) {
         logger.error({ msg: "Failed to start debt aging cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start quote expiry cron job (DISC-QUO-004)
+      try {
+        startQuoteExpiryCron();
+        logger.info("✅ Quote expiry cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start quote expiry cron", error });
         // Server continues - cron is non-critical
       }
     });

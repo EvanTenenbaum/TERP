@@ -165,7 +165,16 @@ export function mapInventoryItemsToPilotRows(
     const holdQty = toNumber(item.holdQty);
 
     return {
-      identity: createIdentity("batch", item.id, "primary"),
+      identity: createIdentity(
+        "batch",
+        item.id,
+        "primary",
+        (item as Record<string, unknown>).version as
+          | string
+          | number
+          | null
+          | undefined
+      ),
       batchId: item.id,
       sku: item.sku,
       productName: item.productName || "Unknown Product",
@@ -275,11 +284,11 @@ export function mapOrdersToPilotRows(input: {
           ? "DRAFT"
           : order.fulfillmentStatus || order.saleStatus || "READY_FOR_PACKING",
       total: toNumber(order.total),
-      lineItemCount: Array.isArray(
-        (order as { lineItems?: unknown[] }).lineItems
-      )
-        ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
-        : 0,
+      lineItemCount:
+        (order as unknown as { lineItemCount?: number }).lineItemCount ??
+        (Array.isArray((order as { lineItems?: unknown[] }).lineItems)
+          ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
+          : 0),
       createdAt,
       ageLabel: formatAgeLabel(createdAt),
       confirmedAt: toDateString(order.confirmedAt),
