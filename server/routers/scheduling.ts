@@ -14,7 +14,11 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import {
@@ -28,7 +32,18 @@ import {
   appointmentReferrals,
 } from "../../drizzle/schema-scheduling";
 import { calendarEvents, clients, users } from "../../drizzle/schema";
-import { eq, and, desc, gte, lte, or, sql, isNull, inArray, ne } from "drizzle-orm";
+import {
+  eq,
+  and,
+  desc,
+  gte,
+  lte,
+  or,
+  sql,
+  isNull,
+  inArray,
+  ne,
+} from "drizzle-orm";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -73,7 +88,11 @@ const roomInputSchema = z.object({
   roomType: z.enum(["meeting", "loading"]),
   capacity: z.number().int().positive().optional().default(1),
   features: z.array(z.string()).optional().default([]),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().default("#3B82F6"),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional()
+    .default("#3B82F6"),
   displayOrder: z.number().int().optional().default(0),
   locationId: z.number().int().optional(),
 });
@@ -99,9 +118,18 @@ const shiftInputSchema = z.object({
   shiftDate: z.string(), // YYYY-MM-DD
   startTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
   endTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
-  breakStart: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
-  breakEnd: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
-  shiftType: z.enum(["regular", "overtime", "on_call", "training"]).optional().default("regular"),
+  breakStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional(),
+  breakEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional(),
+  shiftType: z
+    .enum(["regular", "overtime", "on_call", "training"])
+    .optional()
+    .default("regular"),
   locationId: z.number().int().optional(),
   notes: z.string().optional(),
 });
@@ -111,9 +139,19 @@ const shiftTemplateInputSchema = z.object({
   description: z.string().optional(),
   startTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
   endTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
-  breakStart: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
-  breakEnd: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().default("#10B981"),
+  breakStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional(),
+  breakEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional()
+    .default("#10B981"),
 });
 
 // ============================================================================
@@ -125,8 +163,14 @@ const deliveryScheduleInputSchema = z.object({
   referenceId: z.number().int(),
   expectedDate: z.string(), // YYYY-MM-DD
   confirmedDate: z.string().optional(),
-  expectedTimeStart: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
-  expectedTimeEnd: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
+  expectedTimeStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional(),
+  expectedTimeEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional(),
   carrier: z.string().max(255).optional(),
   trackingNumber: z.string().max(255).optional(),
   deliveryAddress: z.string().optional(),
@@ -174,7 +218,11 @@ export const schedulingRouter = router({
     .input(roomInputSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [result] = await db.insert(rooms).values({
         name: input.name,
@@ -196,15 +244,21 @@ export const schedulingRouter = router({
   listRooms: protectedProcedure
     .use(requirePermission("calendar:read"))
     .input(
-      z.object({
-        roomType: z.enum(["meeting", "loading"]).optional(),
-        isActive: z.boolean().optional().default(true),
-        locationId: z.number().int().optional(),
-      }).optional()
+      z
+        .object({
+          roomType: z.enum(["meeting", "loading"]).optional(),
+          isActive: z.boolean().optional().default(true),
+          locationId: z.number().int().optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [];
       if (input?.isActive !== undefined) {
@@ -235,7 +289,11 @@ export const schedulingRouter = router({
     .input(z.object({ id: z.number().int() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [room] = await db
         .select()
@@ -263,12 +321,13 @@ export const schedulingRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      await db
-        .update(rooms)
-        .set(input.data)
-        .where(eq(rooms.id, input.id));
+      await db.update(rooms).set(input.data).where(eq(rooms.id, input.id));
 
       return { success: true };
     }),
@@ -281,7 +340,11 @@ export const schedulingRouter = router({
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(rooms)
@@ -303,7 +366,11 @@ export const schedulingRouter = router({
     .input(roomBookingInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // QA Fix: Validate time range (start must be before end)
       if (!validateTimeRange(input.startTime, input.endTime)) {
@@ -369,13 +436,25 @@ export const schedulingRouter = router({
         startDate: z.string(),
         endDate: z.string(),
         roomId: z.number().int().optional(),
-        status: z.enum(["pending", "confirmed", "in_progress", "completed", "cancelled"]).optional(),
+        status: z
+          .enum([
+            "pending",
+            "confirmed",
+            "in_progress",
+            "completed",
+            "cancelled",
+          ])
+          .optional(),
         clientId: z.number().int().optional(),
       })
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [
         gte(roomBookings.bookingDate, parseDate(input.startDate)),
@@ -406,7 +485,7 @@ export const schedulingRouter = router({
         .where(and(...conditions))
         .orderBy(roomBookings.bookingDate, roomBookings.startTime);
 
-      return result.map((r) => ({
+      return result.map(r => ({
         ...r.booking,
         room: r.room,
         client: r.client,
@@ -422,13 +501,23 @@ export const schedulingRouter = router({
     .input(
       z.object({
         id: z.number().int(),
-        status: z.enum(["pending", "confirmed", "in_progress", "completed", "cancelled"]),
+        status: z.enum([
+          "pending",
+          "confirmed",
+          "in_progress",
+          "completed",
+          "cancelled",
+        ]),
         notes: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(roomBookings)
@@ -449,7 +538,11 @@ export const schedulingRouter = router({
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(roomBookings)
@@ -475,7 +568,11 @@ export const schedulingRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const bookingDate = parseDate(input.date);
       const conditions = [
@@ -527,7 +624,11 @@ export const schedulingRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const bookingDate = parseDate(input.date);
 
@@ -545,7 +646,11 @@ export const schedulingRouter = router({
         .orderBy(roomBookings.startTime);
 
       // Generate time slots from 8 AM to 6 PM
-      const slots: { startTime: string; endTime: string; available: boolean }[] = [];
+      const slots: {
+        startTime: string;
+        endTime: string;
+        available: boolean;
+      }[] = [];
       const startHour = 8;
       const endHour = 18;
       const slotDuration = input.slotDuration;
@@ -561,7 +666,7 @@ export const schedulingRouter = router({
           const endTime = `${endHourAdjusted.toString().padStart(2, "0")}:${endMinuteAdjusted.toString().padStart(2, "0")}:00`;
 
           // Check if slot conflicts with any booking
-          const isAvailable = !bookings.some((booking) => {
+          const isAvailable = !bookings.some(booking => {
             const bookingStart = booking.startTime;
             const bookingEnd = booking.endTime;
             return (
@@ -599,12 +704,18 @@ export const schedulingRouter = router({
         // Room booking
         roomId: z.number().int(),
         // Referral (optional)
-        referral: referralInputSchema.omit({ calendarEventId: true }).optional(),
+        referral: referralInputSchema
+          .omit({ calendarEventId: true })
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
       const eventDate = parseDate(input.startDate);
@@ -679,7 +790,9 @@ export const schedulingRouter = router({
           referringEmployeeId: input.referral.referringEmployeeId || null,
           referralCode: input.referral.referralCode || null,
           referralNotes: input.referral.referralNotes || null,
-          attributionDate: input.referral.attributionDate ? parseDate(input.referral.attributionDate) : null,
+          attributionDate: input.referral.attributionDate
+            ? parseDate(input.referral.attributionDate)
+            : null,
           conversionValue: input.referral.conversionValue || null,
         });
         referralId = referralResult.insertId;
@@ -705,7 +818,11 @@ export const schedulingRouter = router({
     .input(shiftInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const createdById = getAuthenticatedUserId(ctx);
 
@@ -736,17 +853,24 @@ export const schedulingRouter = router({
         startDate: z.string(),
         endDate: z.string(),
         userId: z.number().int().optional(),
-        status: z.enum(["scheduled", "started", "completed", "absent", "cancelled"]).optional(),
+        status: z
+          .enum(["scheduled", "started", "completed", "absent", "cancelled"])
+          .optional(),
         locationId: z.number().int().optional(),
       })
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [
         gte(employeeShifts.shiftDate, parseDate(input.startDate)),
         lte(employeeShifts.shiftDate, parseDate(input.endDate)),
+        isNull(employeeShifts.deletedAt),
       ];
 
       if (input.userId) {
@@ -769,7 +893,7 @@ export const schedulingRouter = router({
         .where(and(...conditions))
         .orderBy(employeeShifts.shiftDate, employeeShifts.startTime);
 
-      return result.map((r) => ({
+      return result.map(r => ({
         ...r.shift,
         user: r.user,
       }));
@@ -783,7 +907,13 @@ export const schedulingRouter = router({
     .input(
       z.object({
         id: z.number().int(),
-        status: z.enum(["scheduled", "started", "completed", "absent", "cancelled"]),
+        status: z.enum([
+          "scheduled",
+          "started",
+          "completed",
+          "absent",
+          "cancelled",
+        ]),
         actualStartTime: z.string().optional(),
         actualEndTime: z.string().optional(),
         notes: z.string().optional(),
@@ -791,7 +921,11 @@ export const schedulingRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const updateData: Record<string, unknown> = { status: input.status };
       if (input.actualStartTime) {
@@ -820,9 +954,16 @@ export const schedulingRouter = router({
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      await db.delete(employeeShifts).where(eq(employeeShifts.id, input.id));
+      await db
+        .update(employeeShifts)
+        .set({ deletedAt: new Date() })
+        .where(eq(employeeShifts.id, input.id));
 
       return { success: true };
     }),
@@ -839,7 +980,11 @@ export const schedulingRouter = router({
     .input(shiftTemplateInputSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [result] = await db.insert(shiftTemplates).values({
         name: input.name,
@@ -859,10 +1004,16 @@ export const schedulingRouter = router({
    */
   listShiftTemplates: protectedProcedure
     .use(requirePermission("users:read"))
-    .input(z.object({ isActive: z.boolean().optional().default(true) }).optional())
+    .input(
+      z.object({ isActive: z.boolean().optional().default(true) }).optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [];
       if (input?.isActive !== undefined) {
@@ -892,7 +1043,11 @@ export const schedulingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const createdById = getAuthenticatedUserId(ctx);
 
@@ -904,7 +1059,10 @@ export const schedulingRouter = router({
         .limit(1);
 
       if (!template) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Shift template not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Shift template not found",
+        });
       }
 
       // Create shifts for each user and date combination
@@ -955,7 +1113,11 @@ export const schedulingRouter = router({
     .input(deliveryScheduleInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const createdById = getAuthenticatedUserId(ctx);
 
@@ -963,9 +1125,15 @@ export const schedulingRouter = router({
         referenceType: input.referenceType,
         referenceId: input.referenceId,
         expectedDate: parseDate(input.expectedDate),
-        confirmedDate: input.confirmedDate ? parseDate(input.confirmedDate) : null,
-        expectedTimeStart: input.expectedTimeStart ? normalizeTime(input.expectedTimeStart) : null,
-        expectedTimeEnd: input.expectedTimeEnd ? normalizeTime(input.expectedTimeEnd) : null,
+        confirmedDate: input.confirmedDate
+          ? parseDate(input.confirmedDate)
+          : null,
+        expectedTimeStart: input.expectedTimeStart
+          ? normalizeTime(input.expectedTimeStart)
+          : null,
+        expectedTimeEnd: input.expectedTimeEnd
+          ? normalizeTime(input.expectedTimeEnd)
+          : null,
         carrier: input.carrier || null,
         trackingNumber: input.trackingNumber || null,
         deliveryAddress: input.deliveryAddress || null,
@@ -984,27 +1152,50 @@ export const schedulingRouter = router({
   listDeliverySchedules: protectedProcedure
     .use(requirePermission("orders:read"))
     .input(
-      z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        referenceType: z.enum(["order", "purchase_order", "sample"]).optional(),
-        status: z.enum(["pending", "confirmed", "in_transit", "delivered", "delayed", "cancelled"]).optional(),
-      }).optional()
+      z
+        .object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          referenceType: z
+            .enum(["order", "purchase_order", "sample"])
+            .optional(),
+          status: z
+            .enum([
+              "pending",
+              "confirmed",
+              "in_transit",
+              "delivered",
+              "delayed",
+              "cancelled",
+            ])
+            .optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [];
 
       if (input?.startDate) {
-        conditions.push(gte(deliverySchedules.expectedDate, parseDate(input.startDate)));
+        conditions.push(
+          gte(deliverySchedules.expectedDate, parseDate(input.startDate))
+        );
       }
       if (input?.endDate) {
-        conditions.push(lte(deliverySchedules.expectedDate, parseDate(input.endDate)));
+        conditions.push(
+          lte(deliverySchedules.expectedDate, parseDate(input.endDate))
+        );
       }
       if (input?.referenceType) {
-        conditions.push(eq(deliverySchedules.referenceType, input.referenceType));
+        conditions.push(
+          eq(deliverySchedules.referenceType, input.referenceType)
+        );
       }
       if (input?.status) {
         conditions.push(eq(deliverySchedules.status, input.status));
@@ -1027,7 +1218,14 @@ export const schedulingRouter = router({
     .input(
       z.object({
         id: z.number().int(),
-        status: z.enum(["pending", "confirmed", "in_transit", "delivered", "delayed", "cancelled"]),
+        status: z.enum([
+          "pending",
+          "confirmed",
+          "in_transit",
+          "delivered",
+          "delayed",
+          "cancelled",
+        ]),
         confirmedDate: z.string().optional(),
         actualDate: z.string().optional(),
         trackingNumber: z.string().optional(),
@@ -1036,12 +1234,18 @@ export const schedulingRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const updateData: Record<string, unknown> = { status: input.status };
-      if (input.confirmedDate) updateData.confirmedDate = parseDate(input.confirmedDate);
+      if (input.confirmedDate)
+        updateData.confirmedDate = parseDate(input.confirmedDate);
       if (input.actualDate) updateData.actualDate = parseDate(input.actualDate);
-      if (input.trackingNumber) updateData.trackingNumber = input.trackingNumber;
+      if (input.trackingNumber)
+        updateData.trackingNumber = input.trackingNumber;
       if (input.deliveryNotes) updateData.deliveryNotes = input.deliveryNotes;
 
       await db
@@ -1059,7 +1263,11 @@ export const schedulingRouter = router({
     .use(requirePermission("orders:read"))
     .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -1070,7 +1278,12 @@ export const schedulingRouter = router({
         .where(
           and(
             lte(deliverySchedules.expectedDate, today),
-            inArray(deliverySchedules.status, ["pending", "confirmed", "in_transit", "delayed"])
+            inArray(deliverySchedules.status, [
+              "pending",
+              "confirmed",
+              "in_transit",
+              "delayed",
+            ])
           )
         )
         .orderBy(deliverySchedules.expectedDate);
@@ -1090,7 +1303,11 @@ export const schedulingRouter = router({
     .input(referralInputSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [result] = await db.insert(appointmentReferrals).values({
         calendarEventId: input.calendarEventId,
@@ -1099,7 +1316,9 @@ export const schedulingRouter = router({
         referringEmployeeId: input.referringEmployeeId || null,
         referralCode: input.referralCode || null,
         referralNotes: input.referralNotes || null,
-        attributionDate: input.attributionDate ? parseDate(input.attributionDate) : null,
+        attributionDate: input.attributionDate
+          ? parseDate(input.attributionDate)
+          : null,
         conversionValue: input.conversionValue || null,
       });
 
@@ -1114,7 +1333,11 @@ export const schedulingRouter = router({
     .input(z.object({ calendarEventId: z.number().int() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const result = await db
         .select({
@@ -1123,7 +1346,10 @@ export const schedulingRouter = router({
           referringEmployee: users,
         })
         .from(appointmentReferrals)
-        .leftJoin(clients, eq(appointmentReferrals.referringClientId, clients.id))
+        .leftJoin(
+          clients,
+          eq(appointmentReferrals.referringClientId, clients.id)
+        )
         .leftJoin(users, eq(appointmentReferrals.referringEmployeeId, users.id))
         .where(eq(appointmentReferrals.calendarEventId, input.calendarEventId))
         .limit(1);
@@ -1144,14 +1370,20 @@ export const schedulingRouter = router({
   getReferralStats: protectedProcedure
     .use(requirePermission("calendar:read"))
     .input(
-      z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        })
+        .optional()
     )
     .query(async ({ input: _input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get count by source
       const bySource = await db
@@ -1171,7 +1403,10 @@ export const schedulingRouter = router({
           count: sql<number>`COUNT(*)`,
         })
         .from(appointmentReferrals)
-        .leftJoin(clients, eq(appointmentReferrals.referringClientId, clients.id))
+        .leftJoin(
+          clients,
+          eq(appointmentReferrals.referringClientId, clients.id)
+        )
         .where(eq(appointmentReferrals.referralSource, "existing_client"))
         .groupBy(appointmentReferrals.referringClientId, clients.name)
         .orderBy(desc(sql`COUNT(*)`))
@@ -1201,7 +1436,11 @@ export const schedulingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -1257,13 +1496,23 @@ export const schedulingRouter = router({
     .input(
       z.object({
         id: z.number().int(),
-        status: z.enum(["waiting", "checked_in", "in_progress", "completed", "no_show"]),
+        status: z.enum([
+          "waiting",
+          "checked_in",
+          "in_progress",
+          "completed",
+          "no_show",
+        ]),
         notes: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -1275,7 +1524,10 @@ export const schedulingRouter = router({
         .limit(1);
 
       if (!checkIn) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Check-in not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Check-in not found",
+        });
       }
 
       const updateData: Record<string, unknown> = {
@@ -1314,13 +1566,19 @@ export const schedulingRouter = router({
   getTodaysAppointments: protectedProcedure
     .use(requirePermission("calendar:read"))
     .input(
-      z.object({
-        roomId: z.number().int().optional(),
-      }).optional()
+      z
+        .object({
+          roomId: z.number().int().optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -1348,14 +1606,23 @@ export const schedulingRouter = router({
         .from(roomBookings)
         .leftJoin(rooms, eq(roomBookings.roomId, rooms.id))
         .leftJoin(clients, eq(roomBookings.clientId, clients.id))
-        .leftJoin(calendarEvents, eq(roomBookings.calendarEventId, calendarEvents.id))
+        .leftJoin(
+          calendarEvents,
+          eq(roomBookings.calendarEventId, calendarEvents.id)
+        )
         .where(and(...conditions))
         .orderBy(roomBookings.startTime);
 
       // Get check-in status for each booking
       const eventIds = bookings
-        .filter((b): b is typeof b & { calendarEvent: NonNullable<typeof b['calendarEvent']> } => !!b.calendarEvent?.id)
-        .map((b) => b.calendarEvent.id);
+        .filter(
+          (
+            b
+          ): b is typeof b & {
+            calendarEvent: NonNullable<(typeof b)["calendarEvent"]>;
+          } => !!b.calendarEvent?.id
+        )
+        .map(b => b.calendarEvent.id);
 
       let checkIns: Array<typeof appointmentCheckIns.$inferSelect> = [];
       if (eventIds.length > 0) {
@@ -1365,14 +1632,16 @@ export const schedulingRouter = router({
           .where(inArray(appointmentCheckIns.calendarEventId, eventIds));
       }
 
-      const checkInMap = new Map(checkIns.map((c) => [c.calendarEventId, c]));
+      const checkInMap = new Map(checkIns.map(c => [c.calendarEventId, c]));
 
-      return bookings.map((b) => ({
+      return bookings.map(b => ({
         ...b.booking,
         room: b.room,
         client: b.client,
         event: b.calendarEvent,
-        checkIn: b.calendarEvent ? checkInMap.get(b.calendarEvent.id) || null : null,
+        checkIn: b.calendarEvent
+          ? checkInMap.get(b.calendarEvent.id) || null
+          : null,
       }));
     }),
 
@@ -1383,7 +1652,11 @@ export const schedulingRouter = router({
     .use(requirePermission("calendar:read"))
     .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const result = await db
         .select({
@@ -1394,13 +1667,28 @@ export const schedulingRouter = router({
         })
         .from(appointmentCheckIns)
         .leftJoin(clients, eq(appointmentCheckIns.clientId, clients.id))
-        .leftJoin(calendarEvents, eq(appointmentCheckIns.calendarEventId, calendarEvents.id))
-        .leftJoin(roomBookings, eq(appointmentCheckIns.calendarEventId, roomBookings.calendarEventId))
+        .leftJoin(
+          calendarEvents,
+          eq(appointmentCheckIns.calendarEventId, calendarEvents.id)
+        )
+        .leftJoin(
+          roomBookings,
+          eq(appointmentCheckIns.calendarEventId, roomBookings.calendarEventId)
+        )
         .leftJoin(rooms, eq(roomBookings.roomId, rooms.id))
-        .where(inArray(appointmentCheckIns.status, ["waiting", "checked_in", "in_progress"]))
-        .orderBy(appointmentCheckIns.queuePosition, appointmentCheckIns.checkInTime);
+        .where(
+          inArray(appointmentCheckIns.status, [
+            "waiting",
+            "checked_in",
+            "in_progress",
+          ])
+        )
+        .orderBy(
+          appointmentCheckIns.queuePosition,
+          appointmentCheckIns.checkInTime
+        );
 
-      return result.map((r) => ({
+      return result.map(r => ({
         ...r.checkIn,
         client: r.client,
         event: r.event,

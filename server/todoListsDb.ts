@@ -8,7 +8,7 @@ import {
   type TodoListMember,
   type InsertTodoListMember,
 } from "../drizzle/schema";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, isNull } from "drizzle-orm";
 
 /**
  * Todo Lists Database Access Layer
@@ -40,7 +40,10 @@ export async function getUserLists(userId: number): Promise<TodoList[]> {
     .from(todoLists)
     .leftJoin(todoListMembers, eq(todoLists.id, todoListMembers.listId))
     .where(
-      or(eq(todoLists.ownerId, userId), eq(todoListMembers.userId, userId))
+      and(
+        isNull(todoLists.deletedAt),
+        or(eq(todoLists.ownerId, userId), eq(todoListMembers.userId, userId))
+      )
     )
     .orderBy(desc(todoLists.updatedAt));
 
@@ -57,7 +60,7 @@ export async function getListById(listId: number): Promise<TodoList | null> {
   const [list] = await db
     .select()
     .from(todoLists)
-    .where(eq(todoLists.id, listId))
+    .where(and(eq(todoLists.id, listId), isNull(todoLists.deletedAt)))
     .limit(1);
 
   return list || null;
@@ -113,7 +116,10 @@ export async function deleteList(listId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(todoLists).where(eq(todoLists.id, listId));
+  await db
+    .update(todoLists)
+    .set({ deletedAt: new Date() })
+    .where(eq(todoLists.id, listId));
 }
 
 // ============================================================================
@@ -160,7 +166,7 @@ export async function getUserRoleInList(
   const [list] = await db
     .select()
     .from(todoLists)
-    .where(eq(todoLists.id, listId))
+    .where(and(eq(todoLists.id, listId), isNull(todoLists.deletedAt)))
     .limit(1);
 
   if (list?.ownerId === userId) {

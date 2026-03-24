@@ -24,7 +24,7 @@ import {
   type InsertVipTier,
 } from "../../drizzle/schema";
 import * as pricingEngine from "../pricingEngine";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, isNull, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { randomUUID } from "crypto";
@@ -517,9 +517,9 @@ export async function getVipTierConfiguration() {
       message: "Database not available",
     });
 
-  // Get all active tiers sorted by level
+  // Get all active tiers sorted by level (exclude soft-deleted)
   const tiers = await db.query.vipTiers.findMany({
-    where: eq(vipTiers.isActive, true),
+    where: and(eq(vipTiers.isActive, true), isNull(vipTiers.deletedAt)),
     orderBy: (vipTiers, { asc }) => [asc(vipTiers.level)],
   });
 
@@ -555,9 +555,9 @@ export async function updateVipTier(options: UpdateVipTierOptions) {
       message: "Database not available",
     });
 
-  // Check if tier exists
+  // Check if tier exists (exclude soft-deleted)
   const existingTier = await db.query.vipTiers.findFirst({
-    where: eq(vipTiers.id, id),
+    where: and(eq(vipTiers.id, id), isNull(vipTiers.deletedAt)),
   });
 
   if (!existingTier) {
@@ -637,9 +637,9 @@ export async function createVipTier(options: CreateVipTierOptions) {
       message: "Database not available",
     });
 
-  // Check if tier name already exists
+  // Check if tier name already exists (exclude soft-deleted)
   const existingTier = await db.query.vipTiers.findFirst({
-    where: eq(vipTiers.name, options.name),
+    where: and(eq(vipTiers.name, options.name), isNull(vipTiers.deletedAt)),
   });
 
   if (existingTier) {
@@ -683,9 +683,9 @@ export async function deleteVipTier(tierId: number) {
       message: "Database not available",
     });
 
-  // Check if tier exists
+  // Check if tier exists (exclude soft-deleted)
   const tier = await db.query.vipTiers.findFirst({
-    where: eq(vipTiers.id, tierId),
+    where: and(eq(vipTiers.id, tierId), isNull(vipTiers.deletedAt)),
   });
 
   if (!tier) {
@@ -708,8 +708,11 @@ export async function deleteVipTier(tierId: number) {
     });
   }
 
-  // Delete tier
-  await db.delete(vipTiers).where(eq(vipTiers.id, tierId));
+  // Soft delete tier
+  await db
+    .update(vipTiers)
+    .set({ deletedAt: new Date() })
+    .where(eq(vipTiers.id, tierId));
 
   return { success: true };
 }
@@ -723,7 +726,7 @@ export async function getVipTierById(tierId: number) {
     });
 
   const tier = await db.query.vipTiers.findFirst({
-    where: eq(vipTiers.id, tierId),
+    where: and(eq(vipTiers.id, tierId), isNull(vipTiers.deletedAt)),
   });
 
   if (!tier) {

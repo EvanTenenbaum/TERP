@@ -4,7 +4,7 @@ import {
   type TodoTask,
   type InsertTodoTask,
 } from "../drizzle/schema";
-import { eq, and, desc, asc, isNotNull, sql } from "drizzle-orm";
+import { eq, and, desc, asc, isNotNull, isNull, sql } from "drizzle-orm";
 
 /**
  * Todo Tasks Database Access Layer
@@ -31,14 +31,14 @@ export async function getListTasks(
   const [countResult] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(todoTasks)
-    .where(eq(todoTasks.listId, listId));
+    .where(and(eq(todoTasks.listId, listId), isNull(todoTasks.deletedAt)));
   const total = Number(countResult?.count ?? 0);
 
   // Get paginated tasks
   const tasks = await db
     .select()
     .from(todoTasks)
-    .where(eq(todoTasks.listId, listId))
+    .where(and(eq(todoTasks.listId, listId), isNull(todoTasks.deletedAt)))
     .orderBy(asc(todoTasks.position), desc(todoTasks.createdAt))
     .limit(limit)
     .offset(offset);
@@ -68,14 +68,14 @@ export async function getUserAssignedTasks(
   const [countResult] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(todoTasks)
-    .where(eq(todoTasks.assignedTo, userId));
+    .where(and(eq(todoTasks.assignedTo, userId), isNull(todoTasks.deletedAt)));
   const total = Number(countResult?.count ?? 0);
 
   // Get paginated tasks
   const tasks = await db
     .select()
     .from(todoTasks)
-    .where(eq(todoTasks.assignedTo, userId))
+    .where(and(eq(todoTasks.assignedTo, userId), isNull(todoTasks.deletedAt)))
     .orderBy(desc(todoTasks.dueDate), desc(todoTasks.createdAt))
     .limit(limit)
     .offset(offset);
@@ -99,7 +99,7 @@ export async function getTaskById(taskId: number): Promise<TodoTask | null> {
   const [task] = await db
     .select()
     .from(todoTasks)
-    .where(eq(todoTasks.id, taskId))
+    .where(and(eq(todoTasks.id, taskId), isNull(todoTasks.deletedAt)))
     .limit(1);
 
   return task || null;
@@ -112,11 +112,11 @@ export async function createTask(data: InsertTodoTask): Promise<TodoTask> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get the next position in the list
+  // Get the next position in the list (exclude soft-deleted tasks)
   const [maxPosition] = await db
     .select({ max: sql<number>`MAX(${todoTasks.position})` })
     .from(todoTasks)
-    .where(eq(todoTasks.listId, data.listId));
+    .where(and(eq(todoTasks.listId, data.listId), isNull(todoTasks.deletedAt)));
 
   const nextPosition = (maxPosition?.max ?? -1) + 1;
 
@@ -228,7 +228,10 @@ export async function deleteTask(taskId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(todoTasks).where(eq(todoTasks.id, taskId));
+  await db
+    .update(todoTasks)
+    .set({ deletedAt: new Date() })
+    .where(eq(todoTasks.id, taskId));
 }
 
 /**
@@ -292,7 +295,8 @@ export async function getOverdueTasks(): Promise<TodoTask[]> {
       and(
         isNotNull(todoTasks.dueDate),
         sql`${todoTasks.dueDate} < ${now}`,
-        eq(todoTasks.isCompleted, false)
+        eq(todoTasks.isCompleted, false),
+        isNull(todoTasks.deletedAt)
       )
     )
     .orderBy(asc(todoTasks.dueDate));
@@ -318,7 +322,8 @@ export async function getTasksDueSoon(): Promise<TodoTask[]> {
         isNotNull(todoTasks.dueDate),
         sql`${todoTasks.dueDate} >= ${now}`,
         sql`${todoTasks.dueDate} <= ${sevenDaysFromNow}`,
-        eq(todoTasks.isCompleted, false)
+        eq(todoTasks.isCompleted, false),
+        isNull(todoTasks.deletedAt)
       )
     )
     .orderBy(asc(todoTasks.dueDate));
@@ -342,7 +347,7 @@ export async function getListTaskStats(listId: number) {
       overdue: sql<number>`SUM(CASE WHEN ${todoTasks.dueDate} < NOW() AND ${todoTasks.isCompleted} = false THEN 1 ELSE 0 END)`,
     })
     .from(todoTasks)
-    .where(eq(todoTasks.listId, listId));
+    .where(and(eq(todoTasks.listId, listId), isNull(todoTasks.deletedAt)));
 
   return {
     total: Number(stats?.total ?? 0),

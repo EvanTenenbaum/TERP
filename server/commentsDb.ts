@@ -8,7 +8,7 @@ import {
   type CommentMention,
   type InsertCommentMention,
 } from "../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, sql } from "drizzle-orm";
 
 /**
  * Comments Database Access Layer
@@ -39,7 +39,8 @@ export async function getEntityComments(
     .where(
       and(
         eq(comments.commentableType, commentableType),
-        eq(comments.commentableId, commentableId)
+        eq(comments.commentableId, commentableId),
+        isNull(comments.deletedAt)
       )
     );
   const total = Number(countResult?.count ?? 0);
@@ -65,7 +66,8 @@ export async function getEntityComments(
     .where(
       and(
         eq(comments.commentableType, commentableType),
-        eq(comments.commentableId, commentableId)
+        eq(comments.commentableId, commentableId),
+        isNull(comments.deletedAt)
       )
     )
     .orderBy(desc(comments.createdAt))
@@ -105,7 +107,7 @@ export async function getCommentById(commentId: number) {
     })
     .from(comments)
     .innerJoin(users, eq(comments.userId, users.id))
-    .where(eq(comments.id, commentId))
+    .where(and(eq(comments.id, commentId), isNull(comments.deletedAt)))
     .limit(1);
 
   return comment || null;
@@ -161,7 +163,10 @@ export async function deleteComment(commentId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(comments).where(eq(comments.id, commentId));
+  await db
+    .update(comments)
+    .set({ deletedAt: new Date() })
+    .where(eq(comments.id, commentId));
 }
 
 /**
@@ -238,7 +243,8 @@ export async function getUnresolvedCommentsCount(
       and(
         eq(comments.commentableType, commentableType),
         eq(comments.commentableId, commentableId),
-        eq(comments.isResolved, false)
+        eq(comments.isResolved, false),
+        isNull(comments.deletedAt)
       )
     );
 

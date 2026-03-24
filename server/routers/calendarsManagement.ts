@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { getDb } from "../db";
 import {
   calendars,
@@ -27,9 +31,11 @@ export const calendarsManagementRouter = router({
   // List all calendars accessible by the user
   list: protectedProcedure
     .input(
-      z.object({
-        includeArchived: z.boolean().default(false),
-      }).optional()
+      z
+        .object({
+          includeArchived: z.boolean().default(false),
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -52,7 +58,10 @@ export const calendarsManagementRouter = router({
           accessLevel: calendarUserAccess.accessLevel,
         })
         .from(calendars)
-        .innerJoin(calendarUserAccess, eq(calendars.id, calendarUserAccess.calendarId))
+        .innerJoin(
+          calendarUserAccess,
+          eq(calendars.id, calendarUserAccess.calendarId)
+        )
         .where(
           and(
             eq(calendarUserAccess.userId, userId),
@@ -110,7 +119,10 @@ export const calendarsManagementRouter = router({
       z.object({
         name: z.string().min(1).max(255),
         description: z.string().optional(),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#3B82F6"),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .default("#3B82F6"),
         type: z.enum(["workspace", "personal"]).default("workspace"),
         isDefault: z.boolean().default(false),
       })
@@ -158,7 +170,10 @@ export const calendarsManagementRouter = router({
         id: z.number(),
         name: z.string().min(1).max(255).optional(),
         description: z.string().optional(),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
         isDefault: z.boolean().optional(),
       })
     )
@@ -194,7 +209,8 @@ export const calendarsManagementRouter = router({
 
       const updateData: Partial<typeof calendars.$inferInsert> = {};
       if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined) updateData.description = input.description;
+      if (input.description !== undefined)
+        updateData.description = input.description;
       if (input.color !== undefined) updateData.color = input.color;
       if (input.isDefault !== undefined) updateData.isDefault = input.isDefault;
 
@@ -465,7 +481,10 @@ export const calendarsManagementRouter = router({
         .where(
           and(
             eq(appointmentTypes.calendarId, input.calendarId),
-            input.includeInactive ? undefined : eq(appointmentTypes.isActive, true)
+            isNull(appointmentTypes.deletedAt),
+            input.includeInactive
+              ? undefined
+              : eq(appointmentTypes.isActive, true)
           )
         )
         .orderBy(asc(appointmentTypes.name));
@@ -485,7 +504,10 @@ export const calendarsManagementRouter = router({
         bufferAfter: z.number().min(0).max(120).default(0),
         minNoticeHours: z.number().min(0).max(720).default(24), // up to 30 days
         maxAdvanceDays: z.number().min(1).max(365).default(30),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#F59E0B"),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .default("#F59E0B"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -540,7 +562,10 @@ export const calendarsManagementRouter = router({
         bufferAfter: z.number().min(0).max(120).optional(),
         minNoticeHours: z.number().min(0).max(720).optional(),
         maxAdvanceDays: z.number().min(1).max(365).optional(),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
         isActive: z.boolean().optional(),
       })
     )
@@ -553,7 +578,12 @@ export const calendarsManagementRouter = router({
       const [type] = await db
         .select()
         .from(appointmentTypes)
-        .where(eq(appointmentTypes.id, input.id))
+        .where(
+          and(
+            eq(appointmentTypes.id, input.id),
+            isNull(appointmentTypes.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!type) {
@@ -579,12 +609,17 @@ export const calendarsManagementRouter = router({
 
       const updateData: Partial<typeof appointmentTypes.$inferInsert> = {};
       if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined) updateData.description = input.description;
+      if (input.description !== undefined)
+        updateData.description = input.description;
       if (input.duration !== undefined) updateData.duration = input.duration;
-      if (input.bufferBefore !== undefined) updateData.bufferBefore = input.bufferBefore;
-      if (input.bufferAfter !== undefined) updateData.bufferAfter = input.bufferAfter;
-      if (input.minNoticeHours !== undefined) updateData.minNoticeHours = input.minNoticeHours;
-      if (input.maxAdvanceDays !== undefined) updateData.maxAdvanceDays = input.maxAdvanceDays;
+      if (input.bufferBefore !== undefined)
+        updateData.bufferBefore = input.bufferBefore;
+      if (input.bufferAfter !== undefined)
+        updateData.bufferAfter = input.bufferAfter;
+      if (input.minNoticeHours !== undefined)
+        updateData.minNoticeHours = input.minNoticeHours;
+      if (input.maxAdvanceDays !== undefined)
+        updateData.maxAdvanceDays = input.maxAdvanceDays;
       if (input.color !== undefined) updateData.color = input.color;
       if (input.isActive !== undefined) updateData.isActive = input.isActive;
 
@@ -608,7 +643,12 @@ export const calendarsManagementRouter = router({
       const [type] = await db
         .select()
         .from(appointmentTypes)
-        .where(eq(appointmentTypes.id, input.id))
+        .where(
+          and(
+            eq(appointmentTypes.id, input.id),
+            isNull(appointmentTypes.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!type) {
@@ -632,7 +672,10 @@ export const calendarsManagementRouter = router({
         throw new Error("Admin access required to delete appointment types");
       }
 
-      await db.delete(appointmentTypes).where(eq(appointmentTypes.id, input.id));
+      await db
+        .update(appointmentTypes)
+        .set({ deletedAt: new Date() })
+        .where(eq(appointmentTypes.id, input.id));
 
       return { success: true };
     }),
@@ -669,7 +712,10 @@ export const calendarsManagementRouter = router({
         .select()
         .from(calendarAvailability)
         .where(eq(calendarAvailability.calendarId, input.calendarId))
-        .orderBy(asc(calendarAvailability.dayOfWeek), asc(calendarAvailability.startTime));
+        .orderBy(
+          asc(calendarAvailability.dayOfWeek),
+          asc(calendarAvailability.startTime)
+        );
 
       return availability;
     }),
@@ -728,7 +774,7 @@ export const calendarsManagementRouter = router({
       // Insert new slots
       if (input.slots.length > 0) {
         await db.insert(calendarAvailability).values(
-          input.slots.map((slot) => ({
+          input.slots.map(slot => ({
             calendarId: input.calendarId,
             dayOfWeek: input.dayOfWeek,
             startTime: normalizeTime(slot.startTime),
@@ -774,13 +820,20 @@ export const calendarsManagementRouter = router({
         throw new Error("Access denied to this calendar");
       }
 
-      const conditions = [eq(calendarBlockedDates.calendarId, input.calendarId)];
+      const conditions = [
+        eq(calendarBlockedDates.calendarId, input.calendarId),
+        isNull(calendarBlockedDates.deletedAt),
+      ];
 
       if (input.startDate) {
-        conditions.push(gte(calendarBlockedDates.date, new Date(input.startDate)));
+        conditions.push(
+          gte(calendarBlockedDates.date, new Date(input.startDate))
+        );
       }
       if (input.endDate) {
-        conditions.push(lte(calendarBlockedDates.date, new Date(input.endDate)));
+        conditions.push(
+          lte(calendarBlockedDates.date, new Date(input.endDate))
+        );
       }
 
       const blocked = await db
@@ -847,7 +900,12 @@ export const calendarsManagementRouter = router({
       const [blocked] = await db
         .select()
         .from(calendarBlockedDates)
-        .where(eq(calendarBlockedDates.id, input.id))
+        .where(
+          and(
+            eq(calendarBlockedDates.id, input.id),
+            isNull(calendarBlockedDates.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!blocked) {
@@ -871,7 +929,10 @@ export const calendarsManagementRouter = router({
         throw new Error("Edit access required to remove blocked dates");
       }
 
-      await db.delete(calendarBlockedDates).where(eq(calendarBlockedDates.id, input.id));
+      await db
+        .update(calendarBlockedDates)
+        .set({ deletedAt: new Date() })
+        .where(eq(calendarBlockedDates.id, input.id));
 
       return { success: true };
     }),
@@ -919,7 +980,8 @@ export const calendarsManagementRouter = router({
           and(
             eq(appointmentTypes.id, input.appointmentTypeId),
             eq(appointmentTypes.calendarId, input.calendarId),
-            eq(appointmentTypes.isActive, true)
+            eq(appointmentTypes.isActive, true),
+            isNull(appointmentTypes.deletedAt)
           )
         )
         .limit(1);
@@ -942,12 +1004,17 @@ export const calendarsManagementRouter = router({
           and(
             eq(calendarBlockedDates.calendarId, input.calendarId),
             gte(calendarBlockedDates.date, new Date(input.startDate)),
-            lte(calendarBlockedDates.date, new Date(input.endDate))
+            lte(calendarBlockedDates.date, new Date(input.endDate)),
+            isNull(calendarBlockedDates.deletedAt)
           )
         );
 
       const blockedDateSet = new Set(
-        blockedDates.map((b) => b.date instanceof Date ? b.date.toISOString().split("T")[0] : String(b.date))
+        blockedDates.map(b =>
+          b.date instanceof Date
+            ? b.date.toISOString().split("T")[0]
+            : String(b.date)
+        )
       );
 
       // Get existing events
@@ -988,17 +1055,26 @@ export const calendarsManagementRouter = router({
         );
 
       // Convert time-off to blocked time ranges per date
-      const timeOffByDate: Map<string, Array<{ start: number; end: number }>> = new Map();
+      const timeOffByDate: Map<
+        string,
+        Array<{ start: number; end: number }>
+      > = new Map();
       for (const timeOff of approvedTimeOff) {
-        const toStartDate = timeOff.startDate instanceof Date
-          ? timeOff.startDate
-          : new Date(timeOff.startDate);
-        const toEndDate = timeOff.endDate instanceof Date
-          ? timeOff.endDate
-          : new Date(timeOff.endDate);
+        const toStartDate =
+          timeOff.startDate instanceof Date
+            ? timeOff.startDate
+            : new Date(timeOff.startDate);
+        const toEndDate =
+          timeOff.endDate instanceof Date
+            ? timeOff.endDate
+            : new Date(timeOff.endDate);
 
         // Iterate through each day of the time-off period
-        for (let d = new Date(toStartDate); d <= toEndDate; d.setDate(d.getDate() + 1)) {
+        for (
+          let d = new Date(toStartDate);
+          d <= toEndDate;
+          d.setDate(d.getDate() + 1)
+        ) {
           const dStr = d.toISOString().split("T")[0];
 
           let timeOffList = timeOffByDate.get(dStr);
@@ -1023,7 +1099,10 @@ export const calendarsManagementRouter = router({
       }
 
       // Build availability map by day of week
-      const availabilityByDay: Map<number, Array<{ start: string; end: string }>> = new Map();
+      const availabilityByDay: Map<
+        number,
+        Array<{ start: string; end: string }>
+      > = new Map();
       for (const rule of availabilityRules) {
         const day = rule.dayOfWeek;
         let dayRules = availabilityByDay.get(day);
@@ -1039,14 +1118,21 @@ export const calendarsManagementRouter = router({
 
       // Calculate minimum booking time (now + minNoticeHours)
       const now = new Date();
-      const minBookingTime = new Date(now.getTime() + appointmentType.minNoticeHours * 60 * 60 * 1000);
+      const minBookingTime = new Date(
+        now.getTime() + appointmentType.minNoticeHours * 60 * 60 * 1000
+      );
 
       // Calculate maximum booking date
       const maxBookingDate = new Date(now);
-      maxBookingDate.setDate(maxBookingDate.getDate() + appointmentType.maxAdvanceDays);
+      maxBookingDate.setDate(
+        maxBookingDate.getDate() + appointmentType.maxAdvanceDays
+      );
 
       // Total slot duration including buffers
-      const totalDuration = appointmentType.bufferBefore + appointmentType.duration + appointmentType.bufferAfter;
+      const totalDuration =
+        appointmentType.bufferBefore +
+        appointmentType.duration +
+        appointmentType.bufferAfter;
 
       // Generate slots for each day
       const slots: Record<string, string[]> = {};
@@ -1060,7 +1146,11 @@ export const calendarsManagementRouter = router({
         throw new Error("Date range cannot exceed 3 months");
       }
 
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      for (
+        let date = new Date(startDate);
+        date <= endDate;
+        date.setDate(date.getDate() + 1)
+      ) {
         const dateStr = date.toISOString().split("T")[0];
 
         // Skip if date is blocked
@@ -1114,9 +1204,10 @@ export const calendarsManagementRouter = router({
             let hasConflict = false;
 
             for (const event of existingEvents) {
-              const eventDateStr = event.startDate instanceof Date
-                ? event.startDate.toISOString().split("T")[0]
-                : String(event.startDate);
+              const eventDateStr =
+                event.startDate instanceof Date
+                  ? event.startDate.toISOString().split("T")[0]
+                  : String(event.startDate);
 
               if (eventDateStr !== dateStr) {
                 continue;
@@ -1128,8 +1219,12 @@ export const calendarsManagementRouter = router({
                 break;
               }
 
-              const [eventStartHour, eventStartMin] = event.startTime.split(":").map(Number);
-              const [eventEndHour, eventEndMin] = event.endTime.split(":").map(Number);
+              const [eventStartHour, eventStartMin] = event.startTime
+                .split(":")
+                .map(Number);
+              const [eventEndHour, eventEndMin] = event.endTime
+                .split(":")
+                .map(Number);
 
               const eventStartMinutes = eventStartHour * 60 + eventStartMin;
               const eventEndMinutes = eventEndHour * 60 + eventEndMin;
@@ -1138,7 +1233,10 @@ export const calendarsManagementRouter = router({
               const effectiveSlotStart = slotStart;
               const effectiveSlotEnd = slotEndMinutes;
 
-              if (effectiveSlotStart < eventEndMinutes && effectiveSlotEnd > eventStartMinutes) {
+              if (
+                effectiveSlotStart < eventEndMinutes &&
+                effectiveSlotEnd > eventStartMinutes
+              ) {
                 hasConflict = true;
                 break;
               }

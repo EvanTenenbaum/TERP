@@ -1,6 +1,6 @@
 /**
  * Tag Management Service
- * 
+ *
  * Extracted from advancedTagFeatures.ts for better modularity
  * Handles tag hierarchy, groups, merging, and bulk operations
  */
@@ -14,9 +14,9 @@ import {
   productTags,
   type Tag,
   type TagHierarchy,
-  type TagGroup
+  type TagGroup,
 } from "../drizzle/schema";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, or, inArray, isNull } from "drizzle-orm";
 import { isSafeForInArray } from "./lib/sqlSafety";
 
 /**
@@ -31,18 +31,26 @@ export async function createTagHierarchy(
 
   try {
     // Check for circular reference
-    const wouldCreateCircle = await checkCircularReference(parentTagId, childTagId);
+    const wouldCreateCircle = await checkCircularReference(
+      parentTagId,
+      childTagId
+    );
     if (wouldCreateCircle) {
-      throw new Error("Cannot create hierarchy: would create circular reference");
+      throw new Error(
+        "Cannot create hierarchy: would create circular reference"
+      );
     }
 
     // Check if relationship already exists
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(tagHierarchy)
-      .where(and(
-        eq(tagHierarchy.parentTagId, parentTagId),
-        eq(tagHierarchy.childTagId, childTagId)
-      ))
+      .where(
+        and(
+          eq(tagHierarchy.parentTagId, parentTagId),
+          eq(tagHierarchy.childTagId, childTagId)
+        )
+      )
       .limit(1);
 
     if (existing.length > 0) {
@@ -51,17 +59,20 @@ export async function createTagHierarchy(
 
     const [hierarchy] = await db.insert(tagHierarchy).values({
       parentTagId,
-      childTagId
+      childTagId,
     });
 
-    const [created] = await db.select()
+    const [created] = await db
+      .select()
       .from(tagHierarchy)
       .where(eq(tagHierarchy.id, hierarchy.insertId))
       .limit(1);
 
     return created;
   } catch (error: unknown) {
-    throw new Error(`Failed to create tag hierarchy: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to create tag hierarchy: ${(error as Error).message}`
+    );
   }
 }
 
@@ -91,7 +102,8 @@ async function checkCircularReference(
     visited.add(currentId);
 
     // Get parent of current tag
-    const [parent] = await db.select()
+    const [parent] = await db
+      .select()
       .from(tagHierarchy)
       .where(eq(tagHierarchy.childTagId, currentId))
       .limit(1);
@@ -112,7 +124,8 @@ export async function getTagChildren(tagId: number): Promise<Tag[]> {
   if (!db) throw new Error("Database not available");
 
   try {
-    const hierarchies = await db.select()
+    const hierarchies = await db
+      .select()
       .from(tagHierarchy)
       .where(eq(tagHierarchy.parentTagId, tagId));
 
@@ -120,7 +133,8 @@ export async function getTagChildren(tagId: number): Promise<Tag[]> {
 
     if (childIds.length === 0) return [];
 
-    const children = await db.select()
+    const children = await db
+      .select()
       .from(tags)
       .where(inArray(tags.id, childIds));
 
@@ -146,14 +160,16 @@ export async function getTagAncestors(tagId: number): Promise<Tag[]> {
       if (visited.has(currentId)) break;
       visited.add(currentId);
 
-      const [parent] = await db.select()
+      const [parent] = await db
+        .select()
         .from(tagHierarchy)
         .where(eq(tagHierarchy.childTagId, currentId))
         .limit(1);
 
       if (!parent) break;
 
-      const [parentTag] = await db.select()
+      const [parentTag] = await db
+        .select()
         .from(tags)
         .where(eq(tags.id, parent.parentTagId))
         .limit(1);
@@ -184,41 +200,58 @@ export async function mergeTags(
 
   try {
     // Get all products tagged with source tag
-    const sourceProductTags = await db.select()
+    const sourceProductTags = await db
+      .select()
       .from(productTags)
       .where(eq(productTags.tagId, sourceTagId));
 
     // Add target tag to those products (if not already tagged)
     for (const pt of sourceProductTags) {
-      const existing = await db.select()
+      const existing = await db
+        .select()
         .from(productTags)
-        .where(and(
-          eq(productTags.productId, pt.productId),
-          eq(productTags.tagId, targetTagId)
-        ))
+        .where(
+          and(
+            eq(productTags.productId, pt.productId),
+            eq(productTags.tagId, targetTagId)
+          )
+        )
         .limit(1);
 
       if (existing.length === 0) {
         await db.insert(productTags).values({
           productId: pt.productId,
-          tagId: targetTagId
+          tagId: targetTagId,
         });
       }
     }
 
-    // Delete source tag associations
-    await db.delete(productTags)
-      .where(eq(productTags.tagId, sourceTagId));
+    // Soft delete source tag associations
+    await db
+      .update(productTags)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(eq(productTags.tagId, sourceTagId), isNull(productTags.deletedAt))
+      );
 
-    // Delete source tag from hierarchy
-    await db.delete(tagHierarchy)
-      .where(or(
-        eq(tagHierarchy.parentTagId, sourceTagId),
-        eq(tagHierarchy.childTagId, sourceTagId)
-      ));
+    // Soft delete source tag from hierarchy
+    await db
+      .update(tagHierarchy)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          or(
+            eq(tagHierarchy.parentTagId, sourceTagId),
+            eq(tagHierarchy.childTagId, sourceTagId)
+          ),
+          isNull(tagHierarchy.deletedAt)
+        )
+      );
 
-    // Delete source tag
-    await db.delete(tags)
+    // Soft delete source tag
+    await db
+      .update(tags)
+      .set({ deletedAt: new Date() })
       .where(eq(tags.id, sourceTagId));
   } catch (error: unknown) {
     throw new Error(`Failed to merge tags: ${(error as Error).message}`);
@@ -242,10 +275,11 @@ export async function createTagGroup(
       name,
       description,
       color,
-      createdBy
+      createdBy,
     });
 
-    const [created] = await db.select()
+    const [created] = await db
+      .select()
       .from(tagGroups)
       .where(eq(tagGroups.id, group.insertId))
       .limit(1);
@@ -268,12 +302,15 @@ export async function addTagToGroup(
 
   try {
     // Check if already in group
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(tagGroupMembers)
-      .where(and(
-        eq(tagGroupMembers.groupId, groupId),
-        eq(tagGroupMembers.tagId, tagId)
-      ))
+      .where(
+        and(
+          eq(tagGroupMembers.groupId, groupId),
+          eq(tagGroupMembers.tagId, tagId)
+        )
+      )
       .limit(1);
 
     if (existing.length > 0) {
@@ -282,7 +319,7 @@ export async function addTagToGroup(
 
     await db.insert(tagGroupMembers).values({
       groupId,
-      tagId
+      tagId,
     });
   } catch (error: unknown) {
     throw new Error(`Failed to add tag to group: ${(error as Error).message}`);
@@ -297,7 +334,8 @@ export async function getTagsInGroup(groupId: number): Promise<Tag[]> {
   if (!db) throw new Error("Database not available");
 
   try {
-    const members = await db.select()
+    const members = await db
+      .select()
       .from(tagGroupMembers)
       .where(eq(tagGroupMembers.groupId, groupId));
 
@@ -305,7 +343,8 @@ export async function getTagsInGroup(groupId: number): Promise<Tag[]> {
 
     if (tagIds.length === 0) return [];
 
-    const tagsInGroup = await db.select()
+    const tagsInGroup = await db
+      .select()
       .from(tags)
       .where(inArray(tags.id, tagIds));
 
@@ -337,7 +376,8 @@ export async function getTagUsageStats(): Promise<TagUsageStats[]> {
     const stats = [];
 
     for (const tag of allTags) {
-      const productCount = await db.select()
+      const productCount = await db
+        .select()
         .from(productTags)
         .where(eq(productTags.tagId, tag.id));
 
@@ -345,13 +385,15 @@ export async function getTagUsageStats(): Promise<TagUsageStats[]> {
         tagId: tag.id,
         tagName: tag.name,
         category: tag.category,
-        productCount: productCount.length
+        productCount: productCount.length,
       });
     }
 
     return stats.sort((a, b) => b.productCount - a.productCount);
   } catch (error: unknown) {
-    throw new Error(`Failed to get tag usage stats: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get tag usage stats: ${(error as Error).message}`
+    );
   }
 }
 
@@ -369,18 +411,21 @@ export async function bulkAddTags(
     for (const productId of productIds) {
       for (const tagId of tagIds) {
         // Check if already tagged
-        const existing = await db.select()
+        const existing = await db
+          .select()
           .from(productTags)
-          .where(and(
-            eq(productTags.productId, productId),
-            eq(productTags.tagId, tagId)
-          ))
+          .where(
+            and(
+              eq(productTags.productId, productId),
+              eq(productTags.tagId, tagId)
+            )
+          )
           .limit(1);
 
         if (existing.length === 0) {
           await db.insert(productTags).values({
             productId,
-            tagId
+            tagId,
           });
         }
       }
@@ -409,11 +454,16 @@ export async function bulkRemoveTags(
   }
 
   try {
-    await db.delete(productTags)
-      .where(and(
-        inArray(productTags.productId, productIds),
-        inArray(productTags.tagId, tagIds)
-      ));
+    await db
+      .update(productTags)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          inArray(productTags.productId, productIds),
+          inArray(productTags.tagId, tagIds),
+          isNull(productTags.deletedAt)
+        )
+      );
   } catch (error: unknown) {
     throw new Error(`Failed to bulk remove tags: ${(error as Error).message}`);
   }
