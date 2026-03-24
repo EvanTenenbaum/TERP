@@ -2016,11 +2016,12 @@ export async function bulkDeleteBatches(
         );
       }
 
-      // Soft delete by setting status to CLOSED
+      // Soft delete by setting status to CLOSED + deletedAt timestamp
       await tx
         .update(batches)
         .set({
           batchStatus: "CLOSED",
+          deletedAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(batches.id, batchId));
@@ -2084,6 +2085,7 @@ export async function bulkRestoreBatches(
         .update(batches)
         .set({
           batchStatus: targetStatus,
+          deletedAt: null,
           updatedAt: new Date(),
         })
         .where(eq(batches.id, restoreTarget.id));

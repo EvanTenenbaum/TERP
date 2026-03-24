@@ -236,6 +236,11 @@ export function SalesSheetsPilotSurface({
 
   const deleteDraftMutation = trpc.salesSheets.deleteDraft.useMutation({
     onSuccess: () => {
+      setCurrentDraftId(null);
+      currentDraftIdRef.current = null;
+      setDraftName("");
+      setLastSaveTime(null);
+      setSelectedItems([]);
       void draftsQuery.refetch();
       setShowDeleteDraftDialog(false);
       toast.success("Draft deleted");
@@ -482,11 +487,6 @@ export function SalesSheetsPilotSurface({
       return;
     }
     deleteDraftMutation.mutate({ draftId: currentDraftId });
-    setCurrentDraftId(null);
-    currentDraftIdRef.current = null;
-    setDraftName("");
-    setLastSaveTime(null);
-    setSelectedItems([]);
   }, [currentDraftId, deleteDraftMutation]);
 
   const handleGenerateShareLink = useCallback(() => {

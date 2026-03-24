@@ -287,7 +287,13 @@ export const quotesRouter = router({
         })
         .from(orders)
         .leftJoin(clients, eq(orders.clientId, clients.id))
-        .where(and(eq(orders.id, input.id), eq(orders.orderType, "QUOTE")))
+        .where(
+          and(
+            eq(orders.id, input.id),
+            eq(orders.orderType, "QUOTE"),
+            isNull(orders.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!result) {
@@ -474,7 +480,13 @@ export const quotesRouter = router({
       const [quote] = await db
         .select()
         .from(orders)
-        .where(and(eq(orders.id, input.id), eq(orders.orderType, "QUOTE")))
+        .where(
+          and(
+            eq(orders.id, input.id),
+            eq(orders.orderType, "QUOTE"),
+            isNull(orders.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!quote) {
@@ -532,7 +544,13 @@ export const quotesRouter = router({
       const [quote] = await db
         .select()
         .from(orders)
-        .where(and(eq(orders.id, input.id), eq(orders.orderType, "QUOTE")))
+        .where(
+          and(
+            eq(orders.id, input.id),
+            eq(orders.orderType, "QUOTE"),
+            isNull(orders.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!quote) {

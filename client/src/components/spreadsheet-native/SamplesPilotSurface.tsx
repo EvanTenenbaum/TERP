@@ -802,9 +802,7 @@ export function SamplesPilotSurface({
   const canFulfillSelected = canFulfill && selectedStatus === "PENDING";
 
   const canRequestReturnSelected =
-    canRequestReturn &&
-    selectedStatus !== null &&
-    ["PENDING", "FULFILLED"].includes(selectedStatus);
+    canRequestReturn && selectedStatus === "FULFILLED";
 
   const canApproveReturnSelected =
     canApproveReturn && selectedStatus === "RETURN_REQUESTED";
@@ -815,7 +813,7 @@ export function SamplesPilotSurface({
   const canRequestVendorReturnSelected =
     canManageVendorReturn &&
     selectedStatus !== null &&
-    ["PENDING", "FULFILLED"].includes(selectedStatus);
+    ["RETURNED", "FULFILLED"].includes(selectedStatus);
 
   const canShipToVendorSelected =
     canManageVendorReturn && selectedStatus === "VENDOR_RETURN_REQUESTED";
