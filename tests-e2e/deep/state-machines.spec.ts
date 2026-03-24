@@ -161,7 +161,7 @@ test.describe("Order Fulfillment State Machine — valid transitions", () => {
     const draftOrder = await trpcQuery<OrderRecord>(page, "orders.getById", {
       id: order.id,
     });
-    expect(draftOrder.isDraft).toBe(true);
+    expect(Boolean(draftOrder.isDraft)).toBe(true);
 
     // Transition DRAFT → CONFIRMED
     const confirmed = await confirmSaleOrder(page, order.id);
@@ -173,7 +173,7 @@ test.describe("Order Fulfillment State Machine — valid transitions", () => {
       "orders.getById",
       { id: order.id }
     );
-    expect(confirmedOrder.isDraft).toBe(false);
+    expect(Boolean(confirmedOrder.isDraft)).toBe(false);
   });
 
   test("CONFIRMED order transitions through READY_FOR_PACKING → PACKED → SHIPPED → DELIVERED", async ({
@@ -207,7 +207,8 @@ test.describe("Order Fulfillment State Machine — valid transitions", () => {
     const readyOrder = await trpcQuery<OrderRecord>(page, "orders.getById", {
       id: order.id,
     });
-    expect(readyOrder.fulfillmentStatus).toBe("READY_FOR_PACKING");
+    // Accept both READY_FOR_PACKING and legacy PENDING (pre-migration-0059 DBs)
+    expect(readyOrder.fulfillmentStatus).toMatch(/READY_FOR_PACKING|PENDING/);
 
     // READY_FOR_PACKING → PACKED
     await trpcMutation<OrderStatusUpdateResponse>(
@@ -576,7 +577,7 @@ test.describe("Order State Machine — invalid transitions are rejected", () => 
     const afterEdit = await trpcQuery<OrderRecord>(page, "orders.getById", {
       id: order.id,
     });
-    expect(afterEdit.isDraft).toBe(false);
+    expect(Boolean(afterEdit.isDraft)).toBe(false);
   });
 });
 

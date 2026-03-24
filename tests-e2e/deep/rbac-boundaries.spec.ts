@@ -98,84 +98,48 @@ test.describe("RBAC: Warehouse Staff Boundaries", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite 2: Accountant inventory access — accountant role intentionally
-// includes inventory:update, inventory:quantity:adjust, and
-// inventory:status:update per rbacDefinitions.ts.  Verify they CAN perform
-// these operations (regression guard against accidental permission removal).
+// Suite 2: Accountant cannot modify inventory
 // ---------------------------------------------------------------------------
 
-test.describe("RBAC: Accountant Inventory Access", () => {
+test.describe("RBAC: Accountant Boundaries", () => {
   test.describe.configure({ tag: "@rbac" });
 
   test.beforeEach(async ({ page }) => {
     await loginAsAccountant(page);
   });
 
-  test("accountant can adjust inventory quantities", async ({ page }) => {
+  test("accountant cannot adjust inventory quantities", async ({ page }) => {
     test.setTimeout(120_000);
 
     const batch = await findBatchWithStock(page);
 
-    // Accountant has inventory:update — adjust should succeed or fail for
-    // non-permission reasons (e.g., business rule).  A 403 Forbidden here
-    // means a regression in the permission grant.
-    let threw = false;
-    let wasForbidden = false;
-    try {
-      await trpcMutation(page, "inventory.adjustQty", {
-        id: batch.id,
-        field: "onHandQty",
-        adjustment: 0, // neutral adjustment to avoid side-effects
-        adjustmentReason: "COUNT_DISCREPANCY",
-        notes: "RBAC test: accountant should have access",
-      });
-    } catch (e: unknown) {
-      threw = true;
-      const msg = String(e);
-      wasForbidden = /403|forbidden|permission/i.test(msg);
-    }
-    expect(wasForbidden).toBe(false);
-    if (threw) {
-      test.info().annotations.push({
-        type: "note",
-        description:
-          "Mutation threw for non-permission reason (e.g., batch not found). Permission access confirmed.",
-      });
-    }
+    await expectForbidden(
+      () =>
+        trpcMutation(page, "inventory.adjustQty", {
+          id: batch.id,
+          field: "onHandQty",
+          adjustment: 1,
+          adjustmentReason: "COUNT_DISCREPANCY",
+          notes: "RBAC test: accountant should not adjust",
+        }),
+      "inventory.adjustQty as accountant"
+    );
   });
 
-  test("accountant can update batch status", async ({ page }) => {
+  test("accountant cannot update batch status", async ({ page }) => {
     test.setTimeout(120_000);
 
     const batch = await findBatchWithStock(page);
 
-    let threw = false;
-    let wasForbidden = false;
-    try {
-      await trpcMutation(page, "inventory.updateStatus", {
-        id: batch.id,
-        status: "ON_HOLD",
-        reason: "RBAC test: accountant should have access",
-      });
-      // Revert status to avoid side-effects
-      await trpcMutation(page, "inventory.updateStatus", {
-        id: batch.id,
-        status: "LIVE",
-        reason: "RBAC test cleanup: revert to LIVE",
-      });
-    } catch (e: unknown) {
-      threw = true;
-      const msg = String(e);
-      wasForbidden = /403|forbidden|permission/i.test(msg);
-    }
-    expect(wasForbidden).toBe(false);
-    if (threw) {
-      test.info().annotations.push({
-        type: "note",
-        description:
-          "Mutation threw for non-permission reason. Permission access confirmed.",
-      });
-    }
+    await expectForbidden(
+      () =>
+        trpcMutation(page, "inventory.updateStatus", {
+          id: batch.id,
+          status: "ON_HOLD",
+          reason: "RBAC test: accountant should not change status",
+        }),
+      "inventory.updateStatus as accountant"
+    );
   });
 });
 
