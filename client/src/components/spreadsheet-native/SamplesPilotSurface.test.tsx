@@ -139,6 +139,12 @@ vi.mock("@/lib/trpc", () => ({
           isPending: false,
         }),
       },
+      setExpirationDate: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+        }),
+      },
     },
     clients: {
       list: {
