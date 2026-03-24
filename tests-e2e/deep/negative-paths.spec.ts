@@ -924,4 +924,89 @@ test.describe("Negative Paths: Stale Data / Race Condition Simulation", () => {
 
     expect(reconfirmErrorThrown).toBe(true);
   });
+
+  test("concurrent status updates to the same order: one succeeds, one fails or both are idempotent", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const client = await findBuyerClient(page);
+    const batch = await findBatchWithStock(page);
+
+    const order = await createSaleOrder(page, {
+      clientId: client.id,
+      batchId: batch.id,
+      quantity: 1,
+      unitPrice: Math.max(toNumber(batch.unitCogs) * 1.5, 10),
+    });
+    createdOrderId = order.id;
+
+    await confirmSaleOrder(page, order.id);
+
+    // Fire two concurrent status updates — both try to move to SHIPPED
+    const results = await Promise.allSettled([
+      trpcMutation(page, "orders.updateOrderStatus", {
+        orderId: order.id,
+        newStatus: "SHIPPED",
+        notes: "Race condition test: concurrent A",
+      }),
+      trpcMutation(page, "orders.updateOrderStatus", {
+        orderId: order.id,
+        newStatus: "SHIPPED",
+        notes: "Race condition test: concurrent B",
+      }),
+    ]);
+
+    // At least one should succeed
+    const successes = results.filter(r => r.status === "fulfilled");
+    expect(successes.length).toBeGreaterThanOrEqual(1);
+
+    // Verify the order ended up in a consistent state
+    const finalOrder = await trpcQuery<{
+      id: number;
+      fulfillmentStatus?: string | null;
+    }>(page, "orders.getById", { id: order.id });
+    expect(finalOrder.fulfillmentStatus).toBe("SHIPPED");
+  });
+
+  test("cancelled order has isDraft=false and is not in a confirmable state", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const client = await findBuyerClient(page);
+    const batch = await findBatchWithStock(page);
+
+    const order = await createSaleOrder(page, {
+      clientId: client.id,
+      batchId: batch.id,
+      quantity: 1,
+      unitPrice: Math.max(toNumber(batch.unitCogs) * 1.5, 10),
+    });
+    createdOrderId = order.id;
+
+    await confirmSaleOrder(page, order.id);
+
+    // Cancel the order
+    await trpcMutation(page, "orders.updateOrderStatus", {
+      orderId: order.id,
+      newStatus: "CANCELLED",
+    });
+
+    // Read back and verify the order is in CANCELLED state
+    const cancelledOrder = await trpcQuery<{
+      id: number;
+      fulfillmentStatus?: string | null;
+      saleStatus?: string | null;
+      isDraft?: boolean | null;
+    }>(page, "orders.getById", { id: order.id });
+
+    expect(cancelledOrder.isDraft).not.toBe(true);
+    // The order should reflect CANCELLED in either fulfillmentStatus or saleStatus
+    const statuses = [
+      cancelledOrder.fulfillmentStatus,
+      cancelledOrder.saleStatus,
+    ].filter(Boolean);
+    expect(statuses.some(s => /CANCEL/i.test(s ?? ""))).toBe(true);
+  });
 });
