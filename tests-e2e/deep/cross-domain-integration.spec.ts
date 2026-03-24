@@ -477,17 +477,12 @@ test.describe("Cross-Domain Integration", () => {
     await trpcMutation(page, "invoices.markSent", { id: invoice.id });
 
     // Query AR summary before payment
-    let arBefore: ARSummary | null = null;
-    try {
-      arBefore = await trpcQuery<ARSummary>(
-        page,
-        "accounting.arApDashboard.getARSummary",
-        {}
-      );
-      expect(arBefore).toBeTruthy();
-    } catch {
-      // Endpoint might not exist — verify we at least have the invoice
-    }
+    const arBefore = await trpcQuery<ARSummary>(
+      page,
+      "accounting.arApDashboard.getARSummary",
+      {}
+    );
+    expect(arBefore).toBeTruthy();
 
     // Record full payment
     const total = toNumber(
@@ -505,29 +500,27 @@ test.describe("Cross-Domain Integration", () => {
     });
 
     // Query AR summary after payment
-    if (arBefore) {
-      const arAfter = await trpcQuery<ARSummary>(
-        page,
-        "accounting.arApDashboard.getARSummary",
-        {}
-      );
-      expect(arAfter).toBeTruthy();
+    const arAfter = await trpcQuery<ARSummary>(
+      page,
+      "accounting.arApDashboard.getARSummary",
+      {}
+    );
+    expect(arAfter).toBeTruthy();
 
-      // Outstanding should have decreased by at least the invoice amount
-      const outstandingBefore = toNumber(
-        arBefore.totalOutstanding ?? arBefore.total
+    // Outstanding should have decreased by at least the invoice amount
+    const outstandingBefore = toNumber(
+      arBefore.totalOutstanding ?? arBefore.total
+    );
+    const outstandingAfter = toNumber(
+      arAfter.totalOutstanding ?? arAfter.total
+    );
+    // Payment of `total` should reduce outstanding (other tests may run concurrently,
+    // so we verify it decreased by at least 90% of the payment amount)
+    if (outstandingBefore > 0) {
+      expect(outstandingAfter).toBeLessThanOrEqual(outstandingBefore);
+      expect(outstandingBefore - outstandingAfter).toBeGreaterThanOrEqual(
+        total * 0.9
       );
-      const outstandingAfter = toNumber(
-        arAfter.totalOutstanding ?? arAfter.total
-      );
-      // Payment of `total` should reduce outstanding (other tests may run concurrently,
-      // so we verify it decreased by at least 90% of the payment amount)
-      if (outstandingBefore > 0) {
-        expect(outstandingAfter).toBeLessThanOrEqual(outstandingBefore);
-        expect(outstandingBefore - outstandingAfter).toBeGreaterThanOrEqual(
-          total * 0.9
-        );
-      }
     }
 
     // Verify invoice is PAID

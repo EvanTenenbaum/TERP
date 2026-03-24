@@ -531,6 +531,53 @@ test.describe("Order State Machine — invalid transitions are rejected", () => 
     }
     expect(threw).toBe(true);
   });
+
+  test("CONFIRMED order cannot be edited (items cannot be modified after confirm)", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const client = await findBuyerClient(page);
+    const batch = await findBatchWithStock(page);
+
+    const order = await createSaleOrder(page, {
+      clientId: client.id,
+      batchId: batch.id,
+      quantity: 1,
+      unitPrice: Math.max(batch.unitCogs * 1.4, 1),
+    });
+    createdOrderId = order.id;
+
+    await confirmSaleOrder(page, order.id);
+
+    // Attempt to update items on a confirmed order
+    let threw = false;
+    try {
+      await trpcMutation(page, "orders.updateOrderItems", {
+        orderId: order.id,
+        items: [
+          {
+            batchId: batch.id,
+            quantity: 5,
+            unitPrice: batch.unitCogs * 2,
+            isSample: false,
+          },
+        ],
+      });
+    } catch {
+      threw = true;
+    }
+
+    // Either the endpoint rejects edits on confirmed orders, or the endpoint
+    // doesn't exist (both are acceptable — orders should be immutable after confirm)
+    expect(threw).toBe(true);
+
+    // Verify order is still in confirmed state and not corrupted
+    const afterEdit = await trpcQuery<OrderRecord>(page, "orders.getById", {
+      id: order.id,
+    });
+    expect(afterEdit.isDraft).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -993,6 +1040,83 @@ test.describe("Invoice Void Transition", () => {
           notes: "invalid: downgrade paid invoice",
         }
       );
+    } catch {
+      threw = true;
+    }
+    expect(threw).toBe(true);
+  });
+  test("PAID invoice can be voided successfully", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    const client = await findBuyerClient(page);
+    const batch = await findBatchWithStock(page);
+
+    const order = await createSaleOrder(page, {
+      clientId: client.id,
+      batchId: batch.id,
+      quantity: 1,
+      unitPrice: Math.max(batch.unitCogs * 1.5, 1),
+    });
+    createdOrderId = order.id;
+
+    await confirmSaleOrder(page, order.id);
+
+    const invoice = await trpcMutation<InvoiceGenerateResponse>(
+      page,
+      "invoices.generateFromOrder",
+      { orderId: order.id }
+    );
+
+    await trpcMutation<{ success: boolean }>(page, "invoices.markSent", {
+      id: invoice.id,
+    });
+
+    const sentInvoice = await trpcQuery<InvoiceRecord>(
+      page,
+      "invoices.getById",
+      { id: invoice.id }
+    );
+    const totalAmount = toNumber(sentInvoice.totalAmount);
+
+    await trpcMutation<PaymentResponse>(page, "payments.recordPayment", {
+      invoiceId: invoice.id,
+      amount: totalAmount,
+      paymentMethod: "ACH",
+      referenceNumber: `SM-VOID-PAID-${Date.now()}`,
+    });
+
+    const paidInvoice = await trpcQuery<InvoiceRecord>(
+      page,
+      "invoices.getById",
+      { id: invoice.id }
+    );
+    expect(paidInvoice.status).toBe("PAID");
+
+    // Void the PAID invoice — this should succeed
+    const voidResult = await trpcMutation<InvoiceVoidResponse>(
+      page,
+      "invoices.void",
+      { id: invoice.id, reason: "State machine test: void after PAID" }
+    );
+    expect(voidResult.success).toBe(true);
+
+    // Verify status is now VOID
+    const voidedInvoice = await trpcQuery<InvoiceRecord>(
+      page,
+      "invoices.getById",
+      { id: invoice.id }
+    );
+    expect(voidedInvoice.status).toBe("VOID");
+
+    // Payments against voided invoice should fail
+    let threw = false;
+    try {
+      await trpcMutation<PaymentResponse>(page, "payments.recordPayment", {
+        invoiceId: invoice.id,
+        amount: 1,
+        paymentMethod: "CASH",
+        referenceNumber: `SM-VOID-PAID-RETRY-${Date.now()}`,
+      });
     } catch {
       threw = true;
     }

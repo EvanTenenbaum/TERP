@@ -385,6 +385,53 @@ test.describe("Negative Paths: Payment Validation", () => {
 
     expect(errorThrown).toBe(true);
   });
+
+  test("rejects payment on a DRAFT invoice (not yet SENT)", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const client = await findBuyerClient(page);
+    const batch = await findBatchWithStock(page);
+
+    const order = await createSaleOrder(page, {
+      clientId: client.id,
+      batchId: batch.id,
+      quantity: 1,
+      unitPrice: Math.max(toNumber(batch.unitCogs) * 1.5, 10),
+    });
+    createdOrderId = order.id;
+
+    await confirmSaleOrder(page, order.id);
+
+    const invoice = await trpcMutation<InvoiceRecord>(
+      page,
+      "invoices.generateFromOrder",
+      { orderId: order.id }
+    );
+    expect(invoice.id).toBeGreaterThan(0);
+
+    // Do NOT mark sent — invoice should be in DRAFT status
+    let errorThrown = false;
+    try {
+      await trpcMutation(page, "payments.recordPayment", {
+        invoiceId: invoice.id,
+        amount: 10,
+        paymentMethod: "ACH",
+        referenceNumber: `NEG-PAY-DRAFT-${Date.now()}`,
+      });
+      console.warn(
+        "[negative-paths] payment on DRAFT invoice unexpectedly succeeded — documenting behavior"
+      );
+    } catch (error) {
+      errorThrown = true;
+      expect(String(error)).toMatch(
+        /fail|error|invalid|400|422|draft|status|sent/i
+      );
+    }
+
+    expect(errorThrown).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -779,21 +826,29 @@ test.describe("Negative Paths: Authorization Boundaries", () => {
     expect(permissionErrorThrown).toBe(true);
   });
 
-  test("salesRep cannot create inventory (expects 401/403)", async ({
+  test("salesRep cannot call inventory.intake (expects 401/403)", async ({
     page,
   }) => {
     test.setTimeout(120_000);
 
     let permissionErrorThrown = false;
     try {
-      await trpcMutation(page, "inventory.create", {
-        batchName: "NEG-RBAC-TEST",
-        sku: `NEG-RBAC-${Date.now()}`,
-        unitCogs: 1,
-        totalQty: 1,
+      await trpcMutation(page, "inventory.intake", {
+        vendorName: "NEG-RBAC-TEST-VENDOR",
+        brandName: "NEG-RBAC-TEST-BRAND",
+        productName: "NEG-RBAC-TEST-PRODUCT",
+        category: "Flower",
+        subcategory: "Indoor",
+        grade: "AAA",
+        quantity: "1",
+        cogsMode: "FIXED",
+        unitCogs: "1.00",
+        paymentTerms: "NET_30",
+        location: { name: "Default" },
+        metadata: {},
       });
       console.warn(
-        "[negative-paths] inventory.create succeeded for salesRep — RBAC may not be enforced"
+        "[negative-paths] inventory.intake succeeded for salesRep — RBAC may not be enforced"
       );
     } catch (error) {
       permissionErrorThrown = true;
