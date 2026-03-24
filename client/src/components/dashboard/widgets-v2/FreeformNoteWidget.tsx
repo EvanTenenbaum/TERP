@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, memo } from "react";
 import "./tiptap-styles.css";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -162,7 +161,8 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({
   };
 
   // LINT-005: Use JSONContent type
-  const debouncedSave = useDebounceCallback((content: any) => {
+  const debouncedSave = useDebounceCallback((content: unknown) => {
+    const typedContent = content as JSONContent;
     setIsSaving(true);
     // LINT-007: Guard against null noteId
     if (!currentNoteId) return;
@@ -170,7 +170,7 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({
       {
         noteId: currentNoteId,
         title,
-        content,
+        content: typedContent,
       },
       {
         onSuccess: () => {

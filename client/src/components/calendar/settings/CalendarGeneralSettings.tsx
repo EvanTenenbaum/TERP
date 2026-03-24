@@ -25,17 +25,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
 
 interface Calendar {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   color: string;
   isDefault: boolean;
   isArchived: boolean;
   accessLevel: string;
+  type?: string;
+  ownerId?: number | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 /**
@@ -58,7 +61,7 @@ export function CalendarGeneralSettings() {
       setIsDialogOpen(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to create calendar");
     },
   });
@@ -69,7 +72,7 @@ export function CalendarGeneralSettings() {
       setEditingCalendar(null);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to update calendar");
     },
   });
@@ -79,7 +82,7 @@ export function CalendarGeneralSettings() {
       toast.success("Calendar archived successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to archive calendar");
     },
   });
@@ -89,7 +92,7 @@ export function CalendarGeneralSettings() {
       toast.success("Calendar restored successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to restore calendar");
     },
   });
@@ -98,7 +101,11 @@ export function CalendarGeneralSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowArchived(!showArchived)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowArchived(!showArchived)}
+          >
             {showArchived ? "Hide Archived" : "Show Archived"}
           </Button>
         </div>
@@ -111,7 +118,11 @@ export function CalendarGeneralSettings() {
           </DialogTrigger>
           <DialogContent>
             <CalendarForm
-              onSubmit={(data: any) => createMutation.mutate(data)}
+              onSubmit={data =>
+                createMutation.mutate(
+                  data as Parameters<typeof createMutation.mutate>[0]
+                )
+              }
               onCancel={() => setIsDialogOpen(false)}
               isLoading={createMutation.isPending}
             />
@@ -120,7 +131,7 @@ export function CalendarGeneralSettings() {
       </div>
 
       <div className="border rounded-lg divide-y">
-        {calendars?.map((calendar: any) => (
+        {calendars?.map((calendar: Calendar) => (
           <div
             key={calendar.id}
             className={`p-4 flex items-center justify-between ${
@@ -146,7 +157,9 @@ export function CalendarGeneralSettings() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{calendar.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {calendar.description}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Access: {calendar.accessLevel}
                 </p>
@@ -154,11 +167,14 @@ export function CalendarGeneralSettings() {
             </div>
             <div className="flex items-center gap-2">
               {editingCalendar?.id === calendar.id ? (
-                <Dialog open={true} onOpenChange={() => setEditingCalendar(null)}>
+                <Dialog
+                  open={true}
+                  onOpenChange={() => setEditingCalendar(null)}
+                >
                   <DialogContent>
                     <CalendarForm
                       initialData={calendar}
-                      onSubmit={(data) =>
+                      onSubmit={data =>
                         updateMutation.mutate({ id: calendar.id, ...data })
                       }
                       onCancel={() => setEditingCalendar(null)}
@@ -199,14 +215,17 @@ export function CalendarGeneralSettings() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Archive Calendar</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will archive the "{calendar.name}" calendar. Events will be
-                        preserved but the calendar will be hidden from the main view.
+                        This will archive the "{calendar.name}" calendar. Events
+                        will be preserved but the calendar will be hidden from
+                        the main view.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => archiveMutation.mutate({ id: calendar.id })}
+                        onClick={() =>
+                          archiveMutation.mutate({ id: calendar.id })
+                        }
                       >
                         Archive
                       </AlertDialogAction>
@@ -239,7 +258,9 @@ function CalendarForm({
   isLoading: boolean;
 }) {
   const [name, setName] = useState(initialData?.name || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
   const [color, setColor] = useState(initialData?.color || "#3B82F6");
   const [isDefault, setIsDefault] = useState(initialData?.isDefault || false);
 
@@ -251,7 +272,9 @@ function CalendarForm({
   return (
     <form onSubmit={handleSubmit}>
       <DialogHeader>
-        <DialogTitle>{initialData ? "Edit Calendar" : "Create Calendar"}</DialogTitle>
+        <DialogTitle>
+          {initialData ? "Edit Calendar" : "Create Calendar"}
+        </DialogTitle>
         <DialogDescription>
           {initialData
             ? "Update the calendar details below."
@@ -264,7 +287,7 @@ function CalendarForm({
           <Input
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             placeholder="e.g., Sales Team"
             required
           />
@@ -274,7 +297,7 @@ function CalendarForm({
           <Input
             id="description"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={e => setDescription(e.target.value)}
             placeholder="e.g., Calendar for sales team meetings and appointments"
           />
         </div>
@@ -285,12 +308,12 @@ function CalendarForm({
               type="color"
               id="color"
               value={color}
-              onChange={(e) => setColor(e.target.value)}
+              onChange={e => setColor(e.target.value)}
               className="w-10 h-10 rounded cursor-pointer"
             />
             <Input
               value={color}
-              onChange={(e) => setColor(e.target.value)}
+              onChange={e => setColor(e.target.value)}
               placeholder="#3B82F6"
               className="flex-1"
             />
@@ -301,7 +324,7 @@ function CalendarForm({
             type="checkbox"
             id="isDefault"
             checked={isDefault}
-            onChange={(e) => setIsDefault(e.target.checked)}
+            onChange={e => setIsDefault(e.target.checked)}
             className="rounded"
           />
           <Label htmlFor="isDefault">Set as default calendar</Label>
@@ -312,7 +335,11 @@ function CalendarForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : initialData ? "Save Changes" : "Create Calendar"}
+          {isLoading
+            ? "Saving..."
+            : initialData
+              ? "Save Changes"
+              : "Create Calendar"}
         </Button>
       </DialogFooter>
     </form>

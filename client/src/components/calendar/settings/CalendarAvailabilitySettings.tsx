@@ -1,5 +1,4 @@
 import { useState } from "react";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +12,12 @@ interface AvailabilitySlot {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
+}
+
+interface BlockedDate {
+  id: number;
+  date: string | Date;
+  reason?: string | null;
 }
 
 /**
@@ -287,7 +292,7 @@ export function CalendarAvailabilitySettings() {
           </Button>
         </div>
         <div className="border rounded-lg divide-y">
-          {blockedDates?.map((blocked: any) => (
+          {(blockedDates as BlockedDate[] | undefined)?.map(blocked => (
             <div
               key={blocked.id}
               className="p-3 flex items-center justify-between"

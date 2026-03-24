@@ -1,6 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,25 +16,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  History, 
-  Search, 
-  Download, 
-  FileText, 
-  DollarSign, 
+import {
+  History,
+  Search,
+  Download,
+  FileText,
+  DollarSign,
   FileCheck,
   ShoppingCart,
   RefreshCw,
-  CreditCard
+  CreditCard,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
-interface TransactionHistoryProps {
-  clientId: number;
-  config: any;
+interface TransactionSummary {
+  totalCount?: number;
+  totalValue?: number;
+  lastTransactionDate?: string | null;
 }
 
-export function TransactionHistory({ clientId, config }: TransactionHistoryProps) {
+interface VipPortalTransactionConfig {
+  featuresConfig?: {
+    transactionHistory?: {
+      showSummaryTotals?: boolean;
+      allowFilters?: boolean;
+      showTransactionDetails?: boolean;
+      allowPdfDownload?: boolean;
+    };
+    [key: string]: unknown;
+  } | null;
+}
+
+interface TransactionHistoryProps {
+  clientId: number;
+  config: VipPortalTransactionConfig;
+}
+
+export function TransactionHistory({
+  clientId,
+  config,
+}: TransactionHistoryProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -60,7 +86,9 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
     }
   };
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = (
+    status: string
+  ): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "PAID":
         return "secondary";
@@ -91,43 +119,62 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
       {/* Header */}
       <div>
         <h2 className="text-xl md:text-2xl font-bold">Transaction History</h2>
-        <p className="text-sm text-muted-foreground">Complete record of all your transactions</p>
+        <p className="text-sm text-muted-foreground">
+          Complete record of all your transactions
+        </p>
       </div>
 
       {/* Summary Cards */}
-      {(config as any).featuresConfig?.transactionHistory?.showSummaryTotals && (txData as any)?.summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Total Transactions</CardDescription>
-              <CardTitle className="text-xl md:text-2xl">
-                {(txData as any)?.summary?.totalCount}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Total Value</CardDescription>
-              <CardTitle className="text-xl md:text-2xl">
-                ${(txData as any)?.summary?.totalValue?.toLocaleString()}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Last Transaction</CardDescription>
-              <CardTitle className="text-sm md:text-base">
-                {(txData as any)?.summary?.lastTransactionDate 
-                  ? new Date((txData as any).summary.lastTransactionDate).toLocaleDateString()
-                  : "N/A"}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-      )}
+      {config.featuresConfig?.transactionHistory?.showSummaryTotals &&
+        (txData as { summary?: TransactionSummary } | undefined)?.summary && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+            {(() => {
+              const summary = (txData as { summary?: TransactionSummary })
+                .summary;
+              return (
+                <>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardDescription className="text-xs">
+                        Total Transactions
+                      </CardDescription>
+                      <CardTitle className="text-xl md:text-2xl">
+                        {summary?.totalCount}
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardDescription className="text-xs">
+                        Total Value
+                      </CardDescription>
+                      <CardTitle className="text-xl md:text-2xl">
+                        ${summary?.totalValue?.toLocaleString()}
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardDescription className="text-xs">
+                        Last Transaction
+                      </CardDescription>
+                      <CardTitle className="text-sm md:text-base">
+                        {summary?.lastTransactionDate
+                          ? new Date(
+                              summary.lastTransactionDate
+                            ).toLocaleDateString()
+                          : "N/A"}
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </>
+              );
+            })()}
+          </div>
+        )}
 
       {/* Filters */}
-      {(config as any).featuresConfig?.transactionHistory?.allowFilters && (
+      {config.featuresConfig?.transactionHistory?.allowFilters && (
         <Card>
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -136,7 +183,7 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
                 <Input
                   placeholder="Search transactions..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -174,14 +221,16 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
       {/* Transactions List - Mobile-First Card Layout */}
       <div className="space-y-3">
         {txData?.transactions && txData.transactions.length > 0 ? (
-          txData.transactions.map((tx) => (
+          txData.transactions.map(tx => (
             <Card key={tx.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
                       {getTransactionIcon(tx.transactionType)}
-                      <span className="truncate">{tx.transactionNumber || `#${tx.id}`}</span>
+                      <span className="truncate">
+                        {tx.transactionNumber || `#${tx.id}`}
+                      </span>
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">
                       {new Date(tx.transactionDate).toLocaleDateString()}
@@ -192,7 +241,10 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
                       {tx.transactionType}
                     </Badge>
                     {tx.paymentStatus && (
-                      <Badge variant={getStatusVariant(tx.paymentStatus)} className="flex-shrink-0">
+                      <Badge
+                        variant={getStatusVariant(tx.paymentStatus)}
+                        className="flex-shrink-0"
+                      >
                         {tx.paymentStatus}
                       </Badge>
                     )}
@@ -201,17 +253,22 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Financial Details */}
-                {config.featuresConfig?.transactionHistory?.showTransactionDetails && (
+                {config.featuresConfig?.transactionHistory
+                  ?.showTransactionDetails && (
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-muted-foreground text-xs">Amount</p>
-                      <p className={`font-medium text-base ${getAmountColor(tx.transactionType)}`}>
+                      <p
+                        className={`font-medium text-base ${getAmountColor(tx.transactionType)}`}
+                      >
                         ${tx.amount.toLocaleString()}
                       </p>
                     </div>
                     {tx.paymentAmount && (
                       <div>
-                        <p className="text-muted-foreground text-xs">Payment Amount</p>
+                        <p className="text-muted-foreground text-xs">
+                          Payment Amount
+                        </p>
                         <p className="font-medium text-base text-green-600">
                           ${tx.paymentAmount.toLocaleString()}
                         </p>
@@ -219,7 +276,9 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
                     )}
                     {tx.paymentDate && (
                       <div>
-                        <p className="text-muted-foreground text-xs">Payment Date</p>
+                        <p className="text-muted-foreground text-xs">
+                          Payment Date
+                        </p>
                         <p className="font-medium">
                           {new Date(tx.paymentDate).toLocaleDateString()}
                         </p>
@@ -229,15 +288,20 @@ export function TransactionHistory({ clientId, config }: TransactionHistoryProps
                 )}
 
                 {/* Notes */}
-                {tx.notes && config.featuresConfig?.transactionHistory?.showTransactionDetails && (
-                  <div className="text-sm">
-                    <p className="text-muted-foreground text-xs mb-1">Notes</p>
-                    <p className="text-sm line-clamp-2">{tx.notes}</p>
-                  </div>
-                )}
+                {tx.notes &&
+                  config.featuresConfig?.transactionHistory
+                    ?.showTransactionDetails && (
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs mb-1">
+                        Notes
+                      </p>
+                      <p className="text-sm line-clamp-2">{tx.notes}</p>
+                    </div>
+                  )}
 
                 {/* Actions */}
-                {config.featuresConfig?.transactionHistory?.allowPdfDownload && (
+                {config.featuresConfig?.transactionHistory
+                  ?.allowPdfDownload && (
                   <div className="pt-2">
                     <Button variant="outline" size="sm" className="w-full">
                       <Download className="h-4 w-4 mr-2" />

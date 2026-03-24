@@ -25,18 +25,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
 
 interface AppointmentType {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   color: string;
   duration: number;
   bufferBefore: number;
   bufferAfter: number;
   isActive: boolean;
+  minNoticeHours?: number;
+  maxAdvanceDays?: number;
 }
 
 /**
@@ -45,7 +46,9 @@ interface AppointmentType {
  * Extracted from CalendarSettings.tsx for better maintainability
  */
 export function CalendarAppointmentTypes() {
-  const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(
+    null
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<AppointmentType | null>(null);
   const [showInactive, setShowInactive] = useState(false);
@@ -57,37 +60,40 @@ export function CalendarAppointmentTypes() {
       { enabled: !!selectedCalendarId }
     );
 
-  const createMutation = trpc.calendarsManagement.createAppointmentType.useMutation({
-    onSuccess: () => {
-      toast.success("Appointment type created successfully");
-      setIsDialogOpen(false);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create appointment type");
-    },
-  });
+  const createMutation =
+    trpc.calendarsManagement.createAppointmentType.useMutation({
+      onSuccess: () => {
+        toast.success("Appointment type created successfully");
+        setIsDialogOpen(false);
+        refetch();
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to create appointment type");
+      },
+    });
 
-  const updateMutation = trpc.calendarsManagement.updateAppointmentType.useMutation({
-    onSuccess: () => {
-      toast.success("Appointment type updated successfully");
-      setEditingType(null);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update appointment type");
-    },
-  });
+  const updateMutation =
+    trpc.calendarsManagement.updateAppointmentType.useMutation({
+      onSuccess: () => {
+        toast.success("Appointment type updated successfully");
+        setEditingType(null);
+        refetch();
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to update appointment type");
+      },
+    });
 
-  const deleteMutation = trpc.calendarsManagement.deleteAppointmentType.useMutation({
-    onSuccess: () => {
-      toast.success("Appointment type deleted successfully");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to delete appointment type");
-    },
-  });
+  const deleteMutation =
+    trpc.calendarsManagement.deleteAppointmentType.useMutation({
+      onSuccess: () => {
+        toast.success("Appointment type deleted successfully");
+        refetch();
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to delete appointment type");
+      },
+    });
 
   // Auto-select first calendar if none selected
   if (!selectedCalendarId && calendars && calendars.length > 0) {
@@ -103,7 +109,7 @@ export function CalendarAppointmentTypes() {
             id="calendar-select"
             className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2"
             value={selectedCalendarId || ""}
-            onChange={(e) => setSelectedCalendarId(Number(e.target.value))}
+            onChange={e => setSelectedCalendarId(Number(e.target.value))}
           >
             {calendars?.map((cal: { id: number; name: string }) => (
               <option key={cal.id} value={cal.id}>
@@ -130,7 +136,11 @@ export function CalendarAppointmentTypes() {
             <DialogContent className="w-full sm:max-w-md">
               <AppointmentTypeForm
                 calendarId={selectedCalendarId ?? 0}
-                onSubmit={(data: any) => createMutation.mutate(data)}
+                onSubmit={data =>
+                  createMutation.mutate(
+                    data as Parameters<typeof createMutation.mutate>[0]
+                  )
+                }
                 onCancel={() => setIsDialogOpen(false)}
                 isLoading={createMutation.isPending}
               />
@@ -140,7 +150,7 @@ export function CalendarAppointmentTypes() {
       </div>
 
       <div className="border rounded-lg divide-y">
-        {appointmentTypes?.map((type: any) => (
+        {appointmentTypes?.map((type: AppointmentType) => (
           <div
             key={type.id}
             className={`p-4 flex items-center justify-between ${
@@ -161,7 +171,9 @@ export function CalendarAppointmentTypes() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{type.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {type.description}
+                </p>
                 <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -170,7 +182,9 @@ export function CalendarAppointmentTypes() {
                   {type.bufferBefore > 0 && (
                     <span>+{type.bufferBefore}m before</span>
                   )}
-                  {type.bufferAfter > 0 && <span>+{type.bufferAfter}m after</span>}
+                  {type.bufferAfter > 0 && (
+                    <span>+{type.bufferAfter}m after</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -181,7 +195,7 @@ export function CalendarAppointmentTypes() {
                     <AppointmentTypeForm
                       calendarId={selectedCalendarId ?? 0}
                       initialData={type}
-                      onSubmit={(data) =>
+                      onSubmit={data =>
                         updateMutation.mutate({ id: type.id, ...data })
                       }
                       onCancel={() => setEditingType(null)}
@@ -190,7 +204,11 @@ export function CalendarAppointmentTypes() {
                   </DialogContent>
                 </Dialog>
               )}
-              <Button size="sm" variant="ghost" onClick={() => setEditingType(type)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditingType(type)}
+              >
                 <Edit2 className="h-4 w-4" />
               </Button>
               <AlertDialog>
@@ -203,8 +221,8 @@ export function CalendarAppointmentTypes() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Appointment Type</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete the "{type.name}" appointment type.
-                      This action cannot be undone.
+                      This will permanently delete the "{type.name}" appointment
+                      type. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -221,11 +239,12 @@ export function CalendarAppointmentTypes() {
             </div>
           </div>
         ))}
-        {(!appointmentTypes || appointmentTypes.length === 0) && selectedCalendarId && (
-          <div className="p-8 text-center text-muted-foreground">
-            No appointment types found for this calendar
-          </div>
-        )}
+        {(!appointmentTypes || appointmentTypes.length === 0) &&
+          selectedCalendarId && (
+            <div className="p-8 text-center text-muted-foreground">
+              No appointment types found for this calendar
+            </div>
+          )}
         {!selectedCalendarId && (
           <div className="p-8 text-center text-muted-foreground">
             Select a calendar to view appointment types
@@ -250,12 +269,20 @@ function AppointmentTypeForm({
   isLoading: boolean;
 }) {
   const [name, setName] = useState(initialData?.name || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
   const [duration, setDuration] = useState(initialData?.duration || 30);
-  const [bufferBefore, setBufferBefore] = useState(initialData?.bufferBefore || 0);
+  const [bufferBefore, setBufferBefore] = useState(
+    initialData?.bufferBefore || 0
+  );
   const [bufferAfter, setBufferAfter] = useState(initialData?.bufferAfter || 0);
-  const [minNoticeHours, setMinNoticeHours] = useState((initialData as any)?.minNoticeHours || 24);
-  const [maxAdvanceDays, setMaxAdvanceDays] = useState((initialData as any)?.maxAdvanceDays || 30);
+  const [minNoticeHours, setMinNoticeHours] = useState(
+    initialData?.minNoticeHours ?? 24
+  );
+  const [maxAdvanceDays, setMaxAdvanceDays] = useState(
+    initialData?.maxAdvanceDays ?? 30
+  );
   const [color, setColor] = useState(initialData?.color || "#F59E0B");
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
 
@@ -293,7 +320,7 @@ function AppointmentTypeForm({
           <Input
             id="type-name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             placeholder="e.g., Payment Pickup"
             required
           />
@@ -303,7 +330,7 @@ function AppointmentTypeForm({
           <Input
             id="type-description"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={e => setDescription(e.target.value)}
             placeholder="e.g., Appointment for payment collection"
           />
         </div>
@@ -316,7 +343,7 @@ function AppointmentTypeForm({
               min={5}
               max={480}
               value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              onChange={e => setDuration(Number(e.target.value))}
               required
             />
           </div>
@@ -327,12 +354,12 @@ function AppointmentTypeForm({
                 type="color"
                 id="color"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={e => setColor(e.target.value)}
                 className="w-10 h-8 rounded cursor-pointer"
               />
               <Input
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={e => setColor(e.target.value)}
                 className="flex-1"
               />
             </div>
@@ -347,7 +374,7 @@ function AppointmentTypeForm({
               min={0}
               max={120}
               value={bufferBefore}
-              onChange={(e) => setBufferBefore(Number(e.target.value))}
+              onChange={e => setBufferBefore(Number(e.target.value))}
             />
           </div>
           <div className="space-y-2">
@@ -358,7 +385,7 @@ function AppointmentTypeForm({
               min={0}
               max={120}
               value={bufferAfter}
-              onChange={(e) => setBufferAfter(Number(e.target.value))}
+              onChange={e => setBufferAfter(Number(e.target.value))}
             />
           </div>
         </div>
@@ -371,7 +398,7 @@ function AppointmentTypeForm({
               min={0}
               max={720}
               value={minNoticeHours}
-              onChange={(e) => setMinNoticeHours(Number(e.target.value))}
+              onChange={e => setMinNoticeHours(Number(e.target.value))}
             />
           </div>
           <div className="space-y-2">
@@ -382,7 +409,7 @@ function AppointmentTypeForm({
               min={1}
               max={365}
               value={maxAdvanceDays}
-              onChange={(e) => setMaxAdvanceDays(Number(e.target.value))}
+              onChange={e => setMaxAdvanceDays(Number(e.target.value))}
             />
           </div>
         </div>
@@ -392,7 +419,7 @@ function AppointmentTypeForm({
               type="checkbox"
               id="isActive"
               checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
+              onChange={e => setIsActive(e.target.checked)}
               className="rounded"
             />
             <Label htmlFor="isActive">Active</Label>
@@ -404,7 +431,11 @@ function AppointmentTypeForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : initialData ? "Save Changes" : "Create Type"}
+          {isLoading
+            ? "Saving..."
+            : initialData
+              ? "Save Changes"
+              : "Create Type"}
         </Button>
       </DialogFooter>
     </form>

@@ -141,10 +141,12 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
       <div className="h-full max-w-full overflow-x-auto md:overflow-visible -webkit-overflow-scrolling-touch">
         <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 h-full md:min-w-max">
           {sortedStatuses.map(status => {
-            const batches = queues[status.id] || [];
-            const batchIds = batches.map(
-              (b: Record<string, unknown>) => b.id
-            ) as number[];
+            const batchRecords = queues[status.id] || [];
+            const batches = batchRecords as Array<{
+              id: string | number;
+              [key: string]: unknown;
+            }>;
+            const batchIds = batches.map(b => b.id as number);
 
             return (
               <WorkflowColumn

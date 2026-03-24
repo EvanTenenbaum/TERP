@@ -194,13 +194,15 @@ export function setConfigValue(
     throw new Error("Invalid configuration path");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let target: any = currentConfig;
+  let target: Record<string, unknown> = currentConfig as unknown as Record<
+    string,
+    unknown
+  >;
   for (const part of parts) {
     if (!(part in target)) {
       throw new Error(`Invalid configuration path: ${path}`);
     }
-    target = target[part];
+    target = target[part] as Record<string, unknown>;
   }
 
   // Validate the value type matches the old value type

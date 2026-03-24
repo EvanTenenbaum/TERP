@@ -54,6 +54,54 @@ import { toast } from "sonner";
  * - Take action (create quotes, contact clients, reserve supply)
  */
 
+interface ClientNeedWithMatches {
+  id: number;
+  clientId: number;
+  clientName?: string;
+  priority?: string;
+  matchCount?: number;
+  category?: string;
+  grade?: string;
+  strain?: string;
+  quantityMin?: number | string;
+  quantityMax?: number | string;
+  priceMax?: number | string;
+  productName?: string;
+}
+
+interface SupplyItemWithBuyers {
+  id: number;
+  vendorName?: string;
+  category?: string;
+  grade?: string;
+  strain?: string;
+  productName?: string;
+  buyerCount?: number;
+  quantity?: number | string;
+  quantityAvailable?: number | string;
+  unitPrice?: number | string;
+}
+
+interface SuggestedMatch {
+  needId?: number;
+  id?: number;
+  confidence: number;
+  type?: string;
+  source?: string;
+  reasons: string[];
+}
+
+interface BuyerMatch {
+  clientId: number;
+  needId?: number;
+  clientName?: string;
+  confidence?: number;
+  strain?: string;
+  category?: string;
+  quantityMin?: number | string;
+  quantityMax?: number | string;
+}
+
 interface MatchmakingServicePageProps {
   embedded?: boolean;
 }
@@ -77,8 +125,9 @@ export default function MatchmakingServicePage({
   const [reservingItemId, setReservingItemId] = useState<number | null>(null);
   // UX-002: State for dismiss confirmation dialog
   const [dismissDialogOpen, setDismissDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [matchToDismiss, setMatchToDismiss] = useState<any>(null);
+  const [matchToDismiss, setMatchToDismiss] = useState<SuggestedMatch | null>(
+    null
+  );
 
   // ERR-001: Get tRPC utils for proper cache invalidation
   const utils = trpc.useUtils();
@@ -86,8 +135,7 @@ export default function MatchmakingServicePage({
   // Fetch client needs with match counts
   const { data: needsData, isLoading: needsLoading } =
     trpc.clientNeeds.getAllWithMatches.useQuery({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      status: statusFilter as any,
+      status: statusFilter as "ACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED",
     });
 
   // Fetch vendor supply
@@ -133,16 +181,13 @@ export default function MatchmakingServicePage({
   const allMatches = matchesData?.data || [];
 
   // Get top suggested matches (sorted by confidence)
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const topMatches = allMatches
-    .filter((m: any) => m.confidence > 0)
-    .sort((a: any, b: any) => b.confidence - a.confidence)
+  const topMatches = (allMatches as SuggestedMatch[])
+    .filter(m => m.confidence > 0)
+    .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 10);
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // Filter needs based on search and priority
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filteredNeeds = needs.filter((need: any) => {
+  const filteredNeeds = (needs as ClientNeedWithMatches[]).filter(need => {
     const matchesSearch =
       !searchQuery ||
       need.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -156,8 +201,7 @@ export default function MatchmakingServicePage({
   });
 
   // Filter supply based on search
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filteredSupply = supply.filter((item: any) => {
+  const filteredSupply = (supply as SupplyItemWithBuyers[]).filter(item => {
     return (
       !searchQuery ||
       item.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -218,8 +262,7 @@ export default function MatchmakingServicePage({
   // FE-QA-010: Handler for Create Quote button
   // UX-005: Validate match has required IDs before navigation
   const handleCreateQuote = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (match: any) => {
+    (match: SuggestedMatch & { supplyId?: number; clientId?: number }) => {
       // UX-005: Validate that we have at least a needId or clientId
       if (!match.needId && !match.clientId) {
         toast.error("Cannot create quote: missing client or need information");
@@ -236,8 +279,7 @@ export default function MatchmakingServicePage({
 
   // FE-QA-010: Handler for Dismiss button
   // UX-002: Open confirmation dialog instead of window.confirm
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDismissClick = useCallback((match: any) => {
+  const handleDismissClick = useCallback((match: SuggestedMatch) => {
     setMatchToDismiss(match);
     setDismissDialogOpen(true);
   }, []);
@@ -245,9 +287,10 @@ export default function MatchmakingServicePage({
   // UX-002: Confirm dismiss action from AlertDialog
   const handleConfirmDismiss = useCallback(() => {
     if (matchToDismiss) {
-      setDismissedMatches(
-        prev => new Set([...prev, matchToDismiss.needId || matchToDismiss.id])
-      );
+      const dismissId = matchToDismiss.needId ?? matchToDismiss.id;
+      if (dismissId !== undefined) {
+        setDismissedMatches(prev => new Set([...prev, dismissId]));
+      }
       toast.success("Match dismissed");
     }
     setDismissDialogOpen(false);
@@ -274,8 +317,7 @@ export default function MatchmakingServicePage({
 
   // Filter out dismissed matches
   const visibleMatches = topMatches.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (m: any) => !dismissedMatches.has(m.needId || m.id)
+    m => !dismissedMatches.has((m.needId ?? m.id) as number)
   );
 
   return (
@@ -362,8 +404,12 @@ export default function MatchmakingServicePage({
             <CardContent>
               <div className="text-2xl font-bold">{needs.length}</div>
               <p className="text-xs text-muted-foreground">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {needs.filter((n: any) => n.matchCount > 0).length} with matches
+                {
+                  (needs as ClientNeedWithMatches[]).filter(
+                    n => (n.matchCount ?? 0) > 0
+                  ).length
+                }{" "}
+                with matches
               </p>
             </CardContent>
           </Card>
@@ -376,8 +422,12 @@ export default function MatchmakingServicePage({
             <CardContent>
               <div className="text-2xl font-bold">{supply.length}</div>
               <p className="text-xs text-muted-foreground">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {supply.filter((s: any) => s.buyerCount > 0).length} with buyers
+                {
+                  (supply as SupplyItemWithBuyers[]).filter(
+                    s => (s.buyerCount ?? 0) > 0
+                  ).length
+                }{" "}
+                with buyers
               </p>
             </CardContent>
           </Card>
@@ -403,8 +453,11 @@ export default function MatchmakingServicePage({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {needs.filter((n: any) => n.priority === "URGENT").length}
+                {
+                  (needs as ClientNeedWithMatches[]).filter(
+                    n => n.priority === "URGENT"
+                  ).length
+                }
               </div>
               <p className="text-xs text-muted-foreground">
                 Requires immediate attention
@@ -436,8 +489,7 @@ export default function MatchmakingServicePage({
                   No client needs found
                 </div>
               ) : (
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                filteredNeeds.map((need: any) => (
+                filteredNeeds.map(need => (
                   <div
                     key={need.id}
                     className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
@@ -453,13 +505,13 @@ export default function MatchmakingServicePage({
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">
-                          {getPriorityIcon(need.priority)}
+                          {getPriorityIcon(need.priority || "")}
                         </span>
-                        <Badge variant={getPriorityColor(need.priority)}>
+                        <Badge variant={getPriorityColor(need.priority || "")}>
                           {need.priority}
                         </Badge>
                       </div>
-                      {need.matchCount > 0 && (
+                      {(need.matchCount ?? 0) > 0 && (
                         <Badge variant="secondary">
                           {need.matchCount} matches
                         </Badge>
@@ -479,7 +531,7 @@ export default function MatchmakingServicePage({
                     </p>
                     {need.priceMax && (
                       <p className="text-xs text-muted-foreground">
-                        Max: ${parseFloat(need.priceMax).toFixed(2)}/lb
+                        Max: ${parseFloat(String(need.priceMax)).toFixed(2)}/lb
                       </p>
                     )}
                   </div>
@@ -507,15 +559,14 @@ export default function MatchmakingServicePage({
                   No supplier supply found
                 </div>
               ) : (
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                filteredSupply.map((item: any) => (
+                filteredSupply.map(item => (
                   <div
                     key={item.id}
                     className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <Badge variant="secondary">✅ Available</Badge>
-                      {item.buyerCount > 0 && (
+                      {(item.buyerCount ?? 0) > 0 && (
                         <Badge variant="default">
                           {item.buyerCount} potential buyers
                         </Badge>
@@ -535,7 +586,7 @@ export default function MatchmakingServicePage({
                     </p>
                     {item.unitPrice && (
                       <p className="text-xs font-medium text-green-600">
-                        ${parseFloat(item.unitPrice).toFixed(2)}/lb
+                        ${parseFloat(String(item.unitPrice)).toFixed(2)}/lb
                       </p>
                     )}
                     <div className="flex gap-2 mt-2">
@@ -592,8 +643,7 @@ export default function MatchmakingServicePage({
                   No matches found
                 </div>
               ) : (
-                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-                visibleMatches.map((match: any, idx: number) => (
+                visibleMatches.map((match, idx) => (
                   <div
                     key={`match-${match.needId || idx}`}
                     className="border rounded-lg p-3 hover:bg-accent transition-colors"
@@ -677,8 +727,7 @@ export default function MatchmakingServicePage({
                 No matching buyers found
               </div>
             ) : (
-              /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-              buyersData.data.map((buyer: any, idx: number) => (
+              (buyersData.data as BuyerMatch[]).map((buyer, idx) => (
                 <div
                   key={`buyer-${buyer.clientId || buyer.needId || idx}`}
                   className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"

@@ -519,11 +519,11 @@ async function getCatalogInternal(
     if (quantity > STOCK_LEVEL_LOW_THRESHOLD) stockLevel = "in_stock";
     else if (quantity > 0) stockLevel = "low_stock";
 
+    const productId =
+      typeof item.productId === "number" ? item.productId : undefined;
     const imageUrl =
       batchPrimaryImagesMap.get(item.id) ??
-      (item.productId
-        ? productFallbackImagesMap.get(item.productId)
-        : undefined);
+      (productId ? productFallbackImagesMap.get(productId) : undefined);
 
     return {
       batchId: item.id,

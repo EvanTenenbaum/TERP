@@ -2,7 +2,13 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,12 +37,35 @@ import {
 import { Key, Shield, Plus, X, Eye, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+interface RbacRole {
+  id: number;
+  name: string;
+  isSystemRole?: boolean;
+}
+
+interface RbacPermission {
+  id: number;
+  name: string;
+  description?: string | null;
+  module?: string | null;
+  roleNames?: string[];
+  roleCount?: number;
+  roles?: { roleId: number; roleName: string }[];
+  createdAt?: Date;
+}
+
+interface PermissionRoleDetail {
+  roleId: number;
+  roleName: string;
+  isSystemRole?: boolean;
+  roleDescription?: string;
+}
 
 /**
  * Permission Assignment Component
- * 
+ *
  * Allows administrators to:
  * - View all permissions organized by module
  * - Assign permissions to roles
@@ -49,20 +78,29 @@ export function PermissionAssignment() {
   const [selectedPermissionId, setSelectedPermissionId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModule, setSelectedModule] = useState<string>("all");
-  const [viewingPermissionId, setViewingPermissionId] = useState<number | null>(null);
+  const [viewingPermissionId, setViewingPermissionId] = useState<number | null>(
+    null
+  );
   const [bulkMode, setBulkMode] = useState(false);
-  const [selectedPermissions, setSelectedPermissions] = useState<Set<number>>(new Set());
-  const [removePermissionInfo, setRemovePermissionInfo] = useState<{ roleId: number; roleName: string; permissionId: number } | null>(null);
+  const [selectedPermissions, setSelectedPermissions] = useState<Set<number>>(
+    new Set()
+  );
+  const [removePermissionInfo, setRemovePermissionInfo] = useState<{
+    roleId: number;
+    roleName: string;
+    permissionId: number;
+  } | null>(null);
 
   const utils = trpc.useUtils();
 
   // Fetch permissions with filtering
-  const { data: permissionsData, isLoading: permissionsLoading } = trpc.rbacPermissions.list.useQuery({
-    limit: 500,
-    offset: 0,
-    search: searchTerm || undefined,
-    module: selectedModule !== "all" ? selectedModule : undefined,
-  });
+  const { data: permissionsData, isLoading: permissionsLoading } =
+    trpc.rbacPermissions.list.useQuery({
+      limit: 500,
+      offset: 0,
+      search: searchTerm || undefined,
+      module: selectedModule !== "all" ? selectedModule : undefined,
+    });
 
   // Fetch all modules for filtering
   const { data: modulesData } = trpc.rbacPermissions.getModules.useQuery();
@@ -90,7 +128,7 @@ export function PermissionAssignment() {
       setSelectedRoleId("");
       setSelectedPermissionId("");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to assign permission: ${error.message}`);
     },
   });
@@ -102,13 +140,13 @@ export function PermissionAssignment() {
       utils.rbacPermissions.getById.invalidate();
       utils.rbacRoles.getById.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to remove permission: ${error.message}`);
     },
   });
 
   const bulkAssignMutation = trpc.rbacRoles.bulkAssignPermissions.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`Successfully assigned ${data.assignedCount} permissions`);
       utils.rbacPermissions.list.invalidate();
       utils.rbacRoles.getById.invalidate();
@@ -116,7 +154,7 @@ export function PermissionAssignment() {
       setBulkMode(false);
       setSelectedRoleId("");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to assign permissions: ${error.message}`);
     },
   });
@@ -165,19 +203,22 @@ export function PermissionAssignment() {
     setSelectedPermissions(newSelection);
   };
 
-  const permissions = permissionsData?.permissions || [];
+  const permissions = (permissionsData?.permissions || []) as RbacPermission[];
   const modules = modulesData?.modules || [];
-  const roles = rolesData?.roles || [];
+  const roles = (rolesData?.roles || []) as RbacRole[];
 
   // Group permissions by module for display
-  const permissionsByModule = permissions.reduce((acc: Record<string, any[]>, permission: any) => {
-    const module = permission.module || "other";
-    if (!acc[module]) {
-      acc[module] = [];
-    }
-    acc[module].push(permission);
-    return acc;
-  }, {});
+  const permissionsByModule = permissions.reduce(
+    (acc: Record<string, RbacPermission[]>, permission: RbacPermission) => {
+      const module = permission.module || "other";
+      if (!acc[module]) {
+        acc[module] = [];
+      }
+      acc[module].push(permission);
+      return acc;
+    },
+    {}
+  );
 
   if (permissionsLoading) {
     return (
@@ -206,7 +247,7 @@ export function PermissionAssignment() {
               <Checkbox
                 id="bulk-mode"
                 checked={bulkMode}
-                onCheckedChange={(checked) => {
+                onCheckedChange={checked => {
                   setBulkMode(checked as boolean);
                   setSelectedPermissions(new Set());
                 }}
@@ -220,12 +261,15 @@ export function PermissionAssignment() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="bulk-role-select">Select Role</Label>
-                  <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                  <Select
+                    value={selectedRoleId}
+                    onValueChange={setSelectedRoleId}
+                  >
                     <SelectTrigger id="bulk-role-select">
                       <SelectValue placeholder="Choose a role" />
                     </SelectTrigger>
                     <SelectContent>
-                      {roles.map((role: any) => (
+                      {roles.map((role: RbacRole) => (
                         <SelectItem key={role.id} value={role.id.toString()}>
                           {role.name}
                         </SelectItem>
@@ -236,11 +280,16 @@ export function PermissionAssignment() {
                 <div className="flex items-end gap-2">
                   <Button
                     onClick={handleBulkAssign}
-                    disabled={!selectedRoleId || selectedPermissions.size === 0 || bulkAssignMutation.isPending}
+                    disabled={
+                      !selectedRoleId ||
+                      selectedPermissions.size === 0 ||
+                      bulkAssignMutation.isPending
+                    }
                     className="flex-1"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Assign {selectedPermissions.size} Permission{selectedPermissions.size !== 1 ? 's' : ''}
+                    Assign {selectedPermissions.size} Permission
+                    {selectedPermissions.size !== 1 ? "s" : ""}
                   </Button>
                   <Button
                     variant="outline"
@@ -257,12 +306,15 @@ export function PermissionAssignment() {
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
                   <Label htmlFor="role-select">Select Role</Label>
-                  <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                  <Select
+                    value={selectedRoleId}
+                    onValueChange={setSelectedRoleId}
+                  >
                     <SelectTrigger id="role-select">
                       <SelectValue placeholder="Choose a role" />
                     </SelectTrigger>
                     <SelectContent>
-                      {roles.map((role: any) => (
+                      {roles.map((role: RbacRole) => (
                         <SelectItem key={role.id} value={role.id.toString()}>
                           {role.name}
                         </SelectItem>
@@ -272,13 +324,19 @@ export function PermissionAssignment() {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="permission-select">Select Permission</Label>
-                  <Select value={selectedPermissionId} onValueChange={setSelectedPermissionId}>
+                  <Select
+                    value={selectedPermissionId}
+                    onValueChange={setSelectedPermissionId}
+                  >
                     <SelectTrigger id="permission-select">
                       <SelectValue placeholder="Choose a permission" />
                     </SelectTrigger>
                     <SelectContent>
-                      {permissions.map((permission: any) => (
-                        <SelectItem key={permission.id} value={permission.id.toString()}>
+                      {permissions.map((permission: RbacPermission) => (
+                        <SelectItem
+                          key={permission.id}
+                          value={permission.id.toString()}
+                        >
                           {permission.name} ({permission.module})
                         </SelectItem>
                       ))}
@@ -288,7 +346,11 @@ export function PermissionAssignment() {
                 <div className="flex items-end">
                   <Button
                     onClick={handleAssignPermission}
-                    disabled={!selectedRoleId || !selectedPermissionId || assignPermissionMutation.isPending}
+                    disabled={
+                      !selectedRoleId ||
+                      !selectedPermissionId ||
+                      assignPermissionMutation.isPending
+                    }
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -317,7 +379,7 @@ export function PermissionAssignment() {
                 id="search"
                 placeholder="Search by name or description..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -363,7 +425,12 @@ export function PermissionAssignment() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(permissionsByModule).map(([module, modulePermissions]: [string, any[]]) => (
+              {(
+                Object.entries(permissionsByModule) as unknown as [
+                  string,
+                  RbacPermission[],
+                ][]
+              ).map(([module, modulePermissions]) => (
                 <div key={module}>
                   <h3 className="text-lg font-semibold mb-3 capitalize flex items-center gap-2">
                     {module}
@@ -381,13 +448,17 @@ export function PermissionAssignment() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {modulePermissions.map((permission: any) => (
+                        {modulePermissions.map((permission: RbacPermission) => (
                           <TableRow key={permission.id}>
                             {bulkMode && (
                               <TableCell>
                                 <Checkbox
-                                  checked={selectedPermissions.has(permission.id)}
-                                  onCheckedChange={() => togglePermissionSelection(permission.id)}
+                                  checked={selectedPermissions.has(
+                                    permission.id
+                                  )}
+                                  onCheckedChange={() =>
+                                    togglePermissionSelection(permission.id)
+                                  }
                                 />
                               </TableCell>
                             )}
@@ -399,21 +470,33 @@ export function PermissionAssignment() {
                             </TableCell>
                             {/* FEAT-022: Show role names instead of just count */}
                             <TableCell className="text-center">
-                              {permission.roleNames && permission.roleNames.length > 0 ? (
+                              {permission.roleNames &&
+                              permission.roleNames.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 justify-center">
-                                  {permission.roleNames.slice(0, 3).map((roleName: string) => (
-                                    <Badge key={`role-${roleName}`} variant="outline" className="text-xs">
-                                      {roleName}
-                                    </Badge>
-                                  ))}
+                                  {permission.roleNames
+                                    .slice(0, 3)
+                                    .map((roleName: string) => (
+                                      <Badge
+                                        key={`role-${roleName}`}
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {roleName}
+                                      </Badge>
+                                    ))}
                                   {permission.roleNames.length > 3 && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
                                       +{permission.roleNames.length - 3} more
                                     </Badge>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground text-xs">No roles</span>
+                                <span className="text-muted-foreground text-xs">
+                                  No roles
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="text-right">
@@ -422,16 +505,21 @@ export function PermissionAssignment() {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => setViewingPermissionId(permission.id)}
+                                    onClick={() =>
+                                      setViewingPermissionId(permission.id)
+                                    }
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>
                                 </DialogTrigger>
                                 <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                                   <DialogHeader>
-                                    <DialogTitle className="font-mono">{permission.name}</DialogTitle>
+                                    <DialogTitle className="font-mono">
+                                      {permission.name}
+                                    </DialogTitle>
                                     <DialogDescription>
-                                      {permission.description || "No description"}
+                                      {permission.description ||
+                                        "No description"}
                                     </DialogDescription>
                                   </DialogHeader>
                                   {permissionDetailsLoading ? (
@@ -446,7 +534,9 @@ export function PermissionAssignment() {
                                             Module
                                           </div>
                                           <div className="mt-1">
-                                            <Badge variant="outline">{permissionDetails.module}</Badge>
+                                            <Badge variant="outline">
+                                              {permissionDetails.module}
+                                            </Badge>
                                           </div>
                                         </div>
                                         <div>
@@ -454,22 +544,28 @@ export function PermissionAssignment() {
                                             User Overrides
                                           </div>
                                           <div className="mt-1">
-                                            {permissionDetails.userOverrideCount}
+                                            {
+                                              permissionDetails.userOverrideCount
+                                            }
                                           </div>
                                         </div>
                                       </div>
 
                                       <div>
                                         <h4 className="font-semibold mb-3">
-                                          Assigned to Roles ({permissionDetails.roles.length})
+                                          Assigned to Roles (
+                                          {permissionDetails.roles.length})
                                         </h4>
-                                        {permissionDetails.roles.length === 0 ? (
+                                        {permissionDetails.roles.length ===
+                                        0 ? (
                                           <div className="text-center py-4 text-muted-foreground">
                                             Not assigned to any roles
                                           </div>
                                         ) : (
                                           <div className="space-y-2 max-h-96 overflow-y-auto">
-                                            {permissionDetails.roles.map((role: any) => (
+                                            {(
+                                              permissionDetails.roles as PermissionRoleDetail[]
+                                            ).map(role => (
                                               <div
                                                 key={role.roleId}
                                                 className="p-3 border rounded-lg flex items-center justify-between"
@@ -478,7 +574,10 @@ export function PermissionAssignment() {
                                                   <div className="font-medium flex items-center gap-2">
                                                     {role.roleName}
                                                     {role.isSystemRole && (
-                                                      <Badge variant="default" className="text-xs">
+                                                      <Badge
+                                                        variant="default"
+                                                        className="text-xs"
+                                                      >
                                                         System
                                                       </Badge>
                                                     )}
@@ -496,10 +595,13 @@ export function PermissionAssignment() {
                                                     setRemovePermissionInfo({
                                                       roleId: role.roleId,
                                                       roleName: role.roleName,
-                                                      permissionId: permission.id,
+                                                      permissionId:
+                                                        permission.id,
                                                     });
                                                   }}
-                                                  disabled={removePermissionMutation.isPending}
+                                                  disabled={
+                                                    removePermissionMutation.isPending
+                                                  }
                                                 >
                                                   <X className="h-4 w-4" />
                                                 </Button>
@@ -527,7 +629,7 @@ export function PermissionAssignment() {
 
       <ConfirmDialog
         open={!!removePermissionInfo}
-        onOpenChange={(open) => !open && setRemovePermissionInfo(null)}
+        onOpenChange={open => !open && setRemovePermissionInfo(null)}
         title="Remove Permission"
         description={`Are you sure you want to remove this permission from "${removePermissionInfo?.roleName}"?`}
         confirmLabel="Remove"

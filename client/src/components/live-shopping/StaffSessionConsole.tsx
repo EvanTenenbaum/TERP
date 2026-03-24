@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Staff Session Console - Live Shopping
- * 
+ *
  * Staff-facing interface for managing live shopping sessions.
  * Shows customer's items grouped by status with real-time updates.
  * Allows staff to:
@@ -16,9 +15,34 @@ import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, DollarSign, Check, X as XIcon } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  Check,
+  X as XIcon,
+} from "lucide-react";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
+
+interface CartItemView {
+  id: number;
+  productId: number;
+  batchId: number;
+  productName: string;
+  batchCode: string;
+  quantity: number | string;
+  unitPrice: number | string;
+  subtotal: number | string;
+  isHighlighted?: boolean | null;
+  negotiationStatus?: string | null;
+  negotiation?: {
+    originalPrice?: number | string;
+    proposedPrice?: number | string;
+    counterPrice?: number;
+    reason?: string;
+  } | null;
+}
 
 interface StaffSessionConsoleProps {
   sessionId: number;
@@ -59,29 +83,34 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
 
   // Price negotiation state
   const [showNegotiations, setShowNegotiations] = useState(true);
-  const [counterOfferInputs, setCounterOfferInputs] = useState<Record<number, string>>({});
+  const [counterOfferInputs, setCounterOfferInputs] = useState<
+    Record<number, string>
+  >({});
 
   // Queries
-  const { data: session, isLoading: sessionLoading } = trpc.liveShopping.getSession.useQuery(
-    { sessionId },
-    { enabled: !!sessionId }
-  );
+  const { data: session, isLoading: sessionLoading } =
+    trpc.liveShopping.getSession.useQuery(
+      { sessionId },
+      { enabled: !!sessionId }
+    );
 
-  const { data: itemsByStatus, refetch } = trpc.liveShopping.getItemsByStatus.useQuery(
-    { sessionId },
-    {
-      enabled: !!sessionId,
-      refetchInterval: 2000, // Real-time polling
-    }
-  );
+  const { data: itemsByStatus, refetch } =
+    trpc.liveShopping.getItemsByStatus.useQuery(
+      { sessionId },
+      {
+        enabled: !!sessionId,
+        refetchInterval: 2000, // Real-time polling
+      }
+    );
 
-  const { data: activeNegotiations, refetch: refetchNegotiations } = trpc.liveShopping.getActiveNegotiations.useQuery(
-    { sessionId },
-    {
-      enabled: !!sessionId,
-      refetchInterval: 2000, // Real-time polling
-    }
-  );
+  const { data: activeNegotiations, refetch: refetchNegotiations } =
+    trpc.liveShopping.getActiveNegotiations.useQuery(
+      { sessionId },
+      {
+        enabled: !!sessionId,
+        refetchInterval: 2000, // Real-time polling
+      }
+    );
 
   // Mutations
   const updateStatusMutation = trpc.liveShopping.updateItemStatus.useMutation({
@@ -101,27 +130,28 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
       toast.success("Item removed from session");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to remove item: ${error.message}`);
     },
   });
 
   const endSessionMutation = trpc.liveShopping.endSession.useMutation({
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to end session: ${error.message}`);
     },
   });
 
-  const respondToNegotiationMutation = trpc.liveShopping.respondToNegotiation.useMutation({
-    onSuccess: () => {
-      refetch();
-      refetchNegotiations();
-      setCounterOfferInputs({});
-    },
-    onError: (error) => {
-      toast.error(`Failed to respond to negotiation: ${error.message}`);
-    },
-  });
+  const respondToNegotiationMutation =
+    trpc.liveShopping.respondToNegotiation.useMutation({
+      onSuccess: () => {
+        refetch();
+        refetchNegotiations();
+        setCounterOfferInputs({});
+      },
+      onError: error => {
+        toast.error(`Failed to respond to negotiation: ${error.message}`);
+      },
+    });
 
   // Handlers
   const handleStatusChange = useCallback(
@@ -146,13 +176,10 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
   );
 
   // BUG-007: Show confirm dialog instead of window.confirm
-  const handleRemove = useCallback(
-    (cartItemId: number) => {
-      setItemToRemove(cartItemId);
-      setRemoveDialogOpen(true);
-    },
-    []
-  );
+  const handleRemove = useCallback((cartItemId: number) => {
+    setItemToRemove(cartItemId);
+    setRemoveDialogOpen(true);
+  }, []);
 
   // BUG-007: Actual remove action after confirmation
   const confirmRemoveItem = useCallback(() => {
@@ -171,21 +198,18 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
   }, []);
 
   // BUG-007: Show confirm dialog instead of window.confirm
-  const handleEndSession = useCallback(
-    (convertToOrder: boolean) => {
-      setConvertToOrderOnEnd(convertToOrder);
-      setEndSessionDialogOpen(true);
-    },
-    []
-  );
+  const handleEndSession = useCallback((convertToOrder: boolean) => {
+    setConvertToOrderOnEnd(convertToOrder);
+    setEndSessionDialogOpen(true);
+  }, []);
 
   // BUG-007: Actual end session action after confirmation
   const confirmEndSession = useCallback(() => {
     endSessionMutation.mutate(
       { sessionId, convertToOrder: convertToOrderOnEnd },
       {
-        onSuccess: (data) => {
-          if ('orderId' in data && data.orderId) {
+        onSuccess: data => {
+          if ("orderId" in data && data.orderId) {
             toast.success(`Order #${data.orderId} created successfully!`);
           } else {
             toast.success("Session ended.");
@@ -205,7 +229,11 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
 
   // Handle price negotiation responses
   const handleRespondToNegotiation = useCallback(
-    (cartItemId: number, response: "ACCEPT" | "REJECT" | "COUNTER", counterPrice?: number) => {
+    (
+      cartItemId: number,
+      response: "ACCEPT" | "REJECT" | "COUNTER",
+      counterPrice?: number
+    ) => {
       respondToNegotiationMutation.mutate({
         sessionId,
         cartItemId,
@@ -321,10 +349,11 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
 
             {showNegotiations && (
               <div className="p-4 space-y-3 border-t">
-                {activeNegotiations.map((item: any) => {
+                {(activeNegotiations as unknown as CartItemView[]).map(item => {
                   const negotiation = item.negotiation;
                   const isPending = item.negotiationStatus === "PENDING";
-                  const isCounterOffered = item.negotiationStatus === "COUNTER_OFFERED";
+                  const isCounterOffered =
+                    item.negotiationStatus === "COUNTER_OFFERED";
 
                   return (
                     <div
@@ -333,8 +362,12 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{item.productName}</h4>
-                          <p className="text-xs text-gray-500 font-mono">{item.batchCode || `Batch #${item.batchId}`}</p>
+                          <h4 className="font-medium text-gray-900">
+                            {item.productName}
+                          </h4>
+                          <p className="text-xs text-gray-500 font-mono">
+                            {item.batchCode || `Batch #${item.batchId}`}
+                          </p>
                         </div>
                         <span
                           className={`px-2 py-0.5 text-xs rounded-full ${
@@ -350,18 +383,28 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                       <div className="grid grid-cols-3 gap-2 mb-3 text-sm">
                         <div>
                           <span className="text-gray-500">Current:</span>
-                          <p className="font-bold">${parseFloat(negotiation?.originalPrice || 0).toFixed(2)}</p>
+                          <p className="font-bold">
+                            $
+                            {parseFloat(
+                              String(negotiation?.originalPrice ?? 0)
+                            ).toFixed(2)}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Requested:</span>
                           <p className="font-bold text-purple-600">
-                            ${parseFloat(negotiation?.proposedPrice || 0).toFixed(2)}
+                            $
+                            {parseFloat(
+                              String(negotiation?.proposedPrice ?? 0)
+                            ).toFixed(2)}
                           </p>
                         </div>
                         {negotiation?.reason && (
                           <div className="col-span-3">
                             <span className="text-gray-500">Reason:</span>
-                            <p className="text-sm italic">{negotiation.reason}</p>
+                            <p className="text-sm italic">
+                              {negotiation.reason}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -369,7 +412,9 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                       {isPending && (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleRespondToNegotiation(item.id, "ACCEPT")}
+                            onClick={() =>
+                              handleRespondToNegotiation(item.id, "ACCEPT")
+                            }
                             disabled={respondToNegotiationMutation.isPending}
                             className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center justify-center gap-1"
                           >
@@ -377,7 +422,9 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                             Accept
                           </button>
                           <button
-                            onClick={() => handleRespondToNegotiation(item.id, "REJECT")}
+                            onClick={() =>
+                              handleRespondToNegotiation(item.id, "REJECT")
+                            }
                             disabled={respondToNegotiationMutation.isPending}
                             className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center justify-center gap-1"
                           >
@@ -389,7 +436,9 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
 
                       {isPending && (
                         <div className="mt-2 pt-2 border-t border-purple-200">
-                          <p className="text-xs text-gray-600 mb-2">Or make a counter-offer:</p>
+                          <p className="text-xs text-gray-600 mb-2">
+                            Or make a counter-offer:
+                          </p>
                           <div className="flex gap-2">
                             <div className="flex-1 relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -400,8 +449,8 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                                 step="0.01"
                                 min="0"
                                 value={counterOfferInputs[item.id] || ""}
-                                onChange={(e) =>
-                                  setCounterOfferInputs((prev) => ({
+                                onChange={e =>
+                                  setCounterOfferInputs(prev => ({
                                     ...prev,
                                     [item.id]: e.target.value,
                                   }))
@@ -412,11 +461,19 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                             </div>
                             <button
                               onClick={() => {
-                                const price = parseFloat(counterOfferInputs[item.id] || "0");
+                                const price = parseFloat(
+                                  counterOfferInputs[item.id] || "0"
+                                );
                                 if (price > 0) {
-                                  handleRespondToNegotiation(item.id, "COUNTER", price);
+                                  handleRespondToNegotiation(
+                                    item.id,
+                                    "COUNTER",
+                                    price
+                                  );
                                 } else {
-                                  toast.error("Please enter a valid counter-offer price");
+                                  toast.error(
+                                    "Please enter a valid counter-offer price"
+                                  );
                                 }
                               }}
                               disabled={respondToNegotiationMutation.isPending}
@@ -431,8 +488,11 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                       {isCounterOffered && negotiation?.counterPrice && (
                         <div className="mt-2 p-2 bg-purple-100 rounded">
                           <p className="text-xs text-purple-800">
-                            Waiting for customer to respond to your counter-offer of{" "}
-                            <strong>${negotiation.counterPrice.toFixed(2)}</strong>
+                            Waiting for customer to respond to your
+                            counter-offer of{" "}
+                            <strong>
+                              ${negotiation.counterPrice.toFixed(2)}
+                            </strong>
                           </p>
                         </div>
                       )}
@@ -512,7 +572,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
 // Staff Status Column Component
 interface StaffStatusColumnProps {
   status: ItemStatus;
-  items: any[];
+  items: CartItemView[];
   onStatusChange: (cartItemId: number, newStatus: ItemStatus) => void;
   onPriceChange: (productId: number, newPrice: number) => void;
   onHighlight: (batchId: number, isHighlighted: boolean) => void;
@@ -529,13 +589,17 @@ const StaffStatusColumn: React.FC<StaffStatusColumnProps> = ({
 }) => {
   const config = STATUS_CONFIG[status];
   const otherStatuses = (Object.keys(STATUS_CONFIG) as ItemStatus[]).filter(
-    (s) => s !== status
+    s => s !== status
   );
 
   return (
-    <div className={`flex flex-col rounded-xl border-2 ${config.color} overflow-hidden`}>
+    <div
+      className={`flex flex-col rounded-xl border-2 ${config.color} overflow-hidden`}
+    >
       {/* Column Header */}
-      <div className={`${config.headerBg} text-white px-4 py-3 flex justify-between items-center`}>
+      <div
+        className={`${config.headerBg} text-white px-4 py-3 flex justify-between items-center`}
+      >
         <div className="flex items-center gap-2">
           <span className="text-xl">{config.icon}</span>
           <span className="font-semibold">{config.label}</span>
@@ -552,7 +616,7 @@ const StaffStatusColumn: React.FC<StaffStatusColumnProps> = ({
             No items in this category
           </div>
         ) : (
-          items.map((item: any) => (
+          items.map(item => (
             <StaffItemCard
               key={item.id}
               item={item}
@@ -572,7 +636,7 @@ const StaffStatusColumn: React.FC<StaffStatusColumnProps> = ({
 
 // Staff Item Card Component
 interface StaffItemCardProps {
-  item: any;
+  item: CartItemView;
   currentStatus: ItemStatus;
   otherStatuses: ItemStatus[];
   onStatusChange: (cartItemId: number, newStatus: ItemStatus) => void;
@@ -612,7 +676,9 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
       {/* Header Row */}
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 truncate">{item.productName}</h4>
+          <h4 className="font-medium text-gray-900 truncate">
+            {item.productName}
+          </h4>
           <p className="text-xs text-gray-500 font-mono">{item.batchCode}</p>
         </div>
         <div className="flex items-center gap-1 ml-2">
@@ -623,7 +689,9 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
                 ? "bg-indigo-100 text-indigo-600"
                 : "bg-gray-100 text-gray-400 hover:bg-gray-200"
             }`}
-            title={item.isHighlighted ? "Remove highlight" : "Highlight for customer"}
+            title={
+              item.isHighlighted ? "Remove highlight" : "Highlight for customer"
+            }
           >
             {item.isHighlighted ? "★" : "☆"}
           </button>
@@ -641,7 +709,9 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
       <div className="flex justify-between items-center mb-3">
         <div className="text-sm">
           <span className="text-gray-500">Qty:</span>{" "}
-          <span className="font-bold">{parseFloat(item.quantity).toFixed(0)}</span>
+          <span className="font-bold">
+            {parseFloat(String(item.quantity)).toFixed(0)}
+          </span>
         </div>
         <div className="text-right">
           {isEditingPrice ? (
@@ -652,9 +722,9 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
                 step="0.01"
                 className="w-20 border rounded px-2 py-1 text-right text-sm"
                 value={priceInput}
-                onChange={(e) => setPriceInput(e.target.value)}
+                onChange={e => setPriceInput(e.target.value)}
                 onBlur={handlePriceSubmit}
-                onKeyDown={(e) => e.key === "Enter" && handlePriceSubmit()}
+                onKeyDown={e => e.key === "Enter" && handlePriceSubmit()}
                 autoFocus
               />
             </div>
@@ -665,20 +735,20 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
               title="Click to change price"
             >
               <span className="text-lg font-bold">
-                ${parseFloat(item.unitPrice).toFixed(2)}
+                ${parseFloat(String(item.unitPrice)).toFixed(2)}
               </span>
               <span className="text-xs text-gray-400">✎</span>
             </div>
           )}
           <div className="text-xs text-gray-500">
-            Total: ${parseFloat(item.subtotal).toFixed(2)}
+            Total: ${parseFloat(String(item.subtotal)).toFixed(2)}
           </div>
         </div>
       </div>
 
       {/* Move to Status Buttons */}
       <div className="flex gap-2">
-        {otherStatuses.map((newStatus) => {
+        {otherStatuses.map(newStatus => {
           const targetConfig = STATUS_CONFIG[newStatus];
           return (
             <button

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -35,6 +34,22 @@ import { CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+interface CatalogInterestItem {
+  id: number;
+  itemName?: string;
+  category?: string | null;
+  retailPrice?: number | string | null;
+  priceAtInterest?: number | string | null;
+  currentPrice?: number | string | null;
+  currentQuantity?: number | string | null;
+  quantity?: number | string | null;
+  addedAt?: string | Date | null;
+  priceChanged?: boolean;
+  quantityChanged?: boolean;
+  currentlyAvailable?: boolean;
+  status?: string | null;
+}
+
 interface LiveCatalogConfigProps {
   clientId: number;
 }
@@ -42,7 +57,7 @@ interface LiveCatalogConfigProps {
 export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("configuration");
-  
+
   // Fetch configuration
   const {
     data: config,
@@ -116,40 +131,43 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
   }, [config]);
 
   // Save configuration mutation
-  const saveConfigMutation = trpc.vipPortalAdmin.liveCatalog.saveConfiguration.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Configuration saved",
-        description: "Live Catalog configuration has been updated successfully.",
-      });
-      refetchConfig();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error saving configuration",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const saveConfigMutation =
+    trpc.vipPortalAdmin.liveCatalog.saveConfiguration.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Configuration saved",
+          description:
+            "Live Catalog configuration has been updated successfully.",
+        });
+        refetchConfig();
+      },
+      onError: error => {
+        toast({
+          title: "Error saving configuration",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   // Update status mutation
-  const updateStatusMutation = trpc.vipPortalAdmin.liveCatalog.interestLists.updateStatus.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Status updated",
-        description: "Interest list status has been updated.",
-      });
-      refetchInterestLists();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error updating status",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const updateStatusMutation =
+    trpc.vipPortalAdmin.liveCatalog.interestLists.updateStatus.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Status updated",
+          description: "Interest list status has been updated.",
+        });
+        refetchInterestLists();
+      },
+      onError: error => {
+        toast({
+          title: "Error updating status",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   const handleSaveConfiguration = () => {
     saveConfigMutation.mutate({
@@ -170,7 +188,10 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
     setDetailModalOpen(true);
   };
 
-  const handleUpdateStatus = (listId: number, status: 'NEW' | 'REVIEWED' | 'CONVERTED' | 'ARCHIVED') => {
+  const handleUpdateStatus = (
+    listId: number,
+    status: "NEW" | "REVIEWED" | "CONVERTED" | "ARCHIVED"
+  ) => {
     updateStatusMutation.mutate({
       listId,
       status,
@@ -184,7 +205,8 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
       CONVERTED: { variant: "default" as const, label: "Converted" },
       ARCHIVED: { variant: "outline" as const, label: "Archived" },
     };
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.NEW;
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.NEW;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -217,9 +239,7 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="price-alerts">
-            Price Alerts
-          </TabsTrigger>
+          <TabsTrigger value="price-alerts">Price Alerts</TabsTrigger>
         </TabsList>
 
         {/* Configuration Tab */}
@@ -228,7 +248,8 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
             <CardHeader>
               <CardTitle>Live Catalog Settings</CardTitle>
               <CardDescription>
-                Configure what inventory and attributes are visible to this client in their VIP portal.
+                Configure what inventory and attributes are visible to this
+                client in their VIP portal.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -265,7 +286,9 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                         <Checkbox
                           id="showQuantity"
                           checked={showQuantity}
-                          onCheckedChange={(checked) => setShowQuantity(checked as boolean)}
+                          onCheckedChange={checked =>
+                            setShowQuantity(checked as boolean)
+                          }
                         />
                         <Label htmlFor="showQuantity" className="font-normal">
                           Show Quantity Available
@@ -276,7 +299,9 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                         <Checkbox
                           id="showBrand"
                           checked={showBrand}
-                          onCheckedChange={(checked) => setShowBrand(checked as boolean)}
+                          onCheckedChange={checked =>
+                            setShowBrand(checked as boolean)
+                          }
                         />
                         <Label htmlFor="showBrand" className="font-normal">
                           Show Brand
@@ -287,7 +312,9 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                         <Checkbox
                           id="showGrade"
                           checked={showGrade}
-                          onCheckedChange={(checked) => setShowGrade(checked as boolean)}
+                          onCheckedChange={checked =>
+                            setShowGrade(checked as boolean)
+                          }
                         />
                         <Label htmlFor="showGrade" className="font-normal">
                           Show Grade
@@ -298,7 +325,9 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                         <Checkbox
                           id="showDate"
                           checked={showDate}
-                          onCheckedChange={(checked) => setShowDate(checked as boolean)}
+                          onCheckedChange={checked =>
+                            setShowDate(checked as boolean)
+                          }
                         />
                         <Label htmlFor="showDate" className="font-normal">
                           Show Date
@@ -309,7 +338,9 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                         <Checkbox
                           id="showBasePrice"
                           checked={showBasePrice}
-                          onCheckedChange={(checked) => setShowBasePrice(checked as boolean)}
+                          onCheckedChange={checked =>
+                            setShowBasePrice(checked as boolean)
+                          }
                         />
                         <Label htmlFor="showBasePrice" className="font-normal">
                           Show Base Price
@@ -320,7 +351,9 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                         <Checkbox
                           id="showMarkup"
                           checked={showMarkup}
-                          onCheckedChange={(checked) => setShowMarkup(checked as boolean)}
+                          onCheckedChange={checked =>
+                            setShowMarkup(checked as boolean)
+                          }
                         />
                         <Label htmlFor="showMarkup" className="font-normal">
                           Show Markup
@@ -391,14 +424,16 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {interestListsData.lists.map((list) => (
+                    {interestListsData.lists.map(list => (
                       <TableRow key={list.id}>
-                        <TableCell className="font-medium">#{list.id}</TableCell>
+                        <TableCell className="font-medium">
+                          #{list.id}
+                        </TableCell>
                         <TableCell>
                           {new Date(list.submittedAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>{list.totalItems || 0}</TableCell>
-                        <TableCell>${list.totalValue || '0.00'}</TableCell>
+                        <TableCell>${list.totalValue || "0.00"}</TableCell>
                         <TableCell>{getStatusBadge(list.status)}</TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button
@@ -408,20 +443,24 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                           >
                             View Details
                           </Button>
-                          {list.status === 'NEW' && (
+                          {list.status === "NEW" && (
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => handleUpdateStatus(list.id, 'REVIEWED')}
+                              onClick={() =>
+                                handleUpdateStatus(list.id, "REVIEWED")
+                              }
                             >
                               Mark Reviewed
                             </Button>
                           )}
-                          {list.status === 'REVIEWED' && (
+                          {list.status === "REVIEWED" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleUpdateStatus(list.id, 'ARCHIVED')}
+                              onClick={() =>
+                                handleUpdateStatus(list.id, "ARCHIVED")
+                              }
                             >
                               Archive
                             </Button>
@@ -467,14 +506,18 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {draftInterests.items.map((item: any) => (
+                      {draftInterests.items.map((item: CatalogInterestItem) => (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.itemName}</TableCell>
-                          <TableCell>{item.category || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">
+                            {item.itemName}
+                          </TableCell>
+                          <TableCell>{item.category || "N/A"}</TableCell>
                           <TableCell>${item.retailPrice}</TableCell>
                           <TableCell>{item.quantity} lbs</TableCell>
                           <TableCell>
-                            {new Date(item.addedAt).toLocaleDateString()}
+                            {item.addedAt
+                              ? new Date(item.addedAt).toLocaleDateString()
+                              : "N/A"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -504,14 +547,17 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
             <CardHeader>
               <CardTitle>Client Price Alerts</CardTitle>
               <CardDescription>
-                View and manage price alerts for this client. Clients receive notifications when prices drop to their target.
+                View and manage price alerts for this client. Clients receive
+                notifications when prices drop to their target.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {!enablePriceAlerts ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>Price alerts are not enabled for this client.</p>
-                  <p className="text-sm mt-2">Enable price alerts in the Configuration tab.</p>
+                  <p className="text-sm mt-2">
+                    Enable price alerts in the Configuration tab.
+                  </p>
                 </div>
               ) : (
                 <PriceAlertsTable clientId={clientId} />
@@ -549,57 +595,61 @@ function InterestListDetailModal({
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [addToOrderDialogOpen, setAddToOrderDialogOpen] = useState(false);
   const [draftOrderId, setDraftOrderId] = useState<string>("");
-  
+
   const { data: listDetail, isLoading } =
     trpc.vipPortalAdmin.liveCatalog.interestLists.getById.useQuery(
       { listId },
       { enabled: open }
     );
-  
+
   // Add to new order mutation
-  const addToNewOrderMutation = trpc.vipPortalAdmin.liveCatalog.interestLists.addToNewOrder.useMutation({
-    onSuccess: (data) => {
-      toast({
-        title: "Order created",
-        description: `Draft order #${data.orderNumber} created with ${data.itemCount} items.`,
-      });
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error creating order",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
+  const addToNewOrderMutation =
+    trpc.vipPortalAdmin.liveCatalog.interestLists.addToNewOrder.useMutation({
+      onSuccess: data => {
+        toast({
+          title: "Order created",
+          description: `Draft order #${data.orderNumber} created with ${data.itemCount} items.`,
+        });
+        onOpenChange(false);
+      },
+      onError: error => {
+        toast({
+          title: "Error creating order",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
+
   // Add to draft order mutation
-  const addToDraftOrderMutation = trpc.vipPortalAdmin.liveCatalog.interestLists.addToDraftOrder.useMutation({
-    onSuccess: (data) => {
-      toast({
-        title: "Items added to order",
-        description: `Added ${data.itemsAdded} items to order #${data.orderNumber}.`,
-      });
-      setAddToOrderDialogOpen(false);
-      setDraftOrderId("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Error adding to order",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
+  const addToDraftOrderMutation =
+    trpc.vipPortalAdmin.liveCatalog.interestLists.addToDraftOrder.useMutation({
+      onSuccess: data => {
+        toast({
+          title: "Items added to order",
+          description: `Added ${data.itemsAdded} items to order #${data.orderNumber}.`,
+        });
+        setAddToOrderDialogOpen(false);
+        setDraftOrderId("");
+      },
+      onError: error => {
+        toast({
+          title: "Error adding to order",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
+
   // Select all items by default when modal opens
   useEffect(() => {
     if (listDetail?.items) {
-      setSelectedItems(listDetail.items.map((item: any) => item.id));
+      setSelectedItems(
+        listDetail.items.map((item: CatalogInterestItem) => item.id)
+      );
     }
   }, [listDetail]);
-  
+
   const handleAddToNewOrder = () => {
     if (selectedItems.length === 0) {
       toast({
@@ -614,7 +664,7 @@ function InterestListDetailModal({
       itemIds: selectedItems,
     });
   };
-  
+
   const handleAddToDraftOrder = () => {
     if (selectedItems.length === 0) {
       toast({
@@ -639,7 +689,7 @@ function InterestListDetailModal({
       itemIds: selectedItems,
     });
   };
-  
+
   const toggleItemSelection = (itemId: number) => {
     setSelectedItems(prev =>
       prev.includes(itemId)
@@ -647,12 +697,14 @@ function InterestListDetailModal({
         : [...prev, itemId]
     );
   };
-  
+
   const toggleSelectAll = () => {
     if (selectedItems.length === listDetail?.items.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems((listDetail?.items || []).map((item: any) => item.id));
+      setSelectedItems(
+        (listDetail?.items || []).map((item: CatalogInterestItem) => item.id)
+      );
     }
   };
 
@@ -692,7 +744,7 @@ function InterestListDetailModal({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listDetail.items.map((item: any) => (
+                {listDetail.items.map((item: CatalogInterestItem) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <Checkbox
@@ -700,8 +752,10 @@ function InterestListDetailModal({
                         onCheckedChange={() => toggleItemSelection(item.id)}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{item.itemName}</TableCell>
-                    <TableCell>{item.category || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.itemName}
+                    </TableCell>
+                    <TableCell>{item.category || "N/A"}</TableCell>
                     <TableCell>${item.priceAtInterest}</TableCell>
                     <TableCell>
                       {item.priceChanged ? (
@@ -755,7 +809,9 @@ function InterestListDetailModal({
             <Button
               variant="default"
               onClick={handleAddToNewOrder}
-              disabled={selectedItems.length === 0 || addToNewOrderMutation.isPending}
+              disabled={
+                selectedItems.length === 0 || addToNewOrderMutation.isPending
+              }
             >
               {addToNewOrderMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -774,14 +830,18 @@ function InterestListDetailModal({
             Close
           </Button>
         </DialogFooter>
-        
+
         {/* Add to Draft Order Dialog */}
-        <Dialog open={addToOrderDialogOpen} onOpenChange={setAddToOrderDialogOpen}>
+        <Dialog
+          open={addToOrderDialogOpen}
+          onOpenChange={setAddToOrderDialogOpen}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add to Draft Order</DialogTitle>
               <DialogDescription>
-                Enter the order ID of the draft order you want to add these items to.
+                Enter the order ID of the draft order you want to add these
+                items to.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -792,7 +852,7 @@ function InterestListDetailModal({
                   type="number"
                   placeholder="Enter order ID"
                   value={draftOrderId}
-                  onChange={(e) => setDraftOrderId(e.target.value)}
+                  onChange={e => setDraftOrderId(e.target.value)}
                 />
               </div>
               <div className="text-sm text-muted-foreground">
@@ -800,7 +860,10 @@ function InterestListDetailModal({
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setAddToOrderDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setAddToOrderDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
@@ -823,7 +886,9 @@ function InterestListDetailModal({
 // Price Alerts Table Component
 function PriceAlertsTable({ clientId }: { clientId: number }) {
   const { toast } = useToast();
-  const [deactivateAlertId, setDeactivateAlertId] = useState<number | null>(null);
+  const [deactivateAlertId, setDeactivateAlertId] = useState<number | null>(
+    null
+  );
 
   // Fetch price alerts (admin endpoint - to be created)
   const {
@@ -835,22 +900,23 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
   });
 
   // Deactivate alert mutation
-  const deactivateAlertMutation = trpc.vipPortalAdmin.liveCatalog.priceAlerts.deactivate.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Price alert deactivated",
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to deactivate price alert",
-        variant: "destructive",
-      });
-    },
-  });
+  const deactivateAlertMutation =
+    trpc.vipPortalAdmin.liveCatalog.priceAlerts.deactivate.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Price alert deactivated",
+        });
+        refetch();
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to deactivate price alert",
+          variant: "destructive",
+        });
+      },
+    });
 
   const handleDeactivateAlert = (alertId: number) => {
     setDeactivateAlertId(alertId);
@@ -881,95 +947,103 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
 
   return (
     <>
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Product</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Target Price</TableHead>
-          <TableHead>Current Price</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Created</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {priceAlerts.map((alert) => {
-          const priceDropped = alert.currentPrice !== null && alert.currentPrice <= alert.targetPrice;
-          const priceDropPercentage = alert.priceDropPercentage;
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Product</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Target Price</TableHead>
+            <TableHead>Current Price</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {priceAlerts.map(alert => {
+            const priceDropped =
+              alert.currentPrice !== null &&
+              alert.currentPrice <= alert.targetPrice;
+            const priceDropPercentage = alert.priceDropPercentage;
 
-          return (
-            <TableRow key={alert.id}>
-              <TableCell className="font-medium">{alert.productName}</TableCell>
-              <TableCell>{alert.category || "N/A"}</TableCell>
-              <TableCell>${alert.targetPrice.toFixed(2)}</TableCell>
-              <TableCell>
-                {alert.currentPrice !== null ? (
-                  <span className={priceDropped ? "text-green-600 font-bold" : ""}>
-                    ${alert.currentPrice.toFixed(2)}
-                    {priceDropped && priceDropPercentage !== null && (
-                      <span className="text-xs ml-1">({priceDropPercentage.toFixed(1)}% off)</span>
-                    )}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">N/A</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {alert.isActive ? (
-                  priceDropped ? (
-                    <Badge variant="default" className="bg-green-600">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Triggered
-                    </Badge>
+            return (
+              <TableRow key={alert.id}>
+                <TableCell className="font-medium">
+                  {alert.productName}
+                </TableCell>
+                <TableCell>{alert.category || "N/A"}</TableCell>
+                <TableCell>${alert.targetPrice.toFixed(2)}</TableCell>
+                <TableCell>
+                  {alert.currentPrice !== null ? (
+                    <span
+                      className={priceDropped ? "text-green-600 font-bold" : ""}
+                    >
+                      ${alert.currentPrice.toFixed(2)}
+                      {priceDropped && priceDropPercentage !== null && (
+                        <span className="text-xs ml-1">
+                          ({priceDropPercentage.toFixed(1)}% off)
+                        </span>
+                      )}
+                    </span>
                   ) : (
-                    <Badge variant="default">
-                      <Eye className="h-3 w-3 mr-1" />
-                      Active
-                    </Badge>
-                  )
-                ) : (
-                  <Badge variant="secondary">
-                    <EyeOff className="h-3 w-3 mr-1" />
-                    Inactive
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                {new Date(alert.createdAt).toLocaleDateString()}
-              </TableCell>
-              <TableCell>
-                {alert.isActive && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeactivateAlert(alert.id)}
-                    disabled={deactivateAlertMutation.isPending}
-                  >
-                    {deactivateAlertMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-muted-foreground">N/A</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {alert.isActive ? (
+                    priceDropped ? (
+                      <Badge variant="default" className="bg-green-600">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Triggered
+                      </Badge>
                     ) : (
-                      "Deactivate"
-                    )}
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                      <Badge variant="default">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Active
+                      </Badge>
+                    )
+                  ) : (
+                    <Badge variant="secondary">
+                      <EyeOff className="h-3 w-3 mr-1" />
+                      Inactive
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {new Date(alert.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  {alert.isActive && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeactivateAlert(alert.id)}
+                      disabled={deactivateAlertMutation.isPending}
+                    >
+                      {deactivateAlertMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Deactivate"
+                      )}
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
 
-    <ConfirmDialog
-      open={!!deactivateAlertId}
-      onOpenChange={(open) => !open && setDeactivateAlertId(null)}
-      title="Deactivate Price Alert"
-      description="Are you sure you want to deactivate this price alert?"
-      confirmLabel="Deactivate"
-      variant="destructive"
-      onConfirm={confirmDeactivateAlert}
-      isLoading={deactivateAlertMutation.isPending}
-    />
-  </>
+      <ConfirmDialog
+        open={!!deactivateAlertId}
+        onOpenChange={open => !open && setDeactivateAlertId(null)}
+        title="Deactivate Price Alert"
+        description="Are you sure you want to deactivate this price alert?"
+        confirmLabel="Deactivate"
+        variant="destructive"
+        onConfirm={confirmDeactivateAlert}
+        isLoading={deactivateAlertMutation.isPending}
+      />
+    </>
   );
 }

@@ -1,9 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,9 +39,29 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+interface RbacRole {
+  id: number;
+  name: string;
+  isSystemRole?: boolean;
+}
+
+interface UserAssignedRole {
+  roleId: number;
+  roleName: string;
+  roleDescription?: string | null;
+  assignedAt: string | Date;
+}
+
+interface UserPermissionOverride {
+  permissionId: number;
+  permissionName: string;
+  permissionDescription?: string;
+  granted: boolean;
+}
+
 /**
  * User Role Management Component
- * 
+ *
  * Allows administrators to:
  * - View all users and their assigned roles
  * - Assign roles to users
@@ -48,28 +73,35 @@ export function UserRoleManagement() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [removeRoleInfo, setRemoveRoleInfo] = useState<{ userId: string; roleId: number; roleName: string } | null>(null);
+  const [removeRoleInfo, setRemoveRoleInfo] = useState<{
+    userId: string;
+    roleId: number;
+    roleName: string;
+  } | null>(null);
 
   const utils = trpc.useUtils();
 
   // Fetch users with their roles
-  const { data: usersData, isLoading: usersLoading } = trpc.rbacUsers.list.useQuery({
-    limit: 100,
-    offset: 0,
-    search: searchTerm || undefined,
-  });
+  const { data: usersData, isLoading: usersLoading } =
+    trpc.rbacUsers.list.useQuery({
+      limit: 100,
+      offset: 0,
+      search: searchTerm || undefined,
+    });
 
   // Fetch all available roles
-  const { data: rolesData, isLoading: rolesLoading } = trpc.rbacRoles.list.useQuery({
-    limit: 100,
-    offset: 0,
-  });
+  const { data: rolesData, isLoading: rolesLoading } =
+    trpc.rbacRoles.list.useQuery({
+      limit: 100,
+      offset: 0,
+    });
 
   // Fetch user details when viewing
-  const { data: userDetails, isLoading: userDetailsLoading } = trpc.rbacUsers.getById.useQuery(
-    { userId: viewingUserId || "" },
-    { enabled: !!viewingUserId }
-  );
+  const { data: userDetails, isLoading: userDetailsLoading } =
+    trpc.rbacUsers.getById.useQuery(
+      { userId: viewingUserId || "" },
+      { enabled: !!viewingUserId }
+    );
 
   // Mutations
   const assignRoleMutation = trpc.rbacUsers.assignRole.useMutation({
@@ -80,7 +112,7 @@ export function UserRoleManagement() {
       setSelectedUserId("");
       setSelectedRoleId("");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to assign role: ${error.message}`);
     },
   });
@@ -91,7 +123,7 @@ export function UserRoleManagement() {
       utils.rbacUsers.list.invalidate();
       utils.rbacUsers.getById.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to remove role: ${error.message}`);
     },
   });
@@ -108,13 +140,20 @@ export function UserRoleManagement() {
     });
   };
 
-  const handleRemoveRole = (userId: string, roleId: number, roleName: string) => {
+  const handleRemoveRole = (
+    userId: string,
+    roleId: number,
+    roleName: string
+  ) => {
     setRemoveRoleInfo({ userId, roleId, roleName });
   };
 
   const confirmRemoveRole = () => {
     if (removeRoleInfo) {
-      removeRoleMutation.mutate({ userId: removeRoleInfo.userId, roleId: removeRoleInfo.roleId });
+      removeRoleMutation.mutate({
+        userId: removeRoleInfo.userId,
+        roleId: removeRoleInfo.roleId,
+      });
       setRemoveRoleInfo(null);
     }
   };
@@ -151,7 +190,7 @@ export function UserRoleManagement() {
                 id="user-select"
                 placeholder="Enter User ID (e.g., user_123)"
                 value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
+                onChange={e => setSelectedUserId(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -161,7 +200,7 @@ export function UserRoleManagement() {
                   <SelectValue placeholder="Choose a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role: any) => (
+                  {(roles as RbacRole[]).map(role => (
                     <SelectItem key={role.id} value={role.id.toString()}>
                       {role.name}
                       {role.isSystemRole && (
@@ -177,7 +216,11 @@ export function UserRoleManagement() {
             <div className="flex items-end">
               <Button
                 onClick={handleAssignRole}
-                disabled={!selectedUserId || !selectedRoleId || assignRoleMutation.isPending}
+                disabled={
+                  !selectedUserId ||
+                  !selectedRoleId ||
+                  assignRoleMutation.isPending
+                }
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -205,7 +248,7 @@ export function UserRoleManagement() {
               <Input
                 placeholder="Search by User ID..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="max-w-sm"
               />
             </div>
@@ -225,14 +268,14 @@ export function UserRoleManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {users.map(user => (
                       <TableRow key={user.userId}>
                         <TableCell className="font-mono text-sm">
                           {user.userId}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-2">
-                            {user.roles.map((role) => (
+                            {user.roles.map(role => (
                               <Badge
                                 key={role.roleId}
                                 variant="secondary"
@@ -241,7 +284,11 @@ export function UserRoleManagement() {
                                 {role.roleName}
                                 <button
                                   onClick={() =>
-                                    handleRemoveRole(user.userId, role.roleId, role.roleName)
+                                    handleRemoveRole(
+                                      user.userId,
+                                      role.roleId,
+                                      role.roleName
+                                    )
                                   }
                                   className="ml-1 hover:text-destructive"
                                   disabled={removeRoleMutation.isPending}
@@ -279,16 +326,22 @@ export function UserRoleManagement() {
                                 <div className="space-y-6">
                                   {/* Roles Section */}
                                   <div>
-                                    <h4 className="font-semibold mb-3">Assigned Roles</h4>
+                                    <h4 className="font-semibold mb-3">
+                                      Assigned Roles
+                                    </h4>
                                     <div className="space-y-2">
-                                      {userDetails.roles.map((role: any) => (
+                                      {(
+                                        userDetails.roles as UserAssignedRole[]
+                                      ).map(role => (
                                         <div
                                           key={role.roleId}
                                           className="p-3 border rounded-lg"
                                         >
                                           <div className="flex items-center justify-between">
                                             <div>
-                                              <div className="font-medium">{role.roleName}</div>
+                                              <div className="font-medium">
+                                                {role.roleName}
+                                              </div>
                                               {role.roleDescription && (
                                                 <div className="text-sm text-muted-foreground">
                                                   {role.roleDescription}
@@ -296,7 +349,10 @@ export function UserRoleManagement() {
                                               )}
                                             </div>
                                             <Badge variant="outline">
-                                              Assigned {new Date(role.assignedAt).toLocaleDateString()}
+                                              Assigned{" "}
+                                              {new Date(
+                                                role.assignedAt
+                                              ).toLocaleDateString()}
                                             </Badge>
                                           </div>
                                         </div>
@@ -305,11 +361,16 @@ export function UserRoleManagement() {
                                   </div>
 
                                   {/* Permission Overrides Section */}
-                                  {userDetails.permissionOverrides.length > 0 && (
+                                  {userDetails.permissionOverrides.length >
+                                    0 && (
                                     <div>
-                                      <h4 className="font-semibold mb-3">Permission Overrides</h4>
+                                      <h4 className="font-semibold mb-3">
+                                        Permission Overrides
+                                      </h4>
                                       <div className="space-y-2">
-                                        {userDetails.permissionOverrides.map((override: any) => (
+                                        {(
+                                          userDetails.permissionOverrides as UserPermissionOverride[]
+                                        ).map(override => (
                                           <div
                                             key={override.permissionId}
                                             className="p-3 border rounded-lg"
@@ -319,14 +380,22 @@ export function UserRoleManagement() {
                                                 <div className="font-medium flex items-center gap-2">
                                                   {override.permissionName}
                                                   <Badge
-                                                    variant={override.granted ? "default" : "destructive"}
+                                                    variant={
+                                                      override.granted
+                                                        ? "default"
+                                                        : "destructive"
+                                                    }
                                                   >
-                                                    {override.granted ? "Granted" : "Revoked"}
+                                                    {override.granted
+                                                      ? "Granted"
+                                                      : "Revoked"}
                                                   </Badge>
                                                 </div>
                                                 {override.permissionDescription && (
                                                   <div className="text-sm text-muted-foreground">
-                                                    {override.permissionDescription}
+                                                    {
+                                                      override.permissionDescription
+                                                    }
                                                   </div>
                                                 )}
                                               </div>
@@ -353,7 +422,7 @@ export function UserRoleManagement() {
 
       <ConfirmDialog
         open={!!removeRoleInfo}
-        onOpenChange={(open) => !open && setRemoveRoleInfo(null)}
+        onOpenChange={open => !open && setRemoveRoleInfo(null)}
         title="Remove Role"
         description={`Are you sure you want to remove the "${removeRoleInfo?.roleName}" role from this user?`}
         confirmLabel="Remove"

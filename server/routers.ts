@@ -1,5 +1,6 @@
 import { systemRouter } from "./_core/systemRouter";
 import { router } from "./_core/trpc";
+import type { AnyRouter } from "@trpc/server";
 
 // Import domain-specific routers
 import { authRouter } from "./routers/auth";
@@ -133,8 +134,7 @@ import { productCatalogueRouter } from "./routers/productCatalogue";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let debugRouter: any = null;
+let debugRouter: AnyRouter | null = null;
 // TEMPORARY: Enable debug router in production for diagnostics (REMOVE AFTER DEBUGGING)
 // Original: if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
 if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {

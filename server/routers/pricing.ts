@@ -419,7 +419,9 @@ export const pricingRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      return await pricingEngine.createPricingRule(input);
+      return await pricingEngine.createPricingRule(
+        input as Parameters<typeof pricingEngine.createPricingRule>[0]
+      );
     }),
 
   updateRule: protectedProcedure
@@ -450,7 +452,10 @@ export const pricingRouter = router({
     )
     .mutation(async ({ input }) => {
       const { ruleId, ...data } = input;
-      await pricingEngine.updatePricingRule(ruleId, data);
+      await pricingEngine.updatePricingRule(
+        ruleId,
+        data as Parameters<typeof pricingEngine.updatePricingRule>[1]
+      );
       return { success: true };
     }),
 
