@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as clientNeedsDb from "../clientNeedsDbEnhanced";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import type { Match } from "../matchingEngineEnhanced";
@@ -388,14 +392,15 @@ export const clientNeedsEnhancedRouter = router({
         clientId: z.number(),
         clientNeedId: z.number().optional(),
         matches: z.array(z.record(z.string(), z.unknown())),
-        userId: z.number(),
         matchRecordId: z.number().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
+        const userId = getAuthenticatedUserId(ctx);
         const result = await needsMatchingService.createQuoteFromMatch({
           ...input,
+          userId,
           matches: input.matches as unknown as Match[],
         });
 

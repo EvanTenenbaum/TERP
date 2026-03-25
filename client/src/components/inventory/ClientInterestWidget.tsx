@@ -1,6 +1,5 @@
 import { trpc } from "@/lib/trpc";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
-import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,6 @@ type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
 export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
   const [creatingQuote, setCreatingQuote] = useState<number | null>(null);
-  const { user } = useAuth();
 
   // Fetch matches for this batch
   const { data: matchesData, isLoading } =
@@ -56,7 +54,6 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
         clientId: match.clientId,
         clientNeedId: match.clientNeedId,
         matches: [match] as unknown as Record<string, unknown>[],
-        userId: user?.id ?? 0,
       });
     } catch (error) {
       console.error("Error creating quote:", error);
