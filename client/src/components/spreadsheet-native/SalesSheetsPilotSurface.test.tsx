@@ -3,6 +3,7 @@
  */
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SalesSheetsPilotSurface } from "./SalesSheetsPilotSurface";
 
@@ -33,6 +34,40 @@ let deleteDraftConfig:
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/sales?tab=sheets", mockSetLocation],
+}));
+
+// Mock Radix DropdownMenu so items render inline in JSDOM
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuTrigger: ({
+    children,
+    asChild,
+  }: {
+    children: ReactNode;
+    asChild?: boolean;
+  }) => <>{asChild ? children : <button>{children}</button>}</>,
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+    <div role="menu">{children}</div>
+  ),
+  DropdownMenuItem: ({
+    children,
+    disabled,
+    onClick,
+  }: {
+    children: ReactNode;
+    disabled?: boolean;
+    onClick?: () => void;
+  }) => (
+    <div
+      role="menuitem"
+      data-disabled={disabled ? "" : undefined}
+      onClick={disabled ? undefined : onClick}
+    >
+      {children}
+    </div>
+  ),
 }));
 
 vi.mock("@/hooks/usePermissions", () => ({
@@ -203,6 +238,7 @@ vi.mock("./PowersheetGrid", () => ({
     description,
     rows,
     onSelectedRowChange,
+    onSelectionSetChange,
   }: {
     title: string;
     description?: string;
@@ -210,24 +246,44 @@ vi.mock("./PowersheetGrid", () => ({
       identity?: { rowKey?: string };
     }>;
     onSelectedRowChange?: (row: unknown) => void;
-  }) => (
-    <div>
-      <h2>{title}</h2>
-      {description ? <p>{description}</p> : null}
-      {rows && rows.length > 0 ? (
-        <>
-          <button onClick={() => onSelectedRowChange?.(rows[0])}>
-            Select first {title} row
-          </button>
-          {rows[1] ? (
-            <button onClick={() => onSelectedRowChange?.(rows[1])}>
-              Select second {title} row
+    onSelectionSetChange?: (selectionSet: {
+      focusedRowId: string | null;
+      focusedCell: null;
+      anchorCell: null;
+      ranges: [];
+      selectedRowIds: Set<string>;
+    }) => void;
+  }) => {
+    const simulateSelect = (row: { identity?: { rowKey?: string } }) => {
+      const rowKey = row.identity?.rowKey ?? null;
+      onSelectedRowChange?.(row);
+      onSelectionSetChange?.({
+        focusedRowId: rowKey,
+        focusedCell: null,
+        anchorCell: null,
+        ranges: [],
+        selectedRowIds: new Set(rowKey ? [rowKey] : []),
+      });
+    };
+    return (
+      <div>
+        <h2>{title}</h2>
+        {description ? <p>{description}</p> : null}
+        {rows && rows.length > 0 ? (
+          <>
+            <button onClick={() => simulateSelect(rows[0])}>
+              Select first {title} row
             </button>
-          ) : null}
-        </>
-      ) : null}
-    </div>
-  ),
+            {rows[1] ? (
+              <button onClick={() => simulateSelect(rows[1])}>
+                Select second {title} row
+              </button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    );
+  },
 }));
 
 vi.mock("@/components/ui/confirm-dialog", () => ({
@@ -324,25 +380,25 @@ describe("SalesSheetsPilotSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Delete Draft button", () => {
+  it("renders the overflow menu with Delete Draft, Share, and Export CSV", async () => {
     render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
 
+    const moreBtn = screen.getByRole("button", { name: /more actions/i });
+    expect(moreBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(moreBtn);
+      await Promise.resolve();
+    });
+
     expect(
-      screen.getByRole("button", { name: /^Delete Draft$/i })
+      screen.getByRole("menuitem", { name: /delete draft/i })
     ).toBeInTheDocument();
-  });
-
-  it("renders the Share button", () => {
-    render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: /share/i })).toBeInTheDocument();
-  });
-
-  it("renders the Export CSV button", () => {
-    render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
-
     expect(
-      screen.getByRole("button", { name: /export csv/i })
+      screen.getByRole("menuitem", { name: /share/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: /export csv/i })
     ).toBeInTheDocument();
   });
 
@@ -466,9 +522,21 @@ describe("SalesSheetsPilotSurface", () => {
 
     expect(mockFetchDraftById).toHaveBeenCalledWith({ draftId: 10 });
 
+    // Open overflow menu and verify Delete Draft is enabled
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /more actions/i }));
+      await Promise.resolve();
+    });
     expect(
-      screen.getByRole("button", { name: /^Delete Draft$/i })
-    ).not.toBeDisabled();
+      screen.getByRole("menuitem", { name: /delete draft/i })
+    ).not.toHaveAttribute("data-disabled");
+    // Close the menu by pressing Escape
+    await act(async () => {
+      fireEvent.keyDown(document.activeElement ?? document.body, {
+        key: "Escape",
+      });
+      await Promise.resolve();
+    });
 
     await act(async () => {
       fireEvent.click(
@@ -486,8 +554,13 @@ describe("SalesSheetsPilotSurface", () => {
 
     expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
 
+    // Open overflow menu and click Delete Draft
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /^Delete Draft$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /more actions/i }));
+      await Promise.resolve();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("menuitem", { name: /delete draft/i }));
       await Promise.resolve();
     });
 

@@ -280,6 +280,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   onSelectionSummaryChange?: (
     selectionSummary: PowersheetSelectionSummary
   ) => void;
+  rowHeight?: number;
 }
 
 export function SpreadsheetPilotGrid<Row extends object>({
@@ -323,6 +324,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
   onCellSelectionDeleteEnd,
   onSelectionSetChange,
   onSelectionSummaryChange,
+  rowHeight: rowHeightProp,
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
   const isCellRangeMode = selectionMode === "cell-range";
@@ -467,7 +469,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
               rowData={rows}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
-              rowHeight={28}
+              rowHeight={rowHeightProp ?? 28}
               headerHeight={32}
               animateRows
               rowSelection={

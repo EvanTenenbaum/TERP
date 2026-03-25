@@ -97,11 +97,11 @@ export function PowersheetGrid<Row extends object>({
     return (
       <div className="flex flex-col gap-1">
         {renderedSummary}
-        {renderedSelectionSummary}
-        {renderedSelectionState}
-        {stableDecorations.renderedAffordances}
-        {stableDecorations.renderedReleaseGates}
-        {stableDecorations.renderedAntiDrift}
+        {import.meta.env.DEV && renderedSelectionSummary}
+        {import.meta.env.DEV && renderedSelectionState}
+        {import.meta.env.DEV && stableDecorations.renderedAffordances}
+        {import.meta.env.DEV && stableDecorations.renderedReleaseGates}
+        {import.meta.env.DEV && stableDecorations.renderedAntiDrift}
       </div>
     );
   }, [selectionSet, selectionSummary, stableDecorations, summary, surfaceId]);
