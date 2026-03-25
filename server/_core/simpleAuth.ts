@@ -176,6 +176,16 @@ class SimpleAuthService {
 export const simpleAuth = new SimpleAuthService();
 
 export function registerSimpleAuthRoutes(app: Express) {
+  // BUG-W7-1: Guard against DEMO_MODE in production — this is a security risk
+  if (
+    process.env.DEMO_MODE === "true" &&
+    process.env.NODE_ENV === "production"
+  ) {
+    throw new Error(
+      "DEMO_MODE must not be enabled in production — this is a security risk"
+    );
+  }
+
   // Login endpoint
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
@@ -347,9 +357,28 @@ export function registerSimpleAuthRoutes(app: Express) {
           .json({ error: "Username and password required" });
       }
 
+      // BUG-W7-3: Enforce minimum password policy (8+ chars, at least one letter and one number)
+      if (typeof password !== "string" || password.length < 8) {
+        return res
+          .status(400)
+          .json({ error: "Password must be at least 8 characters" });
+      }
+      if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+        return res.status(400).json({
+          error: "Password must contain at least one letter and one number",
+        });
+      }
+
       const user = await simpleAuth.createUser(username, password, name);
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
+      // QA-002: Catch TOCTOU duplicate-entry race — if two concurrent requests both pass
+      // the countUsers() check, the DB unique constraint on openId will reject the second.
+      if (error instanceof Error && error.message.includes("Duplicate entry")) {
+        return res
+          .status(403)
+          .json({ error: "Users already exist. Use login instead." });
+      }
       // Error logging handled by error handling middleware
       res.status(400).json({
         error: error instanceof Error ? error.message : "Failed to create user",
