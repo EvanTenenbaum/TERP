@@ -31,7 +31,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -52,6 +52,7 @@ import {
 } from "../lib/fulfillmentStatusCompatibility";
 import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import { resolveBatchCogs } from "../cogsCalculator";
+import { validateTransition } from "../services/orderStateMachine";
 
 // ============================================================================
 // BUG-502: In-memory rate limiting for confirm endpoint
@@ -518,19 +519,18 @@ export const ordersRouter = router({
       // BUG-502: Rate limit check - 10 confirms per minute per user
       checkConfirmRateLimit(userId);
 
-      // Import sql for database arithmetic (BUG-316)
-      const { sql } = await import("drizzle-orm");
-
       // BUG-301, BUG-303, BUG-304: Wrap entire confirm logic in a transaction
       // BUG-507: Note - MySQL default isolation level is REPEATABLE READ which is adequate
       // for this use case as it prevents dirty reads and non-repeatable reads within the transaction
       // Transaction automatically rolls back on any thrown error
       return await withTransaction(async tx => {
-        // BUG-304: Fresh read of order within transaction
+        // BUG-304: Fresh read of order within transaction with row lock
+        // BUG-W6-1: .for("update") prevents race conditions on concurrent confirms
         const [order] = await tx
           .select()
           .from(orders)
           .where(eq(orders.id, input.orderId))
+          .for("update")
           .limit(1);
 
         if (!order) {
@@ -553,33 +553,22 @@ export const ordersRouter = router({
           });
         }
 
-        if (!order.isDraft) {
+        // BUG-W6-1: Use state machine for formal transition validation.
+        // Replaces ad-hoc isDraft, saleStatus=CANCELLED, and nonConfirmableStatuses checks.
+        // Draft orders use "DRAFT" as effective status regardless of DB default fulfillmentStatus
+        // (new orders default to READY_FOR_PACKING in schema, but isDraft=true means they're still DRAFT).
+        const effectiveStatus = order.isDraft
+          ? "DRAFT"
+          : (order.fulfillmentStatus ?? "DRAFT");
+        try {
+          validateTransition(effectiveStatus, "CONFIRMED", order.id);
+        } catch (err) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Order is already confirmed",
-          });
-        }
-
-        // BUG-414: Validate order status allows confirmation
-        if (order.saleStatus === "CANCELLED") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Cannot confirm a cancelled order",
-          });
-        }
-
-        // BUG-414: Check fulfillment status allows confirmation
-        const nonConfirmableStatuses = ["SHIPPED", "DELIVERED", "RETURNED"];
-        const normalizedFulfillmentStatus = normalizeFulfillmentStatus(
-          order.fulfillmentStatus
-        );
-        if (
-          normalizedFulfillmentStatus &&
-          nonConfirmableStatuses.includes(normalizedFulfillmentStatus)
-        ) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Cannot confirm order with fulfillment status: ${normalizedFulfillmentStatus}`,
+            message:
+              err instanceof Error
+                ? err.message
+                : "Invalid order state transition",
           });
         }
 
@@ -757,11 +746,13 @@ export const ordersRouter = router({
         }
 
         // BUG-303: Confirm the order (within transaction - will rollback if this fails)
+        // BUG-W6-1: Increment version for optimistic locking (DATA-005)
         await tx
           .update(orders)
           .set({
             isDraft: false,
             confirmedAt: new Date(),
+            version: sql`${orders.version} + 1`,
           })
           .where(eq(orders.id, input.orderId));
 
