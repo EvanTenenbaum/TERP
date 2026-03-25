@@ -832,6 +832,7 @@ export async function getAllBatches(limit: number = 100) {
   return await db
     .select()
     .from(batches)
+    .where(isNull(batches.deletedAt))
     .orderBy(desc(batches.createdAt))
     .limit(limit);
 }
@@ -1513,7 +1514,7 @@ export async function getAllStrains(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const conditions = [];
+  const conditions = [isNull(strains.deletedAt)];
 
   if (query) {
     conditions.push(like(strains.name, `%${query}%`));
@@ -1523,16 +1524,12 @@ export async function getAllStrains(
     conditions.push(eq(strains.category, category));
   }
 
-  if (conditions.length > 0) {
-    return await db
-      .select()
-      .from(strains)
-      .where(and(...conditions))
-      .limit(limit)
-      .orderBy(strains.name);
-  }
-
-  return await db.select().from(strains).limit(limit).orderBy(strains.name);
+  return await db
+    .select()
+    .from(strains)
+    .where(and(...conditions))
+    .limit(limit)
+    .orderBy(strains.name);
 }
 
 export async function getStrainById(id: number) {
@@ -1541,7 +1538,7 @@ export async function getStrainById(id: number) {
   const result = await db
     .select()
     .from(strains)
-    .where(eq(strains.id, id))
+    .where(and(eq(strains.id, id), isNull(strains.deletedAt)))
     .limit(1);
   return result[0] || null;
 }

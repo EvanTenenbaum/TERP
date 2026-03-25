@@ -7,7 +7,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { locations, batchLocations } from "../../drizzle/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const locationsRouter = router({
@@ -31,22 +31,32 @@ export const locationsRouter = router({
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
 
-      let query = db
-        .select()
-        .from(locations)
-        .orderBy(locations.site, locations.zone, locations.rack, locations.shelf, locations.bin)
-        .limit(limit)
-        .offset(offset);
+      let conditions = and(isNull(locations.deletedAt));
 
       if (input?.site) {
-        query = query.where(eq(locations.site, input.site)) as typeof query;
+        conditions = and(conditions, eq(locations.site, input.site));
       }
 
       if (input?.isActive !== undefined) {
-        query = query.where(eq(locations.isActive, input.isActive ? 1 : 0)) as typeof query;
+        conditions = and(
+          conditions,
+          eq(locations.isActive, input.isActive ? 1 : 0)
+        );
       }
 
-      return await query;
+      return await db
+        .select()
+        .from(locations)
+        .where(conditions)
+        .orderBy(
+          locations.site,
+          locations.zone,
+          locations.rack,
+          locations.shelf,
+          locations.bin
+        )
+        .limit(limit)
+        .offset(offset);
     }),
 
   // Get all locations
@@ -69,22 +79,32 @@ export const locationsRouter = router({
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
 
-      let query = db
-        .select()
-        .from(locations)
-        .orderBy(locations.site, locations.zone, locations.rack, locations.shelf, locations.bin)
-        .limit(limit)
-        .offset(offset);
+      let conditions = and(isNull(locations.deletedAt));
 
       if (input?.site) {
-        query = query.where(eq(locations.site, input.site)) as typeof query;
+        conditions = and(conditions, eq(locations.site, input.site));
       }
 
       if (input?.isActive !== undefined) {
-        query = query.where(eq(locations.isActive, input.isActive ? 1 : 0)) as typeof query;
+        conditions = and(
+          conditions,
+          eq(locations.isActive, input.isActive ? 1 : 0)
+        );
       }
 
-      return await query;
+      return await db
+        .select()
+        .from(locations)
+        .where(conditions)
+        .orderBy(
+          locations.site,
+          locations.zone,
+          locations.rack,
+          locations.shelf,
+          locations.bin
+        )
+        .limit(limit)
+        .offset(offset);
     }),
 
   // Get location by ID
@@ -98,7 +118,7 @@ export const locationsRouter = router({
       const [location] = await db
         .select()
         .from(locations)
-        .where(eq(locations.id, input.id));
+        .where(and(eq(locations.id, input.id), isNull(locations.deletedAt)));
 
       if (!location) {
         throw new Error("Location not found");
@@ -133,7 +153,11 @@ export const locationsRouter = router({
         isActive: input.isActive ? 1 : 0,
       });
 
-      return { id: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
+      return {
+        id: Array.isArray(result)
+          ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+          : 0,
+      };
     }),
 
   // Update location
@@ -162,7 +186,8 @@ export const locationsRouter = router({
       if (updates.rack !== undefined) updateData.rack = updates.rack;
       if (updates.shelf !== undefined) updateData.shelf = updates.shelf;
       if (updates.bin !== undefined) updateData.bin = updates.bin;
-      if (updates.isActive !== undefined) updateData.isActive = updates.isActive ? 1 : 0;
+      if (updates.isActive !== undefined)
+        updateData.isActive = updates.isActive ? 1 : 0;
 
       await db.update(locations).set(updateData).where(eq(locations.id, id));
 
@@ -177,7 +202,10 @@ export const locationsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      await db.update(locations).set({ isActive: 0 }).where(eq(locations.id, input.id));
+      await db
+        .update(locations)
+        .set({ isActive: 0 })
+        .where(eq(locations.id, input.id));
 
       return { success: true };
     }),
@@ -206,7 +234,9 @@ export const locationsRouter = router({
         .from(batchLocations);
 
       if (input.batchId) {
-        query = query.where(eq(batchLocations.batchId, input.batchId)) as typeof query;
+        query = query.where(
+          eq(batchLocations.batchId, input.batchId)
+        ) as typeof query;
       }
 
       return await query;
@@ -240,7 +270,11 @@ export const locationsRouter = router({
         qty: input.quantity,
       });
 
-      return { id: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
+      return {
+        id: Array.isArray(result)
+          ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+          : 0,
+      };
     }),
 
   // Get location inventory summary
@@ -271,7 +305,9 @@ export const locationsRouter = router({
         );
 
       if (input?.site) {
-        query = query.where(eq(batchLocations.site, input.site)) as typeof query;
+        query = query.where(
+          eq(batchLocations.site, input.site)
+        ) as typeof query;
       }
 
       return await query;
