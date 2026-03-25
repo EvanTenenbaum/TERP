@@ -227,7 +227,7 @@ export const purchaseOrdersRouter = router({
   // Create new purchase order
   // Supports both supplierClientId (canonical) and vendorId (deprecated, for backward compat)
   create: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:create"))
     .input(
       z
         .object({
@@ -579,7 +579,7 @@ export const purchaseOrdersRouter = router({
 
   // Update purchase order
   update: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number(),
@@ -613,7 +613,7 @@ export const purchaseOrdersRouter = router({
 
   // Delete purchase order
   delete: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -629,7 +629,7 @@ export const purchaseOrdersRouter = router({
 
   // Restore soft-deleted purchase order
   restore: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -644,7 +644,7 @@ export const purchaseOrdersRouter = router({
 
   // Update PO status
   updateStatus: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number(),
@@ -725,7 +725,7 @@ export const purchaseOrdersRouter = router({
 
   // Add item to PO
   addItem: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         purchaseOrderId: z
@@ -786,7 +786,7 @@ export const purchaseOrdersRouter = router({
 
   // Update PO item
   updateItem: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number().int().positive("Item ID must be a positive integer"),
@@ -871,7 +871,7 @@ export const purchaseOrdersRouter = router({
 
   // Delete PO item
   deleteItem: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -1055,7 +1055,7 @@ export const purchaseOrdersRouter = router({
 
   // Submit PO to vendor (changes status from DRAFT to SENT)
   submit: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -1100,7 +1100,7 @@ export const purchaseOrdersRouter = router({
 
   // Confirm PO (vendor has confirmed receipt, changes status from SENT to CONFIRMED)
   confirm: protectedProcedure
-    .use(requirePermission("purchase_orders:write"))
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number(),

@@ -116,7 +116,7 @@ export const calendarsManagementRouter = router({
 
   // Create a new calendar (admin only)
   create: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         name: z.string().min(1).max(255),
@@ -167,7 +167,7 @@ export const calendarsManagementRouter = router({
 
   // Update a calendar
   update: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         id: z.number(),
@@ -227,7 +227,7 @@ export const calendarsManagementRouter = router({
 
   // Archive a calendar (soft delete)
   archive: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -261,7 +261,7 @@ export const calendarsManagementRouter = router({
 
   // Restore an archived calendar
   restore: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -331,7 +331,7 @@ export const calendarsManagementRouter = router({
 
   // Add user access to a calendar
   addUser: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         calendarId: z.number(),
@@ -391,7 +391,7 @@ export const calendarsManagementRouter = router({
 
   // Remove user access from a calendar
   removeUser: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         calendarId: z.number(),
@@ -500,7 +500,7 @@ export const calendarsManagementRouter = router({
 
   // Create an appointment type
   createAppointmentType: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         calendarId: z.number(),
@@ -559,7 +559,7 @@ export const calendarsManagementRouter = router({
 
   // Update an appointment type
   updateAppointmentType: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         id: z.number(),
@@ -636,7 +636,7 @@ export const calendarsManagementRouter = router({
 
   // Delete an appointment type
   deleteAppointmentType: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -720,7 +720,7 @@ export const calendarsManagementRouter = router({
 
   // Set availability for a calendar (replaces all rules for a day)
   setAvailability: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         calendarId: z.number(),
@@ -845,7 +845,7 @@ export const calendarsManagementRouter = router({
 
   // Add a blocked date
   addBlockedDate: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(
       z.object({
         calendarId: z.number(),
@@ -889,7 +889,7 @@ export const calendarsManagementRouter = router({
 
   // Remove a blocked date
   removeBlockedDate: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:events:create"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);

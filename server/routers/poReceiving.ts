@@ -31,7 +31,7 @@ import { insertBatchWithCompatibility } from "../lib/batchInsertCompatibility";
 export const poReceivingRouter = router({
   // Receive a purchase order (create intake session and update inventory)
   receive: protectedProcedure
-    .use(requirePermission("inventory:receive"))
+    .use(requirePermission("purchase_orders:receive"))
     .input(
       z.object({
         poId: z.number(),
@@ -457,7 +457,7 @@ export const poReceivingRouter = router({
 
   // Enhanced goods receiving with batch creation and location assignment
   receiveGoodsWithBatch: protectedProcedure
-    .use(requirePermission("inventory:receive"))
+    .use(requirePermission("purchase_orders:receive"))
     .input(
       z.object({
         purchaseOrderId: z.number(),

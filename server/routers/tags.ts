@@ -108,7 +108,7 @@ export const tagsRouter = router({
    * Create a new tag
    */
   create: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:create"))
     .input(
       z.object({
         name: z.string().min(1, "Tag name is required"),
@@ -165,7 +165,7 @@ export const tagsRouter = router({
    * Update an existing tag
    */
   update: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:update"))
     .input(
       z.object({
         id: z.number(),
@@ -227,7 +227,7 @@ export const tagsRouter = router({
    * Soft delete a tag
    */
   delete: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -321,7 +321,7 @@ export const tagsRouter = router({
    * Add tags to a product
    */
   addProductTags: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         productId: z.number(),
@@ -365,7 +365,7 @@ export const tagsRouter = router({
    * Add tags to a client
    */
   addClientTags: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         clientId: z.number(),
@@ -409,7 +409,7 @@ export const tagsRouter = router({
    * Remove tags from a product
    */
   removeProductTags: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         productId: z.number(),
@@ -443,7 +443,7 @@ export const tagsRouter = router({
    * Remove tags from a client
    */
   removeClientTags: protectedProcedure
-    .use(requirePermission("tags:manage"))
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         clientId: z.number(),

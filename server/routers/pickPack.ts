@@ -539,7 +539,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
-    .use(requirePermission("warehouse:manage"))
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -708,7 +708,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
-    .use(requirePermission("warehouse:manage"))
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -817,7 +817,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
-    .use(requirePermission("warehouse:manage"))
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -971,7 +971,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
-    .use(requirePermission("warehouse:manage"))
+    .use(requirePermission("inventory:update"))
     .input(z.object({ orderId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await import("../db").then(m => m.getDb());
@@ -1055,7 +1055,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
-    .use(requirePermission("warehouse:manage"))
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),

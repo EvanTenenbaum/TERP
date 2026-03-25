@@ -375,7 +375,7 @@ export const vipPortalRouter = router({
   auth: router({
     // Login with email and password
     login: protectedProcedure
-      .use(requirePermission("vip-portal:manage"))
+      .use(requirePermission("vip_portal:clients:manage"))
       .input(
         z.object({
           email: z.string().email(),
@@ -545,7 +545,7 @@ export const vipPortalRouter = router({
 
     // Logout
     logout: protectedProcedure
-      .use(requirePermission("vip-portal:manage"))
+      .use(requirePermission("vip_portal:clients:manage"))
       .input(
         z.object({
           sessionToken: z.string(),
@@ -571,7 +571,7 @@ export const vipPortalRouter = router({
 
     // Request password reset
     requestPasswordReset: protectedProcedure
-      .use(requirePermission("vip-portal:manage"))
+      .use(requirePermission("vip_portal:clients:manage"))
       .input(
         z.object({
           email: z.string().email(),
@@ -635,7 +635,7 @@ export const vipPortalRouter = router({
 
     // Reset password with token
     resetPassword: protectedProcedure
-      .use(requirePermission("vip-portal:manage"))
+      .use(requirePermission("vip_portal:clients:manage"))
       .input(
         z.object({
           resetToken: z.string(),

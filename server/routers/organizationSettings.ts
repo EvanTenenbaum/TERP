@@ -94,7 +94,7 @@ const orgSettingsRouter = router({
 
   // Update a setting (admin only)
   update: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         key: z.string(),
@@ -145,7 +145,7 @@ const orgSettingsRouter = router({
 
   // Bulk update settings
   bulkUpdate: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         settings: z.array(
@@ -373,7 +373,7 @@ const unitTypesRouter = router({
 
   // Create unit type (admin only)
   create: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         code: z.string().min(1).max(20),
@@ -408,7 +408,7 @@ const unitTypesRouter = router({
 
   // Update unit type (admin only)
   update: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         id: z.number(),
@@ -442,7 +442,7 @@ const unitTypesRouter = router({
 
   // Delete (deactivate) unit type (admin only)
   delete: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -536,7 +536,7 @@ const financeStatusesRouter = router({
 
   // Create custom status (admin only)
   create: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         entityType: z.enum(["INVOICE", "ORDER", "PAYMENT", "BILL", "CREDIT"]),
@@ -584,7 +584,7 @@ const financeStatusesRouter = router({
 
   // Update custom status (admin only)
   update: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         id: z.number(),
@@ -638,7 +638,7 @@ const financeStatusesRouter = router({
 
   // Delete (deactivate) custom status (admin only)
   delete: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -703,7 +703,7 @@ const teamSettingsRouter = router({
    * This will affect all team members
    */
   updateTeamSetting: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(
       z.object({
         key: z.string(),
@@ -779,7 +779,7 @@ const teamSettingsRouter = router({
    * Useful when a new team member is added
    */
   applyTeamSettingsToUser: adminProcedure
-    .use(requirePermission("organization:manage"))
+    .use(requirePermission("settings:edit"))
     .input(z.object({ userId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();

@@ -175,7 +175,7 @@ export const calendarInvitationsRouter = router({
    * Create a draft invitation
    */
   createInvitation: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         eventId: z.number(),
@@ -294,7 +294,7 @@ export const calendarInvitationsRouter = router({
    * Send invitation (changes status from DRAFT to PENDING or AUTO_ACCEPTED)
    */
   sendInvitation: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -383,7 +383,7 @@ export const calendarInvitationsRouter = router({
    * Respond to invitation (accept or decline)
    */
   respondToInvitation: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -496,7 +496,7 @@ export const calendarInvitationsRouter = router({
    * Update user's invitation settings
    */
   updateInvitationSettings: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         autoAcceptAll: z.boolean().optional(),
@@ -587,7 +587,7 @@ export const calendarInvitationsRouter = router({
    * Admin override invitation status
    */
   adminOverrideInvitation: adminProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -729,7 +729,7 @@ export const calendarInvitationsRouter = router({
    * Bulk send invitations
    */
   bulkSendInvitations: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         eventId: z.number(),
@@ -857,7 +857,7 @@ export const calendarInvitationsRouter = router({
    * Cancel invitation
    */
   cancelInvitation: protectedProcedure
-    .use(requirePermission("calendar:manage"))
+    .use(requirePermission("calendar:participants:add"))
     .input(
       z.object({
         invitationId: z.number(),
