@@ -1,4 +1,5 @@
 import { eq, and, sql } from "drizzle-orm";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import { getDb } from "./db";
 import {
   clientNeeds,
@@ -108,6 +109,28 @@ const matchingProductSelection = {
   subcategory: products.subcategory,
   strainId: products.strainId,
 };
+
+/** Shape returned by drizzle for matchingBatchSelection rows */
+type MatchingBatch = {
+  id: number;
+  code: string;
+  sku: string;
+  grade: string | null;
+  cogsMode: "FIXED" | "RANGE";
+  unitCogs: string | null;
+  unitCogsMin: string | null;
+  unitCogsMax: string | null;
+  onHandQty: string;
+};
+
+/** Shape returned by drizzle for matchingProductSelection rows (nullable due to leftJoin) */
+type MatchingProduct = {
+  id: number;
+  nameCanonical: string | null;
+  category: string | null;
+  subcategory: string | null;
+  strainId: number | null;
+} | null;
 
 /**
  * Calculate match confidence based on field matches
@@ -369,8 +392,7 @@ async function calculateMatchConfidence(
 /**
  * Get batch with product details for matching
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getBatchWithProduct(db: any, batchId: number) {
+async function getBatchWithProduct(db: MySql2Database<Record<string, unknown>>, batchId: number) {
   const [batch] = await db
     .select({
       batch: matchingBatchSelection,
@@ -387,10 +409,8 @@ async function getBatchWithProduct(db: any, batchId: number) {
  * Calculate selling price for a batch for a specific client
  */
 async function calculateBatchSellingPrice(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  batch: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  product: any,
+  batch: MatchingBatch,
+  product: MatchingProduct,
   clientId: number
 ): Promise<number | null> {
   try {
@@ -413,12 +433,12 @@ async function calculateBatchSellingPrice(
     // Create inventory item for pricing calculation
     const inventoryItem: InventoryItem = {
       id: batch.id,
-      name: product?.nameCanonical || "Unknown",
-      category: product?.category,
-      subcategory: product?.subcategory,
+      name: product?.nameCanonical ?? "Unknown",
+      category: product?.category ?? undefined,
+      subcategory: product?.subcategory ?? undefined,
       strain: product?.strainId ? String(product.strainId) : undefined, // Would need strain name lookup
       basePrice,
-      grade: batch.grade,
+      grade: batch.grade ?? undefined,
     };
 
     // Calculate retail price
