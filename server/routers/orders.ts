@@ -15,6 +15,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { hasPermission, isSuperAdmin } from "../services/permissionService";
 import { parseMoneyOrZero } from "../utils/money";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
@@ -464,7 +465,7 @@ export const ordersRouter = router({
   delete: protectedProcedure
     .use(requirePermission("orders:delete"))
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // TER-252: Verify order exists before deleting
       const existing = await ordersDb.getOrderById(input.id);
 
@@ -473,6 +474,22 @@ export const ordersRouter = router({
           code: "NOT_FOUND",
           message: `Order with ID ${input.id} not found`,
         });
+      }
+
+      // BUG-W5-6: Confirmed orders require elevated permission to delete
+      if (!existing.isDraft) {
+        const userId = ctx.user?.openId ?? "";
+        const isSA = await isSuperAdmin(userId);
+        if (!isSA) {
+          const canManage = await hasPermission(userId, "orders:manage");
+          if (!canManage) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "Deleting a confirmed order requires the orders:manage permission",
+            });
+          }
+        }
       }
 
       const rowsAffected = await softDelete(orders, input.id);
@@ -1009,72 +1026,76 @@ export const ordersRouter = router({
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
 
-      // Create order
-      const [orderResult] = await db.insert(orders).values({
-        orderNumber,
-        orderType: input.orderType,
-        clientId: input.clientId,
-        clientNeedId: input.clientNeedId ?? null,
-        isDraft: true,
-        referredByClientId: input.referredByClientId ?? null,
-        isReferralOrder: Boolean(input.referredByClientId),
-        items: JSON.stringify(
-          lineItemsWithPrices.map(item => ({
-            batchId: item.batchId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            isSample: item.isSample,
-          }))
-        ),
-        total: totals.finalTotal.toString(),
-        subtotal: totals.subtotal.toString(),
-        avgMarginPercent: totals.avgMarginPercent.toString(),
-        notes: input.notes || null,
-        validUntil: input.validUntil ? new Date(input.validUntil) : null,
-        paymentTerms: resolvedPaymentTerms,
-        cashPayment: input.cashPayment?.toString() || null,
-        createdBy: userId,
+      // Create order + line items atomically
+      const { orderId } = await withTransaction(async tx => {
+        const [orderResult] = await tx.insert(orders).values({
+          orderNumber,
+          orderType: input.orderType,
+          clientId: input.clientId,
+          clientNeedId: input.clientNeedId ?? null,
+          isDraft: true,
+          referredByClientId: input.referredByClientId ?? null,
+          isReferralOrder: Boolean(input.referredByClientId),
+          items: JSON.stringify(
+            lineItemsWithPrices.map(item => ({
+              batchId: item.batchId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              isSample: item.isSample,
+            }))
+          ),
+          total: totals.finalTotal.toString(),
+          subtotal: totals.subtotal.toString(),
+          avgMarginPercent: totals.avgMarginPercent.toString(),
+          notes: input.notes || null,
+          validUntil: input.validUntil ? new Date(input.validUntil) : null,
+          paymentTerms: resolvedPaymentTerms,
+          cashPayment: input.cashPayment?.toString() || null,
+          createdBy: userId,
+        });
+
+        const newOrderId = orderResult.insertId;
+
+        // Create line items
+        await Promise.all(
+          lineItemsWithPrices.map(item =>
+            tx.insert(orderLineItems).values({
+              orderId: newOrderId,
+              batchId: item.batchId,
+              productDisplayName: item.productDisplayName || null,
+              quantity: item.quantity.toString(),
+              isSample: item.isSample,
+              cogsPerUnit: item.cogsPerUnit.toString(),
+              originalCogsPerUnit: item.originalCogsPerUnit.toString(),
+              effectiveCogsBasis: item.effectiveCogsBasis,
+              originalRangeMin:
+                item.originalRangeMin !== null &&
+                item.originalRangeMin !== undefined
+                  ? item.originalRangeMin.toString()
+                  : null,
+              originalRangeMax:
+                item.originalRangeMax !== null &&
+                item.originalRangeMax !== undefined
+                  ? item.originalRangeMax.toString()
+                  : null,
+              isBelowVendorRange: item.isBelowVendorRange,
+              belowRangeReason: item.belowRangeReason || null,
+              marginPercent: item.marginPercent.toString(),
+              marginDollar: item.marginDollar.toString(),
+              isCogsOverridden: item.isCogsOverridden,
+              cogsOverrideReason: item.cogsOverrideReason || null,
+              isMarginOverridden: item.isMarginOverridden,
+              marginSource: item.marginSource,
+              unitPrice: item.unitPrice.toString(),
+              lineTotal: item.lineTotal.toString(),
+            })
+          )
+        );
+
+        return { orderId: newOrderId };
       });
 
-      const orderId = orderResult.insertId;
-
-      // Create line items
-      await Promise.all(
-        lineItemsWithPrices.map(item =>
-          db.insert(orderLineItems).values({
-            orderId,
-            batchId: item.batchId,
-            productDisplayName: item.productDisplayName || null,
-            quantity: item.quantity.toString(),
-            isSample: item.isSample,
-            cogsPerUnit: item.cogsPerUnit.toString(),
-            originalCogsPerUnit: item.originalCogsPerUnit.toString(),
-            effectiveCogsBasis: item.effectiveCogsBasis,
-            originalRangeMin:
-              item.originalRangeMin !== null &&
-              item.originalRangeMin !== undefined
-                ? item.originalRangeMin.toString()
-                : null,
-            originalRangeMax:
-              item.originalRangeMax !== null &&
-              item.originalRangeMax !== undefined
-                ? item.originalRangeMax.toString()
-                : null,
-            isBelowVendorRange: item.isBelowVendorRange,
-            belowRangeReason: item.belowRangeReason || null,
-            marginPercent: item.marginPercent.toString(),
-            marginDollar: item.marginDollar.toString(),
-            isCogsOverridden: item.isCogsOverridden,
-            cogsOverrideReason: item.cogsOverrideReason || null,
-            isMarginOverridden: item.isMarginOverridden,
-            marginSource: item.marginSource,
-            unitPrice: item.unitPrice.toString(),
-            lineTotal: item.lineTotal.toString(),
-          })
-        )
-      );
-
-      // Log audit entry
+      // Log audit entry (outside transaction — non-critical side effect)
       await orderAuditService.logOrderCreation(orderId, userId, {
         orderType: input.orderType,
         clientId: input.clientId,
@@ -2257,8 +2278,15 @@ export const ordersRouter = router({
           // TER-259: Release reservation AND decrement onHandQty atomically on shipment.
           // reservedQty was incremented at confirmation (soft lock); now we release it
           // and record the actual physical deduction against onHandQty.
+          // W6-3: Throw instead of silently clamping to prevent phantom inventory.
+          if (currentOnHand - allocatedQty < 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient inventory on batch ${allocation.batchId}: on-hand ${currentOnHand}, requested ${allocatedQty}`,
+            });
+          }
           const newReserved = Math.max(0, currentReserved - allocatedQty);
-          const newOnHand = Math.max(0, currentOnHand - allocatedQty);
+          const newOnHand = currentOnHand - allocatedQty;
 
           await tx
             .update(batches)
