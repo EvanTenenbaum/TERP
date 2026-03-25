@@ -140,21 +140,6 @@ export async function softDeleteEvent(eventId: number) {
 }
 
 /**
- * Soft delete event (sets deletedAt timestamp)
- */
-export async function hardDeleteEvent(eventId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  await db
-    .update(calendarEvents)
-    .set({ deletedAt: new Date() })
-    .where(eq(calendarEvents.id, eventId));
-
-  return { success: true };
-}
-
-/**
  * Get events by entity
  */
 export async function getEventsByEntity(entityType: string, entityId: number) {

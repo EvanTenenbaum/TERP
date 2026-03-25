@@ -19,6 +19,7 @@ import { eq, sql, and } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
+import type { DbTransaction } from "../_core/dbTransaction";
 
 interface OrderItem {
   batchId: number;
@@ -456,8 +457,7 @@ export async function restoreInventoryFromOrder(input: {
  * @param input - Items to restore and order ID
  */
 export async function restoreInventoryFromOrderTx(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
+  tx: DbTransaction,
   input: {
     items: OrderItem[];
     orderId: number;
@@ -573,8 +573,7 @@ export async function reverseOrderAccountingEntries(input: {
  * @param input - Invoice ID, order ID, reason, and user ID
  */
 export async function reverseOrderAccountingEntriesTx(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
+  tx: DbTransaction,
   input: {
     invoiceId: number;
     orderId: number;
@@ -639,8 +638,7 @@ export async function reverseOrderAccountingEntriesTx(
  * @returns The created invoice ID
  */
 export async function createInvoiceFromOrderTx(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
+  tx: DbTransaction,
   input: CreateInvoiceFromOrderInput
 ): Promise<number> {
   const {
@@ -804,8 +802,7 @@ export async function createInvoiceFromOrderTx(
  * @returns The created payment ID or null if amount <= 0
  */
 export async function recordOrderCashPaymentTx(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
+  tx: DbTransaction,
   input: {
     invoiceId: number;
     amount: number;
