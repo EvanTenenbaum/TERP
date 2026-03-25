@@ -2184,7 +2184,7 @@ export const vipPortalRouter = router({
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
-        .where(inArray(batches.id, batchIds));
+        .where(and(inArray(batches.id, batchIds), isNull(batches.deletedAt)));
 
       // Get client pricing
       const clientRules = await pricingEngine.getClientPricingRules(clientId);
@@ -2292,7 +2292,7 @@ export const vipPortalRouter = router({
 
         // Check if batch exists
         const batch = await db.query.batches.findFirst({
-          where: eq(batches.id, input.batchId),
+          where: and(eq(batches.id, input.batchId), isNull(batches.deletedAt)),
         });
 
         if (!batch) {
@@ -2446,7 +2446,7 @@ export const vipPortalRouter = router({
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
-        .where(inArray(batches.id, batchIds));
+        .where(and(inArray(batches.id, batchIds), isNull(batches.deletedAt)));
 
       // Get client pricing
       const clientRules = await pricingEngine.getClientPricingRules(clientId);

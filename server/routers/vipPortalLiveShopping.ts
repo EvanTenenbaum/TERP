@@ -6,7 +6,7 @@ import {
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { batches, products } from "../../drizzle/schema";
-import { eq, and, or, like, gt, sql } from "drizzle-orm";
+import { eq, and, or, like, gt, sql, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
@@ -214,7 +214,7 @@ export const vipPortalLiveShoppingRouter = router({
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .where(eq(batches.id, input.batchId))
+        .where(and(eq(batches.id, input.batchId), isNull(batches.deletedAt)))
         .limit(1);
 
       if (!result.length) {
@@ -558,7 +558,8 @@ export const vipPortalLiveShoppingRouter = router({
               like(products.nameCanonical, `%${trimmedQuery}%`),
               like(batches.code, `%${trimmedQuery}%`)
             ),
-            gt(batches.onHandQty, "0") // Only show in-stock items (onHandQty is varchar)
+            gt(batches.onHandQty, "0"), // Only show in-stock items (onHandQty is varchar)
+            isNull(batches.deletedAt)
           )
         )
         .limit(15);

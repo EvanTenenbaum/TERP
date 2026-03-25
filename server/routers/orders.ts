@@ -31,7 +31,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -197,7 +197,7 @@ async function getDraftBatchPricingContext(
     .innerJoin(products, eq(batches.productId, products.id))
     .innerJoin(lots, eq(batches.lotId, lots.id))
     .leftJoin(clients, eq(lots.supplierClientId, clients.id))
-    .where(eq(batches.id, batchId))
+    .where(and(eq(batches.id, batchId), isNull(batches.deletedAt)))
     .limit(1)
     .then(rows => rows[0]);
 
@@ -618,7 +618,9 @@ export const ordersRouter = router({
         const batchRecords = await tx
           .select(batchSelect)
           .from(batches)
-          .where(safeInArray(batches.id, batchIds))
+          .where(
+            and(safeInArray(batches.id, batchIds), isNull(batches.deletedAt))
+          )
           .for("update");
 
         const batchMap = new Map(batchRecords.map(batch => [batch.id, batch]));
@@ -952,7 +954,8 @@ export const ordersRouter = router({
           }
 
           const providedUnitPrice =
-            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+            typeof item.unitPrice === "number" &&
+            Number.isFinite(item.unitPrice)
               ? item.unitPrice
               : null;
           const unitPrice =
@@ -1197,7 +1200,8 @@ export const ordersRouter = router({
           }
 
           const providedUnitPrice =
-            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+            typeof item.unitPrice === "number" &&
+            Number.isFinite(item.unitPrice)
               ? item.unitPrice
               : null;
           const unitPrice =
@@ -1417,7 +1421,9 @@ export const ordersRouter = router({
               sampleQty: batches.sampleQty,
             })
             .from(batches)
-            .where(safeInArray(batches.id, batchIds))
+            .where(
+              and(safeInArray(batches.id, batchIds), isNull(batches.deletedAt))
+            )
             .for("update");
 
           const batchMap = new Map(batchRecords.map(b => [b.id, b]));
@@ -1575,7 +1581,12 @@ export const ordersRouter = router({
                 unitCogsMax: batches.unitCogsMax,
               })
               .from(batches)
-              .where(safeInArray(batches.id, batchIds))
+              .where(
+                and(
+                  safeInArray(batches.id, batchIds),
+                  isNull(batches.deletedAt)
+                )
+              )
           : [];
       const batchMetadataById = new Map(
         batchMetadata.map(batch => [
@@ -2016,7 +2027,9 @@ export const ordersRouter = router({
           const batchRecords = await tx
             .select(batchSelect)
             .from(batches)
-            .where(safeInArray(batches.id, batchIds))
+            .where(
+              and(safeInArray(batches.id, batchIds), isNull(batches.deletedAt))
+            )
             .for("update");
 
           const batchMap = new Map(batchRecords.map(b => [b.id, b]));
@@ -2232,7 +2245,9 @@ export const ordersRouter = router({
           const [batch] = await tx
             .select(batchSelect)
             .from(batches)
-            .where(eq(batches.id, allocation.batchId))
+            .where(
+              and(eq(batches.id, allocation.batchId), isNull(batches.deletedAt))
+            )
             .for("update")
             .limit(1);
 
@@ -2575,7 +2590,9 @@ export const ordersRouter = router({
       const batchRows = await db
         .select({ lotId: batches.lotId })
         .from(batches)
-        .where(safeInArray(batches.id, batchIdList));
+        .where(
+          and(safeInArray(batches.id, batchIdList), isNull(batches.deletedAt))
+        );
 
       const lotIds = Array.from(new Set(batchRows.map(batch => batch.lotId)));
       if (lotIds.length === 0) {
@@ -2730,7 +2747,9 @@ export const ordersRouter = router({
           const [batch] = await tx
             .select({ reservedQty: batches.reservedQty })
             .from(batches)
-            .where(eq(batches.id, existing.batchId))
+            .where(
+              and(eq(batches.id, existing.batchId), isNull(batches.deletedAt))
+            )
             .for("update")
             .limit(1);
 
@@ -2777,7 +2796,9 @@ export const ordersRouter = router({
           const [batch] = await tx
             .select(batchSelect)
             .from(batches)
-            .where(eq(batches.id, alloc.batchId))
+            .where(
+              and(eq(batches.id, alloc.batchId), isNull(batches.deletedAt))
+            )
             .for("update")
             .limit(1);
 
@@ -2922,7 +2943,13 @@ export const ordersRouter = router({
           batchGrade: batches.grade,
         })
         .from(orderLineItemAllocations)
-        .leftJoin(batches, eq(orderLineItemAllocations.batchId, batches.id))
+        .leftJoin(
+          batches,
+          and(
+            eq(orderLineItemAllocations.batchId, batches.id),
+            isNull(batches.deletedAt)
+          )
+        )
         .where(eq(orderLineItemAllocations.orderLineItemId, input.lineItemId));
 
       return allocations.map(alloc => ({
