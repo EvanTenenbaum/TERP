@@ -631,7 +631,7 @@ export function SalesSheetsPilotSurface({
     const filtered = searchLower
       ? all.filter(
           item =>
-            item.name.toLowerCase().includes(searchLower) ||
+            (item.name ?? "").toLowerCase().includes(searchLower) ||
             (item.category ?? "").toLowerCase().includes(searchLower) ||
             (item.vendor ?? "").toLowerCase().includes(searchLower)
         )
