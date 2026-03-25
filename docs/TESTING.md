@@ -4,6 +4,32 @@
 
 ---
 
+## Local DB Auto-Bootstrap
+
+Local TERP verification now auto-bootstrap the shared MySQL test DB by default.
+
+- `pnpm dev` will start the local test DB when no remote DB URL is configured, run schema push, and seed the baseline dataset only if the local DB is empty or broken.
+- `pnpm test`, `pnpm test:watch`, and `pnpm test:coverage` now reset to a clean light dataset before running so local coverage is more complete and less dependent on tribal setup knowledge.
+- `pnpm test:e2e` still uses a fresh full reset for deterministic browser runs.
+- Remote or live DB mode still wins when `TEST_DATABASE_URL` or `DATABASE_URL` points off-host. In that case the repo only runs connectivity preflight and does not touch Docker.
+
+Useful commands:
+
+```bash
+pnpm test:db:ensure        # Start/migrate/seed local DB only when needed
+pnpm test:db:fresh         # Force a clean light reset
+pnpm test:db:ensure:full   # Ensure full dataset is available
+pnpm test:db:fresh:full    # Force a clean full reset
+pnpm db:status             # Show target URL, container state, and baseline readiness
+```
+
+Opt-outs:
+
+- Set `SKIP_LOCAL_DB_BOOTSTRAP=1` to bypass the repo-level auto-bootstrap wrapper.
+- Set `TEST_DB_AUTO_STOP=1` if you want integration-test teardown to stop the local container instead of leaving it warm for reuse.
+
+---
+
 ## Quick Reference: What to Run When
 
 | Situation              | Command                                                           | Time    |

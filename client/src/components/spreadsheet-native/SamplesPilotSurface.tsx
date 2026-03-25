@@ -385,7 +385,7 @@ export function SamplesPilotSurface({
           status,
           lane: getSampleOperatorLane(status),
           requestedDate,
-          dueDate: extractDueDate(sample.notes),
+          dueDate: sample.dueDate ?? extractDueDate(sample.notes),
           location: normalizeLocation(sample.location),
           expirationDate: sample.expirationDate
             ? typeof sample.expirationDate === "string"

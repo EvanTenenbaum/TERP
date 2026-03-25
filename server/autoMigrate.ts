@@ -147,6 +147,24 @@ const FINGERPRINT_CANARIES = [
         AND COLUMN_NAME = 'effective_cogs_basis'
     )`,
   },
+  {
+    key: "returns.status.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'returns'
+        AND COLUMN_NAME = 'status'
+    )`,
+  },
+  {
+    key: "sampleRequests.dueDate.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'sampleRequests'
+        AND COLUMN_NAME = 'dueDate'
+    )`,
+  },
 ] as const;
 
 export const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
@@ -2747,7 +2765,9 @@ export async function runAutoMigrations() {
           INSERT INTO range_pricing_channel_settings (channel, default_basis)
           VALUES (${channel}, 'MID')
         `);
-        console.info(`  ✅ Seeded range_pricing_channel_settings for ${channel}`);
+        console.info(
+          `  ✅ Seeded range_pricing_channel_settings for ${channel}`
+        );
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate entry")) {
@@ -2766,28 +2786,23 @@ export async function runAutoMigrations() {
     const orderLineItemColumns = [
       {
         name: "effective_cogs_basis",
-        ddl:
-          "ALTER TABLE order_line_items ADD COLUMN effective_cogs_basis ENUM('LOW', 'MID', 'HIGH', 'MANUAL') NOT NULL DEFAULT 'MANUAL'",
+        ddl: "ALTER TABLE order_line_items ADD COLUMN effective_cogs_basis ENUM('LOW', 'MID', 'HIGH', 'MANUAL') NOT NULL DEFAULT 'MANUAL'",
       },
       {
         name: "original_range_min",
-        ddl:
-          "ALTER TABLE order_line_items ADD COLUMN original_range_min DECIMAL(15,4) NULL",
+        ddl: "ALTER TABLE order_line_items ADD COLUMN original_range_min DECIMAL(15,4) NULL",
       },
       {
         name: "original_range_max",
-        ddl:
-          "ALTER TABLE order_line_items ADD COLUMN original_range_max DECIMAL(15,4) NULL",
+        ddl: "ALTER TABLE order_line_items ADD COLUMN original_range_max DECIMAL(15,4) NULL",
       },
       {
         name: "is_below_vendor_range",
-        ddl:
-          "ALTER TABLE order_line_items ADD COLUMN is_below_vendor_range BOOLEAN NOT NULL DEFAULT FALSE",
+        ddl: "ALTER TABLE order_line_items ADD COLUMN is_below_vendor_range BOOLEAN NOT NULL DEFAULT FALSE",
       },
       {
         name: "below_range_reason",
-        ddl:
-          "ALTER TABLE order_line_items ADD COLUMN below_range_reason TEXT NULL",
+        ddl: "ALTER TABLE order_line_items ADD COLUMN below_range_reason TEXT NULL",
       },
     ] as const;
 
@@ -2805,6 +2820,71 @@ export async function runAutoMigrations() {
             "order_line_items column migration failed"
           );
         }
+      }
+    }
+
+    // DISC-RET-002: Add dedicated status column to returns table
+    try {
+      await db.execute(
+        sql`ALTER TABLE returns ADD COLUMN status ENUM('PENDING','APPROVED','REJECTED','RECEIVED','PROCESSED','CANCELLED') NOT NULL DEFAULT 'PENDING' AFTER returnReason`
+      );
+      console.info("  ✅ Added status column to returns");
+      // Backfill: mark existing returns as PROCESSED
+      await db.execute(
+        sql`UPDATE returns SET status = 'PROCESSED' WHERE processed_at IS NOT NULL AND status = 'PENDING'`
+      );
+      console.info("  ✅ Backfilled returns.status for existing rows");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  returns.status already exists");
+      } else {
+        console.info("  ⚠️  returns.status:", errMsg);
+      }
+    }
+
+    // DISC-RET-002: Add index on returns.status
+    try {
+      await db.execute(
+        sql`CREATE INDEX idx_returns_status ON returns (status)`
+      );
+      console.info("  ✅ Added idx_returns_status index");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate key name")) {
+        console.info("  ℹ️  idx_returns_status already exists");
+      } else {
+        console.info("  ⚠️  idx_returns_status:", errMsg);
+      }
+    }
+
+    // DISC-SAM-003: Add dedicated dueDate column to sampleRequests table
+    try {
+      await db.execute(
+        sql`ALTER TABLE sampleRequests ADD COLUMN dueDate DATE NULL AFTER notes`
+      );
+      console.info("  ✅ Added dueDate column to sampleRequests");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  sampleRequests.dueDate already exists");
+      } else {
+        console.info("  ⚠️  sampleRequests.dueDate:", errMsg);
+      }
+    }
+
+    // DISC-SAM-003: Add index on sampleRequests.dueDate
+    try {
+      await db.execute(
+        sql`CREATE INDEX idx_sample_requests_due_date ON sampleRequests (dueDate)`
+      );
+      console.info("  ✅ Added idx_sample_requests_due_date index");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate key name")) {
+        console.info("  ℹ️  idx_sample_requests_due_date already exists");
+      } else {
+        console.info("  ⚠️  idx_sample_requests_due_date:", errMsg);
       }
     }
 
