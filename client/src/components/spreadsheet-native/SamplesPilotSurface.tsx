@@ -586,56 +586,50 @@ export function SamplesPilotSurface({
   );
 
   const handleFulfillConfirm = useCallback(() => {
-    if (!user?.id || selectedSampleId === null) return;
+    if (selectedSampleId === null) return;
     fulfillMutation.mutate({
       requestId: selectedSampleId,
-      fulfilledBy: user.id,
     });
-  }, [fulfillMutation, selectedSampleId, user?.id]);
+  }, [fulfillMutation, selectedSampleId]);
 
   const handleDeleteConfirm = useCallback(() => {
-    if (!user?.id || selectedSampleId === null) return;
+    if (selectedSampleId === null) return;
     deleteMutation.mutate({
       requestId: selectedSampleId,
-      cancelledBy: user.id,
       reason: "Cancelled via Sample sheet-native surface",
     });
-  }, [deleteMutation, selectedSampleId, user?.id]);
+  }, [deleteMutation, selectedSampleId]);
 
   const handleApproveReturn = useCallback(() => {
-    if (!user?.id || selectedSampleId === null) return;
+    if (selectedSampleId === null) return;
     approveReturnMutation.mutate({
       requestId: selectedSampleId,
-      approvedBy: user.id,
     });
-  }, [approveReturnMutation, selectedSampleId, user?.id]);
+  }, [approveReturnMutation, selectedSampleId]);
 
   const handleCompleteReturn = useCallback(() => {
-    if (!user?.id || selectedSampleId === null) return;
+    if (selectedSampleId === null) return;
     completeReturnMutation.mutate({
       requestId: selectedSampleId,
-      completedBy: user.id,
     });
-  }, [completeReturnMutation, selectedSampleId, user?.id]);
+  }, [completeReturnMutation, selectedSampleId]);
 
   const handleConfirmVendorReturn = useCallback(() => {
-    if (!user?.id || selectedSampleId === null) return;
+    if (selectedSampleId === null) return;
     confirmVendorReturnMutation.mutate({
       requestId: selectedSampleId,
-      confirmedBy: user.id,
     });
-  }, [confirmVendorReturnMutation, selectedSampleId, user?.id]);
+  }, [confirmVendorReturnMutation, selectedSampleId]);
 
   const handleReturnSubmit = useCallback(
     async (values: SampleReturnFormValues) => {
-      if (!user?.id || selectedSampleId === null) {
+      if (selectedSampleId === null) {
         toast.error("You need to be logged in.");
         return;
       }
       if (returnDialogType === "sample") {
         await requestReturnMutation.mutateAsync({
           requestId: selectedSampleId,
-          requestedBy: user.id,
           reason: values.reason,
           condition: values.condition,
           returnDate: values.returnDate,
@@ -643,7 +637,6 @@ export function SamplesPilotSurface({
       } else {
         await requestVendorReturnMutation.mutateAsync({
           requestId: selectedSampleId,
-          requestedBy: user.id,
           reason: values.reason,
         });
       }
@@ -653,39 +646,36 @@ export function SamplesPilotSurface({
       requestVendorReturnMutation,
       returnDialogType,
       selectedSampleId,
-      user?.id,
     ]
   );
 
   const handleVendorShipSubmit = useCallback(
     async (values: VendorShipFormValues) => {
-      if (!user?.id || selectedSampleId === null) {
+      if (selectedSampleId === null) {
         toast.error("You need to be logged in.");
         return;
       }
       await shipToVendorMutation.mutateAsync({
         requestId: selectedSampleId,
-        shippedBy: user.id,
         trackingNumber: values.trackingNumber,
       });
     },
-    [shipToVendorMutation, selectedSampleId, user?.id]
+    [shipToVendorMutation, selectedSampleId]
   );
 
   const handleLocationSubmit = useCallback(
     async (values: LocationUpdateFormValues) => {
-      if (!user?.id || selectedSampleId === null) {
+      if (selectedSampleId === null) {
         toast.error("You need to be logged in.");
         return;
       }
       await updateLocationMutation.mutateAsync({
         requestId: selectedSampleId,
         location: values.location,
-        changedBy: user.id,
         notes: values.notes,
       });
     },
-    [updateLocationMutation, selectedSampleId, user?.id]
+    [updateLocationMutation, selectedSampleId]
   );
 
   const handleOpenLocationDialog = useCallback(() => {

@@ -493,9 +493,10 @@ export const pricingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const createdBy = getAuthenticatedUserId(ctx);
       return await pricingEngine.createPricingProfile({
         ...input,
-        createdBy: ctx.user?.id,
+        createdBy,
       });
     }),
 

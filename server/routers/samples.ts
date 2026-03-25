@@ -79,7 +79,7 @@ export const samplesRouter = router({
         .optional()
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id;
+      const userId = getAuthenticatedUserId(ctx);
       const limit = input?.limit ?? 50;
       const offset = input?.offset ?? 0;
 
@@ -170,14 +170,11 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        fulfilledBy: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await samplesDb.fulfillSampleRequest(
-        input.requestId,
-        input.fulfilledBy
-      );
+    .mutation(async ({ input, ctx }) => {
+      const fulfilledBy = getAuthenticatedUserId(ctx);
+      return await samplesDb.fulfillSampleRequest(input.requestId, fulfilledBy);
     }),
 
   // Cancel a sample request
@@ -186,14 +183,14 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        cancelledBy: z.number(),
         reason: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const cancelledBy = getAuthenticatedUserId(ctx);
       return await samplesDb.cancelSampleRequest(
         input.requestId,
-        input.cancelledBy,
+        cancelledBy,
         input.reason
       );
     }),
@@ -395,16 +392,16 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        requestedBy: z.number(),
         reason: z.string().min(1, "Reason is required"),
         condition: returnConditionSchema,
         returnDate: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const requestedBy = getAuthenticatedUserId(ctx);
       return await samplesDb.requestSampleReturn(
         input.requestId,
-        input.requestedBy,
+        requestedBy,
         input.reason,
         input.condition,
         input.returnDate ? new Date(input.returnDate) : undefined
@@ -417,14 +414,11 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        approvedBy: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await samplesDb.approveSampleReturn(
-        input.requestId,
-        input.approvedBy
-      );
+    .mutation(async ({ input, ctx }) => {
+      const approvedBy = getAuthenticatedUserId(ctx);
+      return await samplesDb.approveSampleReturn(input.requestId, approvedBy);
     }),
 
   // Complete a sample return
@@ -433,14 +427,11 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        completedBy: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await samplesDb.completeSampleReturn(
-        input.requestId,
-        input.completedBy
-      );
+    .mutation(async ({ input, ctx }) => {
+      const completedBy = getAuthenticatedUserId(ctx);
+      return await samplesDb.completeSampleReturn(input.requestId, completedBy);
     }),
 
   // ============================================================================
@@ -453,14 +444,14 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        requestedBy: z.number(),
         reason: z.string().min(1, "Reason is required"),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const requestedBy = getAuthenticatedUserId(ctx);
       return await samplesDb.requestVendorReturn(
         input.requestId,
-        input.requestedBy,
+        requestedBy,
         input.reason
       );
     }),
@@ -471,14 +462,14 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        shippedBy: z.number(),
         trackingNumber: z.string().min(1, "Tracking number is required"),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const shippedBy = getAuthenticatedUserId(ctx);
       return await samplesDb.shipToVendor(
         input.requestId,
-        input.shippedBy,
+        shippedBy,
         input.trackingNumber
       );
     }),
@@ -489,14 +480,11 @@ export const samplesRouter = router({
     .input(
       z.object({
         requestId: z.number(),
-        confirmedBy: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await samplesDb.confirmVendorReturn(
-        input.requestId,
-        input.confirmedBy
-      );
+    .mutation(async ({ input, ctx }) => {
+      const confirmedBy = getAuthenticatedUserId(ctx);
+      return await samplesDb.confirmVendorReturn(input.requestId, confirmedBy);
     }),
 
   // ============================================================================
@@ -510,15 +498,15 @@ export const samplesRouter = router({
       z.object({
         requestId: z.number(),
         location: sampleLocationSchema,
-        changedBy: z.number(),
         notes: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const changedBy = getAuthenticatedUserId(ctx);
       return await samplesDb.updateSampleLocation(
         input.requestId,
         input.location,
-        input.changedBy,
+        changedBy,
         input.notes
       );
     }),
@@ -581,7 +569,7 @@ export const samplesRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id;
+      const userId = getAuthenticatedUserId(ctx);
       const limit = input.limit || 100;
 
       logger.info(

@@ -1,12 +1,16 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
-import { 
-  roles, 
-  permissions, 
+import {
+  roles,
+  permissions,
   rolePermissions,
-  userRoles 
+  userRoles,
 } from "../../drizzle/schema";
 import { eq, inArray, and, sql } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -14,7 +18,7 @@ import { clearPermissionCache } from "../services/permissionService";
 
 /**
  * RBAC Roles Router
- * 
+ *
  * This router provides endpoints for managing roles and their permission assignments.
  * All endpoints require appropriate RBAC permissions.
  */
@@ -26,16 +30,17 @@ export const rbacRolesRouter = router({
    */
   list: protectedProcedure
     .use(requirePermission("rbac:roles:read"))
-    .input(z.object({
-      limit: z.number().optional().default(100),
-      offset: z.number().optional().default(0),
-      includeSystemRoles: z.boolean().optional().default(true),
-    }))
+    .input(
+      z.object({
+        limit: z.number().optional().default(100),
+        offset: z.number().optional().default(0),
+        includeSystemRoles: z.boolean().optional().default(true),
+      })
+    )
     .query(async ({ input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-
 
         // Get all roles - use conditional where clause
         const roleRecords = !input.includeSystemRoles
@@ -67,33 +72,41 @@ export const rbacRolesRouter = router({
 
         // Get permission counts for each role
         const roleIds = roleRecords.map(r => r.id);
-        
-        const permissionCounts = roleIds.length > 0
-          ? await db
-              .select({
-                roleId: rolePermissions.roleId,
-                count: sql<number>`COUNT(*)`.as('count'),
-              })
-              .from(rolePermissions)
-              .where(inArray(rolePermissions.roleId, roleIds))
-              .groupBy(rolePermissions.roleId)
-          : [];
 
-        const countMap = new Map(permissionCounts.map(pc => [pc.roleId, Number(pc.count)]));
+        const permissionCounts =
+          roleIds.length > 0
+            ? await db
+                .select({
+                  roleId: rolePermissions.roleId,
+                  count: sql<number>`COUNT(*)`.as("count"),
+                })
+                .from(rolePermissions)
+                .where(inArray(rolePermissions.roleId, roleIds))
+                .groupBy(rolePermissions.roleId)
+            : [];
+
+        const countMap = new Map(
+          permissionCounts.map(pc => [pc.roleId, Number(pc.count)])
+        );
 
         // Get user counts for each role
-        const userCounts = roleIds.length > 0
-          ? await db
-              .select({
-                roleId: userRoles.roleId,
-                count: sql<number>`COUNT(DISTINCT ${userRoles.userId})`.as('count'),
-              })
-              .from(userRoles)
-              .where(inArray(userRoles.roleId, roleIds))
-              .groupBy(userRoles.roleId)
-          : [];
+        const userCounts =
+          roleIds.length > 0
+            ? await db
+                .select({
+                  roleId: userRoles.roleId,
+                  count: sql<number>`COUNT(DISTINCT ${userRoles.userId})`.as(
+                    "count"
+                  ),
+                })
+                .from(userRoles)
+                .where(inArray(userRoles.roleId, roleIds))
+                .groupBy(userRoles.roleId)
+            : [];
 
-        const userCountMap = new Map(userCounts.map(uc => [uc.roleId, Number(uc.count)]));
+        const userCountMap = new Map(
+          userCounts.map(uc => [uc.roleId, Number(uc.count)])
+        );
 
         const rolesWithCounts = roleRecords.map(role => ({
           ...role,
@@ -102,9 +115,9 @@ export const rbacRolesRouter = router({
           userCount: userCountMap.get(role.id) || 0,
         }));
 
-        logger.info({ 
-          msg: "Listed roles", 
-          count: rolesWithCounts.length 
+        logger.info({
+          msg: "Listed roles",
+          count: rolesWithCounts.length,
         });
 
         return {
@@ -128,7 +141,6 @@ export const rbacRolesRouter = router({
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-
 
         // Get role details
         const role = await db
@@ -158,19 +170,22 @@ export const rbacRolesRouter = router({
             assignedAt: rolePermissions.createdAt,
           })
           .from(rolePermissions)
-          .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+          .innerJoin(
+            permissions,
+            eq(rolePermissions.permissionId, permissions.id)
+          )
           .where(eq(rolePermissions.roleId, input.roleId));
 
         // Get user count
         const userCount = await db
           .select({
-            count: sql<number>`COUNT(DISTINCT ${userRoles.userId})`.as('count'),
+            count: sql<number>`COUNT(DISTINCT ${userRoles.userId})`.as("count"),
           })
           .from(userRoles)
           .where(eq(userRoles.roleId, input.roleId));
 
-        logger.info({ 
-          msg: "Retrieved role details", 
+        logger.info({
+          msg: "Retrieved role details",
           roleId: input.roleId,
           permissionCount: rolePermissionRecords.length,
         });
@@ -188,7 +203,11 @@ export const rbacRolesRouter = router({
           userCount: Number(userCount[0]?.count || 0),
         };
       } catch (error) {
-        logger.error({ msg: "Error getting role details", roleId: input.roleId, error });
+        logger.error({
+          msg: "Error getting role details",
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
@@ -199,11 +218,14 @@ export const rbacRolesRouter = router({
    */
   create: protectedProcedure
     .use(requirePermission("rbac:roles:create"))
-    .input(z.object({
-      name: z.string().min(1).max(100),
-      description: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
@@ -225,13 +247,17 @@ export const rbacRolesRouter = router({
           isSystemRole: 0, // Custom roles are not system roles
         });
 
-        const roleId = Number(Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0);
+        const roleId = Number(
+          Array.isArray(result)
+            ? ((result[0] as { insertId?: number })?.insertId ?? 0)
+            : 0
+        );
 
-        logger.info({ 
-          msg: "Role created", 
+        logger.info({
+          msg: "Role created",
           roleId,
           roleName: input.name,
-          createdBy: ctx.user?.id,
+          createdBy: actorId,
         });
 
         return {
@@ -240,7 +266,11 @@ export const rbacRolesRouter = router({
           message: `Role "${input.name}" created successfully`,
         };
       } catch (error) {
-        logger.error({ msg: "Error creating role", roleName: input.name, error });
+        logger.error({
+          msg: "Error creating role",
+          roleName: input.name,
+          error,
+        });
         throw error;
       }
     }),
@@ -252,21 +282,24 @@ export const rbacRolesRouter = router({
    */
   update: protectedProcedure
     .use(requirePermission("rbac:roles:update"))
-    .input(z.object({
-      roleId: z.number(),
-      name: z.string().min(1).max(100).optional(),
-      description: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        roleId: z.number(),
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         // Check if role exists and is not a system role
         const role = await db
-          .select({ 
-            id: roles.id, 
-            name: roles.name, 
-            isSystemRole: roles.isSystemRole 
+          .select({
+            id: roles.id,
+            name: roles.name,
+            isSystemRole: roles.isSystemRole,
           })
           .from(roles)
           .where(eq(roles.id, input.roleId))
@@ -296,17 +329,18 @@ export const rbacRolesRouter = router({
         // Update role
         const updateData: Record<string, unknown> = {};
         if (input.name !== undefined) updateData.name = input.name;
-        if (input.description !== undefined) updateData.description = input.description;
+        if (input.description !== undefined)
+          updateData.description = input.description;
 
         await db
           .update(roles)
           .set(updateData)
           .where(eq(roles.id, input.roleId));
 
-        logger.info({ 
-          msg: "Role updated", 
+        logger.info({
+          msg: "Role updated",
           roleId: input.roleId,
-          updatedBy: ctx.user?.id,
+          updatedBy: actorId,
         });
 
         return {
@@ -314,7 +348,11 @@ export const rbacRolesRouter = router({
           message: `Role updated successfully`,
         };
       } catch (error) {
-        logger.error({ msg: "Error updating role", roleId: input.roleId, error });
+        logger.error({
+          msg: "Error updating role",
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
@@ -328,15 +366,16 @@ export const rbacRolesRouter = router({
     .use(requirePermission("rbac:roles:delete"))
     .input(z.object({ roleId: z.number() }))
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         // Check if role exists and is not a system role
         const role = await db
-          .select({ 
-            id: roles.id, 
-            name: roles.name, 
-            isSystemRole: roles.isSystemRole 
+          .select({
+            id: roles.id,
+            name: roles.name,
+            isSystemRole: roles.isSystemRole,
           })
           .from(roles)
           .where(eq(roles.id, input.roleId))
@@ -351,18 +390,16 @@ export const rbacRolesRouter = router({
         }
 
         // Delete role (cascade will handle role_permissions and user_roles)
-        await db
-          .delete(roles)
-          .where(eq(roles.id, input.roleId));
+        await db.delete(roles).where(eq(roles.id, input.roleId));
 
         // Clear permission cache for all users (since we don't know which users had this role)
         clearPermissionCache();
 
-        logger.info({ 
-          msg: "Role deleted", 
+        logger.info({
+          msg: "Role deleted",
           roleId: input.roleId,
           roleName: role[0].name,
-          deletedBy: ctx.user?.id,
+          deletedBy: actorId,
         });
 
         return {
@@ -370,7 +407,11 @@ export const rbacRolesRouter = router({
           message: `Role "${role[0].name}" deleted successfully`,
         };
       } catch (error) {
-        logger.error({ msg: "Error deleting role", roleId: input.roleId, error });
+        logger.error({
+          msg: "Error deleting role",
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
@@ -381,11 +422,14 @@ export const rbacRolesRouter = router({
    */
   assignPermission: protectedProcedure
     .use(requirePermission("rbac:roles:assign_permission"))
-    .input(z.object({
-      roleId: z.number(),
-      permissionId: z.number(),
-    }))
+    .input(
+      z.object({
+        roleId: z.number(),
+        permissionId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
@@ -414,14 +458,18 @@ export const rbacRolesRouter = router({
         const existing = await db
           .select({ roleId: rolePermissions.roleId })
           .from(rolePermissions)
-          .where(and(
-            eq(rolePermissions.roleId, input.roleId),
-            eq(rolePermissions.permissionId, input.permissionId)
-          ))
+          .where(
+            and(
+              eq(rolePermissions.roleId, input.roleId),
+              eq(rolePermissions.permissionId, input.permissionId)
+            )
+          )
           .limit(1);
 
         if (existing.length > 0) {
-          throw new Error(`Permission "${permission[0].name}" is already assigned to role "${role[0].name}"`);
+          throw new Error(
+            `Permission "${permission[0].name}" is already assigned to role "${role[0].name}"`
+          );
         }
 
         // Assign permission
@@ -433,13 +481,13 @@ export const rbacRolesRouter = router({
         // Clear permission cache for all users with this role
         clearPermissionCache();
 
-        logger.info({ 
-          msg: "Permission assigned to role", 
+        logger.info({
+          msg: "Permission assigned to role",
           roleId: input.roleId,
           roleName: role[0].name,
           permissionId: input.permissionId,
           permissionName: permission[0].name,
-          assignedBy: ctx.user?.id,
+          assignedBy: actorId,
         });
 
         return {
@@ -447,7 +495,12 @@ export const rbacRolesRouter = router({
           message: `Permission "${permission[0].name}" assigned to role "${role[0].name}"`,
         };
       } catch (error) {
-        logger.error({ msg: "Error assigning permission to role", roleId: input.roleId, permissionId: input.permissionId, error });
+        logger.error({
+          msg: "Error assigning permission to role",
+          roleId: input.roleId,
+          permissionId: input.permissionId,
+          error,
+        });
         throw error;
       }
     }),
@@ -458,11 +511,14 @@ export const rbacRolesRouter = router({
    */
   removePermission: protectedProcedure
     .use(requirePermission("rbac:roles:remove_permission"))
-    .input(z.object({
-      roleId: z.number(),
-      permissionId: z.number(),
-    }))
+    .input(
+      z.object({
+        roleId: z.number(),
+        permissionId: z.number(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
@@ -482,21 +538,23 @@ export const rbacRolesRouter = router({
         // Remove permission
         await db
           .delete(rolePermissions)
-          .where(and(
-            eq(rolePermissions.roleId, input.roleId),
-            eq(rolePermissions.permissionId, input.permissionId)
-          ));
+          .where(
+            and(
+              eq(rolePermissions.roleId, input.roleId),
+              eq(rolePermissions.permissionId, input.permissionId)
+            )
+          );
 
         // Clear permission cache for all users with this role
         clearPermissionCache();
 
-        logger.info({ 
-          msg: "Permission removed from role", 
+        logger.info({
+          msg: "Permission removed from role",
           roleId: input.roleId,
           roleName: role[0]?.name,
           permissionId: input.permissionId,
           permissionName: permission[0]?.name,
-          removedBy: ctx.user?.id,
+          removedBy: actorId,
         });
 
         return {
@@ -504,7 +562,12 @@ export const rbacRolesRouter = router({
           message: `Permission removed from role`,
         };
       } catch (error) {
-        logger.error({ msg: "Error removing permission from role", roleId: input.roleId, permissionId: input.permissionId, error });
+        logger.error({
+          msg: "Error removing permission from role",
+          roleId: input.roleId,
+          permissionId: input.permissionId,
+          error,
+        });
         throw error;
       }
     }),
@@ -515,11 +578,14 @@ export const rbacRolesRouter = router({
    */
   bulkAssignPermissions: protectedProcedure
     .use(requirePermission("rbac:roles:assign_permission"))
-    .input(z.object({
-      roleId: z.number(),
-      permissionIds: z.array(z.number()),
-    }))
+    .input(
+      z.object({
+        roleId: z.number(),
+        permissionIds: z.array(z.number()),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
@@ -559,8 +625,12 @@ export const rbacRolesRouter = router({
           .from(rolePermissions)
           .where(eq(rolePermissions.roleId, input.roleId));
 
-        const currentPermissionIds = new Set(currentPermissions.map(p => p.permissionId));
-        const newPermissionIds = input.permissionIds.filter(id => !currentPermissionIds.has(id));
+        const currentPermissionIds = new Set(
+          currentPermissions.map(p => p.permissionId)
+        );
+        const newPermissionIds = input.permissionIds.filter(
+          id => !currentPermissionIds.has(id)
+        );
 
         // Insert new permission assignments
         if (newPermissionIds.length > 0) {
@@ -575,12 +645,12 @@ export const rbacRolesRouter = router({
         // Clear permission cache for all users with this role
         clearPermissionCache();
 
-        logger.info({ 
-          msg: "Bulk permissions assigned to role", 
+        logger.info({
+          msg: "Bulk permissions assigned to role",
           roleId: input.roleId,
           roleName: role[0].name,
           permissionIds: newPermissionIds,
-          assignedBy: ctx.user?.id,
+          assignedBy: actorId,
         });
 
         return {
@@ -589,7 +659,11 @@ export const rbacRolesRouter = router({
           assignedCount: newPermissionIds.length,
         };
       } catch (error) {
-        logger.error({ msg: "Error bulk assigning permissions to role", roleId: input.roleId, error });
+        logger.error({
+          msg: "Error bulk assigning permissions to role",
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
@@ -600,11 +674,14 @@ export const rbacRolesRouter = router({
    */
   replacePermissions: protectedProcedure
     .use(requirePermission("rbac:roles:assign_permission"))
-    .input(z.object({
-      roleId: z.number(),
-      permissionIds: z.array(z.number()),
-    }))
+    .input(
+      z.object({
+        roleId: z.number(),
+        permissionIds: z.array(z.number()),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
@@ -650,12 +727,12 @@ export const rbacRolesRouter = router({
         // Clear permission cache for all users with this role
         clearPermissionCache();
 
-        logger.info({ 
-          msg: "Role permissions replaced", 
+        logger.info({
+          msg: "Role permissions replaced",
           roleId: input.roleId,
           roleName: role[0].name,
           newPermissionIds: input.permissionIds,
-          replacedBy: ctx.user?.id,
+          replacedBy: actorId,
         });
 
         return {
@@ -663,7 +740,11 @@ export const rbacRolesRouter = router({
           message: `Role "${role[0].name}" permissions updated to ${input.permissionIds.length} permission(s)`,
         };
       } catch (error) {
-        logger.error({ msg: "Error replacing role permissions", roleId: input.roleId, error });
+        logger.error({
+          msg: "Error replacing role permissions",
+          roleId: input.roleId,
+          error,
+        });
         throw error;
       }
     }),
