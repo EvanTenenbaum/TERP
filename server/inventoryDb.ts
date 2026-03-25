@@ -925,7 +925,7 @@ export async function getBatchesWithDetails(
   const batchSelect = await getCompatibleBatchSelect();
 
   // Build where conditions
-  const conditions = [];
+  const conditions = [isNull(batches.deletedAt)];
   if (applyPagination && typeof cursor === "number" && cursor > 0) {
     conditions.push(sql`${batches.id} < ${cursor}`);
   }
@@ -1097,7 +1097,7 @@ export async function searchBatches(
       OR ${products.subcategory} LIKE ${`%${query}%`}
       OR ${batches.grade} LIKE ${`%${query}%`}`;
 
-  const conditions = [searchCondition];
+  const conditions = [isNull(batches.deletedAt), searchCondition];
   if (cursor) {
     conditions.push(sql`${batches.id} < ${cursor}`);
   }
@@ -2072,6 +2072,14 @@ export async function bulkRestoreBatches(
         skipped++;
         errors.push(
           `Batch ${restoreTarget.id} is ${batch.batchStatus}; only CLOSED batches can be restored`
+        );
+        continue;
+      }
+
+      if (batch.deletedAt === null) {
+        skipped++;
+        errors.push(
+          `Batch ${restoreTarget.id} is not deleted; only soft-deleted batches can be restored`
         );
         continue;
       }

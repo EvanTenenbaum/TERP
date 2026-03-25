@@ -2,11 +2,34 @@
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SalesSheetsPilotSurface } from "./SalesSheetsPilotSurface";
 
 const mockSetLocation = vi.fn();
+const mockSaveDraftMutate = vi.fn();
+const mockDeleteDraftMutate = vi.fn();
+const mockConvertToOrderMutate = vi.fn();
+const mockFetchDraftById = vi.fn();
+let saveDraftConfig:
+  | {
+      onSuccess?: (
+        data: { draftId: number },
+        variables: {
+          draftId?: number;
+          clientId: number;
+          name: string;
+          items: unknown[];
+          totalValue: number;
+        }
+      ) => void;
+    }
+  | undefined;
+let deleteDraftConfig:
+  | {
+      onSuccess?: (_data: undefined, variables: { draftId: number }) => void;
+    }
+  | undefined;
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/sales?tab=sheets", mockSetLocation],
@@ -129,20 +152,26 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
       saveDraft: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-        }),
+        useMutation: (config?: typeof saveDraftConfig) => {
+          saveDraftConfig = config;
+          return {
+            mutate: mockSaveDraftMutate,
+            isPending: false,
+          };
+        },
       },
       deleteDraft: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-        }),
+        useMutation: (config?: typeof deleteDraftConfig) => {
+          deleteDraftConfig = config;
+          return {
+            mutate: mockDeleteDraftMutate,
+            isPending: false,
+          };
+        },
       },
       save: {
         useMutation: () => ({
-          mutate: vi.fn(),
+          mutate: mockConvertToOrderMutate,
           isPending: false,
         }),
       },
@@ -150,7 +179,7 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({
       salesSheets: {
         getDraftById: {
-          fetch: vi.fn(),
+          fetch: mockFetchDraftById,
         },
       },
     }),
@@ -172,33 +201,98 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    rows,
+    onSelectedRowChange,
   }: {
     title: string;
     description?: string;
+    rows?: Array<{
+      identity?: { rowKey?: string };
+    }>;
+    onSelectedRowChange?: (row: unknown) => void;
   }) => (
     <div>
       <h2>{title}</h2>
       {description ? <p>{description}</p> : null}
+      {rows && rows.length > 0 ? (
+        <>
+          <button onClick={() => onSelectedRowChange?.(rows[0])}>
+            Select first {title} row
+          </button>
+          {rows[1] ? (
+            <button onClick={() => onSelectedRowChange?.(rows[1])}>
+              Select second {title} row
+            </button>
+          ) : null}
+        </>
+      ) : null}
     </div>
   ),
 }));
 
 vi.mock("@/components/ui/confirm-dialog", () => ({
-  ConfirmDialog: () => null,
+  ConfirmDialog: ({
+    onConfirm,
+    confirmLabel,
+  }: {
+    onConfirm: () => void;
+    confirmLabel?: string;
+  }) => <button onClick={onConfirm}>Confirm {confirmLabel ?? "dialog"}</button>,
 }));
 
 vi.mock("@/components/ui/client-combobox", () => ({
-  ClientCombobox: ({ placeholder }: { placeholder?: string }) => (
-    <div data-testid="client-combobox">{placeholder}</div>
+  ClientCombobox: ({
+    placeholder,
+    onValueChange,
+  }: {
+    placeholder?: string;
+    onValueChange?: (value: number | null) => void;
+  }) => (
+    <div data-testid="client-combobox">
+      {placeholder}
+      <button onClick={() => onValueChange?.(1)}>Select client 1</button>
+    </div>
   ),
-  default: ({ placeholder }: { placeholder?: string }) => (
-    <div data-testid="client-combobox">{placeholder}</div>
+  default: ({
+    placeholder,
+    onValueChange,
+  }: {
+    placeholder?: string;
+    onValueChange?: (value: number | null) => void;
+  }) => (
+    <div data-testid="client-combobox">
+      {placeholder}
+      <button onClick={() => onValueChange?.(1)}>Select client 1</button>
+    </div>
   ),
 }));
 
 describe("SalesSheetsPilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    saveDraftConfig = undefined;
+    deleteDraftConfig = undefined;
+    mockSaveDraftMutate.mockImplementation(
+      (variables: {
+        draftId?: number;
+        clientId: number;
+        name: string;
+        items: unknown[];
+        totalValue: number;
+      }) => {
+        saveDraftConfig?.onSuccess?.(
+          { draftId: variables.draftId ?? 10 },
+          variables
+        );
+      }
+    );
+    mockDeleteDraftMutate.mockImplementation(
+      (variables: { draftId: number }) => {
+        deleteDraftConfig?.onSuccess?.(undefined, variables);
+      }
+    );
+    mockConvertToOrderMutate.mockReset();
+    mockFetchDraftById.mockReset();
   });
 
   it("renders the pilot badge", () => {
@@ -234,7 +328,7 @@ describe("SalesSheetsPilotSurface", () => {
     render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
 
     expect(
-      screen.getByRole("button", { name: /delete draft/i })
+      screen.getByRole("button", { name: /^Delete Draft$/i })
     ).toBeInTheDocument();
   });
 
@@ -332,5 +426,86 @@ describe("SalesSheetsPilotSurface", () => {
     render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
 
     expect(screen.getByText("No items in sheet")).toBeInTheDocument();
+  });
+
+  it("cancels pending autosave and clears dirty state when a draft is deleted", async () => {
+    vi.useFakeTimers();
+
+    mockFetchDraftById.mockResolvedValue({
+      id: 10,
+      clientId: 1,
+      name: "Spring Promo",
+      items: [
+        {
+          id: 999,
+          name: "Existing Draft Item",
+          category: "Flower",
+          vendor: "Draft Vendor",
+          retailPrice: 90,
+          quantity: 2,
+          grade: "A",
+          basePrice: 75,
+          cogsMode: "fixed",
+          unitCogs: 50,
+          unitCogsMin: null,
+          unitCogsMax: null,
+          effectiveCogs: 50,
+          effectiveCogsBasis: "fixed",
+        },
+      ],
+      updatedAt: "2026-03-15T12:00:00.000Z",
+    });
+
+    render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /spring promo/i }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockFetchDraftById).toHaveBeenCalledWith({ draftId: 10 });
+
+    expect(
+      screen.getByRole("button", { name: /^Delete Draft$/i })
+    ).not.toBeDisabled();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: /select first inventory browser row/i,
+        })
+      );
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /add to sheet/i }));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /^Delete Draft$/i }));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /^Confirm Delete Draft$/i })
+      );
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+
+    expect(mockSaveDraftMutate).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
   });
 });

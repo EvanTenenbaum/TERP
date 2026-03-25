@@ -192,6 +192,8 @@ export function SalesSheetsPilotSurface({
   const selectedClientIdRef = useRef<number | null>(null);
   const currentDraftIdRef = useRef<number | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDeletedDraftIdRef = useRef<number | null>(null);
+  const isDeletingDraftRef = useRef(false);
   const isInitialLoad = useRef(true);
 
   // ── queries ───────────────────────────────────────────────────────────────
@@ -221,7 +223,15 @@ export function SalesSheetsPilotSurface({
 
   // ── mutations ─────────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: data => {
+    onSuccess: (data, variables) => {
+      if (
+        isDeletingDraftRef.current ||
+        (variables.draftId !== undefined &&
+          variables.draftId === lastDeletedDraftIdRef.current)
+      ) {
+        return;
+      }
+
       setCurrentDraftId(data.draftId);
       currentDraftIdRef.current = data.draftId;
       setLastSaveTime(new Date());
@@ -229,23 +239,44 @@ export function SalesSheetsPilotSurface({
       void draftsQuery.refetch();
       toast.success("Draft saved");
     },
-    onError: error => {
+    onError: (error, variables) => {
+      if (
+        variables.draftId !== undefined &&
+        variables.draftId === lastDeletedDraftIdRef.current
+      ) {
+        return;
+      }
+
       toast.error("Failed to save draft: " + error.message);
     },
   });
 
   const deleteDraftMutation = trpc.salesSheets.deleteDraft.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      isDeletingDraftRef.current = false;
+      lastDeletedDraftIdRef.current = variables.draftId;
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
       setCurrentDraftId(null);
       currentDraftIdRef.current = null;
       setDraftName("");
       setLastSaveTime(null);
       setSelectedItems([]);
+      setSelectedInventoryRowId(null);
+      setSelectedPreviewRowId(null);
+      setHasUnsavedChanges(false);
       void draftsQuery.refetch();
       setShowDeleteDraftDialog(false);
       toast.success("Draft deleted");
     },
     onError: error => {
+      isDeletingDraftRef.current = false;
+      setHasUnsavedChanges(
+        selectedItemsRef.current.length > 0 &&
+          draftNameRef.current.trim() !== ""
+      );
       toast.error("Failed to delete draft: " + error.message);
     },
   });
@@ -314,6 +345,7 @@ export function SalesSheetsPilotSurface({
   // ── auto-save ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (
+      isDeletingDraftRef.current ||
       !hasUnsavedChanges ||
       !selectedClientId ||
       selectedItems.length === 0 ||
@@ -410,13 +442,13 @@ export function SalesSheetsPilotSurface({
       return;
     }
 
-    setSelectedItems(prev => {
-      if (prev.some(item => item.id === row._raw.id)) {
-        toast.info("Item already in sheet");
-        return prev;
-      }
-      return [...prev, row._raw];
-    });
+    if (selectedItems.some(item => item.id === row._raw.id)) {
+      toast.info("Item already in sheet");
+      return;
+    }
+
+    setSelectedItems(prev => [...prev, row._raw]);
+    setHasUnsavedChanges(true);
   }, [selectedInventoryRowId, selectedItems, inventoryQuery.data]);
 
   const handleRemoveSelectedItem = useCallback(() => {
@@ -433,6 +465,7 @@ export function SalesSheetsPilotSurface({
     const id = Number(idStr);
     setSelectedItems(prev => prev.filter(item => item.id !== id));
     setSelectedPreviewRowId(null);
+    setHasUnsavedChanges(true);
   }, [selectedPreviewRowId]);
 
   const handleSaveDraft = useCallback(() => {
@@ -466,6 +499,7 @@ export function SalesSheetsPilotSurface({
       try {
         const result = await utils.salesSheets.getDraftById.fetch({ draftId });
         if (result) {
+          lastDeletedDraftIdRef.current = null;
           setSelectedClientId(result.clientId);
           setSelectedItems(result.items as PricedInventoryItem[]);
           setCurrentDraftId(result.id);
@@ -485,6 +519,12 @@ export function SalesSheetsPilotSurface({
   const handleDeleteCurrentDraft = useCallback(() => {
     if (!currentDraftId) {
       return;
+    }
+    isDeletingDraftRef.current = true;
+    lastDeletedDraftIdRef.current = currentDraftId;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
     }
     deleteDraftMutation.mutate({ draftId: currentDraftId });
   }, [currentDraftId, deleteDraftMutation]);

@@ -1,6 +1,6 @@
 # Pilot Surface QA Review — 2026-03-24 (Tranche 3)
 
-Adversarial review of all 13 pilot surfaces. 7 new reviews + 3 re-reviews of previously reviewed surfaces + 3 prior SHIP verdicts carried forward.
+Adversarial review of all 12 current pilot surfaces, combining new reviews, re-reviews, and carried-forward prior SHIP verdicts.
 
 ## Verdicts
 
@@ -19,7 +19,7 @@ Adversarial review of all 13 pilot surfaces. 7 new reviews + 3 re-reviews of pre
 | FulfillmentPilotSurface    | **SHIP**             | -   | -   | -   | 2   | Carried from 2026-03-21 review          |
 | ClientLedgerPilotSurface   | **SHIP**             | -   | -   | 2   | 1   | Carried from 2026-03-21 review          |
 
-**Overall: 0 NO-SHIP. All 13 surfaces SHIP or CONDITIONAL SHIP (P3-only remaining).**
+**Overall: 0 NO-SHIP. All 12 current surfaces are SHIP or CONDITIONAL SHIP, but known deferred P1 and active P2/P3 findings remain.**
 
 ---
 
@@ -57,8 +57,8 @@ Adversarial review of all 13 pilot surfaces. 7 new reviews + 3 re-reviews of pre
 
 **Surface:** SalesSheetsPilotSurface
 **Location:** `SalesSheetsPilotSurface.tsx:480-490`
-**Issue:** `handleDeleteCurrentDraft` cleared all local state (draft ID, name, items) synchronously before the delete mutation completed. If the server-side delete failed, local state was already lost with no recovery.
-**Fix:** Moved state clearing into mutation's `onSuccess` callback.
+**Issue:** `handleDeleteCurrentDraft` originally cleared all local state synchronously before the delete mutation completed, and the follow-on review found the auto-save timer could still fire against a just-deleted draft.
+**Fix:** State clearing now happens in the delete mutation's `onSuccess`, pending auto-save timers are cancelled during delete, and stale save callbacks for the deleted draft are ignored.
 
 ---
 

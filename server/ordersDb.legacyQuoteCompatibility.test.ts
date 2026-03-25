@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MySqlDialect } from "drizzle-orm/mysql-core";
 
 import { convertQuoteToSale, getOrderById } from "./ordersDb";
 import { getDb } from "./db";
@@ -171,31 +172,33 @@ describe("ordersDb legacy quote compatibility", () => {
       [batch],
     ]);
 
-    const schemaExecute = vi.fn().mockResolvedValue([
-      [
-        { Field: "order_number" },
-        { Field: "orderType" },
-        { Field: "is_draft" },
-        { Field: "client_id" },
-        { Field: "items" },
-        { Field: "subtotal" },
-        { Field: "tax" },
-        { Field: "discount" },
-        { Field: "total" },
-        { Field: "total_cogs" },
-        { Field: "total_margin" },
-        { Field: "avg_margin_percent" },
-        { Field: "paymentTerms" },
-        { Field: "cash_payment" },
-        { Field: "due_date" },
-        { Field: "saleStatus" },
-        { Field: "fulfillmentStatus" },
-        { Field: "notes" },
-        { Field: "created_by" },
-        { Field: "created_at" },
-        { Field: "updated_at" },
-      ],
-    ]);
+    const schemaExecute = vi
+      .fn()
+      .mockResolvedValue([
+        [
+          { Field: "order_number" },
+          { Field: "orderType" },
+          { Field: "is_draft" },
+          { Field: "client_id" },
+          { Field: "items" },
+          { Field: "subtotal" },
+          { Field: "tax" },
+          { Field: "discount" },
+          { Field: "total" },
+          { Field: "total_cogs" },
+          { Field: "total_margin" },
+          { Field: "avg_margin_percent" },
+          { Field: "paymentTerms" },
+          { Field: "cash_payment" },
+          { Field: "due_date" },
+          { Field: "saleStatus" },
+          { Field: "fulfillmentStatus" },
+          { Field: "notes" },
+          { Field: "created_by" },
+          { Field: "created_at" },
+          { Field: "updated_at" },
+        ],
+      ]);
 
     vi.mocked(getDb).mockResolvedValue({
       execute: schemaExecute,
@@ -224,6 +227,112 @@ describe("ordersDb legacy quote compatibility", () => {
     ]);
 
     expect(updateWhere).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("filters soft-deleted quotes out of the convert-to-sale lookup", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-11T19:00:00.000Z"));
+
+    const legacyQuote = {
+      id: 77,
+      orderNumber: "Q-LEGACY-001",
+      orderType: "QUOTE",
+      quoteStatus: null,
+      clientId: 12,
+      items: JSON.stringify([
+        {
+          batchId: 42,
+          displayName: "Legacy Flower",
+          quantity: 2,
+          price: "12.50",
+        },
+      ]),
+      subtotal: "25.00",
+      tax: "0",
+      discount: "0",
+      total: "25.00",
+      totalCogs: null,
+      totalMargin: null,
+      avgMarginPercent: null,
+      validUntil: null,
+      notes: "legacy quote",
+      createdBy: 5,
+    };
+
+    const createdSale = {
+      id: 88,
+      orderNumber: "S-1741729200000",
+      orderType: "SALE",
+      clientId: 12,
+      items: "[]",
+      tax: "0",
+      subtotal: "25.00",
+      total: "25.00",
+    };
+
+    const batch = {
+      id: 42,
+      sku: "LEG-42",
+      sampleQty: "0",
+      reservedQty: "0",
+      onHandQty: "100",
+      quarantineQty: "0",
+      holdQty: "0",
+    };
+
+    const { tx } = createTransactionMock([
+      [legacyQuote],
+      [createdSale],
+      [],
+      [batch],
+    ]);
+
+    vi.mocked(getDb).mockResolvedValue({
+      execute: vi
+        .fn()
+        .mockResolvedValue([
+          [
+            { Field: "order_number" },
+            { Field: "orderType" },
+            { Field: "is_draft" },
+            { Field: "client_id" },
+            { Field: "items" },
+            { Field: "subtotal" },
+            { Field: "tax" },
+            { Field: "discount" },
+            { Field: "total" },
+            { Field: "total_cogs" },
+            { Field: "total_margin" },
+            { Field: "avg_margin_percent" },
+            { Field: "paymentTerms" },
+            { Field: "cash_payment" },
+            { Field: "due_date" },
+            { Field: "saleStatus" },
+            { Field: "fulfillmentStatus" },
+            { Field: "notes" },
+            { Field: "created_by" },
+            { Field: "created_at" },
+            { Field: "updated_at" },
+          ],
+        ]),
+      transaction: async (callback: (txArg: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+    } as Awaited<ReturnType<typeof getDb>>);
+
+    await convertQuoteToSale({
+      quoteId: 77,
+      paymentTerms: "NET_30",
+    });
+
+    const quoteLookup = tx.select.mock.results[0]?.value as {
+      where: ReturnType<typeof vi.fn>;
+    };
+    const whereClause = quoteLookup.where.mock.calls[0]?.[0];
+    const rendered = new MySqlDialect().sqlToQuery(whereClause);
+
+    expect(rendered.sql).toContain("`orders`.`deleted_at` is null");
+
     vi.useRealTimers();
   });
 
