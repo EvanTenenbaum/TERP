@@ -482,7 +482,8 @@ export const invoicesRouter = router({
   updateStatus: protectedProcedure
     .use(requirePermission("accounting:update"))
     .input(updateInvoiceStatusSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -542,6 +543,7 @@ export const invoicesRouter = router({
         invoiceId: input.id,
         oldStatus: invoice.status,
         newStatus: input.status,
+        performedBy: actorId,
       });
 
       return { success: true, invoiceId: input.id, status: input.status };
@@ -553,7 +555,8 @@ export const invoicesRouter = router({
   markSent: protectedProcedure
     .use(requirePermission("accounting:update"))
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const actorId = getAuthenticatedUserId(ctx);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -565,6 +568,7 @@ export const invoicesRouter = router({
       logger.info({
         msg: "[Invoices] Invoice marked as sent",
         invoiceId: input.id,
+        performedBy: actorId,
       });
 
       return { success: true, invoiceId: input.id };

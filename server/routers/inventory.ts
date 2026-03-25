@@ -1700,8 +1700,7 @@ export const inventoryRouter = router({
       .use(requirePermission("inventory:read"))
       .query(async ({ ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           const result = await inventoryDb.getUserInventoryViews(userId);
           // BUG-034: Standardized pagination response
           return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
@@ -1743,8 +1742,7 @@ export const inventoryRouter = router({
       .input(z.number())
       .mutation(async ({ input, ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           return await inventoryDb.deleteInventoryView(input, userId);
         } catch (error) {
           handleError(error, "inventory.views.delete");
@@ -1773,8 +1771,7 @@ export const inventoryRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           return await inventoryDb.bulkUpdateBatchStatus(
             input.batchIds,
             input.newStatus,

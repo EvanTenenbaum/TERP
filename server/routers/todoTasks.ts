@@ -1,23 +1,31 @@
 /**
  * Todo Tasks Router
  * API endpoints for task management within lists
- * 
+ *
  * PERF-003: Added pagination support
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as todoTasksDb from "../todoTasksDb";
 import * as todoActivityDb from "../todoActivityDb";
 import * as inboxDb from "../inboxDb";
 import * as permissions from "../services/todoPermissions";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { DEFAULT_PAGE_SIZE, createSafeUnifiedResponse } from "../_core/pagination";
+import {
+  DEFAULT_PAGE_SIZE,
+  createSafeUnifiedResponse,
+} from "../_core/pagination";
 
 export const todoTasksRouter = router({
   // Get all tasks in a list with pagination
   // PERF-003: Added pagination support
-  getListTasks: protectedProcedure.use(requirePermission("todos:read"))
+  getListTasks: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
@@ -26,71 +34,97 @@ export const todoTasksRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanViewList(ctx.user.id, input.listId);
+      await permissions.assertCanViewList(userId, input.listId);
 
       const limit = input.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input.offset ?? 0;
 
       // DB function already returns structured pagination response
       // { items: TodoTask[], total: number, limit: number, offset: number, hasMore: boolean }
-      const result = await todoTasksDb.getListTasks(input.listId, limit, offset);
-      
+      const result = await todoTasksDb.getListTasks(
+        input.listId,
+        limit,
+        offset
+      );
+
       // Return in unified format compatible with frontend
       return {
         items: result.items,
         nextCursor: null,
         hasMore: result.hasMore,
-        pagination: { total: result.total, limit: result.limit, offset: result.offset }
+        pagination: {
+          total: result.total,
+          limit: result.limit,
+          offset: result.offset,
+        },
       };
     }),
 
   // Get tasks assigned to current user with pagination
   // PERF-003: Added pagination support
-  getMyTasks: protectedProcedure.use(requirePermission("todos:read"))
+  getMyTasks: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
-        offset: z.number().min(0).default(0).optional(),
-      }).optional()
+      z
+        .object({
+          limit: z
+            .number()
+            .min(1)
+            .max(100)
+            .default(DEFAULT_PAGE_SIZE)
+            .optional(),
+          offset: z.number().min(0).default(0).optional(),
+        })
+        .optional()
     )
     .query(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-      
+      const userId = getAuthenticatedUserId(ctx);
+
       const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input?.offset ?? 0;
-      
+
       // DB function already returns structured pagination response
       // { items: TodoTask[], total: number, limit: number, offset: number, hasMore: boolean }
-      const result = await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
-      
+      const result = await todoTasksDb.getUserAssignedTasks(
+        userId,
+        limit,
+        offset
+      );
+
       // Return in unified format compatible with frontend
       return {
         items: result.items,
         nextCursor: null,
         hasMore: result.hasMore,
-        pagination: { total: result.total, limit: result.limit, offset: result.offset }
+        pagination: {
+          total: result.total,
+          limit: result.limit,
+          offset: result.offset,
+        },
       };
     }),
 
   // Get a specific task by ID
-  getById: protectedProcedure.use(requirePermission("todos:read"))
+  getById: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
       })
     )
     .query(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanViewTask(ctx.user.id, input.taskId);
+      await permissions.assertCanViewTask(userId, input.taskId);
 
       return await todoTasksDb.getTaskById(input.taskId);
     }),
 
   // Create a new task
-  create: protectedProcedure.use(requirePermission("todos:create"))
+  create: protectedProcedure
+    .use(requirePermission("todos:create"))
     .input(
       z.object({
         listId: z.number(),
@@ -107,20 +141,20 @@ export const todoTasksRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanEditList(ctx.user.id, input.listId);
+      await permissions.assertCanEditList(userId, input.listId);
 
       const task = await todoTasksDb.createTask({
         ...input,
-        createdBy: ctx.user.id,
+        createdBy: userId,
       });
 
       // Log activity
-      await todoActivityDb.logTaskCreated(task.id, ctx.user.id);
+      await todoActivityDb.logTaskCreated(task.id, userId);
 
       // Create inbox item if assigned to someone
-      if (input.assignedTo && input.assignedTo !== ctx.user.id) {
+      if (input.assignedTo && input.assignedTo !== userId) {
         await inboxDb.createInboxItem({
           userId: input.assignedTo,
           sourceType: "task_assignment",
@@ -137,7 +171,8 @@ export const todoTasksRouter = router({
     }),
 
   // Update a task
-  update: protectedProcedure.use(requirePermission("todos:update"))
+  update: protectedProcedure
+    .use(requirePermission("todos:update"))
     .input(
       z.object({
         taskId: z.number(),
@@ -150,9 +185,9 @@ export const todoTasksRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanEditTask(ctx.user.id, input.taskId);
+      await permissions.assertCanEditTask(userId, input.taskId);
 
       const oldTask = await todoTasksDb.getTaskById(input.taskId);
       if (!oldTask) throw new Error("Task not found");
@@ -164,7 +199,7 @@ export const todoTasksRouter = router({
       if (input.status && input.status !== oldTask.status) {
         await todoActivityDb.logTaskStatusChanged(
           taskId,
-          ctx.user.id,
+          userId,
           oldTask.status,
           input.status
         );
@@ -174,7 +209,7 @@ export const todoTasksRouter = router({
       if (input.title && input.title !== oldTask.title) {
         await todoActivityDb.logTaskUpdated(
           taskId,
-          ctx.user.id,
+          userId,
           "title",
           oldTask.title,
           input.title
@@ -185,62 +220,65 @@ export const todoTasksRouter = router({
     }),
 
   // Delete a task
-  delete: protectedProcedure.use(requirePermission("todos:delete"))
+  delete: protectedProcedure
+    .use(requirePermission("todos:delete"))
     .input(
       z.object({
         taskId: z.number(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanDeleteTask(ctx.user.id, input.taskId);
+      await permissions.assertCanDeleteTask(userId, input.taskId);
 
       // Log deletion before deleting
-      await todoActivityDb.logTaskDeleted(input.taskId, ctx.user.id);
+      await todoActivityDb.logTaskDeleted(input.taskId, userId);
 
       await todoTasksDb.deleteTask(input.taskId);
       return { success: true };
     }),
 
   // Mark task as completed
-  complete: protectedProcedure.use(requirePermission("todos:read"))
+  complete: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanCompleteTask(ctx.user.id, input.taskId);
+      await permissions.assertCanCompleteTask(userId, input.taskId);
 
-      const task = await todoTasksDb.completeTask(input.taskId, ctx.user.id);
+      const task = await todoTasksDb.completeTask(input.taskId, userId);
 
       // Log completion
-      await todoActivityDb.logTaskCompleted(input.taskId, ctx.user.id);
+      await todoActivityDb.logTaskCompleted(input.taskId, userId);
 
       return task;
     }),
 
   // Mark task as incomplete
-  uncomplete: protectedProcedure.use(requirePermission("todos:read"))
+  uncomplete: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanEditTask(ctx.user.id, input.taskId);
+      await permissions.assertCanEditTask(userId, input.taskId);
 
       const task = await todoTasksDb.uncompleteTask(input.taskId);
 
       // Log status change
       await todoActivityDb.logTaskStatusChanged(
         input.taskId,
-        ctx.user.id,
+        userId,
         "done",
         "todo"
       );
@@ -249,7 +287,8 @@ export const todoTasksRouter = router({
     }),
 
   // Assign task to a user
-  assign: protectedProcedure.use(requirePermission("todos:read"))
+  assign: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
@@ -257,21 +296,21 @@ export const todoTasksRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanAssignTask(ctx.user.id, input.taskId);
+      await permissions.assertCanAssignTask(userId, input.taskId);
 
       const task = await todoTasksDb.assignTask(input.taskId, input.userId);
 
       // Log assignment
       await todoActivityDb.logTaskAssigned(
         input.taskId,
-        ctx.user.id,
+        userId,
         input.userId ? `User ${input.userId}` : null
       );
 
       // Create inbox item if assigned to someone other than current user
-      if (input.userId && input.userId !== ctx.user.id) {
+      if (input.userId && input.userId !== userId) {
         await inboxDb.createInboxItem({
           userId: input.userId,
           sourceType: "task_assignment",
@@ -288,7 +327,8 @@ export const todoTasksRouter = router({
     }),
 
   // Reorder tasks in a list
-  reorder: protectedProcedure.use(requirePermission("todos:read"))
+  reorder: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
@@ -301,9 +341,9 @@ export const todoTasksRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanEditList(ctx.user.id, input.listId);
+      await permissions.assertCanEditList(userId, input.listId);
 
       await todoTasksDb.reorderTasks(input.listId, input.taskPositions);
       return { success: true };
@@ -311,31 +351,36 @@ export const todoTasksRouter = router({
 
   // Get overdue tasks
   // BUG-034: Standardized pagination response
-  getOverdue: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-    const tasks = await todoTasksDb.getOverdueTasks();
-    return createSafeUnifiedResponse(tasks, tasks.length, 50, 0);
-  }),
+  getOverdue: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .query(async ({ ctx }) => {
+      getAuthenticatedUserId(ctx);
+      const tasks = await todoTasksDb.getOverdueTasks();
+      return createSafeUnifiedResponse(tasks, tasks.length, 50, 0);
+    }),
 
   // Get tasks due soon
   // BUG-034: Standardized pagination response
-  getDueSoon: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-    const tasks = await todoTasksDb.getTasksDueSoon();
-    return createSafeUnifiedResponse(tasks, tasks.length, 50, 0);
-  }),
+  getDueSoon: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .query(async ({ ctx }) => {
+      getAuthenticatedUserId(ctx);
+      const tasks = await todoTasksDb.getTasksDueSoon();
+      return createSafeUnifiedResponse(tasks, tasks.length, 50, 0);
+    }),
 
   // Get task statistics for a list
-  getListStats: protectedProcedure.use(requirePermission("todos:read"))
+  getListStats: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
       })
     )
     .query(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const userId = getAuthenticatedUserId(ctx);
 
-      await permissions.assertCanViewList(ctx.user.id, input.listId);
+      await permissions.assertCanViewList(userId, input.listId);
 
       return await todoTasksDb.getListTaskStats(input.listId);
     }),

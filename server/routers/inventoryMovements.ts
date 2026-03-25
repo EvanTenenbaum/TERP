@@ -5,7 +5,12 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  adminProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as inventoryMovementsDb from "../inventoryMovementsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { db } from "../db";
@@ -37,26 +42,36 @@ export const inventoryMovementsRouter = router({
           "SAMPLE",
         ]),
         quantityChange: z.string(),
-        quantityBefore: z.string(),
-        quantityAfter: z.string(),
         referenceType: z.string().optional(),
         referenceId: z.number().optional(),
         reason: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const performedBy = getAuthenticatedUserId(ctx);
+
+      // Compute quantityBefore/quantityAfter server-side from current DB state
+      const [batch] = await db
+        .select({ onHandQty: batches.onHandQty })
+        .from(batches)
+        .where(eq(batches.id, input.batchId))
+        .limit(1);
+
+      const quantityBefore = parseFloat(batch?.onHandQty ?? "0").toString();
+      const quantityAfter = (
+        parseFloat(quantityBefore) + parseFloat(input.quantityChange)
+      ).toString();
 
       return await inventoryMovementsDb.recordInventoryMovement({
         batchId: input.batchId,
         inventoryMovementType: input.movementType,
         quantityChange: input.quantityChange,
-        quantityBefore: input.quantityBefore,
-        quantityAfter: input.quantityAfter,
+        quantityBefore,
+        quantityAfter,
         referenceType: input.referenceType,
         referenceId: input.referenceId,
         notes: input.reason,
-        performedBy: ctx.user.id,
+        performedBy,
       });
     }),
 
@@ -73,14 +88,12 @@ export const inventoryMovementsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-
       return await inventoryMovementsDb.decreaseInventory(
         input.batchId,
         input.quantity,
         input.referenceType,
         input.referenceId,
-        ctx.user.id,
+        getAuthenticatedUserId(ctx),
         input.reason
       );
     }),
@@ -98,14 +111,12 @@ export const inventoryMovementsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-
       return await inventoryMovementsDb.increaseInventory(
         input.batchId,
         input.quantity,
         input.referenceType,
         input.referenceId,
-        ctx.user.id,
+        getAuthenticatedUserId(ctx),
         input.reason
       );
     }),
@@ -124,13 +135,11 @@ export const inventoryMovementsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-
       return await inventoryMovementsDb.adjustInventory(
         input.batchId,
         input.newQuantity,
         input.reason,
-        ctx.user.id,
+        getAuthenticatedUserId(ctx),
         input.notes,
         input.adjustmentReason
       );
@@ -202,12 +211,10 @@ export const inventoryMovementsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-
       return await inventoryMovementsDb.reverseInventoryMovement(
         input.movementId,
         input.reason,
-        ctx.user.id
+        getAuthenticatedUserId(ctx)
       );
     }),
 

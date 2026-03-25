@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as clientsDb from "../clientsDb";
 import * as transactionsDb from "../transactionsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -125,28 +129,23 @@ export const clientsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Authentication required to create a client.",
-        });
-      }
+      const actorId = getAuthenticatedUserId(ctx);
 
       // TER-38: Log client creation attempt for debugging
       console.info("[clients.create] Attempting to create client:", {
         teriCode: input.teriCode,
         name: input.name,
-        userId: ctx.user.id,
+        userId: actorId,
       });
 
       try {
-        const clientId = await clientsDb.createClient(ctx.user.id, input);
+        const clientId = await clientsDb.createClient(actorId, input);
 
         // TER-38: Log successful creation
         console.info("[clients.create] Client created successfully:", {
           clientId,
           teriCode: input.teriCode,
-          userId: ctx.user.id,
+          userId: actorId,
         });
 
         return clientId;
@@ -159,7 +158,7 @@ export const clientsRouter = router({
           error: errorMessage,
           teriCode: input.teriCode,
           name: input.name,
-          userId: ctx.user.id,
+          userId: actorId,
           stack: error instanceof Error ? error.stack : undefined,
         });
 
@@ -244,9 +243,13 @@ export const clientsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
       const { clientId, version, ...data } = input;
-      return await clientsDb.updateClient(clientId, ctx.user.id, data, version);
+      return await clientsDb.updateClient(
+        clientId,
+        getAuthenticatedUserId(ctx),
+        data,
+        version
+      );
     }),
 
   // Delete client (soft delete - this is the same as archive)
@@ -255,9 +258,11 @@ export const clientsRouter = router({
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
       try {
-        return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+        return await clientsDb.deleteClient(
+          input.clientId,
+          getAuthenticatedUserId(ctx)
+        );
       } catch (e) {
         // TER-255: Convert not-found/already-archived errors to NOT_FOUND
         if (
@@ -277,9 +282,11 @@ export const clientsRouter = router({
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
       try {
-        return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+        return await clientsDb.deleteClient(
+          input.clientId,
+          getAuthenticatedUserId(ctx)
+        );
       } catch (e) {
         // TER-255: Convert not-found/already-archived errors to NOT_FOUND
         if (
@@ -299,8 +306,10 @@ export const clientsRouter = router({
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-      return await clientsDb.restoreClient(input.clientId, ctx.user.id);
+      return await clientsDb.restoreClient(
+        input.clientId,
+        getAuthenticatedUserId(ctx)
+      );
     }),
 
   // Transactions
@@ -357,8 +366,10 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.createTransaction(ctx.user.id, input);
+        return await clientsDb.createTransaction(
+          getAuthenticatedUserId(ctx),
+          input
+        );
       }),
 
     update: protectedProcedure
@@ -377,11 +388,10 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
         const { transactionId, ...data } = input;
         return await clientsDb.updateTransaction(
           transactionId,
-          ctx.user.id,
+          getAuthenticatedUserId(ctx),
           data
         );
       }),
@@ -398,10 +408,9 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
         return await clientsDb.recordPayment(
           input.transactionId,
-          ctx.user.id,
+          getAuthenticatedUserId(ctx),
           input.paymentDate,
           input.paymentAmount
         );
@@ -434,12 +443,11 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
         return await transactionsDb.linkTransactions(
           input.parentTransactionId,
           input.childTransactionId,
           input.linkType,
-          ctx.user.id,
+          getAuthenticatedUserId(ctx),
           input.linkAmount,
           input.notes
         );
@@ -504,8 +512,11 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.addTag(input.clientId, ctx.user.id, input.tag);
+        return await clientsDb.addTag(
+          input.clientId,
+          getAuthenticatedUserId(ctx),
+          input.tag
+        );
       }),
 
     remove: protectedProcedure
@@ -517,10 +528,9 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
         return await clientsDb.removeTag(
           input.clientId,
-          ctx.user.id,
+          getAuthenticatedUserId(ctx),
           input.tag
         );
       }),
@@ -543,7 +553,7 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
+        getAuthenticatedUserId(ctx);
         return await clientsDb.linkNoteToClient(input.clientId, input.noteId);
       }),
   }),
@@ -577,10 +587,9 @@ export const clientsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
         return await clientsDb.addCommunication({
           ...input,
-          loggedBy: ctx.user.id,
+          loggedBy: getAuthenticatedUserId(ctx),
         });
       }),
   }),
@@ -613,7 +622,7 @@ export const clientsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      getAuthenticatedUserId(ctx);
       return await clientsDb.updateSupplierProfile(input.clientId, input);
     }),
 });
