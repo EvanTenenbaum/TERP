@@ -386,7 +386,18 @@ async function startServer() {
     });
 
     // Metrics endpoint for monitoring systems (Prometheus-compatible format available)
+    // Requires a valid JWT in the Authorization header (Bearer <token>) to prevent
+    // exposing server internals to unauthenticated callers.
     app.get("/health/metrics", (req, res) => {
+      const authHeader = req.headers.authorization;
+      const token =
+        authHeader && authHeader.startsWith("Bearer ")
+          ? authHeader.slice(7)
+          : null;
+      if (!token || !simpleAuth.verifySessionToken(token)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const metrics = getHealthMetrics();
       const format = req.query.format;
 
@@ -440,6 +451,10 @@ async function startServer() {
 
     // Debug endpoint to test createContext directly
     app.get("/api/debug/context", async (req, res) => {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(403).json({ error: "Disabled in production" });
+      }
+
       try {
         const context = await createContext({ req, res } as Parameters<
           typeof createContext
