@@ -1,5 +1,6 @@
 import { systemRouter } from "./_core/systemRouter";
 import { router } from "./_core/trpc";
+import type { AnyRouter } from "@trpc/server";
 
 // Import domain-specific routers
 import { authRouter } from "./routers/auth";
@@ -115,7 +116,6 @@ import { officeSupplyRouter } from "./routers/officeSupply"; // Sprint 4 Track B
 import { storageRouter } from "./routers/storage"; // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
 import { productCategoriesRouter } from "./routers/productCategories"; // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
 import { hourTrackingRouter } from "./routers/hourTracking"; // Sprint 5 Track E: Hour Tracking (MEET-048)
-// Note: rbacEnhancedRouter is imported for future use in Sprint 5 Track E
 import { gamificationRouter } from "./routers/gamification"; // Sprint 5 Track B: Gamification (MEET-044, MEET-045, FEAT-006)
 
 // Sprint 5 Track D: Transaction & Product Features
@@ -134,8 +134,7 @@ import { productCatalogueRouter } from "./routers/productCatalogue";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let debugRouter: any = null;
+let debugRouter: AnyRouter | null = null;
 // TEMPORARY: Enable debug router in production for diagnostics (REMOVE AFTER DEBUGGING)
 // Original: if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
 if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useParams } from "wouter";
 import { useLocation } from "wouter";
@@ -17,6 +16,18 @@ import { TaskCard } from "@/components/todos/TaskCard";
 import { TaskForm } from "@/components/todos/TaskForm";
 import { TodoListForm } from "@/components/todos/TodoListForm";
 
+interface TodoTask {
+  id: number;
+  title: string;
+  description?: string | null;
+  status: "todo" | "in_progress" | "done";
+  priority?: "low" | "medium" | "high" | "urgent" | null;
+  dueDate?: Date | null;
+  assignedTo?: number | null;
+  assignedToName?: string | null;
+  isCompleted: boolean;
+}
+
 export function TodoListDetailPage() {
   const { listId } = useParams<{ listId: string }>();
   const [, setLocation] = useLocation();
@@ -24,15 +35,7 @@ export function TodoListDetailPage() {
   const [isEditListOpen, setIsEditListOpen] = useState(false);
   const [showDeleteListConfirm, setShowDeleteListConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
-  const [editingTask, setEditingTask] = useState<{
-    id: number;
-    title: string;
-    description?: string | null;
-    status: "todo" | "in_progress" | "done";
-    priority?: "low" | "medium" | "high" | "urgent" | null;
-    dueDate?: Date | null;
-    assignedTo?: number | null;
-  } | null>(null);
+  const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
 
   const utils = trpc.useContext();
 
@@ -48,9 +51,13 @@ export function TodoListDetailPage() {
       { listId: Number(listId) },
       { enabled: !!listId }
     );
-  
+
   // Extract items from paginated response - handle both array and object formats
-  const tasks: any[] = tasksData ? (Array.isArray(tasksData) ? tasksData : ((tasksData as { items?: any[] })?.items ?? [])) : [];
+  const tasks: TodoTask[] = tasksData
+    ? Array.isArray(tasksData)
+      ? (tasksData as TodoTask[])
+      : ((tasksData as { items?: TodoTask[] })?.items ?? [])
+    : [];
 
   const { data: stats } = trpc.todoTasks.getListStats.useQuery(
     { listId: Number(listId) },
@@ -209,10 +216,12 @@ export function TodoListDetailPage() {
           {tasks.map(task => (
             <TaskCard
               key={task.id}
-              task={task as any}
-              onClick={() => setEditingTask(task as any)}
-              onToggleComplete={() => handleToggleComplete({ id: task.id, status: task.status })}
-              onEdit={() => setEditingTask(task as any)}
+              task={task}
+              onClick={() => setEditingTask(task)}
+              onToggleComplete={() =>
+                handleToggleComplete({ id: task.id, status: task.status })
+              }
+              onEdit={() => setEditingTask(task)}
               onDelete={() => setTaskToDelete(task.id)}
             />
           ))}
@@ -242,7 +251,7 @@ export function TodoListDetailPage() {
       {/* Delete Task Confirmation */}
       <ConfirmDialog
         open={taskToDelete !== null}
-        onOpenChange={(open) => !open && setTaskToDelete(null)}
+        onOpenChange={open => !open && setTaskToDelete(null)}
         title="Delete Task"
         description="Are you sure you want to delete this task? This action cannot be undone."
         confirmLabel="Delete"

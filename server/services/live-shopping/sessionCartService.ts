@@ -3,13 +3,14 @@ import { eq, and, inArray, sql } from "drizzle-orm";
 import {
   liveShoppingSessions,
   sessionCartItems,
-  SessionCartItem
+  SessionCartItem,
 } from "../../../drizzle/schema-live-shopping";
 import { batches, products } from "../../../drizzle/schema";
 import { sessionPricingService } from "./sessionPricingService";
 import { sessionEventManager } from "../../lib/sse/sessionEventManager";
 import { financialMath } from "../../utils/financialMath";
 import { sessionPickListService } from "./sessionPickListService";
+import type { DbTransaction } from "../../_core/dbTransaction";
 
 export interface AddItemRequest {
   sessionId: number;
@@ -48,12 +49,12 @@ function calculateStaticAvailableQty(batch: {
   const reserved = batch.reservedQty || "0";
   const hold = batch.holdQty || "0";
   const quarantine = batch.quarantineQty || "0";
-  
+
   // Available = onHand - reserved - hold - quarantine
   let available = financialMath.subtract(onHand, reserved);
   available = financialMath.subtract(available, hold);
   available = financialMath.subtract(available, quarantine);
-  
+
   return available;
 }
 
@@ -61,27 +62,33 @@ function calculateStaticAvailableQty(batch: {
  * Get "soft hold" quantity - items in active session carts that haven't been converted to orders yet
  * This prevents overselling during concurrent live shopping sessions
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getSoftHoldQty(tx: any, batchId: number, excludeSessionId?: number): Promise<string> {
+async function getSoftHoldQty(
+  tx: DbTransaction,
+  batchId: number,
+  excludeSessionId?: number
+): Promise<string> {
   // Build where conditions
   const conditions = [
     eq(sessionCartItems.batchId, batchId),
     inArray(liveShoppingSessions.status, ["ACTIVE", "PAUSED"]),
   ];
-  
+
   // Optionally exclude current session (when updating own cart)
   if (excludeSessionId) {
     conditions.push(sql`${sessionCartItems.sessionId} != ${excludeSessionId}`);
   }
-  
+
   const result = await tx
-    .select({ 
-      total: sql<string>`COALESCE(SUM(${sessionCartItems.quantity}), 0)` 
+    .select({
+      total: sql<string>`COALESCE(SUM(${sessionCartItems.quantity}), 0)`,
     })
     .from(sessionCartItems)
-    .innerJoin(liveShoppingSessions, eq(sessionCartItems.sessionId, liveShoppingSessions.id))
+    .innerJoin(
+      liveShoppingSessions,
+      eq(sessionCartItems.sessionId, liveShoppingSessions.id)
+    )
     .where(and(...conditions));
-    
+
   return result[0]?.total || "0";
 }
 
@@ -89,8 +96,7 @@ async function getSoftHoldQty(tx: any, batchId: number, excludeSessionId?: numbe
  * Calculate net available quantity accounting for soft holds
  */
 async function calculateNetAvailableQty(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any, 
+  tx: DbTransaction,
   batch: {
     onHandQty: string | null;
     reservedQty: string | null;
@@ -116,7 +122,7 @@ export const sessionCartService = {
     if (!db) throw new Error("Database not available");
 
     // Use transaction for atomicity
-    await db.transaction(async (tx) => {
+    await db.transaction(async tx => {
       // 1. Validate Session
       const session = await tx
         .select()
@@ -126,7 +132,9 @@ export const sessionCartService = {
 
       if (!session.length) throw new Error("Session not found");
       if (session[0].status !== "ACTIVE" && session[0].status !== "PAUSED") {
-        throw new Error(`Cannot add items to session with status: ${session[0].status}`);
+        throw new Error(
+          `Cannot add items to session with status: ${session[0].status}`
+        );
       }
 
       // 2. Validate Inventory (Batch)
@@ -158,15 +166,17 @@ export const sessionCartService = {
         )
         .limit(1);
 
-      const currentOwnQty = existingItem.length ? existingItem[0].quantity : "0";
+      const currentOwnQty = existingItem.length
+        ? existingItem[0].quantity
+        : "0";
       const newTotalQty = financialMath.add(currentOwnQty, req.quantity);
 
       // 4. Calculate NET available (accounting for soft holds from OTHER sessions)
       // We exclude our own session since we're updating our own cart
       const netAvailable = await calculateNetAvailableQty(
-        tx, 
-        batch[0], 
-        req.batchId, 
+        tx,
+        batch[0],
+        req.batchId,
         req.sessionId // Exclude our session from soft hold calculation
       );
 
@@ -213,7 +223,10 @@ export const sessionCartService = {
 
     // MEET-075-BE: Notify warehouse pick list and update activity
     await this.updateSessionActivity(req.sessionId);
-    await sessionPickListService.notifyPickListUpdate(req.sessionId, "ITEM_ADDED");
+    await sessionPickListService.notifyPickListUpdate(
+      req.sessionId,
+      "ITEM_ADDED"
+    );
   },
 
   /**
@@ -236,7 +249,11 @@ export const sessionCartService = {
 
     // MEET-075-BE: Notify warehouse pick list and update activity
     await this.updateSessionActivity(sessionId);
-    await sessionPickListService.notifyPickListUpdate(sessionId, "ITEM_REMOVED", cartItemId);
+    await sessionPickListService.notifyPickListUpdate(
+      sessionId,
+      "ITEM_REMOVED",
+      cartItemId
+    );
   },
 
   /**
@@ -248,7 +265,8 @@ export const sessionCartService = {
     if (!db) return;
 
     try {
-      await db.update(liveShoppingSessions)
+      await db
+        .update(liveShoppingSessions)
         .set({ lastActivityAt: new Date() })
         .where(eq(liveShoppingSessions.id, sessionId));
     } catch (e) {
@@ -273,7 +291,7 @@ export const sessionCartService = {
       return this.removeItem(sessionId, cartItemId);
     }
 
-    await db.transaction(async (tx) => {
+    await db.transaction(async tx => {
       // Get current item to find batchId
       const currentItem = await tx
         .select()
@@ -302,15 +320,17 @@ export const sessionCartService = {
 
       // Calculate net available (excluding our own session's current hold)
       const netAvailable = await calculateNetAvailableQty(
-        tx, 
-        batch[0], 
+        tx,
+        batch[0],
         currentItem[0].batchId,
         sessionId // Exclude our session
       );
 
       // Check if new quantity exceeds available
       if (financialMath.gt(newQuantity, netAvailable)) {
-        throw new Error(`Insufficient inventory. Max available: ${netAvailable}`);
+        throw new Error(
+          `Insufficient inventory. Max available: ${netAvailable}`
+        );
       }
 
       await tx
@@ -344,8 +364,8 @@ export const sessionCartService = {
       .where(eq(sessionCartItems.sessionId, sessionId));
 
     let totalValue = "0.00";
-    
-    const items = rows.map((row) => {
+
+    const items = rows.map(row => {
       const subtotal = financialMath.multiply(
         row.cartItem.quantity,
         row.cartItem.unitPrice
@@ -413,7 +433,7 @@ export const sessionCartService = {
 
     let cartItemId: number = 0;
 
-    await db.transaction(async (tx) => {
+    await db.transaction(async tx => {
       // 1. Validate Session
       const session = await tx
         .select()
@@ -423,7 +443,9 @@ export const sessionCartService = {
 
       if (!session.length) throw new Error("Session not found");
       if (session[0].status !== "ACTIVE" && session[0].status !== "PAUSED") {
-        throw new Error(`Cannot add items to session with status: ${session[0].status}`);
+        throw new Error(
+          `Cannot add items to session with status: ${session[0].status}`
+        );
       }
 
       // 2. Validate Inventory (Batch)
@@ -510,5 +532,5 @@ export const sessionCartService = {
       );
 
     await this.emitCartUpdate(sessionId);
-  }
+  },
 };

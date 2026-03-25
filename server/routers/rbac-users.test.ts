@@ -86,12 +86,14 @@ describe("RBAC Users Router", () => {
 
       const mockFrom = vi.fn().mockReturnThis();
       const mockInnerJoin = vi.fn().mockReturnThis();
+      const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn().mockReturnThis();
       const mockOffset = vi.fn().mockResolvedValue(mockUserRoles);
 
       vi.mocked(db.select).mockReturnValue({
         from: mockFrom,
         innerJoin: mockInnerJoin,
+        where: mockWhere,
         limit: mockLimit,
         offset: mockOffset,
       } as unknown as ReturnType<typeof db.select>);
@@ -110,12 +112,14 @@ describe("RBAC Users Router", () => {
 
       const mockFrom = vi.fn().mockReturnThis();
       const mockInnerJoin = vi.fn().mockReturnThis();
+      const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn().mockReturnThis();
       const mockOffset = vi.fn().mockResolvedValue(mockUserRoles);
 
       vi.mocked(db.select).mockReturnValue({
         from: mockFrom,
         innerJoin: mockInnerJoin,
+        where: mockWhere,
         limit: mockLimit,
         offset: mockOffset,
       } as unknown as ReturnType<typeof db.select>);
@@ -353,11 +357,13 @@ describe("RBAC Users Router", () => {
         limit: mockLimit,
       } as unknown as ReturnType<typeof db.select>);
 
-      const mockDeleteWhere = vi.fn().mockResolvedValue({});
+      const mockUpdateSet = vi.fn().mockReturnThis();
+      const mockUpdateWhere = vi.fn().mockResolvedValue({});
 
-      vi.mocked(db.delete).mockReturnValue({
-        where: mockDeleteWhere,
-      } as unknown as ReturnType<typeof db.select>);
+      vi.mocked(db.update).mockReturnValue({
+        set: mockUpdateSet,
+        where: mockUpdateWhere,
+      } as unknown as ReturnType<typeof db.update>);
 
       vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
         undefined
@@ -368,7 +374,7 @@ describe("RBAC Users Router", () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(db.delete).toHaveBeenCalled();
+      expect(db.update).toHaveBeenCalled();
       expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
         userId
       );
@@ -530,11 +536,13 @@ describe("RBAC Users Router", () => {
         where: mockWhere,
       } as unknown as ReturnType<typeof db.select>);
 
-      const mockDeleteWhere = vi.fn().mockResolvedValue({});
+      const mockUpdateSet = vi.fn().mockReturnThis();
+      const mockUpdateWhere = vi.fn().mockResolvedValue({});
 
-      vi.mocked(db.delete).mockReturnValue({
-        where: mockDeleteWhere,
-      } as unknown as ReturnType<typeof db.select>);
+      vi.mocked(db.update).mockReturnValue({
+        set: mockUpdateSet,
+        where: mockUpdateWhere,
+      } as unknown as ReturnType<typeof db.update>);
 
       const mockValues = vi.fn().mockResolvedValue({});
 
@@ -551,7 +559,7 @@ describe("RBAC Users Router", () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(db.delete).toHaveBeenCalled();
+      expect(db.update).toHaveBeenCalled();
       expect(db.insert).toHaveBeenCalled();
       expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
         userId

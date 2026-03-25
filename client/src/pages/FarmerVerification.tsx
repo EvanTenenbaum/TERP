@@ -8,16 +8,21 @@
  * Route: /verify/:token
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
-import { useParams } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from "react";
+import { useParams } from "wouter";
+import { trpc } from "@/lib/trpc";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -25,8 +30,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
+} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,8 +41,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { TableSkeleton } from '@/components/ui/skeleton-loaders';
+} from "@/components/ui/alert-dialog";
+import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import {
   ClipboardList,
   Package,
@@ -48,45 +53,60 @@ import {
   AlertTriangle,
   XCircle,
   Building2,
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type ReceiptStatus = 'PENDING' | 'FARMER_VERIFIED' | 'STACKER_VERIFIED' | 'FINALIZED' | 'DISPUTED';
+type ReceiptStatus =
+  | "PENDING"
+  | "FARMER_VERIFIED"
+  | "STACKER_VERIFIED"
+  | "FINALIZED"
+  | "DISPUTED";
+
+interface ReceiptItem {
+  productName?: string;
+  expectedQuantity?: number | string;
+  unit?: string;
+  expectedPrice?: number | string | null;
+}
 
 // ============================================================================
 // STATUS BADGE COMPONENT
 // ============================================================================
 
 function IntakeStatusBadge({ status }: { status: ReceiptStatus }) {
-  const config: Record<ReceiptStatus, { label: string; className: string; icon: React.ReactNode }> = {
+  const config: Record<
+    ReceiptStatus,
+    { label: string; className: string; icon: React.ReactNode }
+  > = {
     PENDING: {
-      label: 'Pending Verification',
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      label: "Pending Verification",
+      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
       icon: <Clock className="h-3 w-3" />,
     },
     FARMER_VERIFIED: {
-      label: 'Verified by You',
-      className: 'bg-green-100 text-green-800 border-green-200',
+      label: "Verified by You",
+      className: "bg-green-100 text-green-800 border-green-200",
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     STACKER_VERIFIED: {
-      label: 'Processing',
-      className: 'bg-blue-100 text-blue-800 border-blue-200',
+      label: "Processing",
+      className: "bg-blue-100 text-blue-800 border-blue-200",
       icon: <Check className="h-3 w-3" />,
     },
     FINALIZED: {
-      label: 'Completed',
-      className: 'bg-gray-100 text-gray-800 border-gray-200',
+      label: "Completed",
+      className: "bg-gray-100 text-gray-800 border-gray-200",
       icon: <FileCheck className="h-3 w-3" />,
     },
     DISPUTED: {
-      label: 'Under Review',
-      className: 'bg-amber-100 text-amber-800 border-amber-200',
+      label: "Under Review",
+      className: "bg-amber-100 text-amber-800 border-amber-200",
       icon: <AlertTriangle className="h-3 w-3" />,
     },
   };
@@ -110,11 +130,16 @@ export default function FarmerVerification() {
   const token = params.token as string;
 
   const [acknowledged, setAcknowledged] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Fetch receipt by token (public API)
-  const { data: receipt, isLoading, error, refetch } = trpc.intakeReceipts.getReceiptByToken.useQuery(
+  const {
+    data: receipt,
+    isLoading,
+    error,
+    refetch,
+  } = trpc.intakeReceipts.getReceiptByToken.useQuery(
     { token },
     { enabled: !!token }
   );
@@ -122,18 +147,18 @@ export default function FarmerVerification() {
   // Verify mutation
   const verifyMutation = trpc.intakeReceipts.verifyAsFarmer.useMutation({
     onSuccess: () => {
-      toast.success('Receipt verified successfully!');
+      toast.success("Receipt verified successfully!");
       setShowConfirmDialog(false);
       refetch();
     },
-    onError: (error) => {
-      toast.error(error.message || 'Verification failed');
+    onError: error => {
+      toast.error(error.message || "Verification failed");
     },
   });
 
   const handleVerify = () => {
     if (!acknowledged) {
-      toast.error('Please acknowledge the receipt before verifying');
+      toast.error("Please acknowledge the receipt before verifying");
       return;
     }
     setShowConfirmDialog(true);
@@ -180,7 +205,8 @@ export default function FarmerVerification() {
               </div>
               <CardTitle>Receipt Not Found</CardTitle>
               <CardDescription>
-                {error?.message || 'This verification link may be invalid or expired.'}
+                {error?.message ||
+                  "This verification link may be invalid or expired."}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -195,11 +221,12 @@ export default function FarmerVerification() {
   }
 
   // Already verified state
-  const alreadyVerified = receipt.status !== 'PENDING';
+  const alreadyVerified = receipt.status !== "PENDING";
 
   // Calculate totals
   const totalExpectedQty = (receipt.items || []).reduce(
-    (sum: number, item: Record<string, unknown>) => sum + (parseFloat(item.expectedQuantity as string) || 0),
+    (sum: number, item: Record<string, unknown>) =>
+      sum + (parseFloat(item.expectedQuantity as string) || 0),
     0
   );
 
@@ -226,11 +253,13 @@ export default function FarmerVerification() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg">{receipt.receiptNumber}</CardTitle>
+                <CardTitle className="text-lg">
+                  {receipt.receiptNumber}
+                </CardTitle>
                 <CardDescription>
                   {receipt.createdAt
-                    ? format(new Date(receipt.createdAt), 'MMMM d, yyyy')
-                    : 'Date not available'}
+                    ? format(new Date(receipt.createdAt), "MMMM d, yyyy")
+                    : "Date not available"}
                 </CardDescription>
               </div>
               <IntakeStatusBadge status={receipt.status as ReceiptStatus} />
@@ -265,21 +294,30 @@ export default function FarmerVerification() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {receipt.items?.map((item: any) => (
-                    <TableRow key={`item-${item.productName}`}>
-                      <TableCell className="font-medium">{item.productName as any}</TableCell>
-                      <TableCell className="text-right">
-                        {item.expectedQuantity as any} {item.unit as any}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {item.expectedPrice ? `$${parseFloat(item.expectedPrice).toFixed(2)}` : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {(receipt.items as ReceiptItem[] | undefined)?.map(
+                    (item, idx) => (
+                      <TableRow key={`item-${item.productName ?? idx}`}>
+                        <TableCell className="font-medium">
+                          {item.productName}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {String(item.expectedQuantity ?? "")} {item.unit}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.expectedPrice
+                            ? `$${parseFloat(String(item.expectedPrice)).toFixed(2)}`
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  )}
                 </TableBody>
               </Table>
               <div className="text-right text-sm text-muted-foreground mt-2 pr-2">
-                Total Quantity: <span className="font-medium">{totalExpectedQty.toFixed(2)}</span>
+                Total Quantity:{" "}
+                <span className="font-medium">
+                  {totalExpectedQty.toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -302,19 +340,24 @@ export default function FarmerVerification() {
             {alreadyVerified ? (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
                 <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-green-800">Already Verified</h3>
+                <h3 className="font-semibold text-green-800">
+                  Already Verified
+                </h3>
                 <p className="text-sm text-green-600 mt-1">
                   {receipt.farmerVerifiedAt
-                    ? `Verified on ${format(new Date(receipt.farmerVerifiedAt), 'MMMM d, yyyy at h:mm a')}`
-                    : 'This receipt has been verified.'}
+                    ? `Verified on ${format(new Date(receipt.farmerVerifiedAt), "MMMM d, yyyy at h:mm a")}`
+                    : "This receipt has been verified."}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="font-semibold text-blue-800 mb-2">Verification Required</h3>
+                  <h3 className="font-semibold text-blue-800 mb-2">
+                    Verification Required
+                  </h3>
                   <p className="text-sm text-blue-600">
-                    Please review the items above and confirm that they match your delivery.
+                    Please review the items above and confirm that they match
+                    your delivery.
                   </p>
                 </div>
 
@@ -323,7 +366,9 @@ export default function FarmerVerification() {
                   <Checkbox
                     id="acknowledge"
                     checked={acknowledged}
-                    onCheckedChange={(checked) => setAcknowledged(checked === true)}
+                    onCheckedChange={checked =>
+                      setAcknowledged(checked === true)
+                    }
                   />
                   <div className="grid gap-1.5 leading-none">
                     <Label
@@ -333,8 +378,8 @@ export default function FarmerVerification() {
                       I confirm this receipt is accurate
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      By checking this box, I acknowledge that the items and quantities listed above
-                      accurately represent my delivery.
+                      By checking this box, I acknowledge that the items and
+                      quantities listed above accurately represent my delivery.
                     </p>
                   </div>
                 </div>
@@ -346,7 +391,7 @@ export default function FarmerVerification() {
                     id="notes"
                     placeholder="Add any notes about this delivery..."
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={e => setNotes(e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -359,7 +404,7 @@ export default function FarmerVerification() {
                   size="lg"
                 >
                   {verifyMutation.isPending ? (
-                    'Verifying...'
+                    "Verifying..."
                   ) : (
                     <>
                       <Check className="h-5 w-5 mr-2" />
@@ -385,14 +430,20 @@ export default function FarmerVerification() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Verification</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to verify that the items in receipt <strong>{receipt.receiptNumber}</strong> are
-              accurate. This action cannot be undone.
+              You are about to verify that the items in receipt{" "}
+              <strong>{receipt.receiptNumber}</strong> are accurate. This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmVerification} disabled={verifyMutation.isPending}>
-              {verifyMutation.isPending ? 'Verifying...' : 'Confirm Verification'}
+            <AlertDialogAction
+              onClick={confirmVerification}
+              disabled={verifyMutation.isPending}
+            >
+              {verifyMutation.isPending
+                ? "Verifying..."
+                : "Confirm Verification"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,12 +1,18 @@
-import { mysqlTable, int, text, varchar, timestamp } from "drizzle-orm/mysql-core";
+import {
+  mysqlTable,
+  int,
+  text,
+  varchar,
+  timestamp,
+} from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
  * RBAC Schema for TERP
- * 
+ *
  * This schema implements Role-Based Access Control (RBAC) for the TERP application.
  * It defines four core tables: roles, permissions, role_permissions, and user_roles.
- * 
+ *
  * Design Principles:
  * - Flexible: Custom roles can be created beyond the 10 predefined roles
  * - Granular: 255 permissions provide fine-grained control
@@ -64,16 +70,19 @@ export const rolePermissions = mysqlTable("role_permissions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
-  role: one(roles, {
-    fields: [rolePermissions.roleId],
-    references: [roles.id],
-  }),
-  permission: one(permissions, {
-    fields: [rolePermissions.permissionId],
-    references: [permissions.id],
-  }),
-}));
+export const rolePermissionsRelations = relations(
+  rolePermissions,
+  ({ one }) => ({
+    role: one(roles, {
+      fields: [rolePermissions.roleId],
+      references: [roles.id],
+    }),
+    permission: one(permissions, {
+      fields: [rolePermissions.permissionId],
+      references: [permissions.id],
+    }),
+  })
+);
 
 // ============================================================================
 // USER_ROLES TABLE (Many-to-Many)
@@ -87,6 +96,7 @@ export const userRoles = mysqlTable("user_roles", {
     .references(() => roles.id, { onDelete: "cascade" }),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
   assignedBy: varchar("assigned_by", { length: 255 }),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const userRolesRelations = relations(userRoles, ({ one }) => ({
@@ -111,9 +121,12 @@ export const userPermissionOverrides = mysqlTable("user_permission_overrides", {
   grantedBy: varchar("granted_by", { length: 255 }),
 });
 
-export const userPermissionOverridesRelations = relations(userPermissionOverrides, ({ one }) => ({
-  permission: one(permissions, {
-    fields: [userPermissionOverrides.permissionId],
-    references: [permissions.id],
-  }),
-}));
+export const userPermissionOverridesRelations = relations(
+  userPermissionOverrides,
+  ({ one }) => ({
+    permission: one(permissions, {
+      fields: [userPermissionOverrides.permissionId],
+      references: [permissions.id],
+    }),
+  })
+);

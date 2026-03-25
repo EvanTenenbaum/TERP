@@ -3065,6 +3065,16 @@ export const returnReasonEnum = mysqlEnum("returnReason", [
   "OTHER",
 ]);
 
+// DISC-RET-002: Dedicated status column for returns (replaces notes-embedded status)
+export const returnStatusEnum = mysqlEnum("status", [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "RECEIVED",
+  "PROCESSED",
+  "CANCELLED",
+]);
+
 /**
  * Returns Table
  * Tracks returns for orders with automatic inventory restocking
@@ -3078,6 +3088,7 @@ export const returns = mysqlTable(
       .references(() => orders.id, { onDelete: "cascade" }),
     items: json("items").notNull(), // Array of { batchId, quantity, reason }
     returnReason: returnReasonEnum.notNull(),
+    status: returnStatusEnum.notNull().default("PENDING"), // DISC-RET-002
     notes: text("notes"),
     processedBy: int("processed_by")
       .notNull()
@@ -3087,6 +3098,7 @@ export const returns = mysqlTable(
   table => ({
     orderIdIdx: index("idx_order_id").on(table.orderId),
     processedAtIdx: index("idx_processed_at").on(table.processedAt),
+    statusIdx: index("idx_returns_status").on(table.status), // DISC-RET-002
   })
 );
 
@@ -3584,6 +3596,7 @@ export const sampleRequests = mysqlTable(
     cancelledBy: int("cancelledBy").references(() => users.id),
     cancellationReason: text("cancellationReason"),
     notes: text("notes"),
+    dueDate: date("dueDate"), // DISC-SAM-003: dedicated column (replaces notes-embedded due date)
     totalCost: decimal("totalCost", { precision: 10, scale: 2 }), // COGS of samples
     relatedOrderId: int("relatedOrderId").references(() => orders.id), // If sample led to order
     conversionDate: timestamp("conversionDate"), // When sample converted to sale
@@ -3621,6 +3634,7 @@ export const sampleRequests = mysqlTable(
     expirationIdx: index("idx_sample_requests_expiration").on(
       table.expirationDate
     ),
+    dueDateIdx: index("idx_sample_requests_due_date").on(table.dueDate), // DISC-SAM-003
   })
 );
 
@@ -3854,6 +3868,7 @@ export const tagHierarchy = mysqlTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
+    deletedAt: timestamp("deletedAt"),
   },
   table => ({
     parentChildIdx: index("idx_tag_hierarchy_parent_child").on(
@@ -4207,6 +4222,7 @@ export const clientNeeds = mysqlTable(
       () => clients.id,
       { onDelete: "restrict" }
     ), // VIP portal client (nullable for internal)
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
@@ -4755,6 +4771,7 @@ export const todoLists = mysqlTable(
     isShared: boolean("is_shared").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     ownerIdIdx: index("idx_owner_id").on(table.ownerId),
@@ -4837,6 +4854,7 @@ export const todoTasks = mysqlTable(
     }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     listIdIdx: index("idx_list_id").on(table.listId),
@@ -4912,6 +4930,7 @@ export const comments = mysqlTable(
     }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     commentableIdx: index("idx_commentable").on(
@@ -5093,6 +5112,7 @@ export const inboxItems = mysqlTable(
     isArchived: boolean("is_archived").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     userIdIdx: index("idx_user_id").on(table.userId),
@@ -5989,6 +6009,7 @@ export const appointmentTypes = mysqlTable(
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     calendarIdx: index("idx_appointment_types_calendar").on(table.calendarId),
@@ -6042,6 +6063,7 @@ export const calendarBlockedDates = mysqlTable(
     reason: varchar("reason", { length: 255 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     calendarIdx: index("idx_blocked_dates_calendar").on(table.calendarId),
@@ -6546,6 +6568,7 @@ export const leaderboardMetricCache = mysqlTable(
     }>(),
     calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
     expiresAt: timestamp("expires_at").notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     clientMetricIdx: unique("idx_client_metric").on(

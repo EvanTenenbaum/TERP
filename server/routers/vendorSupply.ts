@@ -183,11 +183,15 @@ export const vendorSupplyRouter = router({
       try {
         const { id, ...updates } = input;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const processedUpdates: any = { ...updates };
-        if (updates.availableUntil) {
-          processedUpdates.availableUntil = new Date(updates.availableUntil);
-        }
+        const { availableUntil: availableUntilStr, ...restUpdates } = updates;
+        const processedUpdates: Omit<typeof updates, "availableUntil"> & {
+          availableUntil?: Date;
+        } = {
+          ...restUpdates,
+          ...(availableUntilStr
+            ? { availableUntil: new Date(availableUntilStr) }
+            : {}),
+        };
 
         const supply = await vendorSupplyDb.updateVendorSupply(
           id,

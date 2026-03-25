@@ -12,7 +12,7 @@ import {
   userPermissionOverrides,
   permissions,
 } from "../../drizzle/schema";
-import { eq, inArray, and } from "drizzle-orm";
+import { eq, inArray, and, isNull } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import {
   clearPermissionCache,
@@ -47,7 +47,7 @@ export const rbacUsersRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        // Get all user-role assignments
+        // Get all user-role assignments (exclude soft-deleted)
         const userRoleRecords = await db
           .select({
             userId: userRoles.userId,
@@ -58,6 +58,7 @@ export const rbacUsersRouter = router({
           })
           .from(userRoles)
           .innerJoin(roles, eq(userRoles.roleId, roles.id))
+          .where(isNull(userRoles.deletedAt))
           .limit(input.limit)
           .offset(input.offset);
 
@@ -121,7 +122,7 @@ export const rbacUsersRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        // Get user's roles
+        // Get user's roles (exclude soft-deleted)
         const userRoleRecords = await db
           .select({
             roleId: userRoles.roleId,
@@ -131,7 +132,9 @@ export const rbacUsersRouter = router({
           })
           .from(userRoles)
           .innerJoin(roles, eq(userRoles.roleId, roles.id))
-          .where(eq(userRoles.userId, input.userId));
+          .where(
+            and(eq(userRoles.userId, input.userId), isNull(userRoles.deletedAt))
+          );
 
         // Get user's permission overrides
         const overrideRecords = await db
@@ -209,14 +212,15 @@ export const rbacUsersRouter = router({
           throw new Error(`Role with ID ${input.roleId} not found`);
         }
 
-        // Check if user already has this role
+        // Check if user already has this role (exclude soft-deleted)
         const existing = await db
           .select({ userId: userRoles.userId })
           .from(userRoles)
           .where(
             and(
               eq(userRoles.userId, input.userId),
-              eq(userRoles.roleId, input.roleId)
+              eq(userRoles.roleId, input.roleId),
+              isNull(userRoles.deletedAt)
             )
           )
           .limit(1);
@@ -280,13 +284,15 @@ export const rbacUsersRouter = router({
           .where(eq(roles.id, input.roleId))
           .limit(1);
 
-        // Remove role assignment
+        // Soft delete role assignment
         const _result = await db
-          .delete(userRoles)
+          .update(userRoles)
+          .set({ deletedAt: new Date() })
           .where(
             and(
               eq(userRoles.userId, input.userId),
-              eq(userRoles.roleId, input.roleId)
+              eq(userRoles.roleId, input.roleId),
+              isNull(userRoles.deletedAt)
             )
           );
 
@@ -541,11 +547,13 @@ export const rbacUsersRouter = router({
           throw new Error("One or more role IDs are invalid");
         }
 
-        // Get currently assigned roles
+        // Get currently assigned roles (exclude soft-deleted)
         const currentRoles = await db
           .select({ roleId: userRoles.roleId })
           .from(userRoles)
-          .where(eq(userRoles.userId, input.userId));
+          .where(
+            and(eq(userRoles.userId, input.userId), isNull(userRoles.deletedAt))
+          );
 
         const currentRoleIds = new Set(currentRoles.map(r => r.roleId));
         const newRoleIds = input.roleIds.filter(id => !currentRoleIds.has(id));
@@ -617,8 +625,13 @@ export const rbacUsersRouter = router({
           }
         }
 
-        // Delete all current role assignments
-        await db.delete(userRoles).where(eq(userRoles.userId, input.userId));
+        // Soft delete all current role assignments
+        await db
+          .update(userRoles)
+          .set({ deletedAt: new Date() })
+          .where(
+            and(eq(userRoles.userId, input.userId), isNull(userRoles.deletedAt))
+          );
 
         // Insert new role assignments
         if (input.roleIds.length > 0) {

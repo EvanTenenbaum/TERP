@@ -428,7 +428,7 @@ export function OrderPreview({
           item={selectedItemForCogs}
           clientDetails={_clientDetails}
           onClose={() => setSelectedItemForCogs(null)}
-          onSave={(updates: any) => {
+          onSave={updates => {
             onUpdateItem(selectedItemForCogs.batchId as number, updates);
             setSelectedItemForCogs(null);
           }}

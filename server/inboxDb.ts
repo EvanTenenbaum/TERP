@@ -4,7 +4,7 @@ import {
   type InboxItem,
   type InsertInboxItem,
 } from "../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, sql } from "drizzle-orm";
 
 /**
  * Inbox Database Access Layer
@@ -29,8 +29,12 @@ export async function getUserInboxItems(
   if (!db) throw new Error("Database not available");
 
   const whereCondition = includeArchived
-    ? eq(inboxItems.userId, userId)
-    : and(eq(inboxItems.userId, userId), eq(inboxItems.isArchived, false));
+    ? and(eq(inboxItems.userId, userId), isNull(inboxItems.deletedAt))
+    : and(
+        eq(inboxItems.userId, userId),
+        eq(inboxItems.isArchived, false),
+        isNull(inboxItems.deletedAt)
+      );
 
   // Get total count for pagination
   const [countResult] = await db
@@ -73,7 +77,8 @@ export async function getUnreadInboxItems(
       and(
         eq(inboxItems.userId, userId),
         eq(inboxItems.status, "unread"),
-        eq(inboxItems.isArchived, false)
+        eq(inboxItems.isArchived, false),
+        isNull(inboxItems.deletedAt)
       )
     )
     .orderBy(desc(inboxItems.createdAt));
@@ -98,7 +103,8 @@ export async function getInboxItemsByStatus(
       and(
         eq(inboxItems.userId, userId),
         eq(inboxItems.status, status),
-        eq(inboxItems.isArchived, false)
+        eq(inboxItems.isArchived, false),
+        isNull(inboxItems.deletedAt)
       )
     )
     .orderBy(desc(inboxItems.createdAt));
@@ -118,7 +124,7 @@ export async function getInboxItemById(
   const [item] = await db
     .select()
     .from(inboxItems)
-    .where(eq(inboxItems.id, itemId))
+    .where(and(eq(inboxItems.id, itemId), isNull(inboxItems.deletedAt)))
     .limit(1);
 
   return item || null;
@@ -282,7 +288,10 @@ export async function deleteInboxItem(itemId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(inboxItems).where(eq(inboxItems.id, itemId));
+  await db
+    .update(inboxItems)
+    .set({ deletedAt: new Date() })
+    .where(eq(inboxItems.id, itemId));
 }
 
 /**

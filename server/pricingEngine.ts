@@ -20,8 +20,7 @@ export interface PricingConditions {
   priceMax?: number;
   grade?: string;
   vendor?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any; // Allow custom metadata fields
+  [key: string]: unknown; // Allow custom metadata fields
 }
 
 export interface InventoryItem {
@@ -35,8 +34,7 @@ export interface InventoryItem {
   grade?: string;
   vendor?: string;
   quantity?: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any; // Allow custom metadata
+  [key: string]: unknown; // Allow custom metadata
 }
 
 export interface PricedInventoryItem extends InventoryItem {
@@ -153,7 +151,10 @@ export async function deletePricingRule(ruleId: number) {
   if (!db) throw new Error("Database not available");
 
   // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-  await db.update(pricingRules).set({ deletedAt: new Date() }).where(eq(pricingRules.id, ruleId));
+  await db
+    .update(pricingRules)
+    .set({ deletedAt: new Date() })
+    .where(eq(pricingRules.id, ruleId));
 }
 
 // ============================================================================
@@ -179,10 +180,7 @@ export async function getPricingProfileById(profileId: number) {
     .select()
     .from(pricingProfiles)
     .where(
-      and(
-        eq(pricingProfiles.id, profileId),
-        isNull(pricingProfiles.deletedAt)
-      )
+      and(eq(pricingProfiles.id, profileId), isNull(pricingProfiles.deletedAt))
     )
     .limit(1);
   return result[0] || null;
@@ -218,7 +216,8 @@ export function hydrateConfiguredPricingRules(
     .sort((left, right) => {
       const leftMeta = configuredMetaById.get(left.id);
       const rightMeta = configuredMetaById.get(right.id);
-      const priorityDelta = (rightMeta?.priority ?? 0) - (leftMeta?.priority ?? 0);
+      const priorityDelta =
+        (rightMeta?.priority ?? 0) - (leftMeta?.priority ?? 0);
       if (priorityDelta !== 0) {
         return priorityDelta;
       }
@@ -272,7 +271,10 @@ export async function deletePricingProfile(profileId: number) {
   if (!db) throw new Error("Database not available");
 
   // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-  await db.update(pricingProfiles).set({ deletedAt: new Date() }).where(eq(pricingProfiles.id, profileId));
+  await db
+    .update(pricingProfiles)
+    .set({ deletedAt: new Date() })
+    .where(eq(pricingProfiles.id, profileId));
 }
 
 export async function applyProfileToClient(
@@ -426,9 +428,10 @@ export async function calculateRetailPrice(
 
   // BUG-040 FIX: Handle zero base price to prevent division by zero (NaN/Infinity)
   // When basePrice is 0, priceMarkup should be 0 (no markup calculable)
-  const priceMarkup = item.basePrice > 0
-    ? ((currentPrice - item.basePrice) / item.basePrice) * 100
-    : 0;
+  const priceMarkup =
+    item.basePrice > 0
+      ? ((currentPrice - item.basePrice) / item.basePrice) * 100
+      : 0;
 
   return {
     ...item,
@@ -468,12 +471,7 @@ export async function getClientPricingRules(
   const clientResult = await db
     .select()
     .from(clients)
-    .where(
-      and(
-        eq(clients.id, clientId),
-        isNull(clients.deletedAt)
-      )
-    )
+    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
     .limit(1);
   if (!clientResult[0]) {
     console.warn(`[PricingEngine] Client ${clientId} not found`);
@@ -500,7 +498,9 @@ export async function getClientPricingRules(
       // BUG-040 FIX: Validate all ruleIds are positive integers to prevent injection
       const validRuleIds = ruleIds.filter(id => Number.isInteger(id) && id > 0);
       if (validRuleIds.length !== ruleIds.length) {
-        console.warn(`[PricingEngine] Invalid ruleIds filtered for client ${clientId}`);
+        console.warn(
+          `[PricingEngine] Invalid ruleIds filtered for client ${clientId}`
+        );
       }
       if (validRuleIds.length === 0) {
         return [];
@@ -523,7 +523,8 @@ export async function getClientPricingRules(
 
   // If client has custom pricing rules, use those
   if (client.customPricingRules) {
-    const customRules = client.customPricingRules as ConfiguredPricingRuleReference[];
+    const customRules =
+      client.customPricingRules as ConfiguredPricingRuleReference[];
     const ruleIds = customRules.map(r => r.ruleId);
 
     // BUG-040 FIX: Handle empty custom rules array - prevents invalid SQL "WHERE id IN ()"
@@ -537,7 +538,9 @@ export async function getClientPricingRules(
     // BUG-040 FIX: Validate all ruleIds are positive integers to prevent injection
     const validRuleIds = ruleIds.filter(id => Number.isInteger(id) && id > 0);
     if (validRuleIds.length !== ruleIds.length) {
-      console.warn(`[PricingEngine] Invalid custom ruleIds filtered for client ${clientId}`);
+      console.warn(
+        `[PricingEngine] Invalid custom ruleIds filtered for client ${clientId}`
+      );
     }
     if (validRuleIds.length === 0) {
       return [];

@@ -27,6 +27,7 @@ import {
 import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
+import { normalizeFulfillmentStatus } from "../lib/fulfillmentStatusCompatibility";
 import { createInvoiceFromOrderTx } from "../services/orderAccountingService";
 import { reverseGLEntries, GLPostingError } from "../accountingHooks";
 import { syncClientBalance } from "../services/clientBalanceService";
@@ -372,11 +373,12 @@ export const invoicesRouter = router({
       }
 
       // Verify order status allows invoicing
+      // Normalize to handle legacy "PENDING" ↔ "READY_FOR_PACKING" mapping
+      const normalizedStatus = normalizeFulfillmentStatus(
+        order.fulfillmentStatus ?? ""
+      );
       const allowedStatuses = ["READY_FOR_PACKING", "PACKED", "SHIPPED"];
-      if (
-        !order.fulfillmentStatus ||
-        !allowedStatuses.includes(order.fulfillmentStatus)
-      ) {
+      if (!normalizedStatus || !allowedStatuses.includes(normalizedStatus)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Order must be in status: ${allowedStatuses.join(", ")}. Current: ${order.fulfillmentStatus}`,

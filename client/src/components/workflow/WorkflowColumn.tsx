@@ -1,16 +1,23 @@
 /**
  * Workflow Column Component
- * 
+ *
  * Represents a single status column in the Kanban board.
  * Acts as a drop zone for batch cards.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { WorkflowBatchCard } from "./WorkflowBatchCard";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+
+interface WorkflowBatchItem {
+  id: string | number;
+  [key: string]: unknown;
+}
 
 interface WorkflowColumnProps {
   status: {
@@ -20,11 +27,15 @@ interface WorkflowColumnProps {
     color: string;
     order: number;
   };
-  batches: Array<Record<string, unknown>>;
+  batches: WorkflowBatchItem[];
   batchIds: number[];
 }
 
-export function WorkflowColumn({ status, batches, batchIds }: WorkflowColumnProps) {
+export function WorkflowColumn({
+  status,
+  batches,
+  batchIds,
+}: WorkflowColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: status.id,
   });
@@ -61,13 +72,16 @@ export function WorkflowColumn({ status, batches, batchIds }: WorkflowColumnProp
             isOver ? "bg-blue-50" : ""
           }`}
         >
-          <SortableContext items={batchIds} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={batchIds}
+            strategy={verticalListSortingStrategy}
+          >
             {batches.length === 0 ? (
               <div className="text-center py-8 text-gray-400 text-sm">
                 No batches in this status
               </div>
             ) : (
-              batches.map((batch: any) => (
+              batches.map(batch => (
                 <WorkflowBatchCard key={batch.id} batch={batch} />
               ))
             )}

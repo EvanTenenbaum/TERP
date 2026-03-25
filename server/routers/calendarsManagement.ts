@@ -488,6 +488,7 @@ export const calendarsManagementRouter = router({
         .where(
           and(
             eq(appointmentTypes.calendarId, input.calendarId),
+            isNull(appointmentTypes.deletedAt),
             input.includeInactive
               ? undefined
               : eq(appointmentTypes.isActive, true)
@@ -586,7 +587,12 @@ export const calendarsManagementRouter = router({
       const [type] = await db
         .select()
         .from(appointmentTypes)
-        .where(eq(appointmentTypes.id, input.id))
+        .where(
+          and(
+            eq(appointmentTypes.id, input.id),
+            isNull(appointmentTypes.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!type) {
@@ -647,7 +653,12 @@ export const calendarsManagementRouter = router({
       const [type] = await db
         .select()
         .from(appointmentTypes)
-        .where(eq(appointmentTypes.id, input.id))
+        .where(
+          and(
+            eq(appointmentTypes.id, input.id),
+            isNull(appointmentTypes.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!type) {
@@ -672,7 +683,8 @@ export const calendarsManagementRouter = router({
       }
 
       await db
-        .delete(appointmentTypes)
+        .update(appointmentTypes)
+        .set({ deletedAt: new Date() })
         .where(eq(appointmentTypes.id, input.id));
 
       return { success: true };
@@ -821,6 +833,7 @@ export const calendarsManagementRouter = router({
 
       const conditions = [
         eq(calendarBlockedDates.calendarId, input.calendarId),
+        isNull(calendarBlockedDates.deletedAt),
       ];
 
       if (input.startDate) {
@@ -900,7 +913,12 @@ export const calendarsManagementRouter = router({
       const [blocked] = await db
         .select()
         .from(calendarBlockedDates)
-        .where(eq(calendarBlockedDates.id, input.id))
+        .where(
+          and(
+            eq(calendarBlockedDates.id, input.id),
+            isNull(calendarBlockedDates.deletedAt)
+          )
+        )
         .limit(1);
 
       if (!blocked) {
@@ -925,7 +943,8 @@ export const calendarsManagementRouter = router({
       }
 
       await db
-        .delete(calendarBlockedDates)
+        .update(calendarBlockedDates)
+        .set({ deletedAt: new Date() })
         .where(eq(calendarBlockedDates.id, input.id));
 
       return { success: true };
@@ -974,7 +993,8 @@ export const calendarsManagementRouter = router({
           and(
             eq(appointmentTypes.id, input.appointmentTypeId),
             eq(appointmentTypes.calendarId, input.calendarId),
-            eq(appointmentTypes.isActive, true)
+            eq(appointmentTypes.isActive, true),
+            isNull(appointmentTypes.deletedAt)
           )
         )
         .limit(1);
@@ -997,7 +1017,8 @@ export const calendarsManagementRouter = router({
           and(
             eq(calendarBlockedDates.calendarId, input.calendarId),
             gte(calendarBlockedDates.date, new Date(input.startDate)),
-            lte(calendarBlockedDates.date, new Date(input.endDate))
+            lte(calendarBlockedDates.date, new Date(input.endDate)),
+            isNull(calendarBlockedDates.deletedAt)
           )
         );
 

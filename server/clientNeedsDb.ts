@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { clientNeeds, clients } from "../drizzle/schema";
 import type { ClientNeed, InsertClientNeed } from "../drizzle/schema";
@@ -9,7 +9,9 @@ import { logger } from "./_core/logger";
  * @param need - The client need data to insert
  * @returns The created client need with full details
  */
-export async function createClientNeed(need: InsertClientNeed): Promise<ClientNeed> {
+export async function createClientNeed(
+  need: InsertClientNeed
+): Promise<ClientNeed> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -19,7 +21,7 @@ export async function createClientNeed(need: InsertClientNeed): Promise<ClientNe
       .select()
       .from(clientNeeds)
       .where(eq(clientNeeds.id, inserted.insertId as number));
-    
+
     return created;
   } catch (error) {
     logger.error({
@@ -27,7 +29,9 @@ export async function createClientNeed(need: InsertClientNeed): Promise<ClientNe
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to create client need: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to create client need: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -36,7 +40,9 @@ export async function createClientNeed(need: InsertClientNeed): Promise<ClientNe
  * @param id - The client need ID
  * @returns The client need or null if not found
  */
-export async function getClientNeedById(id: number): Promise<ClientNeed | null> {
+export async function getClientNeedById(
+  id: number
+): Promise<ClientNeed | null> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -44,8 +50,8 @@ export async function getClientNeedById(id: number): Promise<ClientNeed | null> 
     const [need] = await db
       .select()
       .from(clientNeeds)
-      .where(eq(clientNeeds.id, id));
-    
+      .where(and(eq(clientNeeds.id, id), isNull(clientNeeds.deletedAt)));
+
     return need || null;
   } catch (error) {
     logger.error({
@@ -54,7 +60,9 @@ export async function getClientNeedById(id: number): Promise<ClientNeed | null> 
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to fetch client need: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch client need: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -75,8 +83,8 @@ export async function getClientNeeds(filters?: {
 
   try {
     let query = db.select().from(clientNeeds);
-    
-    const conditions = [];
+
+    const conditions = [isNull(clientNeeds.deletedAt)];
     if (filters?.status) {
       conditions.push(eq(clientNeeds.status, filters.status));
     }
@@ -93,9 +101,7 @@ export async function getClientNeeds(filters?: {
       conditions.push(eq(clientNeeds.category, filters.category));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as typeof query;
-    }
+    query = query.where(and(...conditions)) as typeof query;
 
     const needs = await query.orderBy(desc(clientNeeds.createdAt));
     return needs;
@@ -106,7 +112,9 @@ export async function getClientNeeds(filters?: {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to fetch client needs: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch client needs: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -115,7 +123,9 @@ export async function getClientNeeds(filters?: {
  * @param clientId - The client ID
  * @returns Array of active client needs
  */
-export async function getActiveClientNeeds(clientId: number): Promise<ClientNeed[]> {
+export async function getActiveClientNeeds(
+  clientId: number
+): Promise<ClientNeed[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -126,11 +136,12 @@ export async function getActiveClientNeeds(clientId: number): Promise<ClientNeed
       .where(
         and(
           eq(clientNeeds.clientId, clientId),
-          eq(clientNeeds.status, "ACTIVE")
+          eq(clientNeeds.status, "ACTIVE"),
+          isNull(clientNeeds.deletedAt)
         )
       )
       .orderBy(desc(clientNeeds.priority), desc(clientNeeds.createdAt));
-    
+
     return needs;
   } catch (error) {
     logger.error({
@@ -139,7 +150,9 @@ export async function getActiveClientNeeds(clientId: number): Promise<ClientNeed
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to fetch active client needs: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch active client needs: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -157,20 +170,17 @@ export async function updateClientNeed(
   if (!db) throw new Error("Database not available");
 
   try {
-    await db
-      .update(clientNeeds)
-      .set(updates)
-      .where(eq(clientNeeds.id, id));
-    
+    await db.update(clientNeeds).set(updates).where(eq(clientNeeds.id, id));
+
     const [updated] = await db
       .select()
       .from(clientNeeds)
       .where(eq(clientNeeds.id, id));
-    
+
     if (!updated) {
       throw new Error("Client need not found after update");
     }
-    
+
     return updated;
   } catch (error) {
     logger.error({
@@ -179,7 +189,9 @@ export async function updateClientNeed(
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to update client need: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to update client need: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -204,7 +216,9 @@ export async function fulfillClientNeed(id: number): Promise<ClientNeed> {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to fulfill client need: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fulfill client need: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -228,7 +242,9 @@ export async function cancelClientNeed(id: number): Promise<ClientNeed> {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to cancel client need: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to cancel client need: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -242,7 +258,10 @@ export async function deleteClientNeed(id: number): Promise<boolean> {
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.delete(clientNeeds).where(eq(clientNeeds.id, id));
+    await db
+      .update(clientNeeds)
+      .set({ deletedAt: new Date() })
+      .where(eq(clientNeeds.id, id));
     return true;
   } catch (error) {
     logger.error({
@@ -251,7 +270,9 @@ export async function deleteClientNeed(id: number): Promise<boolean> {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to delete client need: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to delete client need: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -298,7 +319,9 @@ export async function getClientNeedsWithMatches(filters?: {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to fetch client needs with matches: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch client needs with matches: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -320,7 +343,7 @@ export async function expireOldClientNeeds(): Promise<number> {
           sql`${clientNeeds.expiresAt} < NOW()`
         )
       );
-    
+
     return result[0].affectedRows || 0;
   } catch (error) {
     logger.error({
@@ -328,7 +351,8 @@ export async function expireOldClientNeeds(): Promise<number> {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to expire old client needs: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to expire old client needs: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
-

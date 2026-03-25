@@ -70,8 +70,10 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
       refetchNeeds();
       if (
         result.success &&
+        "matches" in result &&
         result.matches &&
         result.matches.matches.length > 0 &&
+        "need" in result &&
         result.need
       ) {
         setSelectedNeed({

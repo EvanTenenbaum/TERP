@@ -20,7 +20,8 @@ export async function createSampleRequest(
   clientId: number,
   requestedBy: number,
   products: Array<{ productId: number; quantity: string }>,
-  notes?: string
+  notes?: string,
+  dueDate?: string // DISC-SAM-003: dedicated due date column
 ): Promise<SampleRequest> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -49,6 +50,7 @@ export async function createSampleRequest(
       products: products as { productId: number; quantity: string }[],
       sampleRequestStatus: "PENDING",
       notes,
+      ...(dueDate ? { dueDate: new Date(dueDate) } : {}), // DISC-SAM-003
     });
 
     const newRequest = await db

@@ -20,6 +20,31 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+interface ReorderPrediction {
+  clientId: number;
+  clientName?: string;
+  productId?: number;
+  productName?: string;
+  strain?: string;
+  category?: string;
+  subcategory?: string;
+  daysUntilPredictedOrder?: number;
+  daysSinceLastOrder?: number;
+  predictedNextOrderDate?: string | Date;
+  predictedReorderDate?: string | Date;
+  lastPurchaseDate?: string | Date;
+  orderFrequencyDays?: number;
+  confidence?: number;
+  averageQuantity?: number;
+  reasons?: string[];
+  totalQuantity?: number;
+}
+
+interface PurchasePattern {
+  purchaseCount?: number;
+  totalQuantity?: number;
+}
+
 interface PurchasePatternsWidgetProps {
   clientId: number;
 }
@@ -45,9 +70,8 @@ export function PurchasePatternsWidget({
   const allPredictions = predictionsData?.data || [];
 
   // Filter predictions for this specific client
-  const clientPredictions = allPredictions.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (pred: any) => pred.clientId === clientId
+  const clientPredictions = (allPredictions as ReorderPrediction[]).filter(
+    pred => pred.clientId === clientId
   );
 
   // Format date
@@ -125,7 +149,9 @@ export function PurchasePatternsWidget({
             ) : (
               <div className="grid gap-4">
                 {purchasePatterns.map((pattern, idx) => (
-                  <Card key={`pattern-${pattern.strain || pattern.category || pattern.subcategory || idx}`}>
+                  <Card
+                    key={`pattern-${pattern.strain || pattern.category || pattern.subcategory || idx}`}
+                  >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -215,16 +241,15 @@ export function PurchasePatternsWidget({
               <div className="space-y-4">
                 {/* Overdue Predictions Alert */}
                 {clientPredictions.some(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (p: any) => p.daysUntilPredictedOrder < 0
+                  (p: ReorderPrediction) => (p.daysUntilPredictedOrder ?? 0) < 0
                 ) && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       {
                         clientPredictions.filter(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (p: any) => p.daysUntilPredictedOrder < 0
+                          (p: ReorderPrediction) =>
+                            (p.daysUntilPredictedOrder ?? 0) < 0
                         ).length
                       }{" "}
                       overdue reorder(s) detected. Contact client proactively!
@@ -235,98 +260,96 @@ export function PurchasePatternsWidget({
                 <div className="grid gap-4">
                   {clientPredictions
                     .sort(
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      (a: any, b: any) =>
-                        a.daysUntilPredictedOrder - b.daysUntilPredictedOrder
+                      (a: ReorderPrediction, b: ReorderPrediction) =>
+                        (a.daysUntilPredictedOrder ?? 0) -
+                        (b.daysUntilPredictedOrder ?? 0)
                     )
-                    .map(
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      (prediction: any, idx: number) => (
-                        <Card
-                          key={`prediction-${prediction.strain || prediction.category || prediction.subcategory || idx}`}
-                          className={
-                            prediction.daysUntilPredictedOrder < 0
-                              ? "border-red-500"
-                              : ""
-                          }
-                        >
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1">
-                                <CardTitle className="text-base">
-                                  {prediction.strain ||
-                                    prediction.category ||
-                                    "Unknown Product"}
-                                </CardTitle>
-                                <CardDescription>
-                                  Frequent reorder pattern
-                                </CardDescription>
-                              </div>
-                              <div className="flex flex-col items-end gap-2">
-                                {getUrgencyBadge(
-                                  prediction.daysUntilPredictedOrder
-                                )}
-                                {getConfidenceBadge(prediction.confidence)}
-                              </div>
+                    .map((prediction: ReorderPrediction, idx: number) => (
+                      <Card
+                        key={`prediction-${prediction.strain || prediction.category || prediction.subcategory || idx}`}
+                        className={
+                          (prediction.daysUntilPredictedOrder ?? 0) < 0
+                            ? "border-red-500"
+                            : ""
+                        }
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-base">
+                                {prediction.strain ||
+                                  prediction.category ||
+                                  "Unknown Product"}
+                              </CardTitle>
+                              <CardDescription>
+                                Frequent reorder pattern
+                              </CardDescription>
                             </div>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">
-                                  Days Since Last
-                                </p>
-                                <p className="text-sm font-medium">
-                                  {prediction.daysSinceLastOrder}d ago
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">
-                                  Predicted Date
-                                </p>
-                                <p className="text-sm font-medium">
-                                  {formatDate(
-                                    prediction.predictedNextOrderDate
-                                  )}
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">
-                                  Order Frequency
-                                </p>
-                                <p className="text-sm font-medium">
-                                  Every {prediction.orderFrequencyDays}d
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Prediction Reasons */}
-                            {prediction.reasons &&
-                              prediction.reasons.length > 0 && (
-                                <div className="space-y-2 pt-3 border-t">
-                                  <p className="text-xs font-medium text-muted-foreground">
-                                    Prediction Factors:
-                                  </p>
-                                  <ul className="space-y-1">
-                                    {prediction.reasons.map(
-                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                      (reason: any, _ridx: number) => (
-                                        <li
-                                          key={`reason-${String(reason).substring(0, 30)}`}
-                                          className="text-xs flex items-start gap-2"
-                                        >
-                                          <ArrowRight className="h-3 w-3 text-muted-foreground mt-0.5" />
-                                          <span>{reason}</span>
-                                        </li>
-                                      )
-                                    )}
-                                  </ul>
-                                </div>
+                            <div className="flex flex-col items-end gap-2">
+                              {getUrgencyBadge(
+                                prediction.daysUntilPredictedOrder ?? 0
                               )}
-                          </CardContent>
-                        </Card>
-                      )
-                    )}
+                              {getConfidenceBadge(prediction.confidence ?? 0)}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">
+                                Days Since Last
+                              </p>
+                              <p className="text-sm font-medium">
+                                {prediction.daysSinceLastOrder}d ago
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">
+                                Predicted Date
+                              </p>
+                              <p className="text-sm font-medium">
+                                {prediction.predictedNextOrderDate
+                                  ? formatDate(
+                                      prediction.predictedNextOrderDate
+                                    )
+                                  : "N/A"}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">
+                                Order Frequency
+                              </p>
+                              <p className="text-sm font-medium">
+                                Every {prediction.orderFrequencyDays}d
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Prediction Reasons */}
+                          {prediction.reasons &&
+                            prediction.reasons.length > 0 && (
+                              <div className="space-y-2 pt-3 border-t">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  Prediction Factors:
+                                </p>
+                                <ul className="space-y-1">
+                                  {prediction.reasons.map(
+                                    (reason: string, _ridx: number) => (
+                                      <li
+                                        key={`reason-${String(reason).substring(0, 30)}`}
+                                        className="text-xs flex items-start gap-2"
+                                      >
+                                        <ArrowRight className="h-3 w-3 text-muted-foreground mt-0.5" />
+                                        <span>{reason}</span>
+                                      </li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+                        </CardContent>
+                      </Card>
+                    ))}
                 </div>
               </div>
             )}
@@ -367,8 +390,8 @@ export function PurchasePatternsWidget({
                     <span className="text-2xl font-bold">
                       {purchasePatterns
                         .reduce(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (sum: number, p: any) => sum + (p.totalQuantity || 0),
+                          (sum: number, p: PurchasePattern) =>
+                            sum + (p.totalQuantity || 0),
                           0
                         )
                         .toLocaleString()}
@@ -400,8 +423,8 @@ export function PurchasePatternsWidget({
                     <span className="text-2xl font-bold text-red-600">
                       {
                         clientPredictions.filter(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (p: any) => p.daysUntilPredictedOrder < 0
+                          (p: ReorderPrediction) =>
+                            (p.daysUntilPredictedOrder ?? 0) < 0
                         ).length
                       }
                     </span>
@@ -413,10 +436,9 @@ export function PurchasePatternsWidget({
                     <span className="text-2xl font-bold text-orange-600">
                       {
                         clientPredictions.filter(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (p: any) =>
-                            p.daysUntilPredictedOrder >= 0 &&
-                            p.daysUntilPredictedOrder <= 7
+                          (p: ReorderPrediction) =>
+                            (p.daysUntilPredictedOrder ?? 0) >= 0 &&
+                            (p.daysUntilPredictedOrder ?? 0) <= 7
                         ).length
                       }
                     </span>

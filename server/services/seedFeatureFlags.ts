@@ -287,6 +287,56 @@ const DEFAULT_FLAGS = [
     defaultEnabled: true, // 100% rollout
   },
 
+  // Individual Work Surface component flags
+  {
+    key: "work-surface-direct-intake",
+    name: "Work Surface: Direct Intake",
+    description: "Enable Work Surface UI for the Direct Intake workflow",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-purchase-orders",
+    name: "Work Surface: Purchase Orders",
+    description: "Enable Work Surface UI for the Purchase Orders workflow",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-clients",
+    name: "Work Surface: Clients",
+    description: "Enable Work Surface UI for the Clients page",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-orders",
+    name: "Work Surface: Orders",
+    description: "Enable Work Surface UI for the Orders page",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-inventory",
+    name: "Work Surface: Inventory",
+    description: "Enable Work Surface UI for the Inventory page",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-invoices",
+    name: "Work Surface: Invoices",
+    description: "Enable Work Surface UI for the Invoices page",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+
   // DATA-012: Work Surface Feature Flags
   {
     key: "work-surface-keyboard-contract",

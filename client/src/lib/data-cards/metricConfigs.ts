@@ -26,7 +26,6 @@ import {
   Percent,
 } from "lucide-react";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { MetricConfig, ModuleConfig } from "./types";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 
@@ -158,7 +157,10 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     category: "analytical",
     destination: {
       path: "/inventory",
-      getParams: (data: any) => ({ category: data?.topCategory || "" }),
+      getParams: (data?: unknown) => ({
+        category:
+          (data as { topCategory?: string } | undefined)?.topCategory || "",
+      }),
     },
   },
 
@@ -520,7 +522,9 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     category: "analytical",
     destination: {
       path: "/vendor-supply",
-      getParams: (data: any) => ({ vendor: data?.topVendor || "" }),
+      getParams: (data?: unknown) => ({
+        vendor: (data as { topVendor?: string } | undefined)?.topVendor || "",
+      }),
     },
   },
 

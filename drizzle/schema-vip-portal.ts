@@ -546,6 +546,7 @@ export const vipTiers = mysqlTable(
     isDefault: boolean("is_default").default(false), // Default tier for new clients
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     levelIdx: index("idx_vip_tiers_level").on(table.level),

@@ -21,7 +21,7 @@ const isCloud =
 const isRemoteExecution = isRemoteBaseURL || isCloud;
 const isOracleRun = Boolean(process.env.ORACLE_RUN_MODE);
 const envTaggedPattern =
-  /@prod-smoke|@prod-regression|@dev-only|@staging-critical/;
+  /@prod-smoke|@prod-regression|@dev-only|@staging-critical|@deep|@rbac/;
 const shouldUploadToArgos = Boolean(process.env.CI && process.env.ARGOS_TOKEN);
 
 // Parse HTTP(S) proxy for Playwright browser context when running in proxied environments
@@ -105,6 +105,34 @@ export default defineConfig({
         ignoreHTTPSErrors: !!proxyConfig,
       },
     },
+    // Deep business-logic tests run first with full admin access.
+    // RBAC permission tests run separately after, so auth issues never
+    // block accurate findings about business logic.
+    {
+      name: "deep",
+      testDir: "./tests-e2e/deep",
+      grepInvert: /@rbac/,
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        ignoreHTTPSErrors: !!proxyConfig,
+      },
+    },
+    {
+      name: "deep-rbac",
+      testDir: "./tests-e2e/deep",
+      grep: /@rbac/,
+      dependencies: ["deep"],
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        ignoreHTTPSErrors: !!proxyConfig,
+      },
+    },
     {
       name: "smoke",
       testDir: "./tests/smoke",
@@ -122,8 +150,9 @@ export default defineConfig({
       : [
           {
             name: "chromium",
-            // Keep untagged legacy coverage local, but avoid duplicate env-tagged runs.
+            // Keep untagged legacy coverage local, but avoid duplicate env-tagged and deep runs.
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["Desktop Chrome"] },
           },
           {
@@ -139,16 +168,19 @@ export default defineConfig({
           {
             name: "Mobile Chrome",
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["Pixel 5"] },
           },
           {
             name: "Mobile Safari",
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["iPhone 13"] },
           },
           {
             name: "Tablet",
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["iPad (gen 7)"] },
           },
         ]),

@@ -5,7 +5,7 @@
 
 import { db } from "../../db";
 import { leaderboardMetricCache } from "../../../drizzle/schema";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, isNull } from "drizzle-orm";
 import type { MetricType, MetricResult } from "./types";
 import { CACHE_TTL } from "./constants";
 
@@ -23,7 +23,8 @@ export async function getCachedMetrics(
     .where(
       and(
         eq(leaderboardMetricCache.clientId, clientId),
-        gte(leaderboardMetricCache.expiresAt, new Date())
+        gte(leaderboardMetricCache.expiresAt, new Date()),
+        isNull(leaderboardMetricCache.deletedAt)
       )
     );
 
@@ -89,11 +90,21 @@ export async function cacheMetrics(
 export async function invalidateCache(clientId?: number): Promise<void> {
   if (!db) return;
 
+  const now = new Date();
   if (clientId) {
     await db
-      .delete(leaderboardMetricCache)
-      .where(eq(leaderboardMetricCache.clientId, clientId));
+      .update(leaderboardMetricCache)
+      .set({ deletedAt: now })
+      .where(
+        and(
+          eq(leaderboardMetricCache.clientId, clientId),
+          isNull(leaderboardMetricCache.deletedAt)
+        )
+      );
   } else {
-    await db.delete(leaderboardMetricCache);
+    await db
+      .update(leaderboardMetricCache)
+      .set({ deletedAt: now })
+      .where(isNull(leaderboardMetricCache.deletedAt));
   }
 }
