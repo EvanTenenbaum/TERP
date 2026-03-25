@@ -184,7 +184,8 @@ export const analyticsRouter = router({
         .where(isNull(batches.deletedAt));
       const [paymentStats] = await db
         .select({ totalPayments: sum(payments.amount) })
-        .from(payments);
+        .from(payments)
+        .where(isNull(payments.deletedAt));
 
       const currentRevenue = Number(periodStats?.revenueThisPeriod || 0);
       const previousRevenue = Number(prevPeriodStats?.revenue || 0);

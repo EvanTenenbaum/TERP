@@ -92,7 +92,9 @@ export const auditRouter = router({
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(eq(payments.customerId, clientId))
+        .where(
+          and(eq(payments.customerId, clientId), isNull(payments.deletedAt))
+        )
         .orderBy(desc(payments.paymentDate));
 
       // Combine and sort all transactions
@@ -448,7 +450,13 @@ export const auditRouter = router({
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(and(eq(payments.vendorId, vendorId), ...paymentDateFilter))
+        .where(
+          and(
+            eq(payments.vendorId, vendorId),
+            isNull(payments.deletedAt),
+            ...paymentDateFilter
+          )
+        )
         .orderBy(desc(payments.paymentDate));
 
       // Combine transactions
