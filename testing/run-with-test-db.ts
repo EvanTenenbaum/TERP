@@ -78,6 +78,9 @@ async function main(): Promise<void> {
 }
 
 main().catch(error => {
-  console.error("❌ Failed to run command with local test DB bootstrap:", error);
+  console.error(
+    "❌ Failed to run command with local test DB bootstrap:",
+    error
+  );
   process.exit(1);
 });

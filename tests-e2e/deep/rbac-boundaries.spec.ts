@@ -286,19 +286,26 @@ test.describe("RBAC: SalesRep Extended Boundaries", () => {
     await loginAsSalesRep(page);
   });
 
-  test("salesRep cannot cancel a confirmed order", async ({ page }) => {
+  test("salesRep (Customer Service) can cancel orders — has orders:cancel", async ({
+    page,
+  }) => {
     test.setTimeout(120_000);
 
-    // SalesRep should not be able to cancel orders (admin-only operation)
-    await expectForbidden(
-      () =>
-        trpcMutation(page, "orders.updateOrderStatus", {
-          orderId: 1,
-          newStatus: "CANCELLED",
-          notes: "RBAC test: salesRep should not cancel",
-        }),
-      "orders.updateOrderStatus(CANCELLED) as salesRep"
-    );
+    // Customer Service role has orders:cancel per rbacDefinitions.ts.
+    // Verify the permission is not accidentally revoked (regression guard).
+    let wasForbidden = false;
+    try {
+      await trpcMutation(page, "orders.updateOrderStatus", {
+        orderId: 1,
+        newStatus: "CANCELLED",
+        notes: "RBAC test: salesRep should have cancel permission",
+      });
+    } catch (e: unknown) {
+      const msg = String(e);
+      wasForbidden = /403|forbidden|permission/i.test(msg);
+      // Non-permission errors (e.g., order not found, invalid transition) are fine
+    }
+    expect(wasForbidden).toBe(false);
   });
 
   test("salesRep cannot void invoices", async ({ page }) => {

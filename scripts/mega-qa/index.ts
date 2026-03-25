@@ -181,19 +181,26 @@ function runPreflight(config: MegaQAConfig): boolean {
   // 1. Check if test DB is up
   console.log("\n📦 Step 1: Checking test database...");
   try {
-    if (config.cloud || config.dbMode === "live") {
-      execSync("pnpm test:db:preflight", { stdio: "inherit" });
-    } else {
-      execSync(
-        config.scenario === "full"
-          ? "pnpm test:db:ensure:full"
-          : "pnpm test:db:ensure",
-        { stdio: "inherit" }
-      );
-    }
+    execSync("pnpm test:db:preflight", { stdio: "inherit" });
   } catch {
-    console.error("   ❌ Database setup failed");
-    passed = false;
+    // In cloud/live DB mode, never try to start/reset DB automatically.
+    if (config.cloud || config.dbMode === "live") {
+      console.error("   ❌ Database preflight failed (cloud/live DB mode)");
+      passed = false;
+    } else {
+      console.log("   ⚠️  Preflight check failed, attempting DB setup...");
+      try {
+        execSync("pnpm test:env:up", { stdio: "inherit" });
+        execSync(
+          `pnpm test:db:reset${config.scenario === "full" ? ":full" : ""}`,
+          { stdio: "inherit" }
+        );
+        execSync("pnpm test:db:preflight", { stdio: "inherit" });
+      } catch {
+        console.error("   ❌ Database setup failed");
+        passed = false;
+      }
+    }
   }
 
   // 2. Check if app is running

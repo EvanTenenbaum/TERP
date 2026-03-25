@@ -424,9 +424,8 @@ export async function seedDefaultAccountingAccounts() {
   try {
     const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
     process.env.DATABASE_URL = databaseUrl;
-    const { seedDefaultChartOfAccounts } = await import(
-      "../server/services/seedDefaults"
-    );
+    const { seedDefaultChartOfAccounts } =
+      await import("../server/services/seedDefaults");
     await seedDefaultChartOfAccounts();
     console.info("✅ Default chart of accounts ready");
   } catch (error) {
@@ -482,7 +481,9 @@ export async function ensureTestDatabase(
 
   const databaseUrl = getTestDatabaseUrl();
   if (databaseUrl && isRemoteDatabaseUrl(databaseUrl)) {
-    console.info("🌐 Using remote test database target; skipping local bootstrap");
+    console.info(
+      "🌐 Using remote test database target; skipping local bootstrap"
+    );
     await preflightTestDatabase();
     return;
   }
@@ -739,7 +740,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           );
           console.info("  migrate       - Run migrations");
           console.info("  seed [scenario]  - Seed database (default: light)");
-          console.info("  status        - Show target, container, and baseline status");
+          console.info(
+            "  status        - Show target, container, and baseline status"
+          );
           console.info(
             "  preflight     - Verify database connectivity (local or remote)"
           );

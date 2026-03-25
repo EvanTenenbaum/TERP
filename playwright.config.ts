@@ -110,15 +110,28 @@ export default defineConfig({
     // block accurate findings about business logic.
     {
       name: "deep",
-      grep: /@deep/,
+      testDir: "./tests-e2e/deep",
       grepInvert: /@rbac/,
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        ignoreHTTPSErrors: !!proxyConfig,
+      },
     },
     {
       name: "deep-rbac",
+      testDir: "./tests-e2e/deep",
       grep: /@rbac/,
       dependencies: ["deep"],
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+        ...(proxyConfig ? { proxy: proxyConfig } : {}),
+        ignoreHTTPSErrors: !!proxyConfig,
+      },
     },
     {
       name: "smoke",
@@ -137,8 +150,9 @@ export default defineConfig({
       : [
           {
             name: "chromium",
-            // Keep untagged legacy coverage local, but avoid duplicate env-tagged runs.
+            // Keep untagged legacy coverage local, but avoid duplicate env-tagged and deep runs.
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["Desktop Chrome"] },
           },
           {
@@ -154,16 +168,19 @@ export default defineConfig({
           {
             name: "Mobile Chrome",
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["Pixel 5"] },
           },
           {
             name: "Mobile Safari",
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["iPhone 13"] },
           },
           {
             name: "Tablet",
             grepInvert: envTaggedPattern,
+            testIgnore: /tests-e2e\/deep\//,
             use: { ...devices["iPad (gen 7)"] },
           },
         ]),

@@ -49,6 +49,27 @@ pnpm qa:test:core            # Oracle-based flow tests
 - **When asked to "run E2E tests" or "run browser tests"**, use `pnpm test:e2e:deep:all` for business logic + RBAC, or `pnpm test:e2e` for everything.
 - **Do NOT default to** `tests-e2e/ai-generated/` or root-level specs — these are legacy/supplementary. The `deep/` suite is the current standard.
 
+### Running E2E in Sandboxed/Remote Environments
+
+In sandboxed environments (e.g. Claude Code remote), standard DNS may not resolve external hosts.
+The `HTTPS_PROXY`/`HTTP_PROXY` env vars route `curl` through a proxy, but Playwright needs extra setup:
+
+1. **DNS**: If `getaddrinfo` fails, resolve via DNS-over-HTTPS and add to `/etc/hosts`:
+   ```bash
+   IP=$(curl -sk 'https://1.1.1.1/dns-query?name=terp-staging-yicld.ondigitalocean.app' \
+     -H 'accept: application/dns-json' | python3 -c 'import sys,json; print(json.load(sys.stdin)["Answer"][0]["data"])')
+   echo "$IP terp-staging-yicld.ondigitalocean.app" >> /etc/hosts
+   ```
+2. **TLS**: Set `NODE_TLS_REJECT_UNAUTHORIZED=0` (proxy TLS certs aren't trusted by default).
+3. **Proxy**: The `playwright.config.ts` `getProxyConfig()` auto-reads `HTTPS_PROXY` for browser context.
+4. **Run**:
+   ```bash
+   NODE_TLS_REJECT_UNAUTHORIZED=0 SKIP_E2E_SETUP=1 \
+     PLAYWRIGHT_BASE_URL=https://terp-staging-yicld.ondigitalocean.app \
+     npx playwright test --project=deep --reporter=list
+   ```
+5. **No Docker needed** when targeting staging — set `SKIP_E2E_SETUP=1` to bypass local DB setup.
+
 ## Forbidden Patterns (CI-Enforced)
 
 ```typescript

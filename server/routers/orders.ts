@@ -952,7 +952,8 @@ export const ordersRouter = router({
           }
 
           const providedUnitPrice =
-            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+            typeof item.unitPrice === "number" &&
+            Number.isFinite(item.unitPrice)
               ? item.unitPrice
               : null;
           const unitPrice =
@@ -1197,7 +1198,8 @@ export const ordersRouter = router({
           }
 
           const providedUnitPrice =
-            typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+            typeof item.unitPrice === "number" &&
+            Number.isFinite(item.unitPrice)
               ? item.unitPrice
               : null;
           const unitPrice =
@@ -1771,6 +1773,20 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
+
+      // Cancellation requires the more specific orders:cancel permission
+      if (input.newStatus === "CANCELLED") {
+        const { hasPermission } = await import("../services/permissionService");
+        const canCancel = await hasPermission(String(userId), "orders:cancel");
+        if (!canCancel) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to cancel orders. Required permission: orders:cancel",
+          });
+        }
+      }
+
       return await ordersDb.updateOrderStatus({
         ...input,
         userId,

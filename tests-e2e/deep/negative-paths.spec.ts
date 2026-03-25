@@ -537,7 +537,7 @@ test.describe("Negative Paths: Duplicate Operation Prevention", () => {
     }>(page, "orders.getById", { id: order.id });
     expect(orderAfter.id).toBe(order.id);
     // Order must not be reverted to DRAFT or corrupted
-    expect(orderAfter.isDraft).not.toBe(true);
+    expect(Boolean(orderAfter.isDraft)).not.toBe(true);
 
     if (!secondConfirmError) {
       // Idempotent path — confirm succeeded silently, verify state is consistent
@@ -1057,7 +1057,7 @@ test.describe("Negative Paths: Stale Data / Race Condition Simulation", () => {
       isDraft?: boolean | null;
     }>(page, "orders.getById", { id: order.id });
 
-    expect(cancelledOrder.isDraft).not.toBe(true);
+    expect(Boolean(cancelledOrder.isDraft)).not.toBe(true);
     // The order should reflect CANCELLED in either fulfillmentStatus or saleStatus
     const statuses = [
       cancelledOrder.fulfillmentStatus,
