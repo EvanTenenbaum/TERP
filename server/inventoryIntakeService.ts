@@ -27,7 +27,7 @@ import {
   type Lot,
   type Batch,
 } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 import * as inventoryUtils from "./inventoryUtils";
 import { findOrCreate } from "./_core/dbUtils";
 import { logger } from "./_core/logger";
@@ -143,7 +143,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
     // lock waits/deadlocks under concurrent intake load.
     const result = await withRetryableTransaction(
       async tx => {
-        // 1. Find or create vendor
+        // 1. Find or create vendor (retained for brands.vendorId and lots.vendorId NOT NULL compatibility)
         // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
         const vendor = await findOrCreate<typeof vendors, Vendor>(
           tx,
@@ -151,6 +151,19 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           [eq(vendors.name, input.vendorName)],
           { name: input.vendorName }
         );
+
+        // W4-1: Look up supplier in clients table (isSeller=true) to set supplierClientId on lots
+        const [supplierClient] = await tx
+          .select({ id: clients.id })
+          .from(clients)
+          .where(
+            and(
+              eq(clients.name, input.vendorName),
+              eq(clients.isSeller, true),
+              isNull(clients.deletedAt)
+            )
+          )
+          .limit(1);
 
         // 2. Find or create brand
         // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
@@ -203,6 +216,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             .values({
               code: lotCode,
               vendorId: vendor.id,
+              supplierClientId: supplierClient?.id ?? null,
               date: new Date(),
             })
             .$returningId();
@@ -298,7 +312,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
               defectiveQty: "0",
             } as const;
 
-            const batchId = await insertBatchWithCompatibility(tx, batchPayload);
+            const batchId = await insertBatchWithCompatibility(
+              tx,
+              batchPayload
+            );
 
             if (!batchId) {
               throw new Error("Failed to create batch");
