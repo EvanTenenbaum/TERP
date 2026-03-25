@@ -13,6 +13,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 
 import {
@@ -148,6 +149,7 @@ export const intakeReceiptsRouter = router({
    * Create a new intake receipt with items
    */
   createReceipt: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(createReceiptSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -504,6 +506,7 @@ export const intakeReceiptsRouter = router({
    * Farmer acknowledges receipt (via shareable token)
    */
   verifyAsFarmer: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(
       z.object({
         token: z.string().min(1),
@@ -578,6 +581,7 @@ export const intakeReceiptsRouter = router({
    * Stacker verifies receipt with actual quantities
    */
   verifyAsStacker: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(
       z.object({
         receiptId: z.number().int().positive(),
@@ -755,6 +759,7 @@ export const intakeReceiptsRouter = router({
    * Report a discrepancy for a specific item
    */
   reportDiscrepancy: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(
       z.object({
         receiptId: z.number().int().positive(),
@@ -878,6 +883,7 @@ export const intakeReceiptsRouter = router({
    * Resolve a discrepancy (admin action)
    */
   resolveDiscrepancy: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(
       z.object({
         discrepancyId: z.number().int().positive(),
@@ -983,6 +989,7 @@ export const intakeReceiptsRouter = router({
    * Finalize receipt (complete the intake process)
    */
   finalizeReceipt: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(
       z.object({
         receiptId: z.number().int().positive(),
@@ -1176,6 +1183,7 @@ export const intakeReceiptsRouter = router({
    * Update receipt (before finalization)
    */
   updateReceipt: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(
       z.object({
         id: z.number().int().positive(),
@@ -1230,6 +1238,7 @@ export const intakeReceiptsRouter = router({
    * Delete receipt (only if PENDING)
    */
   deleteReceipt: protectedProcedure
+    .use(requirePermission("inventory:intake"))
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       const db = await getDb();

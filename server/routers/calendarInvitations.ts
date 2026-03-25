@@ -5,7 +5,13 @@
  */
 
 import { z } from "zod";
-import { adminProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  adminProcedure,
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import { calendarLogger } from "../_core/logger";
 import {
@@ -14,7 +20,6 @@ import {
   calendarInvitationHistory,
   calendarEventParticipants,
   calendarEvents,
-
 } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import PermissionService from "../_core/permissionService";
@@ -28,7 +33,7 @@ async function checkAutoAccept(
   organizerId: number
 ): Promise<{ autoAccept: boolean; reason: string | null }> {
   const db = await getDb();
-        if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   if (!db) return { autoAccept: false, reason: null };
 
   // Get user's invitation settings
@@ -108,7 +113,7 @@ async function createParticipantFromInvitation(
   addedBy: number
 ): Promise<number> {
   const db = await getDb();
-        if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [participant] = await db
@@ -153,7 +158,7 @@ async function logInvitationAction(
   metadata?: Record<string, unknown>
 ) {
   const db = await getDb();
-        if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   if (!db) return;
 
   await db.insert(calendarInvitationHistory).values({
@@ -170,6 +175,7 @@ export const calendarInvitationsRouter = router({
    * Create a draft invitation
    */
   createInvitation: protectedProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         eventId: z.number(),
@@ -186,7 +192,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -288,6 +294,7 @@ export const calendarInvitationsRouter = router({
    * Send invitation (changes status from DRAFT to PENDING or AUTO_ACCEPTED)
    */
   sendInvitation: protectedProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -295,7 +302,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -357,7 +364,9 @@ export const calendarInvitationsRouter = router({
         invitation.id,
         invitation.autoAccept ? "AUTO_ACCEPTED" : "SENT",
         userId,
-        invitation.autoAccept ? invitation.autoAcceptReason || undefined : undefined
+        invitation.autoAccept
+          ? invitation.autoAcceptReason || undefined
+          : undefined
       );
 
       // Return updated invitation
@@ -374,6 +383,7 @@ export const calendarInvitationsRouter = router({
    * Respond to invitation (accept or decline)
    */
   respondToInvitation: protectedProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -382,7 +392,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -448,7 +458,7 @@ export const calendarInvitationsRouter = router({
    */
   getInvitationSettings: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const userId = getAuthenticatedUserId(ctx);
@@ -486,6 +496,7 @@ export const calendarInvitationsRouter = router({
    * Update user's invitation settings
    */
   updateInvitationSettings: protectedProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         autoAcceptAll: z.boolean().optional(),
@@ -498,7 +509,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -576,6 +587,7 @@ export const calendarInvitationsRouter = router({
    * Admin override invitation status
    */
   adminOverrideInvitation: adminProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -585,7 +597,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const adminId = getAuthenticatedUserId(ctx);
@@ -666,7 +678,7 @@ export const calendarInvitationsRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -695,7 +707,7 @@ export const calendarInvitationsRouter = router({
    */
   getPendingInvitations: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const userId = getAuthenticatedUserId(ctx);
@@ -717,6 +729,7 @@ export const calendarInvitationsRouter = router({
    * Bulk send invitations
    */
   bulkSendInvitations: protectedProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         eventId: z.number(),
@@ -737,7 +750,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -844,6 +857,7 @@ export const calendarInvitationsRouter = router({
    * Cancel invitation
    */
   cancelInvitation: protectedProcedure
+    .use(requirePermission("calendar:manage"))
     .input(
       z.object({
         invitationId: z.number(),
@@ -851,7 +865,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -910,7 +924,7 @@ export const calendarInvitationsRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
