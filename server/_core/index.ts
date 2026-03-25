@@ -20,6 +20,8 @@ function logStartupPhase(phase: string) {
 }
 
 import express from "express";
+import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
@@ -312,6 +314,23 @@ async function startServer() {
 
     // Sentry is now auto-instrumented via setupExpressErrorHandler
 
+    // Security headers via Helmet
+    app.use(helmet());
+
+    // CORS whitelist — staging + production origins, or all in dev
+    const allowedOrigins = [
+      "https://terp-staging-yicld.ondigitalocean.app",
+      ...(process.env.ALLOWED_ORIGINS?.split(",")
+        .map(o => o.trim())
+        .filter(Boolean) ?? []),
+    ];
+    app.use(
+      cors({
+        origin: process.env.NODE_ENV === "production" ? allowedOrigins : true,
+        credentials: true,
+      })
+    );
+
     // Request logging
     app.use(requestLogger);
 
@@ -342,12 +361,15 @@ async function startServer() {
     // ERR_ERL_PERMISSIVE_TRUST_PROXY. Use a hop count instead.
     app.set("trust proxy", 1);
 
+    // Apply rate limiting to auth endpoints before registering auth routes
+    app.use("/api/auth", authLimiter);
+    app.use("/api/trpc/auth", authLimiter);
+
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
 
-    // Apply rate limiting
+    // Apply rate limiting to tRPC API
     app.use("/api/trpc", apiLimiter);
-    app.use("/api/trpc/auth", authLimiter);
 
     // Health check endpoints
     // Returns appropriate HTTP status codes so DigitalOcean's load balancer
