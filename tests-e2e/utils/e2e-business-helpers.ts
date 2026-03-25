@@ -13,6 +13,7 @@ type InventoryListResponse = {
       sku?: string | null;
       totalQty?: string | number | null;
       onHandQty?: string | number | null;
+      reservedQty?: string | number | null;
       unitCogs?: string | number | null;
       batchStatus?: string | null;
     };
@@ -39,6 +40,7 @@ export interface StockBatch {
   sku: string;
   totalQty: number;
   onHandQty: number;
+  reservedQty: number;
   unitCogs: number;
   batchStatus: string;
 }
@@ -114,16 +116,22 @@ export async function findBatchWithStock(page: Page): Promise<StockBatch> {
         sku: batch.sku ?? `BATCH-${batch.id}`,
         totalQty: toNumber(batch.totalQty),
         onHandQty: toNumber(batch.onHandQty),
+        reservedQty: toNumber(batch.reservedQty),
         unitCogs: toNumber(batch.unitCogs),
         batchStatus: batch.batchStatus ?? "UNKNOWN",
       };
+    })
+    .sort((a, b) => {
+      const aAvail = (a?.onHandQty ?? 0) - (a?.reservedQty ?? 0);
+      const bAvail = (b?.onHandQty ?? 0) - (b?.reservedQty ?? 0);
+      return bAvail - aAvail;
     })
     .find(
       (batch): batch is StockBatch =>
         !!batch &&
         batch.batchStatus === "LIVE" &&
         batch.totalQty > 0 &&
-        batch.onHandQty > 0
+        batch.onHandQty - batch.reservedQty > 0
     );
 
   if (!match) {
