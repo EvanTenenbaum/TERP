@@ -15,11 +15,10 @@ import { logger } from "./logger";
 
 /**
  * System actor ID used for background/cron jobs that run without a user session.
- * This is the ID of user record 1 (the system service account).
- * TODO: Create a dedicated system service account in the users table and reference
- * its ID here via an environment variable or config constant rather than a literal.
+ * Defaults to 1 (first admin user) but can be overridden via SYSTEM_USER_ID env var
+ * to reference a dedicated system service account.
  */
-const SYSTEM_ACTOR_ID = 1;
+const SYSTEM_ACTOR_ID = parseInt(process.env.SYSTEM_USER_ID ?? "1", 10);
 
 /**
  * Instance Generation Job
