@@ -65,7 +65,7 @@ export async function getEventsByDateRange(
 
   // Apply filters
   // Note: This is a simplified version. In production, you'd build the query dynamically
-  
+
   return await query;
 }
 
@@ -81,10 +81,7 @@ export async function getEventById(eventId: number) {
     .select()
     .from(calendarEvents)
     .where(
-      and(
-        eq(calendarEvents.id, eventId),
-        isNull(calendarEvents.deletedAt)
-      )
+      and(eq(calendarEvents.id, eventId), isNull(calendarEvents.deletedAt))
     )
     .limit(1);
 
@@ -110,7 +107,10 @@ export async function createEvent(event: InsertCalendarEvent) {
 /**
  * Update calendar event
  */
-export async function updateEvent(eventId: number, updates: Partial<InsertCalendarEvent>) {
+export async function updateEvent(
+  eventId: number,
+  updates: Partial<InsertCalendarEvent>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
@@ -140,15 +140,15 @@ export async function softDeleteEvent(eventId: number) {
 }
 
 /**
- * Hard delete event
+ * Soft delete event (sets deletedAt timestamp)
  */
 export async function hardDeleteEvent(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  if (!db) throw new Error("Database not available");
 
   await db
-    .delete(calendarEvents)
+    .update(calendarEvents)
+    .set({ deletedAt: new Date() })
     .where(eq(calendarEvents.id, eventId));
 
   return { success: true };
@@ -288,7 +288,7 @@ export async function getInstancesByEvent(
   // Note: Additional date filtering should be done in the initial query
   // For now, filter in memory if dates provided
   const results = await query;
-  
+
   if (startDate && endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -326,7 +326,9 @@ export async function getInstanceByDate(eventId: number, instanceDate: string) {
 /**
  * Create instance
  */
-export async function createInstance(instance: InsertCalendarRecurrenceInstance) {
+export async function createInstance(
+  instance: InsertCalendarRecurrenceInstance
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
@@ -394,7 +396,9 @@ export async function getEventParticipants(eventId: number) {
 /**
  * Add participant to event
  */
-export async function addParticipant(participant: InsertCalendarEventParticipant) {
+export async function addParticipant(
+  participant: InsertCalendarEventParticipant
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
@@ -661,10 +665,7 @@ export async function getUserDefaultView(userId: number) {
     .select()
     .from(calendarViews)
     .where(
-      and(
-        eq(calendarViews.userId, userId),
-        eq(calendarViews.isDefault, true)
-      )
+      and(eq(calendarViews.userId, userId), eq(calendarViews.isDefault, true))
     )
     .limit(1);
 
@@ -679,10 +680,7 @@ export async function createView(view: InsertCalendarView) {
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
-  const [newView] = await db
-    .insert(calendarViews)
-    .values(view)
-    .$returningId();
+  const [newView] = await db.insert(calendarViews).values(view).$returningId();
 
   return newView;
 }
@@ -690,7 +688,10 @@ export async function createView(view: InsertCalendarView) {
 /**
  * Update calendar view
  */
-export async function updateView(viewId: number, updates: Partial<InsertCalendarView>) {
+export async function updateView(
+  viewId: number,
+  updates: Partial<InsertCalendarView>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
@@ -711,9 +712,7 @@ export async function deleteView(viewId: number) {
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
-  await db
-    .delete(calendarViews)
-    .where(eq(calendarViews.id, viewId));
+  await db.delete(calendarViews).where(eq(calendarViews.id, viewId));
 
   return { success: true };
 }
@@ -789,7 +788,9 @@ export async function getClientMeetingHistory(clientId: number) {
 /**
  * Add meeting history entry
  */
-export async function addMeetingHistoryEntry(entry: InsertClientMeetingHistoryEntry) {
+export async function addMeetingHistoryEntry(
+  entry: InsertClientMeetingHistoryEntry
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
@@ -870,7 +871,7 @@ export async function getEventsByVendor(vendorId: number) {
 /**
  * Check for conflicting events in a time range
  * v3.2: Fix #4 - Conflict detection for quick book
- * 
+ *
  * @param params - Time range and optional event to exclude
  * @returns Array of conflicting events
  */
@@ -886,7 +887,7 @@ export async function checkConflicts(params: {
   if (!db) throw new Error("Database not available");
 
   const { startDate, endDate, excludeEventId } = params;
-  
+
   // Convert string dates to Date objects
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
@@ -935,7 +936,7 @@ export async function checkConflicts(params: {
 /**
  * Execute callback within a database transaction
  * v3.2: Fix #10 - Add transactions for multi-step operations
- * 
+ *
  * @param callback - Function to execute within transaction
  * @returns Result of callback
  */
@@ -947,7 +948,7 @@ export async function withTransaction<T>(
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
-  return await db.transaction(async (tx) => {
+  return await db.transaction(async tx => {
     return await callback(tx);
   });
 }
