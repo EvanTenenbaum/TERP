@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,7 +49,6 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
     null
   );
   const [activeSubTab, setActiveSubTab] = useState("active");
-  const { user } = useAuth();
 
   // Fetch active needs
   const {
@@ -130,7 +128,6 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
       clientId,
       clientNeedId: need.id,
       matches: matches as unknown as Record<string, unknown>[],
-      userId: user?.id ?? 0,
     });
   };
 

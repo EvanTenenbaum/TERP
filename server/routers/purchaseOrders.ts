@@ -11,7 +11,6 @@ import {
   products,
   clients,
   brands,
-  vendors,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
@@ -228,6 +227,7 @@ export const purchaseOrdersRouter = router({
   // Create new purchase order
   // Supports both supplierClientId (canonical) and vendorId (deprecated, for backward compat)
   create: protectedProcedure
+    .use(requirePermission("purchase_orders:create"))
     .input(
       z
         .object({
@@ -336,13 +336,20 @@ export const purchaseOrdersRouter = router({
         });
       }
 
-      if (!supplierName && resolvedVendorId) {
-        const [legacyVendor] = await db
-          .select({ name: vendors.name })
-          .from(vendors)
-          .where(eq(vendors.id, resolvedVendorId))
+      if (!supplierName && resolvedSupplierClientId) {
+        // W4-3: Look up supplier name from clients table (isSeller=true)
+        const [supplierClient] = await db
+          .select({ name: clients.name })
+          .from(clients)
+          .where(
+            and(
+              eq(clients.id, resolvedSupplierClientId),
+              eq(clients.isSeller, true),
+              isNull(clients.deletedAt)
+            )
+          )
           .limit(1);
-        supplierName = legacyVendor?.name ?? null;
+        supplierName = supplierClient?.name ?? null;
       }
 
       // Generate PO number
@@ -572,6 +579,7 @@ export const purchaseOrdersRouter = router({
 
   // Update purchase order
   update: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number(),
@@ -605,6 +613,7 @@ export const purchaseOrdersRouter = router({
 
   // Delete purchase order
   delete: protectedProcedure
+    .use(requirePermission("purchase_orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -620,6 +629,7 @@ export const purchaseOrdersRouter = router({
 
   // Restore soft-deleted purchase order
   restore: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -634,6 +644,7 @@ export const purchaseOrdersRouter = router({
 
   // Update PO status
   updateStatus: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number(),
@@ -650,6 +661,47 @@ export const purchaseOrdersRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      // W6-2: Fetch current status and validate transition
+      const [current] = await db
+        .select({ purchaseOrderStatus: purchaseOrders.purchaseOrderStatus })
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, input.id))
+        .limit(1);
+
+      if (!current) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Purchase order ${input.id} not found`,
+        });
+      }
+
+      type POStatus =
+        | "DRAFT"
+        | "SENT"
+        | "CONFIRMED"
+        | "RECEIVING"
+        | "RECEIVED"
+        | "CANCELLED";
+
+      const VALID_TRANSITIONS: Record<POStatus, POStatus[]> = {
+        DRAFT: ["SENT", "CANCELLED"],
+        SENT: ["CONFIRMED", "CANCELLED"],
+        CONFIRMED: ["RECEIVING", "CANCELLED"],
+        RECEIVING: ["RECEIVED", "CANCELLED"],
+        RECEIVED: [],
+        CANCELLED: [],
+      };
+
+      const fromStatus = current.purchaseOrderStatus as POStatus;
+      const allowedNext = VALID_TRANSITIONS[fromStatus] ?? [];
+
+      if (!allowedNext.includes(input.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot transition purchase order from ${fromStatus} to ${input.status}. Allowed transitions: ${allowedNext.join(", ") || "none"}`,
+        });
+      }
 
       const updateData: Record<string, unknown> = {
         purchaseOrderStatus: input.status,
@@ -673,6 +725,7 @@ export const purchaseOrdersRouter = router({
 
   // Add item to PO
   addItem: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         purchaseOrderId: z
@@ -733,6 +786,7 @@ export const purchaseOrdersRouter = router({
 
   // Update PO item
   updateItem: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number().int().positive("Item ID must be a positive integer"),
@@ -817,6 +871,7 @@ export const purchaseOrdersRouter = router({
 
   // Delete PO item
   deleteItem: protectedProcedure
+    .use(requirePermission("purchase_orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -1000,6 +1055,7 @@ export const purchaseOrdersRouter = router({
 
   // Submit PO to vendor (changes status from DRAFT to SENT)
   submit: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -1044,6 +1100,7 @@ export const purchaseOrdersRouter = router({
 
   // Confirm PO (vendor has confirmed receipt, changes status from SENT to CONFIRMED)
   confirm: protectedProcedure
+    .use(requirePermission("purchase_orders:update"))
     .input(
       z.object({
         id: z.number(),

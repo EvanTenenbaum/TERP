@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { router, vipPortalProcedure } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { batches, products } from "../../drizzle/schema";
-import { eq, and, or, like, gt, sql } from "drizzle-orm";
+import { eq, and, or, like, gt, sql, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
@@ -96,6 +97,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Validates that the logged-in client is the intended participant.
    */
   joinSession: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(z.object({ roomCode: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -214,7 +216,7 @@ export const vipPortalLiveShoppingRouter = router({
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .where(eq(batches.id, input.batchId))
+        .where(and(eq(batches.id, input.batchId), isNull(batches.deletedAt)))
         .limit(1);
 
       if (!result.length) {
@@ -228,6 +230,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Add Item to Cart (Client Role)
    */
   addToCart: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),
@@ -278,6 +281,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Update Item Quantity
    */
   updateQuantity: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),
@@ -324,6 +328,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Remove Item from Cart
    */
   removeItem: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),
@@ -359,6 +364,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Signals to the Host that the client is done and ready to convert to order.
    */
   requestCheckout: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -407,6 +413,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Customer updates item status (Sample Request, Interested, To Purchase)
    */
   updateItemStatus: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),
@@ -459,6 +466,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Customer adds item directly with a specific status
    */
   addItemWithStatus: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),
@@ -558,7 +566,8 @@ export const vipPortalLiveShoppingRouter = router({
               like(products.nameCanonical, `%${trimmedQuery}%`),
               like(batches.code, `%${trimmedQuery}%`)
             ),
-            gt(batches.onHandQty, "0") // Only show in-stock items (onHandQty is varchar)
+            gt(batches.onHandQty, "0"), // Only show in-stock items (onHandQty is varchar)
+            isNull(batches.deletedAt)
           )
         )
         .limit(15);
@@ -620,6 +629,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Customer proposes a new price for a cart item
    */
   requestNegotiation: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),
@@ -715,6 +725,7 @@ export const vipPortalLiveShoppingRouter = router({
    * Customer accepts the counter-offer price
    */
   acceptCounterOffer: vipPortalProcedure
+    .use(requirePermission("vip_portal:clients:manage"))
     .input(
       z.object({
         sessionId: z.number(),

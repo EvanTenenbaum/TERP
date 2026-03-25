@@ -20,7 +20,7 @@ import {
   lots,
   brands,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, isNull } from "drizzle-orm";
 
 // Default thresholds for stock alerts
 const DEFAULT_THRESHOLDS = {
@@ -177,7 +177,9 @@ export const alertsRouter = router({
           })
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
-          .where(eq(batches.batchStatus, "LIVE"))
+          .where(
+            and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt))
+          )
           .limit(100);
 
         for (const batch of batchData) {
@@ -333,6 +335,7 @@ export const alertsRouter = router({
         .where(
           and(
             eq(batches.batchStatus, "LIVE"),
+            isNull(batches.deletedAt),
             input.category ? eq(products.category, input.category) : undefined
           )
         )
@@ -486,7 +489,7 @@ export const alertsRouter = router({
           holdQty: batches.holdQty,
         })
         .from(batches)
-        .where(eq(batches.batchStatus, "LIVE"));
+        .where(and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt)));
 
       let outOfStockCount = 0;
       let criticalStockCount = 0;

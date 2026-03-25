@@ -20,6 +20,7 @@ import {
   Download,
   FileText,
   Link2,
+  MoreHorizontal,
   Plus,
   RefreshCw,
   Save,
@@ -35,6 +36,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ClientCombobox } from "@/components/ui/client-combobox";
 import {
   KeyboardHintBar,
@@ -192,6 +199,8 @@ export function SalesSheetsPilotSurface({
   const selectedClientIdRef = useRef<number | null>(null);
   const currentDraftIdRef = useRef<number | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDeletedDraftIdRef = useRef<number | null>(null);
+  const isDeletingDraftRef = useRef(false);
   const isInitialLoad = useRef(true);
 
   // ── queries ───────────────────────────────────────────────────────────────
@@ -221,7 +230,15 @@ export function SalesSheetsPilotSurface({
 
   // ── mutations ─────────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: data => {
+    onSuccess: (data, variables) => {
+      if (
+        isDeletingDraftRef.current ||
+        (variables.draftId !== undefined &&
+          variables.draftId === lastDeletedDraftIdRef.current)
+      ) {
+        return;
+      }
+
       setCurrentDraftId(data.draftId);
       currentDraftIdRef.current = data.draftId;
       setLastSaveTime(new Date());
@@ -229,23 +246,44 @@ export function SalesSheetsPilotSurface({
       void draftsQuery.refetch();
       toast.success("Draft saved");
     },
-    onError: error => {
+    onError: (error, variables) => {
+      if (
+        variables.draftId !== undefined &&
+        variables.draftId === lastDeletedDraftIdRef.current
+      ) {
+        return;
+      }
+
       toast.error("Failed to save draft: " + error.message);
     },
   });
 
   const deleteDraftMutation = trpc.salesSheets.deleteDraft.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      isDeletingDraftRef.current = false;
+      lastDeletedDraftIdRef.current = variables.draftId;
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
       setCurrentDraftId(null);
       currentDraftIdRef.current = null;
       setDraftName("");
       setLastSaveTime(null);
       setSelectedItems([]);
+      setSelectedInventoryRowId(null);
+      setSelectedPreviewRowId(null);
+      setHasUnsavedChanges(false);
       void draftsQuery.refetch();
       setShowDeleteDraftDialog(false);
       toast.success("Draft deleted");
     },
     onError: error => {
+      isDeletingDraftRef.current = false;
+      setHasUnsavedChanges(
+        selectedItemsRef.current.length > 0 &&
+          draftNameRef.current.trim() !== ""
+      );
       toast.error("Failed to delete draft: " + error.message);
     },
   });
@@ -314,6 +352,7 @@ export function SalesSheetsPilotSurface({
   // ── auto-save ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (
+      isDeletingDraftRef.current ||
       !hasUnsavedChanges ||
       !selectedClientId ||
       selectedItems.length === 0 ||
@@ -410,13 +449,13 @@ export function SalesSheetsPilotSurface({
       return;
     }
 
-    setSelectedItems(prev => {
-      if (prev.some(item => item.id === row._raw.id)) {
-        toast.info("Item already in sheet");
-        return prev;
-      }
-      return [...prev, row._raw];
-    });
+    if (selectedItems.some(item => item.id === row._raw.id)) {
+      toast.info("Item already in sheet");
+      return;
+    }
+
+    setSelectedItems(prev => [...prev, row._raw]);
+    setHasUnsavedChanges(true);
   }, [selectedInventoryRowId, selectedItems, inventoryQuery.data]);
 
   const handleRemoveSelectedItem = useCallback(() => {
@@ -433,6 +472,7 @@ export function SalesSheetsPilotSurface({
     const id = Number(idStr);
     setSelectedItems(prev => prev.filter(item => item.id !== id));
     setSelectedPreviewRowId(null);
+    setHasUnsavedChanges(true);
   }, [selectedPreviewRowId]);
 
   const handleSaveDraft = useCallback(() => {
@@ -466,6 +506,7 @@ export function SalesSheetsPilotSurface({
       try {
         const result = await utils.salesSheets.getDraftById.fetch({ draftId });
         if (result) {
+          lastDeletedDraftIdRef.current = null;
           setSelectedClientId(result.clientId);
           setSelectedItems(result.items as PricedInventoryItem[]);
           setCurrentDraftId(result.id);
@@ -485,6 +526,12 @@ export function SalesSheetsPilotSurface({
   const handleDeleteCurrentDraft = useCallback(() => {
     if (!currentDraftId) {
       return;
+    }
+    isDeletingDraftRef.current = true;
+    lastDeletedDraftIdRef.current = currentDraftId;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
     }
     deleteDraftMutation.mutate({ draftId: currentDraftId });
   }, [currentDraftId, deleteDraftMutation]);
@@ -807,42 +854,40 @@ export function SalesSheetsPilotSurface({
             {saveDraftMutation.isPending ? "Saving..." : "Save Draft"}
           </Button>
 
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={
-              !selectedClientId || selectedItems.length === 0 || !currentDraftId
-            }
-            onClick={() => setShowDeleteDraftDialog(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Draft
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!canShare}
-            title={
-              hasUnsavedChanges
-                ? "Save the draft before sharing"
-                : "Generate share link"
-            }
-            onClick={handleGenerateShareLink}
-          >
-            <Link2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={selectedItems.length === 0}
-            onClick={handleExport}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" aria-label="More actions">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                disabled={
+                  !selectedClientId ||
+                  selectedItems.length === 0 ||
+                  !currentDraftId
+                }
+                onClick={() => setShowDeleteDraftDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Draft
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canShare}
+                onClick={handleGenerateShareLink}
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Share
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={selectedItems.length === 0}
+                onClick={handleExport}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button
             size="sm"
@@ -874,7 +919,7 @@ export function SalesSheetsPilotSurface({
 
         <Button
           size="sm"
-          variant="outline"
+          variant="default"
           disabled={!selectedInventoryRowId || !selectedClientId}
           onClick={handleAddSelectedItem}
         >
@@ -929,8 +974,8 @@ export function SalesSheetsPilotSurface({
 
       {/* ── browser + preview split ─────────────────────────────────────── */}
       {selectedClientId ? (
-        <div className="grid gap-4 lg:grid-cols-5">
-          {/* inventory browser (3/5 width) */}
+        <div className="grid gap-4 lg:grid-cols-4">
+          {/* inventory browser (3/4 width — wider for readability) */}
           <div className="lg:col-span-3">
             <PowersheetGrid
               surfaceId="sales-sheets-browser"
@@ -954,6 +999,9 @@ export function SalesSheetsPilotSurface({
               selectionMode="cell-range"
               enableFillHandle={false}
               enableUndoRedo={false}
+              onSelectionSetChange={selectionSet =>
+                setSelectedInventoryRowId(selectionSet.focusedRowId)
+              }
               onSelectionSummaryChange={setBrowserSelectionSummary}
               isLoading={inventoryQuery.isLoading}
               errorMessage={inventoryQuery.error?.message ?? null}
@@ -967,11 +1015,12 @@ export function SalesSheetsPilotSurface({
               }
               antiDriftSummary="Browser release gates: client-pricing context must load together; unsaved state must remain visible when data context changes."
               minHeight={320}
+              rowHeight={36}
             />
           </div>
 
-          {/* sheet preview (2/5 width) */}
-          <div className="lg:col-span-2">
+          {/* sheet preview (1/4 width) */}
+          <div className="lg:col-span-1">
             <PowersheetGrid
               surfaceId="sales-sheets-preview"
               requirementIds={["SALE-SHT-002", "SALE-SHT-005", "SALE-SHT-006"]}

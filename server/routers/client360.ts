@@ -36,6 +36,7 @@ import {
   sum,
   avg,
   inArray,
+  isNull,
 } from "drizzle-orm";
 
 export const client360Router = router({
@@ -700,7 +701,12 @@ export const client360Router = router({
         const [item] = await db
           .select({ productId: batches.productId })
           .from(batches)
-          .where(eq(batches.id, input.inventoryItemId))
+          .where(
+            and(
+              eq(batches.id, input.inventoryItemId),
+              isNull(batches.deletedAt)
+            )
+          )
           .limit(1);
         productIdToUse = item?.productId;
       }
@@ -933,8 +939,18 @@ export const client360Router = router({
         name: z.string().min(1).max(255),
         email: z.string().email().optional().or(z.literal("")),
         phone: z.string().max(50).optional(),
-        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
-        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        businessType: z
+          .enum([
+            "RETAIL",
+            "WHOLESALE",
+            "DISPENSARY",
+            "DELIVERY",
+            "MANUFACTURER",
+            "DISTRIBUTOR",
+            "OTHER",
+          ])
+          .optional(),
+        preferredContact: z.enum(["EMAIL", "PHONE", "TEXT", "ANY"]).optional(),
         paymentTerms: z.number().int().positive().optional().default(30),
         isBuyer: z.boolean().default(true),
         isSeller: z.boolean().default(false),

@@ -593,7 +593,7 @@ export const serviceInvoices = mysqlTable(
     amountDue: decimal("amount_due", { precision: 15, scale: 2 }).notNull(),
 
     // Status
-    status: mysqlEnum("service_invoice_status", [
+    status: mysqlEnum("status", [
       "DRAFT",
       "SENT",
       "PARTIAL",
@@ -843,7 +843,7 @@ export const installmentPlans = mysqlTable(
     }).notNull(),
 
     // Status
-    status: mysqlEnum("plan_status", [
+    status: mysqlEnum("status", [
       "ACTIVE",
       "COMPLETED",
       "DEFAULTED",

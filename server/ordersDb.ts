@@ -1215,7 +1215,7 @@ export async function convertQuoteToSale(
     const quote = await tx
       .select()
       .from(orders)
-      .where(eq(orders.id, input.quoteId))
+      .where(and(eq(orders.id, input.quoteId), isNull(orders.deletedAt)))
       .limit(1)
       .then(rows => rows[0]);
 

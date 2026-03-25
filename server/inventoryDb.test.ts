@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as fc from "fast-check";
+import { MySqlDialect } from "drizzle-orm/mysql-core";
 
 // Mock the database module
 vi.mock("./db", () => ({
@@ -8,6 +9,7 @@ vi.mock("./db", () => ({
 
 import { getDb } from "./db";
 import {
+  bulkRestoreBatches,
   getBatchesBySupplier,
   getBatchesWithDetails,
   getDashboardStats,
@@ -266,6 +268,34 @@ describe("getBatchesWithDetails", () => {
     expect(selectArgs.product.strainId).toBeDefined();
     expect(selectArgs.product.strainId).toEqual(products.strainId);
   });
+
+  it("filters out soft-deleted batches before applying other conditions", async () => {
+    const mockQuery = {
+      from: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([]),
+      where: vi.fn().mockReturnThis(),
+    };
+
+    const mockDb = {
+      select: vi.fn().mockReturnValue(mockQuery),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
+
+    await getBatchesWithDetails(10, undefined, {
+      status: "LIVE",
+    });
+
+    const whereClause = mockQuery.where.mock.calls[0]?.[0];
+    const rendered = new MySqlDialect().sqlToQuery(whereClause);
+
+    expect(rendered.sql).toContain("`batches`.`deleted_at` is null");
+    expect(rendered.sql).toContain("`batches`.`batchStatus` =");
+  });
 });
 
 describe("searchBatches", () => {
@@ -305,6 +335,120 @@ describe("searchBatches", () => {
     const selectArgs = mockDb.select.mock.calls[0][0];
     expect(selectArgs.product.strainId).toBeDefined();
     expect(selectArgs.product.strainId).toEqual(products.strainId);
+  });
+
+  it("always excludes soft-deleted batches from search results", async () => {
+    const mockQuery = {
+      from: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([]),
+    };
+
+    const mockDb = {
+      select: vi.fn().mockReturnValue(mockQuery),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
+
+    await searchBatches("search", 10, 5);
+
+    const whereClause = mockQuery.where.mock.calls[0]?.[0];
+    const rendered = new MySqlDialect().sqlToQuery(whereClause);
+
+    expect(rendered.sql).toContain("`batches`.`deleted_at` is null");
+    expect(rendered.sql).toContain("`batches`.`id` < ?");
+  });
+});
+
+describe("bulkRestoreBatches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("skips CLOSED batches that were never soft-deleted", async () => {
+    const mockTx = {
+      select: vi.fn(() => ({
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([
+          {
+            id: 14,
+            batchStatus: "CLOSED",
+            deletedAt: null,
+          },
+        ]),
+      })),
+      update: vi.fn(),
+    };
+
+    vi.mocked(getDb).mockResolvedValue({
+      transaction: async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+        callback(mockTx),
+    } as Awaited<ReturnType<typeof getDb>>);
+
+    const result = await bulkRestoreBatches(
+      [{ id: 14, previousStatus: "LIVE" }],
+      7
+    );
+
+    expect(result).toEqual({
+      success: true,
+      restored: 0,
+      skipped: 1,
+      errors: [
+        "Batch 14 is not deleted; only soft-deleted batches can be restored",
+      ],
+    });
+    expect(mockTx.update).not.toHaveBeenCalled();
+  });
+
+  it("restores soft-deleted CLOSED batches to the requested status", async () => {
+    const updateWhere = vi.fn().mockResolvedValue(undefined);
+    const updateSet = vi.fn(() => ({
+      where: updateWhere,
+    }));
+    const mockTx = {
+      select: vi.fn(() => ({
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([
+          {
+            id: 21,
+            batchStatus: "CLOSED",
+            deletedAt: new Date("2026-03-24T00:00:00.000Z"),
+          },
+        ]),
+      })),
+      update: vi.fn(() => ({
+        set: updateSet,
+      })),
+    };
+
+    vi.mocked(getDb).mockResolvedValue({
+      transaction: async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+        callback(mockTx),
+    } as Awaited<ReturnType<typeof getDb>>);
+
+    const result = await bulkRestoreBatches(
+      [{ id: 21, previousStatus: "HELD" }],
+      7
+    );
+
+    expect(result).toEqual({
+      success: true,
+      restored: 1,
+      skipped: 0,
+      errors: [],
+    });
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        batchStatus: "HELD",
+        deletedAt: null,
+      })
+    );
+    expect(updateWhere).toHaveBeenCalled();
   });
 });
 

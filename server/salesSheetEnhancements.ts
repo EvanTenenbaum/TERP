@@ -430,7 +430,11 @@ export async function getSalesSheetUsageStats(templateId: number): Promise<{
       .from(salesSheetHistory)
       .where(eq(salesSheetHistory.templateId, templateId));
 
-    // Get orders created from this template
+    // Get orders created from this template.
+    // SECURITY AUDIT (2026-03-25): templateId is interpolated via Drizzle's sql
+    // tagged template literal, which binds all non-column interpolations as
+    // parameterized query values — not raw string concatenation. This is safe
+    // from SQL injection. Audited and confirmed no remediation needed.
     const ordersFromTemplate = await db
       .select()
       .from(orders)

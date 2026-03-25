@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import { tags, productTags, clientTags } from "../../drizzle/schema";
 import { eq, like, or, and, isNull, desc } from "drizzle-orm";
@@ -107,6 +108,7 @@ export const tagsRouter = router({
    * Create a new tag
    */
   create: protectedProcedure
+    .use(requirePermission("tags:create"))
     .input(
       z.object({
         name: z.string().min(1, "Tag name is required"),
@@ -163,6 +165,7 @@ export const tagsRouter = router({
    * Update an existing tag
    */
   update: protectedProcedure
+    .use(requirePermission("tags:update"))
     .input(
       z.object({
         id: z.number(),
@@ -224,6 +227,7 @@ export const tagsRouter = router({
    * Soft delete a tag
    */
   delete: protectedProcedure
+    .use(requirePermission("tags:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -317,6 +321,7 @@ export const tagsRouter = router({
    * Add tags to a product
    */
   addProductTags: protectedProcedure
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         productId: z.number(),
@@ -360,6 +365,7 @@ export const tagsRouter = router({
    * Add tags to a client
    */
   addClientTags: protectedProcedure
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         clientId: z.number(),
@@ -403,6 +409,7 @@ export const tagsRouter = router({
    * Remove tags from a product
    */
   removeProductTags: protectedProcedure
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         productId: z.number(),
@@ -436,6 +443,7 @@ export const tagsRouter = router({
    * Remove tags from a client
    */
   removeClientTags: protectedProcedure
+    .use(requirePermission("tags:assign"))
     .input(
       z.object({
         clientId: z.number(),

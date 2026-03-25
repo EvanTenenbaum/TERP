@@ -1,5 +1,4 @@
 import { getDb } from "./db";
-import type { DbTransaction } from "./_core/dbTransaction";
 import {
   calendarEvents,
   calendarRecurrenceRules,
@@ -136,19 +135,6 @@ export async function softDeleteEvent(eventId: number) {
     .update(calendarEvents)
     .set({ deletedAt: new Date() })
     .where(eq(calendarEvents.id, eventId));
-
-  return { success: true };
-}
-
-/**
- * Hard delete event
- */
-export async function hardDeleteEvent(eventId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  if (!db) throw new Error("Database not available");
-
-  await db.delete(calendarEvents).where(eq(calendarEvents.id, eventId));
 
   return { success: true };
 }
@@ -940,7 +926,8 @@ export async function checkConflicts(params: {
  * @returns Result of callback
  */
 export async function withTransaction<T>(
-  callback: (tx: DbTransaction) => Promise<T>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  callback: (tx: any) => Promise<T>
 ): Promise<T> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

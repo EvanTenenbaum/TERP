@@ -456,10 +456,12 @@ export function OrdersSheetPilotSurface({
             Keyboard:
           </span>
           <KeyboardHintBar hints={documentKeyboardHints} className="text-xs" />
-          <span className="ml-auto text-xs text-muted-foreground">
-            Spreadsheet edits stay in the grid. Finalize and handoffs use the
-            buttons below.
-          </span>
+          {import.meta.env.DEV && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              Spreadsheet edits stay in the grid. Finalize and handoffs use the
+              buttons below.
+            </span>
+          )}
         </div>
       </div>
     );
@@ -474,7 +476,6 @@ export function OrdersSheetPilotSurface({
           placeholder="Search order or client"
           className="max-w-xs"
         />
-        <Badge variant="outline">Pilot: queue + document + handoffs</Badge>
         <div className="ml-auto flex items-center gap-2">
           <Button
             size="sm"
@@ -504,20 +505,26 @@ export function OrdersSheetPilotSurface({
             ? `${selectedOrderRow.orderNumber} selected`
             : "Queue evaluation active"}
         </span>
-        <Badge
-          variant={rowScopedActionsBlocked ? "secondary" : "outline"}
-          className="max-w-full"
-        >
-          {workflowActionTargetLabel}
-        </Badge>
-        <span className="text-xs text-muted-foreground">
-          Primary actions stay on-sheet. The document flow now stays inside the
-          sheet-native Orders surface, while accounting and shipping remain
-          explicit owner handoffs.
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {workflowActionGuardrail}
-        </span>
+        {import.meta.env.DEV && (
+          <Badge
+            variant={rowScopedActionsBlocked ? "secondary" : "outline"}
+            className="max-w-full"
+          >
+            {workflowActionTargetLabel}
+          </Badge>
+        )}
+        {import.meta.env.DEV && (
+          <span className="text-xs text-muted-foreground">
+            Primary actions stay on-sheet. The document flow now stays inside
+            the sheet-native Orders surface, while accounting and shipping
+            remain explicit owner handoffs.
+          </span>
+        )}
+        {import.meta.env.DEV && (
+          <span className="text-xs text-muted-foreground">
+            {workflowActionGuardrail}
+          </span>
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
             size="sm"

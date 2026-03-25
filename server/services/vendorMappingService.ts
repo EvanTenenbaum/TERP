@@ -176,10 +176,12 @@ export async function checkForCollisions(vendorId: number): Promise<{
   const db = await getDb();
   if (!db) return { hasCollision: false };
 
-  // Get the vendor
-  const vendor = await db.query.vendors.findFirst({
-    where: eq(vendors.id, vendorId),
-  });
+  // Get the vendor name via select (avoids deprecated db.query.vendors accessor)
+  const [vendor] = await db
+    .select({ id: vendors.id, name: vendors.name })
+    .from(vendors)
+    .where(eq(vendors.id, vendorId))
+    .limit(1);
 
   if (!vendor) {
     return { hasCollision: false };
@@ -224,10 +226,12 @@ export async function migrateVendorToClient(
     };
   }
 
-  // Get the vendor (exclude soft-deleted)
-  const vendor = await db.query.vendors.findFirst({
-    where: and(eq(vendors.id, vendorId), isNull(vendors.deletedAt)),
-  });
+  // Get the vendor (exclude soft-deleted) via select (avoids deprecated db.query.vendors accessor)
+  const [vendor] = await db
+    .select()
+    .from(vendors)
+    .where(and(eq(vendors.id, vendorId), isNull(vendors.deletedAt)))
+    .limit(1);
 
   if (!vendor) {
     return {

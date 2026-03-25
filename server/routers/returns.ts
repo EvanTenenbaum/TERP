@@ -23,7 +23,7 @@ import {
   ledgerEntries,
   orderLineItems,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and, ne } from "drizzle-orm";
+import { eq, desc, sql, and, ne, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -538,7 +538,9 @@ export const returnsRouter = router({
             const [batch] = await tx
               .select()
               .from(batches)
-              .where(eq(batches.id, item.batchId))
+              .where(
+                and(eq(batches.id, item.batchId), isNull(batches.deletedAt))
+              )
               .for("update"); // Row-level lock
 
             if (!batch) {
@@ -611,7 +613,8 @@ export const returnsRouter = router({
             and(
               eq(invoices.referenceType, "ORDER"),
               eq(invoices.referenceId, input.orderId),
-              ne(invoices.status, "VOID")
+              ne(invoices.status, "VOID"),
+              isNull(invoices.deletedAt)
             )
           )
           .orderBy(desc(invoices.createdAt));
@@ -939,7 +942,9 @@ export const returnsRouter = router({
             const [batch] = await tx
               .select()
               .from(batches)
-              .where(eq(batches.id, item.batchId))
+              .where(
+                and(eq(batches.id, item.batchId), isNull(batches.deletedAt))
+              )
               .for("update");
 
             if (batch) {
@@ -973,7 +978,9 @@ export const returnsRouter = router({
             const [batch] = await tx
               .select()
               .from(batches)
-              .where(eq(batches.id, item.batchId))
+              .where(
+                and(eq(batches.id, item.batchId), isNull(batches.deletedAt))
+              )
               .for("update");
 
             if (batch) {
@@ -1024,7 +1031,9 @@ export const returnsRouter = router({
             const [batch] = await tx
               .select()
               .from(batches)
-              .where(eq(batches.id, item.batchId))
+              .where(
+                and(eq(batches.id, item.batchId), isNull(batches.deletedAt))
+              )
               .for("update");
 
             if (batch) {
@@ -1170,7 +1179,8 @@ export const returnsRouter = router({
             and(
               eq(invoices.referenceType, "ORDER"),
               eq(invoices.referenceId, returnRecord.orderId),
-              ne(invoices.status, "VOID")
+              ne(invoices.status, "VOID"),
+              isNull(invoices.deletedAt)
             )
           )
           .orderBy(desc(invoices.createdAt));

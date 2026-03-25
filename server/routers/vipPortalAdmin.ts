@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 import * as vipPortalAdminService from "../services/vipPortalAdminService";
@@ -338,7 +342,10 @@ export const vipPortalAdminRouter = router({
         .mutation(
           async ({
             input,
+            ctx,
           }): Promise<{ orderNumber: string; itemCount: number }> => {
+            const actorId = getAuthenticatedUserId(ctx);
+
             // Get interest list with items
             const list = await vipPortalAdminService.getInterestListById(
               input.listId
@@ -360,11 +367,14 @@ export const vipPortalAdminRouter = router({
             // Create order via orders service
             const { createOrderFromInterestList } =
               await import("../services/orderService");
-            const order = await createOrderFromInterestList({
-              clientId: list.clientId,
-              items: selectedItems,
-              source: "vip_portal_interest_list",
-            });
+            const order = await createOrderFromInterestList(
+              {
+                clientId: list.clientId,
+                items: selectedItems,
+                source: "vip_portal_interest_list",
+              },
+              actorId
+            );
 
             // Update interest list status
             await vipPortalAdminService.updateInterestListStatus({

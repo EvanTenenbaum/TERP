@@ -295,7 +295,7 @@ export function parseQty(qtyStr: string): number {
  * Format quantity number to string
  */
 export function formatQty(qty: number): string {
-  return qty.toFixed(2);
+  return qty.toFixed(4);
 }
 
 /**

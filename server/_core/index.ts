@@ -20,6 +20,8 @@ function logStartupPhase(phase: string) {
 }
 
 import express from "express";
+import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
@@ -312,6 +314,23 @@ async function startServer() {
 
     // Sentry is now auto-instrumented via setupExpressErrorHandler
 
+    // Security headers via Helmet
+    app.use(helmet());
+
+    // CORS whitelist — staging + production origins, or all in dev
+    const allowedOrigins = [
+      "https://terp-staging-yicld.ondigitalocean.app",
+      ...(process.env.ALLOWED_ORIGINS?.split(",")
+        .map(o => o.trim())
+        .filter(Boolean) ?? []),
+    ];
+    app.use(
+      cors({
+        origin: process.env.NODE_ENV === "production" ? allowedOrigins : true,
+        credentials: true,
+      })
+    );
+
     // Request logging
     app.use(requestLogger);
 
@@ -342,12 +361,15 @@ async function startServer() {
     // ERR_ERL_PERMISSIVE_TRUST_PROXY. Use a hop count instead.
     app.set("trust proxy", 1);
 
+    // Apply rate limiting to auth endpoints before registering auth routes
+    app.use("/api/auth", authLimiter);
+    app.use("/api/trpc/auth", authLimiter);
+
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
 
-    // Apply rate limiting
+    // Apply rate limiting to tRPC API
     app.use("/api/trpc", apiLimiter);
-    app.use("/api/trpc/auth", authLimiter);
 
     // Health check endpoints
     // Returns appropriate HTTP status codes so DigitalOcean's load balancer
@@ -386,7 +408,18 @@ async function startServer() {
     });
 
     // Metrics endpoint for monitoring systems (Prometheus-compatible format available)
+    // Requires a valid JWT in the Authorization header (Bearer <token>) to prevent
+    // exposing server internals to unauthenticated callers.
     app.get("/health/metrics", (req, res) => {
+      const authHeader = req.headers.authorization;
+      const token =
+        authHeader && authHeader.startsWith("Bearer ")
+          ? authHeader.slice(7)
+          : null;
+      if (!token || !simpleAuth.verifySessionToken(token)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const metrics = getHealthMetrics();
       const format = req.query.format;
 
@@ -440,6 +473,10 @@ async function startServer() {
 
     // Debug endpoint to test createContext directly
     app.get("/api/debug/context", async (req, res) => {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(403).json({ error: "Disabled in production" });
+      }
+
       try {
         const context = await createContext({ req, res } as Parameters<
           typeof createContext

@@ -5,7 +5,12 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, adminProcedure, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  adminProcedure,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { db } from "../db";
 import { receipts, clients } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -351,6 +356,8 @@ export const receiptsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const createdBy = getAuthenticatedUserId(ctx);
+
       // Get client info
       const client = await db
         .select()
@@ -397,7 +404,7 @@ export const receiptsRouter = router({
         newBalance: String(input.newBalance),
         note: input.note,
         pdfUrl: pdfDataUri ? `/api/receipts/${receiptNumber}/pdf` : null,
-        createdBy: ctx.user.id,
+        createdBy,
       });
 
       // Generate HTML preview

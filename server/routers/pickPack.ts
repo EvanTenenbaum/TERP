@@ -16,7 +16,10 @@ import {
 } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
-import { requireAnyPermission } from "../_core/permissionMiddleware";
+import {
+  requireAnyPermission,
+  requirePermission,
+} from "../_core/permissionMiddleware";
 
 const pickPackDisplayStatusSchema = z.enum([
   "PENDING",
@@ -536,6 +539,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -704,6 +708,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -812,6 +817,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -965,6 +971,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
+    .use(requirePermission("inventory:update"))
     .input(z.object({ orderId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await import("../db").then(m => m.getDb());
@@ -1048,6 +1055,7 @@ export const pickPackRouter = router({
         "orders:update",
       ])
     )
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         orderId: z.number(),

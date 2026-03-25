@@ -20,7 +20,7 @@ import { storagePut, storageDelete, isStorageConfigured } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { getDb } from "../db";
 import { batches, inventoryMovements } from "../../drizzle/schema";
-import { eq, sql, desc, inArray } from "drizzle-orm";
+import { eq, sql, desc, inArray, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { env } from "../_core/env";
 import {
@@ -171,7 +171,7 @@ async function readBatchAdjustmentSnapshot(
   const rows = await tx
     .select(batchSelect)
     .from(batches)
-    .where(eq(batches.id, batchId))
+    .where(and(eq(batches.id, batchId), isNull(batches.deletedAt)))
     .for("update")
     .limit(1);
 
@@ -1147,7 +1147,7 @@ export const inventoryRouter = router({
         if (!db) throw new Error("Database not available");
 
         const { batches } = await import("../../drizzle/schema");
-        const { eq, and } = await import("drizzle-orm");
+        const { eq, and, isNull: isNullFn } = await import("drizzle-orm");
 
         // Get batches for product with LIVE status
         const productBatches = await db
@@ -1170,7 +1170,8 @@ export const inventoryRouter = router({
           .where(
             and(
               eq(batches.productId, input.productId),
-              eq(batches.batchStatus, "LIVE")
+              eq(batches.batchStatus, "LIVE"),
+              isNullFn(batches.deletedAt)
             )
           )
           .orderBy(batches.createdAt);
@@ -1699,8 +1700,7 @@ export const inventoryRouter = router({
       .use(requirePermission("inventory:read"))
       .query(async ({ ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           const result = await inventoryDb.getUserInventoryViews(userId);
           // BUG-034: Standardized pagination response
           return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
@@ -1742,8 +1742,7 @@ export const inventoryRouter = router({
       .input(z.number())
       .mutation(async ({ input, ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           return await inventoryDb.deleteInventoryView(input, userId);
         } catch (error) {
           handleError(error, "inventory.views.delete");
@@ -1772,8 +1771,7 @@ export const inventoryRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         try {
-          const userId = ctx.user?.id;
-          if (!userId) throw new Error("User not authenticated");
+          const userId = getAuthenticatedUserId(ctx);
           return await inventoryDb.bulkUpdateBatchStatus(
             input.batchIds,
             input.newStatus,

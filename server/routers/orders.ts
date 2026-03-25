@@ -15,6 +15,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { hasPermission, isSuperAdmin } from "../services/permissionService";
 import { parseMoneyOrZero } from "../utils/money";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
@@ -31,7 +32,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -52,6 +53,7 @@ import {
 } from "../lib/fulfillmentStatusCompatibility";
 import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import { resolveBatchCogs } from "../cogsCalculator";
+import { validateTransition } from "../services/orderStateMachine";
 
 // ============================================================================
 // BUG-502: In-memory rate limiting for confirm endpoint
@@ -197,7 +199,7 @@ async function getDraftBatchPricingContext(
     .innerJoin(products, eq(batches.productId, products.id))
     .innerJoin(lots, eq(batches.lotId, lots.id))
     .leftJoin(clients, eq(lots.supplierClientId, clients.id))
-    .where(eq(batches.id, batchId))
+    .where(and(eq(batches.id, batchId), isNull(batches.deletedAt)))
     .limit(1)
     .then(rows => rows[0]);
 
@@ -463,7 +465,7 @@ export const ordersRouter = router({
   delete: protectedProcedure
     .use(requirePermission("orders:delete"))
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // TER-252: Verify order exists before deleting
       const existing = await ordersDb.getOrderById(input.id);
 
@@ -472,6 +474,22 @@ export const ordersRouter = router({
           code: "NOT_FOUND",
           message: `Order with ID ${input.id} not found`,
         });
+      }
+
+      // BUG-W5-6: Confirmed orders require elevated permission to delete
+      if (!existing.isDraft) {
+        const userId = ctx.user?.openId ?? "";
+        const isSA = await isSuperAdmin(userId);
+        if (!isSA) {
+          const canManage = await hasPermission(userId, "orders:manage");
+          if (!canManage) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "Deleting a confirmed order requires the orders:manage permission",
+            });
+          }
+        }
       }
 
       const rowsAffected = await softDelete(orders, input.id);
@@ -518,19 +536,18 @@ export const ordersRouter = router({
       // BUG-502: Rate limit check - 10 confirms per minute per user
       checkConfirmRateLimit(userId);
 
-      // Import sql for database arithmetic (BUG-316)
-      const { sql } = await import("drizzle-orm");
-
       // BUG-301, BUG-303, BUG-304: Wrap entire confirm logic in a transaction
       // BUG-507: Note - MySQL default isolation level is REPEATABLE READ which is adequate
       // for this use case as it prevents dirty reads and non-repeatable reads within the transaction
       // Transaction automatically rolls back on any thrown error
       return await withTransaction(async tx => {
-        // BUG-304: Fresh read of order within transaction
+        // BUG-304: Fresh read of order within transaction with row lock
+        // BUG-W6-1: .for("update") prevents race conditions on concurrent confirms
         const [order] = await tx
           .select()
           .from(orders)
           .where(eq(orders.id, input.orderId))
+          .for("update")
           .limit(1);
 
         if (!order) {
@@ -553,33 +570,22 @@ export const ordersRouter = router({
           });
         }
 
-        if (!order.isDraft) {
+        // BUG-W6-1: Use state machine for formal transition validation.
+        // Replaces ad-hoc isDraft, saleStatus=CANCELLED, and nonConfirmableStatuses checks.
+        // Draft orders use "DRAFT" as effective status regardless of DB default fulfillmentStatus
+        // (new orders default to READY_FOR_PACKING in schema, but isDraft=true means they're still DRAFT).
+        const effectiveStatus = order.isDraft
+          ? "DRAFT"
+          : (order.fulfillmentStatus ?? "DRAFT");
+        try {
+          validateTransition(effectiveStatus, "CONFIRMED", order.id);
+        } catch (err) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Order is already confirmed",
-          });
-        }
-
-        // BUG-414: Validate order status allows confirmation
-        if (order.saleStatus === "CANCELLED") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Cannot confirm a cancelled order",
-          });
-        }
-
-        // BUG-414: Check fulfillment status allows confirmation
-        const nonConfirmableStatuses = ["SHIPPED", "DELIVERED", "RETURNED"];
-        const normalizedFulfillmentStatus = normalizeFulfillmentStatus(
-          order.fulfillmentStatus
-        );
-        if (
-          normalizedFulfillmentStatus &&
-          nonConfirmableStatuses.includes(normalizedFulfillmentStatus)
-        ) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Cannot confirm order with fulfillment status: ${normalizedFulfillmentStatus}`,
+            message:
+              err instanceof Error
+                ? err.message
+                : "Invalid order state transition",
           });
         }
 
@@ -618,7 +624,9 @@ export const ordersRouter = router({
         const batchRecords = await tx
           .select(batchSelect)
           .from(batches)
-          .where(safeInArray(batches.id, batchIds))
+          .where(
+            and(safeInArray(batches.id, batchIds), isNull(batches.deletedAt))
+          )
           .for("update");
 
         const batchMap = new Map(batchRecords.map(batch => [batch.id, batch]));
@@ -755,11 +763,13 @@ export const ordersRouter = router({
         }
 
         // BUG-303: Confirm the order (within transaction - will rollback if this fails)
+        // BUG-W6-1: Increment version for optimistic locking (DATA-005)
         await tx
           .update(orders)
           .set({
             isDraft: false,
             confirmedAt: new Date(),
+            version: sql`${orders.version} + 1`,
           })
           .where(eq(orders.id, input.orderId));
 
@@ -1016,72 +1026,76 @@ export const ordersRouter = router({
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
 
-      // Create order
-      const [orderResult] = await db.insert(orders).values({
-        orderNumber,
-        orderType: input.orderType,
-        clientId: input.clientId,
-        clientNeedId: input.clientNeedId ?? null,
-        isDraft: true,
-        referredByClientId: input.referredByClientId ?? null,
-        isReferralOrder: Boolean(input.referredByClientId),
-        items: JSON.stringify(
-          lineItemsWithPrices.map(item => ({
-            batchId: item.batchId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            isSample: item.isSample,
-          }))
-        ),
-        total: totals.finalTotal.toString(),
-        subtotal: totals.subtotal.toString(),
-        avgMarginPercent: totals.avgMarginPercent.toString(),
-        notes: input.notes || null,
-        validUntil: input.validUntil ? new Date(input.validUntil) : null,
-        paymentTerms: resolvedPaymentTerms,
-        cashPayment: input.cashPayment?.toString() || null,
-        createdBy: userId,
+      // Create order + line items atomically
+      const { orderId } = await withTransaction(async tx => {
+        const [orderResult] = await tx.insert(orders).values({
+          orderNumber,
+          orderType: input.orderType,
+          clientId: input.clientId,
+          clientNeedId: input.clientNeedId ?? null,
+          isDraft: true,
+          referredByClientId: input.referredByClientId ?? null,
+          isReferralOrder: Boolean(input.referredByClientId),
+          items: JSON.stringify(
+            lineItemsWithPrices.map(item => ({
+              batchId: item.batchId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              isSample: item.isSample,
+            }))
+          ),
+          total: totals.finalTotal.toString(),
+          subtotal: totals.subtotal.toString(),
+          avgMarginPercent: totals.avgMarginPercent.toString(),
+          notes: input.notes || null,
+          validUntil: input.validUntil ? new Date(input.validUntil) : null,
+          paymentTerms: resolvedPaymentTerms,
+          cashPayment: input.cashPayment?.toString() || null,
+          createdBy: userId,
+        });
+
+        const newOrderId = orderResult.insertId;
+
+        // Create line items
+        await Promise.all(
+          lineItemsWithPrices.map(item =>
+            tx.insert(orderLineItems).values({
+              orderId: newOrderId,
+              batchId: item.batchId,
+              productDisplayName: item.productDisplayName || null,
+              quantity: item.quantity.toString(),
+              isSample: item.isSample,
+              cogsPerUnit: item.cogsPerUnit.toString(),
+              originalCogsPerUnit: item.originalCogsPerUnit.toString(),
+              effectiveCogsBasis: item.effectiveCogsBasis,
+              originalRangeMin:
+                item.originalRangeMin !== null &&
+                item.originalRangeMin !== undefined
+                  ? item.originalRangeMin.toString()
+                  : null,
+              originalRangeMax:
+                item.originalRangeMax !== null &&
+                item.originalRangeMax !== undefined
+                  ? item.originalRangeMax.toString()
+                  : null,
+              isBelowVendorRange: item.isBelowVendorRange,
+              belowRangeReason: item.belowRangeReason || null,
+              marginPercent: item.marginPercent.toString(),
+              marginDollar: item.marginDollar.toString(),
+              isCogsOverridden: item.isCogsOverridden,
+              cogsOverrideReason: item.cogsOverrideReason || null,
+              isMarginOverridden: item.isMarginOverridden,
+              marginSource: item.marginSource,
+              unitPrice: item.unitPrice.toString(),
+              lineTotal: item.lineTotal.toString(),
+            })
+          )
+        );
+
+        return { orderId: newOrderId };
       });
 
-      const orderId = orderResult.insertId;
-
-      // Create line items
-      await Promise.all(
-        lineItemsWithPrices.map(item =>
-          db.insert(orderLineItems).values({
-            orderId,
-            batchId: item.batchId,
-            productDisplayName: item.productDisplayName || null,
-            quantity: item.quantity.toString(),
-            isSample: item.isSample,
-            cogsPerUnit: item.cogsPerUnit.toString(),
-            originalCogsPerUnit: item.originalCogsPerUnit.toString(),
-            effectiveCogsBasis: item.effectiveCogsBasis,
-            originalRangeMin:
-              item.originalRangeMin !== null &&
-              item.originalRangeMin !== undefined
-                ? item.originalRangeMin.toString()
-                : null,
-            originalRangeMax:
-              item.originalRangeMax !== null &&
-              item.originalRangeMax !== undefined
-                ? item.originalRangeMax.toString()
-                : null,
-            isBelowVendorRange: item.isBelowVendorRange,
-            belowRangeReason: item.belowRangeReason || null,
-            marginPercent: item.marginPercent.toString(),
-            marginDollar: item.marginDollar.toString(),
-            isCogsOverridden: item.isCogsOverridden,
-            cogsOverrideReason: item.cogsOverrideReason || null,
-            isMarginOverridden: item.isMarginOverridden,
-            marginSource: item.marginSource,
-            unitPrice: item.unitPrice.toString(),
-            lineTotal: item.lineTotal.toString(),
-          })
-        )
-      );
-
-      // Log audit entry
+      // Log audit entry (outside transaction — non-critical side effect)
       await orderAuditService.logOrderCreation(orderId, userId, {
         orderType: input.orderType,
         clientId: input.clientId,
@@ -1419,7 +1433,9 @@ export const ordersRouter = router({
               sampleQty: batches.sampleQty,
             })
             .from(batches)
-            .where(safeInArray(batches.id, batchIds))
+            .where(
+              and(safeInArray(batches.id, batchIds), isNull(batches.deletedAt))
+            )
             .for("update");
 
           const batchMap = new Map(batchRecords.map(b => [b.id, b]));
@@ -1577,7 +1593,12 @@ export const ordersRouter = router({
                 unitCogsMax: batches.unitCogsMax,
               })
               .from(batches)
-              .where(safeInArray(batches.id, batchIds))
+              .where(
+                and(
+                  safeInArray(batches.id, batchIds),
+                  isNull(batches.deletedAt)
+                )
+              )
           : [];
       const batchMetadataById = new Map(
         batchMetadata.map(batch => [
@@ -2032,7 +2053,9 @@ export const ordersRouter = router({
           const batchRecords = await tx
             .select(batchSelect)
             .from(batches)
-            .where(safeInArray(batches.id, batchIds))
+            .where(
+              and(safeInArray(batches.id, batchIds), isNull(batches.deletedAt))
+            )
             .for("update");
 
           const batchMap = new Map(batchRecords.map(b => [b.id, b]));
@@ -2248,7 +2271,9 @@ export const ordersRouter = router({
           const [batch] = await tx
             .select(batchSelect)
             .from(batches)
-            .where(eq(batches.id, allocation.batchId))
+            .where(
+              and(eq(batches.id, allocation.batchId), isNull(batches.deletedAt))
+            )
             .for("update")
             .limit(1);
 
@@ -2267,8 +2292,15 @@ export const ordersRouter = router({
           // TER-259: Release reservation AND decrement onHandQty atomically on shipment.
           // reservedQty was incremented at confirmation (soft lock); now we release it
           // and record the actual physical deduction against onHandQty.
+          // W6-3: Throw instead of silently clamping to prevent phantom inventory.
+          if (currentOnHand - allocatedQty < 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient inventory on batch ${allocation.batchId}: on-hand ${currentOnHand}, requested ${allocatedQty}`,
+            });
+          }
           const newReserved = Math.max(0, currentReserved - allocatedQty);
-          const newOnHand = Math.max(0, currentOnHand - allocatedQty);
+          const newOnHand = currentOnHand - allocatedQty;
 
           await tx
             .update(batches)
@@ -2591,7 +2623,9 @@ export const ordersRouter = router({
       const batchRows = await db
         .select({ lotId: batches.lotId })
         .from(batches)
-        .where(safeInArray(batches.id, batchIdList));
+        .where(
+          and(safeInArray(batches.id, batchIdList), isNull(batches.deletedAt))
+        );
 
       const lotIds = Array.from(new Set(batchRows.map(batch => batch.lotId)));
       if (lotIds.length === 0) {
@@ -2746,7 +2780,9 @@ export const ordersRouter = router({
           const [batch] = await tx
             .select({ reservedQty: batches.reservedQty })
             .from(batches)
-            .where(eq(batches.id, existing.batchId))
+            .where(
+              and(eq(batches.id, existing.batchId), isNull(batches.deletedAt))
+            )
             .for("update")
             .limit(1);
 
@@ -2793,7 +2829,9 @@ export const ordersRouter = router({
           const [batch] = await tx
             .select(batchSelect)
             .from(batches)
-            .where(eq(batches.id, alloc.batchId))
+            .where(
+              and(eq(batches.id, alloc.batchId), isNull(batches.deletedAt))
+            )
             .for("update")
             .limit(1);
 
@@ -2938,7 +2976,13 @@ export const ordersRouter = router({
           batchGrade: batches.grade,
         })
         .from(orderLineItemAllocations)
-        .leftJoin(batches, eq(orderLineItemAllocations.batchId, batches.id))
+        .leftJoin(
+          batches,
+          and(
+            eq(orderLineItemAllocations.batchId, batches.id),
+            isNull(batches.deletedAt)
+          )
+        )
         .where(eq(orderLineItemAllocations.orderLineItemId, input.lineItemId));
 
       return allocations.map(alloc => ({

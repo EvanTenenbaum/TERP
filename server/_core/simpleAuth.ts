@@ -114,7 +114,10 @@ class SimpleAuthService {
     try {
       isValid = await this.verifyPassword(password, user.loginMethod || "");
     } catch (error) {
-      logger.error({ error, username }, "Auth login failed during password verify");
+      logger.error(
+        { error, username },
+        "Auth login failed during password verify"
+      );
       throw ForbiddenError("Invalid username or password");
     }
 
@@ -173,6 +176,16 @@ class SimpleAuthService {
 export const simpleAuth = new SimpleAuthService();
 
 export function registerSimpleAuthRoutes(app: Express) {
+  // BUG-W7-1: Guard against DEMO_MODE in production — this is a security risk
+  if (
+    process.env.DEMO_MODE === "true" &&
+    process.env.NODE_ENV === "production"
+  ) {
+    throw new Error(
+      "DEMO_MODE must not be enabled in production — this is a security risk"
+    );
+  }
+
   // Login endpoint
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
@@ -201,7 +214,10 @@ export function registerSimpleAuthRoutes(app: Express) {
       logger.warn(
         {
           username: typeof username === "string" ? username : undefined,
-          err: error instanceof Error ? { message: error.message, name: error.name } : String(error),
+          err:
+            error instanceof Error
+              ? { message: error.message, name: error.name }
+              : String(error),
         },
         "Auth login request failed"
       );
@@ -236,6 +252,21 @@ export function registerSimpleAuthRoutes(app: Express) {
 
   // Database schema push endpoint (for schema updates)
   app.post("/api/auth/push-schema", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Disabled in production" });
+    }
+
+    // Require valid JWT + admin auth
+    let user: Awaited<ReturnType<typeof simpleAuth.authenticateRequest>>;
+    try {
+      user = await simpleAuth.authenticateRequest(req);
+    } catch {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
     try {
       const { pushSchema } = await import("../services/pushSchema");
       const result = await pushSchema();
@@ -253,6 +284,21 @@ export function registerSimpleAuthRoutes(app: Express) {
 
   // Manual seed endpoint (for initial setup)
   app.post("/api/auth/seed", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Disabled in production" });
+    }
+
+    // Require valid JWT + admin auth
+    let seedUser: Awaited<ReturnType<typeof simpleAuth.authenticateRequest>>;
+    try {
+      seedUser = await simpleAuth.authenticateRequest(req);
+    } catch {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    if (seedUser.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
     // Check if seeding is disabled (case-insensitive)
     const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
     if (skipSeeding === "true" || skipSeeding === "1") {
@@ -289,7 +335,20 @@ export function registerSimpleAuthRoutes(app: Express) {
 
   // Create first user endpoint (for initial setup)
   app.post("/api/auth/create-first-user", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Disabled in production" });
+    }
+
     try {
+      // Reject if any users already exist — prevents account takeover
+      const { countUsers } = await import("../db");
+      const existingCount = await countUsers();
+      if (existingCount > 0) {
+        return res
+          .status(403)
+          .json({ error: "Users already exist. Use login instead." });
+      }
+
       const { username, password, name } = req.body;
 
       if (!username || !password) {
@@ -298,9 +357,28 @@ export function registerSimpleAuthRoutes(app: Express) {
           .json({ error: "Username and password required" });
       }
 
+      // BUG-W7-3: Enforce minimum password policy (8+ chars, at least one letter and one number)
+      if (typeof password !== "string" || password.length < 8) {
+        return res
+          .status(400)
+          .json({ error: "Password must be at least 8 characters" });
+      }
+      if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+        return res.status(400).json({
+          error: "Password must contain at least one letter and one number",
+        });
+      }
+
       const user = await simpleAuth.createUser(username, password, name);
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
+      // QA-002: Catch TOCTOU duplicate-entry race — if two concurrent requests both pass
+      // the countUsers() check, the DB unique constraint on openId will reject the second.
+      if (error instanceof Error && error.message.includes("Duplicate entry")) {
+        return res
+          .status(403)
+          .json({ error: "Users already exist. Use login instead." });
+      }
       // Error logging handled by error handling middleware
       res.status(400).json({
         error: error instanceof Error ? error.message : "Failed to create user",

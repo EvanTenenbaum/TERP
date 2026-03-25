@@ -232,11 +232,11 @@ describe("Inventory Validation Property Tests", () => {
       );
     });
 
-    it("P34: Always returns string with 2 decimal places", () => {
+    it("P34: Always returns string with 4 decimal places", () => {
       fc.assert(
         fc.property(fc.float({ min: 0, max: 10000, noNaN: true }), num => {
           const result = formatQty(num);
-          return /^\d+\.\d{2}$/.test(result);
+          return /^\d+\.\d{4}$/.test(result);
         }),
         { numRuns }
       );

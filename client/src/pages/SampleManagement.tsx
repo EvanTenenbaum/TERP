@@ -456,7 +456,6 @@ export default function SampleManagement({
 
       await deleteSampleMutation.mutateAsync({
         requestId: sampleId,
-        cancelledBy: user.id,
         reason: "Deleted via Sample Management",
       });
     },
@@ -477,7 +476,6 @@ export default function SampleManagement({
       }
       await approveReturnMutation.mutateAsync({
         requestId: sampleId,
-        approvedBy: user.id,
       });
     },
     [approveReturnMutation, user?.id]
@@ -491,7 +489,6 @@ export default function SampleManagement({
       }
       await completeReturnMutation.mutateAsync({
         requestId: sampleId,
-        completedBy: user.id,
       });
     },
     [completeReturnMutation, user?.id]
@@ -516,7 +513,6 @@ export default function SampleManagement({
       }
       await confirmVendorReturnMutation.mutateAsync({
         requestId: sampleId,
-        confirmedBy: user.id,
       });
     },
     [confirmVendorReturnMutation, user?.id]
@@ -542,7 +538,6 @@ export default function SampleManagement({
       if (returnDialogType === "sample") {
         await requestReturnMutation.mutateAsync({
           requestId: selectedSampleId,
-          requestedBy: user.id,
           reason: values.reason,
           condition: values.condition,
           returnDate: values.returnDate,
@@ -550,7 +545,6 @@ export default function SampleManagement({
       } else {
         await requestVendorReturnMutation.mutateAsync({
           requestId: selectedSampleId,
-          requestedBy: user.id,
           reason: values.reason,
         });
       }
@@ -573,7 +567,6 @@ export default function SampleManagement({
 
       await shipToVendorMutation.mutateAsync({
         requestId: selectedSampleId,
-        shippedBy: user.id,
         trackingNumber: values.trackingNumber,
       });
     },
@@ -590,7 +583,6 @@ export default function SampleManagement({
       await updateLocationMutation.mutateAsync({
         requestId: selectedSampleId,
         location: values.location,
-        changedBy: user.id,
         notes: values.notes,
       });
     },

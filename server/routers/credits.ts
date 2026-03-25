@@ -8,7 +8,11 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as creditsDb from "../creditsDb";
 
@@ -242,7 +246,7 @@ export const creditsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const createdBy = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -291,7 +295,7 @@ export const creditsRouter = router({
         creditReason: input.reason,
         expirationDate: input.expiresAt,
         notes: creditNotes,
-        createdBy: ctx.user.id,
+        createdBy,
         creditStatus: "ACTIVE",
       });
 
@@ -317,7 +321,7 @@ export const creditsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const createdBy = getAuthenticatedUserId(ctx);
 
       // Generate credit number
       const creditNumber = await creditsDb.generateCreditNumber();
@@ -331,7 +335,7 @@ export const creditsRouter = router({
         creditReason: input.creditReason,
         expirationDate: input.expirationDate,
         notes: input.notes,
-        createdBy: ctx.user.id,
+        createdBy,
         creditStatus: "ACTIVE",
       });
     }),
@@ -389,13 +393,13 @@ export const creditsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const appliedBy = getAuthenticatedUserId(ctx);
 
       return await creditsDb.applyCredit(
         input.creditId,
         input.invoiceId,
         input.amountToApply,
-        ctx.user.id,
+        appliedBy,
         input.notes,
         input.idempotencyKey
       );
@@ -430,7 +434,7 @@ export const creditsRouter = router({
     .use(requirePermission("credits:delete"))
     .input(z.object({ creditId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      getAuthenticatedUserId(ctx);
       return await creditsDb.voidCredit(input.creditId);
     }),
 
@@ -438,7 +442,7 @@ export const creditsRouter = router({
   markExpired: protectedProcedure
     .use(requirePermission("credits:update"))
     .mutation(async ({ ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      getAuthenticatedUserId(ctx);
       const count = await creditsDb.markExpiredCredits();
       return { expiredCount: count };
     }),

@@ -92,7 +92,9 @@ export const auditRouter = router({
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(eq(payments.customerId, clientId))
+        .where(
+          and(eq(payments.customerId, clientId), isNull(payments.deletedAt))
+        )
         .orderBy(desc(payments.paymentDate));
 
       // Combine and sort all transactions
@@ -231,7 +233,13 @@ export const auditRouter = router({
         })
         .from(inventoryMovements)
         .leftJoin(users, eq(inventoryMovements.performedBy, users.id))
-        .where(and(eq(inventoryMovements.batchId, batchId), ...dateFilter))
+        .where(
+          and(
+            eq(inventoryMovements.batchId, batchId),
+            isNull(inventoryMovements.deletedAt),
+            ...dateFilter
+          )
+        )
         .orderBy(desc(inventoryMovements.createdAt));
 
       // Calculate running total
@@ -428,7 +436,13 @@ export const auditRouter = router({
         })
         .from(bills)
         .leftJoin(users, eq(bills.createdBy, users.id))
-        .where(and(eq(bills.vendorId, vendorId), ...billDateFilter))
+        .where(
+          and(
+            eq(bills.vendorId, vendorId),
+            isNull(bills.deletedAt),
+            ...billDateFilter
+          )
+        )
         .orderBy(desc(bills.billDate));
 
       // Build date filter for payments
@@ -448,7 +462,13 @@ export const auditRouter = router({
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(and(eq(payments.vendorId, vendorId), ...paymentDateFilter))
+        .where(
+          and(
+            eq(payments.vendorId, vendorId),
+            isNull(payments.deletedAt),
+            ...paymentDateFilter
+          )
+        )
         .orderBy(desc(payments.paymentDate));
 
       // Combine transactions

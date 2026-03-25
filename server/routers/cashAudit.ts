@@ -10,7 +10,11 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import {
@@ -224,7 +228,7 @@ export const cashAuditRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const actorId = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -232,7 +236,7 @@ export const cashAuditRouter = router({
       logger.info({
         msg: "[CashAudit] Creating cash location",
         name: input.name,
-        userId: ctx.user.id,
+        userId: actorId,
       });
 
       // Insert the new location
@@ -252,7 +256,7 @@ export const cashAuditRouter = router({
           amount: input.initialBalance.toFixed(2),
           description: "Initial balance",
           referenceType: "MANUAL",
-          createdBy: ctx.user.id,
+          createdBy: actorId,
         });
       }
 
@@ -279,7 +283,7 @@ export const cashAuditRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const actorId = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -287,7 +291,7 @@ export const cashAuditRouter = router({
       logger.info({
         msg: "[CashAudit] Updating cash location",
         locationId: input.locationId,
-        userId: ctx.user.id,
+        userId: actorId,
       });
 
       // Check location exists
@@ -389,7 +393,7 @@ export const cashAuditRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const actorId = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -399,7 +403,7 @@ export const cashAuditRouter = router({
         from: input.fromLocationId,
         to: input.toLocationId,
         amount: input.amount,
-        userId: ctx.user.id,
+        userId: actorId,
       });
 
       // Validate locations exist and are active
@@ -468,7 +472,7 @@ export const cashAuditRouter = router({
         description: transferDescription,
         referenceType: "TRANSFER",
         transferToLocationId: input.toLocationId,
-        createdBy: ctx.user.id,
+        createdBy: actorId,
       });
 
       // Record IN transaction for destination location
@@ -479,7 +483,7 @@ export const cashAuditRouter = router({
         description: transferDescription,
         referenceType: "TRANSFER",
         transferFromLocationId: input.fromLocationId,
-        createdBy: ctx.user.id,
+        createdBy: actorId,
       });
 
       logger.info({
@@ -659,7 +663,7 @@ export const cashAuditRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const actorId = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -669,7 +673,7 @@ export const cashAuditRouter = router({
         locationId: input.locationId,
         type: input.transactionType,
         amount: input.amount,
-        userId: ctx.user.id,
+        userId: actorId,
       });
 
       // Verify location exists and is active
@@ -718,7 +722,7 @@ export const cashAuditRouter = router({
         description: input.description,
         referenceType: input.referenceType,
         referenceId: input.referenceId,
-        createdBy: ctx.user.id,
+        createdBy: actorId,
       });
 
       const transactionId = Number(result[0].insertId);
@@ -1042,7 +1046,7 @@ export const cashAuditRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
+      const actorId = getAuthenticatedUserId(ctx);
 
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -1051,7 +1055,7 @@ export const cashAuditRouter = router({
         msg: "[CashAudit] Resetting shift",
         locationId: input.locationId,
         actualCashCount: input.actualCashCount,
-        userId: ctx.user.id,
+        userId: actorId,
       });
 
       // Verify location exists
@@ -1120,7 +1124,7 @@ export const cashAuditRouter = router({
           variance: variance.toFixed(2),
           status: "CLOSED",
           notes: input.notes,
-          resetBy: ctx.user.id,
+          resetBy: actorId,
           resetAt: now,
         })
         .where(eq(shiftAudits.id, activeShift.id));
@@ -1143,7 +1147,7 @@ export const cashAuditRouter = router({
           amount: varianceAmount.toFixed(2),
           description: `Shift reconciliation variance: ${variance > 0 ? "Over" : "Short"} by $${varianceAmount.toFixed(2)}`,
           referenceType: "MANUAL",
-          createdBy: ctx.user.id,
+          createdBy: actorId,
         });
       }
 
