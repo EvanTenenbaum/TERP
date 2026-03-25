@@ -79,7 +79,7 @@ const BATCH_STATUS_CONFIG: Record<
 
 /**
  * Type guard to check if a status is non-sellable
- * Returns true for AWAITING_INTAKE, ON_HOLD, or QUARANTINED statuses
+ * Returns true for AWAITING_INTAKE, ON_HOLD, QUARANTINED, SOLD_OUT, or CLOSED statuses
  */
 function isNonSellableStatus(status?: string): status is NonSellableStatus {
   if (!status) return false;
