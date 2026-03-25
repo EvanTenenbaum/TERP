@@ -163,30 +163,7 @@ export const installmentPaymentsRouter = router({
 
       const remainingBalance = input.totalAmount - input.downPaymentAmount;
 
-      // Create the plan
-      const planResult = await db.insert(installmentPlans).values({
-        clientId: input.clientId,
-        invoiceId: input.invoiceId,
-        orderId: input.orderId,
-        planName:
-          input.planName ||
-          `Installment Plan - ${new Date().toISOString().split("T")[0]}`,
-        totalAmount: input.totalAmount.toFixed(2),
-        numberOfInstallments: input.numberOfInstallments,
-        frequency: input.frequency,
-        firstPaymentDate: new Date(input.firstPaymentDate),
-        downPaymentAmount: input.downPaymentAmount.toFixed(2),
-        totalPaid: input.downPaymentAmount.toFixed(2), // Down payment counts as paid
-        remainingBalance: remainingBalance.toFixed(2),
-        interestRate: input.interestRate.toFixed(2),
-        lateFeeAmount: input.lateFeeAmount.toFixed(2),
-        notes: input.notes,
-        createdBy: userId,
-      });
-
-      const planId = Number(planResult[0].insertId);
-
-      // Calculate installment dates
+      // Calculate installment dates (pure computation, outside transaction)
       const firstPaymentDate = new Date(input.firstPaymentDate);
       const installmentDates = calculateInstallmentDates(
         firstPaymentDate,
@@ -195,31 +172,59 @@ export const installmentPaymentsRouter = router({
         input.customIntervalDays
       );
 
-      // Create individual installments
-      for (let i = 0; i < input.numberOfInstallments; i++) {
-        // Last installment might be slightly different to account for rounding
-        let amountDue = installmentAmount;
-        if (i === input.numberOfInstallments - 1) {
-          const previousTotal =
-            installmentAmount * (input.numberOfInstallments - 1);
-          amountDue =
-            Math.round(
-              (remainingBalance -
-                previousTotal +
-                (remainingBalance * input.interestRate) / 100) *
-                100
-            ) / 100;
-          if (amountDue < 0) amountDue = installmentAmount; // Fallback
+      // Wrap plan insert + all installment inserts in a single transaction
+      const planId = await db.transaction(async tx => {
+        // Create the plan
+        const planResult = await tx.insert(installmentPlans).values({
+          clientId: input.clientId,
+          invoiceId: input.invoiceId,
+          orderId: input.orderId,
+          planName:
+            input.planName ||
+            `Installment Plan - ${new Date().toISOString().split("T")[0]}`,
+          totalAmount: input.totalAmount.toFixed(2),
+          numberOfInstallments: input.numberOfInstallments,
+          frequency: input.frequency,
+          firstPaymentDate: new Date(input.firstPaymentDate),
+          downPaymentAmount: input.downPaymentAmount.toFixed(2),
+          totalPaid: input.downPaymentAmount.toFixed(2), // Down payment counts as paid
+          remainingBalance: remainingBalance.toFixed(2),
+          interestRate: input.interestRate.toFixed(2),
+          lateFeeAmount: input.lateFeeAmount.toFixed(2),
+          notes: input.notes,
+          createdBy: userId,
+        });
+
+        const newPlanId = Number(planResult[0].insertId);
+
+        // Create individual installments
+        for (let i = 0; i < input.numberOfInstallments; i++) {
+          // Last installment might be slightly different to account for rounding
+          let amountDue = installmentAmount;
+          if (i === input.numberOfInstallments - 1) {
+            const previousTotal =
+              installmentAmount * (input.numberOfInstallments - 1);
+            amountDue =
+              Math.round(
+                (remainingBalance -
+                  previousTotal +
+                  (remainingBalance * input.interestRate) / 100) *
+                  100
+              ) / 100;
+            if (amountDue < 0) amountDue = installmentAmount; // Fallback
+          }
+
+          await tx.insert(installments).values({
+            planId: newPlanId,
+            installmentNumber: i + 1,
+            dueDate: installmentDates[i],
+            amountDue: amountDue.toFixed(2),
+            status: i === 0 ? "PENDING" : "SCHEDULED",
+          });
         }
 
-        await db.insert(installments).values({
-          planId,
-          installmentNumber: i + 1,
-          dueDate: installmentDates[i],
-          amountDue: amountDue.toFixed(2),
-          status: i === 0 ? "PENDING" : "SCHEDULED",
-        });
-      }
+        return newPlanId;
+      });
 
       logger.info({
         msg: "[InstallmentPayments] Created installment plan",
@@ -389,64 +394,67 @@ export const installmentPaymentsRouter = router({
       const newPaid = currentPaid + input.amountPaid;
       const isFullyPaid = newPaid >= amountDue;
 
-      // Update installment
-      await db
-        .update(installments)
-        .set({
-          amountPaid: newPaid.toFixed(2),
-          paidDate: isFullyPaid ? new Date() : null,
-          paymentId: input.paymentId,
-          status: isFullyPaid ? "PAID" : "PARTIAL",
-          notes: input.notes,
-        })
-        .where(eq(installments.id, input.installmentId));
-
-      // Update plan totals
-      const [plan] = await db
-        .select()
-        .from(installmentPlans)
-        .where(eq(installmentPlans.id, installment.planId))
-        .limit(1);
-
-      if (plan) {
-        const planTotalPaid =
-          parseFloat(plan.totalPaid || "0") + input.amountPaid;
-        const planRemainingBalance =
-          parseFloat(plan.totalAmount || "0") - planTotalPaid;
-
-        const planStatus = planRemainingBalance <= 0 ? "COMPLETED" : "ACTIVE";
-
-        await db
-          .update(installmentPlans)
+      // Wrap installment update + plan totals + next activation in a single transaction
+      await db.transaction(async tx => {
+        // Update installment
+        await tx
+          .update(installments)
           .set({
-            totalPaid: planTotalPaid.toFixed(2),
-            remainingBalance: Math.max(0, planRemainingBalance).toFixed(2),
-            status: planStatus,
+            amountPaid: newPaid.toFixed(2),
+            paidDate: isFullyPaid ? new Date() : null,
+            paymentId: input.paymentId,
+            status: isFullyPaid ? "PAID" : "PARTIAL",
+            notes: input.notes,
           })
-          .where(eq(installmentPlans.id, installment.planId));
+          .where(eq(installments.id, input.installmentId));
 
-        // If this installment is paid, activate next one
-        if (isFullyPaid) {
-          const nextInstallment = await db
-            .select()
-            .from(installments)
-            .where(
-              and(
-                eq(installments.planId, installment.planId),
-                eq(installments.status, "SCHEDULED")
+        // Update plan totals
+        const [plan] = await tx
+          .select()
+          .from(installmentPlans)
+          .where(eq(installmentPlans.id, installment.planId))
+          .limit(1);
+
+        if (plan) {
+          const planTotalPaid =
+            parseFloat(plan.totalPaid || "0") + input.amountPaid;
+          const planRemainingBalance =
+            parseFloat(plan.totalAmount || "0") - planTotalPaid;
+
+          const planStatus = planRemainingBalance <= 0 ? "COMPLETED" : "ACTIVE";
+
+          await tx
+            .update(installmentPlans)
+            .set({
+              totalPaid: planTotalPaid.toFixed(2),
+              remainingBalance: Math.max(0, planRemainingBalance).toFixed(2),
+              status: planStatus,
+            })
+            .where(eq(installmentPlans.id, installment.planId));
+
+          // If this installment is paid, activate next one
+          if (isFullyPaid) {
+            const nextInstallment = await tx
+              .select()
+              .from(installments)
+              .where(
+                and(
+                  eq(installments.planId, installment.planId),
+                  eq(installments.status, "SCHEDULED")
+                )
               )
-            )
-            .orderBy(asc(installments.installmentNumber))
-            .limit(1);
+              .orderBy(asc(installments.installmentNumber))
+              .limit(1);
 
-          if (nextInstallment.length > 0) {
-            await db
-              .update(installments)
-              .set({ status: "PENDING" })
-              .where(eq(installments.id, nextInstallment[0].id));
+            if (nextInstallment.length > 0) {
+              await tx
+                .update(installments)
+                .set({ status: "PENDING" })
+                .where(eq(installments.id, nextInstallment[0].id));
+            }
           }
         }
-      }
+      });
 
       logger.info({
         msg: "[InstallmentPayments] Recorded payment",

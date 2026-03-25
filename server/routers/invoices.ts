@@ -27,7 +27,7 @@ import {
 import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
-import { createInvoiceFromOrder } from "../services/orderAccountingService";
+import { createInvoiceFromOrderTx } from "../services/orderAccountingService";
 import { reverseGLEntries, GLPostingError } from "../accountingHooks";
 import { syncClientBalance } from "../services/clientBalanceService";
 import { generateInvoicePdf } from "../services/pdfGenerator";
@@ -437,26 +437,30 @@ export const invoicesRouter = router({
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + daysToAdd);
 
-      // Create the invoice using the accounting service
-      const invoiceId = await createInvoiceFromOrder({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        clientId: order.clientId,
-        items: orderItems,
-        subtotal: parseFloat(order.subtotal || "0"),
-        tax: parseFloat(order.tax || "0"),
-        total: parseFloat(order.total || "0"),
-        dueDate,
-        createdBy: userId,
+      // Wrap invoice insert + order update in a single transaction
+      const invoiceId = await db.transaction(async tx => {
+        const newInvoiceId = await createInvoiceFromOrderTx(tx, {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          clientId: order.clientId,
+          items: orderItems,
+          subtotal: parseFloat(order.subtotal || "0"),
+          tax: parseFloat(order.tax || "0"),
+          total: parseFloat(order.total || "0"),
+          dueDate,
+          createdBy: userId,
+        });
+
+        // Update order with invoice reference
+        await tx
+          .update(orders)
+          .set({ invoiceId: newInvoiceId })
+          .where(eq(orders.id, input.orderId));
+
+        return newInvoiceId;
       });
 
-      // Update order with invoice reference
-      await db
-        .update(orders)
-        .set({ invoiceId })
-        .where(eq(orders.id, input.orderId));
-
-      // ARCH-002: Sync client balance after invoice creation
+      // ARCH-002: Sync client balance after invoice creation (derived recalculation, outside tx)
       await syncClientBalance(order.clientId);
 
       logger.info({
