@@ -188,7 +188,8 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       // SEC-029: Default permissions are now DISABLED by default for security
       // This follows the principle of least privilege - users must have explicit RBAC roles
       // Set ENABLE_DEFAULT_READ_PERMISSIONS=true to enable fallback (not recommended for production)
-      const enableDefaultPermissions = process.env.ENABLE_DEFAULT_READ_PERMISSIONS === 'true';
+      const enableDefaultPermissions =
+        process.env.ENABLE_DEFAULT_READ_PERMISSIONS === "true";
 
       if (!enableDefaultPermissions) {
         logger.warn({
@@ -208,7 +209,8 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       logger.warn({
         msg: "SEC-029: Granting default read permissions (ENABLE_DEFAULT_READ_PERMISSIONS=true)",
         userId,
-        warning: "This is not recommended for production - assign proper RBAC roles instead",
+        warning:
+          "This is not recommended for production - assign proper RBAC roles instead",
       });
 
       const defaultReadPermissions = new Set<string>([
@@ -355,13 +357,27 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 }
 
 /**
- * Check if a user has a specific permission
+ * Check if a user has a specific permission.
+ * Fail-closed: any DB error returns false (deny) rather than propagating a 500.
+ * The error is still logged by getUserPermissions for observability.
  */
 export async function hasPermission(
   userId: string,
   permissionName: string
 ): Promise<boolean> {
-  const userPermissions = await getUserPermissions(userId);
+  let userPermissions: Set<string>;
+  try {
+    userPermissions = await getUserPermissions(userId);
+  } catch (error) {
+    logger.error({
+      msg: "hasPermission: getUserPermissions threw — denying access (fail-closed)",
+      userId,
+      permission: permissionName,
+      error,
+    });
+    return false;
+  }
+
   const hasIt = userPermissions.has(permissionName);
 
   logger.debug({

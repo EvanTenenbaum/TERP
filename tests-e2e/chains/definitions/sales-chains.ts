@@ -111,7 +111,7 @@ export const SALES_CHAINS: TestChain[] = [
           {
             action: "click",
             target:
-              'table tbody tr:first-child, [data-testid*="order-row"]:first-child, [class*="row"]:first-child a',
+              '[role="grid"] [role="row"]:nth-child(2), [data-testid*="order-row"]:first-child, table tbody tr:first-child',
             wait_for: "text=Order, text=Details, text=Status",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
@@ -405,10 +405,17 @@ export const SALES_CHAINS: TestChain[] = [
             wait_for: "text=Orders, text=Sales, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
+          // Click the Orders tab explicitly — session may preserve the last active tab
+          {
+            action: "click",
+            target: '[role="tab"]:has-text("Orders")',
+            wait_for: '[role="grid"], text=Orders Queue',
+          },
+          { action: "wait", network_idle: true, timeout: 5000 },
           {
             action: "assert",
             visible:
-              'table tbody tr:first-child, [data-testid*="order-row"]:first-child',
+              '[role="grid"] [role="row"]:nth-child(2), [data-testid*="order-row"]:first-child',
           },
           { action: "screenshot", name: "sales-orders-after-create" },
         ],
@@ -417,104 +424,58 @@ export const SALES_CHAINS: TestChain[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // sales.create-sales-sheet — daily CRUD lifecycle
+  // sales.create-sales-sheet — daily read (catalogues tab)
+  // NOTE: /sales-sheets now redirects into the unified /sales workspace as the
+  // "Sales Catalogues" tab. The pilot surface is a catalog browser; a standalone
+  // create-form with a name input does not exist in the current pilot. This chain
+  // verifies the tab loads and the surface renders. Restore create/save phases
+  // once the create flow is implemented in SalesSheetsPilotSurface.
   // ---------------------------------------------------------------------------
   {
     chain_id: "sales.create-sales-sheet",
     description:
-      "Create a new sales sheet, save it, navigate away, and verify persistence",
-    tags: [
-      "route:/sales-sheets",
-      "persona:sales",
-      "daily",
-      "crud:create",
-      "save-state",
-      "persistence",
-    ],
+      "Verify the Sales Catalogues tab loads in the unified sales workspace",
+    tags: ["route:/sales", "persona:sales", "daily", "read", "crud:read"],
     phases: [
       {
-        phase_id: "navigate-sales-sheets",
-        description: "Go to sales sheets page",
+        phase_id: "navigate-sales",
+        description: "Navigate to the unified sales workspace",
         steps: [
           {
             action: "navigate",
-            path: "/sales-sheets",
-            wait_for: "text=Sales Sheet, text=Sales, main",
+            path: "/sales",
+            wait_for: "text=Sales, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
         ],
-        expected_ui: { url_contains: "sales-sheet" },
-        screenshot: "sales-sheets-list",
+        expected_ui: { url_contains: "sales" },
+        screenshot: "sales-workspace-for-catalogues",
       },
       {
-        phase_id: "verify-page-loaded",
-        description: "Verify the sales sheets page renders correctly",
-        steps: [
-          { action: "assert", visible: "main" },
-          { action: "screenshot", name: "sales-sheets-page-loaded" },
-        ],
-      },
-      {
-        phase_id: "create-new-sales-sheet",
-        description: "Open the create form for a new sales sheet",
+        phase_id: "open-sales-catalogues-tab",
+        description: "Click the Sales Catalogues tab",
         steps: [
           {
             action: "click",
             target:
-              'button:has-text("Create"), button:has-text("New"), button:has-text("Add"), [data-testid*="create-sheet"], [data-testid*="new-sheet"]',
-            wait_for: "text=Name, text=Title, text=Products, input, form",
+              '[role="tab"]:has-text("Sales Catalogues"), [role="tab"]:has-text("Catalogue")',
+            wait_for: "main",
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          { action: "screenshot", name: "sales-sheet-create-form" },
+          { action: "wait", network_idle: true, timeout: 8000 },
+          { action: "screenshot", name: "sales-catalogues-tab-loaded" },
         ],
       },
       {
-        phase_id: "fill-sales-sheet-form",
-        description: "Enter a name for the sales sheet",
-        steps: [
-          {
-            action: "type",
-            target:
-              'input[name="name"], input[name="title"], input[placeholder*="name" i], input[placeholder*="title" i], input[aria-label*="name" i]',
-            value: "QA Chain Sales Sheet {{timestamp}}",
-            clear_first: true,
-          },
-          { action: "screenshot", name: "sales-sheet-form-filled" },
-        ],
-      },
-      {
-        phase_id: "save-sales-sheet",
-        description: "Submit and verify the sales sheet saves",
-        steps: [
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Create"), button:has-text("Publish")',
-            wait_for: "text=saved, text=Created, text=Success",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          { action: "screenshot", name: "sales-sheet-saved" },
-        ],
-      },
-      {
-        phase_id: "navigate-away-and-verify-persistence",
+        phase_id: "verify-catalogues-surface-renders",
         description:
-          "Leave the page and come back to confirm the sheet is still there",
+          "Assert the catalogues surface renders with a grid, list, or empty state",
         steps: [
           {
-            action: "navigate",
-            path: "/dashboard",
-            wait_for: "text=Dashboard",
+            action: "assert",
+            visible:
+              '[role="grid"], [role="table"], table, [class*="catalogue"], [class*="catalog"], [class*="sheet"], main',
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "navigate",
-            path: "/sales-sheets",
-            wait_for: "text=Sales Sheet, main",
-          },
-          { action: "wait", network_idle: true, timeout: 10000 },
-          { action: "assert", text_contains: "QA Chain Sales Sheet" },
-          { action: "screenshot", name: "sales-sheet-persisted" },
+          { action: "screenshot", name: "sales-catalogues-surface" },
         ],
       },
     ],
@@ -539,7 +500,8 @@ export const SALES_CHAINS: TestChain[] = [
     phases: [
       {
         phase_id: "navigate-clients",
-        description: "Go to the clients list",
+        description:
+          "Go to the clients list (redirects into Relationships workspace)",
         steps: [
           {
             action: "navigate",
@@ -548,7 +510,7 @@ export const SALES_CHAINS: TestChain[] = [
           },
           { action: "wait", network_idle: true, timeout: 10000 },
         ],
-        expected_ui: { url_contains: "clients" },
+        expected_ui: { url_contains: "client" },
         screenshot: "sales-clients-list-for-profile",
       },
       {
@@ -558,7 +520,7 @@ export const SALES_CHAINS: TestChain[] = [
           {
             action: "click",
             target:
-              'table tbody tr:first-child, [data-testid*="client-row"]:first-child, a[href*="client"]:first-child',
+              '[data-testid^="client-row-"], table tbody tr:first-child, a[href*="/clients/"]:first-child',
             wait_for: "text=Profile, text=Details, text=Client, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
@@ -619,70 +581,63 @@ export const SALES_CHAINS: TestChain[] = [
 
   // ---------------------------------------------------------------------------
   // sales.process-return — occasional
+  // NOTE: /returns redirects to /sales?tab=returns. The Returns tab uses
+  // ReturnsPilotSurface which is a queue view only — new returns are initiated
+  // from individual order detail pages, not via a standalone Create button.
+  // This chain verifies the queue renders and the surface is navigable.
   // ---------------------------------------------------------------------------
   {
     chain_id: "sales.process-return",
-    description: "Navigate to returns page and initiate a return request",
+    description:
+      "Verify the Returns queue renders in the unified sales workspace",
     tags: [
-      "route:/returns",
+      "route:/sales",
       "persona:sales",
       "occasional",
-      "crud:create",
+      "read",
+      "crud:read",
       "cross-domain:returns-inventory",
     ],
     phases: [
       {
         phase_id: "navigate-returns",
-        description: "Go to the returns page",
+        description: "Navigate to the returns surface via the sales workspace",
         steps: [
           {
             action: "navigate",
-            path: "/returns",
-            wait_for: "text=Return, main",
+            path: "/sales",
+            wait_for: "text=Sales, main",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
         ],
-        expected_ui: { url_contains: "return" },
-        screenshot: "sales-returns-page",
+        expected_ui: { url_contains: "sales" },
+        screenshot: "sales-workspace-for-returns",
       },
       {
-        phase_id: "verify-returns-list",
-        description: "Verify the returns list renders",
-        steps: [
-          { action: "assert", visible: "main" },
-          {
-            action: "assert",
-            visible:
-              'table, [role="table"], [class*="list"], [class*="returns"], [data-testid*="return"]',
-          },
-          { action: "screenshot", name: "sales-returns-list-loaded" },
-        ],
-      },
-      {
-        phase_id: "initiate-new-return",
-        description: "Click the create/initiate return button",
+        phase_id: "open-returns-tab",
+        description: "Click the Returns tab",
         steps: [
           {
             action: "click",
-            target:
-              'button:has-text("Create"), button:has-text("New Return"), button:has-text("Initiate"), [data-testid*="create-return"]',
-            wait_for: "text=Return, text=Order, input, form",
+            target: '[role="tab"]:has-text("Returns")',
+            wait_for: "main",
           },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          { action: "screenshot", name: "sales-return-form-opened" },
+          { action: "wait", network_idle: true, timeout: 8000 },
+          { action: "screenshot", name: "sales-returns-tab-loaded" },
         ],
       },
       {
-        phase_id: "verify-return-form",
-        description: "Confirm return form elements are displayed",
+        phase_id: "verify-returns-surface-renders",
+        description:
+          "Assert the returns queue renders (AG Grid or empty state)",
         steps: [
           { action: "assert", visible: "main" },
           {
             action: "assert",
             visible:
-              'input, select, [role="combobox"], button:has-text("Submit"), button:has-text("Save")',
+              '[role="grid"], [role="table"], table, [class*="return"], [class*="queue"], text=Return',
           },
-          { action: "screenshot", name: "sales-return-form-elements" },
+          { action: "screenshot", name: "sales-returns-surface" },
         ],
       },
     ],

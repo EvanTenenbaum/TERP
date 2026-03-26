@@ -726,10 +726,10 @@ export function ReturnsPilotSurface({
         ? allQueueRows
         : allQueueRows.filter(
             row =>
-              row.returnNumber.toLowerCase().includes(searchLower) ||
+              (row.returnNumber ?? "").toLowerCase().includes(searchLower) ||
               String(row.orderId).includes(searchLower) ||
-              row.returnReason.toLowerCase().includes(searchLower) ||
-              row.derivedStatus.toLowerCase().includes(searchLower)
+              (row.returnReason ?? "").toLowerCase().includes(searchLower) ||
+              (row.derivedStatus ?? "").toLowerCase().includes(searchLower)
           ),
     [allQueueRows, searchLower]
   );

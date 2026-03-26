@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-03-03T21:34:09.004Z",
+  "checkedAt": "2026-03-25T23:26:06.560Z",
   "dryRun": false,
   "before": {
     "roleCount": 0,
@@ -146,6 +146,7 @@
       "accounting:delete",
       "accounting:manage",
       "pricing:access",
+      "pricing:read",
       "pricing:rules:read",
       "pricing:rules:create",
       "pricing:rules:update",
@@ -294,15 +295,15 @@
       "system:metrics",
       "vip_portal:manage"
     ],
-    "missingMappingsCount": 873,
+    "missingMappingsCount": 883,
     "unresolvedRoles": [],
     "unresolvedPermissions": []
   },
   "after": {
     "roleCount": 10,
-    "permissionCount": 272,
-    "mappingCount": 873,
-    "uniqueMappingCount": 873,
+    "permissionCount": 273,
+    "mappingCount": 883,
+    "uniqueMappingCount": 883,
     "duplicateMappings": 0
   }
 }
