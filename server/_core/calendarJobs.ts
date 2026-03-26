@@ -361,6 +361,57 @@ export async function collectionsAlertJob(): Promise<void> {
 }
 
 /**
+ * Quote Expiry Job
+ * Marks SENT quotes with validUntil in the past as EXPIRED
+ *
+ * Schedule: Daily at 2:00 AM
+ */
+export async function quoteExpiryJob(): Promise<void> {
+  logger.info("[CalendarJobs] Starting quote expiry job...");
+
+  try {
+    const { getDb } = await import("../db");
+    const { orders } = await import("../../drizzle/schema");
+    const { eq, and, lt, isNull } = await import("drizzle-orm");
+
+    const db = await getDb();
+    if (!db) {
+      logger.warn(
+        "[CalendarJobs] Database not available, skipping quote expiry"
+      );
+      return;
+    }
+
+    const now = new Date();
+    const result = await db
+      .update(orders)
+      .set({ quoteStatus: "EXPIRED" })
+      .where(
+        and(
+          eq(orders.orderType, "QUOTE"),
+          eq(orders.quoteStatus, "SENT"),
+          lt(orders.validUntil, now),
+          isNull(orders.deletedAt)
+        )
+      );
+
+    const expiredCount = result[0]?.affectedRows ?? 0;
+    if (expiredCount > 0) {
+      logger.info(
+        `[CalendarJobs] Expired ${expiredCount} quote(s) past validUntil`
+      );
+    } else {
+      logger.info("[CalendarJobs] No quotes to expire");
+    }
+  } catch (error) {
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[CalendarJobs] Quote expiry job failed"
+    );
+  }
+}
+
+/**
  * Data Integrity Verification Job
  * Runs daily to check for integrity issues
  *
@@ -419,6 +470,7 @@ export function initializeCalendarJobs(): void {
   // - dataCleanupJob: Weekly on Sunday at 3:00 AM ('0 3 * * 0')
   // - oldInstanceCleanupJob: Daily at 3:00 AM ('0 3 * * *')
   // - collectionsAlertJob: Daily at 8:00 AM ('0 8 * * *')
+  // - quoteExpiryJob: Daily at 2:00 AM ('0 2 * * *')
   // - dataIntegrityVerificationJob: Daily at 4:00 AM ('0 4 * * *')
 
   // Example implementation with node-cron (uncomment when cron is installed):
@@ -428,6 +480,7 @@ export function initializeCalendarJobs(): void {
   // cron.schedule('0 3 * * 0', dataCleanupJob);
   // cron.schedule('0 3 * * *', oldInstanceCleanupJob);
   // cron.schedule('0 8 * * *', collectionsAlertJob);
+  // cron.schedule('0 2 * * *', quoteExpiryJob);
   // cron.schedule('0 4 * * *', dataIntegrityVerificationJob);
 
   // For now, jobs can be triggered manually via API or run on server startup
@@ -447,6 +500,7 @@ export async function runAllJobsOnce(): Promise<void> {
   await dataCleanupJob();
   await oldInstanceCleanupJob();
   await collectionsAlertJob();
+  await quoteExpiryJob();
   await dataIntegrityVerificationJob();
 
   logger.info("[CalendarJobs] All jobs complete");
@@ -461,6 +515,7 @@ export const calendarJobs = {
   dataCleanup: dataCleanupJob,
   oldInstanceCleanup: oldInstanceCleanupJob,
   collectionsAlert: collectionsAlertJob,
+  quoteExpiry: quoteExpiryJob,
   dataIntegrityVerification: dataIntegrityVerificationJob,
   initialize: initializeCalendarJobs,
   runAllOnce: runAllJobsOnce,
