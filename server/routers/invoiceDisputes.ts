@@ -18,11 +18,7 @@ import {
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
-import {
-  invoices,
-  clients,
-  users,
-} from "../../drizzle/schema";
+import { invoices, clients, users } from "../../drizzle/schema";
 import {
   invoiceDisputes,
   disputeAttachments,
@@ -42,7 +38,9 @@ const searchInvoicesSchema = z.object({
   maxAmount: z.number().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  status: z.enum(["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"]).optional(),
+  status: z
+    .enum(["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"])
+    .optional(),
   hasDispute: z.boolean().optional(),
   limit: z.number().min(1).max(100).default(50),
   offset: z.number().min(0).default(0),
@@ -56,7 +54,9 @@ const createDisputeSchema = z.object({
 
 const updateDisputeSchema = z.object({
   disputeId: z.number(),
-  status: z.enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED", "ESCALATED"]).optional(),
+  status: z
+    .enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED", "ESCALATED"])
+    .optional(),
   resolutionNotes: z.string().optional(),
   adjustmentAmount: z.number().optional(),
   assignedTo: z.number().optional(),
@@ -83,7 +83,9 @@ async function generateDisputeNumber(): Promise<string> {
   const result = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(invoiceDisputes)
-    .where(sql`YEAR(created_at) = ${year} AND MONTH(created_at) = ${today.getMonth() + 1}`);
+    .where(
+      sql`YEAR(created_at) = ${year} AND MONTH(created_at) = ${today.getMonth() + 1}`
+    );
 
   const count = Number(result[0]?.count || 0) + 1;
   return `DSP-${year}${month}-${String(count).padStart(5, "0")}`;
@@ -102,12 +104,18 @@ export const invoiceDisputesRouter = router({
     .input(searchInvoicesSchema)
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(invoices.deletedAt)];
 
       if (input.invoiceNumber) {
-        conditions.push(like(invoices.invoiceNumber, `%${input.invoiceNumber}%`));
+        conditions.push(
+          like(invoices.invoiceNumber, `%${input.invoiceNumber}%`)
+        );
       }
 
       if (input.clientId) {
@@ -163,16 +171,22 @@ export const invoiceDisputesRouter = router({
           .from(invoiceDisputes)
           .where(
             and(
-              sql`invoice_id IN (${sql.join(invoiceIds.map(id => sql`${id}`), sql`, `)})`,
+              sql`invoice_id IN (${sql.join(
+                invoiceIds.map(id => sql`${id}`),
+                sql`, `
+              )})`,
               isNull(invoiceDisputes.deletedAt)
             )
           )
           .groupBy(invoiceDisputes.invoiceId);
 
-        disputeCounts = disputes.reduce((acc, d) => {
-          acc[d.invoiceId] = Number(d.count);
-          return acc;
-        }, {} as Record<number, number>);
+        disputeCounts = disputes.reduce(
+          (acc, d) => {
+            acc[d.invoiceId] = Number(d.count);
+            return acc;
+          },
+          {} as Record<number, number>
+        );
       }
 
       // Get total count
@@ -198,17 +212,25 @@ export const invoiceDisputesRouter = router({
    */
   list: protectedProcedure
     .use(requirePermission("accounting:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-      invoiceId: z.number().optional(),
-      status: z.enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED", "ESCALATED"]).optional(),
-      assignedTo: z.number().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        clientId: z.number().optional(),
+        invoiceId: z.number().optional(),
+        status: z
+          .enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED", "ESCALATED"])
+          .optional(),
+        assignedTo: z.number().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(invoiceDisputes.deletedAt)];
 
@@ -280,7 +302,11 @@ export const invoiceDisputesRouter = router({
     .input(z.object({ disputeId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [result] = await db
         .select({
@@ -300,7 +326,10 @@ export const invoiceDisputesRouter = router({
         .limit(1);
 
       if (!result) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Dispute not found",
+        });
       }
 
       // Get notes
@@ -341,7 +370,11 @@ export const invoiceDisputesRouter = router({
     .input(createDisputeSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -349,11 +382,16 @@ export const invoiceDisputesRouter = router({
       const [invoice] = await db
         .select()
         .from(invoices)
-        .where(eq(invoices.id, input.invoiceId))
+        .where(
+          and(eq(invoices.id, input.invoiceId), isNull(invoices.deletedAt))
+        )
         .limit(1);
 
       if (!invoice) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
       }
 
       // Check if disputed amount is reasonable
@@ -400,7 +438,11 @@ export const invoiceDisputesRouter = router({
     .input(updateDisputeSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -414,7 +456,10 @@ export const invoiceDisputesRouter = router({
         .limit(1);
 
       if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Dispute not found",
+        });
       }
 
       const updateData: Record<string, unknown> = {};
@@ -464,7 +509,11 @@ export const invoiceDisputesRouter = router({
     .input(addDisputeNoteSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -486,12 +535,20 @@ export const invoiceDisputesRouter = router({
    */
   getStats: protectedProcedure
     .use(requirePermission("accounting:read"))
-    .input(z.object({
-      clientId: z.number().optional(),
-    }).optional())
+    .input(
+      z
+        .object({
+          clientId: z.number().optional(),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(invoiceDisputes.deletedAt)];
 
@@ -534,15 +591,21 @@ export const invoiceDisputesRouter = router({
    */
   resolve: protectedProcedure
     .use(requirePermission("accounting:update"))
-    .input(z.object({
-      disputeId: z.number(),
-      resolution: z.enum(["RESOLVED", "REJECTED"]),
-      adjustmentAmount: z.number().optional(),
-      resolutionNotes: z.string().min(1, "Resolution notes are required"),
-    }))
+    .input(
+      z.object({
+        disputeId: z.number(),
+        resolution: z.enum(["RESOLVED", "REJECTED"]),
+        adjustmentAmount: z.number().optional(),
+        resolutionNotes: z.string().min(1, "Resolution notes are required"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -554,10 +617,16 @@ export const invoiceDisputesRouter = router({
         .limit(1);
 
       if (!dispute) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Dispute not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Dispute not found",
+        });
       }
 
-      if (dispute.disputeStatus === "RESOLVED" || dispute.disputeStatus === "REJECTED") {
+      if (
+        dispute.disputeStatus === "RESOLVED" ||
+        dispute.disputeStatus === "REJECTED"
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Dispute has already been resolved",
@@ -576,7 +645,11 @@ export const invoiceDisputesRouter = router({
         .where(eq(invoiceDisputes.id, input.disputeId));
 
       // If resolved with adjustment, create ledger adjustment
-      if (input.resolution === "RESOLVED" && input.adjustmentAmount && input.adjustmentAmount > 0) {
+      if (
+        input.resolution === "RESOLVED" &&
+        input.adjustmentAmount &&
+        input.adjustmentAmount > 0
+      ) {
         // Note: Would integrate with client ledger adjustment here
         logger.info({
           msg: "[Disputes] Dispute resolved with adjustment",
@@ -593,6 +666,10 @@ export const invoiceDisputesRouter = router({
         userId,
       });
 
-      return { success: true, disputeId: input.disputeId, resolution: input.resolution };
+      return {
+        success: true,
+        disputeId: input.disputeId,
+        resolution: input.resolution,
+      };
     }),
 });

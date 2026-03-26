@@ -96,7 +96,10 @@ async function generatePaymentNumber(): Promise<string> {
     .select({ count: sql<number>`COUNT(*)` })
     .from(payments)
     .where(
-      sql`YEAR(${payments.paymentDate}) = ${year} AND MONTH(${payments.paymentDate}) = ${today.getMonth() + 1}`
+      and(
+        sql`YEAR(${payments.paymentDate}) = ${year} AND MONTH(${payments.paymentDate}) = ${today.getMonth() + 1}`,
+        isNull(payments.deletedAt)
+      )
     );
 
   const count = Number(result[0]?.count || 0) + 1;
@@ -1277,7 +1280,7 @@ export const paymentsRouter = router({
       const [payment] = await db
         .select()
         .from(payments)
-        .where(eq(payments.id, input.id))
+        .where(and(eq(payments.id, input.id), isNull(payments.deletedAt)))
         .limit(1);
 
       if (!payment) {

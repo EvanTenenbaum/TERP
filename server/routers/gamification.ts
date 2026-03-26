@@ -1434,7 +1434,7 @@ export const gamificationRouter = router({
         const [order] = await db
           .select()
           .from(orders)
-          .where(eq(orders.id, input.orderId))
+          .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
           .limit(1);
 
         if (!order || !order.clientId) {

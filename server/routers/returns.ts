@@ -387,7 +387,9 @@ export const returnsRouter = router({
           total: orders.total,
         })
         .from(orders)
-        .where(eq(orders.id, returnRecord.orderId));
+        .where(
+          and(eq(orders.id, returnRecord.orderId), isNull(orders.deletedAt))
+        );
 
       // Get client details if order exists
       let client = null;
@@ -443,7 +445,7 @@ export const returnsRouter = router({
         const [order] = await tx
           .select()
           .from(orders)
-          .where(eq(orders.id, input.orderId));
+          .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)));
 
         if (!order) {
           throw new Error("Order not found");
@@ -923,7 +925,8 @@ export const returnsRouter = router({
             and(
               eq(inventoryMovements.inventoryMovementType, "RETURN"),
               eq(inventoryMovements.referenceType, "RETURN"),
-              eq(inventoryMovements.referenceId, input.id)
+              eq(inventoryMovements.referenceId, input.id),
+              isNull(inventoryMovements.deletedAt)
             )
           );
 
@@ -1153,7 +1156,9 @@ export const returnsRouter = router({
             total: orders.total,
           })
           .from(orders)
-          .where(eq(orders.id, returnRecord.orderId));
+          .where(
+            and(eq(orders.id, returnRecord.orderId), isNull(orders.deletedAt))
+          );
 
         if (!order) {
           throw new Error("Order not found for this return");

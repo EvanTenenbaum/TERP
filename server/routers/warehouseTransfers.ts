@@ -4,10 +4,14 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { getDb } from "../db";
 import { batchLocations, inventoryMovements } from "../../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const warehouseTransfersRouter = router({
@@ -35,7 +39,7 @@ export const warehouseTransfersRouter = router({
       if (!db) throw new Error("Database not available");
 
       // Wrap in transaction for atomicity
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async tx => {
         // If fromLocationId provided, reduce quantity from that location
         if (input.fromLocationId) {
           const [fromLocation] = await tx
@@ -59,7 +63,9 @@ export const warehouseTransfersRouter = router({
 
           if (newQty === 0) {
             // Remove location record if quantity is zero
-            await tx.delete(batchLocations).where(eq(batchLocations.id, input.fromLocationId));
+            await tx
+              .delete(batchLocations)
+              .where(eq(batchLocations.id, input.fromLocationId));
           } else {
             // Update quantity
             await tx
@@ -77,10 +83,18 @@ export const warehouseTransfersRouter = router({
             and(
               eq(batchLocations.batchId, input.batchId),
               eq(batchLocations.site, input.toSite),
-              input.toZone ? eq(batchLocations.zone, input.toZone) : sql`${batchLocations.zone} IS NULL`,
-              input.toRack ? eq(batchLocations.rack, input.toRack) : sql`${batchLocations.rack} IS NULL`,
-              input.toShelf ? eq(batchLocations.shelf, input.toShelf) : sql`${batchLocations.shelf} IS NULL`,
-              input.toBin ? eq(batchLocations.bin, input.toBin) : sql`${batchLocations.bin} IS NULL`
+              input.toZone
+                ? eq(batchLocations.zone, input.toZone)
+                : sql`${batchLocations.zone} IS NULL`,
+              input.toRack
+                ? eq(batchLocations.rack, input.toRack)
+                : sql`${batchLocations.rack} IS NULL`,
+              input.toShelf
+                ? eq(batchLocations.shelf, input.toShelf)
+                : sql`${batchLocations.shelf} IS NULL`,
+              input.toBin
+                ? eq(batchLocations.bin, input.toBin)
+                : sql`${batchLocations.bin} IS NULL`
             )
           )
           .for("update");
@@ -117,7 +131,9 @@ export const warehouseTransfersRouter = router({
           quantityAfter: "0", // Not applicable for transfers
           referenceType: "WAREHOUSE_TRANSFER",
           referenceId: null,
-          notes: input.notes || `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
+          notes:
+            input.notes ||
+            `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
           performedBy,
         });
 
@@ -141,7 +157,8 @@ export const warehouseTransfersRouter = router({
         .where(
           and(
             eq(inventoryMovements.batchId, input.batchId),
-            eq(inventoryMovements.inventoryMovementType, "TRANSFER")
+            eq(inventoryMovements.inventoryMovementType, "TRANSFER"),
+            isNull(inventoryMovements.deletedAt)
           )
         )
         .orderBy(desc(inventoryMovements.createdAt));
@@ -179,11 +196,18 @@ export const warehouseTransfersRouter = router({
           recentTransfers: sql<number>`SUM(CASE WHEN ${inventoryMovements.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END)`,
         })
         .from(inventoryMovements)
-        .where(eq(inventoryMovements.inventoryMovementType, "TRANSFER"));
+        .where(
+          and(
+            eq(inventoryMovements.inventoryMovementType, "TRANSFER"),
+            isNull(inventoryMovements.deletedAt)
+          )
+        );
 
-      return stats[0] || {
-        totalTransfers: 0,
-        recentTransfers: 0,
-      };
+      return (
+        stats[0] || {
+          totalTransfers: 0,
+          recentTransfers: 0,
+        }
+      );
     }),
 });

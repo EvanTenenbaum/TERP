@@ -543,7 +543,12 @@ export const inventoryRouter = router({
               >`MAX(${inventoryMovements.createdAt})`,
             })
             .from(inventoryMovements)
-            .where(inArray(inventoryMovements.batchId, batchIds))
+            .where(
+              and(
+                inArray(inventoryMovements.batchId, batchIds),
+                isNull(inventoryMovements.deletedAt)
+              )
+            )
             .groupBy(inventoryMovements.batchId);
 
           for (const row of movementRows) {
@@ -572,7 +577,12 @@ export const inventoryRouter = router({
               notes: inventoryMovements.notes,
             })
             .from(inventoryMovements)
-            .where(inArray(inventoryMovements.batchId, batchIds))
+            .where(
+              and(
+                inArray(inventoryMovements.batchId, batchIds),
+                isNull(inventoryMovements.deletedAt)
+              )
+            )
             .orderBy(desc(inventoryMovements.createdAt));
 
           for (const row of movementRows) {

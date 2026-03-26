@@ -75,7 +75,13 @@ async function _generateQuoteNumber(): Promise<string> {
   const result = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(orders)
-    .where(and(eq(orders.orderType, "QUOTE"), sql`YEAR(created_at) = ${year}`));
+    .where(
+      and(
+        eq(orders.orderType, "QUOTE"),
+        sql`YEAR(created_at) = ${year}`,
+        isNull(orders.deletedAt)
+      )
+    );
 
   const count = Number(result[0]?.count || 0) + 1;
   return `Q-${year}-${String(count).padStart(5, "0")}`;
@@ -446,7 +452,7 @@ export const quotesRouter = router({
       const [updated] = await db
         .select()
         .from(orders)
-        .where(eq(orders.id, input.id))
+        .where(and(eq(orders.id, input.id), isNull(orders.deletedAt)))
         .limit(1);
 
       return {

@@ -835,7 +835,10 @@ export const vipPortalRouter = router({
         const { clientId, search, status } = input;
 
         // Build query conditions
-        const conditions = [eq(invoices.customerId, clientId)];
+        const conditions = [
+          eq(invoices.customerId, clientId),
+          isNull(invoices.deletedAt),
+        ];
 
         if (search) {
           conditions.push(like(invoices.invoiceNumber, `%${search}%`));
@@ -901,7 +904,10 @@ export const vipPortalRouter = router({
         const { clientId, search, status } = input;
 
         // Build query conditions
-        const conditions = [eq(bills.vendorId, clientId)];
+        const conditions = [
+          eq(bills.vendorId, clientId),
+          isNull(bills.deletedAt),
+        ];
 
         if (search) {
           conditions.push(like(bills.billNumber, `%${search}%`));
