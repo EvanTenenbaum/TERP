@@ -159,11 +159,11 @@ export default function WorkflowQueuePage() {
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <BackButton label="Back to Dashboard" to="/" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">
                 Workflow Queue
               </h1>
               <p className="text-sm text-gray-600 mt-1">
@@ -173,7 +173,7 @@ export default function WorkflowQueuePage() {
           </div>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <Button
               variant="default"
               size="sm"

@@ -44,13 +44,13 @@ export function NotificationsHub() {
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <BackButton label="Back to Dashboard" to="/" />
-        <div className="flex items-center gap-2">
-          <Bell className="h-6 w-6 text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl font-semibold">Notifications</h1>
-            <p className="text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 min-w-0">
+          <Bell className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold truncate">Notifications</h1>
+            <p className="text-sm text-muted-foreground truncate">
               Review system notifications and alerts in one hub.
             </p>
           </div>
