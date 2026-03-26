@@ -412,7 +412,7 @@ export const pickPackRouter = router({
         })
         .from(orders)
         .innerJoin(clients, eq(orders.clientId, clients.id))
-        .where(eq(orders.id, input.orderId))
+        .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
         .limit(1);
 
       if (!order) {
@@ -558,7 +558,7 @@ export const pickPackRouter = router({
 
       const { orders, orderBags, orderItemBags, auditLogs } =
         await import("../../drizzle/schema");
-      const { eq, and, sql } = await import("drizzle-orm");
+      const { eq, and, sql, isNull } = await import("drizzle-orm");
 
       // Verify order exists
       const [order] = await db
@@ -570,7 +570,7 @@ export const pickPackRouter = router({
           pickPackStatus: orders.pickPackStatus,
         })
         .from(orders)
-        .where(eq(orders.id, input.orderId))
+        .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
         .limit(1);
 
       if (!order) {
@@ -736,7 +736,7 @@ export const pickPackRouter = router({
           isDraft: orders.isDraft,
         })
         .from(orders)
-        .where(eq(orders.id, input.orderId))
+        .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
         .limit(1);
 
       if (!order) {
@@ -834,7 +834,7 @@ export const pickPackRouter = router({
 
       const { orders, orderBags, orderItemBags, orderLineItems, auditLogs } =
         await import("../../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
+      const { eq, and, isNull } = await import("drizzle-orm");
 
       // Get order items
       const [order] = await db
@@ -846,7 +846,7 @@ export const pickPackRouter = router({
           items: orders.items,
         })
         .from(orders)
-        .where(eq(orders.id, input.orderId))
+        .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
         .limit(1);
 
       if (!order) {
@@ -995,7 +995,7 @@ export const pickPackRouter = router({
           items: orders.items,
         })
         .from(orders)
-        .where(eq(orders.id, input.orderId))
+        .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
         .limit(1);
 
       if (!order) {
@@ -1071,7 +1071,7 @@ export const pickPackRouter = router({
         });
 
       const { orders } = await import("../../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
+      const { eq, and, isNull } = await import("drizzle-orm");
 
       const [order] = await db
         .select({
@@ -1081,7 +1081,7 @@ export const pickPackRouter = router({
           isDraft: orders.isDraft,
         })
         .from(orders)
-        .where(eq(orders.id, input.orderId))
+        .where(and(eq(orders.id, input.orderId), isNull(orders.deletedAt)))
         .limit(1);
 
       if (!order) {

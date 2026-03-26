@@ -65,7 +65,7 @@ export const ROLES = [
 ];
 
 // ============================================================================
-// PERMISSION DEFINITIONS (255 permissions across 20 modules)
+// PERMISSION DEFINITIONS (331 permissions across 27 modules)
 // ============================================================================
 
 export const PERMISSIONS = [
@@ -108,6 +108,11 @@ export const PERMISSIONS = [
   {
     name: "analytics:export",
     description: "Can export analytics data",
+    module: "analytics",
+  },
+  {
+    name: "analytics:read",
+    description: "Can read analytics data",
     module: "analytics",
   },
   {
@@ -403,6 +408,11 @@ export const PERMISSIONS = [
     description: "Can process product intake",
     module: "inventory",
   },
+  {
+    name: "inventory:locations:manage",
+    description: "Can manage inventory locations",
+    module: "inventory",
+  },
 
   // Purchase Orders & Vendors (18)
   {
@@ -669,6 +679,50 @@ export const PERMISSIONS = [
     description: "Can manage accounting (bad debt, reconciliation)",
     module: "accounting",
   },
+  {
+    name: "accounting:admin",
+    description: "Full administrative access to accounting module",
+    module: "accounting",
+  },
+  {
+    name: "accounting:write",
+    description: "Can write/modify accounting records",
+    module: "accounting",
+  },
+
+  // Payments (4)
+  {
+    name: "payments:create",
+    description: "Can create payments",
+    module: "accounting",
+  },
+  {
+    name: "payments:delete",
+    description: "Can delete payments",
+    module: "accounting",
+  },
+  {
+    name: "payments:read",
+    description: "Can read payment records",
+    module: "accounting",
+  },
+  {
+    name: "payments:update",
+    description: "Can update payment records",
+    module: "accounting",
+  },
+
+  // COGS (2)
+  {
+    name: "cogs:read",
+    description: "Can read COGS data",
+    module: "cogs",
+  },
+  {
+    name: "cogs:update",
+    description: "Can update COGS calculations",
+    module: "cogs",
+  },
 
   // Pricing (12)
   {
@@ -734,6 +788,26 @@ export const PERMISSIONS = [
   {
     name: "pricing:test",
     description: "Can test pricing calculations",
+    module: "pricing",
+  },
+  {
+    name: "pricing:adjust",
+    description: "Can adjust pricing",
+    module: "pricing",
+  },
+  {
+    name: "pricing:create",
+    description: "Can create pricing entries",
+    module: "pricing",
+  },
+  {
+    name: "pricing:delete",
+    description: "Can delete pricing entries",
+    module: "pricing",
+  },
+  {
+    name: "pricing:update",
+    description: "Can update pricing entries",
     module: "pricing",
   },
 
@@ -861,6 +935,48 @@ export const PERMISSIONS = [
     description: "Can edit calendar financial settings",
     module: "calendar",
   },
+  {
+    name: "calendar:admin",
+    description: "Full administrative access to calendar",
+    module: "calendar",
+  },
+  {
+    name: "calendar:create",
+    description: "Can create calendar entries",
+    module: "calendar",
+  },
+  {
+    name: "calendar:delete",
+    description: "Can delete calendar entries",
+    module: "calendar",
+  },
+  {
+    name: "calendar:read",
+    description: "Can read calendar entries",
+    module: "calendar",
+  },
+  {
+    name: "calendar:update",
+    description: "Can update calendar entries",
+    module: "calendar",
+  },
+  {
+    name: "calendar:write",
+    description: "Can write calendar data",
+    module: "calendar",
+  },
+
+  // Scheduling (2)
+  {
+    name: "scheduling:manage",
+    description: "Can manage scheduling",
+    module: "calendar",
+  },
+  {
+    name: "scheduling:read",
+    description: "Can read scheduling data",
+    module: "calendar",
+  },
 
   // Tasks & To-Do (12)
   {
@@ -913,6 +1029,26 @@ export const PERMISSIONS = [
   {
     name: "todo:activity:view",
     description: "Can view task activity",
+    module: "todo",
+  },
+  {
+    name: "todos:create",
+    description: "Can create todos",
+    module: "todo",
+  },
+  {
+    name: "todos:delete",
+    description: "Can delete todos",
+    module: "todo",
+  },
+  {
+    name: "todos:read",
+    description: "Can read todos",
+    module: "todo",
+  },
+  {
+    name: "todos:update",
+    description: "Can update todos",
     module: "todo",
   },
 
@@ -1021,6 +1157,11 @@ export const PERMISSIONS = [
     description: "Can delete match records",
     module: "matching",
   },
+  {
+    name: "matching:read",
+    description: "Can read matching engine results",
+    module: "matching",
+  },
 
   // Samples (8)
   {
@@ -1057,6 +1198,16 @@ export const PERMISSIONS = [
   {
     name: "samples:inventory:view",
     description: "Can view sample inventory",
+    module: "samples",
+  },
+  {
+    name: "samples:approve",
+    description: "Can approve sample requests",
+    module: "samples",
+  },
+  {
+    name: "samples:return",
+    description: "Can process sample returns",
     module: "samples",
   },
 
@@ -1107,6 +1258,16 @@ export const PERMISSIONS = [
     description: "Can use scratchpad",
     module: "comments",
   },
+  {
+    name: "notes:delete",
+    description: "Can delete notes",
+    module: "comments",
+  },
+  {
+    name: "notes:read",
+    description: "Can read notes",
+    module: "comments",
+  },
 
   // Inbox & Notifications (6)
   { name: "inbox:access", description: "Can access inbox", module: "inbox" },
@@ -1153,6 +1314,11 @@ export const PERMISSIONS = [
     description: "Can search audit logs",
     module: "audit_logs",
   },
+  {
+    name: "audit:read",
+    description: "Can read audit logs",
+    module: "audit_logs",
+  },
 
   // User Management (12)
   {
@@ -1194,6 +1360,86 @@ export const PERMISSIONS = [
   {
     name: "permissions:override",
     description: "Can override permissions for individual users",
+    module: "users",
+  },
+  {
+    name: "rbac:permissions:create",
+    description: "Can create permissions",
+    module: "users",
+  },
+  {
+    name: "rbac:permissions:delete",
+    description: "Can delete permissions",
+    module: "users",
+  },
+  {
+    name: "rbac:permissions:read",
+    description: "Can read permissions",
+    module: "users",
+  },
+  {
+    name: "rbac:permissions:update",
+    description: "Can update permissions",
+    module: "users",
+  },
+  {
+    name: "rbac:roles:assign_permission",
+    description: "Can assign permissions to roles",
+    module: "users",
+  },
+  {
+    name: "rbac:roles:create",
+    description: "Can create roles",
+    module: "users",
+  },
+  {
+    name: "rbac:roles:delete",
+    description: "Can delete roles",
+    module: "users",
+  },
+  {
+    name: "rbac:roles:read",
+    description: "Can read roles",
+    module: "users",
+  },
+  {
+    name: "rbac:roles:remove_permission",
+    description: "Can remove permissions from roles",
+    module: "users",
+  },
+  {
+    name: "rbac:roles:update",
+    description: "Can update roles",
+    module: "users",
+  },
+  {
+    name: "rbac:users:assign_role",
+    description: "Can assign roles to users",
+    module: "users",
+  },
+  {
+    name: "rbac:users:grant_permission",
+    description: "Can grant permissions to users",
+    module: "users",
+  },
+  {
+    name: "rbac:users:read",
+    description: "Can read user permission data",
+    module: "users",
+  },
+  {
+    name: "rbac:users:remove_permission_override",
+    description: "Can remove user permission overrides",
+    module: "users",
+  },
+  {
+    name: "rbac:users:remove_role",
+    description: "Can remove roles from users",
+    module: "users",
+  },
+  {
+    name: "rbac:users:revoke_permission",
+    description: "Can revoke user permissions",
     module: "users",
   },
 
@@ -1258,6 +1504,31 @@ export const PERMISSIONS = [
     description: "Can enable/disable maintenance mode",
     module: "settings",
   },
+  {
+    name: "settings:create",
+    description: "Can create settings entries",
+    module: "settings",
+  },
+  {
+    name: "settings:delete",
+    description: "Can delete settings entries",
+    module: "settings",
+  },
+  {
+    name: "settings:manage",
+    description: "Can manage all settings",
+    module: "settings",
+  },
+  {
+    name: "settings:read",
+    description: "Can read settings",
+    module: "settings",
+  },
+  {
+    name: "settings:update",
+    description: "Can update settings",
+    module: "settings",
+  },
 
   // Admin Tools (10)
   {
@@ -1308,6 +1579,16 @@ export const PERMISSIONS = [
   {
     name: "admin:jobs:manage",
     description: "Can manage background jobs",
+    module: "admin",
+  },
+  {
+    name: "admin",
+    description: "General admin access",
+    module: "admin",
+  },
+  {
+    name: "system:manage",
+    description: "Can manage system configuration",
     module: "admin",
   },
 
@@ -1381,6 +1662,23 @@ export const PERMISSIONS = [
     name: "vip_portal:manage",
     description: "Can manage VIP portal settings and clients",
     module: "vip_portal",
+  },
+
+  // Workflow (3)
+  {
+    name: "workflow:manage",
+    description: "Can manage workflows",
+    module: "workflow",
+  },
+  {
+    name: "workflow:read",
+    description: "Can read workflow data",
+    module: "workflow",
+  },
+  {
+    name: "workflow:update",
+    description: "Can update workflows",
+    module: "workflow",
   },
 ];
 

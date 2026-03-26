@@ -420,6 +420,7 @@ export function initializeCalendarJobs(): void {
   // - oldInstanceCleanupJob: Daily at 3:00 AM ('0 3 * * *')
   // - collectionsAlertJob: Daily at 8:00 AM ('0 8 * * *')
   // - dataIntegrityVerificationJob: Daily at 4:00 AM ('0 4 * * *')
+  // Note: Quote expiry runs via server/cron/quoteExpiryCron.ts (with leader election)
 
   // Example implementation with node-cron (uncomment when cron is installed):
   // import cron from 'node-cron';

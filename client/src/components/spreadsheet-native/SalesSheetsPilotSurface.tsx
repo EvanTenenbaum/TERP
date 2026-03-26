@@ -825,7 +825,9 @@ export function SalesSheetsPilotSurface({
           disabled={!selectedClientId}
         />
 
-        <Badge variant="outline">Pilot: browser + preview split</Badge>
+        {import.meta.env.DEV && (
+          <Badge variant="outline">Pilot: browser + preview split</Badge>
+        )}
 
         {hasUnsavedChanges && (
           <Badge variant="secondary" className="text-amber-600">

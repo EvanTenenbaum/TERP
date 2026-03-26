@@ -116,7 +116,9 @@ export const client360Router = router({
           avgOrderValue: avg(orders.total),
         })
         .from(orders)
-        .where(eq(orders.clientId, input.clientId));
+        .where(
+          and(eq(orders.clientId, input.clientId), isNull(orders.deletedAt))
+        );
 
       // Get recent orders if requested
       let recentOrders: Array<{
@@ -136,7 +138,9 @@ export const client360Router = router({
             createdAt: orders.createdAt,
           })
           .from(orders)
-          .where(eq(orders.clientId, input.clientId))
+          .where(
+            and(eq(orders.clientId, input.clientId), isNull(orders.deletedAt))
+          )
           .orderBy(desc(orders.createdAt))
           .limit(input.orderLimit);
       }
