@@ -2,9 +2,14 @@
   "hooks": {
     "TaskCompleted": [
       {
-        "type": "command",
-        "command": "pnpm check && pnpm lint && pnpm test && pnpm build",
-        "timeout": 120000
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm check && pnpm lint && pnpm test && pnpm build",
+            "timeout": 120000
+          }
+        ]
       }
     ]
   },
