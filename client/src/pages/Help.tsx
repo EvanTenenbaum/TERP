@@ -271,13 +271,13 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                 onClick={() => handleCardClick(section.id)}
                 className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 overflow-hidden">
                   <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
                     <Icon className="w-6 h-6 text-blue-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2 min-w-0">
                         {section.title}
                       </h3>
                       <div className="flex-shrink-0 mt-1">

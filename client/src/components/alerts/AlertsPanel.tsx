@@ -320,17 +320,20 @@ export const AlertsPanel = memo(function AlertsPanel({
                     return (
                       <div
                         key={alert.id}
-                        className={`p-3 rounded-lg border ${severity.color} flex items-center gap-3`}
+                        className={`p-3 rounded-lg border ${severity.color} flex flex-wrap sm:flex-nowrap items-center gap-3 overflow-hidden`}
                       >
-                        <div className="p-2 bg-white/50 rounded">
+                        <div className="p-2 bg-white/50 rounded flex-shrink-0">
                           <TypeIcon className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <p className="font-medium truncate">
                               {alert.title}
                             </p>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge
+                              variant="outline"
+                              className="text-xs flex-shrink-0"
+                            >
                               {type.label}
                             </Badge>
                           </div>
@@ -343,7 +346,7 @@ export const AlertsPanel = memo(function AlertsPanel({
                             })}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <Button
                             variant="ghost"
                             size="sm"
