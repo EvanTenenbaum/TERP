@@ -126,7 +126,7 @@ export const useInspectorPanel = () => {
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
-  const toggleExpanded = useCallback(() => setIsExpanded((prev) => !prev), []);
+  const toggleExpanded = useCallback(() => setIsExpanded(prev => !prev), []);
 
   return {
     isOpen,
@@ -160,7 +160,7 @@ function useFocusTrap(
         containerRef.current.querySelectorAll<HTMLElement>(
           'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         )
-      ).filter((el) => el.offsetParent !== null);
+      ).filter(el => el.offsetParent !== null);
     };
 
     // Focus first element
@@ -351,11 +351,12 @@ export function InspectorPanel({
             isOpen ? "translate-y-0" : "translate-y-full",
           ],
           // Mobile side panel
-          isMobile && !isMobileBottom && [
-            "fixed top-0 right-0 h-full w-full max-w-[90vw]",
-            "transform transition-transform duration-300 ease-in-out",
-            isOpen ? "translate-x-0" : "translate-x-full",
-          ],
+          isMobile &&
+            !isMobileBottom && [
+              "fixed top-0 right-0 h-full w-full max-w-[90vw]",
+              "transform transition-transform duration-300 ease-in-out",
+              isOpen ? "translate-x-0" : "translate-x-full",
+            ],
           className
         )}
         style={{
@@ -365,17 +366,6 @@ export function InspectorPanel({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center gap-2 min-w-0">
-            {showCloseButton && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="shrink-0 -ml-2"
-                aria-label="Close panel"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
             <div className="min-w-0">
               {title && (
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -463,7 +453,8 @@ export function InspectorSection({
   defaultOpen,
 }: InspectorSectionProps) {
   // defaultOpen takes precedence if specified (inverted logic)
-  const initialCollapsed = defaultOpen !== undefined ? !defaultOpen : defaultCollapsed;
+  const initialCollapsed =
+    defaultOpen !== undefined ? !defaultOpen : defaultCollapsed;
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
 
   return (
@@ -518,7 +509,9 @@ export function InspectorField({
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
       {hint && !error && (
         <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>
       )}

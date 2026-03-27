@@ -63,12 +63,12 @@ export default function AccountingWorkspacePage() {
       onTabChange={setActiveTab}
       meta={[
         {
-          label: "Start here",
-          value: "Receive payment or pay supplier",
+          label: "Record a payment",
+          value: "Select an invoice, then use Record Payment",
         },
         {
-          label: "Flow",
-          value: "Invoice / Bill -> Payment -> Ledger",
+          label: "Billing cycle",
+          value: "Invoice -> Payment -> General Ledger",
         },
       ]}
       commandStrip={
