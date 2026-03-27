@@ -3,8 +3,9 @@
  * Wave 5C: Comprehensive credit management UI
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { ClientCombobox } from "@/components/ui/client-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,13 +132,53 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
   const [creditToVoid, setCreditToVoid] = useState<number | null>(null);
 
   // Form state for issuing credit
-  const [newCredit, setNewCredit] = useState({
-    clientId: "",
+  const [newCredit, setNewCredit] = useState<{
+    clientId: number | null;
+    amount: string;
+    reason: CreditReason | "";
+    description: string;
+    notes: string;
+  }>({
+    clientId: null,
     amount: "",
-    reason: "" as CreditReason | "",
+    reason: "",
     description: "",
     notes: "",
   });
+
+  // Inline validation errors for the issue-credit form
+  const [issueCreditTouched, setIssueCreditTouched] = useState({
+    clientId: false,
+    amount: false,
+    reason: false,
+  });
+
+  const issueCreditErrors = useMemo(() => {
+    return {
+      clientId:
+        issueCreditTouched.clientId && newCredit.clientId === null
+          ? "Please select a client."
+          : null,
+      amount:
+        issueCreditTouched.amount &&
+        (!newCredit.amount ||
+          isNaN(parseFloat(newCredit.amount)) ||
+          parseFloat(newCredit.amount) <= 0)
+          ? "Enter a positive amount."
+          : null,
+      reason:
+        issueCreditTouched.reason && !newCredit.reason
+          ? "Please select a reason."
+          : null,
+    };
+  }, [newCredit, issueCreditTouched]);
+
+  const isIssueCreditFormValid =
+    newCredit.clientId !== null &&
+    newCredit.amount !== "" &&
+    !isNaN(parseFloat(newCredit.amount)) &&
+    parseFloat(newCredit.amount) > 0 &&
+    newCredit.reason !== "";
 
   // Form state for applying credit
   const [applyForm, setApplyForm] = useState({
@@ -159,18 +200,32 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
 
   const { data: summary } = trpc.credits.getSummary.useQuery();
 
+  // Fetch clients for the searchable selector
+  const { data: clientsData, isLoading: clientsLoading } =
+    trpc.clients.list.useQuery({ limit: 200 });
+
+  const clientOptions = useMemo(() => {
+    const items = Array.isArray(clientsData)
+      ? clientsData
+      : ((clientsData as { items?: unknown[] })?.items ?? []);
+    return (
+      items as Array<{ id: number; name: string; email?: string | null }>
+    ).map(c => ({ id: c.id, name: c.name, email: c.email }));
+  }, [clientsData]);
+
   // Mutations
   const issueCreditMutation = trpc.credits.issue.useMutation({
     onSuccess: () => {
       toast({ title: "Credit adjustment issued successfully" });
       setIssueCreditOpen(false);
       setNewCredit({
-        clientId: "",
+        clientId: null,
         amount: "",
         reason: "",
         description: "",
         notes: "",
       });
+      setIssueCreditTouched({ clientId: false, amount: false, reason: false });
       refetch();
     },
     onError: error => {
@@ -228,16 +283,15 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
   };
 
   const handleIssueCredit = () => {
-    if (!newCredit.clientId || !newCredit.amount || !newCredit.reason) {
-      toast({
-        title: "Please fill in all required fields",
-        variant: "destructive",
-      });
+    // Mark all required fields as touched to show inline errors
+    setIssueCreditTouched({ clientId: true, amount: true, reason: true });
+
+    if (!isIssueCreditFormValid) {
       return;
     }
 
     issueCreditMutation.mutate({
-      clientId: parseInt(newCredit.clientId),
+      clientId: newCredit.clientId as number,
       amount: parseFloat(newCredit.amount),
       reason: newCredit.reason as CreditReason,
       description: newCredit.description || undefined,
@@ -570,7 +624,19 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
       </Card>
 
       {/* Issue Credit Dialog */}
-      <Dialog open={issueCreditOpen} onOpenChange={setIssueCreditOpen}>
+      <Dialog
+        open={issueCreditOpen}
+        onOpenChange={open => {
+          setIssueCreditOpen(open);
+          if (!open) {
+            setIssueCreditTouched({
+              clientId: false,
+              amount: false,
+              reason: false,
+            });
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Issue Credit Adjustment</DialogTitle>
@@ -581,39 +647,64 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="clientId">Client ID *</Label>
-              <Input
-                id="clientId"
-                type="number"
+              <Label htmlFor="credit-client">Client *</Label>
+              <ClientCombobox
                 value={newCredit.clientId}
-                onChange={e =>
-                  setNewCredit({ ...newCredit, clientId: e.target.value })
-                }
-                placeholder="Enter client ID"
+                onValueChange={v => {
+                  setNewCredit({ ...newCredit, clientId: v });
+                  setIssueCreditTouched(prev => ({
+                    ...prev,
+                    clientId: true,
+                  }));
+                }}
+                clients={clientOptions}
+                isLoading={clientsLoading}
+                placeholder="Search and select a client..."
               />
+              {issueCreditErrors.clientId ? (
+                <p className="text-xs text-destructive">
+                  {issueCreditErrors.clientId}
+                </p>
+              ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="credit-amount">Amount *</Label>
               <Input
-                id="amount"
+                id="credit-amount"
                 type="number"
                 step="0.01"
+                min="0.01"
                 value={newCredit.amount}
                 onChange={e =>
                   setNewCredit({ ...newCredit, amount: e.target.value })
                 }
+                onBlur={() =>
+                  setIssueCreditTouched(prev => ({ ...prev, amount: true }))
+                }
                 placeholder="0.00"
+                aria-describedby={
+                  issueCreditErrors.amount ? "credit-amount-error" : undefined
+                }
               />
+              {issueCreditErrors.amount ? (
+                <p
+                  id="credit-amount-error"
+                  className="text-xs text-destructive"
+                >
+                  {issueCreditErrors.amount}
+                </p>
+              ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="reason">Reason *</Label>
+              <Label htmlFor="credit-reason">Reason *</Label>
               <Select
                 value={newCredit.reason}
-                onValueChange={v =>
-                  setNewCredit({ ...newCredit, reason: v as CreditReason })
-                }
+                onValueChange={v => {
+                  setNewCredit({ ...newCredit, reason: v as CreditReason });
+                  setIssueCreditTouched(prev => ({ ...prev, reason: true }));
+                }}
               >
-                <SelectTrigger>
+                <SelectTrigger id="credit-reason">
                   <SelectValue placeholder="Select reason" />
                 </SelectTrigger>
                 <SelectContent>
@@ -624,11 +715,16 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {issueCreditErrors.reason ? (
+                <p className="text-xs text-destructive">
+                  {issueCreditErrors.reason}
+                </p>
+              ) : null}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="credit-description">Description</Label>
               <Input
-                id="description"
+                id="credit-description"
                 value={newCredit.description}
                 onChange={e =>
                   setNewCredit({ ...newCredit, description: e.target.value })
@@ -637,9 +733,9 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="credit-notes">Notes</Label>
               <Textarea
-                id="notes"
+                id="credit-notes"
                 value={newCredit.notes}
                 onChange={e =>
                   setNewCredit({ ...newCredit, notes: e.target.value })
@@ -649,12 +745,29 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIssueCreditOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIssueCreditOpen(false);
+                setIssueCreditTouched({
+                  clientId: false,
+                  amount: false,
+                  reason: false,
+                });
+              }}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleIssueCredit}
-              disabled={issueCreditMutation.isPending}
+              disabled={
+                issueCreditMutation.isPending || !isIssueCreditFormValid
+              }
+              title={
+                !isIssueCreditFormValid
+                  ? "Fill in all required fields to continue"
+                  : undefined
+              }
             >
               {issueCreditMutation.isPending
                 ? "Issuing..."
@@ -741,8 +854,8 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Void Issued Adjustment?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to void this issued adjustment balance?
-              This action cannot be undone.
+              Are you sure you want to void this issued adjustment balance? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
