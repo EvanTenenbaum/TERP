@@ -718,14 +718,6 @@ export function PurchaseOrdersPilotSurface({
     </span>
   );
 
-  const workflowTargetLabel = selectedRow
-    ? `Workflow target: ${selectedRow.poNumber}`
-    : "Workflow target: select a PO";
-
-  const workflowGuardrail = queueSelectionTouchesMultipleRows
-    ? "Selection spans multiple rows — workflow actions stay locked until focused row is the only selection."
-    : "Workflow actions are row-scoped. Cell selections do not change ownership.";
-
   // Status transition options for selected PO — filtered by state machine
   const availableTransitions = useMemo<POStatus[]>(() => {
     if (!selectedRow) return [];
@@ -761,7 +753,6 @@ export function PurchaseOrdersPilotSurface({
             <SelectItem value="CANCELLED">Cancelled</SelectItem>
           </SelectContent>
         </Select>
-        <Badge variant="outline">Sheet-native Pilot · PO Queue + Detail</Badge>
         <div className="ml-auto flex items-center gap-2">
           <Button
             size="sm"
@@ -794,17 +785,15 @@ export function PurchaseOrdersPilotSurface({
       {/* Workflow action bar */}
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
         <span className="text-sm font-medium text-foreground">
-          {selectedRow ? `${selectedRow.poNumber} selected` : "PO Queue active"}
+          {selectedRow
+            ? `${selectedRow.poNumber} selected`
+            : "Select a purchase order to take action"}
         </span>
-        <Badge
-          variant={rowScopedActionsBlocked ? "secondary" : "outline"}
-          className="max-w-full"
-        >
-          {workflowTargetLabel}
-        </Badge>
-        <span className="text-xs text-muted-foreground">
-          {workflowGuardrail}
-        </span>
+        {rowScopedActionsBlocked && (
+          <span className="text-xs text-muted-foreground">
+            Multiple rows selected — actions apply to one order at a time.
+          </span>
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {/* Status transitions dropdown-style buttons */}
           {availableTransitions.slice(0, 3).map(status => (
@@ -858,7 +847,6 @@ export function PurchaseOrdersPilotSurface({
       <PowersheetGrid
         surfaceId="po-queue"
         requirementIds={["PROC-PO-001", "PROC-PO-005"]}
-        releaseGateIds={["PROC-PO-001", "PROC-PO-002", "PROC-PO-005"]}
         affordances={queueAffordances}
         title="Purchase Orders Queue"
         description="One dominant queue — status, supplier, dates, total, and terms visible at a glance. Select a row to load line items and workflow actions."
@@ -881,7 +869,6 @@ export function PurchaseOrdersPilotSurface({
             {confirmedCount + receivingCount} active
           </span>
         }
-        antiDriftSummary="Queue release gates: row-selection driving detail, status filter parity, explicit row-scoped receiving handoff."
         minHeight={360}
       />
 
@@ -931,7 +918,6 @@ export function PurchaseOrdersPilotSurface({
       <PowersheetGrid
         surfaceId="po-line-items"
         requirementIds={["PROC-PO-003", "PROC-PO-004"]}
-        releaseGateIds={["PROC-PO-003", "PROC-PO-004"]}
         affordances={supportAffordances}
         title="Line Items"
         description="Line items for the selected purchase order. Quantity, COGS mode, and cost visible for quick verification before receiving."
@@ -966,7 +952,6 @@ export function PurchaseOrdersPilotSurface({
             </span>
           ) : undefined
         }
-        antiDriftSummary="Support-grid release gate: COGS mode and quantity parity with the selected PO."
         minHeight={220}
       />
 

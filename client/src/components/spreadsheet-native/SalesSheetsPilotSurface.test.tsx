@@ -351,12 +351,12 @@ describe("SalesSheetsPilotSurface", () => {
     mockFetchDraftById.mockReset();
   });
 
-  it("renders the pilot badge", () => {
+  it("does not render the internal pilot badge to operators", () => {
     render(<SalesSheetsPilotSurface onOpenClassic={vi.fn()} />);
 
     expect(
-      screen.getByText("Pilot: browser + preview split")
-    ).toBeInTheDocument();
+      screen.queryByText("Pilot: browser + preview split")
+    ).not.toBeInTheDocument();
   });
 
   it("renders the client combobox with placeholder text", () => {

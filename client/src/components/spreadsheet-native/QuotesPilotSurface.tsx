@@ -851,10 +851,6 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
   const multiRowSelected = (selectionSummary?.selectedRowCount ?? 0) > 1;
   const actionsBlocked = multiRowSelected;
 
-  const workflowTargetLabel = selectedRow
-    ? `Workflow target: ${selectedRow.orderNumber}`
-    : "Workflow target: select a quote";
-
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -943,18 +939,11 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
         <span className="text-sm font-medium text-foreground">
           {selectedRow
             ? `${selectedRow.orderNumber} selected`
-            : "Registry evaluation active"}
+            : "Select a quote to take action"}
         </span>
-        <Badge
-          variant={actionsBlocked ? "secondary" : "outline"}
-          className="max-w-full text-xs"
-        >
-          {workflowTargetLabel}
-        </Badge>
         {actionsBlocked && (
           <span className="text-xs text-muted-foreground">
-            Selection spans multiple rows — workflow actions locked to focused
-            row.
+            Multiple rows selected — actions apply to one quote at a time.
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -1028,7 +1017,6 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
       <PowersheetGrid
         surfaceId="quotes-registry"
         requirementIds={["QUO-WF-001", "QUO-WF-002"]}
-        releaseGateIds={["SALE-QUO-001", "SALE-QUO-002", "SALE-QUO-026"]}
         affordances={registryAffordances}
         title="Quotes Registry"
         description="Read-only registry of all quotes. Row selection drives inspector and workflow action context."
@@ -1055,7 +1043,6 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
             {stats.sent} sent · {stats.converted} converted
           </span>
         }
-        antiDriftSummary="Registry release gates: status filtering, row-scoped actions, inspector parity, and QUO-026 rejection."
         minHeight={360}
       />
 

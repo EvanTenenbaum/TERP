@@ -23,7 +23,7 @@ export function SheetModeToggle({
         variant={surfaceMode === "sheet-native" ? "default" : "outline"}
         onClick={() => onSurfaceModeChange("sheet-native")}
       >
-        Sheet-Native Pilot
+        Spreadsheet View
       </Button>
       <Button
         size="sm"

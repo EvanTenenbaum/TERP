@@ -739,12 +739,6 @@ export function InventorySheetPilotSurface({
           "OPS-INV-006",
           "OPS-INV-011",
         ]}
-        releaseGateIds={[
-          "INV-WF-001",
-          "INV-WF-004",
-          "INV-WF-006",
-          "INV-WF-011",
-        ]}
         affordances={inventoryAffordances}
         title="Inventory Sheet"
         description="One dominant inventory table keeps SKU, product context, status, quantity, and age visible. Status is editable inline; quantity adjustments require a reason dialog."
@@ -769,7 +763,6 @@ export function InventorySheetPilotSurface({
             {canUpdateInventory ? "status editing enabled" : "read-only mode"}
           </span>
         }
-        antiDriftSummary="Inventory queue release gates: spreadsheet selection parity, status edit, bulk operations, and export."
         headerActions={
           hasMoreRows ? (
             <Button
@@ -826,7 +819,6 @@ export function InventorySheetPilotSurface({
       <PowersheetGrid
         surfaceId="inventory-locations-grid"
         requirementIds={["OPS-INV-002"]}
-        releaseGateIds={["INV-WF-002"]}
         affordances={locationAffordances}
         title="Selected Batch Locations"
         description="This supporting table keeps storage context inline so the sheet can answer the next question without pushing routine work into the inspector."
@@ -847,7 +839,6 @@ export function InventorySheetPilotSurface({
             </span>
           ) : undefined
         }
-        antiDriftSummary="Locations support-grid: must stay selection-driven and linked to the focused batch."
         minHeight={220}
       />
 

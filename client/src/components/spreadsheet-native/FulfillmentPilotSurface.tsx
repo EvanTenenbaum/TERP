@@ -1290,7 +1290,6 @@ export function FulfillmentPilotSurface({
           "FUL-010",
           "FUL-026",
         ]}
-        releaseGateIds={["FUL-G1"]}
         affordances={queueAffordances}
         title="Fulfillment Queue"
         description="Orders eligible for pick and pack. Select a row to open the detail panel."
@@ -1323,7 +1322,6 @@ export function FulfillmentPilotSurface({
               : ""}
           </span>
         }
-        antiDriftSummary="Queue must show only SALE + non-draft + no D-/Q- prefix orders. FUL-026."
         minHeight={280}
       />
 

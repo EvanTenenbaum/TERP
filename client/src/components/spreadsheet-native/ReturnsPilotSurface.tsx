@@ -978,14 +978,6 @@ export function ReturnsPilotSurface({
       <PowersheetGrid
         surfaceId="returns-queue"
         requirementIds={["RET-001", "RET-003"]}
-        releaseGateIds={[
-          "RET-001",
-          "RET-005",
-          "RET-016",
-          "RET-017",
-          "RET-018",
-          "RET-019",
-        ]}
         affordances={queueAffordances}
         title="Returns Queue"
         description="Read-only queue. Select a row to load workflow cards and inspector detail. Composition dialog opens via Process Return."
@@ -1007,7 +999,6 @@ export function ReturnsPilotSurface({
             {queueRows.length} visible · {totalCount} total
           </span>
         }
-        antiDriftSummary="Returns queue: status parsing via bracket markers, workflow actions scoped to focused row."
         minHeight={320}
       />
 
