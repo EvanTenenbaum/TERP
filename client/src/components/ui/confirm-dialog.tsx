@@ -69,12 +69,23 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
     }
   };
 
+  // When description is a ReactNode (not a plain string), render it as a div
+  // to avoid invalid HTML nesting (block elements inside <p>).
+  const isRichContent = typeof description !== "string";
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          {isRichContent ? (
+            // Use asChild to render as div, avoiding block-in-p HTML violation
+            <AlertDialogDescription asChild>
+              <div>{description}</div>
+            </AlertDialogDescription>
+          ) : (
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>
