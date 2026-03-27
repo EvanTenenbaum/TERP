@@ -43,12 +43,12 @@ type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
 type SalesQueryTab = SalesTab | "pick-pack";
 
-const SALES_TABS_CONFIG = [
+const SALES_TABS_CONFIG_BASE = [
   ...SALES_WORKSPACE.tabs,
   { value: "create-order", label: "New Sales Order" },
 ] as const satisfies readonly LinearWorkspaceTab<SalesTab>[];
 
-const SALES_TABS = SALES_TABS_CONFIG.map(
+const SALES_TABS = SALES_TABS_CONFIG_BASE.map(
   tab => tab.value
 ) as readonly SalesTab[];
 
@@ -64,6 +64,17 @@ export default function SalesWorkspacePage() {
       ([key]) => key !== "tab" && key !== "classic"
     )
   );
+
+  // BUG-008: When mode=quote is in the URL (from "New Quote" action),
+  // relabel the create-order tab to "New Quote" so users understand context.
+  const isQuoteMode =
+    activeTab === "create-order" &&
+    new URLSearchParams(search).get("mode") === "quote";
+  const SALES_TABS_CONFIG: readonly LinearWorkspaceTab<SalesTab>[] = isQuoteMode
+    ? SALES_TABS_CONFIG_BASE.map(tab =>
+        tab.value === "create-order" ? { ...tab, label: "New Quote" } : tab
+      )
+    : SALES_TABS_CONFIG_BASE;
   const pilotSurfaceSupported =
     activeTab === "orders" ||
     activeTab === "create-order" ||
