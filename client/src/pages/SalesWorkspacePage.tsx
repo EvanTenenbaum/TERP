@@ -45,7 +45,7 @@ type SalesQueryTab = SalesTab | "pick-pack";
 
 const SALES_TABS_CONFIG_BASE = [
   ...SALES_WORKSPACE.tabs,
-  { value: "create-order", label: "New Sales Order" },
+  { value: "create-order", label: "Create Order" },
 ] as const satisfies readonly LinearWorkspaceTab<SalesTab>[];
 
 const SALES_TABS = SALES_TABS_CONFIG_BASE.map(
