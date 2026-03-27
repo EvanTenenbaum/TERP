@@ -13,6 +13,7 @@ import { getDb } from "./db";
 import {
   calendarEvents,
   calendarEventPermissions,
+  users,
   type CalendarEvent,
 } from "../../drizzle/schema";
 import cache, { CacheKeys, CacheTTL } from "./cache";
@@ -38,7 +39,11 @@ export class PermissionService {
     requiredPermission: PermissionLevel
   ): Promise<boolean> {
     // Check cache first
-    const cacheKey = CacheKeys.calendarEventPermission(userId, eventId, requiredPermission);
+    const cacheKey = CacheKeys.calendarEventPermission(
+      userId,
+      eventId,
+      requiredPermission
+    );
     const cached = cache.get<boolean>(cacheKey);
     if (cached !== null) {
       return cached;
@@ -46,6 +51,17 @@ export class PermissionService {
 
     const db = await getDb();
     if (!db) throw new Error("Database not available");
+
+    // BUG-094: Admin users have full MANAGE permission on all calendar events
+    const [userRecord] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (userRecord?.role === "admin") {
+      cache.set(cacheKey, true, CacheTTL.MEDIUM);
+      return true;
+    }
 
     // Get the event
     const [event] = await db
@@ -67,7 +83,10 @@ export class PermissionService {
     }
 
     // Assigned user has EDIT permission
-    if (event.assignedTo === userId && this.isPermissionSufficient("EDIT", requiredPermission)) {
+    if (
+      event.assignedTo === userId &&
+      this.isPermissionSufficient("EDIT", requiredPermission)
+    ) {
       cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
@@ -135,7 +154,11 @@ export class PermissionService {
     eventId: number,
     requiredPermission: PermissionLevel
   ): Promise<void> {
-    const hasPermission = await this.hasPermission(userId, eventId, requiredPermission);
+    const hasPermission = await this.hasPermission(
+      userId,
+      eventId,
+      requiredPermission
+    );
 
     if (!hasPermission) {
       throw new TRPCError({
@@ -252,7 +275,7 @@ export class PermissionService {
    * Batch check permissions for multiple events
    * Returns a map of eventId -> hasPermission
    * This is a performance optimization to avoid N+1 queries
-   * 
+   *
    * @param userId - The user ID to check permissions for
    * @param eventIds - Array of event IDs to check
    * @param requiredPermission - The permission level required
@@ -307,7 +330,10 @@ export class PermissionService {
       }
 
       // Assigned user has EDIT permission
-      if (event.assignedTo === userId && this.isPermissionSufficient("EDIT", requiredPermission)) {
+      if (
+        event.assignedTo === userId &&
+        this.isPermissionSufficient("EDIT", requiredPermission)
+      ) {
         permissionMap[event.id] = true;
         continue;
       }
@@ -349,7 +375,7 @@ export class PermissionService {
   /**
    * Filter events by user permissions
    * Returns only events the user has permission to view
-   * 
+   *
    * @deprecated Use batchCheckPermissions for better performance
    */
   static async filterEventsByPermission(
@@ -489,9 +515,18 @@ export class PermissionService {
    */
   static invalidatePermissionCache(userId: number, eventId: number): void {
     // Invalidate all permission levels for this user-event combination
-    const permissionLevels: PermissionLevel[] = ["VIEW", "EDIT", "DELETE", "MANAGE"];
+    const permissionLevels: PermissionLevel[] = [
+      "VIEW",
+      "EDIT",
+      "DELETE",
+      "MANAGE",
+    ];
     for (const permission of permissionLevels) {
-      const cacheKey = CacheKeys.calendarEventPermission(userId, eventId, permission);
+      const cacheKey = CacheKeys.calendarEventPermission(
+        userId,
+        eventId,
+        permission
+      );
       cache.delete(cacheKey);
     }
   }
