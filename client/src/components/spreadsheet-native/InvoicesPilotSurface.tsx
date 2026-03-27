@@ -180,7 +180,9 @@ const getDaysOverdue = (dueDate: Date | string): number => {
 const getPaymentProgress = (item: InvoiceItem): number => {
   const total = parseFloat(String(item.totalAmount ?? "0"));
   const paid = parseFloat(String(item.amountPaid ?? "0"));
-  return total > 0 ? Math.round((paid / total) * 100) : 0;
+  return total > 0
+    ? Math.max(0, Math.min(100, Math.round((paid / total) * 100)))
+    : 0;
 };
 
 // ============================================================================

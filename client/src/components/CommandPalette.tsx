@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -24,6 +24,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
+  const [query, setQuery] = useState("");
   const { flags, isLoading } = useFeatureFlags();
   const navigationAccessModel = useMemo(
     () =>
@@ -105,9 +106,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput autoFocus placeholder="Type a command or search..." />
+      <CommandInput
+        autoFocus
+        placeholder="Type a command or search..."
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>
+          {query.length > 2
+            ? `No results found for "${query}"`
+            : "No results found."}
+        </CommandEmpty>
 
         <CommandGroup heading="Navigation">
           {navigationCommands.map(item => {

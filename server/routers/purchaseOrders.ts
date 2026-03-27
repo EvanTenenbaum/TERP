@@ -1515,10 +1515,10 @@ async function recalculatePOTotals(
     .from(purchaseOrderItems)
     .where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + parseFloat(item.totalCost),
-    0
-  );
+  const subtotal = items.reduce((sum, item) => {
+    const cost = parseFloat(item.totalCost);
+    return sum + (isNaN(cost) ? 0 : cost);
+  }, 0);
 
   await db
     .update(purchaseOrders)
