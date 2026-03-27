@@ -867,6 +867,7 @@ export function InvoiceToPaymentFlow({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-lg max-h-[85vh] overflow-hidden"
+        aria-describedby="payment-flow-description"
         {...keyboardProps}
       >
         <DialogHeader>
@@ -874,7 +875,7 @@ export function InvoiceToPaymentFlow({
             <Sparkles className="h-5 w-5 text-primary" />
             Record Payment
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="payment-flow-description">
             Record a payment for this invoice
           </DialogDescription>
         </DialogHeader>
