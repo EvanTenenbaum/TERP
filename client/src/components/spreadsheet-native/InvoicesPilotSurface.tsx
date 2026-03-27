@@ -1083,6 +1083,7 @@ export function InvoicesPilotSurface({
               onClick={() => {
                 setStatusFilter(tab.value);
                 setPage(1);
+                setSearchTerm("");
               }}
               data-testid={`status-tab-${tab.value}`}
             >
