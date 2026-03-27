@@ -129,6 +129,17 @@ export const Sidebar = React.memo(function Sidebar({
   >(() => getDefaultOpenGroups(`${location}${search || ""}`));
   const [collapsed, setCollapsed] = useState(false);
 
+  // BUG-103: Auto-close the mobile drawer whenever the active route changes so
+  // the workspace is immediately visible after any navigation (including
+  // programmatic navigation that bypasses the Link onClick handlers).
+  useEffect(() => {
+    if (open) {
+      onClose?.();
+    }
+    // Only re-run when the *location* changes — not when open/onClose change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
+
   const navigationScopeKey = useMemo(() => {
     if (currentUser?.id !== undefined && currentUser?.id !== null) {
       return `user:${String(currentUser.id)}`;
@@ -214,16 +225,25 @@ export const Sidebar = React.memo(function Sidebar({
         className={cn(
           "flex flex-col bg-background/96 border-r border-border/80 transition-all duration-200 ease-in-out z-50 backdrop-blur-sm",
           "md:relative md:translate-x-0",
-          "fixed inset-y-0 left-0",
+          // BUG-102: cap width to viewport so the close button stays on-screen
+          "fixed inset-y-0 left-0 max-w-[calc(100vw-3rem)]",
           collapsed ? "w-16" : "w-[17.25rem]",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         {/* TER-599: Simplified header — just collapse/expand button */}
-        <div className="flex items-center justify-end h-12 px-3 border-b border-border/80">
+        {/* BUG-102: close button must be visible and reachable on all phone widths */}
+        <div className="flex items-center justify-between h-12 px-3 border-b border-border/80">
+          <button
+            onClick={onClose}
+            className="md:hidden p-2 hover:bg-accent rounded-md max-md:size-11 flex-shrink-0"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
           <button
             onClick={() => setCollapsed(prev => !prev)}
-            className="hidden md:flex p-2 hover:bg-accent rounded-md text-muted-foreground"
+            className="hidden md:flex p-2 hover:bg-accent rounded-md text-muted-foreground ml-auto"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -231,13 +251,6 @@ export const Sidebar = React.memo(function Sidebar({
             ) : (
               <ChevronsLeft className="h-5 w-5" />
             )}
-          </button>
-          <button
-            onClick={onClose}
-            className="md:hidden p-2 hover:bg-accent rounded-md max-md:size-11"
-            aria-label="Close menu"
-          >
-            <X className="h-5 w-5" />
           </button>
         </div>
 
