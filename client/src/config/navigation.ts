@@ -227,7 +227,7 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: true,
   },
   {
-    name: "Reports",
+    name: "Analytics",
     path: "/analytics",
     icon: BarChart3,
     group: "finance",

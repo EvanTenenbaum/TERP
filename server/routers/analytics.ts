@@ -131,6 +131,7 @@ export const analyticsRouter = router({
           ordersThisPeriod: 0,
           revenueThisPeriod: 0,
           newClientsThisPeriod: 0,
+          totalInventoryValue: 0,
         };
       }
       const { startDate, endDate } =
@@ -182,7 +183,10 @@ export const analyticsRouter = router({
           )
         );
       const [inventoryStats] = await db
-        .select({ totalInventoryItems: count() })
+        .select({
+          totalInventoryItems: count(),
+          totalInventoryValue: sql<string>`COALESCE(SUM(${batches.onHandQty} * ${batches.unitCogs}), 0)`,
+        })
         .from(batches)
         .where(isNull(batches.deletedAt));
       const [paymentStats] = await db
@@ -212,6 +216,7 @@ export const analyticsRouter = router({
         ordersThisPeriod: Number(periodStats?.ordersThisPeriod || 0),
         revenueThisPeriod: currentRevenue,
         newClientsThisPeriod: Number(newClientStats?.newClients || 0),
+        totalInventoryValue: Number(inventoryStats?.totalInventoryValue || 0),
       };
     }),
 
