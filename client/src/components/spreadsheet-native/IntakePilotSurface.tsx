@@ -916,10 +916,9 @@ function RowInspectorContent({
 
         <InspectorField label="Location" required>
           <Select
-            value={
-              findLocationOptionForRow(row, locationOptions)?.id.toString() ??
-              ""
-            }
+            value={String(
+              findLocationOptionForRow(row, locationOptions)?.id ?? ""
+            )}
             onValueChange={value => {
               const location = locationOptions.find(
                 option => option.id.toString() === value
@@ -2449,7 +2448,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Location</Label>
             <Select
-              value={selectedLocationOption?.id.toString() ?? ""}
+              value={String(selectedLocationOption?.id ?? "")}
               onValueChange={value => {
                 if (!selectedRow || selectedRow.status !== "pending") return;
                 const location = locationOptions.find(

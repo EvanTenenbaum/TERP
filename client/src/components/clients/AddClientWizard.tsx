@@ -181,8 +181,6 @@ export function AddClientWizard({
   });
 
   // Create client mutation
-  // BUG-071 FIX: Enhanced error handling with detailed messages
-  // TER-38 FIX: Use tRPC error codes for reliable error detection
   const utils = trpc.useContext();
   const createClientMutation = trpc.clients.create.useMutation({
     onSuccess: data => {
