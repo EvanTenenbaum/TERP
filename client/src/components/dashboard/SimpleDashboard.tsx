@@ -54,7 +54,7 @@ const TodaysOrdersCard = memo(function TodaysOrdersCard() {
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Today&apos;s Orders
+          Today&apos;s Sales
         </CardTitle>
         <ShoppingCart className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
@@ -70,7 +70,7 @@ const TodaysOrdersCard = memo(function TodaysOrdersCard() {
               {formatCurrency(snapshot?.today.sales ?? 0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {snapshot?.today.unitsSold ?? 0} units &middot;{" "}
+              {snapshot?.today.unitsSold ?? 0} invoices &middot;{" "}
               {formatCurrency(snapshot?.thisWeek.sales ?? 0)} this week
             </p>
             <Button
