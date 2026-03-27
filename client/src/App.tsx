@@ -912,8 +912,38 @@ function Router() {
                   component={RedirectWithSearch("/todo-lists", "/todos")}
                 />
 
+                {/* TER-859: Dead route redirects */}
+                <Route
+                  path="/suppliers"
+                  component={RedirectWithTab(
+                    "/suppliers",
+                    "/relationships",
+                    "suppliers"
+                  )}
+                />
+                <Route
+                  path="/accounts-receivable"
+                  component={RedirectWithTab(
+                    "/accounts-receivable",
+                    "/accounting",
+                    "invoices"
+                  )}
+                />
+                <Route
+                  path="/payments"
+                  component={RedirectWithTab(
+                    "/payments",
+                    "/accounting",
+                    "payments"
+                  )}
+                />
+                <Route
+                  path="/admin"
+                  component={RedirectWithSearch("/admin", "/settings")}
+                />
+
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
-                {/* Final fallback route */}
+                {/* Final fallback route — TER-902: shows user-friendly 404 page */}
                 <Route component={withErrorBoundary(NotFound)} />
               </Switch>
             </AppShell>
