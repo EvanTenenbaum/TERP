@@ -187,6 +187,20 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
     setIsOverrideDialogOpen(true);
   };
 
+  // BUG-085: group flags by module for cleaner operator view
+  // Must be declared before any early returns to satisfy rules-of-hooks
+  const flagsByModule = React.useMemo(() => {
+    if (!flags) return [];
+    const map = new Map<string, typeof flags>();
+    for (const flag of flags) {
+      const key = flag.module ?? "General";
+      const arr = map.get(key) ?? [];
+      arr.push(flag);
+      map.set(key, arr);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [flags]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -201,11 +215,14 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
     <div
       className={embedded ? "space-y-6" : "container mx-auto py-6 space-y-6"}
     >
+      {/* BUG-083: operator-facing heading copy */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Feature Flags</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Feature Controls
+          </h1>
           <p className="text-muted-foreground">
-            Manage feature availability across the application
+            Control which features are active for your team
           </p>
         </div>
         <div className="flex gap-2">
@@ -220,7 +237,7 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
               <Settings
                 className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`}
               />
-              Seed Defaults
+              Initialize Defaults
             </Button>
           )}
           <Button
@@ -232,7 +249,7 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
             <RefreshCw
               className={`h-4 w-4 mr-2 ${invalidateCachesMutation.isPending ? "animate-spin" : ""}`}
             />
-            Clear Caches
+            Refresh
           </Button>
           <Dialog
             open={isCreateDialogOpen}
@@ -241,7 +258,7 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                New Flag
+                Add Control
               </Button>
             </DialogTrigger>
             <CreateFlagDialog
@@ -256,153 +273,183 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
         <TabsList>
           <TabsTrigger value="flags">
             <Flag className="h-4 w-4 mr-2" />
-            Flags ({flags?.length || 0})
+            {/* BUG-083: operator-facing tab label */}
+            Controls ({flags?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="audit">
             <History className="h-4 w-4 mr-2" />
-            Audit History
+            {/* BUG-083: operator-facing tab label */}
+            Change Log
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="flags" className="mt-4">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Flag</TableHead>
-                    <TableHead>Module</TableHead>
-                    <TableHead>System</TableHead>
-                    <TableHead>Default</TableHead>
-                    <TableHead>Depends On</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {flags?.map(flag => (
-                    <TableRow key={flag.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{flag.name}</div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            {flag.key}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {flag.module ? (
-                          <Badge variant="outline">{flag.module}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={flag.systemEnabled}
-                          onCheckedChange={() =>
-                            handleToggle(flag.id, flag.systemEnabled)
-                          }
-                          disabled={toggleMutation.isPending}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={flag.defaultEnabled}
-                          onCheckedChange={() =>
-                            handleToggleDefault(flag.id, flag.defaultEnabled)
-                          }
-                          disabled={toggleDefaultMutation.isPending}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {flag.dependsOn ? (
-                          <Badge
-                            variant="outline"
-                            className="font-mono text-xs"
-                          >
-                            {flag.dependsOn}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenOverrides(flag.id)}
-                          title="Manage Overrides"
-                        >
-                          <Users className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!flags || flags.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Flag className="h-8 w-8" />
-                          <p>No feature flags defined yet</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsCreateDialogOpen(true)}
-                          >
-                            Create your first flag
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {/* BUG-085: render one card per module group */}
+          <div className="space-y-4">
+            {flagsByModule.map(([moduleName, moduleFlags]) => (
+              <Card key={moduleName}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">{moduleName}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Feature</TableHead>
+                        {/* BUG-083: "Active" is clearer than "System" for operators */}
+                        <TableHead>Active</TableHead>
+                        {/* BUG-083: "On by Default" is clearer than "Default" */}
+                        <TableHead>On by Default</TableHead>
+                        {/* BUG-084: raw "Depends On" key hidden from non-superAdmins */}
+                        {isSuperAdmin && <TableHead>Requires</TableHead>}
+                        <TableHead className="text-right">Access</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {moduleFlags.map(flag => (
+                        <TableRow key={flag.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{flag.name}</div>
+                              {/* BUG-084: raw key only visible to superAdmins */}
+                              {isSuperAdmin && (
+                                <div className="text-xs text-muted-foreground font-mono">
+                                  {flag.key}
+                                </div>
+                              )}
+                              {flag.description && (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  {flag.description}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={flag.systemEnabled}
+                              onCheckedChange={() =>
+                                handleToggle(flag.id, flag.systemEnabled)
+                              }
+                              disabled={toggleMutation.isPending}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={flag.defaultEnabled}
+                              onCheckedChange={() =>
+                                handleToggleDefault(
+                                  flag.id,
+                                  flag.defaultEnabled
+                                )
+                              }
+                              disabled={toggleDefaultMutation.isPending}
+                            />
+                          </TableCell>
+                          {isSuperAdmin && (
+                            <TableCell>
+                              {flag.dependsOn ? (
+                                <Badge
+                                  variant="outline"
+                                  className="font-mono text-xs"
+                                >
+                                  {flag.dependsOn}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenOverrides(flag.id)}
+                              title="Manage access overrides"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ))}
+            {(!flags || flags.length === 0) && (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Flag className="h-8 w-8" />
+                    <p>No feature controls defined yet</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsCreateDialogOpen(true)}
+                    >
+                      Add your first control
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="audit" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Audit History</CardTitle>
-              <CardDescription>Recent changes to feature flags</CardDescription>
+              {/* BUG-083: operator-facing heading */}
+              <CardTitle>Change Log</CardTitle>
+              <CardDescription>
+                Recent changes to feature controls
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Flag</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Actor</TableHead>
+                    <TableHead>When</TableHead>
+                    {/* BUG-083: "Feature" instead of "Flag" */}
+                    <TableHead>Feature</TableHead>
+                    <TableHead>Change</TableHead>
+                    {/* BUG-084: raw openId hidden from non-superAdmins */}
+                    {isSuperAdmin && <TableHead>Changed By</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditHistory?.map(entry => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(entry.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {entry.flagKey}
-                      </TableCell>
-                      <TableCell>
-                        <ActionBadge action={entry.action} />
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {entry.actorOpenId}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {auditHistory?.map(entry => {
+                    // BUG-085: resolve flag key to display name when possible
+                    const flagName =
+                      flags?.find(f => f.key === entry.flagKey)?.name ??
+                      entry.flagKey;
+                    return (
+                      <TableRow key={entry.id}>
+                        <TableCell className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(entry.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-sm">{flagName}</TableCell>
+                        <TableCell>
+                          <ActionBadge action={entry.action} />
+                        </TableCell>
+                        {/* BUG-084: only superAdmins see raw actor openId */}
+                        {isSuperAdmin && (
+                          <TableCell className="text-muted-foreground text-sm">
+                            {entry.actorOpenId}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
                   {(!auditHistory || auditHistory.length === 0) && (
                     <TableRow>
                       <TableCell
-                        colSpan={4}
+                        colSpan={isSuperAdmin ? 4 : 3}
                         className="text-center py-8 text-muted-foreground"
                       >
-                        No audit history yet
+                        No changes recorded yet
                       </TableCell>
                     </TableRow>
                   )}
@@ -420,12 +467,13 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
       >
         <DialogContent className="w-full sm:max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
+            {/* BUG-083: operator-facing dialog heading */}
             <DialogTitle>
-              Manage Overrides: {selectedFlagData?.name}
+              Access Overrides: {selectedFlagData?.name}
             </DialogTitle>
             <DialogDescription>
-              Configure user and role-specific overrides for this feature flag.
-              Overrides take precedence over the default value.
+              Grant or restrict access to this feature for specific users or
+              roles. Overrides take precedence over the team-wide default.
             </DialogDescription>
           </DialogHeader>
           {selectedFlag && (
@@ -434,6 +482,7 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
               flagKey={selectedFlagData?.key || ""}
               users={users || []}
               roles={rolesData?.roles || []}
+              isSuperAdmin={isSuperAdmin}
               onUpdate={() => {
                 refetchAudit();
               }}
@@ -468,6 +517,8 @@ interface OverrideManagementProps {
   }>;
   roles: Array<{ id: number; name: string; description: string | null }>;
   onUpdate: () => void;
+  // BUG-084: only superAdmins see raw identifier fields
+  isSuperAdmin?: boolean;
 }
 
 function OverrideManagement({
@@ -476,6 +527,7 @@ function OverrideManagement({
   users,
   roles,
   onUpdate,
+  isSuperAdmin = false,
 }: OverrideManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
@@ -651,9 +703,12 @@ function OverrideManagement({
                           <div className="text-sm text-muted-foreground">
                             {user.email}
                           </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            {user.openId}
-                          </div>
+                          {/* BUG-084: only superAdmins see raw openId */}
+                          {isSuperAdmin && (
+                            <div className="text-xs text-muted-foreground font-mono">
+                              {user.openId}
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -695,50 +750,53 @@ function OverrideManagement({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Quick Override by User ID
-              </CardTitle>
-              <CardDescription>
-                Directly enter a user's OpenID to set an override
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter user OpenID..."
-                  value={selectedUserId}
-                  onChange={e => setSelectedUserId(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-green-50 hover:bg-green-100 text-green-700"
-                  onClick={() => handleSetUserOverride(selectedUserId, true)}
-                  disabled={
-                    !selectedUserId || setUserOverrideMutation.isPending
-                  }
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Enable
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-red-50 hover:bg-red-100 text-red-700"
-                  onClick={() => handleSetUserOverride(selectedUserId, false)}
-                  disabled={
-                    !selectedUserId || setUserOverrideMutation.isPending
-                  }
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Disable
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* BUG-084: raw OpenID input is an internal tool — only superAdmins need it */}
+          {isSuperAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Quick Override by User ID
+                </CardTitle>
+                <CardDescription>
+                  Directly enter a user&apos;s OpenID to set an override
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter user OpenID..."
+                    value={selectedUserId}
+                    onChange={e => setSelectedUserId(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-green-50 hover:bg-green-100 text-green-700"
+                    onClick={() => handleSetUserOverride(selectedUserId, true)}
+                    disabled={
+                      !selectedUserId || setUserOverrideMutation.isPending
+                    }
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    Enable
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-red-50 hover:bg-red-100 text-red-700"
+                    onClick={() => handleSetUserOverride(selectedUserId, false)}
+                    disabled={
+                      !selectedUserId || setUserOverrideMutation.isPending
+                    }
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Disable
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Role Overrides Tab */}
