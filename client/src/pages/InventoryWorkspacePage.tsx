@@ -1,14 +1,11 @@
 import { lazy, Suspense } from "react";
-import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
+import { InventoryManagementSurface } from "@/components/spreadsheet-native/InventoryManagementSurface";
 import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
 
-const InventorySheetPilotSurface = lazy(
-  () => import("@/components/spreadsheet-native/InventorySheetPilotSurface")
-);
 const FulfillmentPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/FulfillmentPilotSurface")
 );
@@ -24,7 +21,6 @@ import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { INVENTORY_WORKSPACE } from "@/config/workspaces";
 import {
-  buildOperationsWorkspacePath,
   normalizeOperationsTab,
   type OperationsTab,
 } from "@/lib/workspaceRoutes";
@@ -39,7 +35,7 @@ import {
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
 import { PageLoading } from "@/components/ui/loading-state";
-import { useLocation, useSearch } from "wouter";
+import { useSearch } from "wouter";
 
 const ReceivingPage = lazy(
   () => import("@/components/uiux-slice/ProductIntakeSlicePage")
@@ -59,7 +55,6 @@ const INVENTORY_TABS = INVENTORY_TABS_CONFIG.map(
 ) as readonly InventoryTab[];
 
 export default function InventoryWorkspacePage() {
-  const [, setLocation] = useLocation();
   const search = useSearch();
   const { activeTab: requestedTab, setActiveTab } =
     useQueryTabState<InventoryQueryTab>({
@@ -67,14 +62,6 @@ export default function InventoryWorkspacePage() {
       validTabs: [...INVENTORY_TABS, "pick-pack"],
     });
   const activeTab = normalizeOperationsTab(requestedTab) ?? "inventory";
-
-  // Inventory tab pilot
-  const pilotSurfaceSupported = activeTab === "inventory";
-  const { sheetPilotEnabled, availabilityReady } =
-    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
-    buildSurfaceAvailability("inventory", sheetPilotEnabled, availabilityReady)
-  );
 
   // Intake tab pilot (TER-815)
   const intakePilotSupported = activeTab === "intake";
@@ -139,13 +126,7 @@ export default function InventoryWorkspacePage() {
       onTabChange={tab => setActiveTab(tab)}
       data-testid="inventory-header"
       commandStrip={
-        activeTab === "inventory" ? (
-          <SheetModeToggle
-            enabled={sheetPilotEnabled}
-            surfaceMode={surfaceMode}
-            onSurfaceModeChange={setSurfaceMode}
-          />
-        ) : activeTab === "intake" ? (
+        activeTab === "intake" ? (
           <SheetModeToggle
             enabled={intakePilotEnabled}
             surfaceMode={intakeSurfaceMode}
@@ -161,21 +142,7 @@ export default function InventoryWorkspacePage() {
       }
     >
       <LinearWorkspacePanel value="inventory">
-        {surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<InventoryWorkSurface />}>
-            <InventorySheetPilotSurface
-              onOpenClassic={batchId =>
-                setLocation(
-                  buildOperationsWorkspacePath("inventory", {
-                    batchId: batchId ?? undefined,
-                  })
-                )
-              }
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <InventoryWorkSurface />
-        )}
+        <InventoryManagementSurface />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="shipping">
         {fulfillmentSurfaceMode === "sheet-native" ? (
