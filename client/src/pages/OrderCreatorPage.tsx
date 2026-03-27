@@ -205,6 +205,40 @@ export const resolveInventoryPricingContext = (
   };
 };
 
+export function resolveRouteSeedOrderType(
+  routeMode: string | null | undefined
+): "QUOTE" | "SALE" {
+  return routeMode === "quote" ? "QUOTE" : "SALE";
+}
+
+export function shouldSeedComposerFromRoute(params: {
+  routeOrderId: number | null;
+  routeOrderLoading: boolean;
+  isSalesSheetImport: boolean;
+  routeMode: string | null | undefined;
+  clientIdFromRoute: number | null;
+  needIdFromRoute: number | null;
+}): boolean {
+  const {
+    routeOrderId,
+    routeOrderLoading,
+    isSalesSheetImport,
+    routeMode,
+    clientIdFromRoute,
+    needIdFromRoute,
+  } = params;
+
+  if (routeOrderId !== null || routeOrderLoading || isSalesSheetImport) {
+    return false;
+  }
+
+  return (
+    routeMode === "quote" ||
+    clientIdFromRoute !== null ||
+    needIdFromRoute !== null
+  );
+}
+
 const normalizeFingerprintNumber = (
   value: number | null | undefined,
   precision = 4
@@ -388,7 +422,8 @@ export default function OrderCreatorPageV2({
     routeOrderId !== null ||
     clientIdFromRoute !== null ||
     needIdFromRoute !== null ||
-    isSalesSheetImport;
+    isSalesSheetImport ||
+    routeMode === "quote";
 
   // State
   const [clientId, setClientId] = useState<number | null>(null);
@@ -689,15 +724,19 @@ export default function OrderCreatorPageV2({
 
   useEffect(() => {
     if (
-      routeOrderId !== null ||
-      routeOrderLoading ||
-      isSalesSheetImport ||
-      clientIdFromRoute === null
+      !shouldSeedComposerFromRoute({
+        routeOrderId,
+        routeOrderLoading,
+        isSalesSheetImport,
+        routeMode,
+        clientIdFromRoute,
+        needIdFromRoute,
+      })
     ) {
       return;
     }
 
-    const seedKey = `${clientIdFromRoute}:${needIdFromRoute ?? "none"}`;
+    const seedKey = `${resolveRouteSeedOrderType(routeMode)}:${clientIdFromRoute ?? "none"}:${needIdFromRoute ?? "none"}`;
     if (seededRouteKeyRef.current === seedKey) {
       return;
     }
@@ -714,7 +753,7 @@ export default function OrderCreatorPageV2({
     pendingPersistFingerprintRef.current = null;
     persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
     setSaved();
-    setOrderType(routeMode === "quote" ? "QUOTE" : "SALE");
+    setOrderType(resolveRouteSeedOrderType(routeMode));
     seededRouteKeyRef.current = seedKey;
   }, [
     clientIdFromRoute,

@@ -43,6 +43,7 @@ import { ListSkeleton } from "@/components/ui/skeleton-loaders";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 import { getProductDisplayName } from "@/lib/displayHelpers";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
 
 /**
@@ -108,6 +109,21 @@ interface MatchmakingServicePageProps {
   embedded?: boolean;
 }
 
+export function buildQuoteMatchComposerPath(
+  match: SuggestedMatch & { supplyId?: number; clientId?: number }
+) {
+  if (!match.needId && !match.clientId) {
+    return null;
+  }
+
+  const params: Record<string, string | number> = { mode: "quote" };
+  if (match.needId) params.needId = match.needId;
+  if (match.supplyId) params.supplyId = match.supplyId;
+  if (match.clientId) params.clientId = match.clientId;
+
+  return buildSalesWorkspacePath("create-order", params);
+}
+
 export default function MatchmakingServicePage({
   embedded = false,
 }: MatchmakingServicePageProps) {
@@ -137,7 +153,9 @@ export default function MatchmakingServicePage({
   const [needProductName, setNeedProductName] = useState("");
   const [needQuantityMin, setNeedQuantityMin] = useState("");
   const [needQuantityMax, setNeedQuantityMax] = useState("");
-  const [needPriority, setNeedPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "URGENT">("MEDIUM");
+  const [needPriority, setNeedPriority] = useState<
+    "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+  >("MEDIUM");
   const [needNotes, setNeedNotes] = useState("");
 
   // TER-888: Add Supply modal state
@@ -260,7 +278,15 @@ export default function MatchmakingServicePage({
       priority: needPriority,
       notes: needNotes || undefined,
     });
-  }, [needClientId, needProductName, needQuantityMin, needQuantityMax, needPriority, needNotes, addNeedMutation]);
+  }, [
+    needClientId,
+    needProductName,
+    needQuantityMin,
+    needQuantityMax,
+    needPriority,
+    needNotes,
+    addNeedMutation,
+  ]);
 
   // TER-888: Handle Add Supply form submit
   const handleAddSupplySubmit = useCallback(() => {
@@ -280,7 +306,14 @@ export default function MatchmakingServicePage({
       unitPrice: supplyUnitPrice || undefined,
       notes: supplyNotes || undefined,
     });
-  }, [supplyClientId, supplyProductName, supplyQuantity, supplyUnitPrice, supplyNotes, addSupplyMutation]);
+  }, [
+    supplyClientId,
+    supplyProductName,
+    supplyQuantity,
+    supplyUnitPrice,
+    supplyNotes,
+    addSupplyMutation,
+  ]);
 
   const needs = needsData?.data || [];
   const supply = supplyData?.data || [];
@@ -369,16 +402,12 @@ export default function MatchmakingServicePage({
   // UX-005: Validate match has required IDs before navigation
   const handleCreateQuote = useCallback(
     (match: SuggestedMatch & { supplyId?: number; clientId?: number }) => {
-      // UX-005: Validate that we have at least a needId or clientId
-      if (!match.needId && !match.clientId) {
+      const targetPath = buildQuoteMatchComposerPath(match);
+      if (!targetPath) {
         toast.error("Cannot create quote: missing client or need information");
         return;
       }
-      const params = new URLSearchParams();
-      if (match.needId) params.set("needId", match.needId.toString());
-      if (match.supplyId) params.set("supplyId", match.supplyId.toString());
-      if (match.clientId) params.set("clientId", match.clientId.toString());
-      setLocation(`/quotes?action=create&${params.toString()}`);
+      setLocation(targetPath);
     },
     [setLocation]
   );
@@ -448,10 +477,7 @@ export default function MatchmakingServicePage({
               <Plus className="mr-2 h-4 w-4" />
               Add Need
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setAddSupplyOpen(true)}
-            >
+            <Button variant="outline" onClick={() => setAddSupplyOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Supply
             </Button>
@@ -845,7 +871,13 @@ export default function MatchmakingServicePage({
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {((buyerClientsData as { items?: Array<{ id: number; name: string }> } | null)?.items ?? []).map(c => (
+                  {(
+                    (
+                      buyerClientsData as {
+                        items?: Array<{ id: number; name: string }>;
+                      } | null
+                    )?.items ?? []
+                  ).map(c => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
                     </SelectItem>
@@ -888,7 +920,9 @@ export default function MatchmakingServicePage({
               <Label htmlFor="need-priority">Priority</Label>
               <Select
                 value={needPriority}
-                onValueChange={v => setNeedPriority(v as "LOW" | "MEDIUM" | "HIGH" | "URGENT")}
+                onValueChange={v =>
+                  setNeedPriority(v as "LOW" | "MEDIUM" | "HIGH" | "URGENT")
+                }
               >
                 <SelectTrigger id="need-priority">
                   <SelectValue />
@@ -954,7 +988,13 @@ export default function MatchmakingServicePage({
                   <SelectValue placeholder="Select a supplier" />
                 </SelectTrigger>
                 <SelectContent>
-                  {((sellerClientsData as { items?: Array<{ id: number; name: string }> } | null)?.items ?? []).map(c => (
+                  {(
+                    (
+                      sellerClientsData as {
+                        items?: Array<{ id: number; name: string }>;
+                      } | null
+                    )?.items ?? []
+                  ).map(c => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
                     </SelectItem>
@@ -1009,7 +1049,11 @@ export default function MatchmakingServicePage({
             </Button>
             <Button
               onClick={handleAddSupplySubmit}
-              disabled={addSupplyMutation.isPending || !supplyClientId || !supplyQuantity}
+              disabled={
+                addSupplyMutation.isPending ||
+                !supplyClientId ||
+                !supplyQuantity
+              }
             >
               {addSupplyMutation.isPending ? "Adding..." : "Add Supply"}
             </Button>

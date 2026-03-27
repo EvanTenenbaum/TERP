@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   resolveInventoryPricingContext,
+  resolveRouteSeedOrderType,
+  shouldSeedComposerFromRoute,
   shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget,
 } from "./OrderCreatorPage";
 
@@ -58,6 +60,35 @@ describe("resolveInventoryPricingContext", () => {
       shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget(
         document.createElement("button")
       )
+    ).toBe(false);
+  });
+
+  it("treats mode=quote as the default quote seed even without client context", () => {
+    expect(resolveRouteSeedOrderType("quote")).toBe("QUOTE");
+    expect(resolveRouteSeedOrderType(null)).toBe("SALE");
+  });
+
+  it("seeds the composer for blank quote routes even without client or need params", () => {
+    expect(
+      shouldSeedComposerFromRoute({
+        routeOrderId: null,
+        routeOrderLoading: false,
+        isSalesSheetImport: false,
+        routeMode: "quote",
+        clientIdFromRoute: null,
+        needIdFromRoute: null,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldSeedComposerFromRoute({
+        routeOrderId: null,
+        routeOrderLoading: false,
+        isSalesSheetImport: false,
+        routeMode: null,
+        clientIdFromRoute: null,
+        needIdFromRoute: null,
+      })
     ).toBe(false);
   });
 });

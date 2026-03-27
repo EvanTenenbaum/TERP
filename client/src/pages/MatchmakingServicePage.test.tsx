@@ -9,7 +9,10 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import MatchmakingServicePage from "./MatchmakingServicePage";
+import MatchmakingServicePage, {
+  buildQuoteMatchComposerPath,
+} from "./MatchmakingServicePage";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 
 // Mock wouter's useLocation hook
 const mockSetLocation = vi.fn();
@@ -114,7 +117,19 @@ vi.mock("@/lib/trpc", () => ({
     matching: {
       getAllActiveNeedsWithMatches: {
         useQuery: () => ({
-          data: [],
+          data: {
+            data: [
+              {
+                needId: 12,
+                supplyId: 44,
+                clientId: 7,
+                confidence: 90,
+                type: "DIRECT",
+                source: "Need match",
+                reasons: ["Fits requested quantity"],
+              },
+            ],
+          },
           isLoading: false,
           error: null,
         }),
@@ -186,5 +201,39 @@ describe("MatchmakingServicePage - Button Navigation", () => {
     const addNeedButton = screen.getByRole("button", { name: /add need/i });
     fireEvent.click(addNeedButton);
     expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  it("builds Create Quote routes against the quote composer instead of the registry", () => {
+    expect(
+      buildQuoteMatchComposerPath({
+        needId: 12,
+        supplyId: 44,
+        clientId: 7,
+        confidence: 90,
+        reasons: [],
+      })
+    ).toBe(
+      buildSalesWorkspacePath("create-order", {
+        mode: "quote",
+        needId: 12,
+        supplyId: 44,
+        clientId: 7,
+      })
+    );
+  });
+
+  it("routes the visible Create Quote action into the quote composer", () => {
+    render(<MatchmakingServicePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /create quote/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      buildSalesWorkspacePath("create-order", {
+        mode: "quote",
+        needId: 12,
+        supplyId: 44,
+        clientId: 7,
+      })
+    );
   });
 });
