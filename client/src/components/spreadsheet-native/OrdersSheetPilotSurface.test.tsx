@@ -202,6 +202,14 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
     },
+    invoices: {
+      generateFromOrder: {
+        useMutation: vi.fn().mockReturnValue({
+          mutate: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
   },
 }));
 
