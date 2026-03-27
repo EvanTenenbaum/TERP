@@ -62,6 +62,14 @@ vi.mock("@/components/work-surface/QuotesWorkSurface", () => ({
   default: () => <div>Quotes Surface</div>,
 }));
 
+vi.mock("@/components/spreadsheet-native/QuotesPilotSurface", () => ({
+  default: () => <div>Quotes Sheet Pilot</div>,
+}));
+
+vi.mock("@/components/spreadsheet-native/ReturnsPilotSurface", () => ({
+  default: () => <div>Returns Sheet Pilot</div>,
+}));
+
 vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
   default: () => <div>Inventory Sheet Pilot</div>,
 }));
@@ -173,6 +181,40 @@ describe("spreadsheet-native pilot rollout gating", () => {
         screen.getByText("Orders Sheet Pilot Document")
       ).toBeInTheDocument();
     });
+    expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  it("renders the quotes sheet-native pilot when the master flag is on and requested", async () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=quotes&surface=sheet-native";
+    mockActiveTab = "quotes";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Quotes Sheet Pilot")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: "Spreadsheet View" })
+    ).toBeInTheDocument();
+    expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  it("renders the returns sheet-native pilot when the master flag is on and requested", async () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=returns&surface=sheet-native";
+    mockActiveTab = "returns";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Returns Sheet Pilot")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: "Spreadsheet View" })
+    ).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 

@@ -742,6 +742,7 @@ export function ClientLedgerPilotSurface({
   // ── Refs ───────────────────────────────────────────────────────────────────
   const clientSearchRef = useRef<HTMLInputElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const lastEmittedRowIdRef = useRef<string | null>(null);
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: clientsData, isLoading: clientsLoading } =
@@ -956,10 +957,20 @@ export function ClientLedgerPilotSurface({
   );
 
   // ── Row selection → inspector ──────────────────────────────────────────────
+  const handleCloseInspector = useCallback(() => {
+    lastEmittedRowIdRef.current = null;
+    setInspectorTransaction(null);
+  }, []);
+
   const handleSelectedRowChange = useCallback((row: LedgerRow | null) => {
-    if (row) {
-      setInspectorTransaction(row._txn);
+    const nextId = row?._txn.id ?? null;
+
+    if (nextId === lastEmittedRowIdRef.current) {
+      return;
     }
+
+    lastEmittedRowIdRef.current = nextId;
+    setInspectorTransaction(row?._txn ?? null);
   }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -1283,7 +1294,7 @@ export function ClientLedgerPilotSurface({
               {/* Right-rail inspector */}
               <InspectorPanel
                 isOpen={inspectorTransaction !== null}
-                onClose={() => setInspectorTransaction(null)}
+                onClose={handleCloseInspector}
                 title="Transaction Details"
                 subtitle={
                   inspectorTransaction

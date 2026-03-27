@@ -80,8 +80,14 @@ export default function SalesWorkspacePage() {
     activeTab === "orders" || activeTab === "create-order";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(ordersPilotSupported);
+  const ordersSurfaceModuleId =
+    activeTab === "create-order" ? "create-order" : "orders";
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
-    buildSurfaceAvailability(activeTab, sheetPilotEnabled, availabilityReady)
+    buildSurfaceAvailability(
+      ordersSurfaceModuleId,
+      sheetPilotEnabled,
+      availabilityReady && ordersPilotSupported
+    )
   );
 
   // Sales-sheets pilot — independent surface mode so orders default (sheet-native) doesn't bleed in
@@ -98,6 +104,38 @@ export default function SalesWorkspacePage() {
       "sales-sheets",
       salesSheetsPilotEnabled,
       salesSheetsAvailabilityReady && salesSheetsPilotSupported
+    )
+  );
+
+  const quotesPilotSupported = activeTab === "quotes";
+  const {
+    sheetPilotEnabled: quotesPilotEnabled,
+    availabilityReady: quotesAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(quotesPilotSupported);
+  const {
+    surfaceMode: quotesSurfaceMode,
+    setSurfaceMode: setQuotesSurfaceMode,
+  } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "quotes",
+      quotesPilotEnabled,
+      quotesAvailabilityReady && quotesPilotSupported
+    )
+  );
+
+  const returnsPilotSupported = activeTab === "returns";
+  const {
+    sheetPilotEnabled: returnsPilotEnabled,
+    availabilityReady: returnsAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(returnsPilotSupported);
+  const {
+    surfaceMode: returnsSurfaceMode,
+    setSurfaceMode: setReturnsSurfaceMode,
+  } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "returns",
+      returnsPilotEnabled,
+      returnsAvailabilityReady && returnsPilotSupported
     )
   );
 
@@ -131,6 +169,18 @@ export default function SalesWorkspacePage() {
             surfaceMode={salesSheetsSurfaceMode}
             onSurfaceModeChange={setSalesSheetsSurfaceMode}
           />
+        ) : activeTab === "quotes" ? (
+          <SheetModeToggle
+            enabled={quotesPilotEnabled}
+            surfaceMode={quotesSurfaceMode}
+            onSurfaceModeChange={setQuotesSurfaceMode}
+          />
+        ) : activeTab === "returns" ? (
+          <SheetModeToggle
+            enabled={returnsPilotEnabled}
+            surfaceMode={returnsSurfaceMode}
+            onSurfaceModeChange={setReturnsSurfaceMode}
+          />
         ) : null
       }
     >
@@ -152,10 +202,10 @@ export default function SalesWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="quotes">
-        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+        {quotesPilotEnabled && quotesSurfaceMode === "sheet-native" ? (
           <PilotSurfaceBoundary fallback={<QuotesWorkSurface />}>
             <QuotesPilotSurface
-              onOpenClassic={() => setSurfaceMode("classic")}
+              onOpenClassic={() => setQuotesSurfaceMode("classic")}
             />
           </PilotSurfaceBoundary>
         ) : (
@@ -163,10 +213,10 @@ export default function SalesWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
-        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+        {returnsPilotEnabled && returnsSurfaceMode === "sheet-native" ? (
           <PilotSurfaceBoundary fallback={<ReturnsPage embedded />}>
             <ReturnsPilotSurface
-              onOpenClassic={() => setSurfaceMode("classic")}
+              onOpenClassic={() => setReturnsSurfaceMode("classic")}
             />
           </PilotSurfaceBoundary>
         ) : (
