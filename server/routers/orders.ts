@@ -2660,7 +2660,9 @@ export const ordersRouter = router({
       const vendorRows = await db
         .select({ id: clients.id, name: clients.name })
         .from(clients)
-        .where(safeInArray(clients.id, vendorIdList));
+        .where(
+          and(safeInArray(clients.id, vendorIdList), isNull(clients.deletedAt))
+        );
 
       return {
         orderStatus: normalizedOrderStatus,

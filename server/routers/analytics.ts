@@ -99,7 +99,8 @@ export const analyticsRouter = router({
         .from(orders);
       const [clientStats] = await db
         .select({ totalClients: count() })
-        .from(clients);
+        .from(clients)
+        .where(isNull(clients.deletedAt));
       const [inventoryStats] = await db
         .select({ totalInventoryItems: count() })
         .from(batches)
@@ -168,12 +169,14 @@ export const analyticsRouter = router({
 
       const [clientStats] = await db
         .select({ totalClients: count() })
-        .from(clients);
+        .from(clients)
+        .where(isNull(clients.deletedAt));
       const [newClientStats] = await db
         .select({ newClients: count() })
         .from(clients)
         .where(
           and(
+            isNull(clients.deletedAt),
             gte(clients.createdAt, startDate),
             lte(clients.createdAt, endDate)
           )
@@ -266,6 +269,7 @@ export const analyticsRouter = router({
         conditions.push(gte(orders.createdAt, input.startDate));
       if (input.endDate) conditions.push(lte(orders.createdAt, input.endDate));
 
+      conditions.push(isNull(clients.deletedAt));
       const topClients = await db
         .select({
           clientId: clients.id,
@@ -275,7 +279,7 @@ export const analyticsRouter = router({
         })
         .from(clients)
         .leftJoin(orders, eq(orders.clientId, clients.id))
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .where(and(...conditions))
         .groupBy(clients.id, clients.name)
         .orderBy(
           desc(
@@ -353,7 +357,8 @@ export const analyticsRouter = router({
             .from(orders);
           const [clientStats] = await db
             .select({ totalClients: count() })
-            .from(clients);
+            .from(clients)
+            .where(isNull(clients.deletedAt));
           const [inventoryStats] = await db
             .select({ totalInventoryItems: count() })
             .from(batches)
@@ -422,6 +427,7 @@ export const analyticsRouter = router({
             })
             .from(clients)
             .leftJoin(orders, eq(orders.clientId, clients.id))
+            .where(isNull(clients.deletedAt))
             .groupBy(
               clients.id,
               clients.name,
