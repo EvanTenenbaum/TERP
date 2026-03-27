@@ -65,10 +65,7 @@ export function GeneralOrgSettings() {
   const { data: settings, refetch } =
     trpc.organizationSettings.settings.list.useQuery();
   const { isSuperAdmin, hasPermission } = usePermissions();
-  const canManageCogs =
-    isSuperAdmin ||
-    hasPermission("settings:manage") ||
-    hasPermission("cogs:update");
+  const canManageCogs = isSuperAdmin || hasPermission("settings:edit");
   const updateMutation = trpc.organizationSettings.settings.update.useMutation({
     onSuccess: () => {
       toast.success("Setting updated successfully");
