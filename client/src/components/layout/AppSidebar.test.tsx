@@ -139,6 +139,22 @@ describe("AppSidebar navigation", () => {
     expect(screen.queryByText("Sales Catalogues")).not.toBeInTheDocument();
   });
 
+  it("keeps the mobile header strip clear when the drawer is open", () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    const overlay = screen.getByRole("button", { name: "Close navigation" });
+    expect(overlay).toHaveClass("top-14");
+
+    const aside = container.querySelector("aside");
+    expect(aside).not.toBeNull();
+    expect(aside).toHaveClass("top-14");
+    expect(aside).toHaveClass("bottom-0");
+  });
+
   it("highlights active navigation item", () => {
     mockLocation = "/sales";
     render(

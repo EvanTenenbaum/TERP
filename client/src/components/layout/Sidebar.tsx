@@ -216,7 +216,7 @@ export const Sidebar = React.memo(function Sidebar({
       {open && (
         <button
           type="button"
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-x-0 bottom-0 top-14 bg-black/50 z-40 md:hidden"
           onClick={onClose}
           aria-label="Close navigation"
         />
@@ -225,8 +225,8 @@ export const Sidebar = React.memo(function Sidebar({
         className={cn(
           "flex flex-col bg-background/96 border-r border-border/80 transition-all duration-200 ease-in-out z-50 backdrop-blur-sm",
           "md:relative md:translate-x-0",
-          // BUG-102: cap width to viewport so the close button stays on-screen
-          "fixed inset-y-0 left-0 max-w-[calc(100vw-3rem)]",
+          // Keep the mobile header interactive so the same top-left affordance can close the drawer.
+          "fixed left-0 top-14 bottom-0 max-w-[calc(100vw-3rem)]",
           collapsed ? "w-16" : "w-[17.25rem]",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
