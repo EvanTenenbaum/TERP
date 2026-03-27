@@ -16,7 +16,7 @@
  * Deep-link support: ?id=, ?invoiceId=, ?orderId= (PAY-004)
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import type { ColDef } from "ag-grid-community";
 import { useSearch } from "wouter";
 import { toast } from "sonner";
@@ -466,6 +466,7 @@ export function PaymentsPilotSurface({
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [registrySelectionSummary, setRegistrySelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
+  const lastEmittedRowIdRef = useRef<string | null>(null);
 
   // Dialog state
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
@@ -483,6 +484,7 @@ export function PaymentsPilotSurface({
     onSuccess: () => {
       toast.success("Payment voided successfully.");
       setVoidDialogOpen(false);
+      lastEmittedRowIdRef.current = null;
       setSelectedRowId(null);
       void paymentsQuery.refetch();
     },
@@ -564,6 +566,22 @@ export function PaymentsPilotSurface({
     () => gridRows.find(r => r.rowKey === selectedRowId) ?? null,
     [gridRows, selectedRowId]
   );
+
+  const handleCloseInspector = useCallback(() => {
+    lastEmittedRowIdRef.current = null;
+    setSelectedRowId(null);
+  }, []);
+
+  const handleSelectedRowChange = useCallback((row: PaymentGridRow | null) => {
+    const nextId = row?.rowKey ?? null;
+
+    if (nextId === lastEmittedRowIdRef.current) {
+      return;
+    }
+
+    lastEmittedRowIdRef.current = nextId;
+    setSelectedRowId(nextId);
+  }, []);
 
   // Invoice ID to open the payment flow dialog.
   // If a row is selected and has an invoiceId, use it. Fall back to URL invoiceId.
@@ -750,7 +768,7 @@ export function PaymentsPilotSurface({
         columnDefs={columnDefs}
         getRowId={row => row.rowKey}
         selectedRowId={selectedRowId}
-        onSelectedRowChange={row => setSelectedRowId(row?.rowKey ?? null)}
+        onSelectedRowChange={handleSelectedRowChange}
         selectionMode="cell-range"
         enableFillHandle={false}
         enableUndoRedo={false}
@@ -778,7 +796,7 @@ export function PaymentsPilotSurface({
       {/* Inspector panel — selected payment detail */}
       <InspectorPanel
         isOpen={selectedRow !== null}
-        onClose={() => setSelectedRowId(null)}
+        onClose={handleCloseInspector}
         title={selectedRow?.paymentNumber ?? "Payment"}
         subtitle={
           selectedRow

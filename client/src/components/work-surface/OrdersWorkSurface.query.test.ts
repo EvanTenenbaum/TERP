@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildConfirmedQueryInput,
   buildDraftQueryInput,
+  canViewOrderCogsDetails,
   canDownloadInvoice,
   canGenerateInvoice,
   getMakePaymentRoute,
@@ -127,6 +128,22 @@ describe("canDownloadInvoice", () => {
     expect(canDownloadInvoice({ invoiceId: null }, true)).toBe(false);
     expect(canDownloadInvoice({ invoiceId: 12 }, false)).toBe(false);
     expect(canDownloadInvoice(null, true)).toBe(false);
+  });
+});
+
+describe("canViewOrderCogsDetails", () => {
+  it("only exposes COGS inspector content when display settings confirm access", () => {
+    expect(
+      canViewOrderCogsDetails({
+        display: { canViewCogsData: true },
+      })
+    ).toBe(true);
+    expect(
+      canViewOrderCogsDetails({
+        display: { canViewCogsData: false },
+      })
+    ).toBe(false);
+    expect(canViewOrderCogsDetails(undefined)).toBe(false);
   });
 });
 

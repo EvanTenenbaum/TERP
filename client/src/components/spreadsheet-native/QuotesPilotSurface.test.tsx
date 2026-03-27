@@ -3,11 +3,16 @@ import React from "react";
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QuotesPilotSurface } from "./QuotesPilotSurface";
 
 const mockSetLocation = vi.fn();
+
+function getSearchParams(path: string) {
+  const [, query = ""] = path.split("?");
+  return new URLSearchParams(query);
+}
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/sales?tab=quotes", mockSetLocation],
@@ -139,7 +144,22 @@ vi.mock("@/lib/spreadsheet-native", async () => {
 });
 
 vi.mock("@/lib/workspaceRoutes", () => ({
-  buildSalesWorkspacePath: (tab: string) => `/sales?tab=${tab}`,
+  buildSalesWorkspacePath: (
+    tab: string,
+    params?: Record<string, string | number | boolean | null | undefined>
+  ) => {
+    const search = new URLSearchParams();
+    search.set("tab", tab);
+
+    for (const [key, value] of Object.entries(params ?? {})) {
+      if (value === null || value === undefined || value === "") {
+        continue;
+      }
+      search.set(key, String(value));
+    }
+
+    return `/sales?${search.toString()}`;
+  },
 }));
 
 vi.mock("./PowersheetGrid", () => ({
@@ -281,6 +301,19 @@ describe("QuotesPilotSurface", () => {
     expect(
       screen.getByRole("button", { name: /new quote/i })
     ).toBeInTheDocument();
+  });
+
+  it("routes New Quote to the quote composer", () => {
+    render(<QuotesPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /new quote/i }));
+
+    const route = mockSetLocation.mock.calls.at(-1)?.[0];
+    expect(route).toBeTruthy();
+
+    const params = getSearchParams(String(route));
+    expect(params.get("tab")).toBe("create-order");
+    expect(params.get("mode")).toBe("quote");
   });
 
   it("renders the refresh button", () => {

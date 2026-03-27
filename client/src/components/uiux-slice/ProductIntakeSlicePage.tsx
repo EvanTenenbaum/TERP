@@ -75,7 +75,10 @@ import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getMixedBrandLabel } from "@/lib/nomenclature";
-import { resolveNextSelectedDraftId } from "./productIntakeSelection";
+import {
+  resolveNextSelectedDraftId,
+  resolveSelectedDraft,
+} from "./productIntakeSelection";
 
 // BUG-026: Capitalize each word of strain/product names for polished display
 function capitalizeStrainName(name: string | null | undefined): string {
@@ -184,8 +187,6 @@ export function ProductIntakeSlicePage() {
   );
   const [activityLoading, setActivityLoading] = useState(false);
   const [activityReloadToken, setActivityReloadToken] = useState(0);
-  // BUG-031: Draft refresh token forces selectedDraft memo to re-run after grade/location updates
-  const [draftRefreshToken, setDraftRefreshToken] = useState(0);
   const localActivityIdRef = useRef(-1);
 
   const [viewMode, setViewMode] = useState<GridViewMode>(() => {
@@ -245,8 +246,6 @@ export function ProductIntakeSlicePage() {
           currentSelectedDraftId: selectedDraftId,
         })
       );
-      // BUG-031: Force selectedDraft memo to re-run even when the same draftId is selected
-      setDraftRefreshToken(t => t + 1);
     },
     [selectedDraftId, storageUserId]
   );
@@ -256,14 +255,9 @@ export function ProductIntakeSlicePage() {
     refreshDrafts(fromUrl);
   }, [refreshDrafts, route, storageUserId]);
 
-  // BUG-031: Include draftRefreshToken so memo re-runs after grade/location bulk updates
   const selectedDraft = useMemo(
-    () =>
-      selectedDraftId
-        ? getProductIntakeDraft(selectedDraftId, storageUserId)
-        : null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedDraftId, storageUserId, draftRefreshToken]
+    () => resolveSelectedDraft(drafts, selectedDraftId),
+    [drafts, selectedDraftId]
   );
 
   // Shared powersheet selection for draft lines (TER-284)

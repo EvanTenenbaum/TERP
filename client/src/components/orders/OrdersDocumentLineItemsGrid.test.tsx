@@ -155,6 +155,29 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(screen.getByText(/4 selected cells/i)).toBeInTheDocument();
   });
 
+  it("hides COGS and margin columns when cost visibility is disabled", () => {
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={vi.fn()}
+        showCogsColumn={false}
+        showMarginColumn={false}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    const cogsColumn = call?.columnDefs.find(
+      (column: { field?: string }) => column.field === "cogsPerUnit"
+    );
+    const marginColumn = call?.columnDefs.find(
+      (column: { field?: string }) => column.field === "marginPercent"
+    );
+
+    expect(cogsColumn?.hide).toBe(true);
+    expect(marginColumn?.hide).toBe(true);
+  });
+
   it("uses a deterministic vertical fill callback for approved document fields", () => {
     render(
       <OrdersDocumentLineItemsGrid

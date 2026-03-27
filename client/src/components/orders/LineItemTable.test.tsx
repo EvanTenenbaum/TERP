@@ -130,9 +130,7 @@ describe("LineItemTable powersheet actions", () => {
     );
 
     expect(screen.getByText("Price from profile rule")).toBeInTheDocument();
-    expect(
-      screen.getByText("Profile rule +25.0% markup")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Profile rule +25.0% markup")).toBeInTheDocument();
     expect(
       screen.getByText("Applied: Flower Markup (+25%)")
     ).toBeInTheDocument();
@@ -141,5 +139,27 @@ describe("LineItemTable powersheet actions", () => {
     expect(
       screen.getByText("Weighted lot allocation cost")
     ).toBeInTheDocument();
+  });
+
+  it("hides COGS and margin controls when cost visibility is disabled", () => {
+    render(
+      <LineItemTable
+        clientId={123}
+        items={[buildLineItem()]}
+        onChange={vi.fn()}
+        showCogs={false}
+        showMargin={false}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Select line item 1"));
+
+    expect(screen.queryByText("COGS/Unit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gross Margin")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("COGS")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Margin %")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Using saved supplier cost")
+    ).not.toBeInTheDocument();
   });
 });

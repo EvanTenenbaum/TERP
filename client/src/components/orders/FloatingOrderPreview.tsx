@@ -68,6 +68,8 @@ interface FloatingOrderPreviewProps {
   onRemoveItem?: (batchId: number) => void;
   className?: string;
   showInternalMetrics?: boolean;
+  showCogs?: boolean;
+  showMargin?: boolean;
 }
 
 export function FloatingOrderPreview({
@@ -83,6 +85,8 @@ export function FloatingOrderPreview({
   onRemoveItem,
   className,
   showInternalMetrics = true,
+  showCogs = true,
+  showMargin = true,
 }: FloatingOrderPreviewProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -91,6 +95,9 @@ export function FloatingOrderPreview({
   const [editPrice, setEditPrice] = useState<string>("");
 
   const fmt = (value: number) => `$${value.toFixed(2)}`;
+  const renderCogs = showInternalMetrics && showCogs;
+  const renderMargin = showInternalMetrics && showMargin;
+  const renderInternalMetrics = renderCogs || renderMargin;
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -239,8 +246,8 @@ export function FloatingOrderPreview({
   const PreviewContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="space-y-4 flex-1 flex flex-col min-h-0">
       {/* Quick Stats Bar */}
-      {items.length > 0 && showInternalMetrics && (
-        <div className="grid grid-cols-3 gap-2">
+      {items.length > 0 && renderInternalMetrics && (
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <div className="bg-muted/50 rounded-lg p-2 text-center">
             <Package className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
             <div className="text-lg font-bold">{items.length}</div>
@@ -251,18 +258,27 @@ export function FloatingOrderPreview({
             <div className="text-lg font-bold">{fmt(subtotal)}</div>
             <div className="text-xs text-muted-foreground">Subtotal</div>
           </div>
-          <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <TrendingUp className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
-            <div
-              className={cn(
-                "text-lg font-bold",
-                getMarginColor(metrics.avgMarginPercent)
-              )}
-            >
-              {metrics.avgMarginPercent.toFixed(1)}%
+          {renderCogs ? (
+            <div className="bg-muted/50 rounded-lg p-2 text-center">
+              <DollarSign className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+              <div className="text-lg font-bold">{fmt(metrics.totalCogs)}</div>
+              <div className="text-xs text-muted-foreground">COGS</div>
             </div>
-            <div className="text-xs text-muted-foreground">Margin</div>
-          </div>
+          ) : null}
+          {renderMargin ? (
+            <div className="bg-muted/50 rounded-lg p-2 text-center">
+              <TrendingUp className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+              <div
+                className={cn(
+                  "text-lg font-bold",
+                  getMarginColor(metrics.avgMarginPercent)
+                )}
+              >
+                {metrics.avgMarginPercent.toFixed(1)}%
+              </div>
+              <div className="text-xs text-muted-foreground">Margin</div>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -447,14 +463,22 @@ export function FloatingOrderPreview({
             </div>
 
             {/* Internal Margin Info (not shown to client) */}
-            {showInternalMetrics && items.length > 0 && (
+            {renderInternalMetrics && items.length > 0 && (
               <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2 mt-2">
-                <div className="flex justify-between">
-                  <span>Est. Profit:</span>
-                  <span className="text-green-600">
-                    {fmt(metrics.totalMargin)}
-                  </span>
-                </div>
+                {renderCogs ? (
+                  <div className="flex justify-between">
+                    <span>Total COGS:</span>
+                    <span>{fmt(metrics.totalCogs)}</span>
+                  </div>
+                ) : null}
+                {renderMargin ? (
+                  <div className="flex justify-between">
+                    <span>Est. Profit:</span>
+                    <span className="text-green-600">
+                      {fmt(metrics.totalMargin)}
+                    </span>
+                  </div>
+                ) : null}
                 {metrics.sampleCount > 0 && (
                   <div className="flex justify-between mt-1">
                     <span>Samples included:</span>

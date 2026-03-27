@@ -101,8 +101,24 @@ const RETURN_REASONS: ReturnReason[] = [
   "OTHER",
 ];
 
+const RETURN_WORKFLOW_STATUSES = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "RECEIVED",
+  "PROCESSED",
+  "CANCELLED",
+] as const;
+
 const isReturnReason = (value: string): value is ReturnReason =>
   RETURN_REASONS.includes(value as ReturnReason);
+
+const isReturnWorkflowStatus = (
+  value: string | null | undefined
+): value is ReturnQueueRow["derivedStatus"] =>
+  value !== null &&
+  value !== undefined &&
+  RETURN_WORKFLOW_STATUSES.includes(value as ReturnQueueRow["derivedStatus"]);
 
 interface OrderLineItemOption {
   id: number;
@@ -162,19 +178,9 @@ function deriveGLStatus(
   statusOrNotes: string | null,
   notes?: string | null
 ): "PENDING" | "APPROVED" | "PROCESSED" | "CANCELLED" {
-  // DISC-RET-002: If first arg is a known status value, use it directly; otherwise parse notes
-  const knownStatuses = [
-    "PENDING",
-    "APPROVED",
-    "REJECTED",
-    "RECEIVED",
-    "PROCESSED",
-    "CANCELLED",
-  ];
-  const status =
-    statusOrNotes && knownStatuses.includes(statusOrNotes)
-      ? (statusOrNotes as ReturnQueueRow["derivedStatus"])
-      : extractWorkflowStatus(notes ?? statusOrNotes);
+  const status = isReturnWorkflowStatus(statusOrNotes)
+    ? statusOrNotes
+    : extractWorkflowStatus(notes ?? statusOrNotes);
   if (status === "CANCELLED" || status === "REJECTED") return "CANCELLED";
   if (status === "PROCESSED") return "PROCESSED";
   if (status === "RECEIVED" || status === "APPROVED") return "APPROVED";
@@ -249,9 +255,9 @@ function mapReturnsToQueueRows(items: ReturnListItem[]): ReturnQueueRow[] {
         ? item.processedAt.toISOString()
         : item.processedAt,
     notes: item.notes,
-    derivedStatus:
-      (item.status as ReturnQueueRow["derivedStatus"]) ??
-      extractWorkflowStatus(item.notes),
+    derivedStatus: isReturnWorkflowStatus(item.status)
+      ? item.status
+      : extractWorkflowStatus(item.notes),
   }));
 }
 

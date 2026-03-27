@@ -254,8 +254,8 @@ function mapPOsToQueueRows(
         ? (supplierNamesById.get(supplierId) ?? "Unknown Supplier")
         : "Unknown Supplier";
     const status = po.purchaseOrderStatus;
-    // TER-925: clamp total to >= 0; negative DB values should not surface to users
-    const total = Math.max(0, toNumber(po.total));
+    // TER-925: totals are normalized on the server read path; do not mask them again here.
+    const total = toNumber(po.total);
     return {
       identity: {
         rowKey: buildRowKey("po", po.id),

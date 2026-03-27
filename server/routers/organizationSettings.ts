@@ -24,6 +24,7 @@ import { eq, and, isNull, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { isSchemaDriftError } from "../_core/dbErrors";
+import { hasAnyPermission, isSuperAdmin } from "../services/permissionService";
 
 export function shouldFallbackDisplaySettingsUserPrefs(error: unknown) {
   return isSchemaDriftError(error, [
@@ -43,6 +44,24 @@ export function shouldFallbackLegacyDisplaySettingsUserPrefs(error: unknown) {
     "show_margin_in_orders",
     "default_warehouse_id",
   ]);
+}
+
+const COGS_VISIBILITY_PERMISSIONS = [
+  "cogs:access",
+  "cogs:view",
+  "cogs:read",
+  "cogs:edit",
+  "accounting:access",
+  "accounting:read",
+  "accounting:manage",
+  "accounting:admin",
+  "settings:manage",
+] as const;
+
+export function normalizeCogsDisplayMode(
+  value: unknown
+): "ADMIN_ONLY" | "HIDDEN" {
+  return value === "HIDDEN" ? "HIDDEN" : "ADMIN_ONLY";
 }
 
 // ============================================================================
@@ -903,6 +922,7 @@ export const organizationSettingsRouter = router({
   // Convenience method to get all settings for a form/page
   getDisplaySettings: protectedProcedure.query(async ({ ctx }) => {
     const userId = getAuthenticatedUserId(ctx);
+    const userOpenId = ctx.user?.openId;
     const db = await getDb();
     if (!db)
       throw new TRPCError({
@@ -994,7 +1014,23 @@ export const organizationSettingsRouter = router({
       }
     }
 
-    return buildDisplaySettingsPayload(settingsMap, userPrefs);
+    const cogsDisplayMode = normalizeCogsDisplayMode(
+      settingsMap.cogs_display_mode
+    );
+    const canViewCogsData =
+      cogsDisplayMode === "HIDDEN"
+        ? false
+        : userOpenId
+          ? (await isSuperAdmin(userOpenId)) ||
+            (await hasAnyPermission(userOpenId, [
+              ...COGS_VISIBILITY_PERMISSIONS,
+            ]))
+          : false;
+
+    return buildDisplaySettingsPayload(settingsMap, userPrefs, {
+      canViewCogsData,
+      cogsDisplayMode,
+    });
   }),
 });
 
@@ -1006,15 +1042,24 @@ export function buildDisplaySettingsPayload(
     showMarginInOrders: boolean;
     showGradeField: boolean;
     hideExpectedDelivery: boolean;
-  } | null
+  } | null,
+  options?: {
+    canViewCogsData?: boolean;
+    cogsDisplayMode?: "ADMIN_ONLY" | "HIDDEN";
+  }
 ) {
+  const canViewCogsData = options?.canViewCogsData ?? true;
+  const cogsDisplayMode =
+    options?.cogsDisplayMode ??
+    normalizeCogsDisplayMode(settingsMap.cogs_display_mode);
   const resolvedUserPrefs = userPrefs || {
-    showCogsInOrders: true,
-    showMarginInOrders: true,
+    showCogsInOrders: canViewCogsData,
+    showMarginInOrders: canViewCogsData,
     showGradeField: settingsMap.grade_field_enabled !== false,
     hideExpectedDelivery: settingsMap.expected_delivery_enabled === false,
     defaultWarehouseId: null,
   };
+  const showCostData = canViewCogsData && cogsDisplayMode === "ADMIN_ONLY";
 
   return {
     organization: settingsMap,
@@ -1027,9 +1072,10 @@ export function buildDisplaySettingsPayload(
       showExpectedDelivery:
         settingsMap.expected_delivery_enabled !== false &&
         !resolvedUserPrefs.hideExpectedDelivery,
-      showCogsInOrders: resolvedUserPrefs.showCogsInOrders,
-      showMarginInOrders: resolvedUserPrefs.showMarginInOrders,
-      cogsDisplayMode: settingsMap.cogs_display_mode || "ADMIN_ONLY",
+      showCogsInOrders: showCostData && resolvedUserPrefs.showCogsInOrders,
+      showMarginInOrders: showCostData && resolvedUserPrefs.showMarginInOrders,
+      canViewCogsData,
+      cogsDisplayMode,
       packagedUnitEnabled: settingsMap.packaged_unit_enabled !== false,
     },
   };

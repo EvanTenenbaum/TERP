@@ -205,6 +205,56 @@ export const resolveInventoryPricingContext = (
   };
 };
 
+export function resolveRouteSeedOrderType(
+  routeMode: string | null | undefined
+): "QUOTE" | "SALE" {
+  return routeMode === "quote" ? "QUOTE" : "SALE";
+}
+
+export function shouldSeedComposerFromRoute(params: {
+  routeOrderId: number | null;
+  routeOrderLoading: boolean;
+  isSalesSheetImport: boolean;
+  routeMode: string | null | undefined;
+  clientIdFromRoute: number | null;
+  needIdFromRoute: number | null;
+}): boolean {
+  const {
+    routeOrderId,
+    routeOrderLoading,
+    isSalesSheetImport,
+    routeMode,
+    clientIdFromRoute,
+    needIdFromRoute,
+  } = params;
+
+  if (routeOrderId !== null || routeOrderLoading || isSalesSheetImport) {
+    return false;
+  }
+
+  return (
+    routeMode === "quote" ||
+    clientIdFromRoute !== null ||
+    needIdFromRoute !== null
+  );
+}
+
+export function resolveOrderCostVisibility(settings?: {
+  display?: {
+    canViewCogsData?: boolean;
+    showCogsInOrders?: boolean;
+    showMarginInOrders?: boolean;
+  };
+}) {
+  const canViewCogsData = Boolean(settings?.display?.canViewCogsData);
+
+  return {
+    showCogs: canViewCogsData && Boolean(settings?.display?.showCogsInOrders),
+    showMargin:
+      canViewCogsData && Boolean(settings?.display?.showMarginInOrders),
+  };
+}
+
 const normalizeFingerprintNumber = (
   value: number | null | undefined,
   precision = 4
@@ -388,7 +438,8 @@ export default function OrderCreatorPageV2({
     routeOrderId !== null ||
     clientIdFromRoute !== null ||
     needIdFromRoute !== null ||
-    isSalesSheetImport;
+    isSalesSheetImport ||
+    routeMode === "quote";
 
   // State
   const [clientId, setClientId] = useState<number | null>(null);
@@ -444,6 +495,8 @@ export default function OrderCreatorPageV2({
     null
   );
   const { hasAnyPermission } = usePermissions();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const canViewPricingContext = hasAnyPermission([
     "orders:view_pricing",
     "pricing:read",
@@ -465,6 +518,10 @@ export default function OrderCreatorPageV2({
 
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
     useSaveState();
+  const { showCogs, showMargin } = useMemo(
+    () => resolveOrderCostVisibility(displaySettings),
+    [displaySettings]
+  );
   const undo = useUndo({ enableKeyboard: false });
   const {
     getFieldState: getOrderFieldState,
@@ -689,15 +746,19 @@ export default function OrderCreatorPageV2({
 
   useEffect(() => {
     if (
-      routeOrderId !== null ||
-      routeOrderLoading ||
-      isSalesSheetImport ||
-      clientIdFromRoute === null
+      !shouldSeedComposerFromRoute({
+        routeOrderId,
+        routeOrderLoading,
+        isSalesSheetImport,
+        routeMode,
+        clientIdFromRoute,
+        needIdFromRoute,
+      })
     ) {
       return;
     }
 
-    const seedKey = `${clientIdFromRoute}:${needIdFromRoute ?? "none"}`;
+    const seedKey = `${resolveRouteSeedOrderType(routeMode)}:${clientIdFromRoute ?? "none"}:${needIdFromRoute ?? "none"}`;
     if (seededRouteKeyRef.current === seedKey) {
       return;
     }
@@ -714,7 +775,7 @@ export default function OrderCreatorPageV2({
     pendingPersistFingerprintRef.current = null;
     persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
     setSaved();
-    setOrderType(routeMode === "quote" ? "QUOTE" : "SALE");
+    setOrderType(resolveRouteSeedOrderType(routeMode));
     seededRouteKeyRef.current = seedKey;
   }, [
     clientIdFromRoute,
@@ -1695,6 +1756,8 @@ export default function OrderCreatorPageV2({
                           items={items}
                           clientId={clientId}
                           onChange={handleLineItemsChange}
+                          showCogsColumn={showCogs}
+                          showMarginColumn={showMargin}
                           onAddItem={() => {
                             const inventoryBrowser = document.getElementById(
                               "inventory-browser-section"
@@ -1719,6 +1782,8 @@ export default function OrderCreatorPageV2({
                             items={items}
                             clientId={clientId}
                             onChange={handleLineItemsChange}
+                            showCogs={showCogs}
+                            showMargin={showMargin}
                             onAddItem={() => {
                               const inventoryBrowser = document.getElementById(
                                 "inventory-browser-section"
@@ -1851,7 +1916,8 @@ export default function OrderCreatorPageV2({
                       showAdjustment={showAdjustmentOnDocument}
                       total={totals.total}
                       orderType={orderType}
-                      showInternalMetrics={true}
+                      showCogs={showCogs}
+                      showMargin={showMargin}
                       onUpdateItem={(batchId, updates) => {
                         setItems(prevItems =>
                           prevItems.map(item =>
@@ -1870,6 +1936,8 @@ export default function OrderCreatorPageV2({
                     totals={totals}
                     warnings={warnings}
                     isValid={isValid}
+                    showCogs={showCogs}
+                    showMargin={showMargin}
                   />
 
                   {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}

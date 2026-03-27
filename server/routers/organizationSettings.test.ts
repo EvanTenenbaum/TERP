@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDisplaySettingsPayload,
+  normalizeCogsDisplayMode,
   shouldFallbackDisplaySettingsUserPrefs,
   shouldFallbackLegacyDisplaySettingsUserPrefs,
 } from "./organizationSettings";
 
 describe("organizationSettings display payload", () => {
-  it("falls back to safe defaults when user preferences are unavailable", () => {
+  it("normalizes legacy visible mode to admin-only and hides cost data for unauthorized viewers", () => {
     const result = buildDisplaySettingsPayload(
       {
         grade_field_enabled: true,
@@ -14,12 +15,13 @@ describe("organizationSettings display payload", () => {
         cogs_display_mode: "VISIBLE",
         packaged_unit_enabled: true,
       },
-      null
+      null,
+      { canViewCogsData: false }
     );
 
     expect(result.user).toEqual({
-      showCogsInOrders: true,
-      showMarginInOrders: true,
+      showCogsInOrders: false,
+      showMarginInOrders: false,
       showGradeField: true,
       hideExpectedDelivery: false,
       defaultWarehouseId: null,
@@ -28,14 +30,15 @@ describe("organizationSettings display payload", () => {
       showGradeField: true,
       gradeFieldRequired: false,
       showExpectedDelivery: true,
-      showCogsInOrders: true,
-      showMarginInOrders: true,
-      cogsDisplayMode: "VISIBLE",
+      showCogsInOrders: false,
+      showMarginInOrders: false,
+      canViewCogsData: false,
+      cogsDisplayMode: "ADMIN_ONLY",
       packagedUnitEnabled: true,
     });
   });
 
-  it("honors persisted user preferences when they are available", () => {
+  it("honors persisted user preferences for authorized cost viewers", () => {
     const result = buildDisplaySettingsPayload(
       {
         grade_field_enabled: true,
@@ -50,7 +53,8 @@ describe("organizationSettings display payload", () => {
         showMarginInOrders: false,
         showGradeField: false,
         hideExpectedDelivery: true,
-      }
+      },
+      { canViewCogsData: true }
     );
 
     expect(result.user).toEqual({
@@ -66,9 +70,38 @@ describe("organizationSettings display payload", () => {
       showExpectedDelivery: false,
       showCogsInOrders: false,
       showMarginInOrders: false,
+      canViewCogsData: true,
       cogsDisplayMode: "HIDDEN",
       packagedUnitEnabled: false,
     });
+  });
+
+  it("forces hidden mode to suppress cost metrics even for authorized viewers", () => {
+    const result = buildDisplaySettingsPayload(
+      {
+        cogs_display_mode: "HIDDEN",
+      },
+      {
+        defaultWarehouseId: null,
+        showCogsInOrders: true,
+        showMarginInOrders: true,
+        showGradeField: true,
+        hideExpectedDelivery: false,
+      },
+      { canViewCogsData: true }
+    );
+
+    expect(result.display.showCogsInOrders).toBe(false);
+    expect(result.display.showMarginInOrders).toBe(false);
+    expect(result.display.canViewCogsData).toBe(true);
+    expect(result.display.cogsDisplayMode).toBe("HIDDEN");
+  });
+
+  it("normalizes any non-hidden mode to admin-only", () => {
+    expect(normalizeCogsDisplayMode("VISIBLE")).toBe("ADMIN_ONLY");
+    expect(normalizeCogsDisplayMode("ADMIN_ONLY")).toBe("ADMIN_ONLY");
+    expect(normalizeCogsDisplayMode(undefined)).toBe("ADMIN_ONLY");
+    expect(normalizeCogsDisplayMode("HIDDEN")).toBe("HIDDEN");
   });
 
   it("only treats user preference schema drift as recoverable", () => {
