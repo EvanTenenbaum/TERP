@@ -1029,7 +1029,7 @@ export function buildDisplaySettingsPayload(
         !resolvedUserPrefs.hideExpectedDelivery,
       showCogsInOrders: resolvedUserPrefs.showCogsInOrders,
       showMarginInOrders: resolvedUserPrefs.showMarginInOrders,
-      cogsDisplayMode: settingsMap.cogs_display_mode || "VISIBLE",
+      cogsDisplayMode: settingsMap.cogs_display_mode || "ADMIN_ONLY",
       packagedUnitEnabled: settingsMap.packaged_unit_enabled !== false,
     },
   };
