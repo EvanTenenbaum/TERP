@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   CircleDollarSign,
   Edit,
+  Info,
   Receipt,
   ShieldAlert,
 } from "lucide-react";
@@ -28,6 +29,11 @@ import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -468,7 +474,24 @@ export default function ClientProfilePage() {
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium">Roles</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium">Roles</p>
+                        {shell.roles.includes("Customer") &&
+                        shell.roles.includes("Supplier") ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              This account acts as both a Customer (you sell to
+                              them) and a Supplier (you buy from them). Sales
+                              data appears in Sales &amp; Pricing; purchase
+                              history and payables appear in Supply &amp;
+                              Inventory.
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : null}
+                      </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {shell.roles.map(role => (
                           <Badge key={role} variant="secondary">
@@ -554,14 +577,17 @@ export default function ClientProfilePage() {
               <MetricCard
                 label="Lifetime Value"
                 value={formatMoney(shell.financials.lifetimeValue)}
+                hint="Total invoiced across completed sales orders"
               />
               <MetricCard
                 label="Profit"
                 value={formatMoney(shell.financials.profitability)}
+                hint="Revenue minus COGS on completed orders"
               />
               <MetricCard
                 label="Average Margin"
                 value={`${shell.financials.averageMarginPercent.toFixed(1)}%`}
+                hint="Weighted average across completed orders"
               />
               <MetricCard
                 label="Open Quotes"
@@ -778,18 +804,34 @@ export default function ClientProfilePage() {
               <MetricCard
                 label="Ledger Net"
                 value={formatMoney(money?.ledgerTotals.netBalance)}
+                hint="Running total across all ledger entries (sales, payments, adjustments)"
               />
             </div>
+
+            <p className="text-xs text-muted-foreground">
+              Receivable is derived from stored transaction balances. Ledger Net
+              sums all sales, purchase, payment, and adjustment entries — they
+              represent different accounting views and may differ.
+            </p>
 
             {shouldShowCreditWidgetInProfile && isCustomer ? (
               <CreditStatusCard clientId={clientId} clientName={shell.name} />
             ) : null}
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Transaction History</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Click a row to edit supported transactions.
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">
+                    Transaction History
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Click a row to edit supported transactions.
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Legacy per-client records (TXN). The Ledger Timeline below
+                  reflects the full accounting view across orders, payments, and
+                  adjustments (ORD / PAY).
                 </p>
               </CardHeader>
               <CardContent>
@@ -811,7 +853,14 @@ export default function ClientProfilePage() {
                           className="cursor-pointer"
                           onClick={() => setSelectedTransaction(transaction)}
                         >
-                          <TableCell>{transaction.transactionType}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-mono text-xs text-muted-foreground">
+                                TXN
+                              </span>
+                              <span>{transaction.transactionType}</span>
+                            </span>
+                          </TableCell>
                           <TableCell>
                             {transaction.transactionNumber ||
                               `#${transaction.id}`}
