@@ -45,8 +45,15 @@ export function AdjustmentContextDrawer({
 
   if (!isOpen) return null;
 
+  const formatQty = (v: number) =>
+    v.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+
   const delta = currentValue - previousValue;
-  const deltaLabel = delta >= 0 ? `+${delta}` : `\u2212${Math.abs(delta)}`;
+  const deltaLabel =
+    delta >= 0 ? `+${formatQty(delta)}` : `\u2212${formatQty(Math.abs(delta))}`;
 
   const handleApply = () => {
     if (!selectedReason) return;
@@ -54,7 +61,7 @@ export function AdjustmentContextDrawer({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-80 flex-col border-l border-border bg-background shadow-xl">
+    <div className="flex w-[260px] flex-col border-l border-border bg-background">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold">Adjust Quantity</h2>
@@ -79,7 +86,7 @@ export function AdjustmentContextDrawer({
             </span>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            {previousValue} → {currentValue}
+            {formatQty(previousValue)} → {formatQty(currentValue)}
           </div>
         </div>
 
@@ -93,6 +100,7 @@ export function AdjustmentContextDrawer({
               <button
                 key={reason}
                 type="button"
+                aria-pressed={selectedReason === reason}
                 onClick={() => setSelectedReason(reason)}
                 className={cn(
                   "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
