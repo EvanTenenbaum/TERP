@@ -103,7 +103,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
     expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
     expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Sheet-Native Pilot" })
+      screen.queryByRole("button", { name: "Spreadsheet View" })
     ).not.toBeInTheDocument();
   });
 
@@ -140,7 +140,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
       expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("button", { name: "Sheet-Native Pilot" })
+      screen.getByRole("button", { name: "Spreadsheet View" })
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Classic Surface" })

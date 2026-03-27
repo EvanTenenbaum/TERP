@@ -47,16 +47,23 @@ describe("Analytics Router", () => {
     it("should retrieve summary analytics with real data", async () => {
       // Arrange - mock database responses
       // Note: orders and clients queries don't use .where(), inventory does
-      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn>; };
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn> };
 
       // For orders - .select().from() directly returns array
-      mockDb.select = vi.fn()
+      mockDb.select = vi
+        .fn()
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
+          from: vi
+            .fn()
+            .mockResolvedValue([
+              { totalOrders: 100, totalRevenue: "50000.00" },
+            ]),
         })
-        // For clients - .select().from() directly returns array
+        // For clients - .select().from().where() returns array
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+          }),
         })
         // For batches - .select().from().where() returns array
         .mockReturnValueOnce({
@@ -81,16 +88,21 @@ describe("Analytics Router", () => {
 
     it("should handle empty database gracefully", async () => {
       // Arrange - mock empty database
-      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn>; };
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn> };
 
       // For orders
-      mockDb.select = vi.fn()
+      mockDb.select = vi
+        .fn()
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+          from: vi
+            .fn()
+            .mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
         })
-        // For clients
+        // For clients - .select().from().where() returns array
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+          }),
         })
         // For batches
         .mockReturnValueOnce({
