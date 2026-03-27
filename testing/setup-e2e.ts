@@ -21,7 +21,7 @@ async function globalSetup() {
   // In CI, the GitHub Actions `services:` block already provides the database.
   // Schema push and seeding are handled by prior workflow steps.
   // Attempting Docker startup here would cause a port conflict (3307 already bound).
-  if (process.env.CI === "true") {
+  if (isTruthy(process.env.CI)) {
     console.info(
       "✅ Skipping local Docker setup (CI environment detected — using service container).\n"
     );

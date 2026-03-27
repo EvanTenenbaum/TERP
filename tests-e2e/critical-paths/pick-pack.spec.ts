@@ -1,212 +1,93 @@
 /**
  * E2E Tests: Shipping Workflow (WS-003)
  *
- * Tests the critical fulfillment workflow for packing orders.
+ * Lean workspace smoke coverage for the shipping queue.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-const SHIPPING_ROUTE = "/operations?tab=shipping";
+const LEGACY_SHIPPING_ROUTE = "/operations?tab=shipping";
+const SHIPPING_ROUTE = "/inventory?tab=shipping";
+
+async function waitForAppShell(page: Page) {
+  await page.waitForLoadState("domcontentloaded");
+  await expect(page.locator("body")).not.toContainText(
+    /Loading TERP\.\.\.|Loading page\.\.\./,
+    {
+      timeout: 30000,
+    }
+  );
+}
+
+async function gotoShippingWorkspace(page: Page) {
+  await page.goto(SHIPPING_ROUTE);
+  await waitForAppShell(page);
+  await expect(page).toHaveURL(/\/inventory\?tab=shipping/);
+  await expect(page.getByTestId("pick-pack-header")).toBeVisible({
+    timeout: 10000,
+  });
+  await expect(page.getByTestId("order-queue")).toBeVisible({
+    timeout: 10000,
+  });
+}
 
 test.describe("Shipping Workflow (WS-003)", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
-  test("should navigate to shipping page", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
+  test("should redirect the legacy shipping route into the inventory workspace", async ({
+    page,
+  }) => {
+    await page.goto(LEGACY_SHIPPING_ROUTE);
+    await waitForAppShell(page);
 
-    // Verify page loaded
-    await expect(
-      page.locator('h1:has-text("Shipping"), [data-testid="pick-pack-page"]')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(/\/inventory\?tab=shipping/);
+    await expect(page.getByTestId("pick-pack-header")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test("should display order queue", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
+  test("should load the shipping queue and primary controls", async ({
+    page,
+  }) => {
+    await gotoShippingWorkspace(page);
 
-    // Look for order queue/list
-    const orderQueue = page.locator(
-      '[data-testid="order-queue"], .order-queue, table, [data-testid="orders-list"]'
-    );
-
-    await expect(orderQueue).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("button", { name: "Refresh Queue" })
+    ).toBeVisible();
+    await expect(page.getByTestId("pick-pack-search-input")).toBeVisible();
+    await expect(page.getByTestId("status-filter")).toBeVisible();
   });
 
   test("should filter orders by status", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
+    await gotoShippingWorkspace(page);
 
-    // Look for status filter
-    const statusFilter = page.locator('[data-testid="status-filter"]');
+    await page.getByTestId("status-filter").click();
+    await page.getByRole("option", { name: "Partial" }).click();
 
-    if (await statusFilter.isVisible().catch(() => false)) {
-      await statusFilter.click();
-      await page.getByRole("option", { name: "Partial" }).click();
-
-      await page.waitForLoadState("networkidle");
-
-      await expect(page.getByTestId("pick-pack-reset-filters")).toBeEnabled();
-    }
+    await expect(page.getByTestId("pick-pack-reset-filters")).toBeEnabled();
   });
 
-  test("should open order details for packing", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
+  test("should open order details for packing when queue rows exist", async ({
+    page,
+  }) => {
+    await gotoShippingWorkspace(page);
 
-    // Click on first order in queue
-    const firstOrder = page
-      .locator("[data-testid='order-queue-row'], table tbody tr, .order-row")
-      .first();
-
+    const firstOrder = page.getByTestId("order-queue-row").first();
     if (await firstOrder.isVisible().catch(() => false)) {
       await firstOrder.click();
 
-      // Should show order details or packing interface
       await expect(
         page.locator(
           '[data-testid="order-details"], [data-testid="packing-interface"], .order-details, [role="dialog"]'
         )
       ).toBeVisible({ timeout: 5000 });
-    }
-  });
-
-  test("should display order items for picking", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
-
-    // Click on first order
-    const firstOrder = page
-      .locator("[data-testid='order-queue-row'], table tbody tr")
-      .first();
-
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-
-      // Wait for details to load
-      await page.waitForLoadState("networkidle");
-
-      // Should show line items
-      const lineItems = page.locator(
-        '[data-testid="line-item"], .line-item, [data-testid="order-item"]'
-      );
-
-      const count = await lineItems.count();
-      // May or may not have items depending on test data
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
-  });
-
-  test("should allow packing items into bags", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
-
-    // Click on first order
-    const firstOrder = page
-      .locator("[data-testid='order-queue-row'], table tbody tr")
-      .first();
-
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
-
-      // Look for pack/bag action
-      const packButton = page.locator(
-        'button:has-text("Pack"), button:has-text("Add to Bag"), [data-testid="pack-button"]'
-      );
-
-      if (await packButton.isVisible().catch(() => false)) {
-        // Verify pack button is clickable
-        await expect(packButton).toBeEnabled();
-      }
-    }
-  });
-
-  test("should show bag management interface", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
-
-    // Click on first order
-    const firstOrder = page
-      .locator("[data-testid='order-queue-row'], table tbody tr")
-      .first();
-
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
-
-      // Look for bags section
-      const bagsSection = page.locator(
-        '[data-testid="bags-section"], .bags-section, :has-text("Bags")'
-      );
-
-      if (await bagsSection.isVisible().catch(() => false)) {
-        // Look for add bag button
-        const addBagButton = page.locator(
-          'button:has-text("New Bag"), button:has-text("Add Bag"), [data-testid="add-bag"]'
-        );
-
-        if (await addBagButton.isVisible().catch(() => false)) {
-          await expect(addBagButton).toBeEnabled();
-        }
-      }
-    }
-  });
-
-  test("should mark order as ready when fully packed", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
-
-    // Click on first order
-    const firstOrder = page
-      .locator("[data-testid='order-queue-row'], table tbody tr")
-      .first();
-
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
-
-      // Look for "Mark Ready" or similar action
-      const markReadyButton = page.locator(
-        'button:has-text("Mark Ready for Shipping"), button:has-text("Mark Ready"), button:has-text("Complete"), [data-testid="mark-ready"]'
-      );
-
-      if (await markReadyButton.isVisible().catch(() => false)) {
-        // Button should be present (may be disabled if not fully packed)
-        await expect(markReadyButton).toBeVisible();
-      }
-    }
-  });
-});
-
-test.describe("Shipping - Printing", () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-  });
-
-  test("should have print packing slip option", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
-
-    // Click on first order
-    const firstOrder = page
-      .locator("[data-testid='order-queue-row'], table tbody tr")
-      .first();
-
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
-
-      // Look for print button
-      const printButton = page.locator(
-        'button:has-text("Print"), button:has-text("Packing Slip"), [data-testid="print-slip"]'
-      );
-
-      if (await printButton.isVisible().catch(() => false)) {
-        await expect(printButton).toBeEnabled();
-      }
+    } else {
+      await expect(
+        page.getByText("Select an order to prepare for shipping")
+      ).toBeVisible();
     }
   });
 });
@@ -218,22 +99,13 @@ test.describe("Shipping - Mobile Responsive", () => {
     await loginAsAdmin(page);
   });
 
-  test("should be usable on mobile viewport", async ({ page }) => {
-    await page.goto(SHIPPING_ROUTE);
-    await page.waitForLoadState("networkidle");
+  test("should remain usable on a mobile viewport", async ({ page }) => {
+    await gotoShippingWorkspace(page);
 
-    // Page should be visible and not have horizontal scroll
     const body = page.locator("body");
     const bodyWidth = await body.evaluate(el => el.scrollWidth);
-    const viewportWidth = 375;
 
-    // Allow some tolerance for scroll
-    expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 50);
-
-    // Order list should still be visible
-    const orderList = page.locator(
-      '[data-testid="order-queue"], table, [data-testid="orders-list"]'
-    );
-    await expect(orderList).toBeVisible();
+    expect(bodyWidth).toBeLessThanOrEqual(425);
+    await expect(page.getByTestId("order-queue")).toBeVisible();
   });
 });

@@ -1,7 +1,6 @@
 {
-  "*.{ts,tsx}": [
-    "eslint --fix --max-warnings=0 --no-warn-ignored",
-    "prettier --write"
+  "{client/src,server}/**/*.{ts,tsx}": [
+    "eslint --fix --max-warnings=0 --no-warn-ignored"
   ],
-  "*.{md,json}": ["prettier --write"]
+  "**/*.{ts,tsx,md,json}": ["prettier --write"]
 }

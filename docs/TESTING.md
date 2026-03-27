@@ -118,7 +118,7 @@ pnpm test:smoke              # Smoke suite
 | Directory         | Purpose                                          | Count                     |
 | ----------------- | ------------------------------------------------ | ------------------------- |
 | `golden-flows/`   | Core business flow tests (gf-001 through gf-008) | 10 specs                  |
-| `critical-paths/` | Feature-specific critical paths                  | 15 specs                  |
+| `critical-paths/` | Targeted workspace and route smoke contracts     | 15 specs                  |
 | `deep/`           | Deep business logic, edge cases, state machines  | 7 specs                   |
 | `rbac/`           | Role-based access control tests                  | 5 specs                   |
 | `mega/`           | Comprehensive sprint feature tests               | 2 specs                   |
@@ -137,6 +137,10 @@ pnpm test:smoke              # Smoke suite
 - `gf-006` — Client Ledger Review
 - `gf-007` — Inventory Management
 - `gf-008` — Sample Request
+
+**Targeted PR lane (`critical-paths/`):**
+
+`tests-e2e/critical-paths/` is the fast, changed-files-aware Playwright lane used by PR automation. These specs should stay focused on current route redirects, workspace shells, and high-signal UI contracts that can fail quickly and diagnose drift without duplicating the deeper business-logic coverage below.
 
 **Deep tests (business logic + edge cases + RBAC):**
 

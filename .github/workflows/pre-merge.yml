@@ -282,9 +282,12 @@ jobs:
 
       - name: Lint changed files
         run: |
-          CHANGED=$(git diff --name-only origin/main...HEAD -- '*.ts' '*.tsx' 2>/dev/null || true)
-          if [ -n "$CHANGED" ]; then
-            echo "$CHANGED" | xargs pnpm eslint --max-warnings=0 || true
+          mapfile -t CHANGED_FILES < <(
+            git diff --name-only origin/main...HEAD -- client/src server 2>/dev/null |
+              grep -E '\.(ts|tsx)$' || true
+          )
+          if [ "${#CHANGED_FILES[@]}" -gt 0 ]; then
+            pnpm eslint --max-warnings=0 "${CHANGED_FILES[@]}"
           fi
 
   # ================================================================
@@ -395,6 +398,7 @@ jobs:
         id: e2e
         timeout-minutes: 15
         run: |
+          set -o pipefail
           SPECS="${{ steps.resolve.outputs.specs }}"
 
           if [ "$SPECS" = "SMOKE" ]; then

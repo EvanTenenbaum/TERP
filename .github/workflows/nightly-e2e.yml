@@ -91,6 +91,7 @@ jobs:
       - name: Run E2E tests
         id: e2e
         run: |
+          set -o pipefail
           SUITE="${{ steps.suite.outputs.suite }}"
 
           case "$SUITE" in
