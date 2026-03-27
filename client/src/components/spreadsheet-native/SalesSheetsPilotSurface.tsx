@@ -811,6 +811,7 @@ export function SalesSheetsPilotSurface({
             value={selectedClientId}
             onValueChange={handleClientChange}
             clients={clientList}
+            isLoading={clientsQuery.isLoading}
             placeholder="Choose a client..."
             emptyText="No clients found"
           />
