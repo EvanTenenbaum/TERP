@@ -45,9 +45,18 @@ export const MobileNav = React.memo(function MobileNav({
         >
           <Bell className="h-5 w-5" />
         </Button>
-        <Avatar className="h-8 w-8">
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
+        {/* TER-891: make avatar a button to access My Account on mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full p-0"
+          aria-label="My Account"
+          onClick={() => setLocation("/account")}
+        >
+          <Avatar className="h-8 w-8">
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
+        </Button>
       </div>
     </div>
   );
