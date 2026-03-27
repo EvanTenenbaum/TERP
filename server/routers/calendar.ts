@@ -140,6 +140,7 @@ export const calendarRouter = router({
           gte(calendarEvents.startDate, new Date(input.startDate)),
           lte(calendarEvents.endDate, new Date(input.endDate)),
           isNull(calendarEvents.deletedAt),
+          sql`${calendarEvents.title} NOT LIKE 'QA Chain Event%'`,
         ];
 
         // Apply filters

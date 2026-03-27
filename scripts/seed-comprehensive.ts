@@ -1228,6 +1228,48 @@ async function seedCalendarEvents(connection: mysql.Connection, userIds: number[
   const eventTypes = ['MEETING', 'DELIVERY', 'TASK', 'PAYMENT_DUE', 'FOLLOW_UP', 'INTAKE', 'AR_COLLECTION', 'AP_PAYMENT'];
   const priorities = ['LOW', 'MEDIUM', 'HIGH'];
   const statuses = ['SCHEDULED', 'COMPLETED', 'CANCELLED'];
+  const eventTitleTemplates: Record<string, string[]> = {
+    MEETING: [
+      'Team planning check-in',
+      'Client pipeline review',
+      'Operations coordination meeting',
+    ],
+    DELIVERY: [
+      'Delivery route confirmation',
+      'Customer delivery handoff',
+      'Shipment readiness review',
+    ],
+    TASK: [
+      'Ops follow-through task',
+      'Customer action item review',
+      'Warehouse action queue',
+    ],
+    PAYMENT_DUE: [
+      'Payment due review',
+      'Receivables due today',
+      'Collections follow-up window',
+    ],
+    FOLLOW_UP: [
+      'Client follow-up reminder',
+      'Account check-in follow-up',
+      'Sales relationship follow-up',
+    ],
+    INTAKE: [
+      'Receiving intake slot',
+      'Inventory intake appointment',
+      'Inbound product intake review',
+    ],
+    AR_COLLECTION: [
+      'Accounts receivable follow-up',
+      'Past-due invoice outreach',
+      'Collections review',
+    ],
+    AP_PAYMENT: [
+      'Accounts payable payment run',
+      'Vendor payment review',
+      'Payables approval window',
+    ],
+  };
 
   const hasCalendarId = await tableHasColumn(connection, 'calendar_events', 'calendar_id');
 
@@ -1238,9 +1280,10 @@ async function seedCalendarEvents(connection: mysql.Connection, userIds: number[
     const module = modules[i % modules.length];
     const eventType = eventTypes[i % eventTypes.length];
     const status = i < count * 0.8 ? 'SCHEDULED' : statuses[i % statuses.length];
+    const titlePool = eventTitleTemplates[eventType] ?? ['Operations calendar item'];
 
     const values = [
-      `${eventType.replace(/_/g, ' ')} - ${faker.company.buzzPhrase()}`,
+      titlePool[i % titlePool.length],
       faker.lorem.paragraph(),
       formatDate(startDate),
       formatDate(endDate),

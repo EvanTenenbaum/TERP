@@ -182,6 +182,14 @@ function buildStatusCondition(
   return sql`${orders.fulfillmentStatus} IN ('SHIPPED', 'DELIVERED', 'RETURNED', 'RESTOCKED', 'RETURNED_TO_VENDOR')`;
 }
 
+const excludedPickPackClientNamePatterns = [
+  "Stage Quick Add%",
+  "Test Client %",
+  "QA Chain Test Client %",
+  "QA Write-Path Client %",
+  "QA Concurrent Test Client %",
+] as const;
+
 export const pickPackRouter = router({
   /**
    * Get the real-time pick list (orders ready for picking)
@@ -253,6 +261,12 @@ export const pickPackRouter = router({
       if (input.filters?.dateTo) {
         conditions.push(lte(orders.createdAt, new Date(input.filters.dateTo)));
       }
+
+      conditions.push(
+        ...excludedPickPackClientNamePatterns.map(
+          pattern => sql`${clients.name} NOT LIKE ${pattern}`
+        )
+      );
 
       // Get orders with client info and pack counts
       const pickListOrders = await db

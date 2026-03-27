@@ -151,9 +151,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const hasQuotes = (searchResults?.quotes?.length ?? 0) > 0;
   const hasCustomers = (searchResults?.customers?.length ?? 0) > 0;
   const hasProducts = (searchResults?.products?.length ?? 0) > 0;
+  const hasSearchResults = hasQuotes || hasCustomers || hasProducts;
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      commandProps={{ shouldFilter: !isActiveSearch }}
+    >
       <CommandInput
         autoFocus
         placeholder="Type a command or search..."
@@ -161,119 +166,129 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         onValueChange={setInputValue}
       />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        {isActiveSearch ? (
+          <>
+            {isSearching && (
+              <CommandGroup heading="Search Results">
+                <CommandItem disabled value="search-status-loading">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Searching...</span>
+                </CommandItem>
+              </CommandGroup>
+            )}
 
-        {/* Search Results */}
-        {isActiveSearch && isSearching && (
-          <CommandGroup heading="Search Results">
-            <CommandItem disabled value={`${debouncedQuery} searching`}>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              <span>Searching...</span>
-            </CommandItem>
-          </CommandGroup>
+            {!isSearching && hasQuotes && (
+              <CommandGroup heading="Quotes">
+                {(searchResults?.quotes ?? []).map(quote => (
+                  <CommandItem
+                    key={`quote-${quote.id}`}
+                    value={`quote-${quote.id}`}
+                    onSelect={() => handleNavigate(quote.url)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>{quote.title}</span>
+                    {quote.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {quote.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && hasCustomers && (
+              <CommandGroup heading="Relationships">
+                {(searchResults?.customers ?? []).map(customer => (
+                  <CommandItem
+                    key={`customer-${customer.id}`}
+                    value={`customer-${customer.id}`}
+                    onSelect={() => handleNavigate(customer.url)}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>{customer.title}</span>
+                    {customer.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {customer.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && hasProducts && (
+              <CommandGroup heading="Products & Batches">
+                {(searchResults?.products ?? []).map(product => (
+                  <CommandItem
+                    key={`product-${product.type}-${product.id}`}
+                    value={`product-${product.type}-${product.id}`}
+                    onSelect={() => handleNavigate(product.url)}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    <span>{product.title}</span>
+                    {product.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {product.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && !hasSearchResults && (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                No results found.
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <CommandEmpty>No results found.</CommandEmpty>
+
+            <CommandGroup heading="Navigation">
+              {navigationCommands.map(item => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.label} navigation`}
+                    onSelect={() => {
+                      setLocation(item.path);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.label}</span>
+                    {item.shortcut && (
+                      <CommandShortcut>{item.shortcut}</CommandShortcut>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+
+            <CommandGroup heading="Actions">
+              {actionCommands.map(item => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.label} action`}
+                    onSelect={item.action}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.label}</span>
+                    {item.shortcut && (
+                      <CommandShortcut>{item.shortcut}</CommandShortcut>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </>
         )}
-
-        {isActiveSearch && !isSearching && hasQuotes && (
-          <CommandGroup heading="Quotes">
-            {(searchResults?.quotes ?? []).map(quote => (
-              <CommandItem
-                key={`quote-${quote.id}`}
-                value={`${debouncedQuery} search quote ${quote.title} ${quote.id}`}
-                onSelect={() => handleNavigate(quote.url)}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                <span>{quote.title}</span>
-                {quote.description && (
-                  <span className="ml-2 text-xs text-muted-foreground truncate">
-                    {quote.description}
-                  </span>
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-
-        {isActiveSearch && !isSearching && hasCustomers && (
-          <CommandGroup heading="Relationships">
-            {(searchResults?.customers ?? []).map(customer => (
-              <CommandItem
-                key={`customer-${customer.id}`}
-                value={`${debouncedQuery} search customer ${customer.title} ${customer.id}`}
-                onSelect={() => handleNavigate(customer.url)}
-              >
-                <Users className="mr-2 h-4 w-4" />
-                <span>{customer.title}</span>
-                {customer.description && (
-                  <span className="ml-2 text-xs text-muted-foreground truncate">
-                    {customer.description}
-                  </span>
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-
-        {isActiveSearch && !isSearching && hasProducts && (
-          <CommandGroup heading="Products & Batches">
-            {(searchResults?.products ?? []).map(product => (
-              <CommandItem
-                key={`product-${product.type}-${product.id}`}
-                value={`${debouncedQuery} search product ${product.title} ${product.id}`}
-                onSelect={() => handleNavigate(product.url)}
-              >
-                <Package className="mr-2 h-4 w-4" />
-                <span>{product.title}</span>
-                {product.description && (
-                  <span className="ml-2 text-xs text-muted-foreground truncate">
-                    {product.description}
-                  </span>
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-
-        {/* Navigation */}
-        <CommandGroup heading="Navigation">
-          {navigationCommands.map(item => {
-            const Icon = item.icon;
-            return (
-              <CommandItem
-                key={item.id}
-                value={`${item.label} navigation`}
-                onSelect={() => {
-                  setLocation(item.path);
-                  onOpenChange(false);
-                }}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{item.label}</span>
-                {item.shortcut && (
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
-                )}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
-
-        <CommandGroup heading="Actions">
-          {actionCommands.map(item => {
-            const Icon = item.icon;
-            return (
-              <CommandItem
-                key={item.id}
-                value={`${item.label} action`}
-                onSelect={item.action}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{item.label}</span>
-                {item.shortcut && (
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
-                )}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
       </CommandList>
     </CommandDialog>
   );
