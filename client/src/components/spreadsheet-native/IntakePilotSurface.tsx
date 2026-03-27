@@ -257,6 +257,21 @@ interface IntakeDraftRow extends IntakeRowData {
   errorMessage?: string;
 }
 
+interface IntakeLocationRecord {
+  id: number;
+  site: string;
+  zone?: string | null;
+  rack?: string | null;
+  shelf?: string | null;
+  bin?: string | null;
+}
+
+interface LocationOption {
+  id: number;
+  site: string;
+  label: string;
+}
+
 type IntakeExportRow = IntakeDraftRow & Record<string, unknown>;
 
 type UploadedMediaUrl = {
@@ -436,6 +451,71 @@ const normalizeRowForValidation = (row: IntakeDraftRow): IntakeDraftRow => {
   return normalizeIntakeCogs({ ...row, vendorName, brandName, item, site });
 };
 
+const formatLocationLabel = (location: IntakeLocationRecord): string => {
+  const segments = [
+    location.site,
+    location.zone,
+    location.rack,
+    location.shelf,
+    location.bin,
+  ]
+    .map(segment => segment?.trim())
+    .filter((segment): segment is string => Boolean(segment));
+
+  return segments.length > 0 ? segments.join(" / ") : `Location ${location.id}`;
+};
+
+const buildLocationOptions = (
+  locations: IntakeLocationRecord[]
+): LocationOption[] => {
+  const labelCounts = new Map<string, number>();
+
+  for (const location of locations) {
+    const label = formatLocationLabel(location);
+    labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
+  }
+
+  return locations.map(location => {
+    const label = formatLocationLabel(location);
+    return {
+      id: location.id,
+      site: location.site.trim(),
+      label:
+        (labelCounts.get(label) ?? 0) > 1
+          ? `${label} / ID ${location.id}`
+          : label,
+    };
+  });
+};
+
+const findLocationOptionForRow = (
+  row: Pick<IntakeDraftRow, "locationId" | "locationName" | "site"> | null,
+  locationOptions: LocationOption[]
+): LocationOption | null => {
+  if (!row) return null;
+
+  if (row.locationId !== null) {
+    const byId = locationOptions.find(option => option.id === row.locationId);
+    if (byId) return byId;
+  }
+
+  const locationName = row.locationName.trim();
+  if (locationName) {
+    const byLabel = locationOptions.find(
+      option => option.label === locationName
+    );
+    if (byLabel) return byLabel;
+  }
+
+  const site = row.site.trim();
+  if (site) {
+    const bySite = locationOptions.find(option => option.site === site);
+    if (bySite) return bySite;
+  }
+
+  return null;
+};
+
 // ============================================================================
 // STATUS CELL RENDERER
 // ============================================================================
@@ -477,7 +557,7 @@ interface RowInspectorProps {
   mediaFiles: File[];
   onMediaFilesChange: (files: File[]) => void;
   vendors: { id: number; name: string }[];
-  locations: { id: number; site: string }[];
+  locationOptions: LocationOption[];
   products: {
     id: number;
     name: string;
@@ -493,7 +573,7 @@ function RowInspectorContent({
   mediaFiles,
   onMediaFilesChange,
   vendors,
-  locations,
+  locationOptions,
   products,
 }: RowInspectorProps) {
   const validation = useValidationTiming({
@@ -836,15 +916,20 @@ function RowInspectorContent({
 
         <InspectorField label="Location" required>
           <Select
-            value={row.site}
+            value={
+              findLocationOptionForRow(row, locationOptions)?.id.toString() ??
+              ""
+            }
             onValueChange={value => {
-              const location = locations.find(l => l.site === value);
+              const location = locationOptions.find(
+                option => option.id.toString() === value
+              );
               onUpdate({
-                site: value,
+                site: location?.site ?? "",
                 locationId: location?.id ?? null,
-                locationName: value,
+                locationName: location?.label ?? "",
               });
-              validation.handleChange("site", value);
+              validation.handleChange("site", location?.site ?? "");
             }}
           >
             <SelectTrigger
@@ -855,14 +940,14 @@ function RowInspectorContent({
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
             <SelectContent>
-              {locations.length === 0 ? (
+              {locationOptions.length === 0 ? (
                 <SelectItem value="no-locations" disabled>
                   No locations available
                 </SelectItem>
               ) : (
-                locations.map(l => (
-                  <SelectItem key={l.id} value={l.site}>
-                    {l.site}
+                locationOptions.map(location => (
+                  <SelectItem key={location.id} value={location.id.toString()}>
+                    {location.label}
                   </SelectItem>
                 ))
               )}
@@ -1146,14 +1231,16 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
 
   // BUG-042: Escape key closes the inspector panel (the hint bar advertises this behavior)
   useEffect(() => {
+    if (!inspector.isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && inspector.isOpen) {
+      if (!e.defaultPrevented && e.key === "Escape") {
         inspector.close();
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [inspector]);
+  }, [inspector, inspector.isOpen]);
 
   // ---- Data queries ----
   const {
@@ -1190,17 +1277,30 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
     error: locationsError,
     refetch: refetchLocations,
   } = trpc.locations.getAll.useQuery();
-  // BUG-036 / BUG-106: Deduplicate locations by site name to prevent repeated entries
-  const locations = useMemo(() => {
+  const locations = useMemo<IntakeLocationRecord[]>(() => {
     const raw = Array.isArray(locationsData) ? locationsData : [];
-    const seen = new Set<string>();
-    return raw.filter(l => {
-      const key = (l.site ?? "").trim();
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return raw
+      .filter(
+        location =>
+          typeof location?.id === "number" && typeof location?.site === "string"
+      )
+      .map(location => ({
+        id: Number(location.id),
+        site: String(location.site),
+        zone: typeof location.zone === "string" ? location.zone : null,
+        rack: typeof location.rack === "string" ? location.rack : null,
+        shelf: typeof location.shelf === "string" ? location.shelf : null,
+        bin: typeof location.bin === "string" ? location.bin : null,
+      }));
   }, [locationsData]);
+  const locationOptions = useMemo(
+    () => buildLocationOptions(locations),
+    [locations]
+  );
+  const selectedLocationOption = useMemo(
+    () => findLocationOptionForRow(selectedRow, locationOptions),
+    [locationOptions, selectedRow]
+  );
 
   const mainWarehouse = useMemo(
     () =>
@@ -1209,24 +1309,27 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       ) ?? locations[0],
     [locations]
   );
-  const defaultLocationOverrides = useMemo(
-    () =>
-      mainWarehouse
-        ? {
-            locationId: mainWarehouse.id,
-            locationName: mainWarehouse.site ?? "",
-            site: mainWarehouse.site ?? "",
-          }
-        : undefined,
-    [mainWarehouse]
-  );
+  const defaultLocationOverrides = useMemo(() => {
+    if (!mainWarehouse) return undefined;
+    const option =
+      locationOptions.find(location => location.id === mainWarehouse.id) ??
+      null;
+    return {
+      locationId: mainWarehouse.id,
+      locationName: option?.label ?? mainWarehouse.site ?? "",
+      site: mainWarehouse.site ?? "",
+    };
+  }, [locationOptions, mainWarehouse]);
 
   // Apply main warehouse default to rows that have no location yet
   useEffect(() => {
     if (!defaultLocationOverrides) return;
     updateRows(prev =>
       prev.map(row =>
-        row.locationId === null && row.status === "pending"
+        row.locationId === null &&
+        !row.site.trim() &&
+        !row.locationName.trim() &&
+        row.status === "pending"
           ? { ...row, ...defaultLocationOverrides }
           : row
       )
@@ -1440,7 +1543,11 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
             : "powersheet-cell--locked",
         headerTooltip: "Editable: location for pending rows",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: locations.map(l => l.site) },
+        cellEditorParams: {
+          values: locationOptions.map(location => location.label),
+        },
+        valueFormatter: params =>
+          params.data?.locationName || params.data?.site || "",
       },
       {
         headerName: "Terms",
@@ -1471,7 +1578,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         filter: true,
       },
     ],
-    [vendors, locations, products]
+    [locationOptions, products, vendors]
   );
 
   // ---- Cell value changed handler ----
@@ -1494,12 +1601,14 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       }
 
       if (event.colDef.field === "site") {
-        const site =
+        const locationLabel =
           typeof event.newValue === "string" ? event.newValue.trim() : "";
-        nextRow.site = site;
-        const location = locations.find(l => l.site === site);
+        const location = locationOptions.find(
+          option => option.label === locationLabel
+        );
+        nextRow.site = location?.site ?? locationLabel;
         nextRow.locationId = location?.id ?? null;
-        nextRow.locationName = location?.site ?? "";
+        nextRow.locationName = location?.label ?? "";
       }
 
       if (event.colDef.field === "item") {
@@ -1532,7 +1641,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       );
       setTimeout(() => setSaved(), 500);
     },
-    [vendors, locations, products, setSaving, setSaved, updateRows]
+    [locationOptions, products, setSaved, setSaving, updateRows, vendors]
   );
 
   // ---- Row add ----
@@ -2340,14 +2449,16 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Location</Label>
             <Select
-              value={selectedRow?.site ?? ""}
+              value={selectedLocationOption?.id.toString() ?? ""}
               onValueChange={value => {
                 if (!selectedRow || selectedRow.status !== "pending") return;
-                const location = locations.find(l => l.site === value);
+                const location = locationOptions.find(
+                  option => option.id.toString() === value
+                );
                 handleUpdateSelectedRow({
-                  site: value,
+                  site: location?.site ?? "",
                   locationId: location?.id ?? null,
-                  locationName: value,
+                  locationName: location?.label ?? "",
                 });
               }}
               disabled={!selectedRow || selectedRow.status !== "pending"}
@@ -2359,9 +2470,9 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                 />
               </SelectTrigger>
               <SelectContent>
-                {locations.map(l => (
-                  <SelectItem key={l.id} value={l.site}>
-                    {l.site}
+                {locationOptions.map(location => (
+                  <SelectItem key={location.id} value={location.id.toString()}>
+                    {location.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -2596,7 +2707,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   }));
                 }}
                 vendors={vendors}
-                locations={locations}
+                locationOptions={locationOptions}
                 products={products}
               />
               {selectedRow?.status === "pending" && (
