@@ -20,6 +20,7 @@ import type {
   GridReadyEvent,
   PasteEndEvent,
   PasteStartEvent,
+  RowClickedEvent,
   SendToClipboardParams,
   SelectionChangedEvent,
 } from "ag-grid-community";
@@ -280,6 +281,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   onSelectionSummaryChange?: (
     selectionSummary: PowersheetSelectionSummary
   ) => void;
+  onRowClicked?: (event: RowClickedEvent<Row>) => void;
   rowHeight?: number;
 }
 
@@ -324,6 +326,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
   onCellSelectionDeleteEnd,
   onSelectionSetChange,
   onSelectionSummaryChange,
+  onRowClicked,
   rowHeight: rowHeightProp,
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
@@ -522,6 +525,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
               onFillEnd={onFillEnd}
               onCellSelectionDeleteStart={onCellSelectionDeleteStart}
               onCellSelectionDeleteEnd={onCellSelectionDeleteEnd}
+              onRowClicked={onRowClicked}
               getRowId={params => getRowId(params.data)}
             />
           </div>
