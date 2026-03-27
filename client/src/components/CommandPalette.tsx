@@ -37,18 +37,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { flags, isLoading } = useFeatureFlags();
   const [inputValue, setInputValue] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const normalizedInput = inputValue.trim();
 
   // Debounce the search query — 300ms after user stops typing
   useEffect(() => {
-    if (inputValue.length <= 2) {
+    if (normalizedInput.length <= 2) {
       setDebouncedQuery("");
       return;
     }
     const timer = setTimeout(() => {
-      setDebouncedQuery(inputValue);
+      setDebouncedQuery(normalizedInput);
     }, 300);
     return () => clearTimeout(timer);
-  }, [inputValue]);
+  }, [normalizedInput]);
 
   // Reset state when dialog closes
   useEffect(() => {

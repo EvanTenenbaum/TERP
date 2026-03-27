@@ -8,6 +8,9 @@ import { CommandPalette } from "./CommandPalette";
 
 const mockSetLocation = vi.fn();
 let mockSpreadsheetEnabled = true;
+const { mockGlobalSearchUseQuery } = vi.hoisted(() => ({
+  mockGlobalSearchUseQuery: vi.fn(),
+}));
 
 // Track the current mock query return value so tests can override it
 let mockSearchQueryResult: {
@@ -60,7 +63,7 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     search: {
       global: {
-        useQuery: () => mockSearchQueryResult,
+        useQuery: mockGlobalSearchUseQuery,
       },
     },
   },
@@ -71,6 +74,8 @@ describe("CommandPalette", () => {
     mockSpreadsheetEnabled = true;
     mockSetLocation.mockClear();
     mockSearchQueryResult = { data: undefined, isLoading: false };
+    mockGlobalSearchUseQuery.mockReset();
+    mockGlobalSearchUseQuery.mockImplementation(() => mockSearchQueryResult);
   });
 
   it("omits feature-flagged navigation entries when disabled", () => {
@@ -94,18 +99,19 @@ describe("CommandPalette", () => {
     expect(screen.getByText("Inventory")).toBeInTheDocument();
   });
 
-  it("shows loading indicator while searching", () => {
+  it("shows loading indicator while searching", async () => {
     mockSearchQueryResult = { data: undefined, isLoading: true };
+    vi.useFakeTimers();
     render(<CommandPalette open onOpenChange={() => {}} />);
 
-    // Simulate typing more than 2 chars — the component uses controlled input
     const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "test" } });
+    vi.advanceTimersByTime(350);
+    vi.useRealTimers();
 
-    // With debounce, the loading state depends on debouncedQuery being set.
-    // Since we set isLoading: true unconditionally in the mock, verify the
-    // search group appears when the query fires. We'll test after debounce
-    // in the async test below.
+    await waitFor(() => {
+      expect(screen.getByText("Searching...")).toBeInTheDocument();
+    });
   });
 
   it("renders search results for quotes when returned from API", async () => {
@@ -212,13 +218,61 @@ describe("CommandPalette", () => {
   });
 
   it("does not fire search query when input is 2 chars or fewer", () => {
+    vi.useFakeTimers();
     render(<CommandPalette open onOpenChange={() => {}} />);
 
     const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "ab" } });
+    vi.advanceTimersByTime(350);
+    vi.useRealTimers();
 
     // With <= 2 chars, the search group never renders
     expect(screen.queryByText("Searching...")).not.toBeInTheDocument();
     expect(screen.queryByText("Quotes")).not.toBeInTheDocument();
+    expect(mockGlobalSearchUseQuery).toHaveBeenLastCalledWith(
+      { query: "" },
+      { enabled: false }
+    );
+  });
+
+  it("trims whitespace-only input so global search never enables", () => {
+    vi.useFakeTimers();
+    render(<CommandPalette open onOpenChange={() => {}} />);
+
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "   " } });
+    vi.advanceTimersByTime(350);
+    vi.useRealTimers();
+
+    expect(mockGlobalSearchUseQuery).toHaveBeenLastCalledWith(
+      { query: "" },
+      { enabled: false }
+    );
+  });
+
+  it("passes a trimmed query to search results", async () => {
+    mockSearchQueryResult = {
+      isLoading: false,
+      data: {
+        quotes: [],
+        customers: [],
+        products: [],
+      },
+    };
+
+    vi.useFakeTimers();
+    render(<CommandPalette open onOpenChange={() => {}} />);
+
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "  quote  " } });
+    vi.advanceTimersByTime(350);
+    vi.useRealTimers();
+
+    await waitFor(() => {
+      expect(mockGlobalSearchUseQuery).toHaveBeenLastCalledWith(
+        { query: "quote" },
+        { enabled: true }
+      );
+    });
   });
 });

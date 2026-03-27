@@ -53,8 +53,8 @@ export function PasswordChangeSection() {
 
     if (!newPassword) {
       newErrors.newPassword = "New password is required";
-    } else if (newPassword.length < 4) {
-      newErrors.newPassword = "Password must be at least 4 characters";
+    } else if (newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
     }
 
     if (!confirmPassword) {
@@ -165,7 +165,7 @@ export function PasswordChangeSection() {
               </button>
             </div>
             <p id="new-password-hint" className="text-xs text-muted-foreground">
-              Must be at least 4 characters
+              Must be at least 8 characters
             </p>
             {errors.newPassword && (
               <p id="new-password-error" className="text-sm text-destructive">
