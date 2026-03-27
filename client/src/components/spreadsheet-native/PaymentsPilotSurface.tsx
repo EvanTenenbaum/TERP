@@ -180,7 +180,7 @@ function mapToGridRows(payments: PaymentItem[]): PaymentGridRow[] {
     paymentMethod: (p.paymentMethod ?? "-").replace(/_/g, " "),
     amount: p.amount ?? "0",
     amountFormatted: formatCurrency(p.amount ?? "0"),
-    referenceNumber: p.referenceNumber ?? "-",
+    referenceNumber: p.referenceNumber ?? "No reference",
     invoiceId: p.invoiceId ?? null,
     notes: p.notes ?? "",
   }));
@@ -197,7 +197,8 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 130,
     maxWidth: 160,
     cellClass: "powersheet-cell--locked font-mono",
-    headerTooltip: "Read-only: payment number assigned at creation.",
+    headerTooltip:
+      "Payment identifier. Format varies by origin: PAY- (manual), PMT-RCV- (received from customer), PMT-SNT- (sent to supplier). All refer to the same payment record.",
   },
   {
     field: "paymentDate",
@@ -849,11 +850,17 @@ export function PaymentsPilotSurface({
                   {selectedRow.amountFormatted}
                 </p>
               </InspectorField>
-              {selectedRow.referenceNumber !== "-" && (
-                <InspectorField label="Reference">
-                  <p className="font-mono">{selectedRow.referenceNumber}</p>
-                </InspectorField>
-              )}
+              <InspectorField label="Reference">
+                <p
+                  className={
+                    selectedRow.referenceNumber === "No reference"
+                      ? "text-muted-foreground italic"
+                      : "font-mono"
+                  }
+                >
+                  {selectedRow.referenceNumber}
+                </p>
+              </InspectorField>
               {selectedRow.invoiceId !== null && (
                 <InspectorField label="Invoice">
                   <p className="font-mono">#{selectedRow.invoiceId}</p>
