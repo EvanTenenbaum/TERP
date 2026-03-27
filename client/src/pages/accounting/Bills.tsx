@@ -78,6 +78,12 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const routeBillId = routeContext.billId;
 
+  // Fetch line items for the selected bill detail drawer
+  const { data: selectedBillDetail } = trpc.accounting.bills.getById.useQuery(
+    { id: selectedBill?.id ?? 0 },
+    { enabled: selectedBill !== null }
+  );
+
   // Fetch bills
   const {
     data: bills,
@@ -448,6 +454,37 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
                   </div>
                 </div>
               </div>
+
+              <Separator />
+
+              {/* Line Items */}
+              {selectedBillDetail?.lineItems &&
+                selectedBillDetail.lineItems.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3">Line Items</h3>
+                    <div className="space-y-2">
+                      {selectedBillDetail.lineItems.map(item => (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between text-sm border rounded p-2"
+                        >
+                          <div className="flex-1 min-w-0 mr-2">
+                            <p className="font-medium truncate">
+                              {item.description}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              Qty {item.quantity} &times;{" "}
+                              {formatCurrency(item.unitPrice)}
+                            </p>
+                          </div>
+                          <span className="font-mono font-medium shrink-0">
+                            {formatCurrency(item.lineTotal)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               <Separator />
 
