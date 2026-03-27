@@ -9,7 +9,7 @@
 
 import { TRPCError } from "@trpc/server";
 import { eq, and, inArray } from "drizzle-orm";
-import { getDb } from "./db";
+import { getDb, getUserById } from "./db";
 import {
   calendarEvents,
   calendarEventPermissions,
@@ -26,6 +26,17 @@ export type GrantType = "USER" | "ROLE" | "TEAM";
  * Enforces row-level security for calendar events
  */
 export class PermissionService {
+  private static async resolveSuperAdminUserKey(
+    userId: number
+  ): Promise<string> {
+    try {
+      const user = await getUserById(userId);
+      return user?.openId ?? String(userId);
+    } catch {
+      return String(userId);
+    }
+  }
+
   /**
    * Check if a user has a specific permission on an event
    *
@@ -51,7 +62,8 @@ export class PermissionService {
 
     // BUG-094: use the canonical super-admin truth path instead of a local
     // users.role shortcut so RBAC-only Super Admins get the same bypass.
-    if (await isSuperAdmin(String(userId))) {
+    const superAdminUserKey = await this.resolveSuperAdminUserKey(userId);
+    if (await isSuperAdmin(superAdminUserKey)) {
       cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
@@ -289,7 +301,8 @@ export class PermissionService {
     const permissionMap: Record<number, boolean> = {};
 
     // BUG-094: keep batch checks aligned with the canonical super-admin path.
-    if (await isSuperAdmin(String(userId))) {
+    const superAdminUserKey = await this.resolveSuperAdminUserKey(userId);
+    if (await isSuperAdmin(superAdminUserKey)) {
       for (const id of eventIds) {
         permissionMap[id] = true;
       }
