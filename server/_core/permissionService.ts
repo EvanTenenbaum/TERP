@@ -49,15 +49,15 @@ export class PermissionService {
       return cached;
     }
 
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
-
     // BUG-094: use the canonical super-admin truth path instead of a local
     // users.role shortcut so RBAC-only Super Admins get the same bypass.
     if (await isSuperAdmin(String(userId))) {
       cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     // Get the event
     const [event] = await db
@@ -286,8 +286,6 @@ export class PermissionService {
       return {};
     }
 
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
     const permissionMap: Record<number, boolean> = {};
 
     // BUG-094: keep batch checks aligned with the canonical super-admin path.
@@ -297,6 +295,9 @@ export class PermissionService {
       }
       return permissionMap;
     }
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     // Fetch all events in a single query using inArray for efficiency
     const events = await db

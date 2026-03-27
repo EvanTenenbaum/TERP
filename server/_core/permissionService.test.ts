@@ -51,6 +51,7 @@ describe("PermissionService super admin handling", () => {
       PermissionService.hasPermission(42, 1001, "MANAGE")
     ).resolves.toBe(true);
     expect(mockIsSuperAdmin).toHaveBeenCalledWith("42");
+    expect(mockGetDb).not.toHaveBeenCalled();
   });
 
   it("grants batch permissions through the canonical super-admin path", async () => {
@@ -60,5 +61,6 @@ describe("PermissionService super admin handling", () => {
       PermissionService.batchCheckPermissions(42, [11, 12], "VIEW")
     ).resolves.toEqual({ 11: true, 12: true });
     expect(mockIsSuperAdmin).toHaveBeenCalledWith("42");
+    expect(mockGetDb).not.toHaveBeenCalled();
   });
 });
