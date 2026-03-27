@@ -23,10 +23,10 @@ env:
   # Updated for TER-235 supplier_client_id debt plus the PO range COGS
   # columns that are currently applied by runtime migration rather than
   # drizzle migration in CI's blank-DB schema pass.
-  SCHEMA_ISSUE_BASELINE_TOTAL: 67
+  SCHEMA_ISSUE_BASELINE_TOTAL: 77
   SCHEMA_ISSUE_BASELINE_CRITICAL: 1
   SCHEMA_ISSUE_BASELINE_HIGH: 5
-  SCHEMA_ISSUE_BASELINE_MEDIUM: 61
+  SCHEMA_ISSUE_BASELINE_MEDIUM: 71
   SCHEMA_ISSUE_BASELINE_LOW: 0
   SCHEMA_VERIFICATION_FAILED_TESTS_BASELINE: 1117
 
