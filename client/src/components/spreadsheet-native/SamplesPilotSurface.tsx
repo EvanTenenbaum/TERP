@@ -1041,6 +1041,12 @@ export function SamplesPilotSurface({
           onSelectedRowChange={row =>
             setSelectedSampleId(row?.sampleId ?? null)
           }
+          onRowClicked={event => {
+            const row = event.data;
+            if (row) {
+              setSelectedSampleId(row.sampleId);
+            }
+          }}
           selectionMode="cell-range"
           enableFillHandle={false}
           enableUndoRedo={false}
