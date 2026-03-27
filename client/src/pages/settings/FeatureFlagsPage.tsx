@@ -193,7 +193,7 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
     if (!flags) return [];
     const map = new Map<string, typeof flags>();
     for (const flag of flags) {
-      const key = flag.module ?? "General";
+      const key = flag.module || "General";
       const arr = map.get(key) ?? [];
       arr.push(flag);
       map.set(key, arr);
