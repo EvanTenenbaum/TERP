@@ -37,7 +37,10 @@ export function QuickAddTaskModal({
   const utils = trpc.useContext();
 
   // Fetch user's lists - handle paginated response
-  const { data: listsData } = trpc.todoLists.getMyLists.useQuery();
+  const { data: listsData, isLoading: isListsLoading } =
+    trpc.todoLists.getMyLists.useQuery(undefined, {
+      enabled: isOpen,
+    });
   // Wrap in useMemo to stabilize the array reference. Without this, the conditional
   // expression produces a new array on every render even when listsData hasn't changed,
   // which causes the useEffect below (which lists `lists` in its deps) to run on every render.
@@ -140,7 +143,11 @@ export function QuickAddTaskModal({
                 <SelectValue placeholder="Select a list" />
               </SelectTrigger>
               <SelectContent>
-                {lists.length === 0 ? (
+                {isOpen && isListsLoading ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                    Loading lists...
+                  </div>
+                ) : lists.length === 0 ? (
                   <div className="px-2 py-3 text-sm text-muted-foreground text-center">
                     No lists yet. Create one first!
                   </div>
