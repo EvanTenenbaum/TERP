@@ -198,4 +198,45 @@ describe("Bills line item states", () => {
     expect(screen.getByText(/Qty 3 × \$15\.00/i)).toBeInTheDocument();
     expect(screen.getByText("$45.00")).toBeInTheDocument();
   });
+
+  it("keeps the selected bill drawer open across bill-list refreshes", async () => {
+    billDetailResult = {
+      data: {
+        lineItems: [
+          {
+            id: 10,
+            description: "Packaging materials",
+            quantity: "3",
+            unitPrice: "15.00",
+            lineTotal: "45.00",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    };
+
+    const { rerender } = render(<Bills embedded />);
+    fireEvent.click(screen.getByText("BILL-001"));
+    expect(screen.getByTestId("bill-sheet")).toBeInTheDocument();
+
+    listResult.data = {
+      items: [
+        {
+          ...listResult.data.items[0],
+          status: "PAID",
+          amountPaid: "120.00",
+          amountDue: "0.00",
+        },
+      ],
+      pagination: { total: 1 },
+    };
+
+    rerender(<Bills embedded />);
+
+    expect(screen.getByTestId("bill-sheet")).toBeInTheDocument();
+    expect(screen.getByText("BILL-001")).toBeInTheDocument();
+    expect(screen.getByText("Packaging materials")).toBeInTheDocument();
+  });
 });

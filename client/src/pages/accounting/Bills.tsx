@@ -195,7 +195,23 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   };
 
   useEffect(() => {
-    setSelectedBill(findBillByRouteId(bills?.items ?? [], routeBillId));
+    const billList = (bills?.items ?? []) as Bill[];
+
+    if (routeBillId !== null) {
+      setSelectedBill(findBillByRouteId(billList, routeBillId));
+      return;
+    }
+
+    setSelectedBill(currentSelection => {
+      if (!currentSelection) {
+        return null;
+      }
+
+      return (
+        billList.find(bill => bill.id === currentSelection.id) ??
+        currentSelection
+      );
+    });
   }, [bills, routeBillId]);
 
   useEffect(() => {
