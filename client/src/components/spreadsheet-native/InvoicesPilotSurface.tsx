@@ -1183,16 +1183,6 @@ export function InvoicesPilotSurface({
       <PowersheetGrid
         surfaceId="invoices-registry"
         requirementIds={["INV-001", "INV-002", "INV-003", "INV-009", "INV-020"]}
-        releaseGateIds={[
-          "INV-001",
-          "INV-002",
-          "INV-003",
-          "INV-006",
-          "INV-007",
-          "INV-013",
-          "INV-014",
-          "INV-015",
-        ]}
         affordances={registryAffordances}
         title="Invoices Registry"
         description="Read-only registry of all invoices. Row selection enables status actions and opens the inspector for full detail."
@@ -1217,7 +1207,6 @@ export function InvoicesPilotSurface({
             {statusFilter !== "ALL" ? statusFilter : "All statuses"}
           </span>
         }
-        antiDriftSummary="Registry gates: status filtering, row selection, workflow actions, PDF/print sidecars."
         minHeight={360}
       />
 

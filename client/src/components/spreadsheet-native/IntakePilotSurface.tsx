@@ -2503,7 +2503,6 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   "OPS-INT-004",
                   "OPS-INT-005",
                 ]}
-                releaseGateIds={["INT-PILOT-001"]}
                 affordances={intakeAffordances}
                 title="Direct Intake Session"
                 description="Draft and submit inventory intake rows. Pending rows are editable."
@@ -2531,7 +2530,6 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                     )}
                   </span>
                 }
-                antiDriftSummary="OPS-INT-001: Pending rows editable · OPS-INT-004: Single-row submit · OPS-INT-005: Bulk submit + CSV export"
                 minHeight={360}
               />
             </div>

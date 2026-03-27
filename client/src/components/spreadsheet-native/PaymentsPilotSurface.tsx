@@ -742,7 +742,6 @@ export function PaymentsPilotSurface({
       <PowersheetGrid
         surfaceId="payments-registry"
         requirementIds={["PAY-001", "PAY-002", "PAY-003", "PAY-004", "PAY-014"]}
-        releaseGateIds={["PAY-G1"]}
         affordances={registryAffordances}
         title="Payments Registry"
         description="Read-only payment transaction ledger. Select a row to see details and take actions."
@@ -772,7 +771,6 @@ export function PaymentsPilotSurface({
             {gridRows.length} payment{gridRows.length !== 1 ? "s" : ""} visible
           </span>
         }
-        antiDriftSummary="Preserves: browse, filter by type, sort by date/amount/type/number, deep-link, record payment, void payment."
         minHeight={360}
       />
 

@@ -222,11 +222,11 @@ describe("PurchaseOrdersPilotSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the sheet-native pilot badge", () => {
+  it("does not render internal pilot badge to operators", () => {
     render(<PurchaseOrdersPilotSurface onOpenClassic={vi.fn()} />);
     expect(
-      screen.getByText("Sheet-native Pilot · PO Queue + Detail")
-    ).toBeInTheDocument();
+      screen.queryByText("Sheet-native Pilot · PO Queue + Detail")
+    ).not.toBeInTheDocument();
   });
 
   it("renders the keyboard hint bar", () => {

@@ -378,12 +378,6 @@ export function OrdersSheetPilotSurface({
 
   const queueSelectionTouchesMultipleRows =
     (queueSelectionSummary?.selectedRowCount ?? 0) > 1;
-  const workflowActionTargetLabel = selectedOrderRow
-    ? `Workflow target: focused order ${selectedOrderRow.orderNumber}`
-    : "Workflow target: select a focused order";
-  const workflowActionGuardrail = queueSelectionTouchesMultipleRows
-    ? "Spreadsheet selection spans multiple rows. Workflow actions stay locked until the focused row is the only selected row in scope."
-    : "Workflow actions remain explicit row-scoped actions. Cell selections do not change handoff ownership.";
 
   const canOpenAccounting = selectedOrderRow?.lane === "confirmed";
   const canOpenShipping = Boolean(
@@ -456,12 +450,6 @@ export function OrdersSheetPilotSurface({
             Keyboard:
           </span>
           <KeyboardHintBar hints={documentKeyboardHints} className="text-xs" />
-          {import.meta.env.DEV && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              Spreadsheet edits stay in the grid. Finalize and handoffs use the
-              buttons below.
-            </span>
-          )}
         </div>
       </div>
     );
@@ -503,28 +491,8 @@ export function OrdersSheetPilotSurface({
         <span className="text-sm font-medium text-foreground">
           {selectedOrderRow
             ? `${selectedOrderRow.orderNumber} selected`
-            : "Queue evaluation active"}
+            : "Select an order to take action"}
         </span>
-        {import.meta.env.DEV && (
-          <Badge
-            variant={rowScopedActionsBlocked ? "secondary" : "outline"}
-            className="max-w-full"
-          >
-            {workflowActionTargetLabel}
-          </Badge>
-        )}
-        {import.meta.env.DEV && (
-          <span className="text-xs text-muted-foreground">
-            Primary actions stay on-sheet. The document flow now stays inside
-            the sheet-native Orders surface, while accounting and shipping
-            remain explicit owner handoffs.
-          </span>
-        )}
-        {import.meta.env.DEV && (
-          <span className="text-xs text-muted-foreground">
-            {workflowActionGuardrail}
-          </span>
-        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -609,13 +577,6 @@ export function OrdersSheetPilotSurface({
       <PowersheetGrid
         surfaceId="orders-queue"
         requirementIds={["ORD-WF-001", "ORD-WF-006", "ORD-WF-007"]}
-        releaseGateIds={[
-          "SALE-ORD-019",
-          "SALE-ORD-023",
-          "SALE-ORD-024",
-          "SALE-ORD-026",
-          "SALE-ORD-027",
-        ]}
         affordances={queueAffordances}
         title="Orders Queue"
         description="One dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context."
@@ -640,7 +601,6 @@ export function OrdersSheetPilotSurface({
             {confirmedRows.length} confirmed
           </span>
         }
-        antiDriftSummary="Queue release gates: spreadsheet selection parity, discoverability, and explicit workflow actions."
         minHeight={360}
       />
 
@@ -685,7 +645,6 @@ export function OrdersSheetPilotSurface({
       <PowersheetGrid
         surfaceId="orders-support-grid"
         requirementIds={["ORD-WF-002"]}
-        releaseGateIds={["SALE-ORD-023", "SALE-ORD-026"]}
         affordances={supportAffordances}
         title="Selected Order Lines"
         description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
@@ -708,7 +667,6 @@ export function OrdersSheetPilotSurface({
             </span>
           ) : undefined
         }
-        antiDriftSummary="Support-grid release gate: linked lines must share the same spreadsheet grammar and active-order synchronization."
         minHeight={220}
       />
 

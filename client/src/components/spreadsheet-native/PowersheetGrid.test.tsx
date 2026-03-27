@@ -63,7 +63,7 @@ vi.mock("./SpreadsheetPilotGrid", () => ({
 }));
 
 describe("PowersheetGrid", () => {
-  it("surfaces selection state, anti-drift context, and release gates through the shared adapter", () => {
+  it("renders the user-facing summary and does not expose internal engineering annotations", () => {
     render(
       <PowersheetGrid
         surfaceId="orders-queue"
@@ -81,21 +81,24 @@ describe("PowersheetGrid", () => {
     );
 
     expect(screen.getByTestId("mock-powersheet-grid")).toBeInTheDocument();
+    // User-facing summary is rendered
+    expect(screen.getByText("1 visible order")).toBeInTheDocument();
+    // Internal engineering annotations must not be visible to operators
     expect(
-      screen.getByTestId("orders-queue-selection-summary")
-    ).toHaveTextContent("6 selected cells · 2 rows in scope");
+      screen.queryByTestId("orders-queue-selection-summary")
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByTestId("orders-queue-selection-state")
-    ).toHaveTextContent("Focused cell: 2:sku · Ranges: 1");
-    expect(screen.getByTestId("orders-queue-release-gates")).toHaveTextContent(
-      "SALE-ORD-019, SALE-ORD-024"
-    );
+      screen.queryByTestId("orders-queue-selection-state")
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByTestId("orders-queue-anti-drift-summary")
-    ).toHaveTextContent("Queue selection parity must stay visible.");
+      screen.queryByTestId("orders-queue-release-gates")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("orders-queue-anti-drift-summary")
+    ).not.toBeInTheDocument();
   });
 
-  it("still surfaces shared selection summaries when no external summary props are provided", () => {
+  it("renders without crashing when no summary props are provided", () => {
     render(
       <PowersheetGrid
         surfaceId="orders-support-grid"
@@ -109,15 +112,17 @@ describe("PowersheetGrid", () => {
       />
     );
 
+    expect(screen.getByTestId("mock-powersheet-grid")).toBeInTheDocument();
+    // No debug annotations rendered
     expect(
-      screen.getByTestId("orders-support-grid-selection-summary")
-    ).toHaveTextContent("6 selected cells · 2 rows in scope");
+      screen.queryByTestId("orders-support-grid-selection-summary")
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByTestId("orders-support-grid-selection-state")
-    ).toHaveTextContent("Focused cell: 2:sku · Ranges: 1");
+      screen.queryByTestId("orders-support-grid-selection-state")
+    ).not.toBeInTheDocument();
   });
 
-  it("renders affordance availability with strikethrough cues for unavailable actions", () => {
+  it("accepts affordances prop without rendering internal affordance badges", () => {
     render(
       <PowersheetGrid
         surfaceId="orders-document-grid"
@@ -136,11 +141,10 @@ describe("PowersheetGrid", () => {
       />
     );
 
+    expect(screen.getByTestId("mock-powersheet-grid")).toBeInTheDocument();
+    // Internal affordance debug panel must not be rendered
     expect(
-      screen.getByTestId("orders-document-grid-affordances")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Copy")).not.toHaveClass("line-through");
-    expect(screen.getByText("Paste")).toHaveClass("line-through");
-    expect(screen.getByText("Fill")).toHaveClass("line-through");
+      screen.queryByTestId("orders-document-grid-affordances")
+    ).not.toBeInTheDocument();
   });
 });
