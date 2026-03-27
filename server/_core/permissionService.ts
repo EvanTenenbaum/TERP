@@ -13,10 +13,10 @@ import { getDb } from "./db";
 import {
   calendarEvents,
   calendarEventPermissions,
-  users,
   type CalendarEvent,
 } from "../../drizzle/schema";
 import cache, { CacheKeys, CacheTTL } from "./cache";
+import { isSuperAdmin } from "../services/permissionService";
 
 export type PermissionLevel = "VIEW" | "EDIT" | "DELETE" | "MANAGE";
 export type GrantType = "USER" | "ROLE" | "TEAM";
@@ -52,13 +52,9 @@ export class PermissionService {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    // BUG-094: Admin users have full MANAGE permission on all calendar events
-    const [userRecord] = await db
-      .select({ role: users.role })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    if (userRecord?.role === "admin") {
+    // BUG-094: use the canonical super-admin truth path instead of a local
+    // users.role shortcut so RBAC-only Super Admins get the same bypass.
+    if (await isSuperAdmin(String(userId))) {
       cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
@@ -294,13 +290,8 @@ export class PermissionService {
     if (!db) throw new Error("Database not available");
     const permissionMap: Record<number, boolean> = {};
 
-    // BUG-094: Admin users have full permission on all calendar events (consistent with hasPermission)
-    const [userRecord] = await db
-      .select({ role: users.role })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    if (userRecord?.role === "admin") {
+    // BUG-094: keep batch checks aligned with the canonical super-admin path.
+    if (await isSuperAdmin(String(userId))) {
       for (const id of eventIds) {
         permissionMap[id] = true;
       }
