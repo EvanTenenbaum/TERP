@@ -3,7 +3,7 @@ import React from "react";
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SamplesPilotSurface } from "./SamplesPilotSurface";
 
@@ -165,16 +165,17 @@ vi.mock("@/lib/trpc", () => ({
 }));
 
 vi.mock("@/lib/spreadsheet-native", async () => {
+  const React = await vi.importActual<typeof import("react")>("react");
   const actual = await vi.importActual<
     typeof import("@/lib/spreadsheet-native")
   >("@/lib/spreadsheet-native");
 
   return {
     ...actual,
-    useSpreadsheetSelectionParam: () => ({
-      selectedId: null,
-      setSelectedId: vi.fn(),
-    }),
+    useSpreadsheetSelectionParam: () => {
+      const [selectedId, setSelectedId] = React.useState<number | null>(null);
+      return { selectedId, setSelectedId };
+    },
   };
 });
 
@@ -182,13 +183,28 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    rows,
+    onRowClicked,
   }: {
     title: string;
     description?: string;
+    rows?: Array<{ sampleId: number; identity: { rowKey: string } }>;
+    onRowClicked?: (event: {
+      data: { sampleId: number; identity: { rowKey: string } };
+    }) => void;
   }) => (
     <div>
       <h2>{title}</h2>
       {description ? <p>{description}</p> : null}
+      {rows?.map(row => (
+        <button
+          key={row.identity.rowKey}
+          type="button"
+          onClick={() => onRowClicked?.({ data: row })}
+        >
+          Open sample {row.sampleId}
+        </button>
+      ))}
     </div>
   ),
 }));
@@ -216,15 +232,18 @@ vi.mock("@/components/work-surface/InspectorPanel", () => ({
   InspectorPanel: ({
     children,
     title,
+    isOpen,
   }: {
     children: React.ReactNode;
     title?: string;
-  }) => (
-    <div>
-      {title ? <h3>{title}</h3> : null}
-      {children}
-    </div>
-  ),
+    isOpen?: boolean;
+  }) =>
+    isOpen ? (
+      <div>
+        {title ? <h3>{title}</h3> : null}
+        {children}
+      </div>
+    ) : null,
   InspectorSection: ({
     title,
     children,
@@ -342,5 +361,13 @@ describe("SamplesPilotSurface", () => {
     expect(
       screen.getByRole("group", { name: /keyboard shortcuts/i })
     ).toBeInTheDocument();
+  });
+
+  it("opens the inspector when a sample row is clicked", () => {
+    render(<SamplesPilotSurface onOpenClassic={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /open sample 1/i }));
+
+    expect(screen.getByText("Sample #1")).toBeInTheDocument();
+    expect(screen.getByText("Request Details")).toBeInTheDocument();
   });
 });

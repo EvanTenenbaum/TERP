@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,8 +151,34 @@ export function AddClientWizard({
     formData.notes !== "";
   useBeforeUnloadWarning(hasFormData && open);
 
-  // Fetch all existing tags for autocomplete
-  const { data: existingTags } = trpc.clients.tags.getAll.useQuery();
+  const resetForm = useCallback(() => {
+    setStep(1);
+    setFormData(buildInitialFormData(defaultRoles));
+    setNewTag("");
+  }, [defaultRoles]);
+
+  const handleWizardOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        resetForm();
+        setDeleteTagConfirm(null);
+      }
+      onOpenChange(nextOpen);
+    },
+    [onOpenChange, resetForm]
+  );
+
+  useEffect(() => {
+    if (!open) {
+      resetForm();
+      setDeleteTagConfirm(null);
+    }
+  }, [open, resetForm]);
+
+  // Fetch tags only while the wizard is open.
+  const { data: existingTags } = trpc.clients.tags.getAll.useQuery(undefined, {
+    enabled: open,
+  });
 
   // Create client mutation
   // BUG-071 FIX: Enhanced error handling with detailed messages
@@ -166,8 +192,7 @@ export function AddClientWizard({
       // TER-185: Invalidate client list so new client appears immediately
       utils.clients.list.invalidate();
       utils.clients.count.invalidate();
-      onOpenChange(false);
-      resetForm();
+      handleWizardOpenChange(false);
       if (onSuccess && data) onSuccess(data as number);
     },
     onError: error => {
@@ -240,12 +265,6 @@ export function AddClientWizard({
       }
     },
   });
-
-  const resetForm = () => {
-    setStep(1);
-    setFormData(buildInitialFormData(defaultRoles));
-    setNewTag("");
-  };
 
   const handleNext = () => {
     if (step < TOTAL_STEPS) setStep(step + 1);
@@ -404,7 +423,7 @@ export function AddClientWizard({
     formData.isContractor;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleWizardOpenChange}>
       <DialogContent className="w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add New Client</DialogTitle>
@@ -1068,10 +1087,7 @@ export function AddClientWizard({
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                resetForm();
-              }}
+              onClick={() => handleWizardOpenChange(false)}
             >
               Cancel
             </Button>
