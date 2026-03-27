@@ -4,7 +4,14 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { strainService } from "../services/strainService";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { db } from "../db";
-import { orders, clients, batches, payments } from "../../drizzle/schema";
+import {
+  orders,
+  clients,
+  batches,
+  payments,
+  organizationSettings,
+} from "../../drizzle/schema";
+import { hasAnyPermission, isSuperAdmin } from "../services/permissionService";
 import {
   count,
   sum,
@@ -28,6 +35,61 @@ import type {
   ExportData,
 } from "../services/analytics";
 import { getDateRange, formatAsCSV } from "../services/analytics";
+
+const ANALYTICS_COST_VISIBILITY_PERMISSIONS = [
+  "cogs:access",
+  "cogs:view",
+  "cogs:read",
+  "cogs:edit",
+  "accounting:access",
+  "accounting:read",
+  "accounting:manage",
+  "accounting:admin",
+  "settings:manage",
+] as const;
+
+export function canViewCogsAnalytics(args: {
+  cogsDisplayMode: unknown;
+  isSuperAdmin: boolean;
+  hasCogsAccess: boolean;
+}) {
+  const mode = args.cogsDisplayMode === "HIDDEN" ? "HIDDEN" : "ADMIN_ONLY";
+
+  if (mode === "HIDDEN") {
+    return false;
+  }
+
+  return args.isSuperAdmin || args.hasCogsAccess;
+}
+
+export function redactInventoryExportRows(
+  rows: Array<{
+    batchId: number;
+    batchCode: string | null;
+    onHandQty: string | number | null;
+    unitCogs: string | number | null;
+    createdAt: Date | null;
+  }>,
+  canViewCogsData: boolean
+) {
+  return rows.map(row => {
+    const baseRow = {
+      batchId: row.batchId,
+      batchCode: row.batchCode || "N/A",
+      onHandQty: Number(row.onHandQty || 0),
+      createdAt: row.createdAt?.toISOString() || "",
+    };
+
+    if (!canViewCogsData) {
+      return baseRow;
+    }
+
+    return {
+      ...baseRow,
+      unitCogs: Number(row.unitCogs || 0),
+    };
+  });
+}
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -96,7 +158,8 @@ export const analyticsRouter = router({
         };
       const [orderStats] = await db
         .select({ totalOrders: count(), totalRevenue: sum(orders.total) })
-        .from(orders);
+        .from(orders)
+        .where(isNull(orders.deletedAt));
       const [clientStats] = await db
         .select({ totalClients: count() })
         .from(clients)
@@ -116,7 +179,7 @@ export const analyticsRouter = router({
   getExtendedSummary: protectedProcedure
     .use(requirePermission("analytics:read"))
     .input(dateRangeInput)
-    .query(async ({ input }): Promise<ExtendedAnalytics> => {
+    .query(async ({ input, ctx }): Promise<ExtendedAnalytics> => {
       if (!db) {
         return {
           totalRevenue: 0,
@@ -131,9 +194,28 @@ export const analyticsRouter = router({
           ordersThisPeriod: 0,
           revenueThisPeriod: 0,
           newClientsThisPeriod: 0,
-          totalInventoryValue: 0,
+          totalInventoryValue: null,
         };
       }
+      const userOpenId = ctx.user?.openId ?? "";
+      const [orgCogsSetting] = await db
+        .select({ value: organizationSettings.settingValue })
+        .from(organizationSettings)
+        .where(eq(organizationSettings.settingKey, "cogs_display_mode"))
+        .limit(1);
+      const cogsDisplayMode = orgCogsSetting?.value
+        ? JSON.parse(orgCogsSetting.value as string)
+        : "ADMIN_ONLY";
+      const canViewCogsData = userOpenId
+        ? canViewCogsAnalytics({
+            cogsDisplayMode,
+            isSuperAdmin: await isSuperAdmin(userOpenId),
+            hasCogsAccess: await hasAnyPermission(userOpenId, [
+              ...ANALYTICS_COST_VISIBILITY_PERMISSIONS,
+            ]),
+          })
+        : false;
+
       const { startDate, endDate } =
         input.startDate && input.endDate
           ? { startDate: input.startDate, endDate: input.endDate }
@@ -145,7 +227,8 @@ export const analyticsRouter = router({
           totalRevenue: sum(orders.total),
           avgOrderValue: avg(orders.total),
         })
-        .from(orders);
+        .from(orders)
+        .where(isNull(orders.deletedAt));
       const [periodStats] = await db
         .select({
           ordersThisPeriod: count(),
@@ -153,7 +236,11 @@ export const analyticsRouter = router({
         })
         .from(orders)
         .where(
-          and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))
+          and(
+            isNull(orders.deletedAt),
+            gte(orders.createdAt, startDate),
+            lte(orders.createdAt, endDate)
+          )
         );
 
       const periodLength = endDate.getTime() - startDate.getTime();
@@ -163,6 +250,7 @@ export const analyticsRouter = router({
         .from(orders)
         .where(
           and(
+            isNull(orders.deletedAt),
             gte(orders.createdAt, prevStartDate),
             lte(orders.createdAt, startDate)
           )
@@ -216,7 +304,9 @@ export const analyticsRouter = router({
         ordersThisPeriod: Number(periodStats?.ordersThisPeriod || 0),
         revenueThisPeriod: currentRevenue,
         newClientsThisPeriod: Number(newClientStats?.newClients || 0),
-        totalInventoryValue: Number(inventoryStats?.totalInventoryValue || 0),
+        totalInventoryValue: canViewCogsData
+          ? Number(inventoryStats?.totalInventoryValue || 0)
+          : null,
       };
     }),
 
@@ -247,7 +337,11 @@ export const analyticsRouter = router({
         })
         .from(orders)
         .where(
-          and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate))
+          and(
+            isNull(orders.deletedAt),
+            gte(orders.createdAt, startDate),
+            lte(orders.createdAt, endDate)
+          )
         )
         .groupBy(sql`DATE_FORMAT(${orders.createdAt}, ${dateFormat})`)
         .orderBy(sql`period`)
@@ -283,7 +377,10 @@ export const analyticsRouter = router({
           orderCount: count(orders.id),
         })
         .from(clients)
-        .leftJoin(orders, eq(orders.clientId, clients.id))
+        .leftJoin(
+          orders,
+          and(eq(orders.clientId, clients.id), isNull(orders.deletedAt))
+        )
         .where(and(...conditions))
         .groupBy(clients.id, clients.name)
         .orderBy(
@@ -339,12 +436,31 @@ export const analyticsRouter = router({
   exportData: protectedProcedure
     .use(requirePermission("analytics:read"))
     .input(exportInput)
-    .mutation(async ({ input }): Promise<ExportData> => {
+    .mutation(async ({ input, ctx }): Promise<ExportData> => {
       if (!db)
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Database not available",
         });
+
+      const userOpenId = ctx.user?.openId ?? "";
+      const [orgCogsSetting] = await db
+        .select({ value: organizationSettings.settingValue })
+        .from(organizationSettings)
+        .where(eq(organizationSettings.settingKey, "cogs_display_mode"))
+        .limit(1);
+      const cogsDisplayMode = orgCogsSetting?.value
+        ? JSON.parse(orgCogsSetting.value as string)
+        : "ADMIN_ONLY";
+      const canViewCogsData = userOpenId
+        ? canViewCogsAnalytics({
+            cogsDisplayMode,
+            isSuperAdmin: await isSuperAdmin(userOpenId),
+            hasCogsAccess: await hasAnyPermission(userOpenId, [
+              ...ANALYTICS_COST_VISIBILITY_PERMISSIONS,
+            ]),
+          })
+        : false;
 
       const timestamp = new Date().toISOString().split("T")[0];
       let data: Record<string, unknown>[];
@@ -359,7 +475,8 @@ export const analyticsRouter = router({
               totalRevenue: sum(orders.total),
               avgOrderValue: avg(orders.total),
             })
-            .from(orders);
+            .from(orders)
+            .where(isNull(orders.deletedAt));
           const [clientStats] = await db
             .select({ totalClients: count() })
             .from(clients)
@@ -407,7 +524,12 @@ export const analyticsRouter = router({
               orderCount: count(),
             })
             .from(orders)
-            .where(conditions.length > 0 ? and(...conditions) : undefined)
+            .where(
+              and(
+                isNull(orders.deletedAt),
+                ...(conditions.length > 0 ? conditions : [])
+              )
+            )
             .groupBy(sql`DATE(${orders.createdAt})`)
             .orderBy(sql`date`);
           data = revenueData.map(r => ({
@@ -431,7 +553,10 @@ export const analyticsRouter = router({
               orderCount: count(orders.id),
             })
             .from(clients)
-            .leftJoin(orders, eq(orders.clientId, clients.id))
+            .leftJoin(
+              orders,
+              and(eq(orders.clientId, clients.id), isNull(orders.deletedAt))
+            )
             .where(isNull(clients.deletedAt))
             .groupBy(
               clients.id,
@@ -477,20 +602,10 @@ export const analyticsRouter = router({
             .from(batches)
             .where(isNull(batches.deletedAt))
             .orderBy(desc(batches.createdAt));
-          data = inventoryData.map(b => ({
-            batchId: b.batchId,
-            batchCode: b.batchCode || "N/A",
-            onHandQty: Number(b.onHandQty || 0),
-            unitCogs: Number(b.unitCogs || 0),
-            createdAt: b.createdAt?.toISOString() || "",
-          }));
-          headers = [
-            "batchId",
-            "batchCode",
-            "onHandQty",
-            "unitCogs",
-            "createdAt",
-          ];
+          data = redactInventoryExportRows(inventoryData, canViewCogsData);
+          headers = canViewCogsData
+            ? ["batchId", "batchCode", "onHandQty", "unitCogs", "createdAt"]
+            : ["batchId", "batchCode", "onHandQty", "createdAt"];
           filename = `inventory-report-${timestamp}`;
           break;
         }

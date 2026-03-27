@@ -239,6 +239,22 @@ export function shouldSeedComposerFromRoute(params: {
   );
 }
 
+export function resolveOrderCostVisibility(settings?: {
+  display?: {
+    canViewCogsData?: boolean;
+    showCogsInOrders?: boolean;
+    showMarginInOrders?: boolean;
+  };
+}) {
+  const canViewCogsData = Boolean(settings?.display?.canViewCogsData);
+
+  return {
+    showCogs: canViewCogsData && Boolean(settings?.display?.showCogsInOrders),
+    showMargin:
+      canViewCogsData && Boolean(settings?.display?.showMarginInOrders),
+  };
+}
+
 const normalizeFingerprintNumber = (
   value: number | null | undefined,
   precision = 4
@@ -479,6 +495,8 @@ export default function OrderCreatorPageV2({
     null
   );
   const { hasAnyPermission } = usePermissions();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const canViewPricingContext = hasAnyPermission([
     "orders:view_pricing",
     "pricing:read",
@@ -500,6 +518,10 @@ export default function OrderCreatorPageV2({
 
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
     useSaveState();
+  const { showCogs, showMargin } = useMemo(
+    () => resolveOrderCostVisibility(displaySettings),
+    [displaySettings]
+  );
   const undo = useUndo({ enableKeyboard: false });
   const {
     getFieldState: getOrderFieldState,
@@ -1734,6 +1756,8 @@ export default function OrderCreatorPageV2({
                           items={items}
                           clientId={clientId}
                           onChange={handleLineItemsChange}
+                          showCogsColumn={showCogs}
+                          showMarginColumn={showMargin}
                           onAddItem={() => {
                             const inventoryBrowser = document.getElementById(
                               "inventory-browser-section"
@@ -1758,6 +1782,8 @@ export default function OrderCreatorPageV2({
                             items={items}
                             clientId={clientId}
                             onChange={handleLineItemsChange}
+                            showCogs={showCogs}
+                            showMargin={showMargin}
                             onAddItem={() => {
                               const inventoryBrowser = document.getElementById(
                                 "inventory-browser-section"
@@ -1890,7 +1916,8 @@ export default function OrderCreatorPageV2({
                       showAdjustment={showAdjustmentOnDocument}
                       total={totals.total}
                       orderType={orderType}
-                      showInternalMetrics={true}
+                      showCogs={showCogs}
+                      showMargin={showMargin}
                       onUpdateItem={(batchId, updates) => {
                         setItems(prevItems =>
                           prevItems.map(item =>
@@ -1909,6 +1936,8 @@ export default function OrderCreatorPageV2({
                     totals={totals}
                     warnings={warnings}
                     isValid={isValid}
+                    showCogs={showCogs}
+                    showMargin={showMargin}
                   />
 
                   {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}

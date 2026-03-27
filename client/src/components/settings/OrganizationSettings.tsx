@@ -68,7 +68,7 @@ export function GeneralOrgSettings() {
   const canManageCogs =
     isSuperAdmin ||
     hasPermission("settings:manage") ||
-    hasPermission("settings:cogs");
+    hasPermission("cogs:update");
   const updateMutation = trpc.organizationSettings.settings.update.useMutation({
     onSuccess: () => {
       toast.success("Setting updated successfully");
@@ -84,6 +84,8 @@ export function GeneralOrgSettings() {
   };
 
   const settingsMap = settings?.settingsMap || {};
+  const resolvedCogsDisplayMode =
+    settingsMap.cogs_display_mode === "HIDDEN" ? "HIDDEN" : "ADMIN_ONLY";
 
   return (
     <Card>
@@ -212,7 +214,7 @@ export function GeneralOrgSettings() {
             <div className="space-y-2">
               <Label>COGS Display Mode</Label>
               <Select
-                value={String(settingsMap.cogs_display_mode || "ADMIN_ONLY")}
+                value={resolvedCogsDisplayMode}
                 onValueChange={value =>
                   updateMutation.mutate({ key: "cogs_display_mode", value })
                 }
@@ -222,13 +224,13 @@ export function GeneralOrgSettings() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="VISIBLE">Visible to All Users</SelectItem>
                   <SelectItem value="ADMIN_ONLY">Admin Only</SelectItem>
                   <SelectItem value="HIDDEN">Hidden</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                Control who can see COGS and margin information in orders
+                Restrict COGS and margin information to authorized finance users
+                or hide it entirely.
               </p>
             </div>
           </div>
@@ -245,6 +247,12 @@ export function UserPreferencesSettings() {
   const { data: preferences, refetch } =
     trpc.organizationSettings.userPreferences.get.useQuery();
   const { data: locations } = trpc.settings.locations.list.useQuery();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canViewCogsPreferences =
+    isSuperAdmin ||
+    hasPermission("cogs:read") ||
+    hasPermission("cogs:update") ||
+    hasPermission("settings:manage");
 
   const updateMutation =
     trpc.organizationSettings.userPreferences.update.useMutation({
@@ -308,37 +316,46 @@ export function UserPreferencesSettings() {
         <div className="space-y-4">
           <h3 className="text-sm font-semibold">Display Preferences</h3>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show COGS in Orders</Label>
-              <p className="text-sm text-muted-foreground">
-                Display cost information when creating orders
-              </p>
-            </div>
-            <Switch
-              checked={preferences?.showCogsInOrders ?? true}
-              onCheckedChange={checked =>
-                updateMutation.mutate({ showCogsInOrders: checked })
-              }
-              disabled={updateMutation.isPending}
-            />
-          </div>
+          {canViewCogsPreferences ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Show COGS in Orders</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Display cost information when creating orders
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences?.showCogsInOrders ?? true}
+                  onCheckedChange={checked =>
+                    updateMutation.mutate({ showCogsInOrders: checked })
+                  }
+                  disabled={updateMutation.isPending}
+                />
+              </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show Margin in Orders</Label>
-              <p className="text-sm text-muted-foreground">
-                Display margin calculations when creating orders
-              </p>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Show Margin in Orders</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Display margin calculations when creating orders
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences?.showMarginInOrders ?? true}
+                  onCheckedChange={checked =>
+                    updateMutation.mutate({ showMarginInOrders: checked })
+                  }
+                  disabled={updateMutation.isPending}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+              COGS and margin preferences are hidden because your role does not
+              include COGS access.
             </div>
-            <Switch
-              checked={preferences?.showMarginInOrders ?? true}
-              onCheckedChange={checked =>
-                updateMutation.mutate({ showMarginInOrders: checked })
-              }
-              disabled={updateMutation.isPending}
-            />
-          </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">

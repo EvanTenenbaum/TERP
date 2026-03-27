@@ -18,6 +18,8 @@ interface OrderTotalsPanelProps {
   isValid: boolean;
   /** TER-205: Hide COGS/margin in customer-facing contexts */
   hideInternalMetrics?: boolean;
+  showCogs?: boolean;
+  showMargin?: boolean;
 }
 
 export function OrderTotalsPanel({
@@ -25,8 +27,12 @@ export function OrderTotalsPanel({
   warnings,
   isValid,
   hideInternalMetrics = false,
+  showCogs = true,
+  showMargin = true,
 }: OrderTotalsPanelProps) {
   const fmt = (value: number) => `$${value.toFixed(2)}`;
+  const renderCogs = !hideInternalMetrics && showCogs;
+  const renderMargin = !hideInternalMetrics && showMargin;
 
   const getMarginColor = (percent: number) => {
     if (percent < 0) return "text-red-600";
@@ -52,34 +58,38 @@ export function OrderTotalsPanel({
         </div>
 
         {/* COGS + Margin — hidden in customer-facing mode (TER-205) */}
-        {!hideInternalMetrics && (
+        {(renderCogs || renderMargin) && (
           <>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Package className="h-3 w-3" />
-                Total COGS
-              </span>
-              <span className="font-medium text-muted-foreground">
-                {fmt(totals.totalCogs)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Total Margin
-              </span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-semibold ${getMarginColor(totals.avgMarginPercent)}`}
-                >
-                  {fmt(totals.totalMargin)}
+            {renderCogs ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Package className="h-3 w-3" />
+                  Total COGS
                 </span>
-                <Badge variant="secondary" className="text-xs">
-                  {totals.avgMarginPercent.toFixed(1)}%
-                </Badge>
+                <span className="font-medium text-muted-foreground">
+                  {fmt(totals.totalCogs)}
+                </span>
               </div>
-            </div>
+            ) : null}
+
+            {renderMargin ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  Total Margin
+                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`font-semibold ${getMarginColor(totals.avgMarginPercent)}`}
+                  >
+                    {fmt(totals.totalMargin)}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {totals.avgMarginPercent.toFixed(1)}%
+                  </Badge>
+                </div>
+              </div>
+            ) : null}
           </>
         )}
 

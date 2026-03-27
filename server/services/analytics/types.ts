@@ -21,7 +21,7 @@ export interface ExtendedAnalytics extends AnalyticsSummary {
   ordersThisPeriod: number;
   revenueThisPeriod: number;
   newClientsThisPeriod: number;
-  totalInventoryValue: number;
+  totalInventoryValue: number | null;
 }
 
 /** Client strain preference data */

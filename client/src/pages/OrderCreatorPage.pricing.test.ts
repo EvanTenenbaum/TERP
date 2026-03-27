@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   resolveInventoryPricingContext,
+  resolveOrderCostVisibility,
   resolveRouteSeedOrderType,
   shouldSeedComposerFromRoute,
   shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget,
@@ -90,5 +91,33 @@ describe("resolveInventoryPricingContext", () => {
         needIdFromRoute: null,
       })
     ).toBe(false);
+  });
+
+  it("only exposes cost controls when display settings confirm COGS access", () => {
+    expect(
+      resolveOrderCostVisibility({
+        display: {
+          canViewCogsData: false,
+          showCogsInOrders: true,
+          showMarginInOrders: true,
+        },
+      })
+    ).toEqual({
+      showCogs: false,
+      showMargin: false,
+    });
+
+    expect(
+      resolveOrderCostVisibility({
+        display: {
+          canViewCogsData: true,
+          showCogsInOrders: true,
+          showMarginInOrders: false,
+        },
+      })
+    ).toEqual({
+      showCogs: true,
+      showMargin: false,
+    });
   });
 });

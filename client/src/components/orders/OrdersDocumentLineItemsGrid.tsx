@@ -45,6 +45,8 @@ interface OrdersDocumentLineItemsGridProps {
   clientId: number | null;
   onChange: (items: LineItem[]) => void;
   onAddItem?: () => void;
+  showCogsColumn?: boolean;
+  showMarginColumn?: boolean;
 }
 
 type OrdersDocumentEditableField =
@@ -592,6 +594,8 @@ export function OrdersDocumentLineItemsGrid({
   clientId,
   onChange,
   onAddItem,
+  showCogsColumn = true,
+  showMarginColumn = true,
 }: OrdersDocumentLineItemsGridProps) {
   const [selectionSet, setSelectionSet] =
     useState<PowersheetSelectionSet | null>(null);
@@ -671,6 +675,7 @@ export function OrdersDocumentLineItemsGrid({
         field: "cogsPerUnit",
         headerName: "COGS / Unit",
         minWidth: 120,
+        hide: !showCogsColumn,
         editable: true,
         singleClickEdit: true,
         sortable: false,
@@ -684,6 +689,7 @@ export function OrdersDocumentLineItemsGrid({
         field: "marginPercent",
         headerName: "Margin %",
         minWidth: 110,
+        hide: !showMarginColumn,
         editable: true,
         singleClickEdit: true,
         sortable: false,
@@ -732,7 +738,7 @@ export function OrdersDocumentLineItemsGrid({
         valueFormatter: params => (params.value ? "Yes" : "No"),
       },
     ],
-    []
+    [showCogsColumn, showMarginColumn]
   );
 
   const notifyEditToast = (level: "warning" | "error", message: string) => {

@@ -81,6 +81,8 @@ interface LineItemTableProps {
   clientId: number | null;
   onChange: (items: LineItem[]) => void;
   onAddItem?: () => void;
+  showCogs?: boolean;
+  showMargin?: boolean;
 }
 
 // WSQA-002: State for batch selection dialog
@@ -125,6 +127,8 @@ export function LineItemTable({
   clientId,
   onChange,
   onAddItem,
+  showCogs = true,
+  showMargin = true,
 }: LineItemTableProps) {
   const { isCompact } = useUiDensity();
   // WSQA-002: Batch selection dialog state
@@ -478,36 +482,48 @@ export function LineItemTable({
               Delete
             </Button>
             <div className="ml-auto flex flex-wrap items-center gap-2">
-              <Input
-                value={bulkMarginPercent}
-                onChange={event => setBulkMarginPercent(event.target.value)}
-                placeholder="Margin %"
-                className="h-8 w-24 text-right"
-                inputMode="decimal"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleBulkApplyMargin}
-              >
-                Apply Margin
-              </Button>
-              <Input
-                value={bulkCogsPerUnit}
-                onChange={event => setBulkCogsPerUnit(event.target.value)}
-                placeholder="COGS"
-                className="h-8 w-24 text-right"
-                inputMode="decimal"
-              />
-              <Input
-                value={bulkCogsReason}
-                onChange={event => setBulkCogsReason(event.target.value)}
-                placeholder="COGS reason"
-                className="h-8 w-40"
-              />
-              <Button size="sm" variant="outline" onClick={handleBulkApplyCogs}>
-                Apply COGS
-              </Button>
+              {showMargin ? (
+                <>
+                  <Input
+                    value={bulkMarginPercent}
+                    onChange={event => setBulkMarginPercent(event.target.value)}
+                    placeholder="Margin %"
+                    className="h-8 w-24 text-right"
+                    inputMode="decimal"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkApplyMargin}
+                  >
+                    Apply Margin
+                  </Button>
+                </>
+              ) : null}
+              {showCogs ? (
+                <>
+                  <Input
+                    value={bulkCogsPerUnit}
+                    onChange={event => setBulkCogsPerUnit(event.target.value)}
+                    placeholder="COGS"
+                    className="h-8 w-24 text-right"
+                    inputMode="decimal"
+                  />
+                  <Input
+                    value={bulkCogsReason}
+                    onChange={event => setBulkCogsReason(event.target.value)}
+                    placeholder="COGS reason"
+                    className="h-8 w-40"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkApplyCogs}
+                  >
+                    Apply COGS
+                  </Button>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -556,12 +572,16 @@ export function LineItemTable({
                 <TableHead className="text-right w-[90px] py-2 text-xs uppercase tracking-wide">
                   Qty
                 </TableHead>
-                <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
-                  COGS/Unit
-                </TableHead>
-                <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
-                  Gross Margin
-                </TableHead>
+                {showCogs ? (
+                  <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
+                    COGS/Unit
+                  </TableHead>
+                ) : null}
+                {showMargin ? (
+                  <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
+                    Gross Margin
+                  </TableHead>
+                ) : null}
                 <TableHead className="text-right w-[110px] py-2 text-xs uppercase tracking-wide">
                   Price/Unit
                 </TableHead>
@@ -584,6 +604,8 @@ export function LineItemTable({
                     index={index}
                     clientId={clientId}
                     selected={rowSelection.isSelected(rowSelectionId)}
+                    showCogs={showCogs}
+                    showMargin={showMargin}
                     onToggleSelected={checked => {
                       if (checked !== rowSelection.isSelected(rowSelectionId)) {
                         rowSelection.toggleRow(rowSelectionId);
