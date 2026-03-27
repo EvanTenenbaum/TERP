@@ -38,6 +38,11 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: vi.fn(() => ({ data: { items: [] }, isLoading: false })),
       },
     },
+    organizationSettings: {
+      getDisplaySettings: {
+        useQuery: vi.fn(() => ({ data: { showCogsInOrders: false } })),
+      },
+    },
     useUtils: vi.fn(() => ({
       salesSheets: {
         getDrafts: { invalidate: vi.fn() },

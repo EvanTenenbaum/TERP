@@ -207,6 +207,10 @@ export function SalesCatalogueSurface() {
     { enabled: selectedClientId !== null }
   );
 
+  const displaySettingsQuery =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
+  const showCogs = displaySettingsQuery.data?.showCogsInOrders ?? false;
+
   // ── live session mutation ──────────────────────────────────────────────
   const liveSessionMutation = trpc.salesSheets.convertToLiveSession.useMutation(
     {
@@ -330,8 +334,8 @@ export function SalesCatalogueSurface() {
   );
 
   // ── column defs ────────────────────────────────────────────────────────
-  const inventoryColumnDefs = useMemo<ColDef<InventoryBrowserRow>[]>(
-    () => [
+  const inventoryColumnDefs = useMemo<ColDef<InventoryBrowserRow>[]>(() => {
+    const cols: ColDef<InventoryBrowserRow>[] = [
       {
         field: "status",
         headerName: "",
@@ -397,16 +401,30 @@ export function SalesCatalogueSurface() {
         maxWidth: 80,
         cellClass: "powersheet-cell--locked",
       },
-      {
-        field: "grade",
-        headerName: "Grade",
-        minWidth: 70,
-        maxWidth: 90,
+    ];
+
+    if (showCogs) {
+      cols.push({
+        headerName: "COGS",
+        minWidth: 75,
+        maxWidth: 95,
+        valueGetter: params =>
+          params.data?._raw.effectiveCogs ?? params.data?._raw.unitCogs ?? 0,
+        valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
         cellClass: "powersheet-cell--locked",
-      },
-    ],
-    []
-  );
+      });
+    }
+
+    cols.push({
+      field: "grade",
+      headerName: "Grade",
+      minWidth: 70,
+      maxWidth: 90,
+      cellClass: "powersheet-cell--locked",
+    });
+
+    return cols;
+  }, [showCogs]);
 
   const previewColumnDefs = useMemo<ColDef<SheetPreviewRow>[]>(
     () => [
@@ -907,11 +925,11 @@ export function SalesCatalogueSurface() {
             disabled={!draft.canConvert}
             onClick={() => {
               if (!draft.canConvert) return;
-              if (!draft.currentDraftId) {
+              if (!draft.lastSavedSheetId) {
                 toast.error("Save the catalogue before going live");
                 return;
               }
-              liveSessionMutation.mutate({ sheetId: draft.currentDraftId });
+              liveSessionMutation.mutate({ sheetId: draft.lastSavedSheetId });
             }}
           >
             Live
