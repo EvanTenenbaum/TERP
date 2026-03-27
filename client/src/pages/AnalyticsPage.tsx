@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Card,
   CardContent,
@@ -65,6 +66,8 @@ const periodLabels: Record<Period, string> = {
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("month");
   const [, setLocation] = useLocation();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canSeeCogs = isSuperAdmin || hasPermission("settings:manage");
 
   const { data, isLoading, error, refetch } =
     trpc.analytics.getExtendedSummary.useQuery({ period });
@@ -333,14 +336,16 @@ export default function AnalyticsPage() {
                   icon={Package}
                   isLoading={isLoading}
                 />
-                <MetricCard
-                  title="Inventory Value"
-                  href="/inventory"
-                  value={formatCurrency(data?.totalInventoryValue ?? 0)}
-                  subtitle="Est. COGS value of on-hand inventory"
-                  icon={DollarSign}
-                  isLoading={isLoading}
-                />
+                {canSeeCogs && (
+                  <MetricCard
+                    title="Inventory Value"
+                    href="/inventory"
+                    value={formatCurrency(data?.totalInventoryValue ?? 0)}
+                    subtitle="Est. COGS value of on-hand inventory"
+                    icon={DollarSign}
+                    isLoading={isLoading}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
