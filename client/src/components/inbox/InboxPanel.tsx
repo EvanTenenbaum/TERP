@@ -109,24 +109,20 @@ export function InboxPanel() {
         </div>
 
         {/*
-         * BUG-098: Replace Radix Tabs with explicit button-based filter strip.
-         * When InboxPanel is rendered inside a TabsContent of an outer Radix
-         * Tabs component (NotificationsHub), the nested Radix Tabs Root can
-         * conflict with the outer context, causing TabsTrigger click events to
-         * be silently swallowed.  Plain buttons with explicit onClick handlers
-         * are not subject to this nesting issue.
+         * BUG-098: Replace nested Radix tabs with an explicit button filter
+         * strip. This avoids the nested Tabs context issue in NotificationsHub
+         * without advertising tab semantics we do not fully implement.
          */}
         <div
-          role="tablist"
+          role="group"
           aria-label="Filter notifications"
           className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
         >
           {TABS.map(tab => (
             <button
               key={tab.value}
-              role="tab"
               type="button"
-              aria-selected={selectedTab === tab.value}
+              aria-pressed={selectedTab === tab.value}
               onClick={() => setSelectedTab(tab.value)}
               className={cn(
                 "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1 text-sm font-medium whitespace-nowrap transition-colors",

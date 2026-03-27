@@ -202,7 +202,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
 
   // Fetch clients for the searchable selector
   const { data: clientsData, isLoading: clientsLoading } =
-    trpc.clients.list.useQuery({ limit: 200 });
+    trpc.clients.list.useQuery({ limit: 1000 });
 
   const clientOptions = useMemo(() => {
     const items = Array.isArray(clientsData)

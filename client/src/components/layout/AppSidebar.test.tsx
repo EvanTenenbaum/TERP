@@ -6,7 +6,7 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { Sidebar } from "./Sidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
@@ -240,5 +240,27 @@ describe("AppSidebar navigation", () => {
 
     // Spreadsheet View has sidebarVisible: false, so it should never appear in the sidebar
     expect(screen.queryByText("Spreadsheet View")).not.toBeInTheDocument();
+  });
+
+  it("closes the mobile drawer when only the query string changes", async () => {
+    mockLocation = "/sales?tab=create-order";
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <ThemeProvider>
+        <Sidebar open onClose={() => onClose("initial")} />
+      </ThemeProvider>
+    );
+
+    onClose.mockClear();
+    mockLocation = "/sales?tab=quotes";
+    rerender(
+      <ThemeProvider>
+        <Sidebar open onClose={() => onClose("search-change")} />
+      </ThemeProvider>
+    );
+
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 });

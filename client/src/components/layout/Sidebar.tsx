@@ -130,15 +130,15 @@ export const Sidebar = React.memo(function Sidebar({
   const [collapsed, setCollapsed] = useState(false);
 
   // BUG-103: Auto-close the mobile drawer whenever the active route changes so
-  // the workspace is immediately visible after any navigation (including
-  // programmatic navigation that bypasses the Link onClick handlers).
+  // the workspace is immediately visible after any navigation, including
+  // query-only tab/surface changes and programmatic route updates.
   useEffect(() => {
     if (open) {
       onClose?.();
     }
-    // Only re-run when the *location* changes — not when open/onClose change.
+    // Only re-run when the active URL changes — not when open/onClose change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]);
+  }, [location, search]);
 
   const navigationScopeKey = useMemo(() => {
     if (currentUser?.id !== undefined && currentUser?.id !== null) {
