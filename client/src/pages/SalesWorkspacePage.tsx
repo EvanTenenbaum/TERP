@@ -75,15 +75,32 @@ export default function SalesWorkspacePage() {
         tab.value === "create-order" ? { ...tab, label: "New Quote" } : tab
       )
     : SALES_TABS_CONFIG_BASE;
-  const pilotSurfaceSupported =
-    activeTab === "orders" ||
-    activeTab === "create-order" ||
-    activeTab === "sales-sheets";
+  // Orders / create-order pilot (separate from sales-sheets to prevent cross-tab surfaceMode bleed)
+  const ordersPilotSupported =
+    activeTab === "orders" || activeTab === "create-order";
   const { sheetPilotEnabled, availabilityReady } =
-    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
+    useSpreadsheetPilotAvailability(ordersPilotSupported);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
     buildSurfaceAvailability(activeTab, sheetPilotEnabled, availabilityReady)
   );
+
+  // Sales-sheets pilot — independent surface mode so orders default (sheet-native) doesn't bleed in
+  const salesSheetsPilotSupported = activeTab === "sales-sheets";
+  const {
+    sheetPilotEnabled: salesSheetsPilotEnabled,
+    availabilityReady: salesSheetsAvailabilityReady,
+  } = useSpreadsheetPilotAvailability(salesSheetsPilotSupported);
+  const {
+    surfaceMode: salesSheetsSurfaceMode,
+    setSurfaceMode: setSalesSheetsSurfaceMode,
+  } = useSpreadsheetSurfaceMode(
+    buildSurfaceAvailability(
+      "sales-sheets",
+      salesSheetsPilotEnabled,
+      salesSheetsAvailabilityReady && salesSheetsPilotSupported
+    )
+  );
+
   useWorkspaceHomeTelemetry("sales", activeTab);
 
   if (activeTab === "pick-pack") {
@@ -102,13 +119,17 @@ export default function SalesWorkspacePage() {
       onTabChange={tab => setActiveTab(tab)}
       meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
-        activeTab === "orders" ||
-        activeTab === "create-order" ||
-        activeTab === "sales-sheets" ? (
+        activeTab === "orders" || activeTab === "create-order" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
             onSurfaceModeChange={setSurfaceMode}
+          />
+        ) : activeTab === "sales-sheets" ? (
+          <SheetModeToggle
+            enabled={salesSheetsPilotEnabled}
+            surfaceMode={salesSheetsSurfaceMode}
+            onSurfaceModeChange={setSalesSheetsSurfaceMode}
           />
         ) : null
       }
@@ -153,7 +174,8 @@ export default function SalesWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
-        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
+        {salesSheetsPilotEnabled &&
+        salesSheetsSurfaceMode === "sheet-native" ? (
           <PilotSurfaceBoundary fallback={<SalesSheetCreatorPage embedded />}>
             <SalesSheetsPilotSurface
               onOpenClassic={() =>
