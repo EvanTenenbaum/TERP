@@ -68,7 +68,15 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
       views: {
-        list: { useQuery: vi.fn(() => ({ data: { items: [] } })) },
+        list: {
+          useQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
+        },
+        save: {
+          useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+        },
+        delete: {
+          useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+        },
       },
       getById: {
         useQuery: vi.fn(() => ({

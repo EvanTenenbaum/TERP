@@ -20,6 +20,16 @@ import {
   SquareArrowOutUpRight,
   Trash2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -240,6 +250,12 @@ export function InventoryManagementSurface() {
   const [adjustDrawerState, setAdjustDrawerState] =
     useState<AdjustDrawerState | null>(null);
 
+  // Saved views state
+  const [currentViewId, setCurrentViewId] = useState<number | null>(null);
+  const [saveViewDialogOpen, setSaveViewDialogOpen] = useState(false);
+  const [saveViewName, setSaveViewName] = useState("");
+  const [saveViewShared, setSaveViewShared] = useState(false);
+
   const canUpdateInventory = hasPermission("inventory:update");
   const canDeleteInventory = hasPermission("inventory:delete");
 
@@ -376,6 +392,33 @@ export function InventoryManagementSurface() {
     },
     onError: error => {
       toast.error(error.message || "Failed to restore batches");
+    },
+  });
+
+  const saveViewMutation = trpc.inventory.views.save.useMutation({
+    onSuccess: result => {
+      toast.success("View saved");
+      setSaveViewDialogOpen(false);
+      setSaveViewName("");
+      setSaveViewShared(false);
+      void viewsQuery.refetch();
+      if (result && typeof result === "object" && "id" in result) {
+        setCurrentViewId(Number(result.id));
+      }
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to save view");
+    },
+  });
+
+  const _deleteViewMutation = trpc.inventory.views.delete.useMutation({
+    onSuccess: () => {
+      toast.success("View deleted");
+      void viewsQuery.refetch();
+      setCurrentViewId(null);
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to delete view");
     },
   });
 
@@ -857,10 +900,50 @@ export function InventoryManagementSurface() {
               <Badge className="ml-1.5 h-4 px-1 text-[10px]">!</Badge>
             )}
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs" disabled>
-            Saved Views
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs" disabled>
+          <Select
+            value={
+              currentViewId !== null ? String(currentViewId) : "__default__"
+            }
+            onValueChange={val => {
+              if (val === "__default__") {
+                setFilters(createDefaultInventoryFilters());
+                setCurrentViewId(null);
+              } else {
+                const viewId = Number(val);
+                const view = views.find(v => v.id === viewId);
+                if (view) {
+                  setFilters({
+                    ...createDefaultInventoryFilters(),
+                    ...(view.filters as Partial<InventoryFilterState>),
+                  });
+                  setCurrentViewId(viewId);
+                }
+              }
+            }}
+          >
+            <SelectTrigger
+              className="h-7 w-[160px] text-xs"
+              aria-label="Saved views"
+            >
+              <SelectValue placeholder="Saved Views" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__default__">Default (no view)</SelectItem>
+              {views.map(view => (
+                <SelectItem key={view.id} value={String(view.id)}>
+                  {view.name}
+                  {view.isShared ? " (shared)" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            disabled={!hasActiveFilters(filters)}
+            onClick={() => setSaveViewDialogOpen(true)}
+          >
             Save View
           </Button>
 
@@ -1221,6 +1304,72 @@ export function InventoryManagementSurface() {
           variant="destructive"
           onConfirm={handleBulkDeleteConfirm}
         />
+
+        {/* ── Save View Dialog ── */}
+        <Dialog
+          open={saveViewDialogOpen}
+          onOpenChange={open => {
+            setSaveViewDialogOpen(open);
+            if (!open) {
+              setSaveViewName("");
+              setSaveViewShared(false);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Current View</DialogTitle>
+              <DialogDescription>
+                Save the current filters as a named view for quick access later.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="save-view-name">View name</Label>
+                <Input
+                  id="save-view-name"
+                  value={saveViewName}
+                  onChange={e => setSaveViewName(e.target.value.slice(0, 100))}
+                  placeholder="e.g. Live THCA only"
+                  maxLength={100}
+                  autoFocus
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="save-view-shared"
+                  checked={saveViewShared}
+                  onCheckedChange={checked =>
+                    setSaveViewShared(checked === true)
+                  }
+                />
+                <Label htmlFor="save-view-shared" className="cursor-pointer">
+                  Share with team
+                </Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setSaveViewDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!saveViewName.trim() || saveViewMutation.isPending}
+                onClick={() => {
+                  saveViewMutation.mutate({
+                    name: saveViewName.trim(),
+                    filters: filters as unknown as Record<string, unknown>,
+                    isShared: saveViewShared,
+                  });
+                }}
+              >
+                {saveViewMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* ── 8. Adjustment Context Drawer (right side) ── */}
