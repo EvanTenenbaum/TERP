@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -9,13 +9,23 @@ import {
   CommandItem,
   CommandShortcut,
 } from "@/components/ui/command";
-import { HelpCircle, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
+import {
+  FileText,
+  HelpCircle,
+  LayoutDashboard,
+  Loader2,
+  Package,
+  Plus,
+  ReceiptText,
+  Users,
+} from "lucide-react";
 import { buildNavigationAccessModel } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
 } from "@/lib/workspaceRoutes";
+import { trpc } from "@/lib/trpc";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -25,6 +35,35 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
   const { flags, isLoading } = useFeatureFlags();
+  const [inputValue, setInputValue] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // Debounce the search query — 300ms after user stops typing
+  useEffect(() => {
+    if (inputValue.length <= 2) {
+      setDebouncedQuery("");
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDebouncedQuery(inputValue);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setInputValue("");
+      setDebouncedQuery("");
+    }
+  }, [open]);
+
+  const { data: searchResults, isLoading: isSearching } =
+    trpc.search.global.useQuery(
+      { query: debouncedQuery },
+      { enabled: debouncedQuery.length > 2 }
+    );
+
   const navigationAccessModel = useMemo(
     () =>
       buildNavigationAccessModel({
@@ -103,12 +142,98 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
   ];
 
+  const handleNavigate = (url: string) => {
+    setLocation(url);
+    onOpenChange(false);
+  };
+
+  const isActiveSearch = debouncedQuery.length > 2;
+  const hasQuotes = (searchResults?.quotes?.length ?? 0) > 0;
+  const hasCustomers = (searchResults?.customers?.length ?? 0) > 0;
+  const hasProducts = (searchResults?.products?.length ?? 0) > 0;
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput autoFocus placeholder="Type a command or search..." />
+      <CommandInput
+        autoFocus
+        placeholder="Type a command or search..."
+        value={inputValue}
+        onValueChange={setInputValue}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
+        {/* Search Results */}
+        {isActiveSearch && isSearching && (
+          <CommandGroup heading="Search Results">
+            <CommandItem disabled value={`${debouncedQuery} searching`}>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span>Searching...</span>
+            </CommandItem>
+          </CommandGroup>
+        )}
+
+        {isActiveSearch && !isSearching && hasQuotes && (
+          <CommandGroup heading="Quotes">
+            {(searchResults?.quotes ?? []).map(quote => (
+              <CommandItem
+                key={`quote-${quote.id}`}
+                value={`${debouncedQuery} search quote ${quote.title} ${quote.id}`}
+                onSelect={() => handleNavigate(quote.url)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>{quote.title}</span>
+                {quote.description && (
+                  <span className="ml-2 text-xs text-muted-foreground truncate">
+                    {quote.description}
+                  </span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {isActiveSearch && !isSearching && hasCustomers && (
+          <CommandGroup heading="Relationships">
+            {(searchResults?.customers ?? []).map(customer => (
+              <CommandItem
+                key={`customer-${customer.id}`}
+                value={`${debouncedQuery} search customer ${customer.title} ${customer.id}`}
+                onSelect={() => handleNavigate(customer.url)}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span>{customer.title}</span>
+                {customer.description && (
+                  <span className="ml-2 text-xs text-muted-foreground truncate">
+                    {customer.description}
+                  </span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {isActiveSearch && !isSearching && hasProducts && (
+          <CommandGroup heading="Products & Batches">
+            {(searchResults?.products ?? []).map(product => (
+              <CommandItem
+                key={`product-${product.type}-${product.id}`}
+                value={`${debouncedQuery} search product ${product.title} ${product.id}`}
+                onSelect={() => handleNavigate(product.url)}
+              >
+                <Package className="mr-2 h-4 w-4" />
+                <span>{product.title}</span>
+                {product.description && (
+                  <span className="ml-2 text-xs text-muted-foreground truncate">
+                    {product.description}
+                  </span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {/* Navigation */}
         <CommandGroup heading="Navigation">
           {navigationCommands.map(item => {
             const Icon = item.icon;
