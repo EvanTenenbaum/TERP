@@ -40,7 +40,9 @@ vi.mock("@/lib/trpc", () => ({
     },
     organizationSettings: {
       getDisplaySettings: {
-        useQuery: vi.fn(() => ({ data: { showCogsInOrders: false } })),
+        useQuery: vi.fn(() => ({
+          data: { display: { showCogsInOrders: false } },
+        })),
       },
     },
     useUtils: vi.fn(() => ({

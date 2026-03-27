@@ -209,7 +209,7 @@ export function SalesCatalogueSurface() {
 
   const displaySettingsQuery =
     trpc.organizationSettings.getDisplaySettings.useQuery();
-  const showCogs = displaySettingsQuery.data?.showCogsInOrders ?? false;
+  const showCogs = displaySettingsQuery.data?.display.showCogsInOrders ?? false;
 
   // ── live session mutation ──────────────────────────────────────────────
   const liveSessionMutation = trpc.salesSheets.convertToLiveSession.useMutation(

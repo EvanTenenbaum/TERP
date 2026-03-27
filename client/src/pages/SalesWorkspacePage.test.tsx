@@ -94,8 +94,10 @@ vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
   default: () => <div>orders pilot surface</div>,
 }));
 
-vi.mock("@/components/spreadsheet-native/SalesSheetsPilotSurface", () => ({
-  default: () => <div>sales sheets pilot surface</div>,
+vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
+  default: () => (
+    <div data-testid="sale-catalogue-surface">SalesCatalogueSurface</div>
+  ),
 }));
 
 vi.mock("@/components/spreadsheet-native/ReturnsPilotSurface", () => ({
@@ -122,10 +124,6 @@ vi.mock("@/pages/ReturnsPage", () => ({
 
 vi.mock("@/pages/OrderCreatorPage", () => ({
   default: () => <div>order creator page</div>,
-}));
-
-vi.mock("@/pages/SalesSheetCreatorPage", () => ({
-  default: () => <div>sales sheet creator page</div>,
 }));
 
 vi.mock("@/pages/LiveShoppingPage", () => ({
