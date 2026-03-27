@@ -68,6 +68,8 @@ export default function AnalyticsPage() {
 
   const { data, isLoading, error, refetch } =
     trpc.analytics.getExtendedSummary.useQuery({ period });
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const { data: revenueTrends, isLoading: trendsLoading } =
     trpc.analytics.getRevenueTrends.useQuery({
       granularity: period === "day" || period === "week" ? "day" : "month",
@@ -108,6 +110,9 @@ export default function AnalyticsPage() {
       orders: t.orderCount,
     }));
   }, [revenueTrends]);
+  const canViewInventoryValue = Boolean(
+    displaySettings?.display.canViewCogsData
+  );
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -333,14 +338,16 @@ export default function AnalyticsPage() {
                   icon={Package}
                   isLoading={isLoading}
                 />
-                <MetricCard
-                  title="Inventory Value"
-                  href="/inventory"
-                  value={formatCurrency(data?.totalInventoryValue ?? 0)}
-                  subtitle="Est. COGS value of on-hand inventory"
-                  icon={DollarSign}
-                  isLoading={isLoading}
-                />
+                {canViewInventoryValue ? (
+                  <MetricCard
+                    title="Inventory Value"
+                    href="/inventory"
+                    value={formatCurrency(data?.totalInventoryValue ?? 0)}
+                    subtitle="Est. COGS value of on-hand inventory"
+                    icon={DollarSign}
+                    isLoading={isLoading}
+                  />
+                ) : null}
               </div>
             </CardContent>
           </Card>

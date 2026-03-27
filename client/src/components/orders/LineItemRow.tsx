@@ -58,6 +58,8 @@ interface LineItemRowProps {
   index: number;
   clientId: number | null;
   selected?: boolean;
+  showCogs?: boolean;
+  showMargin?: boolean;
   onToggleSelected?: (selected: boolean) => void;
   onUpdate: (updates: Partial<LineItem>) => void;
   onRemove: () => void;
@@ -69,6 +71,8 @@ export const LineItemRow = memo(function LineItemRow({
   index,
   clientId: _clientId,
   selected = false,
+  showCogs = true,
+  showMargin = true,
   onToggleSelected,
   onUpdate,
   onRemove,
@@ -196,8 +200,8 @@ export const LineItemRow = memo(function LineItemRow({
   };
 
   // Warning badges
-  const hasLowMargin = item.marginPercent < 5;
-  const hasNegativeMargin = item.marginPercent < 0;
+  const hasLowMargin = showMargin && item.marginPercent < 5;
+  const hasNegativeMargin = showMargin && item.marginPercent < 0;
   const showProfileAdjustment =
     item.marginSource === "CUSTOMER_PROFILE" &&
     !item.isMarginOverridden &&
@@ -205,9 +209,9 @@ export const LineItemRow = memo(function LineItemRow({
     item.effectiveCogsBasis !== "MANUAL" &&
     item.originalCogsPerUnit > 0;
   const profileAdjustmentPercent = showProfileAdjustment
-    ? item.profilePriceAdjustmentPercent ??
+    ? (item.profilePriceAdjustmentPercent ??
       ((item.unitPrice - item.originalCogsPerUnit) / item.originalCogsPerUnit) *
-        100
+        100)
     : null;
   const pricingSourceLabel =
     item.marginSource === "CUSTOMER_PROFILE"
@@ -276,20 +280,31 @@ export const LineItemRow = memo(function LineItemRow({
             {pricingSourceLabel}
           </span>
           {profileAdjustmentPercent !== null && (
-            <span className="text-xs text-muted-foreground" title={appliedRuleTitle}>
-              Profile {item.appliedRules && item.appliedRules.length > 1 ? "rules net" : "rule"}{" "}
+            <span
+              className="text-xs text-muted-foreground"
+              title={appliedRuleTitle}
+            >
+              Profile{" "}
+              {item.appliedRules && item.appliedRules.length > 1
+                ? "rules net"
+                : "rule"}{" "}
               {profileAdjustmentPercent >= 0 ? "+" : ""}
               {profileAdjustmentPercent.toFixed(1)}% markup
             </span>
           )}
           {appliedRuleSummary && (
-            <span className="text-xs text-muted-foreground" title={appliedRuleTitle}>
+            <span
+              className="text-xs text-muted-foreground"
+              title={appliedRuleTitle}
+            >
               Applied: {appliedRuleSummary}
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
-            {cogsSourceLabel}
-          </span>
+          {showCogs ? (
+            <span className="text-xs text-muted-foreground">
+              {cogsSourceLabel}
+            </span>
+          ) : null}
           {item.isSample && (
             <Badge variant="secondary" className="w-fit mt-1">
               Sample
@@ -335,32 +350,36 @@ export const LineItemRow = memo(function LineItemRow({
       </TableCell>
 
       {/* COGS/Unit */}
-      <TableCell className="text-right py-2">
-        <COGSInput
-          value={item.cogsPerUnit}
-          originalValue={item.originalCogsPerUnit}
-          isOverridden={item.isCogsOverridden}
-          reason={item.belowRangeReason || item.cogsOverrideReason}
-          cogsMode={item.cogsMode}
-          rangeMin={item.originalRangeMin}
-          rangeMax={item.originalRangeMax}
-          effectiveBasis={item.effectiveCogsBasis}
-          isBelowVendorRange={item.isBelowVendorRange}
-          onChange={handleCOGSChange}
-        />
-      </TableCell>
+      {showCogs ? (
+        <TableCell className="text-right py-2">
+          <COGSInput
+            value={item.cogsPerUnit}
+            originalValue={item.originalCogsPerUnit}
+            isOverridden={item.isCogsOverridden}
+            reason={item.belowRangeReason || item.cogsOverrideReason}
+            cogsMode={item.cogsMode}
+            rangeMin={item.originalRangeMin}
+            rangeMax={item.originalRangeMax}
+            effectiveBasis={item.effectiveCogsBasis}
+            isBelowVendorRange={item.isBelowVendorRange}
+            onChange={handleCOGSChange}
+          />
+        </TableCell>
+      ) : null}
 
       {/* Margin */}
-      <TableCell className="text-right py-2">
-        <MarginInput
-          marginPercent={item.marginPercent}
-          marginDollar={item.marginDollar}
-          cogsPerUnit={item.cogsPerUnit}
-          source={item.marginSource}
-          isOverridden={item.isMarginOverridden}
-          onChange={handleMarginChange}
-        />
-      </TableCell>
+      {showMargin ? (
+        <TableCell className="text-right py-2">
+          <MarginInput
+            marginPercent={item.marginPercent}
+            marginDollar={item.marginDollar}
+            cogsPerUnit={item.cogsPerUnit}
+            source={item.marginSource}
+            isOverridden={item.isMarginOverridden}
+            onChange={handleMarginChange}
+          />
+        </TableCell>
+      ) : null}
 
       {/* Price/Unit */}
       <TableCell className="text-right py-2">
