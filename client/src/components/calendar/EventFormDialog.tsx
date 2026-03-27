@@ -40,14 +40,15 @@ export default function EventFormDialog({
   initialClientId,
   onSaved,
 }: EventFormDialogProps) {
-  // Form state
+  // Form state — date/time seeded with today so the form is never visually empty on open
+  const todayStr = new Date().toISOString().split("T")[0];
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
   const [isAllDay, setIsAllDay] = useState(false);
   const [module, setModule] = useState("GENERAL");
   const [eventType, setEventType] = useState("MEETING");
