@@ -499,20 +499,7 @@ export function PurchaseOrdersSlicePage({
     setBulkPlacing(false);
   };
 
-  const openIntakePicker = () => {
-    const po = activePoForIntake;
-    if (!po) {
-      toast.error("Select one Purchase Order first.");
-      recordFrictionEvent({
-        event: "dead_end",
-        workflow: "GF-002",
-        surface: "purchase-orders",
-        step: "open-intake-picker",
-        note: "no-po-selected",
-      });
-      return;
-    }
-
+  const openIntakePickerForPo = useCallback((po: (typeof poItems)[number]) => {
     if (!canReceivePurchaseOrder(po.purchaseOrderStatus)) {
       toast.error(
         "Only confirmed or partially received POs can enter Receiving."
@@ -548,6 +535,23 @@ export function PurchaseOrdersSlicePage({
       step: "open-intake-picker",
       stepCount: 1,
     });
+  }, []);
+
+  const openIntakePicker = () => {
+    const po = activePoForIntake;
+    if (!po) {
+      toast.error("Select one Purchase Order first.");
+      recordFrictionEvent({
+        event: "dead_end",
+        workflow: "GF-002",
+        surface: "purchase-orders",
+        step: "open-intake-picker",
+        note: "no-po-selected",
+      });
+      return;
+    }
+
+    openIntakePickerForPo(po);
   };
 
   const createIntakeDraft = () => {
@@ -845,7 +849,12 @@ export function PurchaseOrdersSlicePage({
                 <tr
                   key={po.id}
                   className={`border-b cursor-pointer hover:bg-muted/20 ${rowClass} ${selectedPoId === po.id ? "bg-muted/20" : ""}`}
-                  onClick={() => setSelectedPoId(po.id)}
+                  onClick={() => {
+                    setSelectedPoId(po.id);
+                    if (mode === "receiving") {
+                      openIntakePickerForPo(po);
+                    }
+                  }}
                 >
                   <td className="p-2" onClick={e => e.stopPropagation()}>
                     <Checkbox
