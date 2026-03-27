@@ -5,6 +5,7 @@ import { trpc } from "../../lib/trpc";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -173,6 +174,23 @@ export default function EventFormDialog({
       // Reset form for new event when dialog opens
       resetForm();
     }
+    // BUG-108: When calendarsData loads after form open, patch calendarId without resetting the
+    // whole form. Only apply if calendarId is still unset (user hasn't picked one yet).
+    if (
+      isOpen &&
+      !eventId &&
+      !eventData &&
+      calendarId === null &&
+      calendarsData?.length
+    ) {
+      const defaultCalendar = calendarsData.find(
+        (c: { id: number; isDefault: boolean }) => c.isDefault
+      );
+      const fallbackId = defaultCalendar?.id ?? calendarsData[0]?.id ?? null;
+      if (fallbackId !== null) {
+        setCalendarId(fallbackId);
+      }
+    }
   }, [
     eventData,
     initialDate,
@@ -181,10 +199,22 @@ export default function EventFormDialog({
     isOpen,
     eventId,
     resetForm,
+    calendarId,
   ]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // BUG-099: Explicit required-field validation before submission
+    const missing: string[] = [];
+    if (!title.trim()) missing.push("Title");
+    if (!startDate) missing.push("Start Date");
+    if (!endDate) missing.push("End Date");
+    if (!calendarId) missing.push("Calendar");
+    if (missing.length > 0) {
+      toast.error(`Required fields missing: ${missing.join(", ")}`);
+      return;
+    }
 
     const eventPayload: Record<string, unknown> = {
       title,
@@ -245,6 +275,12 @@ export default function EventFormDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{eventId ? "Edit Event" : "Create Event"}</DialogTitle>
+          {/* BUG-092: aria-describedby requires a DialogDescription for screen-reader context */}
+          <DialogDescription className="sr-only">
+            {eventId
+              ? "Edit the details of this calendar event."
+              : "Fill in the details to create a new calendar event."}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Form */}
