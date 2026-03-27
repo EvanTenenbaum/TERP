@@ -505,9 +505,11 @@ export const relationshipProfileRouter = router({
       }> = [];
       const moneyMode = getRelationshipMoneyMode(client);
 
+      const storedCreditLimit = parseMoney(client.creditLimit);
       if (
         (moneyMode === "customer" || moneyMode === "hybrid") &&
-        balance.computedBalance > parseMoney(client.creditLimit)
+        storedCreditLimit > 0 &&
+        balance.computedBalance > storedCreditLimit
       ) {
         alerts.push({
           tone: "warning",
@@ -873,28 +875,38 @@ export const relationshipProfileRouter = router({
               updatedAt: normalizeDate(creditLimitRow[0].updatedAt),
             }
           : null,
-        transactionHistory: transactions.map(row => ({
-          id: row.id,
-          transactionType: row.transactionType,
-          transactionNumber: row.transactionNumber,
-          transactionDate: normalizeDate(row.transactionDate),
-          amount: parseMoney(row.amount),
-          paymentStatus: row.paymentStatus,
-          paymentDate: normalizeDate(row.paymentDate),
-          paymentAmount: parseMoney(row.paymentAmount),
-          notes: row.notes,
-        })),
-        paymentHistory: paymentRows.map(row => ({
-          id: row.id,
-          paymentNumber: row.paymentNumber,
-          paymentType: row.paymentType,
-          paymentDate: normalizeDate(row.paymentDate),
-          amount: parseMoney(row.amount),
-          paymentMethod: row.paymentMethod,
-          referenceNumber: row.referenceNumber,
-          notes: row.notes,
-          createdByName: row.createdByName,
-        })),
+        transactionHistory: transactions
+          // Deduplicate by ID — guard against any duplicate rows from the DB
+          .filter(
+            (row, index, self) => index === self.findIndex(t => t.id === row.id)
+          )
+          .map(row => ({
+            id: row.id,
+            transactionType: row.transactionType,
+            transactionNumber: row.transactionNumber,
+            transactionDate: normalizeDate(row.transactionDate),
+            amount: parseMoney(row.amount),
+            paymentStatus: row.paymentStatus,
+            paymentDate: normalizeDate(row.paymentDate),
+            paymentAmount: parseMoney(row.paymentAmount),
+            notes: row.notes,
+          })),
+        paymentHistory: paymentRows
+          // Deduplicate by ID — a dual-role client can appear as both customerId and vendorId
+          .filter(
+            (row, index, self) => index === self.findIndex(p => p.id === row.id)
+          )
+          .map(row => ({
+            id: row.id,
+            paymentNumber: row.paymentNumber,
+            paymentType: row.paymentType,
+            paymentDate: normalizeDate(row.paymentDate),
+            amount: parseMoney(row.amount),
+            paymentMethod: row.paymentMethod,
+            referenceNumber: row.referenceNumber,
+            notes: row.notes,
+            createdByName: row.createdByName,
+          })),
         ledgerTimeline: ledger.entries,
         ledgerTotals: ledger.totals,
       };

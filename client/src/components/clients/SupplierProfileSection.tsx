@@ -143,6 +143,17 @@ export const SupplierProfileSection = React.memo(
       );
     }
 
+    const hasAnyProfileData =
+      supplierProfile &&
+      (supplierProfile.contactName ||
+        supplierProfile.contactEmail ||
+        supplierProfile.contactPhone ||
+        supplierProfile.licenseNumber ||
+        supplierProfile.taxId ||
+        supplierProfile.paymentTerms ||
+        supplierProfile.preferredPaymentMethod ||
+        supplierProfile.supplierNotes);
+
     return (
       <div className="space-y-6">
         {/* Supplier Profile Card */}
@@ -155,7 +166,9 @@ export const SupplierProfileSection = React.memo(
                   Supplier Profile
                 </CardTitle>
                 <CardDescription>
-                  Supplier-specific information and settings
+                  {hasAnyProfileData
+                    ? "Supplier-specific information and settings"
+                    : "No supplier details on file yet — click Edit Profile to add contact info, license, and payment terms."}
                 </CardDescription>
               </div>
               <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
@@ -179,7 +192,11 @@ export const SupplierProfileSection = React.memo(
                         Contact Name
                       </Label>
                       <p className="text-sm">
-                        {supplierProfile?.contactName || "-"}
+                        {supplierProfile?.contactName || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -190,7 +207,11 @@ export const SupplierProfileSection = React.memo(
                         Contact Email
                       </Label>
                       <p className="text-sm">
-                        {supplierProfile?.contactEmail || "-"}
+                        {supplierProfile?.contactEmail || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -201,7 +222,11 @@ export const SupplierProfileSection = React.memo(
                         Contact Phone
                       </Label>
                       <p className="text-sm">
-                        {supplierProfile?.contactPhone || "-"}
+                        {supplierProfile?.contactPhone || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -221,7 +246,11 @@ export const SupplierProfileSection = React.memo(
                         License Number
                       </Label>
                       <p className="text-sm">
-                        {supplierProfile?.licenseNumber || "-"}
+                        {supplierProfile?.licenseNumber || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -231,7 +260,13 @@ export const SupplierProfileSection = React.memo(
                       <Label className="text-xs text-muted-foreground">
                         Tax ID
                       </Label>
-                      <p className="text-sm">{supplierProfile?.taxId || "-"}</p>
+                      <p className="text-sm">
+                        {supplierProfile?.taxId || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -241,7 +276,11 @@ export const SupplierProfileSection = React.memo(
                         Payment Terms
                       </Label>
                       <p className="text-sm">
-                        {supplierProfile?.paymentTerms || "-"}
+                        {supplierProfile?.paymentTerms || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -252,7 +291,11 @@ export const SupplierProfileSection = React.memo(
                         Preferred Payment
                       </Label>
                       <p className="text-sm">
-                        {supplierProfile?.preferredPaymentMethod || "-"}
+                        {supplierProfile?.preferredPaymentMethod || (
+                          <span className="text-muted-foreground italic">
+                            Not set
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
