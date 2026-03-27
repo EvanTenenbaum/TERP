@@ -294,6 +294,19 @@ export class PermissionService {
     if (!db) throw new Error("Database not available");
     const permissionMap: Record<number, boolean> = {};
 
+    // BUG-094: Admin users have full permission on all calendar events (consistent with hasPermission)
+    const [userRecord] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (userRecord?.role === "admin") {
+      for (const id of eventIds) {
+        permissionMap[id] = true;
+      }
+      return permissionMap;
+    }
+
     // Fetch all events in a single query using inArray for efficiency
     const events = await db
       .select()
