@@ -748,18 +748,16 @@ export function VendorsWorkSurface() {
         </InspectorPanel>
       </div>
 
-      {isAddSupplierOpen ? (
-        <AddClientWizard
-          open={isAddSupplierOpen}
-          onOpenChange={setIsAddSupplierOpen}
-          defaultRoles={{ isSeller: true }}
-          onSuccess={clientId => {
-            setLocation(
-              buildRelationshipProfilePath(clientId, "supply-inventory")
-            );
-          }}
-        />
-      ) : null}
+      <AddClientWizard
+        open={isAddSupplierOpen}
+        onOpenChange={setIsAddSupplierOpen}
+        defaultRoles={{ isSeller: true }}
+        onSuccess={clientId => {
+          setLocation(
+            buildRelationshipProfilePath(clientId, "supply-inventory")
+          );
+        }}
+      />
     </div>
   );
 }
