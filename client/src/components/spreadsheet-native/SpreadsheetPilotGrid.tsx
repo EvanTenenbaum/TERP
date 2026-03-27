@@ -231,6 +231,18 @@ function focusSelectedRowCell<Row extends object>(
   return true;
 }
 
+function getRowFingerprint<Row extends object>(row: Row | null): string | null {
+  if (!row) {
+    return null;
+  }
+
+  try {
+    return JSON.stringify(row);
+  } catch {
+    return null;
+  }
+}
+
 export interface SpreadsheetPilotGridProps<Row extends object> {
   title: string;
   description?: string;
@@ -332,6 +344,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
   const lastEmittedRowIdRef = useRef<string | null>(null);
+  const lastEmittedRowFingerprintRef = useRef<string | null>(null);
   const isCellRangeMode = selectionMode === "cell-range";
 
   useEffect(() => {
@@ -354,16 +367,49 @@ export function SpreadsheetPilotGrid<Row extends object>({
   const emitSelectedRowChange = useCallback(
     (row: Row | null) => {
       const nextId = row ? getRowId(row) : null;
+      const nextFingerprint = getRowFingerprint(row);
 
-      if (nextId === lastEmittedRowIdRef.current) {
+      if (
+        nextId === lastEmittedRowIdRef.current &&
+        nextFingerprint === lastEmittedRowFingerprintRef.current
+      ) {
         return;
       }
 
       lastEmittedRowIdRef.current = nextId;
+      lastEmittedRowFingerprintRef.current = nextFingerprint;
       onSelectedRowChange?.(row);
     },
     [getRowId, onSelectedRowChange]
   );
+
+  const emitEmptySelectionState = useCallback(() => {
+    if (!isCellRangeMode) {
+      return;
+    }
+
+    onSelectionSetChange?.({
+      focusedCell: null,
+      focusedRowId: null,
+      anchorCell: null,
+      ranges: [],
+      selectedRowIds: new Set<string>(),
+    });
+
+    if (selectionSurface) {
+      onSelectionSummaryChange?.({
+        selectedCellCount: 0,
+        selectedRowCount: 0,
+        hasDiscontiguousSelection: false,
+        focusedSurface: selectionSurface,
+      });
+    }
+  }, [
+    isCellRangeMode,
+    onSelectionSetChange,
+    onSelectionSummaryChange,
+    selectionSurface,
+  ]);
 
   const emitSelectionState = useCallback(
     (gridApi: GridApi<Row>) => {
@@ -411,6 +457,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
       if (selectedRowId === null) {
         activeGridApi.clearFocusedCell();
         activeGridApi.clearCellSelection();
+        emitEmptySelectionState();
         emitSelectedRowChange(null);
         return;
       }
@@ -424,6 +471,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
       if (!focusedSelectedRow) {
         activeGridApi.clearFocusedCell();
         activeGridApi.clearCellSelection();
+        emitEmptySelectionState();
         emitSelectedRowChange(null);
         return;
       }
@@ -441,6 +489,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
     });
   }, [
     emitSelectedRowChange,
+    emitEmptySelectionState,
     emitSelectionState,
     getRowId,
     isCellRangeMode,

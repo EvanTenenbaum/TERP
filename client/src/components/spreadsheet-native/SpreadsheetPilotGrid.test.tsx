@@ -407,4 +407,64 @@ describe("SpreadsheetPilotGrid", () => {
     expect(onSelectionSetChange).not.toHaveBeenCalled();
     expect(onSelectionSummaryChange).not.toHaveBeenCalled();
   });
+
+  it("re-emits when the same row id is focused with refreshed row data", () => {
+    lastAgGridProps = null;
+
+    const onSelectedRowChange = vi.fn();
+    const fakeColumns = [{ getColId: () => "sku" }];
+    let focusedRowData: TestRow = { id: "row-2", sku: "SKU-002" };
+
+    const fakeApi = {
+      getFocusedCell: () => ({
+        rowIndex: 1,
+        column: fakeColumns[0],
+      }),
+      getCellRanges: () => [],
+      getSelectedRows: () => [],
+      clearFocusedCell: vi.fn(),
+      clearCellSelection: vi.fn(),
+      getDisplayedRowAtIndex: (rowIndex: number) =>
+        rowIndex === 1 ? { data: focusedRowData } : null,
+      getAllDisplayedColumns: () => fakeColumns,
+      setFocusedCell: vi.fn(),
+      forEachNode: (
+        callback: (node: { data: TestRow; rowIndex: number }) => void
+      ) => callback({ data: focusedRowData, rowIndex: 1 }),
+    };
+
+    render(
+      <SpreadsheetPilotGrid<TestRow>
+        title="Orders Queue"
+        rows={[
+          { id: "row-1", sku: "SKU-001" },
+          { id: "row-2", sku: "SKU-002" },
+        ]}
+        columnDefs={columnDefs}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        selectionMode="cell-range"
+        selectionSurface="orders-queue"
+        selectedRowId="row-2"
+        onSelectedRowChange={onSelectedRowChange}
+      />
+    );
+
+    lastAgGridProps?.onGridReady?.({ api: fakeApi });
+    expect(onSelectedRowChange).toHaveBeenCalledTimes(1);
+    expect(onSelectedRowChange).toHaveBeenLastCalledWith({
+      id: "row-2",
+      sku: "SKU-002",
+    });
+
+    focusedRowData = { id: "row-2", sku: "SKU-002-UPDATED" };
+    lastAgGridProps?.onCellFocused?.({ api: fakeApi });
+
+    expect(onSelectedRowChange).toHaveBeenCalledTimes(2);
+    expect(onSelectedRowChange).toHaveBeenLastCalledWith({
+      id: "row-2",
+      sku: "SKU-002-UPDATED",
+    });
+  });
 });

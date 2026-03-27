@@ -2,7 +2,8 @@
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentsPilotSurface } from "./PaymentsPilotSurface";
 
@@ -79,13 +80,25 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    rows,
+    onSelectedRowChange,
   }: {
     title: string;
     description?: string;
+    rows: Array<{ rowKey: string }>;
+    onSelectedRowChange?: (row: { rowKey: string } | null) => void;
   }) => (
     <div>
       <h2>{title}</h2>
       {description ? <p>{description}</p> : null}
+      <button
+        type="button"
+        onClick={() => {
+          onSelectedRowChange?.(rows[0] ?? null);
+        }}
+      >
+        select payment row
+      </button>
     </div>
   ),
 }));
@@ -93,6 +106,50 @@ vi.mock("./PowersheetGrid", () => ({
 // Mock InvoiceToPaymentFlow dialog
 vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({
   InvoiceToPaymentFlow: () => null,
+}));
+
+vi.mock("@/components/work-surface/InspectorPanel", () => ({
+  InspectorPanel: ({
+    children,
+    isOpen,
+    onClose,
+  }: {
+    children: ReactNode;
+    isOpen?: boolean;
+    onClose?: () => void;
+  }) =>
+    isOpen ? (
+      <div>
+        <button type="button" onClick={onClose}>
+          close payment inspector
+        </button>
+        {children}
+      </div>
+    ) : null,
+  InspectorSection: ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: ReactNode;
+  }) => (
+    <div>
+      <h3>{title}</h3>
+      {children}
+    </div>
+  ),
+  InspectorField: ({
+    label,
+    children,
+  }: {
+    label: string;
+    children: ReactNode;
+  }) => (
+    <div>
+      <span>{label}</span>
+      {children}
+    </div>
+  ),
 }));
 
 describe("PaymentsPilotSurface", () => {
@@ -204,5 +261,25 @@ describe("PaymentsPilotSurface", () => {
 
     const sortSelect = screen.getByRole("combobox", { name: /sort field/i });
     expect(sortSelect).toBeInTheDocument();
+  });
+
+  it("allows closing and reselecting the same payment row", () => {
+    render(<PaymentsPilotSurface />);
+
+    const recordPaymentButton = screen.getByRole("button", {
+      name: /record payment/i,
+    });
+    expect(recordPaymentButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "select payment row" }));
+    expect(recordPaymentButton).toBeEnabled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "close payment inspector" })
+    );
+    expect(recordPaymentButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "select payment row" }));
+    expect(recordPaymentButton).toBeEnabled();
   });
 });

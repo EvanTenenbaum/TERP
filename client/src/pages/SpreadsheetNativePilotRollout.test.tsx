@@ -201,6 +201,20 @@ describe("spreadsheet-native pilot rollout gating", () => {
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
+  it("strips a stale quotes sheet-native URL when the pilot is disabled", () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=quotes&surface=sheet-native";
+    mockActiveTab = "quotes";
+    mockPilotFlagEnabled = false;
+
+    render(<SalesWorkspacePage />);
+
+    expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
+    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=quotes", {
+      replace: true,
+    });
+  });
+
   it("renders the returns sheet-native pilot when the master flag is on and requested", async () => {
     mockPath = "/sales";
     mockSearch = "?tab=returns&surface=sheet-native";
@@ -216,6 +230,20 @@ describe("spreadsheet-native pilot rollout gating", () => {
       screen.getByRole("button", { name: "Spreadsheet View" })
     ).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  it("strips a stale returns sheet-native URL when the pilot is disabled", () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=returns&surface=sheet-native";
+    mockActiveTab = "returns";
+    mockPilotFlagEnabled = false;
+
+    render(<SalesWorkspacePage />);
+
+    expect(screen.getByText("Returns Embedded")).toBeInTheDocument();
+    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=returns", {
+      replace: true,
+    });
   });
 
   it("preserves the classic create-order route when classic=true is requested", () => {

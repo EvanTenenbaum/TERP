@@ -23,7 +23,13 @@
  * clientLedger.getLedger which aggregates 5 data sources server-side.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation } from "wouter";
 import type { ColDef } from "ag-grid-community";
 import {
@@ -962,16 +968,42 @@ export function ClientLedgerPilotSurface({
     setInspectorTransaction(null);
   }, []);
 
-  const handleSelectedRowChange = useCallback((row: LedgerRow | null) => {
-    const nextId = row?._txn.id ?? null;
+  const handleSelectedRowChange = useCallback(
+    (row: LedgerRow | null) => {
+      const nextTransaction = row?._txn ?? null;
+      const nextId = nextTransaction?.id ?? null;
 
-    if (nextId === lastEmittedRowIdRef.current) {
+      if (
+        nextId === lastEmittedRowIdRef.current &&
+        nextTransaction === inspectorTransaction
+      ) {
+        return;
+      }
+
+      lastEmittedRowIdRef.current = nextId;
+      setInspectorTransaction(nextTransaction);
+    },
+    [inspectorTransaction]
+  );
+
+  useEffect(() => {
+    if (!inspectorTransaction) {
       return;
     }
 
-    lastEmittedRowIdRef.current = nextId;
-    setInspectorTransaction(row?._txn ?? null);
-  }, []);
+    const refreshedTransaction =
+      rows.find(row => row._txn.id === inspectorTransaction.id)?._txn ?? null;
+
+    if (!refreshedTransaction) {
+      lastEmittedRowIdRef.current = null;
+      setInspectorTransaction(null);
+      return;
+    }
+
+    if (refreshedTransaction !== inspectorTransaction) {
+      setInspectorTransaction(refreshedTransaction);
+    }
+  }, [inspectorTransaction, rows]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (

@@ -324,4 +324,26 @@ describe("ReturnsPilotSurface", () => {
     );
     expect(lastPowersheetGridProps).not.toBeNull();
   });
+
+  it("falls back to legacy notes markers when the dedicated status column is missing", () => {
+    mockReturnItems = [
+      {
+        id: 3,
+        orderId: 102,
+        returnNumber: "RET-003",
+        returnReason: "DAMAGED",
+        status: null,
+        processedBy: 1,
+        processedAt: "2026-03-03T00:00:00.000Z",
+        notes: "[REJECTED 2026-03-03]",
+        items: [],
+      },
+    ];
+
+    render(<ReturnsPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByTestId("derived-statuses")).toHaveTextContent(
+      "REJECTED"
+    );
+  });
 });

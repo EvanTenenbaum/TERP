@@ -2,12 +2,38 @@
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ClientLedgerPilotSurface } from "./ClientLedgerPilotSurface";
 
 const mockSetLocation = vi.fn();
-
+let mockLedgerTransactions = [
+  {
+    id: "txn-001",
+    date: "2026-03-10T00:00:00.000Z",
+    type: "SALE",
+    description: "Invoice #1042 — 5 units Flower Indoor",
+    referenceType: "ORDER",
+    referenceId: 1042,
+    debitAmount: 2500,
+    creditAmount: 0,
+    runningBalance: 2500,
+    createdBy: "system",
+  },
+  {
+    id: "txn-002",
+    date: "2026-03-15T00:00:00.000Z",
+    type: "PAYMENT_RECEIVED",
+    description: "Payment received via ACH",
+    referenceType: "PAYMENT",
+    referenceId: 501,
+    debitAmount: 0,
+    creditAmount: 2500,
+    runningBalance: 0,
+    createdBy: "evan",
+  },
+];
 vi.mock("wouter", () => ({
   useLocation: () => ["/accounting?tab=client-ledger", mockSetLocation],
 }));
@@ -68,32 +94,7 @@ vi.mock("@/lib/trpc", () => ({
       getLedger: {
         useQuery: () => ({
           data: {
-            transactions: [
-              {
-                id: "txn-001",
-                date: "2026-03-10T00:00:00.000Z",
-                type: "SALE",
-                description: "Invoice #1042 — 5 units Flower Indoor",
-                referenceType: "ORDER",
-                referenceId: 1042,
-                debitAmount: 2500,
-                creditAmount: 0,
-                runningBalance: 2500,
-                createdBy: "system",
-              },
-              {
-                id: "txn-002",
-                date: "2026-03-15T00:00:00.000Z",
-                type: "PAYMENT_RECEIVED",
-                description: "Payment received via ACH",
-                referenceType: "PAYMENT",
-                referenceId: 501,
-                debitAmount: 0,
-                creditAmount: 2500,
-                runningBalance: 0,
-                createdBy: "evan",
-              },
-            ],
+            transactions: mockLedgerTransactions,
             totalCount: 2,
             currentBalance: 0,
             balanceDescription: "Paid in full",
@@ -133,13 +134,27 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    rows,
+    onSelectedRowChange,
   }: {
     title: string;
     description?: string;
+    rows: Array<{ _txn: { id: string; description: string } }>;
+    onSelectedRowChange?: (
+      row: { _txn: { id: string; description: string } } | null
+    ) => void;
   }) => (
     <div data-testid="powersheet-grid">
       <h2>{title}</h2>
       {description ? <p>{description}</p> : null}
+      <button
+        type="button"
+        onClick={() => {
+          onSelectedRowChange?.(rows[0] ?? null);
+        }}
+      >
+        select ledger row
+      </button>
     </div>
   ),
 }));
@@ -165,14 +180,97 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 }));
 
 vi.mock("@/components/ui/client-combobox", () => ({
-  ClientCombobox: () => (
-    <input data-testid="client-combobox" placeholder="Select a client..." />
+  ClientCombobox: ({
+    onValueChange,
+  }: {
+    onValueChange: (value: number | null) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="client-combobox"
+      onClick={() => onValueChange(1)}
+    >
+      Select a client...
+    </button>
+  ),
+}));
+
+vi.mock("@/components/work-surface/InspectorPanel", () => ({
+  InspectorPanel: ({
+    children,
+    title,
+    isOpen,
+    onClose,
+  }: {
+    children: ReactNode;
+    title?: string;
+    isOpen?: boolean;
+    onClose?: () => void;
+  }) =>
+    isOpen ? (
+      <div>
+        {title ? <h3>{title}</h3> : null}
+        <button type="button" onClick={onClose}>
+          close inspector
+        </button>
+        {children}
+      </div>
+    ) : null,
+  InspectorSection: ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: ReactNode;
+  }) => (
+    <div>
+      <h3>{title}</h3>
+      {children}
+    </div>
+  ),
+  InspectorField: ({
+    label,
+    children,
+  }: {
+    label: string;
+    children: ReactNode;
+  }) => (
+    <div>
+      <span>{label}</span>
+      {children}
+    </div>
   ),
 }));
 
 describe("ClientLedgerPilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLedgerTransactions = [
+      {
+        id: "txn-001",
+        date: "2026-03-10T00:00:00.000Z",
+        type: "SALE",
+        description: "Invoice #1042 — 5 units Flower Indoor",
+        referenceType: "ORDER",
+        referenceId: 1042,
+        debitAmount: 2500,
+        creditAmount: 0,
+        runningBalance: 2500,
+        createdBy: "system",
+      },
+      {
+        id: "txn-002",
+        date: "2026-03-15T00:00:00.000Z",
+        type: "PAYMENT_RECEIVED",
+        description: "Payment received via ACH",
+        referenceType: "PAYMENT",
+        referenceId: 501,
+        debitAmount: 0,
+        creditAmount: 2500,
+        runningBalance: 0,
+        createdBy: "evan",
+      },
+    ];
   });
 
   it("renders the surface header with title, without internal pilot badge", () => {
@@ -263,5 +361,28 @@ describe("ClientLedgerPilotSurface", () => {
     render(<ClientLedgerPilotSurface onOpenClassic={vi.fn()} />);
 
     expect(screen.getByText("All types")).toBeInTheDocument();
+  });
+
+  it("refreshes the inspector when the selected transaction updates with the same id", () => {
+    const { rerender } = render(
+      <ClientLedgerPilotSurface onOpenClassic={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByTestId("client-combobox"));
+    fireEvent.click(screen.getByRole("button", { name: "select ledger row" }));
+
+    expect(
+      screen.getByText("Invoice #1042 — 5 units Flower Indoor")
+    ).toBeInTheDocument();
+
+    mockLedgerTransactions = mockLedgerTransactions.map(transaction =>
+      transaction.id === "txn-001"
+        ? { ...transaction, description: "Updated ledger description" }
+        : transaction
+    );
+
+    rerender(<ClientLedgerPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Updated ledger description")).toBeInTheDocument();
   });
 });
