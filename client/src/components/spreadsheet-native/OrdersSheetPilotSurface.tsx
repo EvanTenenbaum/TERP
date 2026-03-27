@@ -153,24 +153,6 @@ function canGenerateInvoiceForRow(row: {
   );
 }
 
-/**
- * BUG-019: Map payment status to user-friendly label.
- * Returns "No payment" when no payment status is recorded.
- */
-const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Payment pending",
-  PARTIAL: "Partial payment",
-  PAID: "Paid",
-  OVERDUE: "Payment overdue",
-  CANCELLED: "Payment cancelled",
-};
-
-function friendlyPaymentStatus(raw: string | null | undefined): string {
-  if (!raw) return "No payment";
-  const normalized = raw.toUpperCase();
-  return PAYMENT_STATUS_LABELS[normalized] ?? raw;
-}
-
 const parsePositiveIntegerParam = (value: string | null) => {
   if (!value) {
     return null;
@@ -777,13 +759,10 @@ export function OrdersSheetPilotSurface({
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Payment
             </div>
-            <div className="mt-1 text-sm font-medium">
+            <div className="mt-1 text-sm font-medium text-muted-foreground">
               {selectedOrderRow.lane === "drafts"
                 ? "Not applicable"
-                : friendlyPaymentStatus(
-                    (selectedOrderRow as { paymentStatus?: string | null })
-                      .paymentStatus
-                  )}
+                : "See Accounting tab"}
             </div>
           </div>
         </div>
@@ -919,18 +898,12 @@ export function OrdersSheetPilotSurface({
                         : "Not yet invoiced"}
                 </p>
               </InspectorField>
-              {/* BUG-019: Payment status — user-friendly label, never bare "-" */}
+              {/* BUG-019: Payment status — data not available on pilot row, direct to Accounting */}
               <InspectorField label="Payment">
-                <p>
+                <p className="text-muted-foreground">
                   {selectedOrderRow.lane === "drafts"
                     ? "Not applicable"
-                    : friendlyPaymentStatus(
-                        (
-                          selectedOrderRow as {
-                            paymentStatus?: string | null;
-                          }
-                        ).paymentStatus
-                      )}
+                    : "See Accounting tab"}
                 </p>
               </InspectorField>
             </InspectorSection>

@@ -714,12 +714,13 @@ export default function OrderCreatorPageV2({
     pendingPersistFingerprintRef.current = null;
     persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
     setSaved();
-    setOrderType("SALE");
+    setOrderType(routeMode === "quote" ? "QUOTE" : "SALE");
     seededRouteKeyRef.current = seedKey;
   }, [
     clientIdFromRoute,
     isSalesSheetImport,
     needIdFromRoute,
+    routeMode,
     routeOrderId,
     routeOrderLoading,
     setSaved,
