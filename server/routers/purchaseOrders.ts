@@ -1506,6 +1506,7 @@ async function generatePONumber(
 }
 
 // Helper function to recalculate PO totals
+// TER-925: Filter soft-deleted items and clamp to >= 0 to prevent negative totals
 async function recalculatePOTotals(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   purchaseOrderId: number
@@ -1513,18 +1514,23 @@ async function recalculatePOTotals(
   const items = await db
     .select()
     .from(purchaseOrderItems)
-    .where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
+    .where(
+      and(
+        eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId),
+        isNull(purchaseOrderItems.deletedAt)
+      )
+    );
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + parseFloat(item.totalCost),
-    0
+  const subtotal = Math.max(
+    0,
+    items.reduce((sum, item) => sum + parseFloat(item.totalCost), 0)
   );
 
   await db
     .update(purchaseOrders)
     .set({
-      subtotal: subtotal.toString(),
-      total: subtotal.toString(), // Update this if tax/shipping logic is added
+      subtotal: subtotal.toFixed(2),
+      total: subtotal.toFixed(2), // Update this if tax/shipping logic is added
     })
     .where(eq(purchaseOrders.id, purchaseOrderId));
 }

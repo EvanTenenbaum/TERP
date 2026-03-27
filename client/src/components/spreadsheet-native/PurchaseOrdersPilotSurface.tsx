@@ -254,7 +254,8 @@ function mapPOsToQueueRows(
         ? (supplierNamesById.get(supplierId) ?? "Unknown Supplier")
         : "Unknown Supplier";
     const status = po.purchaseOrderStatus;
-    const total = toNumber(po.total);
+    // TER-925: clamp total to >= 0; negative DB values should not surface to users
+    const total = Math.max(0, toNumber(po.total));
     return {
       identity: {
         rowKey: buildRowKey("po", po.id),
@@ -335,6 +336,9 @@ export function PurchaseOrdersPilotSurface({
   // Dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  // BUG-025: Confirm before context-switching to receiving
+  const [showReceivingConfirmDialog, setShowReceivingConfirmDialog] =
+    useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     poId: number;
     status: POStatus;
@@ -612,8 +616,13 @@ export function PurchaseOrdersPilotSurface({
         minWidth: 120,
         maxWidth: 140,
         cellClass: "powersheet-cell--locked",
-        valueFormatter: params =>
-          formatDate(params.value as Date | string | null | undefined),
+        headerTooltip:
+          "Expected delivery date. Set this when creating or confirming a PO.",
+        valueFormatter: params => {
+          const value = params.value as Date | string | null | undefined;
+          if (!value || value === "") return "Not set";
+          return formatDate(value);
+        },
       },
       {
         field: "total",
@@ -808,16 +817,16 @@ export function PurchaseOrdersPilotSurface({
             </Button>
           ))}
 
-          {/* Launch Receiving — row-scoped handoff CTA */}
+          {/* Launch Receiving — row-scoped handoff CTA (BUG-025: confirm first) */}
           <Button
             size="sm"
             variant={canLaunchReceiving ? "default" : "outline"}
             disabled={!canLaunchReceiving}
-            onClick={handleLaunchReceiving}
+            onClick={() => setShowReceivingConfirmDialog(true)}
             aria-label="Launch receiving for selected PO"
           >
             <Truck className="mr-2 h-4 w-4" />
-            Launch Receiving
+            Start Receiving
           </Button>
 
           {/* Delete draft */}
@@ -990,35 +999,58 @@ export function PurchaseOrdersPilotSurface({
       >
         {selectedRow ? (
           <div className="space-y-4">
+            {/* BUG-023: Expanded inspector with full PO context */}
             <InspectorSection title="PO Details" defaultOpen>
               <InspectorField label="PO Number">
                 <p className="font-semibold">{selectedRow.poNumber}</p>
               </InspectorField>
               <InspectorField label="Supplier">
                 <p>{selectedRow.supplierName}</p>
+                {detailQuery.data?.supplier?.email ? (
+                  <p className="text-xs text-muted-foreground">
+                    {detailQuery.data.supplier.email}
+                  </p>
+                ) : null}
+                {detailQuery.data?.supplier?.phone ? (
+                  <p className="text-xs text-muted-foreground">
+                    {detailQuery.data.supplier.phone}
+                  </p>
+                ) : null}
               </InspectorField>
               <InspectorField label="Status">
                 <p>{selectedRow.statusLabel}</p>
               </InspectorField>
               <InspectorField label="Order Date">
-                <p>{formatDate(selectedRow.orderDate)}</p>
+                <p>
+                  {formatDate(selectedRow.orderDate)} (
+                  {formatAgeLabel(selectedRow.orderDate)} ago)
+                </p>
               </InspectorField>
-              {selectedRow.expectedDeliveryDate ? (
-                <InspectorField label="Expected Delivery">
+              <InspectorField label="Expected Delivery">
+                {selectedRow.expectedDeliveryDate ? (
                   <p>{formatDate(selectedRow.expectedDeliveryDate)}</p>
-                </InspectorField>
-              ) : null}
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Not set — edit via Classic Surface
+                  </p>
+                )}
+              </InspectorField>
               <InspectorField label="Payment Terms">
                 <p>{selectedRow.paymentTerms}</p>
               </InspectorField>
               <InspectorField label="Total">
-                <p className="font-semibold">
+                <p className="font-semibold text-lg">
                   {formatCurrency(selectedRow.total)}
                 </p>
               </InspectorField>
+              {detailQuery.data?.notes ? (
+                <InspectorField label="Notes">
+                  <p className="text-sm">{detailQuery.data.notes}</p>
+                </InspectorField>
+              ) : null}
             </InspectorSection>
 
-            <InspectorSection title="Line Items">
+            <InspectorSection title="Line Items" defaultOpen>
               {lineItemRows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {detailQuery.isLoading
@@ -1034,20 +1066,26 @@ export function PurchaseOrdersPilotSurface({
                     >
                       <div className="flex justify-between">
                         <span className="font-medium">{line.productName}</span>
-                        <span>{formatCurrency(line.lineTotal)}</span>
+                        <span className="font-mono">
+                          {formatCurrency(line.lineTotal)}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Qty: {line.quantityOrdered} · Cost:{" "}
-                        {line.unitCostDisplay} · COGS: {line.cogsMode}
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {line.quantityOrdered} units · {line.unitCostDisplay} /{" "}
+                        unit · {line.cogsMode} COGS
                         {line.quantityReceived > 0
-                          ? ` · Received: ${line.quantityReceived}`
+                          ? ` · ${line.quantityReceived} received`
                           : ""}
+                        {line.category !== "-" ? ` · ${line.category}` : ""}
                       </div>
                     </div>
                   ))}
                   <div className="flex justify-between border-t pt-2 text-sm font-medium">
-                    <span>Total</span>
                     <span>
+                      {lineItemRows.length} line{" "}
+                      {lineItemRows.length === 1 ? "item" : "items"}
+                    </span>
+                    <span className="font-mono">
                       {formatCurrency(
                         lineItemRows.reduce((sum, r) => sum + r.lineTotal, 0)
                       )}
@@ -1058,27 +1096,33 @@ export function PurchaseOrdersPilotSurface({
             </InspectorSection>
 
             <InspectorSection title="Receiving Handoff">
-              <InspectorField label="Receivable">
-                <p>
-                  {selectedRow.isReceivable
-                    ? "Yes — PO is eligible for receiving"
-                    : `No — status must be Confirmed or Receiving (current: ${selectedRow.statusLabel})`}
-                </p>
-              </InspectorField>
               {selectedRow.isReceivable ? (
-                <Button
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={handleLaunchReceiving}
-                >
-                  <Truck className="mr-2 h-4 w-4" />
-                  Launch Receiving
-                </Button>
-              ) : null}
+                <>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    This PO is ready for receiving. Use the button below to open
+                    the receiving workflow.
+                  </p>
+                  {/* BUG-025: Show context before navigating to receiving */}
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowReceivingConfirmDialog(true)}
+                  >
+                    <Truck className="mr-2 h-4 w-4" />
+                    Start Receiving
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Not eligible — status must be Confirmed or Receiving (
+                  current: {selectedRow.statusLabel}).
+                </p>
+              )}
             </InspectorSection>
 
-            <InspectorSection title="Status Transitions">
+            <InspectorSection title="Next Steps">
               <div className="grid grid-cols-2 gap-2">
+                {/* BUG-024: Only show status transitions valid for current state */}
                 {availableTransitions.map(status => (
                   <Button
                     key={status}
@@ -1090,6 +1134,12 @@ export function PurchaseOrdersPilotSurface({
                     {PO_STATUS_LABELS[status]}
                   </Button>
                 ))}
+                {availableTransitions.length === 0 && (
+                  <p className="col-span-2 text-sm text-muted-foreground">
+                    No further status changes available for{" "}
+                    {selectedRow.statusLabel} POs.
+                  </p>
+                )}
               </div>
             </InspectorSection>
           </div>
@@ -1130,6 +1180,23 @@ export function PurchaseOrdersPilotSurface({
             : `Set to ${pendingStatusChange ? (PO_STATUS_LABELS[pendingStatusChange.status] ?? pendingStatusChange.status) : ""}`
         }
         onConfirm={handleStatusConfirm}
+      />
+
+      {/* BUG-025: Confirm before launching receiving to prevent silent context-switch */}
+      <ConfirmDialog
+        open={showReceivingConfirmDialog}
+        onOpenChange={setShowReceivingConfirmDialog}
+        title="Start Receiving?"
+        description={
+          selectedRow
+            ? `You will be taken to the Receiving workspace for ${selectedRow.poNumber} (${selectedRow.supplierName}). Any unsaved work in the PO queue will remain.`
+            : "Open the Receiving workspace for this PO?"
+        }
+        confirmLabel="Go to Receiving"
+        onConfirm={() => {
+          setShowReceivingConfirmDialog(false);
+          handleLaunchReceiving();
+        }}
       />
 
       {/* COGS note: Bulk COGS update is available via Classic surface until a dedicated
