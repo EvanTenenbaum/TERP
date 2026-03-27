@@ -2,7 +2,7 @@
  * MatchmakingServicePage Tests
  *
  * Tests for the Matchmaking Service page, specifically testing that
- * the Add Need and Add Supply buttons navigate to the correct routes.
+ * the Add Need and Add Supply buttons open modals (TER-888).
  *
  * @vitest-environment jsdom
  */
@@ -50,20 +50,15 @@ vi.mock("@/lib/trpc", () => ({
       },
       vendorSupply: {
         getAllWithMatches: { invalidate: vi.fn() },
+        getAll: { invalidate: vi.fn() },
       },
       matching: {
         getAllActiveNeedsWithMatches: { invalidate: vi.fn() },
       },
-    }),
-    clientNeeds: {
-      getAllWithMatches: {
-        useQuery: () => ({
-          data: { needs: [], totalCount: 0 },
-          isLoading: false,
-          error: null,
-        }),
+      clients: {
+        list: { invalidate: vi.fn() },
       },
-    },
+    }),
     vendorSupply: {
       getAllWithMatches: {
         useQuery: () => ({
@@ -72,7 +67,44 @@ vi.mock("@/lib/trpc", () => ({
           error: null,
         }),
       },
+      getAll: {
+        useQuery: () => ({
+          data: [],
+          isLoading: false,
+          error: null,
+        }),
+      },
       reserve: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+      create: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
+    clients: {
+      list: {
+        useQuery: () => ({
+          data: { items: [] },
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
+    clientNeeds: {
+      getAllWithMatches: {
+        useQuery: () => ({
+          data: { needs: [], totalCount: 0 },
+          isLoading: false,
+          error: null,
+        }),
+      },
+      create: {
         useMutation: () => ({
           mutateAsync: vi.fn(),
           isPending: false,
@@ -126,34 +158,33 @@ describe("MatchmakingServicePage - Button Navigation", () => {
     ).toBeInTheDocument();
   });
 
-  it("should navigate to /clients when Add Need button is clicked", () => {
+  it("should open Add Need modal when Add Need button is clicked (TER-888)", () => {
     render(<MatchmakingServicePage />);
 
     const addNeedButton = screen.getByRole("button", { name: /add need/i });
     fireEvent.click(addNeedButton);
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/clients");
+    // Modal should open instead of navigating away
+    expect(mockSetLocation).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("should navigate to /vendor-supply when Add Supply button is clicked", () => {
+  it("should open Add Supply modal when Add Supply button is clicked (TER-888)", () => {
     render(<MatchmakingServicePage />);
 
     const addSupplyButton = screen.getByRole("button", { name: /add supply/i });
     fireEvent.click(addSupplyButton);
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/vendor-supply");
+    // Modal should open instead of navigating away
+    expect(mockSetLocation).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("should not navigate to non-existent routes", () => {
+  it("should not navigate away when Add Need or Add Supply is clicked", () => {
     render(<MatchmakingServicePage />);
 
     const addNeedButton = screen.getByRole("button", { name: /add need/i });
-    const addSupplyButton = screen.getByRole("button", { name: /add supply/i });
-
     fireEvent.click(addNeedButton);
-    expect(mockSetLocation).not.toHaveBeenCalledWith("/needs/new");
-
-    fireEvent.click(addSupplyButton);
-    expect(mockSetLocation).not.toHaveBeenCalledWith("/supply/new");
+    expect(mockSetLocation).not.toHaveBeenCalled();
   });
 });
