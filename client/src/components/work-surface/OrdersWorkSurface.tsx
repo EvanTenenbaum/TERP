@@ -149,23 +149,19 @@ export function canDownloadInvoice(
 }
 
 export function canGenerateInvoice(
-  order:
-    | {
-        orderType?: string | null;
-        invoiceId?: number | null;
-        fulfillmentStatus?: string | null;
-      }
-    | null,
+  order: {
+    orderType?: string | null;
+    invoiceId?: number | null;
+    fulfillmentStatus?: string | null;
+  } | null,
   canCreateAccounting: boolean
 ): boolean {
   return Boolean(
     canCreateAccounting &&
-      order?.orderType === "SALE" &&
-      !order.invoiceId &&
-      order.fulfillmentStatus &&
-      ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(
-        order.fulfillmentStatus
-      )
+    order?.orderType === "SALE" &&
+    !order.invoiceId &&
+    order.fulfillmentStatus &&
+    ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(order.fulfillmentStatus)
   );
 }
 
@@ -185,6 +181,12 @@ export function getMakePaymentRoute(
   });
 
   return `/accounting?${params.toString()}`;
+}
+
+export function canViewOrderCogsDetails(settings?: {
+  display?: { canViewCogsData?: boolean };
+}): boolean {
+  return Boolean(settings?.display?.canViewCogsData);
 }
 
 interface ClientSummary {
@@ -466,6 +468,7 @@ interface OrderInspectorProps {
   order: Order | null;
   clientName: string;
   cogsLineItems: OrderCOGSLineItem[];
+  canViewCogsDetails: boolean;
   returnHistory: OrderReturnEntry[];
   shippingEnabled: boolean;
   canManageShipping: boolean;
@@ -507,6 +510,7 @@ function OrderInspectorContent({
   order,
   clientName,
   cogsLineItems,
+  canViewCogsDetails,
   returnHistory,
   shippingEnabled,
   canManageShipping,
@@ -625,9 +629,11 @@ function OrderInspectorContent({
         )}
       </InspectorSection>
 
-      <InspectorSection title="COGS Details" defaultOpen>
-        <OrderCOGSDetails lineItems={cogsLineItems} />
-      </InspectorSection>
+      {canViewCogsDetails ? (
+        <InspectorSection title="COGS Details" defaultOpen>
+          <OrderCOGSDetails lineItems={cogsLineItems} />
+        </InspectorSection>
+      ) : null}
 
       <InspectorSection title="GL Entries" defaultOpen>
         <GLEntriesViewer
@@ -684,9 +690,7 @@ function OrderInspectorContent({
               `Order #${order.id}`
             }
             isUpdating={isStatusUpdating}
-            onStatusChange={newStatus =>
-              onStatusChange?.(order.id, newStatus)
-            }
+            onStatusChange={newStatus => onStatusChange?.(order.id, newStatus)}
             customHandlers={{
               SHIPPED: () => onShip(order.id),
               RETURNED: onProcessReturn
@@ -881,6 +885,8 @@ export function OrdersWorkSurface() {
   const routeSearch = useRouteSearch();
   const trpcUtils = trpc.useUtils();
   const { hasAnyPermission } = usePermissions();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const appliedOrderDeepLinkRef = useRef<number | null>(null);
 
@@ -909,6 +915,7 @@ export function OrdersWorkSurface() {
     "accounting:transactions:create",
     "accounting:manage",
   ]);
+  const canViewCogsDetails = canViewOrderCogsDetails(displaySettings);
 
   // State — Parse localStorage once and distribute
   const savedViewState = useMemo(() => {
@@ -1105,7 +1112,9 @@ export function OrdersWorkSurface() {
       }
       const message = getStatusFilterExitMessage({
         orderNumber:
-          getDisplayOrderNumber(order) || order.orderNumber || `Order #${order.id}`,
+          getDisplayOrderNumber(order) ||
+          order.orderNumber ||
+          `Order #${order.id}`,
         fromFilter: statusFilter,
         toStatus: nextStatus,
       });
@@ -1295,7 +1304,8 @@ export function OrdersWorkSurface() {
           "READY_FOR_PACKING"
       ).length,
       ready: confirmedOrders.filter(
-        (o: Order) => normalizeFulfillmentStatus(o.fulfillmentStatus) === "PACKED"
+        (o: Order) =>
+          normalizeFulfillmentStatus(o.fulfillmentStatus) === "PACKED"
       ).length,
       shipped: confirmedOrders.filter(
         (o: Order) => o.fulfillmentStatus === "SHIPPED"
@@ -1854,6 +1864,7 @@ export function OrdersWorkSurface() {
               selectedOrder ? getClientName(selectedOrder.clientId) : ""
             }
             cogsLineItems={cogsLineItems}
+            canViewCogsDetails={canViewCogsDetails}
             returnHistory={normalizedOrderReturns}
             shippingEnabled={shippingEnabled}
             canManageShipping={canManageShipping}

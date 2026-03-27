@@ -811,6 +811,7 @@ export function SalesSheetsPilotSurface({
             value={selectedClientId}
             onValueChange={handleClientChange}
             clients={clientList}
+            isLoading={clientsQuery.isLoading}
             placeholder="Choose a client..."
             emptyText="No clients found"
           />
@@ -824,10 +825,6 @@ export function SalesSheetsPilotSurface({
           className="max-w-48"
           disabled={!selectedClientId}
         />
-
-        {import.meta.env.DEV && (
-          <Badge variant="outline">Pilot: browser + preview split</Badge>
-        )}
 
         {hasUnsavedChanges && (
           <Badge variant="secondary" className="text-amber-600">
@@ -987,7 +984,6 @@ export function SalesSheetsPilotSurface({
                 "SALE-SHT-003",
                 "SALE-SHT-004",
               ]}
-              releaseGateIds={["SALE-SHT-001", "SALE-SHT-002"]}
               affordances={browserAffordances}
               title="Inventory Browser"
               description="Select items from live inventory to add to the sales catalogue. Client-sensitive pricing is applied automatically."
@@ -1015,7 +1011,6 @@ export function SalesSheetsPilotSurface({
                   {inventoryRows.filter(r => r.inSheet).length} in sheet
                 </span>
               }
-              antiDriftSummary="Browser release gates: client-pricing context must load together; unsaved state must remain visible when data context changes."
               minHeight={320}
               rowHeight={36}
             />
@@ -1026,7 +1021,6 @@ export function SalesSheetsPilotSurface({
             <PowersheetGrid
               surfaceId="sales-sheets-preview"
               requirementIds={["SALE-SHT-002", "SALE-SHT-005", "SALE-SHT-006"]}
-              releaseGateIds={["SALE-SHT-005", "SALE-SHT-006"]}
               affordances={previewAffordances}
               title="Sheet Preview"
               description="Items added to the sheet. Share and convert actions require a saved (clean) state."
@@ -1053,7 +1047,6 @@ export function SalesSheetsPilotSurface({
                   </span>
                 ) : undefined
               }
-              antiDriftSummary="Preview release gates: share and convert must stay blocked while unsaved changes exist."
               minHeight={320}
             />
           </div>

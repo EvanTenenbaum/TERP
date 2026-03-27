@@ -175,11 +175,11 @@ describe("ClientLedgerPilotSurface", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the surface header with title and pilot badge", () => {
+  it("renders the surface header with title, without internal pilot badge", () => {
     render(<ClientLedgerPilotSurface onOpenClassic={vi.fn()} />);
 
     expect(screen.getByText("Client Ledger")).toBeInTheDocument();
-    expect(screen.getByText("Sheet-Native Pilot")).toBeInTheDocument();
+    expect(screen.queryByText("Sheet-Native Pilot")).not.toBeInTheDocument();
     expect(
       screen.getByText("View transactions and balance history for a client")
     ).toBeInTheDocument();

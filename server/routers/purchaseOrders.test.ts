@@ -390,4 +390,50 @@ describe("Purchase Orders Router", () => {
     expect(Number(createdItem?.unitCost)).toBe(50);
     expect(Number(createdItem?.totalCost)).toBe(250);
   });
+
+  it("repairs stale negative totals on read endpoints from active line items", async () => {
+    const supplierClientId = 93003;
+    await seedSupplierClient({
+      id: supplierClientId,
+      name: "North Ridge Supply",
+    });
+
+    const created = await caller.purchaseOrders.create({
+      supplierClientId,
+      orderDate: "2026-03-12",
+      items: [
+        {
+          productName: "Normalization Flower",
+          category: "Flower",
+          quantityOrdered: 2,
+          cogsMode: "FIXED",
+          unitCost: 25,
+        },
+      ],
+    });
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    await db
+      .update(purchaseOrders)
+      .set({
+        subtotal: "-500.00",
+        total: "-500.00",
+      })
+      .where(eq(purchaseOrders.id, created.id));
+
+    const getAllResult = await caller.purchaseOrders.getAll({
+      supplierClientId,
+      limit: 50,
+      offset: 0,
+    });
+    expect(
+      getAllResult.items.find(item => item.id === created.id)
+    ).toMatchObject({
+      id: created.id,
+      subtotal: "50.00",
+      total: "50.00",
+    });
+  });
 });

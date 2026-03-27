@@ -66,6 +66,10 @@ export default function CalendarFilters({
     "GENERAL",
   ];
 
+  const moduleLabels: Record<string, string> = {
+    VENDORS: "Suppliers",
+  };
+
   const eventTypes = [
     "MEETING",
     "TASK",
@@ -109,6 +113,12 @@ export default function CalendarFilters({
       handleCalendarFilterChange(allCalendarIds);
     }
   };
+
+  const formatLabel = (value: string): string =>
+    value
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
 
   const activeFilterCount =
     selectedModules.length +
@@ -215,7 +225,7 @@ export default function CalendarFilters({
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    {module}
+                    {moduleLabels[module] ?? formatLabel(module)}
                   </label>
                 ))}
               </div>
@@ -244,7 +254,7 @@ export default function CalendarFilters({
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    {type.replace(/_/g, " ")}
+                    {formatLabel(type)}
                   </label>
                 ))}
               </div>
@@ -273,7 +283,7 @@ export default function CalendarFilters({
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    {status.replace(/_/g, " ")}
+                    {formatLabel(status)}
                   </label>
                 ))}
               </div>
@@ -302,7 +312,7 @@ export default function CalendarFilters({
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    {priority}
+                    {formatLabel(priority)}
                   </label>
                 ))}
               </div>

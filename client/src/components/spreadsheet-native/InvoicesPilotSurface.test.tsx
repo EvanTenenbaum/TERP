@@ -3,7 +3,7 @@ import React from "react";
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InvoicesPilotSurface } from "./InvoicesPilotSurface";
 
@@ -293,5 +293,19 @@ describe("InvoicesPilotSurface", () => {
     expect(
       screen.getByRole("group", { name: /keyboard shortcuts/i })
     ).toBeInTheDocument();
+  });
+
+  it("clears the search input when switching invoice status tabs", () => {
+    render(<InvoicesPilotSurface onOpenClassic={vi.fn()} />);
+
+    const searchInput = screen.getByPlaceholderText(
+      "Search invoice # or client"
+    );
+    fireEvent.change(searchInput, { target: { value: "INV-001" } });
+    expect(searchInput).toHaveValue("INV-001");
+
+    fireEvent.click(screen.getByTestId("status-tab-SENT"));
+
+    expect(searchInput).toHaveValue("");
   });
 });

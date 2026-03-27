@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveNextSelectedDraftId } from "./productIntakeSelection";
+import {
+  resolveNextSelectedDraftId,
+  resolveSelectedDraft,
+} from "./productIntakeSelection";
 
 const drafts = [{ id: "draft-1" }, { id: "draft-2" }];
 
@@ -32,5 +35,15 @@ describe("resolveNextSelectedDraftId", () => {
         currentSelectedDraftId: null,
       })
     ).toBeNull();
+  });
+});
+
+describe("resolveSelectedDraft", () => {
+  it("returns the current draft from the latest drafts list", () => {
+    expect(resolveSelectedDraft(drafts, "draft-2")).toEqual({ id: "draft-2" });
+  });
+
+  it("clears the selection when the chosen draft disappears from the refreshed list", () => {
+    expect(resolveSelectedDraft([{ id: "draft-1" }], "draft-2")).toBeNull();
   });
 });

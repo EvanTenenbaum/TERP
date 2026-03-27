@@ -16,7 +16,7 @@
  * Deep-link support: ?id=, ?invoiceId=, ?orderId= (PAY-004)
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import type { ColDef } from "ag-grid-community";
 import { useSearch } from "wouter";
 import { toast } from "sonner";
@@ -180,7 +180,7 @@ function mapToGridRows(payments: PaymentItem[]): PaymentGridRow[] {
     paymentMethod: (p.paymentMethod ?? "-").replace(/_/g, " "),
     amount: p.amount ?? "0",
     amountFormatted: formatCurrency(p.amount ?? "0"),
-    referenceNumber: p.referenceNumber ?? "-",
+    referenceNumber: p.referenceNumber ?? "No reference",
     invoiceId: p.invoiceId ?? null,
     notes: p.notes ?? "",
   }));
@@ -197,7 +197,8 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 130,
     maxWidth: 160,
     cellClass: "powersheet-cell--locked font-mono",
-    headerTooltip: "Read-only: payment number assigned at creation.",
+    headerTooltip:
+      "Payment identifier. Format varies by origin: PAY- (manual), PMT-RCV- (received from customer), PMT-SNT- (sent to supplier). All refer to the same payment record.",
   },
   {
     field: "paymentDate",
@@ -465,6 +466,7 @@ export function PaymentsPilotSurface({
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [registrySelectionSummary, setRegistrySelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
+  const lastEmittedRowIdRef = useRef<string | null>(null);
 
   // Dialog state
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
@@ -482,6 +484,7 @@ export function PaymentsPilotSurface({
     onSuccess: () => {
       toast.success("Payment voided successfully.");
       setVoidDialogOpen(false);
+      lastEmittedRowIdRef.current = null;
       setSelectedRowId(null);
       void paymentsQuery.refetch();
     },
@@ -563,6 +566,22 @@ export function PaymentsPilotSurface({
     () => gridRows.find(r => r.rowKey === selectedRowId) ?? null,
     [gridRows, selectedRowId]
   );
+
+  const handleCloseInspector = useCallback(() => {
+    lastEmittedRowIdRef.current = null;
+    setSelectedRowId(null);
+  }, []);
+
+  const handleSelectedRowChange = useCallback((row: PaymentGridRow | null) => {
+    const nextId = row?.rowKey ?? null;
+
+    if (nextId === lastEmittedRowIdRef.current) {
+      return;
+    }
+
+    lastEmittedRowIdRef.current = nextId;
+    setSelectedRowId(nextId);
+  }, []);
 
   // Invoice ID to open the payment flow dialog.
   // If a row is selected and has an invoiceId, use it. Fall back to URL invoiceId.
@@ -742,7 +761,6 @@ export function PaymentsPilotSurface({
       <PowersheetGrid
         surfaceId="payments-registry"
         requirementIds={["PAY-001", "PAY-002", "PAY-003", "PAY-004", "PAY-014"]}
-        releaseGateIds={["PAY-G1"]}
         affordances={registryAffordances}
         title="Payments Registry"
         description="Read-only payment transaction ledger. Select a row to see details and take actions."
@@ -750,7 +768,7 @@ export function PaymentsPilotSurface({
         columnDefs={columnDefs}
         getRowId={row => row.rowKey}
         selectedRowId={selectedRowId}
-        onSelectedRowChange={row => setSelectedRowId(row?.rowKey ?? null)}
+        onSelectedRowChange={handleSelectedRowChange}
         selectionMode="cell-range"
         enableFillHandle={false}
         enableUndoRedo={false}
@@ -772,14 +790,13 @@ export function PaymentsPilotSurface({
             {gridRows.length} payment{gridRows.length !== 1 ? "s" : ""} visible
           </span>
         }
-        antiDriftSummary="Preserves: browse, filter by type, sort by date/amount/type/number, deep-link, record payment, void payment."
         minHeight={360}
       />
 
       {/* Inspector panel — selected payment detail */}
       <InspectorPanel
         isOpen={selectedRow !== null}
-        onClose={() => setSelectedRowId(null)}
+        onClose={handleCloseInspector}
         title={selectedRow?.paymentNumber ?? "Payment"}
         subtitle={
           selectedRow
@@ -851,11 +868,17 @@ export function PaymentsPilotSurface({
                   {selectedRow.amountFormatted}
                 </p>
               </InspectorField>
-              {selectedRow.referenceNumber !== "-" && (
-                <InspectorField label="Reference">
-                  <p className="font-mono">{selectedRow.referenceNumber}</p>
-                </InspectorField>
-              )}
+              <InspectorField label="Reference">
+                <p
+                  className={
+                    selectedRow.referenceNumber === "No reference"
+                      ? "text-muted-foreground italic"
+                      : "font-mono"
+                  }
+                >
+                  {selectedRow.referenceNumber}
+                </p>
+              </InspectorField>
               {selectedRow.invoiceId !== null && (
                 <InspectorField label="Invoice">
                   <p className="font-mono">#{selectedRow.invoiceId}</p>

@@ -81,7 +81,7 @@ describe("SimpleDashboard", () => {
     mockSetLocation.mockReset();
   });
 
-  it("routes the Today's Orders shortcut to the sales orders tab", () => {
+  it("routes the Today's Sales shortcut to the sales orders tab", () => {
     render(<SimpleDashboard />);
 
     fireEvent.click(screen.getByRole("button", { name: /view orders/i }));

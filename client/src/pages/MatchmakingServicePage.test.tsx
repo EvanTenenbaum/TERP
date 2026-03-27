@@ -2,14 +2,17 @@
  * MatchmakingServicePage Tests
  *
  * Tests for the Matchmaking Service page, specifically testing that
- * the Add Need and Add Supply buttons navigate to the correct routes.
+ * the Add Need and Add Supply buttons open modals (TER-888).
  *
  * @vitest-environment jsdom
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import MatchmakingServicePage from "./MatchmakingServicePage";
+import MatchmakingServicePage, {
+  buildQuoteMatchComposerPath,
+} from "./MatchmakingServicePage";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 
 // Mock wouter's useLocation hook
 const mockSetLocation = vi.fn();
@@ -50,24 +53,26 @@ vi.mock("@/lib/trpc", () => ({
       },
       vendorSupply: {
         getAllWithMatches: { invalidate: vi.fn() },
+        getAll: { invalidate: vi.fn() },
       },
       matching: {
         getAllActiveNeedsWithMatches: { invalidate: vi.fn() },
       },
-    }),
-    clientNeeds: {
-      getAllWithMatches: {
-        useQuery: () => ({
-          data: { needs: [], totalCount: 0 },
-          isLoading: false,
-          error: null,
-        }),
+      clients: {
+        list: { invalidate: vi.fn() },
       },
-    },
+    }),
     vendorSupply: {
       getAllWithMatches: {
         useQuery: () => ({
           data: { items: [], totalCount: 0 },
+          isLoading: false,
+          error: null,
+        }),
+      },
+      getAll: {
+        useQuery: () => ({
+          data: [],
           isLoading: false,
           error: null,
         }),
@@ -78,11 +83,53 @@ vi.mock("@/lib/trpc", () => ({
           isPending: false,
         }),
       },
+      create: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
+    clients: {
+      list: {
+        useQuery: () => ({
+          data: { items: [] },
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
+    clientNeeds: {
+      getAllWithMatches: {
+        useQuery: () => ({
+          data: { needs: [], totalCount: 0 },
+          isLoading: false,
+          error: null,
+        }),
+      },
+      create: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
     },
     matching: {
       getAllActiveNeedsWithMatches: {
         useQuery: () => ({
-          data: [],
+          data: {
+            data: [
+              {
+                needId: 12,
+                supplyId: 44,
+                clientId: 7,
+                confidence: 90,
+                type: "DIRECT",
+                source: "Need match",
+                reasons: ["Fits requested quantity"],
+              },
+            ],
+          },
           isLoading: false,
           error: null,
         }),
@@ -126,34 +173,67 @@ describe("MatchmakingServicePage - Button Navigation", () => {
     ).toBeInTheDocument();
   });
 
-  it("should navigate to /clients when Add Need button is clicked", () => {
+  it("should open Add Need modal when Add Need button is clicked (TER-888)", () => {
     render(<MatchmakingServicePage />);
 
     const addNeedButton = screen.getByRole("button", { name: /add need/i });
     fireEvent.click(addNeedButton);
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/clients");
+    // Modal should open instead of navigating away
+    expect(mockSetLocation).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("should navigate to /vendor-supply when Add Supply button is clicked", () => {
+  it("should open Add Supply modal when Add Supply button is clicked (TER-888)", () => {
     render(<MatchmakingServicePage />);
 
     const addSupplyButton = screen.getByRole("button", { name: /add supply/i });
     fireEvent.click(addSupplyButton);
 
-    expect(mockSetLocation).toHaveBeenCalledWith("/vendor-supply");
+    // Modal should open instead of navigating away
+    expect(mockSetLocation).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("should not navigate to non-existent routes", () => {
+  it("should not navigate away when Add Need or Add Supply is clicked", () => {
     render(<MatchmakingServicePage />);
 
     const addNeedButton = screen.getByRole("button", { name: /add need/i });
-    const addSupplyButton = screen.getByRole("button", { name: /add supply/i });
-
     fireEvent.click(addNeedButton);
-    expect(mockSetLocation).not.toHaveBeenCalledWith("/needs/new");
+    expect(mockSetLocation).not.toHaveBeenCalled();
+  });
 
-    fireEvent.click(addSupplyButton);
-    expect(mockSetLocation).not.toHaveBeenCalledWith("/supply/new");
+  it("builds Create Quote routes against the quote composer instead of the registry", () => {
+    expect(
+      buildQuoteMatchComposerPath({
+        needId: 12,
+        supplyId: 44,
+        clientId: 7,
+        confidence: 90,
+        reasons: [],
+      })
+    ).toBe(
+      buildSalesWorkspacePath("create-order", {
+        mode: "quote",
+        needId: 12,
+        supplyId: 44,
+        clientId: 7,
+      })
+    );
+  });
+
+  it("routes the visible Create Quote action into the quote composer", () => {
+    render(<MatchmakingServicePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /create quote/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      buildSalesWorkspacePath("create-order", {
+        mode: "quote",
+        needId: 12,
+        supplyId: 44,
+        clientId: 7,
+      })
+    );
   });
 });

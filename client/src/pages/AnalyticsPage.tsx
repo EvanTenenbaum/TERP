@@ -68,6 +68,8 @@ export default function AnalyticsPage() {
 
   const { data, isLoading, error, refetch } =
     trpc.analytics.getExtendedSummary.useQuery({ period });
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const { data: revenueTrends, isLoading: trendsLoading } =
     trpc.analytics.getRevenueTrends.useQuery({
       granularity: period === "day" || period === "week" ? "day" : "month",
@@ -108,6 +110,9 @@ export default function AnalyticsPage() {
       orders: t.orderCount,
     }));
   }, [revenueTrends]);
+  const canViewInventoryValue = Boolean(
+    displaySettings?.display.canViewCogsData
+  );
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -327,24 +332,22 @@ export default function AnalyticsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <MetricCard
                   title="Total Batches"
+                  href="/inventory"
                   value={(data?.totalInventoryItems ?? 0).toLocaleString()}
                   subtitle="Active batches in stock"
                   icon={Package}
                   isLoading={isLoading}
                 />
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Inventory Value
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Package className="h-6 w-6 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">
-                      Export inventory data for detailed analysis
-                    </p>
-                  </CardContent>
-                </Card>
+                {canViewInventoryValue ? (
+                  <MetricCard
+                    title="Inventory Value"
+                    href="/inventory"
+                    value={formatCurrency(data?.totalInventoryValue ?? 0)}
+                    subtitle="Est. COGS value of on-hand inventory"
+                    icon={DollarSign}
+                    isLoading={isLoading}
+                  />
+                ) : null}
               </div>
             </CardContent>
           </Card>

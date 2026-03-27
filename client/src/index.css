@@ -337,6 +337,9 @@
     min-width: 0;
     flex: 1;
     overflow-x: auto;
+    /* BUG-104: enable momentum-based scroll on iOS and allow horizontal swipe */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
   }
 
   .linear-workspace-tabs-stack {

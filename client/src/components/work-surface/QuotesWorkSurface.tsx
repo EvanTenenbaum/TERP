@@ -79,6 +79,15 @@ import {
   Copy,
   Trash2,
 } from "lucide-react";
+
+export function buildQuoteComposerPath(
+  params?: Record<string, string | number | boolean | null | undefined>
+) {
+  return buildSalesWorkspacePath("create-order", {
+    mode: "quote",
+    ...params,
+  });
+}
 import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
@@ -582,7 +591,7 @@ export function QuotesWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        setLocation(buildQuoteComposerPath());
       },
       arrowdown: e => {
         e.preventDefault();
@@ -615,7 +624,7 @@ export function QuotesWorkSurface() {
 
   // Handlers
   const handleEdit = (quoteId: number) =>
-    setLocation(buildSalesWorkspacePath("create-order", { quoteId }));
+    setLocation(buildQuoteComposerPath({ quoteId }));
   // API-016: Open send dialog
   const handleSend = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
@@ -627,12 +636,7 @@ export function QuotesWorkSurface() {
     setShowConvertDialog(true);
   };
   const handleDuplicate = (quoteId: number) =>
-    setLocation(
-      buildSalesWorkspacePath("create-order", {
-        quoteId,
-        mode: "duplicate",
-      })
-    );
+    setLocation(buildQuoteComposerPath({ quoteId, mode: "duplicate" }));
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);
@@ -700,9 +704,7 @@ export function QuotesWorkSurface() {
               </SelectContent>
             </Select>
           </div>
-          <Button
-            onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
-          >
+          <Button onClick={() => setLocation(buildQuoteComposerPath())}>
             <Plus className="h-4 w-4 mr-2" />
             New Quote
           </Button>

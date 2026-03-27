@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "@/hooks/work-surface";
@@ -337,10 +337,18 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
       <div className="flex-1 min-w-0">
         <div className="font-medium text-gray-900 truncate">
           {item.productName}
+          {item.productId && (
+            <span className="ml-1 text-xs text-muted-foreground font-normal">
+              #{item.productId}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <span>Qty: {item.quantity}</span>
-          {item.location && (
+          {item.unitPrice !== null && item.unitPrice !== undefined && (
+            <span>{formatCurrency(item.unitPrice)}/unit</span>
+          )}
+          {item.location && item.location !== "N/A" && (
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               {item.location}
@@ -444,7 +452,7 @@ function OrderInspector({
           </p>
         </InspectorField>
         <InspectorField label="Total">
-          <p className="font-semibold">${parseFloat(order.total).toFixed(2)}</p>
+          <p className="font-semibold">{formatCurrency(order.total)}</p>
         </InspectorField>
         <InspectorField label="Created">
           <p>
@@ -1086,7 +1094,8 @@ export function FulfillmentPilotSurface({
     () => [
       {
         field: "orderNumber",
-        headerName: "Order",
+        headerName: "Order #",
+        headerTooltip: "S-... = Sale order, O-... = Draft/quote order",
         minWidth: 130,
         maxWidth: 150,
         cellClass: "powersheet-cell--locked",
@@ -1251,30 +1260,40 @@ export function FulfillmentPilotSurface({
       </div>
 
       {/* ── Status summary cards (FUL-006) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-          <div className="text-xl font-bold text-yellow-700">
-            {statusCounts.pending}
-          </div>
-          <div className="text-xs text-yellow-600">Pending</div>
+      <div className="space-y-1">
+        <div className="text-xs text-muted-foreground px-1">
+          Queue totals as of{" "}
+          {new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
         </div>
-        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-          <div className="text-xl font-bold text-blue-700">
-            {statusCounts.partial}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+            <div className="text-xl font-bold text-yellow-700">
+              {statusCounts.pending}
+            </div>
+            <div className="text-xs text-yellow-600">Pending</div>
           </div>
-          <div className="text-xs text-blue-600">Partial</div>
-        </div>
-        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
-          <div className="text-xl font-bold text-green-700">
-            {statusCounts.ready}
+          <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="text-xl font-bold text-blue-700">
+              {statusCounts.partial}
+            </div>
+            <div className="text-xs text-blue-600">Partial</div>
           </div>
-          <div className="text-xs text-green-600">Ready</div>
-        </div>
-        <div className="text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-          <div className="text-xl font-bold text-slate-700">
-            {statusCounts.shipped}
+          <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
+            <div className="text-xl font-bold text-green-700">
+              {statusCounts.ready}
+            </div>
+            <div className="text-xs text-green-600">Ready</div>
           </div>
-          <div className="text-xs text-slate-600">Shipped</div>
+          <div className="text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+            <div className="text-xl font-bold text-slate-700">
+              {statusCounts.shipped}
+            </div>
+            <div className="text-xs text-slate-600">Shipped</div>
+          </div>
         </div>
       </div>
 
@@ -1290,7 +1309,6 @@ export function FulfillmentPilotSurface({
           "FUL-010",
           "FUL-026",
         ]}
-        releaseGateIds={["FUL-G1"]}
         affordances={queueAffordances}
         title="Fulfillment Queue"
         description="Orders eligible for pick and pack. Select a row to open the detail panel."
@@ -1323,7 +1341,6 @@ export function FulfillmentPilotSurface({
               : ""}
           </span>
         }
-        antiDriftSummary="Queue must show only SALE + non-draft + no D-/Q- prefix orders. FUL-026."
         minHeight={280}
       />
 
@@ -1369,9 +1386,7 @@ export function FulfillmentPilotSurface({
                     {orderDetails.summary.totalItems} packed
                   </span>
                   <span>{orderDetails.summary.bagCount} bags</span>
-                  <span>
-                    ${parseFloat(orderDetails.order.total).toFixed(2)}
-                  </span>
+                  <span>{formatCurrency(orderDetails.order.total)}</span>
                 </div>
                 <Button
                   variant="ghost"

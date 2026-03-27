@@ -222,11 +222,13 @@ describe("PurchaseOrdersPilotSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the sheet-native pilot badge", () => {
+  it("does not render internal rollout framing badges (BUG-021)", () => {
     render(<PurchaseOrdersPilotSurface onOpenClassic={vi.fn()} />);
+    // The internal "Sheet-native Pilot" badge was removed to avoid surfacing
+    // internal framing language to end users.
     expect(
-      screen.getByText("Sheet-native Pilot · PO Queue + Detail")
-    ).toBeInTheDocument();
+      screen.queryByText("Sheet-native Pilot · PO Queue + Detail")
+    ).not.toBeInTheDocument();
   });
 
   it("renders the keyboard hint bar", () => {
@@ -236,7 +238,7 @@ describe("PurchaseOrdersPilotSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Launch Receiving button", () => {
+  it("renders the Start Receiving button (BUG-025: renamed from Launch Receiving)", () => {
     render(<PurchaseOrdersPilotSurface onOpenClassic={vi.fn()} />);
     expect(
       screen.getByRole("button", { name: /launch receiving for selected po/i })

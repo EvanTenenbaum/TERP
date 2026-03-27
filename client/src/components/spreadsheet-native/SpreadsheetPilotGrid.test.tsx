@@ -249,6 +249,134 @@ describe("SpreadsheetPilotGrid", () => {
     });
   });
 
+  it("does not re-emit the same focused row on duplicate cell-range events", () => {
+    lastAgGridProps = null;
+
+    const onSelectedRowChange = vi.fn();
+
+    render(
+      <SpreadsheetPilotGrid<TestRow>
+        title="Orders Queue"
+        rows={[
+          { id: "row-1", sku: "SKU-001" },
+          { id: "row-2", sku: "SKU-002" },
+        ]}
+        columnDefs={columnDefs}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        selectionMode="cell-range"
+        selectionSurface="orders-queue"
+        selectedRowId="row-2"
+        onSelectedRowChange={onSelectedRowChange}
+      />
+    );
+
+    const fakeColumns = [{ getColId: () => "sku" }];
+    const focusedCell: {
+      rowIndex: number;
+      column: (typeof fakeColumns)[number];
+    } = {
+      rowIndex: 1,
+      column: fakeColumns[0],
+    };
+    const fakeApi = {
+      getFocusedCell: () => focusedCell,
+      getCellRanges: () => [],
+      getSelectedRows: () => [],
+      clearFocusedCell: vi.fn(),
+      clearCellSelection: vi.fn(),
+      getDisplayedRowAtIndex: (rowIndex: number) =>
+        rowIndex === 1 ? { data: { id: "row-2", sku: "SKU-002" } } : null,
+      getAllDisplayedColumns: () => fakeColumns,
+      setFocusedCell: vi.fn(),
+      forEachNode: (
+        callback: (node: { data: TestRow; rowIndex: number }) => void
+      ) => callback({ data: { id: "row-2", sku: "SKU-002" }, rowIndex: 1 }),
+    };
+
+    lastAgGridProps?.onGridReady?.({ api: fakeApi });
+    expect(onSelectedRowChange).toHaveBeenCalledTimes(1);
+
+    lastAgGridProps?.onCellFocused?.({ api: fakeApi });
+    lastAgGridProps?.onCellSelectionChanged?.({ api: fakeApi });
+
+    expect(onSelectedRowChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("emits null when the controlled selected row is cleared in cell-range mode", () => {
+    lastAgGridProps = null;
+
+    const onSelectedRowChange = vi.fn();
+    const fakeColumns = [{ getColId: () => "sku" }];
+    let focusedCell: {
+      rowIndex: number;
+      column: (typeof fakeColumns)[number];
+    } | null = null;
+    const fakeApi = {
+      getFocusedCell: () => focusedCell,
+      getCellRanges: () => [],
+      getSelectedRows: () => [],
+      clearFocusedCell: vi.fn(() => {
+        focusedCell = null;
+      }),
+      clearCellSelection: vi.fn(),
+      getDisplayedRowAtIndex: (rowIndex: number) =>
+        rowIndex === 0 ? { data: { id: "row-1", sku: "SKU-001" } } : null,
+      getAllDisplayedColumns: () => fakeColumns,
+      setFocusedCell: vi.fn(
+        (rowIndex: number, column: (typeof fakeColumns)[number]) => {
+          focusedCell = { rowIndex, column };
+        }
+      ),
+      forEachNode: (
+        callback: (node: { data: TestRow; rowIndex: number }) => void
+      ) => callback({ data: { id: "row-1", sku: "SKU-001" }, rowIndex: 0 }),
+    };
+
+    const { rerender } = render(
+      <SpreadsheetPilotGrid<TestRow>
+        title="Orders Queue"
+        rows={rows}
+        columnDefs={columnDefs}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        selectionMode="cell-range"
+        selectionSurface="orders-queue"
+        selectedRowId="row-1"
+        onSelectedRowChange={onSelectedRowChange}
+      />
+    );
+
+    lastAgGridProps?.onGridReady?.({ api: fakeApi });
+
+    rerender(
+      <SpreadsheetPilotGrid<TestRow>
+        title="Orders Queue"
+        rows={rows}
+        columnDefs={columnDefs}
+        getRowId={row => row.id}
+        emptyTitle="No rows"
+        emptyDescription="Nothing to show"
+        selectionMode="cell-range"
+        selectionSurface="orders-queue"
+        selectedRowId={null}
+        onSelectedRowChange={onSelectedRowChange}
+      />
+    );
+
+    expect(onSelectedRowChange).toHaveBeenLastCalledWith(null);
+    expect(fakeApi.clearFocusedCell).toHaveBeenCalledTimes(1);
+    expect(fakeApi.clearCellSelection).toHaveBeenCalledTimes(1);
+    const callCountAfterClear = onSelectedRowChange.mock.calls.length;
+
+    lastAgGridProps?.onCellFocused?.({ api: fakeApi });
+    lastAgGridProps?.onCellSelectionChanged?.({ api: fakeApi });
+
+    expect(onSelectedRowChange).toHaveBeenCalledTimes(callCountAfterClear);
+  });
+
   it("ignores destroyed grid APIs instead of reading selection state after teardown", () => {
     lastAgGridProps = null;
 

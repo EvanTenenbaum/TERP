@@ -742,6 +742,7 @@ export function ClientLedgerPilotSurface({
   // ── Refs ───────────────────────────────────────────────────────────────────
   const clientSearchRef = useRef<HTMLInputElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const lastEmittedRowIdRef = useRef<string | null>(null);
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: clientsData, isLoading: clientsLoading } =
@@ -956,10 +957,20 @@ export function ClientLedgerPilotSurface({
   );
 
   // ── Row selection → inspector ──────────────────────────────────────────────
+  const handleCloseInspector = useCallback(() => {
+    lastEmittedRowIdRef.current = null;
+    setInspectorTransaction(null);
+  }, []);
+
   const handleSelectedRowChange = useCallback((row: LedgerRow | null) => {
-    if (row) {
-      setInspectorTransaction(row._txn);
+    const nextId = row?._txn.id ?? null;
+
+    if (nextId === lastEmittedRowIdRef.current) {
+      return;
     }
+
+    lastEmittedRowIdRef.current = nextId;
+    setInspectorTransaction(row?._txn ?? null);
   }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -977,9 +988,6 @@ export function ClientLedgerPilotSurface({
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-600" />
             Client Ledger
-            <Badge variant="outline" className="text-xs ml-1">
-              Sheet-Native Pilot
-            </Badge>
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             View transactions and balance history for a client
@@ -1210,7 +1218,6 @@ export function ClientLedgerPilotSurface({
                     "ACCT-LED-007",
                     "ACCT-LED-009",
                   ]}
-                  releaseGateIds={["G1-ACCT-LED", "G2-ACCT-LED", "G3-ACCT-LED"]}
                   affordances={ledgerAffordances}
                   title={
                     selectedClient ? `Ledger: ${selectedClient.name}` : "Ledger"
@@ -1246,7 +1253,6 @@ export function ClientLedgerPilotSurface({
                       {hasFilters && " (filtered)"}
                     </span>
                   }
-                  antiDriftSummary="Running balance column must stay visible at all times — even when inspector is open."
                   minHeight={280}
                 />
 
@@ -1288,7 +1294,7 @@ export function ClientLedgerPilotSurface({
               {/* Right-rail inspector */}
               <InspectorPanel
                 isOpen={inspectorTransaction !== null}
-                onClose={() => setInspectorTransaction(null)}
+                onClose={handleCloseInspector}
                 title="Transaction Details"
                 subtitle={
                   inspectorTransaction

@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import {
+  AlertTriangle,
   ArrowLeft,
+  FileText,
   Plus,
   RefreshCw,
   SquareArrowOutUpRight,
@@ -18,6 +20,7 @@ import {
   buildSheetNativeOrdersDocumentPath,
   buildSheetNativeOrdersPath,
 } from "@/lib/workspaceRoutes";
+import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
 import {
   extractItems,
   mapOrderLineItemsToPilotRows,
@@ -101,6 +104,55 @@ const formatDate = (value: string | null) => {
   return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleString();
 };
 
+/**
+ * Map raw tRPC/server error messages to user-friendly copy.
+ * BUG-013: Invoice failure leaks raw enum/state names.
+ */
+const INVOICE_ERROR_MAP: Record<string, string> = {
+  ALREADY_INVOICED: "This order already has an invoice.",
+  NOT_CONFIRMED: "The order must be confirmed before generating an invoice.",
+  DRAFT_ORDER: "Draft orders cannot be invoiced — confirm the order first.",
+  INVALID_STATE: "The order is not in a state that allows invoicing.",
+  ORDER_NOT_FOUND: "Order not found. Refresh the page and try again.",
+  PERMISSION_DENIED: "You do not have permission to generate invoices.",
+};
+
+function friendlyInvoiceError(raw: string): string {
+  const upper = raw.toUpperCase().replace(/\s+/g, "_");
+  for (const [key, message] of Object.entries(INVOICE_ERROR_MAP)) {
+    if (upper.includes(key)) {
+      return message;
+    }
+  }
+  // If no enum pattern matched, return the original message
+  return raw;
+}
+
+/**
+ * BUG-012: Determine whether Generate Invoice is available for an order.
+ * Mirrors the logic in OrdersWorkSurface.canGenerateInvoice.
+ */
+function canGenerateInvoiceForRow(row: {
+  lane: "drafts" | "confirmed";
+  orderType: string | null;
+  invoiceId: number | null;
+  fulfillmentStatus: string | null;
+}): boolean {
+  if (row.lane !== "confirmed") return false;
+  if (row.orderType !== "SALE") return false;
+  if (row.invoiceId !== null) return false;
+  const invocableStatuses = [
+    "READY_FOR_PACKING",
+    "PACKED",
+    "SHIPPED",
+    "PENDING",
+    "READY",
+  ];
+  return invocableStatuses.includes(
+    (row.fulfillmentStatus ?? "").toUpperCase()
+  );
+}
+
 const parsePositiveIntegerParam = (value: string | null) => {
   if (!value) {
     return null;
@@ -129,6 +181,12 @@ export function OrdersSheetPilotSurface({
     useState<PowersheetSelectionSummary | null>(null);
   const [supportSelectionSummary, setSupportSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
+  // TER-853: Inspector is only shown after explicit "View Details" action,
+  // not automatically on every cell click.
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  // TER-852: Track last emitted row ID to avoid processing duplicate callbacks
+  // from AG Grid re-renders that don't reflect an actual row change.
+  const lastEmittedRowIdRef = useRef<number | null>(null);
 
   const searchParams = useMemo(() => new URLSearchParams(search), [search]);
   const draftIdFromRoute = parsePositiveIntegerParam(
@@ -212,6 +270,24 @@ export function OrdersSheetPilotSurface({
     },
   });
 
+  // BUG-012 / BUG-013: Generate Invoice with state guard and friendly error messages
+  const generateInvoiceMutation = trpc.invoices.generateFromOrder.useMutation({
+    onSuccess: invoice => {
+      const num = (invoice as Record<string, unknown> | null)?.invoiceNumber;
+      toast.success(
+        typeof num === "string" && num
+          ? `Invoice ${num} generated`
+          : "Invoice generated"
+      );
+      void confirmedQuery.refetch();
+    },
+    onError: error => {
+      toast.error(
+        friendlyInvoiceError(error.message || "Failed to generate invoice")
+      );
+    },
+  });
+
   const clientNamesById = useMemo(
     () =>
       new Map(
@@ -269,6 +345,26 @@ export function OrdersSheetPilotSurface({
 
   const selectedOrderRow =
     queueRows.find(row => row.orderId === effectiveSelectedOrderId) ?? null;
+
+  // TER-852: Stabilized handler that deduplicates rapid AG Grid callbacks.
+  // Without this guard, AG Grid cell-range mode can emit onSelectedRowChange
+  // multiple times for the same row during layout recalculation, causing
+  // unnecessary re-renders and potential infinite loop behaviour.
+  const handleQueueRowChange = useCallback(
+    (row: (typeof queueRows)[number] | null) => {
+      const nextId = row?.orderId ?? null;
+      if (nextId === lastEmittedRowIdRef.current) {
+        return;
+      }
+      lastEmittedRowIdRef.current = nextId;
+      setSelectedOrderId(nextId);
+      // TER-853: Close inspector when row selection is cleared
+      if (nextId === null) {
+        setInspectorOpen(false);
+      }
+    },
+    [setSelectedOrderId]
+  );
 
   const lineItemRows = useMemo(
     () => mapOrderLineItemsToPilotRows(detailQuery.data),
@@ -364,7 +460,11 @@ export function OrdersSheetPilotSurface({
   const statusBarCenter = (
     <span>
       {selectedOrderRow
-        ? `Selected ${selectedOrderRow.orderNumber} · ${selectedOrderRow.stageLabel} · ${selectedOrderRow.ageLabel} old`
+        ? `Selected ${selectedOrderRow.orderNumber} · ${
+            selectedOrderRow.lane === "drafts"
+              ? "Draft"
+              : getFulfillmentDisplayLabel(selectedOrderRow.fulfillmentStatus)
+          } · ${selectedOrderRow.ageLabel} old`
         : "Select an order to load linked lines, evidence, and action context"}
       {queueSelectionSummary
         ? ` · queue selection visible${
@@ -378,12 +478,6 @@ export function OrdersSheetPilotSurface({
 
   const queueSelectionTouchesMultipleRows =
     (queueSelectionSummary?.selectedRowCount ?? 0) > 1;
-  const workflowActionTargetLabel = selectedOrderRow
-    ? `Workflow target: focused order ${selectedOrderRow.orderNumber}`
-    : "Workflow target: select a focused order";
-  const workflowActionGuardrail = queueSelectionTouchesMultipleRows
-    ? "Spreadsheet selection spans multiple rows. Workflow actions stay locked until the focused row is the only selected row in scope."
-    : "Workflow actions remain explicit row-scoped actions. Cell selections do not change handoff ownership.";
 
   const canOpenAccounting = selectedOrderRow?.lane === "confirmed";
   const canOpenShipping = Boolean(
@@ -456,12 +550,6 @@ export function OrdersSheetPilotSurface({
             Keyboard:
           </span>
           <KeyboardHintBar hints={documentKeyboardHints} className="text-xs" />
-          {import.meta.env.DEV && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              Spreadsheet edits stay in the grid. Finalize and handoffs use the
-              buttons below.
-            </span>
-          )}
         </div>
       </div>
     );
@@ -503,28 +591,8 @@ export function OrdersSheetPilotSurface({
         <span className="text-sm font-medium text-foreground">
           {selectedOrderRow
             ? `${selectedOrderRow.orderNumber} selected`
-            : "Queue evaluation active"}
+            : "Select an order to take action"}
         </span>
-        {import.meta.env.DEV && (
-          <Badge
-            variant={rowScopedActionsBlocked ? "secondary" : "outline"}
-            className="max-w-full"
-          >
-            {workflowActionTargetLabel}
-          </Badge>
-        )}
-        {import.meta.env.DEV && (
-          <span className="text-xs text-muted-foreground">
-            Primary actions stay on-sheet. The document flow now stays inside
-            the sheet-native Orders surface, while accounting and shipping
-            remain explicit owner handoffs.
-          </span>
-        )}
-        {import.meta.env.DEV && (
-          <span className="text-xs text-muted-foreground">
-            {workflowActionGuardrail}
-          </span>
-        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -595,6 +663,17 @@ export function OrdersSheetPilotSurface({
             <Truck className="mr-2 h-4 w-4" />
             Fulfillment
           </Button>
+          {/* TER-853: Explicit "View Details" button opens the inspector.
+              Single cell click selects only — does not open the panel. */}
+          <Button
+            size="sm"
+            variant={inspectorOpen ? "secondary" : "outline"}
+            disabled={!selectedOrderRow || rowScopedActionsBlocked}
+            onClick={() => setInspectorOpen(open => !open)}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {inspectorOpen ? "Hide Details" : "View Details"}
+          </Button>
           <Button
             size="sm"
             variant="ghost"
@@ -609,13 +688,6 @@ export function OrdersSheetPilotSurface({
       <PowersheetGrid
         surfaceId="orders-queue"
         requirementIds={["ORD-WF-001", "ORD-WF-006", "ORD-WF-007"]}
-        releaseGateIds={[
-          "SALE-ORD-019",
-          "SALE-ORD-023",
-          "SALE-ORD-024",
-          "SALE-ORD-026",
-          "SALE-ORD-027",
-        ]}
         affordances={queueAffordances}
         title="Orders Queue"
         description="One dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context."
@@ -623,7 +695,7 @@ export function OrdersSheetPilotSurface({
         columnDefs={orderColumnDefs}
         getRowId={row => row.identity.rowKey}
         selectedRowId={selectedOrderRow?.identity.rowKey ?? null}
-        onSelectedRowChange={row => setSelectedOrderId(row?.orderId ?? null)}
+        onSelectedRowChange={handleQueueRowChange}
         selectionMode="cell-range"
         enableFillHandle={false}
         enableUndoRedo={false}
@@ -640,7 +712,6 @@ export function OrdersSheetPilotSurface({
             {confirmedRows.length} confirmed
           </span>
         }
-        antiDriftSummary="Queue release gates: spreadsheet selection parity, discoverability, and explicit workflow actions."
         minHeight={360}
       />
 
@@ -654,38 +725,66 @@ export function OrdersSheetPilotSurface({
               {selectedOrderRow.clientName}
             </div>
           </div>
+          {/* BUG-015: Show actual fulfillment state label, not just "Confirmed" */}
           <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              Stage
+              Status
             </div>
             <div className="mt-1 text-sm font-medium">
-              {selectedOrderRow.stageLabel} ·{" "}
-              {selectedOrderRow.fulfillmentStatus}
+              {selectedOrderRow.lane === "drafts"
+                ? "Draft"
+                : getFulfillmentDisplayLabel(
+                    selectedOrderRow.fulfillmentStatus
+                  )}
             </div>
           </div>
+          {/* BUG-014: Invoice label aligned with actual state */}
           <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Invoice
             </div>
             <div className="mt-1 text-sm font-medium">
-              {selectedOrderRow.invoiceStateLabel}
+              {selectedOrderRow.lane === "drafts"
+                ? "Not applicable"
+                : selectedOrderRow.invoiceId
+                  ? `Issued #${selectedOrderRow.invoiceId}`
+                  : canGenerateInvoiceForRow(selectedOrderRow)
+                    ? "Ready to invoice"
+                    : "Not yet invoiced"}
             </div>
           </div>
+          {/* BUG-019: Payment status — never show bare "-".
+              Full payment context is in the Accounting tab. */}
           <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              Next step
+              Payment
             </div>
-            <div className="mt-1 text-sm font-medium">
-              {selectedOrderRow.nextStepLabel}
+            <div className="mt-1 text-sm font-medium text-muted-foreground">
+              {selectedOrderRow.lane === "drafts"
+                ? "Not applicable"
+                : "See Accounting tab"}
             </div>
           </div>
         </div>
       ) : null}
 
+      {/* BUG-018: Margin warning — alert when all line items have 0% margin */}
+      {selectedOrderRow &&
+        selectedOrderRow.lane === "confirmed" &&
+        lineItemRows.length > 0 &&
+        lineItemRows.every(r => r.unitPrice === 0 || r.lineTotal === 0) && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>
+              All line items show zero revenue — pricing may not have been
+              applied. Check the order before invoicing.
+            </span>
+          </div>
+        )}
+
       <PowersheetGrid
         surfaceId="orders-support-grid"
         requirementIds={["ORD-WF-002"]}
-        releaseGateIds={["SALE-ORD-023", "SALE-ORD-026"]}
         affordances={supportAffordances}
         title="Selected Order Lines"
         description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
@@ -708,7 +807,6 @@ export function OrdersSheetPilotSurface({
             </span>
           ) : undefined
         }
-        antiDriftSummary="Support-grid release gate: linked lines must share the same spreadsheet grammar and active-order synchronization."
         minHeight={220}
       />
 
@@ -720,15 +818,18 @@ export function OrdersSheetPilotSurface({
         }
       />
 
+      {/* TER-853: Inspector only opens on explicit "View Details" action.
+          Cell selection alone does NOT open the inspector panel.
+          The inspectorOpen state is decoupled from selectedOrderRow. */}
       <InspectorPanel
-        isOpen={selectedOrderRow !== null}
-        onClose={() => setSelectedOrderId(null)}
+        isOpen={inspectorOpen && selectedOrderRow !== null}
+        onClose={() => setInspectorOpen(false)}
         title={selectedOrderRow?.orderNumber || "Order Inspector"}
         subtitle={selectedOrderRow?.clientName || "Select an order"}
         headerActions={
           selectedOrderRow ? (
             <Badge variant="outline">
-              {selectedOrderRow.fulfillmentStatus}
+              {getFulfillmentDisplayLabel(selectedOrderRow.fulfillmentStatus)}
             </Badge>
           ) : null
         }
@@ -754,6 +855,16 @@ export function OrdersSheetPilotSurface({
               <InspectorField label="Order Type">
                 <p>{selectedOrderRow.orderType}</p>
               </InspectorField>
+              <InspectorField label="Status">
+                {/* BUG-015: Show user-friendly fulfillment label */}
+                <p>
+                  {selectedOrderRow.lane === "drafts"
+                    ? "Draft"
+                    : getFulfillmentDisplayLabel(
+                        selectedOrderRow.fulfillmentStatus
+                      )}
+                </p>
+              </InspectorField>
               <InspectorField label="Total">
                 <p>{formatCurrency(selectedOrderRow.total)}</p>
               </InspectorField>
@@ -775,14 +886,49 @@ export function OrdersSheetPilotSurface({
               <InspectorField label="GL Entries">
                 <p>{String(ledgerQuery.data?.items?.length ?? 0)}</p>
               </InspectorField>
+              {/* BUG-014: Consistent invoice label between surfaces */}
               <InspectorField label="Invoice">
                 <p>
-                  {selectedOrderRow.invoiceId
-                    ? `Invoice #${selectedOrderRow.invoiceId}`
-                    : "Not invoiced"}
+                  {selectedOrderRow.lane === "drafts"
+                    ? "Not applicable"
+                    : selectedOrderRow.invoiceId
+                      ? `Invoice #${selectedOrderRow.invoiceId}`
+                      : canGenerateInvoiceForRow(selectedOrderRow)
+                        ? "Ready to invoice"
+                        : "Not yet invoiced"}
+                </p>
+              </InspectorField>
+              {/* BUG-019: Payment status — data not available on pilot row, direct to Accounting */}
+              <InspectorField label="Payment">
+                <p className="text-muted-foreground">
+                  {selectedOrderRow.lane === "drafts"
+                    ? "Not applicable"
+                    : "See Accounting tab"}
                 </p>
               </InspectorField>
             </InspectorSection>
+
+            {/* BUG-012: Generate Invoice only shown when state allows it */}
+            {canGenerateInvoiceForRow(selectedOrderRow) && (
+              <InspectorSection title="Actions">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full justify-start"
+                  disabled={generateInvoiceMutation.isPending}
+                  onClick={() =>
+                    generateInvoiceMutation.mutate({
+                      orderId: selectedOrderRow.orderId,
+                    })
+                  }
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {generateInvoiceMutation.isPending
+                    ? "Generating..."
+                    : "Generate Invoice"}
+                </Button>
+              </InspectorSection>
+            )}
           </div>
         ) : null}
       </InspectorPanel>

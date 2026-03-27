@@ -202,6 +202,14 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
     },
+    invoices: {
+      generateFromOrder: {
+        useMutation: vi.fn().mockReturnValue({
+          mutate: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
   },
 }));
 
@@ -304,9 +312,6 @@ describe("OrdersSheetPilotSurface", () => {
       screen.getByRole("button", { name: /new draft/i })
     ).toBeInTheDocument();
     expect(screen.getByText("Issued #55")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Queue release gates: spreadsheet selection parity/i)
-    ).toBeInTheDocument();
 
     const queueCall = mockPowersheetGrid.mock.calls.find(
       ([props]) => props.title === "Orders Queue"
@@ -333,14 +338,9 @@ describe("OrdersSheetPilotSurface", () => {
 
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
-    expect(
-      screen.getByText(/workflow target: focused order so-002/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /selection spans multiple rows\. workflow actions stay locked/i
-      )
-    ).toBeInTheDocument();
+    // Internal "Workflow target:" and guardrail text must not be shown to operators
+    expect(screen.queryByText(/workflow target:/i)).not.toBeInTheDocument();
+    // Buttons are disabled when multiple rows are selected
     expect(screen.getByRole("button", { name: /new draft/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /accounting/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /fulfillment/i })).toBeDisabled();
@@ -377,12 +377,8 @@ describe("OrdersSheetPilotSurface", () => {
 
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
-    expect(
-      screen.getByText(/workflow target: focused order so-002/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/workflow actions remain explicit row-scoped actions/i)
-    ).toBeInTheDocument();
+    // Internal "Workflow target:" text must not be shown to operators
+    expect(screen.queryByText(/workflow target:/i)).not.toBeInTheDocument();
 
     const accountingBtn = screen.getByRole("button", { name: /accounting/i });
     const shippingBtn = screen.getByRole("button", { name: /fulfillment/i });
@@ -417,9 +413,6 @@ describe("OrdersSheetPilotSurface", () => {
 
     expect(typeof queueCall?.onSelectionSummaryChange).toBe("function");
     expect(typeof supportCall?.onSelectionSummaryChange).toBe("function");
-
-    expect(queueCall?.releaseGateIds).toContain("SALE-ORD-023");
-    expect(supportCall?.releaseGateIds).toContain("SALE-ORD-023");
   });
 
   it("renders queue keyboard hints and affordance visibility cues", () => {

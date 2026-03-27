@@ -149,7 +149,7 @@ const mod = isMac ? "\u2318" : "Ctrl";
 const documentKeyboardHints: KeyboardHint[] = [
   { key: "Tab", label: "next cell" },
   { key: "Enter", label: "confirm" },
-  { key: "Escape", label: "cancel edit" },
+  { key: "Escape", label: "close panel" },
   { key: `${mod}+C`, label: "copy" },
   { key: `${mod}+V`, label: "paste" },
   { key: `${mod}+Z`, label: "undo" },
@@ -255,6 +255,21 @@ interface IntakeDraftRow extends IntakeRowData {
   matchedStrainName?: string;
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
+}
+
+interface IntakeLocationRecord {
+  id: number;
+  site: string;
+  zone?: string | null;
+  rack?: string | null;
+  shelf?: string | null;
+  bin?: string | null;
+}
+
+interface LocationOption {
+  id: number;
+  site: string;
+  label: string;
 }
 
 type IntakeExportRow = IntakeDraftRow & Record<string, unknown>;
@@ -436,6 +451,71 @@ const normalizeRowForValidation = (row: IntakeDraftRow): IntakeDraftRow => {
   return normalizeIntakeCogs({ ...row, vendorName, brandName, item, site });
 };
 
+const formatLocationLabel = (location: IntakeLocationRecord): string => {
+  const segments = [
+    location.site,
+    location.zone,
+    location.rack,
+    location.shelf,
+    location.bin,
+  ]
+    .map(segment => segment?.trim())
+    .filter((segment): segment is string => Boolean(segment));
+
+  return segments.length > 0 ? segments.join(" / ") : `Location ${location.id}`;
+};
+
+const buildLocationOptions = (
+  locations: IntakeLocationRecord[]
+): LocationOption[] => {
+  const labelCounts = new Map<string, number>();
+
+  for (const location of locations) {
+    const label = formatLocationLabel(location);
+    labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
+  }
+
+  return locations.map(location => {
+    const label = formatLocationLabel(location);
+    return {
+      id: location.id,
+      site: location.site.trim(),
+      label:
+        (labelCounts.get(label) ?? 0) > 1
+          ? `${label} / ID ${location.id}`
+          : label,
+    };
+  });
+};
+
+const findLocationOptionForRow = (
+  row: Pick<IntakeDraftRow, "locationId" | "locationName" | "site"> | null,
+  locationOptions: LocationOption[]
+): LocationOption | null => {
+  if (!row) return null;
+
+  if (row.locationId !== null) {
+    const byId = locationOptions.find(option => option.id === row.locationId);
+    if (byId) return byId;
+  }
+
+  const locationName = row.locationName.trim();
+  if (locationName) {
+    const byLabel = locationOptions.find(
+      option => option.label === locationName
+    );
+    if (byLabel) return byLabel;
+  }
+
+  const site = row.site.trim();
+  if (site) {
+    const bySite = locationOptions.find(option => option.site === site);
+    if (bySite) return bySite;
+  }
+
+  return null;
+};
+
 // ============================================================================
 // STATUS CELL RENDERER
 // ============================================================================
@@ -477,7 +557,7 @@ interface RowInspectorProps {
   mediaFiles: File[];
   onMediaFilesChange: (files: File[]) => void;
   vendors: { id: number; name: string }[];
-  locations: { id: number; site: string }[];
+  locationOptions: LocationOption[];
   products: {
     id: number;
     name: string;
@@ -493,7 +573,7 @@ function RowInspectorContent({
   mediaFiles,
   onMediaFilesChange,
   vendors,
-  locations,
+  locationOptions,
   products,
 }: RowInspectorProps) {
   const validation = useValidationTiming({
@@ -502,10 +582,12 @@ function RowInspectorContent({
   });
 
   if (!row) {
+    // BUG-039: Show a clear "no row" state — this should not normally appear
+    // when the drawer is opened via "Edit Details" since a row must be selected first
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
         <Package className="h-12 w-12 mb-4 opacity-50" />
-        <p>Select a row to edit details</p>
+        <p>No row selected — click a row in the grid first</p>
       </div>
     );
   }
@@ -834,15 +916,19 @@ function RowInspectorContent({
 
         <InspectorField label="Location" required>
           <Select
-            value={row.site}
+            value={String(
+              findLocationOptionForRow(row, locationOptions)?.id ?? ""
+            )}
             onValueChange={value => {
-              const location = locations.find(l => l.site === value);
+              const location = locationOptions.find(
+                option => option.id.toString() === value
+              );
               onUpdate({
-                site: value,
+                site: location?.site ?? "",
                 locationId: location?.id ?? null,
-                locationName: value,
+                locationName: location?.label ?? "",
               });
-              validation.handleChange("site", value);
+              validation.handleChange("site", location?.site ?? "");
             }}
           >
             <SelectTrigger
@@ -853,14 +939,14 @@ function RowInspectorContent({
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
             <SelectContent>
-              {locations.length === 0 ? (
+              {locationOptions.length === 0 ? (
                 <SelectItem value="no-locations" disabled>
                   No locations available
                 </SelectItem>
               ) : (
-                locations.map(l => (
-                  <SelectItem key={l.id} value={l.site}>
-                    {l.site}
+                locationOptions.map(location => (
+                  <SelectItem key={location.id} value={location.id.toString()}>
+                    {location.label}
                   </SelectItem>
                 ))
               )}
@@ -937,8 +1023,11 @@ function RowInspectorContent({
                 ))}
               </div>
             )}
+            {/* BUG-044: Clarify that photo upload happens at submit time and may fail independently */}
             <p className="text-xs text-muted-foreground">
-              Photos upload when you submit this row.
+              Photos are uploaded when you submit this row. If photo upload
+              fails, the row data is still submitted but photos may need to be
+              re-attached.
             </p>
           </div>
         </InspectorField>
@@ -1007,12 +1096,9 @@ interface IntakePilotSurfaceProps {
 }
 
 export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
-  const INITIAL_ROW_COUNT = 5;
-
   // ---- Row state ----
-  const [rows, setRows] = useState<IntakeDraftRow[]>(() =>
-    Array.from({ length: INITIAL_ROW_COUNT }, () => createEmptyRow())
-  );
+  // BUG-034: Start with no rows — user adds rows explicitly to avoid blank error-prone defaults
+  const [rows, setRows] = useState<IntakeDraftRow[]>([]);
   const rowsRef = useRef<IntakeDraftRow[]>(rows);
 
   const updateRows = useCallback(
@@ -1087,6 +1173,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
   }, [rowMediaFilesById]);
 
   // ---- Derived counts ----
+  // BUG-041: Count rows that are "pending" (ready to submit) vs "error" (need fixing) separately
+  // pendingCount = rows still cleanly pending (not yet attempted or cleared after error fix)
   const pendingCount = useMemo(
     () => rows.filter(r => r.status === "pending").length,
     [rows]
@@ -1127,7 +1215,9 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
     useState<PowersheetSelectionSummary | null>(null);
 
   // ---- Work Surface hooks ----
+  // BUG-035: Start in 'queued' state so "All changes saved" is not shown with a fresh/empty surface
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState({
+    initialState: "queued",
     onStateChange: state => {
       if (state.status === "error") {
         toast.error(state.message ?? "Save failed");
@@ -1137,6 +1227,19 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
   const undo = useUndo({ enableKeyboard: false });
   const { exportCSV, state: exportState } = useExport<IntakeExportRow>();
   const inspector = useInspectorPanel();
+
+  // BUG-042: Escape key closes the inspector panel (the hint bar advertises this behavior)
+  useEffect(() => {
+    if (!inspector.isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.defaultPrevented && e.key === "Escape") {
+        inspector.close();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [inspector, inspector.isOpen]);
 
   // ---- Data queries ----
   const {
@@ -1173,9 +1276,29 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
     error: locationsError,
     refetch: refetchLocations,
   } = trpc.locations.getAll.useQuery();
-  const locations = useMemo(
-    () => (Array.isArray(locationsData) ? locationsData : []),
-    [locationsData]
+  const locations = useMemo<IntakeLocationRecord[]>(() => {
+    const raw = Array.isArray(locationsData) ? locationsData : [];
+    return raw
+      .filter(
+        location =>
+          typeof location?.id === "number" && typeof location?.site === "string"
+      )
+      .map(location => ({
+        id: Number(location.id),
+        site: String(location.site),
+        zone: typeof location.zone === "string" ? location.zone : null,
+        rack: typeof location.rack === "string" ? location.rack : null,
+        shelf: typeof location.shelf === "string" ? location.shelf : null,
+        bin: typeof location.bin === "string" ? location.bin : null,
+      }));
+  }, [locationsData]);
+  const locationOptions = useMemo(
+    () => buildLocationOptions(locations),
+    [locations]
+  );
+  const selectedLocationOption = useMemo(
+    () => findLocationOptionForRow(selectedRow, locationOptions),
+    [locationOptions, selectedRow]
   );
 
   const mainWarehouse = useMemo(
@@ -1185,24 +1308,27 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       ) ?? locations[0],
     [locations]
   );
-  const defaultLocationOverrides = useMemo(
-    () =>
-      mainWarehouse
-        ? {
-            locationId: mainWarehouse.id,
-            locationName: mainWarehouse.site ?? "",
-            site: mainWarehouse.site ?? "",
-          }
-        : undefined,
-    [mainWarehouse]
-  );
+  const defaultLocationOverrides = useMemo(() => {
+    if (!mainWarehouse) return undefined;
+    const option =
+      locationOptions.find(location => location.id === mainWarehouse.id) ??
+      null;
+    return {
+      locationId: mainWarehouse.id,
+      locationName: option?.label ?? mainWarehouse.site ?? "",
+      site: mainWarehouse.site ?? "",
+    };
+  }, [locationOptions, mainWarehouse]);
 
   // Apply main warehouse default to rows that have no location yet
   useEffect(() => {
     if (!defaultLocationOverrides) return;
     updateRows(prev =>
       prev.map(row =>
-        row.locationId === null && row.status === "pending"
+        row.locationId === null &&
+        !row.site.trim() &&
+        !row.locationName.trim() &&
+        row.status === "pending"
           ? { ...row, ...defaultLocationOverrides }
           : row
       )
@@ -1241,15 +1367,17 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
   const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
   const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
 
-  // ---- Selection sync: auto-select first pending row ----
+  // ---- Selection sync: keep focused row valid, but do NOT auto-select on load ----
+  // BUG-037: Do not auto-select rows on initial load — selection starts empty
   useEffect(() => {
     if (rows.length === 0) {
       setSelectedRowId(null);
       return;
     }
-    if (selectedRowId && rows.some(r => r.id === selectedRowId)) return;
-    const firstPending = rows.find(r => r.status === "pending");
-    setSelectedRowId(firstPending?.id ?? rows[0].id);
+    // Only clear selection if the selected row no longer exists
+    if (selectedRowId && !rows.some(r => r.id === selectedRowId)) {
+      setSelectedRowId(null);
+    }
   }, [rows, selectedRowId]);
 
   // Sync powersheet selection when no rows are selected but a focused row exists
@@ -1414,7 +1542,11 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
             : "powersheet-cell--locked",
         headerTooltip: "Editable: location for pending rows",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: locations.map(l => l.site) },
+        cellEditorParams: {
+          values: locationOptions.map(location => location.label),
+        },
+        valueFormatter: params =>
+          params.data?.locationName || params.data?.site || "",
       },
       {
         headerName: "Terms",
@@ -1445,7 +1577,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         filter: true,
       },
     ],
-    [vendors, locations, products]
+    [locationOptions, products, vendors]
   );
 
   // ---- Cell value changed handler ----
@@ -1468,12 +1600,14 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       }
 
       if (event.colDef.field === "site") {
-        const site =
+        const locationLabel =
           typeof event.newValue === "string" ? event.newValue.trim() : "";
-        nextRow.site = site;
-        const location = locations.find(l => l.site === site);
+        const location = locationOptions.find(
+          option => option.label === locationLabel
+        );
+        nextRow.site = location?.site ?? locationLabel;
         nextRow.locationId = location?.id ?? null;
-        nextRow.locationName = location?.site ?? "";
+        nextRow.locationName = location?.label ?? "";
       }
 
       if (event.colDef.field === "item") {
@@ -1506,7 +1640,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       );
       setTimeout(() => setSaved(), 500);
     },
-    [vendors, locations, products, setSaving, setSaved, updateRows]
+    [locationOptions, products, setSaved, setSaving, updateRows, vendors]
   );
 
   // ---- Row add ----
@@ -2070,14 +2204,17 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           <Badge variant="secondary" className="px-2.5 py-1">
             Direct Intake
           </Badge>
-          <Badge variant="outline">Pending {pendingCount}</Badge>
-          <Badge variant="outline">Submitted {submittedCount}</Badge>
+          {/* BUG-041: Show "Ready" for pending, "Fix needed" to surface error rows clearly */}
+          <Badge variant="outline">Ready {pendingCount}</Badge>
           <Badge
             variant="outline"
             className={cn(errorCount > 0 && "border-red-200 text-red-600")}
           >
-            Errors {errorCount}
+            {errorCount > 0
+              ? `Fix needed ${errorCount}`
+              : `Errors ${errorCount}`}
           </Badge>
+          <Badge variant="outline">Submitted {submittedCount}</Badge>
           <Badge variant="outline">Qty {sessionTotals.qty}</Badge>
           <Badge variant="outline">${sessionTotals.value.toFixed(2)}</Badge>
         </div>
@@ -2101,6 +2238,13 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
 
       {/* Zone 2: Pre-submit review region — selected row quick-edit bar */}
       <div className="border-b border-border/70 bg-background px-3 py-3 md:px-4">
+        {/* BUG-043: Error message anchored to top of zone, above inputs, for clear visibility */}
+        {selectedRow?.status === "error" && selectedRow.errorMessage && (
+          <div className="mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>{selectedRow.errorMessage}</span>
+          </div>
+        )}
         <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 overflow-hidden">
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Supplier</Label>
@@ -2195,7 +2339,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
               type="number"
               min="0"
               step="0.01"
-              value={selectedRow?.qty ?? ""}
+              // BUG-038: Show empty for zero default to avoid confusing "0" placeholder
+              value={selectedRow?.qty || ""}
               onChange={e => {
                 if (!selectedRow || selectedRow.status !== "pending") return;
                 const val = Number(e.target.value);
@@ -2205,6 +2350,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
               }}
               disabled={!selectedRow || selectedRow.status !== "pending"}
               className="h-9"
+              placeholder="0"
             />
           </div>
 
@@ -2238,7 +2384,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={selectedRow?.cogsMin ?? ""}
+                  // BUG-038: Show empty for zero default
+                  value={selectedRow?.cogsMin || ""}
                   onChange={e => {
                     if (!selectedRow || selectedRow.status !== "pending")
                       return;
@@ -2248,6 +2395,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                     });
                   }}
                   disabled={!selectedRow || selectedRow.status !== "pending"}
+                  placeholder="0.00"
                   className="h-9"
                 />
               </div>
@@ -2259,7 +2407,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={selectedRow?.cogsMax ?? ""}
+                  // BUG-038: Show empty for zero default
+                  value={selectedRow?.cogsMax || ""}
                   onChange={e => {
                     if (!selectedRow || selectedRow.status !== "pending")
                       return;
@@ -2270,6 +2419,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   }}
                   disabled={!selectedRow || selectedRow.status !== "pending"}
                   className="h-9"
+                  placeholder="0.00"
                 />
               </div>
             </>
@@ -2280,7 +2430,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                 type="number"
                 min="0"
                 step="0.01"
-                value={selectedRow?.cogs ?? ""}
+                // BUG-038: Show empty for zero default
+                value={selectedRow?.cogs || ""}
                 onChange={e => {
                   if (!selectedRow || selectedRow.status !== "pending") return;
                   const val = Number(e.target.value);
@@ -2297,14 +2448,16 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">Location</Label>
             <Select
-              value={selectedRow?.site ?? ""}
+              value={String(selectedLocationOption?.id ?? "")}
               onValueChange={value => {
                 if (!selectedRow || selectedRow.status !== "pending") return;
-                const location = locations.find(l => l.site === value);
+                const location = locationOptions.find(
+                  option => option.id.toString() === value
+                );
                 handleUpdateSelectedRow({
-                  site: value,
+                  site: location?.site ?? "",
                   locationId: location?.id ?? null,
-                  locationName: value,
+                  locationName: location?.label ?? "",
                 });
               }}
               disabled={!selectedRow || selectedRow.status !== "pending"}
@@ -2316,21 +2469,15 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                 />
               </SelectTrigger>
               <SelectContent>
-                {locations.map(l => (
-                  <SelectItem key={l.id} value={l.site}>
-                    {l.site}
+                {locationOptions.map(location => (
+                  <SelectItem key={location.id} value={location.id.toString()}>
+                    {location.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-
-        {selectedRow?.status === "error" && selectedRow.errorMessage && (
-          <p className="mt-2 text-xs font-medium text-red-600">
-            {selectedRow.errorMessage}
-          </p>
-        )}
       </div>
 
       {/* Zone 3: Workflow action bar */}
@@ -2503,7 +2650,6 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   "OPS-INT-004",
                   "OPS-INT-005",
                 ]}
-                releaseGateIds={["INT-PILOT-001"]}
                 affordances={intakeAffordances}
                 title="Direct Intake Session"
                 description="Draft and submit inventory intake rows. Pending rows are editable."
@@ -2531,17 +2677,20 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                     )}
                   </span>
                 }
-                antiDriftSummary="OPS-INT-001: Pending rows editable · OPS-INT-004: Single-row submit · OPS-INT-005: Bulk submit + CSV export"
                 minHeight={360}
               />
             </div>
 
             {/* Inspector Panel */}
+            {/* BUG-039: Title and subtitle reflect actual row state */}
             <InspectorPanel
               isOpen={inspector.isOpen}
               onClose={inspector.close}
               title={selectedRow ? "Edit Row" : "Row Details"}
-              subtitle={selectedRow?.item || "Select a row to edit"}
+              subtitle={
+                selectedRow?.item ||
+                (selectedRow ? "New row" : "No row selected")
+              }
             >
               <RowInspectorContent
                 row={selectedRow}
@@ -2557,7 +2706,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   }));
                 }}
                 vendors={vendors}
-                locations={locations}
+                locationOptions={locationOptions}
                 products={products}
               />
               {selectedRow?.status === "pending" && (

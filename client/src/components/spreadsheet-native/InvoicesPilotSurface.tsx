@@ -211,7 +211,15 @@ function mapToGridRows(
   items: InvoiceItem[],
   clientNamesById: Map<number, string>
 ): InvoiceGridRow[] {
-  return items.map(item => {
+  // BUG-053: deduplicate by invoice ID to prevent duplicate row rendering
+  const seen = new Set<number>();
+  const uniqueItems = items.filter(item => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+
+  return uniqueItems.map(item => {
     const customerId = item.customerId ?? 0;
     const clientName =
       // The list endpoint joins client and returns it under item.client
@@ -221,11 +229,25 @@ function mapToGridRows(
       `Client #${customerId}`;
 
     const totalAmount = String(item.totalAmount ?? "0");
-    const amountDue = String(item.amountDue ?? "0");
-    const amountPaid = String(item.amountPaid ?? "0");
+    const totalAmountNum = parseFloat(totalAmount);
+    const amountPaidRaw = parseFloat(String(item.amountPaid ?? "0"));
+    const status = item.status ?? "DRAFT";
+
+    // BUG-054/055/057: Clamp amountDue to [0, totalAmount]. Never display negative due.
+    // PAID invoices always show $0.00 due regardless of DB value (BUG-055).
+    const rawAmountDue = parseFloat(String(item.amountDue ?? "0"));
+    const amountDueNum =
+      status === "PAID" || status === "VOID"
+        ? 0
+        : Math.max(0, Math.min(rawAmountDue, totalAmountNum));
+    const amountDue = amountDueNum.toFixed(2);
+
+    // Clamp amountPaid to [0, totalAmount] for display (BUG-057)
+    const amountPaid = Math.min(amountPaidRaw, totalAmountNum).toFixed(2);
+
     const dueDate = item.dueDate ? new Date(item.dueDate) : null;
     const daysOverdue =
-      item.status === "OVERDUE" && dueDate ? getDaysOverdue(dueDate) : 0;
+      status === "OVERDUE" && dueDate ? getDaysOverdue(dueDate) : 0;
 
     return {
       rowKey: String(item.id),
@@ -242,7 +264,7 @@ function mapToGridRows(
       amountDueFormatted: formatCurrency(amountDue),
       amountPaid,
       paymentPct: getPaymentProgress(item),
-      status: item.status ?? "DRAFT",
+      status,
       daysOverdue,
       version:
         (item as InvoiceItem & { version?: number | null }).version ?? null,
@@ -1061,6 +1083,7 @@ export function InvoicesPilotSurface({
               onClick={() => {
                 setStatusFilter(tab.value);
                 setPage(1);
+                setSearchTerm("");
               }}
               data-testid={`status-tab-${tab.value}`}
             >
@@ -1183,16 +1206,6 @@ export function InvoicesPilotSurface({
       <PowersheetGrid
         surfaceId="invoices-registry"
         requirementIds={["INV-001", "INV-002", "INV-003", "INV-009", "INV-020"]}
-        releaseGateIds={[
-          "INV-001",
-          "INV-002",
-          "INV-003",
-          "INV-006",
-          "INV-007",
-          "INV-013",
-          "INV-014",
-          "INV-015",
-        ]}
         affordances={registryAffordances}
         title="Invoices Registry"
         description="Read-only registry of all invoices. Row selection enables status actions and opens the inspector for full detail."
@@ -1217,7 +1230,6 @@ export function InvoicesPilotSurface({
             {statusFilter !== "ALL" ? statusFilter : "All statuses"}
           </span>
         }
-        antiDriftSummary="Registry gates: status filtering, row selection, workflow actions, PDF/print sidecars."
         minHeight={360}
       />
 
@@ -1354,10 +1366,14 @@ export function InvoicesPilotSurface({
 
       {/* Create Invoice dialog — DISC-INV-003: server-generated number */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent data-testid="create-invoice-dialog">
+        {/* BUG-059: aria-describedby explicitly links dialog content to its description */}
+        <DialogContent
+          data-testid="create-invoice-dialog"
+          aria-describedby="create-invoice-description"
+        >
           <DialogHeader>
             <DialogTitle>Create Invoice</DialogTitle>
-            <DialogDescription>
+            <DialogDescription id="create-invoice-description">
               Invoice number is assigned by the server.
               {generateNumberQuery.data
                 ? ` Next: ${generateNumberQuery.data}`

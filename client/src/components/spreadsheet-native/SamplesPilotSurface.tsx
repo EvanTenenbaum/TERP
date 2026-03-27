@@ -1031,15 +1031,9 @@ export function SamplesPilotSurface({
         <PowersheetGrid
           surfaceId="samples-queue"
           requirementIds={["SAM-001", "SAM-002", "SAM-003", "SAM-009"]}
-          releaseGateIds={[
-            "SAM-WF-001",
-            "SAM-WF-002",
-            "SAM-WF-003",
-            "SAM-WF-009",
-          ]}
           affordances={samplesAffordances}
           title="Sample Request Queue"
-          description="All active sample requests with status, location, due date (parsed from notes), and expiration. Select a row to access workflow actions. DISC-SAM-001: fulfillRequest is now wired."
+          description="All active sample requests with status, location, due date, and expiration. Select a row to access workflow actions."
           rows={rows}
           columnDefs={columnDefs}
           getRowId={row => row.identity.rowKey}
@@ -1047,6 +1041,12 @@ export function SamplesPilotSurface({
           onSelectedRowChange={row =>
             setSelectedSampleId(row?.sampleId ?? null)
           }
+          onRowClicked={event => {
+            const row = event.data;
+            if (row) {
+              setSelectedSampleId(row.sampleId);
+            }
+          }}
           selectionMode="cell-range"
           enableFillHandle={false}
           enableUndoRedo={false}
@@ -1057,11 +1057,9 @@ export function SamplesPilotSurface({
           emptyDescription="Adjust the search or tab filter, or create a new sample request."
           summary={
             <span>
-              {rows.length} visible rows of {allRows.length} total · dueDate
-              column: DISC-SAM-003 resolved
+              {rows.length} visible · {allRows.length} total
             </span>
           }
-          antiDriftSummary="Samples queue: selection drives row action bar, inspector, and workflow dialogs. fulfillRequest (DISC-SAM-001) must remain wired."
           minHeight={400}
         />
 

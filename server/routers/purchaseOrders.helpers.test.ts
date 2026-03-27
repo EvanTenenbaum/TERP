@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dedupeRecentSupplierProducts,
+  normalizePurchaseOrderTotals,
   normalizePurchaseOrderPaymentTerms,
   shouldFallbackRecentProductsBySupplier,
   summarizePurchaseOrderItemCost,
@@ -88,5 +89,24 @@ describe("purchaseOrders helpers", () => {
     expect(
       shouldFallbackRecentProductsBySupplier(new Error("Connection lost"))
     ).toBe(false);
+  });
+
+  it("repairs stale negative totals from active PO items only", () => {
+    expect(
+      normalizePurchaseOrderTotals(
+        {
+          subtotal: "-500.00",
+          total: "-500.00",
+        },
+        [
+          { totalCost: "300.00", deletedAt: null },
+          { totalCost: "200.00", deletedAt: null },
+          { totalCost: "999.00", deletedAt: new Date("2026-03-01") },
+        ]
+      )
+    ).toEqual({
+      subtotal: "500.00",
+      total: "500.00",
+    });
   });
 });

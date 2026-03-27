@@ -75,7 +75,22 @@ import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getMixedBrandLabel } from "@/lib/nomenclature";
-import { resolveNextSelectedDraftId } from "./productIntakeSelection";
+import {
+  resolveNextSelectedDraftId,
+  resolveSelectedDraft,
+} from "./productIntakeSelection";
+
+// BUG-026: Capitalize each word of strain/product names for polished display
+function capitalizeStrainName(name: string | null | undefined): string {
+  if (!name) return "";
+  return name.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// BUG-027: Currency formatter consistent with summary panels
+const formatCurrency = (value: number): string =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+    value
+  );
 
 const defaultColumns: GridColumnOption[] = [
   { id: "brand", label: "Brand/Farmer", visible: true },
@@ -109,8 +124,11 @@ function rowValidationErrors(line: ProductIntakeDraftLine): string[] {
     errors.push("Qty exceeds remaining PO quantity");
   if (!(line.unitCost >= 0)) errors.push("Cost must be 0 or more");
   if (!line.locationName) errors.push("Location is required");
+  // BUG-032: Guidance message points user to the Attachments button
   if ((line.mediaUrls ?? []).length === 0)
-    errors.push("Image evidence is required");
+    errors.push(
+      "Image evidence is required — use Attachments to upload photos"
+    );
 
   return errors;
 }
@@ -238,11 +256,8 @@ export function ProductIntakeSlicePage() {
   }, [refreshDrafts, route, storageUserId]);
 
   const selectedDraft = useMemo(
-    () =>
-      selectedDraftId
-        ? getProductIntakeDraft(selectedDraftId, storageUserId)
-        : null,
-    [selectedDraftId, storageUserId]
+    () => resolveSelectedDraft(drafts, selectedDraftId),
+    [drafts, selectedDraftId]
   );
 
   // Shared powersheet selection for draft lines (TER-284)
@@ -423,7 +438,9 @@ export function ProductIntakeSlicePage() {
       return null;
     }
     if (latest.version !== draft.version) {
-      toast.error("This receiving draft changed elsewhere. Reloaded latest version.");
+      toast.error(
+        "This receiving draft changed elsewhere. Reloaded latest version."
+      );
       refreshDrafts(draft.id);
       return null;
     }
@@ -1265,7 +1282,13 @@ export function ProductIntakeSlicePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={applyBulkLocation}>
+            {/* BUG-033: Disabled when no lines are selected */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={applyBulkLocation}
+              disabled={selectedLineIds.size === 0}
+            >
               Apply Location
             </Button>
 
@@ -1275,7 +1298,13 @@ export function ProductIntakeSlicePage() {
               onChange={e => setBulkGrade(e.target.value)}
               placeholder="Set Grade"
             />
-            <Button variant="outline" size="sm" onClick={applyBulkGrade}>
+            {/* BUG-033: Disabled when no lines are selected */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={applyBulkGrade}
+              disabled={selectedLineIds.size === 0}
+            >
               Apply Grade
             </Button>
           </>
@@ -1393,16 +1422,24 @@ export function ProductIntakeSlicePage() {
                   )}
                   {visibleColumnIds.has("strain") && (
                     <td className="p-2">
-                      <Input
-                        value={line.strainName ?? line.productName}
-                        disabled={!canEdit}
-                        onChange={e =>
-                          updateLine(line.id, {
-                            strainName: e.target.value,
-                            productName: e.target.value,
-                          })
-                        }
-                      />
+                      {canEdit ? (
+                        <Input
+                          value={line.strainName ?? line.productName}
+                          onChange={e =>
+                            updateLine(line.id, {
+                              strainName: e.target.value,
+                              productName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        // BUG-026: Capitalize strain name in read-only view
+                        <span className="text-sm">
+                          {capitalizeStrainName(
+                            line.strainName ?? line.productName
+                          )}
+                        </span>
+                      )}
                     </td>
                   )}
                   {visibleColumnIds.has("category") && (
@@ -1452,18 +1489,24 @@ export function ProductIntakeSlicePage() {
                   )}
                   {visibleColumnIds.has("cost") && (
                     <td className="p-2">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={line.unitCost}
-                        disabled={!canEdit}
-                        onChange={e =>
-                          updateLine(line.id, {
-                            unitCost: Number(e.target.value || 0),
-                          })
-                        }
-                      />
+                      {canEdit ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={line.unitCost}
+                          onChange={e =>
+                            updateLine(line.id, {
+                              unitCost: Number(e.target.value || 0),
+                            })
+                          }
+                        />
+                      ) : (
+                        // BUG-027: Format cost as currency in read-only view
+                        <span className="text-sm">
+                          {formatCurrency(Number(line.unitCost ?? 0))}
+                        </span>
+                      )}
                     </td>
                   )}
                   {visibleColumnIds.has("grade") && (
@@ -1546,8 +1589,15 @@ export function ProductIntakeSlicePage() {
                   colSpan={12}
                 >
                   <div className="space-y-3">
-                    <p>Open a purchase order from the Receiving queue to continue.</p>
-                    <Button variant="outline" size="sm" onClick={goToReceivingQueue}>
+                    <p>
+                      Open a purchase order from the Receiving queue to
+                      continue.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToReceivingQueue}
+                    >
                       Back to Receiving Queue
                     </Button>
                   </div>
@@ -1572,9 +1622,19 @@ export function ProductIntakeSlicePage() {
             <p>Cost: ${summary.cost.toFixed(2)}</p>
 
             {validation.errorCount > 0 ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-red-700">
-                {validation.errorCount} blocking error(s). Receive is disabled
-                until fixed inline.
+              <div className="rounded border border-red-200 bg-red-50 p-3 text-red-700 space-y-1">
+                {/* BUG-030: List each field error by name so the user knows exactly what to fix */}
+                <p className="font-medium">
+                  {validation.errorCount} blocking error
+                  {validation.errorCount !== 1 ? "s" : ""} — fix inline before
+                  receiving:
+                </p>
+                <ul className="list-disc list-inside text-xs space-y-0.5">
+                  {Array.from(validation.errorsByLine.entries()).flatMap(
+                    ([lineId, errs]) =>
+                      errs.map(err => <li key={`${lineId}-${err}`}>{err}</li>)
+                  )}
+                </ul>
               </div>
             ) : (
               <div className="rounded border border-green-200 bg-green-50 p-3 text-green-700 flex items-center gap-2">
@@ -1583,11 +1643,7 @@ export function ProductIntakeSlicePage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
+          {/* BUG-029: No explicit Close button — DialogContent X button is the single close affordance */}
         </DialogContent>
       </Dialog>
 
@@ -1600,7 +1656,8 @@ export function ProductIntakeSlicePage() {
           <DrawerHeader>
             <DrawerTitle>Activity Log</DrawerTitle>
             <DrawerDescription className="sr-only">
-              Inventory and correction movement history for this receiving record.
+              Inventory and correction movement history for this receiving
+              record.
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-auto space-y-2">
@@ -1641,7 +1698,13 @@ export function ProductIntakeSlicePage() {
       >
         <DrawerContent className="w-[520px] sm:max-w-none">
           <DrawerHeader>
-            <DrawerTitle>Attachments</DrawerTitle>
+            {/* BUG-028: Title shows photo count for the selected line */}
+            <DrawerTitle>
+              Attachments
+              {selectedLine
+                ? ` — ${(selectedLine.mediaUrls ?? []).length} photo${(selectedLine.mediaUrls ?? []).length !== 1 ? "s" : ""}`
+                : ""}
+            </DrawerTitle>
             <DrawerDescription className="sr-only">
               Upload and manage receiving photo evidence for the selected line.
             </DrawerDescription>

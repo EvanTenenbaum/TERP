@@ -82,7 +82,14 @@ vi.mock("@/hooks/work-surface/useUndo", () => ({
 const MOCK_CLIENTS_DATA = {
   items: [{ id: 10, name: "North Farm Supply" }],
 };
-const MOCK_LOCATIONS_DATA = [
+let mockLocationsData: Array<{
+  id: number;
+  site: string;
+  zone?: string;
+  rack?: string;
+  shelf?: string;
+  bin?: string;
+}> = [
   { id: 1, site: "Vault A" },
   { id: 2, site: "Vault B" },
 ];
@@ -107,7 +114,7 @@ vi.mock("@/lib/trpc", () => ({
     locations: {
       getAll: {
         useQuery: () => ({
-          data: MOCK_LOCATIONS_DATA,
+          data: mockLocationsData,
           isLoading: false,
           error: null,
           refetch: vi.fn(),
@@ -324,6 +331,10 @@ vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
 describe("IntakePilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLocationsData = [
+      { id: 1, site: "Vault A" },
+      { id: 2, site: "Vault B" },
+    ];
   });
 
   it("renders without crashing", () => {
@@ -369,5 +380,17 @@ describe("IntakePilotSurface", () => {
     expect(
       screen.getByRole("group", { name: /keyboard shortcuts/i })
     ).toBeInTheDocument();
+  });
+
+  it("preserves distinct hierarchical location labels when sites repeat", () => {
+    mockLocationsData = [
+      { id: 11, site: "Main Warehouse", zone: "Zone A" },
+      { id: 12, site: "Main Warehouse", zone: "Zone B" },
+    ];
+
+    render(<IntakePilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Main Warehouse / Zone A")).toBeInTheDocument();
+    expect(screen.getByText("Main Warehouse / Zone B")).toBeInTheDocument();
   });
 });
