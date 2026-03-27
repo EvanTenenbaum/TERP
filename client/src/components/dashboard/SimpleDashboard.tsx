@@ -121,7 +121,7 @@ const OpenInvoicesCard = memo(function OpenInvoicesCard() {
               variant="ghost"
               size="sm"
               className="mt-2 h-7 text-xs px-0"
-              onClick={() => setLocation("/accounting")}
+              onClick={() => setLocation("/accounting?tab=invoices")}
             >
               View AR <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
