@@ -4,7 +4,7 @@ import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { env } from "./env";
+import { env, shouldBlockDemoModeInProduction } from "./env";
 import { logger } from "./logger";
 import { invalidateToken } from "./tokenInvalidation";
 
@@ -176,10 +176,14 @@ class SimpleAuthService {
 export const simpleAuth = new SimpleAuthService();
 
 export function registerSimpleAuthRoutes(app: Express) {
-  // BUG-W7-1: Guard against DEMO_MODE in production — this is a security risk
+  // Keep demo auth out of the real production app, but allow the explicitly
+  // named staging app which intentionally runs with DEMO_MODE=true.
   if (
-    process.env.DEMO_MODE === "true" &&
-    process.env.NODE_ENV === "production"
+    shouldBlockDemoModeInProduction({
+      demoMode: process.env.DEMO_MODE,
+      nodeEnv: process.env.NODE_ENV,
+      appId: process.env.VITE_APP_ID,
+    })
   ) {
     throw new Error(
       "DEMO_MODE must not be enabled in production — this is a security risk"
