@@ -81,6 +81,9 @@ export function InventoryGalleryView({
               <p className="text-sm font-medium mt-0.5">{row.productName}</p>
               <p className="text-xs text-muted-foreground">
                 {row.vendorName}
+                {row.brandName && row.brandName !== row.vendorName
+                  ? ` · ${row.brandName}`
+                  : ""}
                 {row.grade ? ` · ${row.grade}` : ""}
               </p>
             </div>

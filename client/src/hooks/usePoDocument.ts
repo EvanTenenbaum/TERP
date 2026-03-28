@@ -9,6 +9,7 @@
 
 export interface PoLineItem {
   tempId: string;
+  existingItemId?: number | null;
   productId: number | null;
   productName: string;
   category: string;
@@ -37,6 +38,7 @@ export interface PoDocumentState {
 export function createEmptyLineItem(): PoLineItem {
   return {
     tempId: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    existingItemId: null,
     productId: null,
     productName: "",
     category: "",
@@ -70,6 +72,7 @@ export function createLineItemFromProduct(product: ProductInput): PoLineItem {
 
   return {
     tempId: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    existingItemId: null,
     productId:
       product.productId !== null && product.productId !== undefined
         ? Number(product.productId)
@@ -109,6 +112,10 @@ export function validatePoDocument(state: PoDocumentState): string[] {
       errors.push(`${label}: quantity must be > 0`);
     }
 
+    if (!item.productId && !item.productName.trim()) {
+      errors.push(`${label}: product is required`);
+    }
+
     if (item.cogsMode === "FIXED") {
       if (item.unitCost < 0) {
         errors.push(`${label}: unit cost must be >= 0`);
@@ -138,6 +145,7 @@ interface CreatePayloadItem {
   unitCost?: number;
   unitCostMin?: number;
   unitCostMax?: number;
+  notes?: string;
 }
 
 interface CreatePayload {
@@ -171,6 +179,10 @@ export function buildCreatePayload(state: PoDocumentState): CreatePayload {
       } else {
         base.unitCostMin = item.unitCostMin;
         base.unitCostMax = item.unitCostMax;
+      }
+
+      if (item.notes.trim()) {
+        base.notes = item.notes.trim();
       }
 
       return base;

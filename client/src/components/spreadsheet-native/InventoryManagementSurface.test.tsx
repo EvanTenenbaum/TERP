@@ -1,11 +1,46 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+/**
+ * @vitest-environment jsdom
+ */
+
+import type { ReactNode } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InventoryManagementSurface } from "./InventoryManagementSurface";
 
-// Mock PowersheetGrid since AG Grid doesn't render in JSDOM
+const { mockSetSelectedId, viewsListQuery, filtersState } = vi.hoisted(() => ({
+  mockSetSelectedId: vi.fn(),
+  viewsListQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
+  filtersState: {
+    history: [] as Array<{
+      isOpen: boolean;
+      onOpenChange: (open: boolean) => void;
+    }>,
+  },
+}));
+
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({ title }: { title: string }) => (
-    <div data-testid={`grid-${title}`}>{title}</div>
+  PowersheetGrid: ({
+    title,
+    rows = [],
+    onSelectedRowChange,
+    headerActions,
+  }: {
+    title: string;
+    rows?: Array<{ batchId?: number; identity?: { rowKey: string } }>;
+    onSelectedRowChange?: (
+      row: { batchId?: number; identity?: { rowKey: string } } | null
+    ) => void;
+    headerActions?: ReactNode;
+  }) => (
+    <div data-testid={`grid-${title}`}>
+      <div>{title}</div>
+      {headerActions}
+      {rows.length > 0 && onSelectedRowChange ? (
+        <button onClick={() => onSelectedRowChange(rows[0])}>
+          Select inventory row
+        </button>
+      ) : null}
+    </div>
   ),
 }));
 
@@ -14,7 +49,18 @@ vi.mock("./AdjustmentContextDrawer", () => ({
 }));
 
 vi.mock("./InventoryAdvancedFilters", () => ({
-  InventoryAdvancedFilters: () => <div data-testid="advanced-filters" />,
+  InventoryAdvancedFilters: (props: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => {
+    filtersState.history.push(props);
+    if (!props.isOpen) return null;
+    return (
+      <div data-testid="advanced-filters">
+        <button onClick={() => props.onOpenChange(false)}>Close filters</button>
+      </div>
+    );
+  },
   createDefaultInventoryFilters: () => ({
     search: "",
     statuses: [],
@@ -33,12 +79,24 @@ vi.mock("./InventoryAdvancedFilters", () => ({
     ageBracket: "ALL",
     batchId: "",
   }),
-  hasActiveFilters: () => false,
+  hasActiveFilters: (filters: { statuses?: string[] }) =>
+    Boolean(filters.statuses?.length),
   filtersToQueryInput: () => ({}),
 }));
 
 vi.mock("./InventoryGalleryView", () => ({
-  InventoryGalleryView: () => <div data-testid="gallery-view" />,
+  InventoryGalleryView: ({
+    onOpenInspector,
+    onAdjustQty,
+  }: {
+    onOpenInspector: (id: number) => void;
+    onAdjustQty: (id: number) => void;
+  }) => (
+    <div data-testid="gallery-view">
+      <button onClick={() => onOpenInspector(7)}>Open from gallery</button>
+      <button onClick={() => onAdjustQty(42)}>Adjust from gallery</button>
+    </div>
+  ),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -47,8 +105,34 @@ vi.mock("@/lib/trpc", () => ({
       getEnhanced: {
         useQuery: vi.fn(() => ({
           data: {
-            items: [],
-            summary: { totalItems: 0 },
+            items: [
+              {
+                id: 42,
+                batchId: 42,
+                sku: "BATCH-042",
+                productName: "Wedding Cake",
+                productSummary: "Wedding Cake · Tops",
+                category: "Flower",
+                subcategory: "Tops",
+                vendorName: "GreenLeaf",
+                brandName: "House Reserve",
+                grade: "AAA",
+                status: "LIVE",
+                onHandQty: 100,
+                reservedQty: 10,
+                availableQty: 90,
+                unitCogs: 2.4,
+                ageLabel: "3d",
+                stockStatus: "LOW",
+                identity: {
+                  rowKey: "batch:42",
+                  entityId: 42,
+                  entityType: "batch",
+                  recordVersion: 1,
+                },
+              },
+            ],
+            summary: { totalItems: 1 },
             pagination: { hasMore: false },
           },
           isLoading: false,
@@ -59,18 +143,15 @@ vi.mock("@/lib/trpc", () => ({
       dashboardStats: {
         useQuery: vi.fn(() => ({
           data: {
-            batchCount: 12,
             totalUnits: 500,
-            inventoryValue: 25000,
-            statusCounts: {},
+            totalInventoryValue: 25000,
+            statusCounts: { LIVE: 12 },
           },
           refetch: vi.fn(),
         })),
       },
       views: {
-        list: {
-          useQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
-        },
+        list: { useQuery: viewsListQuery },
         save: {
           useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
         },
@@ -124,9 +205,9 @@ vi.mock("@/hooks/work-surface/useExport", () => ({
 vi.mock("@/lib/spreadsheet-native", () => ({
   useSpreadsheetSelectionParam: vi.fn(() => ({
     selectedId: null,
-    setSelectedId: vi.fn(),
+    setSelectedId: mockSetSelectedId,
   })),
-  mapInventoryItemsToPilotRows: vi.fn(() => []),
+  mapInventoryItemsToPilotRows: vi.fn((items: unknown[]) => items),
   mapInventoryDetailToPilotRow: vi.fn(() => null),
   summarizeInventoryDetail: vi.fn(() => null),
 }));
@@ -136,23 +217,56 @@ vi.mock("wouter", () => ({
 }));
 
 describe("InventoryManagementSurface", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    filtersState.history = [];
+    viewsListQuery.mockImplementation(() => ({
+      data: { items: [] },
+      refetch: vi.fn(),
+    }));
+  });
+
   it("renders toolbar with 'Inventory' title", () => {
     render(<InventoryManagementSurface />);
     expect(screen.getByText("Inventory")).toBeInTheDocument();
   });
 
-  it("renders search input", () => {
+  it("toggles the advanced filters panel from the action bar", () => {
     render(<InventoryManagementSurface />);
-    expect(
-      screen.getByPlaceholderText("Search SKU, product, supplier...")
-    ).toBeInTheDocument();
+
+    expect(screen.queryByTestId("advanced-filters")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /filters/i }));
+    expect(screen.getByTestId("advanced-filters")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Close filters"));
+    expect(screen.queryByTestId("advanced-filters")).not.toBeInTheDocument();
   });
 
-  it("renders Grid/Gallery toggle buttons", () => {
+  it("switches to gallery mode", () => {
     render(<InventoryManagementSurface />);
-    expect(screen.getByRole("button", { name: /grid/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /gallery view/i }));
+
+    expect(screen.getByTestId("gallery-view")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /gallery/i })
-    ).toBeInTheDocument();
+      screen.queryByTestId("grid-Inventory Sheet")
+    ).not.toBeInTheDocument();
+  });
+
+  it("routes gallery adjust actions through batch selection instead of opening a zero-delta drawer", () => {
+    render(<InventoryManagementSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: /gallery view/i }));
+    fireEvent.click(screen.getByText("Adjust from gallery"));
+
+    expect(mockSetSelectedId).toHaveBeenCalledWith(42);
+    expect(screen.queryByTestId("adjust-drawer")).not.toBeInTheDocument();
+  });
+
+  it("routes grid row selection through the workbook selection param", () => {
+    render(<InventoryManagementSurface />);
+
+    fireEvent.click(screen.getByText("Select inventory row"));
+
+    expect(mockSetSelectedId).toHaveBeenCalledWith(42);
   });
 });

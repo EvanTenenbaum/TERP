@@ -53,6 +53,7 @@ describe("InventoryGalleryView", () => {
 
     expect(screen.getByText("BATCH-001")).toBeInTheDocument();
     expect(screen.getByText("Test Flower")).toBeInTheDocument();
+    expect(screen.getAllByText(/North Farm · North Brand · A/)).toHaveLength(2);
     expect(screen.getByText("BATCH-002")).toBeInTheDocument();
     expect(screen.getByText("Another Product")).toBeInTheDocument();
   });

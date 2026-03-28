@@ -19,6 +19,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useExport } from "@/hooks/work-surface/useExport";
+import type { ExportColumn } from "@/hooks/work-surface/useExport";
 import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
 import {
   ArrowLeft,
@@ -44,6 +46,7 @@ import {
 import type { ProductIntakeDraftLine } from "@/lib/productIntakeDrafts";
 import {
   createDefaultPoDocument,
+  createEmptyLineItem,
   createLineItemFromProduct,
   validatePoDocument,
   buildCreatePayload,
@@ -54,6 +57,7 @@ import {
 } from "@/hooks/usePoDocument";
 import { ProductBrowserGrid } from "./ProductBrowserGrid";
 import type { AddProductPayload } from "./ProductBrowserGrid";
+import { parsePurchaseOrderDeepLink } from "@/components/uiux-slice/purchaseOrdersDeepLink";
 import { SupplierCombobox } from "@/components/ui/supplier-combobox";
 import type { SupplierOption } from "@/components/ui/supplier-combobox";
 import { Badge } from "@/components/ui/badge";
@@ -214,6 +218,15 @@ const supportAffordances: PowersheetAffordance[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
+function extractPaginatedData<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  if (Array.isArray(obj.data)) return obj.data as T[];
+  if (Array.isArray(obj.items)) return obj.items as T[];
+  return [];
+}
+
 function toNumber(value: string | number | null | undefined): number {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
@@ -304,7 +317,9 @@ function mapLineItemsToRows(items: POLineItem[]): POLineRow[] {
         ? `${formatCurrency(unitCostMin)}\u2013${formatCurrency(unitCostMax)}`
         : formatCurrency(unitCost);
     const quantityOrdered = toNumber(item.quantityOrdered);
-    const lineTotal = quantityOrdered * unitCost;
+    const effectiveUnitCost =
+      cogsMode === "RANGE" ? (unitCostMin + unitCostMax) / 2 : unitCost;
+    const lineTotal = quantityOrdered * effectiveUnitCost;
     return {
       identity: {
         rowKey: buildRowKey("poLine", item.id),
@@ -390,6 +405,10 @@ const PAYMENT_TERMS_OPTIONS = [
   "PARTIAL",
 ] as const;
 
+function buildPoDraftStorageKey(editPoId: number | null) {
+  return `terp.purchase-order-document.v1:${editPoId ?? "create"}`;
+}
+
 // ---------------------------------------------------------------------------
 // Creation / Edit Mode
 // ---------------------------------------------------------------------------
@@ -405,15 +424,32 @@ function PurchaseOrderCreateEditMode({
 }: {
   editPoId: number | null;
 }) {
+  const [, setLocation] = useLocation();
+  const routeSearch = useSearch();
   const isEditMode = editPoId !== null;
+  const deepLink = useMemo(
+    () => parsePurchaseOrderDeepLink(routeSearch),
+    [routeSearch]
+  );
+  const draftStorageKey = useMemo(
+    () => buildPoDraftStorageKey(editPoId),
+    [editPoId]
+  );
 
   // ── State ───────────────────────────────────────────────────────────────────
   const [doc, setDoc] = useState<PoDocumentState>(createDefaultPoDocument);
   const [notesMode, setNotesMode] = useState<"internal" | "supplier" | null>(
     null
   );
+  const [selectedDocLineId, setSelectedDocLineId] = useState<string | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autosaveState, setAutosaveState] = useState<
+    "idle" | "dirty" | "saved"
+  >("idle");
   const submitAfterCreateRef = useRef(false);
+  const hasLoadedInitialStateRef = useRef(false);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const updateDoc = useCallback((partial: Partial<PoDocumentState>) => {
@@ -432,6 +468,40 @@ function PurchaseOrderCreateEditMode({
     []
   );
 
+  useEffect(() => {
+    if (isEditMode || typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(draftStorageKey);
+    if (!raw) {
+      if (deepLink.supplierClientId) {
+        setDoc(prev => ({ ...prev, supplierId: deepLink.supplierClientId }));
+      }
+      hasLoadedInitialStateRef.current = true;
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<PoDocumentState>;
+      setDoc(prev => ({
+        ...prev,
+        ...parsed,
+        supplierId:
+          parsed.supplierId ?? deepLink.supplierClientId ?? prev.supplierId,
+        lineItems:
+          Array.isArray(parsed.lineItems) && parsed.lineItems.length > 0
+            ? parsed.lineItems
+            : prev.lineItems,
+      }));
+      setAutosaveState("saved");
+    } catch {
+      setDoc(prev => ({
+        ...prev,
+        supplierId: deepLink.supplierClientId ?? prev.supplierId,
+      }));
+    } finally {
+      hasLoadedInitialStateRef.current = true;
+    }
+  }, [deepLink.supplierClientId, draftStorageKey, isEditMode]);
+
   // ── Supplier query ──────────────────────────────────────────────────────────
   const suppliersQuery = trpc.clients.list.useQuery({
     clientTypes: ["seller"],
@@ -439,23 +509,14 @@ function PurchaseOrderCreateEditMode({
   });
 
   const supplierOptions = useMemo<SupplierOption[]>(() => {
-    const data = suppliersQuery.data as unknown;
-    let items: Array<{
+    const items = extractPaginatedData<{
       id: number;
       name: string;
       email?: string | null;
       phone?: string | null;
       city?: string | null;
       state?: string | null;
-    }> = [];
-    if (Array.isArray(data)) {
-      items = data as typeof items;
-    } else if (data && typeof data === "object") {
-      const withItems = data as { items?: typeof items };
-      if (Array.isArray(withItems.items)) {
-        items = withItems.items;
-      }
-    }
+    }>(suppliersQuery.data);
     return items.map(s => ({
       id: s.id,
       name: s.name ?? "Unknown",
@@ -477,31 +538,36 @@ function PurchaseOrderCreateEditMode({
     { enabled: isEditMode }
   );
 
-  useEffect(() => {
-    if (!isEditMode || !editQuery.data) return;
-    const po = editQuery.data as {
-      id: number;
-      poNumber?: string;
-      supplierClientId?: number | null;
-      orderDate?: string | Date | null;
-      expectedDeliveryDate?: string | Date | null;
-      paymentTerms?: string | null;
-      notes?: string | null;
-      vendorNotes?: string | null;
-      items?: Array<{
+  const editDetail = editQuery.data as
+    | {
         id: number;
-        productId?: number | null;
-        productName?: string | null;
-        category?: string | null;
-        subcategory?: string | null;
-        quantityOrdered?: string | number | null;
-        cogsMode?: string | null;
-        unitCost?: string | number | null;
-        unitCostMin?: string | number | null;
-        unitCostMax?: string | number | null;
+        poNumber?: string;
+        supplierClientId?: number | null;
+        orderDate?: string | Date | null;
+        expectedDeliveryDate?: string | Date | null;
+        paymentTerms?: string | null;
         notes?: string | null;
-      }>;
-    };
+        vendorNotes?: string | null;
+        items?: Array<{
+          id: number;
+          productId?: number | null;
+          productName?: string | null;
+          category?: string | null;
+          subcategory?: string | null;
+          quantityOrdered?: string | number | null;
+          cogsMode?: string | null;
+          unitCost?: string | number | null;
+          unitCostMin?: string | number | null;
+          unitCostMax?: string | number | null;
+          notes?: string | null;
+        }>;
+      }
+    | null
+    | undefined;
+
+  useEffect(() => {
+    if (!isEditMode || !editDetail) return;
+    const po = editDetail;
     const toNum = (v: string | number | null | undefined): number => {
       if (v === null || v === undefined || v === "") return 0;
       const n = Number(v);
@@ -516,6 +582,7 @@ function PurchaseOrderCreateEditMode({
       supplierId: po.supplierClientId ?? null,
       lineItems: (po.items ?? []).map((item, idx) => ({
         tempId: `edit-${item.id ?? idx}-${Date.now()}`,
+        existingItemId: item.id ?? null,
         productId: item.productId ?? null,
         productName: item.productName ?? "",
         category: item.category ?? "",
@@ -535,7 +602,33 @@ function PurchaseOrderCreateEditMode({
       supplierNotes: po.vendorNotes ?? "",
       draftId: editPoId,
     });
-  }, [isEditMode, editQuery.data, editPoId]);
+    hasLoadedInitialStateRef.current = true;
+    setAutosaveState("saved");
+  }, [isEditMode, editDetail, editPoId]);
+
+  useEffect(() => {
+    if (!hasLoadedInitialStateRef.current || typeof window === "undefined") {
+      return;
+    }
+    if (isSubmitting) return;
+
+    setAutosaveState("dirty");
+    const timeout = window.setTimeout(() => {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(doc));
+      setAutosaveState("saved");
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
+  }, [doc, draftStorageKey, isSubmitting]);
+
+  useEffect(() => {
+    if (
+      selectedDocLineId &&
+      !doc.lineItems.some(item => item.tempId === selectedDocLineId)
+    ) {
+      setSelectedDocLineId(null);
+    }
+  }, [doc.lineItems, selectedDocLineId]);
 
   // ── Mutations ───────────────────────────────────────────────────────────────
   const createMutation = trpc.purchaseOrders.create.useMutation({
@@ -563,17 +656,10 @@ function PurchaseOrderCreateEditMode({
     },
   });
 
-  const updateMutation = trpc.purchaseOrders.update.useMutation({
-    onSuccess: () => {
-      toast.success("Purchase order updated");
-      setIsSubmitting(false);
-      navigateBackToQueue(editPoId);
-    },
-    onError: error => {
-      toast.error(error.message || "Failed to update purchase order");
-      setIsSubmitting(false);
-    },
-  });
+  const updateMutation = trpc.purchaseOrders.update.useMutation();
+  const addItemMutation = trpc.purchaseOrders.addItem.useMutation();
+  const updateItemMutation = trpc.purchaseOrders.updateItem.useMutation();
+  const deleteItemMutation = trpc.purchaseOrders.deleteItem.useMutation();
 
   const submitMutation = trpc.purchaseOrders.submit.useMutation({
     onSuccess: () => {
@@ -587,25 +673,36 @@ function PurchaseOrderCreateEditMode({
   });
 
   // ── Navigation ──────────────────────────────────────────────────────────────
-  const navigateBackToQueue = useCallback((poId?: number | null) => {
-    const params = new URLSearchParams(window.location.search);
-    params.delete("poView");
-    if (poId) {
-      params.set("poId", String(poId));
-    }
-    const qs = params.toString();
-    window.history.pushState(
-      {},
-      "",
-      qs ? `${window.location.pathname}?${qs}` : window.location.pathname
-    );
-    window.dispatchEvent(new Event("popstate"));
-  }, []);
+  const navigateBackToQueue = useCallback(
+    (poId?: number | null) => {
+      const params = new URLSearchParams(routeSearch);
+      params.delete("poView");
+      if (poId) {
+        params.set("poId", String(poId));
+      }
+      const qs = params.toString();
+      setLocation(qs ? `?${qs}` : "?tab=purchase-orders");
+    },
+    [routeSearch, setLocation]
+  );
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAddProduct = useCallback((product: AddProductPayload) => {
     const newItem = createLineItemFromProduct(product);
-    setDoc(d => ({ ...d, lineItems: [...d.lineItems, newItem] }));
+    setDoc(d => {
+      const hasOnlyPlaceholder =
+        d.lineItems.length === 1 &&
+        !d.lineItems[0].productId &&
+        !d.lineItems[0].productName;
+      return {
+        ...d,
+        lineItems: hasOnlyPlaceholder ? [newItem] : [...d.lineItems, newItem],
+      };
+    });
+  }, []);
+
+  const handleAddBlankLine = useCallback(() => {
+    setDoc(d => ({ ...d, lineItems: [...d.lineItems, createEmptyLineItem()] }));
   }, []);
 
   const handleRemoveLineItem = useCallback((tempId: string) => {
@@ -623,9 +720,34 @@ function PurchaseOrderCreateEditMode({
       if (!event.data) return;
       const field = event.colDef.field as keyof PoLineItem;
       const value = event.newValue;
+      if (field === "cogsMode") {
+        const nextMode = value === "RANGE" ? "RANGE" : "FIXED";
+        updateLineItem(event.data.tempId, {
+          cogsMode: nextMode,
+          unitCost:
+            nextMode === "FIXED"
+              ? event.data.unitCost || event.data.unitCostMin || 0
+              : event.data.unitCost,
+          unitCostMin:
+            nextMode === "RANGE"
+              ? event.data.unitCostMin || event.data.unitCost || 0
+              : 0,
+          unitCostMax:
+            nextMode === "RANGE"
+              ? event.data.unitCostMax ||
+                event.data.unitCostMin ||
+                event.data.unitCost ||
+                0
+              : 0,
+        });
+        return;
+      }
       updateLineItem(event.data.tempId, {
         [field]:
-          field === "quantityOrdered" || field === "unitCost"
+          field === "quantityOrdered" ||
+          field === "unitCost" ||
+          field === "unitCostMin" ||
+          field === "unitCostMax"
             ? Number(value)
             : value,
       });
@@ -634,27 +756,112 @@ function PurchaseOrderCreateEditMode({
   );
 
   const handleSubmit = useCallback(
-    (andSubmit = false) => {
+    async (andSubmit = false) => {
       const errors = validatePoDocument(doc);
       if (errors.length > 0) {
         toast.error(errors[0]);
         return;
       }
       setIsSubmitting(true);
-      if (isEditMode && editPoId) {
-        const payload = buildCreatePayload(doc);
-        updateMutation.mutate({ id: editPoId, ...payload } as Parameters<
-          typeof updateMutation.mutate
-        >[0]);
-      } else {
+      if (!isEditMode) {
         submitAfterCreateRef.current = andSubmit;
         const payload = buildCreatePayload(doc);
         createMutation.mutate(
           payload as Parameters<typeof createMutation.mutate>[0]
         );
+        return;
+      }
+
+      if (!editPoId) {
+        toast.error("Missing purchase order id");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const buildItemCostFields = (item: PoLineItem) =>
+        item.cogsMode === "RANGE"
+          ? {
+              cogsMode: "RANGE" as const,
+              unitCostMin: item.unitCostMin,
+              unitCostMax: item.unitCostMax,
+            }
+          : {
+              cogsMode: "FIXED" as const,
+              unitCost: item.unitCost,
+            };
+
+      try {
+        await updateMutation.mutateAsync({
+          id: editPoId,
+          supplierClientId: doc.supplierId ?? undefined,
+          orderDate: doc.orderDate,
+          expectedDeliveryDate: doc.expectedDeliveryDate || null,
+          paymentTerms: doc.paymentTerms || null,
+          notes: doc.internalNotes || null,
+          vendorNotes: doc.supplierNotes || null,
+        });
+
+        const originalItems = editDetail?.items ?? [];
+        const originalIds = new Set(originalItems.map(item => item.id));
+        const retainedExistingIds = new Set<number>();
+
+        for (const item of doc.lineItems) {
+          if (item.existingItemId) {
+            retainedExistingIds.add(item.existingItemId);
+            await updateItemMutation.mutateAsync({
+              id: item.existingItemId,
+              quantityOrdered: item.quantityOrdered,
+              notes: item.notes || undefined,
+              ...buildItemCostFields(item),
+            });
+            continue;
+          }
+
+          if (!item.productId) {
+            throw new Error(
+              "New line items must be selected from the product browser before saving"
+            );
+          }
+
+          await addItemMutation.mutateAsync({
+            purchaseOrderId: editPoId,
+            productId: item.productId,
+            quantityOrdered: item.quantityOrdered,
+            notes: item.notes || undefined,
+            ...buildItemCostFields(item),
+          });
+        }
+
+        for (const originalId of originalIds) {
+          if (!retainedExistingIds.has(originalId)) {
+            await deleteItemMutation.mutateAsync({ id: originalId });
+          }
+        }
+
+        toast.success("Purchase order updated");
+        setIsSubmitting(false);
+        navigateBackToQueue(editPoId);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to update purchase order";
+        toast.error(message);
+        setIsSubmitting(false);
       }
     },
-    [doc, isEditMode, editPoId, createMutation, updateMutation]
+    [
+      addItemMutation,
+      createMutation,
+      deleteItemMutation,
+      doc,
+      editDetail,
+      editPoId,
+      isEditMode,
+      navigateBackToQueue,
+      updateItemMutation,
+      updateMutation,
+    ]
   );
 
   // ── Derived ─────────────────────────────────────────────────────────────────
@@ -714,7 +921,7 @@ function PurchaseOrderCreateEditMode({
         field: "unitCost",
         headerName: "Unit Cost",
         width: 90,
-        editable: true,
+        editable: params => params.data?.cogsMode !== "RANGE",
         valueFormatter: p => {
           const row = p.data;
           if (row?.cogsMode === "RANGE") {
@@ -725,19 +932,34 @@ function PurchaseOrderCreateEditMode({
         cellClass: "powersheet-cell--editable",
       },
       {
+        field: "unitCostMin",
+        headerName: "Min",
+        width: 80,
+        editable: params => params.data?.cogsMode === "RANGE",
+        valueFormatter: p => formatCurrency(Number(p.value ?? 0)),
+        cellClass: "powersheet-cell--editable",
+      },
+      {
+        field: "unitCostMax",
+        headerName: "Max",
+        width: 80,
+        editable: params => params.data?.cogsMode === "RANGE",
+        valueFormatter: p => formatCurrency(Number(p.value ?? 0)),
+        cellClass: "powersheet-cell--editable",
+      },
+      {
+        field: "notes",
+        headerName: "Notes",
+        flex: 1,
+        minWidth: 160,
+        editable: true,
+        cellClass: "powersheet-cell--editable",
+      },
+      {
         headerName: "Total",
         width: 90,
         valueGetter: p => (p.data ? getLineTotal(p.data) : 0),
         valueFormatter: p => formatCurrency(Number(p.value ?? 0)),
-        cellClass: "powersheet-cell--locked",
-      },
-      {
-        headerName: "",
-        width: 40,
-        cellRenderer: (_params: { data: PoLineItem }) => {
-          // Render nothing — delete handled via header action
-          return null;
-        },
         cellClass: "powersheet-cell--locked",
       },
     ],
@@ -746,10 +968,16 @@ function PurchaseOrderCreateEditMode({
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  if (editPoId && editQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+        Loading purchase order...
+      </div>
+    );
+  }
+
   const editPoNumber =
-    isEditMode && editQuery.data
-      ? ((editQuery.data as { poNumber?: string }).poNumber ?? `PO-${editPoId}`)
-      : null;
+    isEditMode && editDetail ? (editDetail.poNumber ?? `PO-${editPoId}`) : null;
 
   return (
     <div className="flex flex-col gap-2">
@@ -776,7 +1004,7 @@ function PurchaseOrderCreateEditMode({
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
-            Draft
+            {autosaveState === "dirty" ? "DIRTY" : "AUTO / saved"}
           </Badge>
           <Button
             size="sm"
@@ -821,9 +1049,13 @@ function PurchaseOrderCreateEditMode({
             rows={doc.lineItems}
             columnDefs={docColumnDefs}
             getRowId={row => row.tempId}
+            selectedRowId={selectedDocLineId}
+            onSelectedRowChange={row =>
+              setSelectedDocLineId(row ? row.tempId : null)
+            }
             onCellValueChanged={handleDocCellChanged}
-            selectionMode="single-row"
-            enableFillHandle={false}
+            selectionMode="cell-range"
+            enableFillHandle
             enableUndoRedo={true}
             isLoading={false}
             emptyTitle="No line items"
@@ -831,30 +1063,30 @@ function PurchaseOrderCreateEditMode({
             minHeight={240}
             headerActions={
               <div className="flex items-center gap-1">
-                {doc.lineItems.map(item => (
-                  <span key={item.tempId} className="hidden">
-                    {/* Row delete buttons rendered in the grid are not supported in PowersheetGrid,
-                        so we provide a contextual delete via selection */}
-                  </span>
-                ))}
-                {doc.lineItems.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                    onClick={() => {
-                      const last = doc.lineItems[doc.lineItems.length - 1];
-                      if (last && doc.lineItems.length > 1) {
-                        handleRemoveLineItem(last.tempId);
-                      }
-                    }}
-                    disabled={doc.lineItems.length <= 1}
-                    title="Remove last line item"
-                  >
-                    <X className="mr-1 h-3 w-3" />
-                    Remove Last
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  onClick={handleAddBlankLine}
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add Line
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                  onClick={() => {
+                    if (selectedDocLineId) {
+                      handleRemoveLineItem(selectedDocLineId);
+                    }
+                  }}
+                  disabled={!selectedDocLineId || doc.lineItems.length <= 1}
+                  title="Remove selected line item"
+                >
+                  <X className="mr-1 h-3 w-3" />
+                  Remove Selected
+                </Button>
               </div>
             }
           />
@@ -1025,6 +1257,10 @@ function PurchaseOrderQueueMode({
   setLocation: (path: string) => void;
   userId: number | null;
 }) {
+  // Export hook
+  const { exportCSV, state: exportState } =
+    useExport<Record<string, unknown>>();
+
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
@@ -1087,27 +1323,15 @@ function PurchaseOrderQueueMode({
   // Derived data
   // ---------------------------------------------------------------------------
 
-  const rawPos = useMemo((): POQueueRecord[] => {
-    const data = posQuery.data as unknown;
-    if (!data) return [];
-    if (Array.isArray(data)) return data as POQueueRecord[];
-    const withItems = data as { items?: POQueueRecord[] };
-    return Array.isArray(withItems.items) ? withItems.items : [];
-  }, [posQuery.data]);
+  const rawPos = useMemo(
+    () => extractPaginatedData<POQueueRecord>(posQuery.data),
+    [posQuery.data]
+  );
 
   const supplierNamesById = useMemo(() => {
-    const data = suppliersQuery.data as unknown;
-    let items: Array<{ id: number; name: string }> = [];
-    if (Array.isArray(data)) {
-      items = data as Array<{ id: number; name: string }>;
-    } else if (data && typeof data === "object") {
-      const withItems = data as {
-        items?: Array<{ id: number; name: string }>;
-      };
-      if (Array.isArray(withItems.items)) {
-        items = withItems.items;
-      }
-    }
+    const items = extractPaginatedData<{ id: number; name: string }>(
+      suppliersQuery.data
+    );
     return new Map(items.map(s => [s.id, s.name ?? "Unknown"]));
   }, [suppliersQuery.data]);
 
@@ -1239,50 +1463,43 @@ function PurchaseOrderQueueMode({
     // Set URL param to trigger creation mode (Task 4)
     const params = new URLSearchParams(window.location.search);
     params.set("poView", "create");
-    window.history.pushState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`
-    );
-    window.dispatchEvent(new Event("popstate"));
+    setLocation(`?${params.toString()}`);
   };
+
+  const PO_EXPORT_COLUMNS: ExportColumn<POQueueRow>[] = [
+    { key: "poNumber", label: "PO Number" },
+    { key: "supplierName", label: "Supplier" },
+    { key: "statusLabel", label: "Status" },
+    {
+      key: "orderDate",
+      label: "Order Date",
+      formatter: v => formatDate(v as Date | string | null),
+    },
+    {
+      key: "expectedDeliveryDate",
+      label: "Est. Delivery",
+      formatter: v => formatDate(v as Date | string | null),
+    },
+    {
+      key: "total",
+      label: "Total",
+      formatter: v => String(Number(v ?? 0).toFixed(2)),
+    },
+    { key: "paymentTerms", label: "Payment Terms" },
+  ];
 
   const handleExport = () => {
     if (queueRows.length === 0) {
       notifyToast("warning", "No rows to export");
       return;
     }
-    const header = [
-      "PO Number",
-      "Supplier",
-      "Status",
-      "Order Date",
-      "Expected Delivery",
-      "Total",
-      "Payment Terms",
-    ];
-    const rows = queueRows.map(row => [
-      row.poNumber,
-      row.supplierName,
-      row.statusLabel,
-      formatDate(row.orderDate),
-      formatDate(row.expectedDeliveryDate),
-      row.total.toFixed(2),
-      row.paymentTerms,
-    ]);
-    const csv = [header, ...rows]
-      .map(cols =>
-        cols.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `purchase-orders-${new Date().toISOString().split("T")[0]}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    notifyToast("success", `Exported ${queueRows.length} rows`);
+    void exportCSV(queueRows as unknown as Record<string, unknown>[], {
+      columns: PO_EXPORT_COLUMNS as unknown as ExportColumn<
+        Record<string, unknown>
+      >[],
+      filename: "purchase-orders",
+      addTimestamp: true,
+    });
   };
 
   const handleStatusTransition = (status: POStatus) => {
@@ -1339,7 +1556,10 @@ function PurchaseOrderQueueMode({
         category: item.category,
         quantityOrdered: toNumber(item.quantityOrdered),
         quantityReceived: toNumber(item.quantityReceived),
-        intakeQty: 0,
+        intakeQty: Math.max(
+          0,
+          toNumber(item.quantityOrdered) - toNumber(item.quantityReceived)
+        ),
         cogsMode: item.cogsMode ?? "FIXED",
         unitCost: toNumber(item.unitCost),
         unitCostMin: toNumber(item.unitCostMin),
@@ -1358,7 +1578,15 @@ function PurchaseOrderQueueMode({
         warehouseName: "Default",
         lines,
       });
-      upsertProductIntakeDraft(draft, userId);
+      const persistedDraft = upsertProductIntakeDraft(draft, userId);
+      setLocation(
+        buildOperationsWorkspacePath("receiving", {
+          draftId: persistedDraft.id,
+          poId: selectedRow.poId,
+          poNumber: selectedRow.poNumber,
+        })
+      );
+      return;
     }
 
     setLocation(
@@ -1553,9 +1781,10 @@ function PurchaseOrderQueueMode({
             variant="outline"
             aria-label="Export visible POs to CSV"
             onClick={handleExport}
+            disabled={exportState.isExporting}
           >
             <Download className="mr-1 h-4 w-4" />
-            Export CSV
+            {exportState.isExporting ? "Exporting..." : "Export CSV"}
           </Button>
         </div>
       </div>
@@ -1685,12 +1914,7 @@ function PurchaseOrderQueueMode({
                       );
                       params.set("poView", "edit");
                       params.set("poId", String(selectedRow.poId));
-                      window.history.pushState(
-                        {},
-                        "",
-                        `${window.location.pathname}?${params.toString()}`
-                      );
-                      window.dispatchEvent(new Event("popstate"));
+                      setLocation(`?${params.toString()}`);
                     }}
                   >
                     <Pencil className="mr-1 h-3 w-3" />

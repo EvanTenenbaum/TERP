@@ -84,6 +84,7 @@ export function ProductBrowserGrid({
   const [activeTab, setActiveTab] = useState<ActiveTab>("supplier-history");
   const [search, setSearch] = useState("");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const normalizedSearch = search.trim().toLowerCase();
 
   // ── Queries ──────────────────────────────────────────────────────────────────
 
@@ -109,12 +110,35 @@ export function ProductBrowserGrid({
     { search, limit: 100 },
     { enabled: activeTab === "catalog" }
   );
+  const catalogFallbackQuery = trpc.productCatalogue.list.useQuery(
+    { limit: 100, offset: 0, search },
+    {
+      enabled:
+        activeTab === "catalog" &&
+        (!catalogQuery.data ||
+          catalogQuery.isError ||
+          ((catalogQuery.data as { items?: unknown[] } | undefined)?.items
+            ?.length ?? 0) === 0),
+    }
+  );
 
   // ── Row mapping ───────────────────────────────────────────────────────────────
 
   const rows = useMemo<BrowserRow[]>(() => {
     if (activeTab === "supplier-history") {
-      const items = supplierHistoryQuery.data ?? [];
+      const items = (supplierHistoryQuery.data ?? []).filter(item => {
+        if (!normalizedSearch) return true;
+        const haystack = [
+          item.productName,
+          item.category,
+          item.subcategory,
+          item.poNumber,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(normalizedSearch);
+      });
       return items.map((item, idx) => ({
         identity: { rowKey: `sh-${item.productId ?? idx}` },
         productId: item.productId ?? null,
@@ -177,6 +201,7 @@ export function ProductBrowserGrid({
 
     // catalog tab — returns UnifiedPaginatedResponse with .items array
     const rawData = catalogQuery.data;
+    const fallbackData = catalogFallbackQuery.data;
     type CatalogItem = {
       id: number;
       productName?: string | null;
@@ -185,9 +210,16 @@ export function ProductBrowserGrid({
       subcategory?: string | null;
       unitCost?: number | null;
     };
-    const items: CatalogItem[] = Array.isArray(rawData)
+    const primaryItems: CatalogItem[] = Array.isArray(rawData)
       ? (rawData as CatalogItem[])
       : ((rawData?.items as CatalogItem[] | undefined) ?? []);
+    const fallbackItems: CatalogItem[] = Array.isArray(fallbackData)
+      ? (fallbackData as CatalogItem[])
+      : ((fallbackData?.items as CatalogItem[] | undefined) ?? []);
+    const items =
+      primaryItems.length > 0 || !fallbackItems.length
+        ? primaryItems
+        : fallbackItems;
 
     return items.map((item, idx) => ({
       identity: { rowKey: `cat-${item.id ?? idx}` },
@@ -207,9 +239,11 @@ export function ProductBrowserGrid({
     }));
   }, [
     activeTab,
+    normalizedSearch,
     supplierHistoryQuery.data,
     lowStockQuery.data,
     catalogQuery.data,
+    catalogFallbackQuery.data,
   ]);
 
   // ── Column defs ───────────────────────────────────────────────────────────────
@@ -267,7 +301,8 @@ export function ProductBrowserGrid({
   const isLoading =
     (activeTab === "supplier-history" && supplierHistoryQuery.isLoading) ||
     (activeTab === "low-stock" && lowStockQuery.isLoading) ||
-    (activeTab === "catalog" && catalogQuery.isLoading);
+    (activeTab === "catalog" &&
+      (catalogQuery.isLoading || catalogFallbackQuery.isLoading));
 
   const selectedRow =
     rows.find(r => r.identity.rowKey === selectedRowId) ?? null;

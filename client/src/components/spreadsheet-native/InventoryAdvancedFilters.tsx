@@ -19,30 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const STATUS_OPTIONS = [
-  "AWAITING_INTAKE",
-  "LIVE",
-  "ON_HOLD",
-  "QUARANTINED",
-  "SOLD_OUT",
-  "CLOSED",
-] as const;
-
-type InventoryBatchStatus = (typeof STATUS_OPTIONS)[number];
-
-const STATUS_LABELS: Record<InventoryBatchStatus, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
+import { STATUS_OPTIONS, STATUS_LABELS } from "./inventoryConstants";
 
 // ============================================================================
 // Types
@@ -517,6 +494,8 @@ export function InventoryAdvancedFilters({
             onChange={e => update({ batchId: e.target.value })}
           />
         </FilterSection>
+
+        {/* Note: Payment Status filter requires server-side support (inventory.getEnhanced doesn't accept paymentStatus). Tracked as future enhancement. */}
       </div>
     </div>
   );

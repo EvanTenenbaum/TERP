@@ -77,37 +77,18 @@ import {
   type InventoryFilterState,
 } from "./InventoryAdvancedFilters";
 import { InventoryGalleryView } from "./InventoryGalleryView";
+import {
+  STATUS_OPTIONS,
+  STATUS_LABELS,
+  mod,
+  type InventoryBatchStatus,
+} from "./inventoryConstants";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const STATUS_OPTIONS = [
-  "AWAITING_INTAKE",
-  "LIVE",
-  "ON_HOLD",
-  "QUARANTINED",
-  "SOLD_OUT",
-  "CLOSED",
-] as const;
-
-type InventoryBatchStatus = (typeof STATUS_OPTIONS)[number];
-
-const STATUS_LABELS: Record<InventoryBatchStatus, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
-
 const PAGE_SIZE = 100;
-
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
 
 const keyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
@@ -402,7 +383,7 @@ export function InventoryManagementSurface() {
     },
   });
 
-  const _deleteViewMutation = trpc.inventory.views.delete.useMutation({
+  const deleteViewMutation = trpc.inventory.views.delete.useMutation({
     onSuccess: () => {
       toast.success("View deleted");
       void viewsQuery.refetch();
@@ -728,18 +709,12 @@ export function InventoryManagementSurface() {
 
   const handleGalleryAdjustQty = useCallback(
     (batchId: number) => {
-      const row = rows.find(r => r.batchId === batchId);
-      if (!row) return;
-      setAdjustDrawerState({
-        isOpen: true,
-        batchId,
-        sku: row.sku,
-        productName: row.productName,
-        previousValue: row.onHandQty,
-        currentValue: row.onHandQty, // user will enter delta via drawer
-      });
+      // Select the batch to open the inspector panel where the user can
+      // use the "Adjust Quantity" section. Opening the drawer directly
+      // from gallery would result in a zero-delta (previousValue === currentValue).
+      setSelectedBatchId(batchId);
     },
-    [rows]
+    [setSelectedBatchId]
   );
 
   // ============================================================================
@@ -937,6 +912,19 @@ export function InventoryManagementSurface() {
           >
             Save View
           </Button>
+          {currentViewId !== null && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[9px] text-red-500"
+              disabled={deleteViewMutation.isPending}
+              onClick={() => {
+                deleteViewMutation.mutate(currentViewId);
+              }}
+            >
+              Delete View
+            </Button>
+          )}
 
           {/* Bulk actions (right side) */}
           {bulkActionsActive && (
