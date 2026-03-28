@@ -6,8 +6,6 @@ import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { ACCOUNTING_WORKSPACE } from "@/config/workspaces";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
-import GeneralLedger from "@/pages/accounting/GeneralLedger";
-import ChartOfAccounts from "@/pages/accounting/ChartOfAccounts";
 import Expenses from "@/pages/accounting/Expenses";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
@@ -15,7 +13,7 @@ import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
 import { lazy } from "react";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
 
-// Phase 1 unified surfaces
+// Phase 1+2 unified surfaces
 const InvoicesSurface = lazy(
   () => import("@/components/spreadsheet-native/InvoicesSurface")
 );
@@ -24,6 +22,12 @@ const BillsSurface = lazy(
 );
 const PaymentsSurface = lazy(
   () => import("@/components/spreadsheet-native/PaymentsSurface")
+);
+const GeneralLedgerSurface = lazy(
+  () => import("@/components/spreadsheet-native/GeneralLedgerSurface")
+);
+const ChartOfAccountsSurface = lazy(
+  () => import("@/components/spreadsheet-native/ChartOfAccountsSurface")
 );
 
 type AccountingTab = (typeof ACCOUNTING_WORKSPACE.tabs)[number]["value"];
@@ -88,13 +92,29 @@ export default function AccountingWorkspacePage() {
           <PaymentsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
-      {/* Phase 2-3 tabs remain classic until those phases are built */}
       <LinearWorkspacePanel value="general-ledger">
-        <GeneralLedger embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading general ledger...
+            </div>
+          }
+        >
+          <GeneralLedgerSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="chart-of-accounts">
-        <ChartOfAccounts embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading chart of accounts...
+            </div>
+          }
+        >
+          <ChartOfAccountsSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
+      {/* Phase 3 tabs remain classic until that phase is built */}
       <LinearWorkspacePanel value="expenses">
         <Expenses embedded />
       </LinearWorkspacePanel>
