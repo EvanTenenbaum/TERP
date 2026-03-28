@@ -1,0 +1,173 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { PaymentsSurface } from "./PaymentsSurface";
+
+/* ── Mock PowersheetGrid ── */
+vi.mock("./PowersheetGrid", () => ({
+  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
+    <div data-testid={`grid-${title}`}>
+      {title} — {rows.length} rows
+    </div>
+  ),
+}));
+
+/* ── Mock tRPC ── */
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    accounting: {
+      payments: {
+        list: {
+          useQuery: vi.fn(() => ({
+            data: {
+              items: [
+                {
+                  id: 1,
+                  paymentNumber: "PAY-001",
+                  paymentDate: "2026-01-15",
+                  paymentType: "RECEIVED",
+                  paymentMethod: "CHECK",
+                  amount: "5000.00",
+                  referenceNumber: "CHK-100",
+                  invoiceId: 10,
+                  notes: "First payment",
+                },
+                {
+                  id: 2,
+                  paymentNumber: "PAY-002",
+                  paymentDate: "2026-02-01",
+                  paymentType: "SENT",
+                  paymentMethod: "ACH",
+                  amount: "3000.00",
+                  referenceNumber: "ACH-200",
+                  invoiceId: 20,
+                  notes: "",
+                },
+                {
+                  id: 3,
+                  paymentNumber: "PAY-003",
+                  paymentDate: "2026-02-10",
+                  paymentType: "RECEIVED",
+                  paymentMethod: "WIRE",
+                  amount: "2500.00",
+                  referenceNumber: null,
+                  invoiceId: null,
+                  notes: null,
+                },
+              ],
+              nextCursor: null,
+              hasMore: false,
+              pagination: { total: 142, limit: 50, offset: 0 },
+            },
+            isLoading: false,
+            error: null,
+            isFetching: false,
+            refetch: vi.fn(),
+          })),
+        },
+      },
+    },
+    payments: {
+      void: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isPending: false,
+        })),
+      },
+    },
+  },
+}));
+
+/* ── Mock external components ── */
+vi.mock("@/components/work-surface/InspectorPanel", () => ({
+  InspectorPanel: ({ children }: { children: unknown }) => (
+    <div data-testid="inspector-panel">{children as string}</div>
+  ),
+  InspectorSection: ({ children }: { children: unknown }) => (
+    <div>{children as string}</div>
+  ),
+  InspectorField: ({ children }: { children: unknown }) => (
+    <div>{children as string}</div>
+  ),
+}));
+
+vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
+  WorkSurfaceStatusBar: ({
+    left,
+    right,
+  }: {
+    left: unknown;
+    right: unknown;
+  }) => (
+    <div data-testid="status-bar">
+      <span>{left as string}</span>
+      <span>{right as string}</span>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
+  KeyboardHintBar: () => <div data-testid="keyboard-hint-bar" />,
+}));
+
+vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({
+  InvoiceToPaymentFlow: () => <div data-testid="invoice-to-payment-flow" />,
+}));
+
+vi.mock("wouter", () => ({
+  useSearch: vi.fn(() => ""),
+}));
+
+vi.mock("@/hooks/usePermissions", () => ({
+  usePermissions: () => ({
+    hasPermission: () => true,
+  }),
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TESTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("PaymentsSurface", () => {
+  it("renders KPI badges with totals (142 total)", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByText(/142 total/i)).toBeInTheDocument();
+  });
+
+  it("renders KPI badges with received total ($7,500)", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByText(/\$7,500/)).toBeInTheDocument();
+  });
+
+  it("renders KPI badges with sent total ($3,000)", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByText(/\$3,000/)).toBeInTheDocument();
+  });
+
+  it("renders type filter tabs (All, Received, Sent)", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByTestId("type-tab-ALL")).toBeInTheDocument();
+    expect(screen.getByTestId("type-tab-RECEIVED")).toBeInTheDocument();
+    expect(screen.getByTestId("type-tab-SENT")).toBeInTheDocument();
+  });
+
+  it("renders Record Payment and Void actions", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByTestId("action-record-payment")).toBeInTheDocument();
+    expect(screen.getByTestId("action-void")).toBeInTheDocument();
+  });
+
+  it("renders payments grid with data", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByText(/3 rows/)).toBeInTheDocument();
+  });
+
+  it("renders status bar", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByTestId("status-bar")).toBeInTheDocument();
+  });
+
+  it("disables Void when no row selected", () => {
+    render(<PaymentsSurface />);
+    expect(screen.getByTestId("action-void")).toBeDisabled();
+  });
+});
