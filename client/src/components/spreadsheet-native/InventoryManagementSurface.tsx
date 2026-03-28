@@ -783,7 +783,7 @@ export function InventoryManagementSurface() {
       setSelectedBatchId(batchId);
       setViewMode("grid");
     },
-    [setSelectedBatchId]
+    [setSelectedBatchId, setViewMode]
   );
 
   const handleInspectorReviewAdjustment = useCallback(() => {
