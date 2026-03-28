@@ -151,6 +151,15 @@ describe("CommandPalette", () => {
     expect(screen.getByText("Inventory")).toBeInTheDocument();
   });
 
+  it("routes the New Sales Order action to the unified sales workspace surface", () => {
+    render(<CommandPalette open onOpenChange={mockOnOpenChange} />);
+
+    fireEvent.click(screen.getByText("New Sales Order"));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=create-order");
+    expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+  });
+
   // -------------------------------------------------------------------------
   // New tests: empty search + reset
   // -------------------------------------------------------------------------

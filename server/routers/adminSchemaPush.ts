@@ -854,6 +854,14 @@ export const adminSchemaPushRouter = router({
       `
       );
 
+      await safeExecute(
+        "add_orders_show_adjustment_on_document",
+        sql`
+        ALTER TABLE orders
+        ADD COLUMN show_adjustment_on_document BOOLEAN NOT NULL DEFAULT TRUE
+      `
+      );
+
       // ============================================================================
       // SUMMARY
       // ============================================================================
@@ -1040,6 +1048,9 @@ export const adminSchemaPushRouter = router({
         ),
         deleted_at: ordersCols.includes("deleted_at"),
         shipping: ordersCols.includes("shipping"),
+        show_adjustment_on_document: ordersCols.includes(
+          "show_adjustment_on_document"
+        ),
       };
 
       const allTablesPresent = Object.values(criticalTables).every(v => v);

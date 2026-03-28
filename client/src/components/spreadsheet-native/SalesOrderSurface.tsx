@@ -719,22 +719,6 @@ export function SalesOrderSurface() {
           <Button
             type="button"
             size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
-            onClick={() =>
-              setLocation(
-                buildSalesWorkspacePath("create-order", {
-                  ...(draft.activeDraftId ? { draftId: draft.activeDraftId } : {}),
-                  classic: true,
-                })
-              )
-            }
-          >
-            Classic Composer
-          </Button>
-          <Button
-            type="button"
-            size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
             disabled={draft.items.length === 0 || draft.isPersistingDraft}

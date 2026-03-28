@@ -254,7 +254,16 @@ describe("SalesOrderSurface", () => {
   it("renders the unified sales order toolbar", () => {
     render(<SalesOrderSurface />);
     expect(screen.getAllByText("Sales Order").length).toBeGreaterThan(0);
-    expect(screen.getByText("Classic Composer")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Queue" })).toBeInTheDocument();
+    expect(screen.queryByText("Classic Composer")).not.toBeInTheDocument();
+  });
+
+  it("routes back to the orders queue from the toolbar", () => {
+    render(<SalesOrderSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Queue" }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=orders");
   });
 
   it("renders empty state when no customer is selected", () => {
