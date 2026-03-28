@@ -420,9 +420,10 @@ export const purchaseOrdersRouter = router({
       // Generate PO number
       const poNumber = await generatePONumber(db);
 
-      const normalizedPaymentTerms = poData.paymentTerms?.trim()
-        ? normalizePurchaseOrderPaymentTerms(poData.paymentTerms)
-        : null;
+      // Preserve legacy create semantics: blank terms default to CONSIGNMENT.
+      const normalizedPaymentTerms = normalizePurchaseOrderPaymentTerms(
+        poData.paymentTerms
+      );
 
       const resolvedItems = await Promise.all(
         items.map(async item => {
