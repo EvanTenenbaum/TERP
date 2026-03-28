@@ -41,6 +41,8 @@
     "test:db:seed": "tsx testing/db-util.ts seed light",
     "test:db:preflight": "tsx testing/db-util.ts preflight",
     "db:status": "tsx testing/db-util.ts status",
+    "qa:accounting:dev:start": "bash scripts/qa/start-accounting-browser-dev.sh",
+    "qa:accounting:dev:probe": "tsx scripts/qa/probe-accounting-route-health.ts",
     "mega:qa": "tsx scripts/mega-qa/index.ts",
     "mega:qa:local": "tsx scripts/mega-qa/index.ts --scenario=full",
     "mega:qa:ci": "tsx scripts/mega-qa/index.ts --scenario=full --ci",
