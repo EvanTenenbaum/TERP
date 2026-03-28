@@ -26,6 +26,7 @@ import {
   Download,
   Package,
   Plus,
+  Pencil,
   Trash2,
   Truck,
   X,
@@ -135,7 +136,6 @@ interface POQueueRow {
   orderDate: Date | string;
   expectedDeliveryDate: Date | string;
   total: number;
-  lineItemCount: number;
   paymentTerms: string;
   isReceivable: boolean;
   isDraft: boolean;
@@ -286,7 +286,6 @@ function mapPOsToQueueRows(
       orderDate: po.orderDate ?? "",
       expectedDeliveryDate: po.expectedDeliveryDate ?? "",
       total,
-      lineItemCount: 0,
       paymentTerms: po.paymentTerms ?? "-",
       isReceivable: RECEIVABLE_STATUSES.has(status),
       isDraft: status === "DRAFT",
@@ -414,6 +413,7 @@ function PurchaseOrderCreateEditMode({
     null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitAfterCreateRef = useRef(false);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const updateDoc = useCallback((partial: Partial<PoDocumentState>) => {
@@ -540,12 +540,24 @@ function PurchaseOrderCreateEditMode({
   // ── Mutations ───────────────────────────────────────────────────────────────
   const createMutation = trpc.purchaseOrders.create.useMutation({
     onSuccess: data => {
-      toast.success("Purchase order created");
-      setIsSubmitting(false);
       const newId = (data as { id?: number })?.id;
-      navigateBackToQueue(newId ?? null);
+      if (submitAfterCreateRef.current && newId) {
+        submitAfterCreateRef.current = false;
+        submitMutation.mutate(
+          { id: newId },
+          {
+            onSuccess: () => navigateBackToQueue(newId),
+            onError: () => navigateBackToQueue(newId),
+          }
+        );
+      } else {
+        toast.success("Purchase order created");
+        setIsSubmitting(false);
+        navigateBackToQueue(newId ?? null);
+      }
     },
     onError: error => {
+      submitAfterCreateRef.current = false;
       toast.error(error.message || "Failed to create purchase order");
       setIsSubmitting(false);
     },
@@ -559,6 +571,17 @@ function PurchaseOrderCreateEditMode({
     },
     onError: error => {
       toast.error(error.message || "Failed to update purchase order");
+      setIsSubmitting(false);
+    },
+  });
+
+  const submitMutation = trpc.purchaseOrders.submit.useMutation({
+    onSuccess: () => {
+      toast.success("Purchase order submitted");
+      setIsSubmitting(false);
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to submit purchase order");
       setIsSubmitting(false);
     },
   });
@@ -610,25 +633,29 @@ function PurchaseOrderCreateEditMode({
     [updateLineItem]
   );
 
-  const handleSubmit = useCallback(() => {
-    const errors = validatePoDocument(doc);
-    if (errors.length > 0) {
-      toast.error(errors[0]);
-      return;
-    }
-    setIsSubmitting(true);
-    if (isEditMode && editPoId) {
-      const payload = buildCreatePayload(doc);
-      updateMutation.mutate({ id: editPoId, ...payload } as Parameters<
-        typeof updateMutation.mutate
-      >[0]);
-    } else {
-      const payload = buildCreatePayload(doc);
-      createMutation.mutate(
-        payload as Parameters<typeof createMutation.mutate>[0]
-      );
-    }
-  }, [doc, isEditMode, editPoId, createMutation, updateMutation]);
+  const handleSubmit = useCallback(
+    (andSubmit = false) => {
+      const errors = validatePoDocument(doc);
+      if (errors.length > 0) {
+        toast.error(errors[0]);
+        return;
+      }
+      setIsSubmitting(true);
+      if (isEditMode && editPoId) {
+        const payload = buildCreatePayload(doc);
+        updateMutation.mutate({ id: editPoId, ...payload } as Parameters<
+          typeof updateMutation.mutate
+        >[0]);
+      } else {
+        submitAfterCreateRef.current = andSubmit;
+        const payload = buildCreatePayload(doc);
+        createMutation.mutate(
+          payload as Parameters<typeof createMutation.mutate>[0]
+        );
+      }
+    },
+    [doc, isEditMode, editPoId, createMutation, updateMutation]
+  );
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const addedProductIds = useMemo(
@@ -754,12 +781,16 @@ function PurchaseOrderCreateEditMode({
           <Button
             size="sm"
             variant="outline"
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(false)}
             disabled={isSubmitting}
           >
             Save Draft
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={isSubmitting}>
+          <Button
+            size="sm"
+            onClick={() => handleSubmit(!isEditMode)}
+            disabled={isSubmitting}
+          >
             {isSubmitting
               ? "Saving..."
               : isEditMode
@@ -793,7 +824,7 @@ function PurchaseOrderCreateEditMode({
             onCellValueChanged={handleDocCellChanged}
             selectionMode="single-row"
             enableFillHandle={false}
-            enableUndoRedo={false}
+            enableUndoRedo={true}
             isLoading={false}
             emptyTitle="No line items"
             emptyDescription="Use the product browser on the left to add items."
@@ -1229,7 +1260,6 @@ function PurchaseOrderQueueMode({
       "Expected Delivery",
       "Total",
       "Payment Terms",
-      "Line Count",
     ];
     const rows = queueRows.map(row => [
       row.poNumber,
@@ -1239,7 +1269,6 @@ function PurchaseOrderQueueMode({
       formatDate(row.expectedDeliveryDate),
       row.total.toFixed(2),
       row.paymentTerms,
-      String(row.lineItemCount),
     ]);
     const csv = [header, ...rows]
       .map(cols =>
@@ -1401,13 +1430,6 @@ function PurchaseOrderQueueMode({
         headerName: "Payment Terms",
         minWidth: 100,
         maxWidth: 130,
-        cellClass: "powersheet-cell--locked",
-      },
-      {
-        field: "lineItemCount",
-        headerName: "Line Count",
-        minWidth: 90,
-        maxWidth: 110,
         cellClass: "powersheet-cell--locked",
       },
     ],
@@ -1653,6 +1675,27 @@ function PurchaseOrderQueueMode({
               {/* Draft actions */}
               {selectedRow.isDraft && (
                 <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      const params = new URLSearchParams(
+                        window.location.search
+                      );
+                      params.set("poView", "edit");
+                      params.set("poId", String(selectedRow.poId));
+                      window.history.pushState(
+                        {},
+                        "",
+                        `${window.location.pathname}?${params.toString()}`
+                      );
+                      window.dispatchEvent(new Event("popstate"));
+                    }}
+                  >
+                    <Pencil className="mr-1 h-3 w-3" />
+                    Edit
+                  </Button>
                   {availableTransitions
                     .filter(s => s !== "CANCELLED")
                     .map(status => (

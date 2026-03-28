@@ -241,11 +241,6 @@ export function InventoryManagementSurface() {
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [pendingBulkStatus, setPendingBulkStatus] =
     useState<InventoryBatchStatus | null>(null);
-  const [_recentlyDeletedBatches, setRecentlyDeletedBatches] = useState<
-    Array<{ id: number; previousStatus: InventoryBatchStatus }>
-  >([]);
-  const [_showRestoreToast, setShowRestoreToast] = useState(false);
-
   // Adjustment drawer state
   const [adjustDrawerState, setAdjustDrawerState] =
     useState<AdjustDrawerState | null>(null);
@@ -361,8 +356,6 @@ export function InventoryManagementSurface() {
           id: r.batchId,
           previousStatus: r.status as InventoryBatchStatus,
         }));
-      setRecentlyDeletedBatches(previousStatuses);
-      setShowRestoreToast(true);
       toast.success(`Deleted ${count} batch${count === 1 ? "" : "es"}`, {
         action: {
           label: "Restore",
@@ -385,8 +378,6 @@ export function InventoryManagementSurface() {
   const bulkRestoreMutation = trpc.inventory.bulk.restore.useMutation({
     onSuccess: () => {
       toast.success("Batches restored");
-      setRecentlyDeletedBatches([]);
-      setShowRestoreToast(false);
       void enhancedQuery.refetch();
       void dashboardQuery.refetch();
     },
@@ -1036,7 +1027,7 @@ export function InventoryManagementSurface() {
             onCellValueChanged={handleCellValueChanged}
             selectionMode="cell-range"
             enableFillHandle={false}
-            enableUndoRedo={false}
+            enableUndoRedo={true}
             onSelectionSummaryChange={setQueueSelectionSummary}
             isLoading={enhancedQuery.isLoading}
             errorMessage={enhancedQuery.error?.message ?? null}
