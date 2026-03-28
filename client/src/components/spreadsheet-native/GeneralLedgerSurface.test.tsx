@@ -120,11 +120,22 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
     },
+    accountingHooks: {
+      reverseGLEntries: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isPending: false,
+        })),
+      },
+    },
     useUtils: vi.fn(() => ({
       accounting: {
         ledger: {
           list: { invalidate: vi.fn() },
         },
+      },
+      accountingHooks: {
+        reverseGLEntries: { invalidate: vi.fn() },
       },
     })),
   },

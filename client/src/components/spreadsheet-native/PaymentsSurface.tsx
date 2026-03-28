@@ -11,14 +11,13 @@
  *   4. Status Bar: WorkSurfaceStatusBar + KeyboardHintBar
  *   5. Sidecar Dialogs: InvoiceToPaymentFlow, Void
  *
- * Deep-link support: ?id=, ?invoiceId= via manual URL parsing.
+ * Deep-link support: ?id=, ?invoiceId=, ?orderId= via manual URL parsing.
  */
 
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { ColDef } from "ag-grid-community";
 import { useSearch } from "wouter";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { RefreshCw, Search, Ban } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -44,17 +43,20 @@ import {
   InspectorField,
 } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import {
-  KeyboardHintBar,
-  type KeyboardHint,
-} from "@/components/work-surface/KeyboardHintBar";
-import { InvoiceToPaymentFlow } from "@/components/work-surface/golden-flows/InvoiceToPaymentFlow";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
+import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
 
 import { usePermissions } from "@/hooks/usePermissions";
 
 import { PowersheetGrid } from "./PowersheetGrid";
-import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import {
+  fmtCurrency,
+  fmtCurrencyCompact,
+  fmtDate,
+  REGISTRY_AFFORDANCES,
+  REGISTRY_KEYBOARD_HINTS,
+} from "@/lib/powersheet/surface-helpers";
 
 // ============================================================================
 // TYPES
@@ -72,34 +74,10 @@ type PaymentTypeFilter = "ALL" | "RECEIVED" | "SENT";
 // CONSTANTS
 // ============================================================================
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const TYPE_TABS: Array<{ value: PaymentTypeFilter; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "RECEIVED", label: "Received" },
   { value: "SENT", label: "Sent" },
-];
-
-const registryAffordances: PowersheetAffordance[] = [
-  { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
-  { label: "Paste", available: false },
-  { label: "Fill", available: false },
-  { label: "Edit", available: false },
-  { label: "Sort", available: true },
-  { label: "Filter", available: true },
-];
-
-const keyboardHints: KeyboardHint[] = [
-  { key: "Click", label: "select row" },
-  { key: "Shift+Click", label: "extend range" },
-  { key: `${mod}+Click`, label: "add to selection" },
-  { key: `${mod}+C`, label: "copy cells" },
-  { key: "Escape", label: "close inspector" },
 ];
 
 // ============================================================================
@@ -112,34 +90,9 @@ function parsePositiveInt(value: string | null): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-const formatCurrency = (value: string | number): string => {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (Number.isNaN(num)) return "$0.00";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(num);
-};
-
-const formatCurrencyCompact = (value: string | number): string => {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (Number.isNaN(num)) return "$0";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(num);
-};
-
-const formatDate = (value: string | Date | null | undefined): string => {
-  if (!value) return "-";
-  try {
-    const d = typeof value === "string" ? new Date(value) : value;
-    return format(d, "MMM d, yyyy");
-  } catch {
-    return "-";
-  }
-};
+const formatCurrency = fmtCurrency;
+const formatCurrencyCompact = fmtCurrencyCompact;
+const formatDate = fmtDate;
 
 function paymentMatchesSearch(payment: PaymentItem, query: string): boolean {
   if (!query) return true;
@@ -383,14 +336,34 @@ export function PaymentsSurface() {
   const { hasPermission } = usePermissions();
   const canVoid = hasPermission("accounting:delete");
 
-  // Deep-link support: ?id=, ?invoiceId=
+  // Deep-link support: ?id=, ?invoiceId=, ?orderId=
   const routeParams = useMemo(() => {
     const params = new URLSearchParams(search);
     return {
       paymentId: parsePositiveInt(params.get("id")),
       invoiceId: parsePositiveInt(params.get("invoiceId")),
+      orderId: parsePositiveInt(params.get("orderId")),
     };
   }, [search]);
+
+  const orderInvoiceQuery = trpc.accounting.invoices.getByReference.useQuery(
+    {
+      referenceId: routeParams.orderId ?? 0,
+      referenceTypes: ["ORDER", "SALE"],
+    },
+    { enabled: routeParams.orderId !== null }
+  );
+
+  const handoffInvoiceId = useMemo(() => {
+    if (routeParams.invoiceId !== null) {
+      return routeParams.invoiceId;
+    }
+
+    const resolvedInvoiceId = orderInvoiceQuery.data?.id;
+    return typeof resolvedInvoiceId === "number" && resolvedInvoiceId > 0
+      ? resolvedInvoiceId
+      : null;
+  }, [orderInvoiceQuery.data?.id, routeParams.invoiceId]);
 
   // Filter / search state
   const [searchTerm, setSearchTerm] = useState(() => {
@@ -409,11 +382,20 @@ export function PaymentsSurface() {
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
 
+  useEffect(() => {
+    if (routeParams.paymentId !== null) {
+      setSearchTerm(String(routeParams.paymentId));
+      return;
+    }
+
+    setSearchTerm("");
+  }, [routeParams.paymentId]);
+
   // Data query
   const paymentsQuery = trpc.accounting.payments.list.useQuery({
     paymentType:
       typeFilter !== "ALL" ? (typeFilter as "RECEIVED" | "SENT") : undefined,
-    invoiceId: routeParams.invoiceId ?? undefined,
+    invoiceId: handoffInvoiceId ?? undefined,
   });
 
   // Void mutation
@@ -432,6 +414,10 @@ export function PaymentsSurface() {
 
   // Build grid rows
   const gridRows = useMemo((): PaymentGridRow[] => {
+    if (routeParams.orderId !== null && handoffInvoiceId === null) {
+      return [];
+    }
+
     const raw = paymentsQuery.data?.items ?? [];
     const normalizedQuery = searchTerm.trim().toLowerCase();
 
@@ -445,7 +431,13 @@ export function PaymentsSurface() {
         : searched;
 
     return mapToGridRows(routeFiltered);
-  }, [paymentsQuery.data, searchTerm, routeParams.paymentId]);
+  }, [
+    handoffInvoiceId,
+    paymentsQuery.data,
+    routeParams.orderId,
+    routeParams.paymentId,
+    searchTerm,
+  ]);
 
   // KPI totals — computed client-side from gridRows
   const kpiTotals = useMemo(() => {
@@ -456,16 +448,26 @@ export function PaymentsSurface() {
       .filter(r => r.paymentType === "SENT")
       .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0);
     return {
-      totalCount: paymentsQuery.data?.pagination?.total ?? gridRows.length,
+      totalCount:
+        routeParams.orderId !== null
+          ? gridRows.length
+          : (paymentsQuery.data?.pagination?.total ?? gridRows.length),
       totalReceived,
       totalSent,
     };
-  }, [gridRows, paymentsQuery.data?.pagination?.total]);
+  }, [gridRows, paymentsQuery.data?.pagination?.total, routeParams.orderId]);
 
   // Selected row lookup
   const selectedRow = useMemo(
     () => gridRows.find(r => r.rowKey === selectedRowId) ?? null,
     [gridRows, selectedRowId]
+  );
+
+  const invoiceIdForFlow = selectedRow?.invoiceId ?? handoffInvoiceId ?? null;
+
+  const invoiceDetailsQuery = trpc.accounting.invoices.getById.useQuery(
+    { id: invoiceIdForFlow ?? 0 },
+    { enabled: invoiceIdForFlow !== null }
   );
 
   const handleCloseInspector = useCallback(() => {
@@ -480,9 +482,6 @@ export function PaymentsSurface() {
     setSelectedRowId(nextId);
   }, []);
 
-  const invoiceIdForFlow =
-    selectedRow?.invoiceId ?? routeParams.invoiceId ?? null;
-
   const handleVoidConfirm = useCallback(
     (paymentId: number, reason: string) => {
       voidMutation.mutate({ id: paymentId, reason });
@@ -490,12 +489,49 @@ export function PaymentsSurface() {
     [voidMutation]
   );
 
-  const handlePaymentRecorded = useCallback(
-    (_paymentId: number) => {
-      void paymentsQuery.refetch();
-    },
-    [paymentsQuery]
-  );
+  const handlePaymentRecorded = useCallback(() => {
+    setRecordPaymentOpen(false);
+    void invoiceDetailsQuery.refetch();
+    void orderInvoiceQuery.refetch();
+    void paymentsQuery.refetch();
+  }, [invoiceDetailsQuery, orderInvoiceQuery, paymentsQuery]);
+
+  const invoiceForPaymentDialog = useMemo(() => {
+    const invoice = invoiceDetailsQuery.data;
+    if (!invoice) {
+      return null;
+    }
+
+    return {
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      totalAmount: invoice.totalAmount,
+      amountPaid: invoice.amountPaid,
+      amountDue: invoice.amountDue,
+      status: invoice.status,
+    };
+  }, [invoiceDetailsQuery.data]);
+
+  const handleRecordPaymentClick = useCallback(() => {
+    if (invoiceIdForFlow === null) {
+      toast.error("Select a payment linked to an invoice before recording.");
+      return;
+    }
+
+    setRecordPaymentOpen(true);
+  }, [invoiceIdForFlow]);
+
+  const paymentDialogDescription = useMemo(() => {
+    if (invoiceIdForFlow === null) {
+      return "Select a payment with an invoice, or navigate from an invoice";
+    }
+
+    if (routeParams.orderId !== null) {
+      return `Record a payment against invoice #${invoiceIdForFlow} for order #${routeParams.orderId}`;
+    }
+
+    return `Record a payment against invoice #${invoiceIdForFlow}`;
+  }, [invoiceIdForFlow, routeParams.orderId]);
 
   // Status bar
   const statusLeft = (
@@ -567,6 +603,27 @@ export function PaymentsSurface() {
         </div>
       </div>
 
+      {routeParams.orderId !== null && (
+        <div
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50/70 px-2 py-1.5"
+          data-testid="payments-order-handoff-banner"
+        >
+          <Badge
+            variant="outline"
+            className="text-[9px] bg-blue-100 text-blue-800 border-blue-200"
+          >
+            Sales handoff
+          </Badge>
+          <span className="text-[11px] text-blue-900">
+            {orderInvoiceQuery.isLoading
+              ? `Resolving order #${routeParams.orderId} into its invoice payment history...`
+              : handoffInvoiceId !== null
+                ? `Showing payments posted against invoice #${handoffInvoiceId} for order #${routeParams.orderId}.`
+                : `Order #${routeParams.orderId} does not have a linked invoice yet, so there are no matching payments to show.`}
+          </span>
+        </div>
+      )}
+
       {/* ── 2. Action Bar ── */}
       <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap">
         {/* Type filter tabs */}
@@ -591,12 +648,8 @@ export function PaymentsSurface() {
             size="sm"
             className="h-5 text-[9px] px-2"
             disabled={invoiceIdForFlow === null}
-            onClick={() => setRecordPaymentOpen(true)}
-            title={
-              invoiceIdForFlow === null
-                ? "Select a payment with an invoice, or navigate from an invoice"
-                : "Record a payment against the linked invoice"
-            }
+            onClick={handleRecordPaymentClick}
+            title={paymentDialogDescription}
             data-testid="action-record-payment"
           >
             Record Payment
@@ -626,7 +679,7 @@ export function PaymentsSurface() {
       <PowersheetGrid
         surfaceId="payments-registry"
         requirementIds={["PAY-001", "PAY-002", "PAY-003", "PAY-004"]}
-        affordances={registryAffordances}
+        affordances={REGISTRY_AFFORDANCES}
         title="Payments Registry"
         description="Read-only payment transaction ledger. Select a row to see details and take actions."
         rows={gridRows}
@@ -777,18 +830,16 @@ export function PaymentsSurface() {
       <WorkSurfaceStatusBar
         left={statusLeft}
         center={statusCenter}
-        right={<KeyboardHintBar hints={keyboardHints} className="text-xs" />}
+        right={<KeyboardHintBar hints={REGISTRY_KEYBOARD_HINTS} className="text-xs" />}
       />
 
       {/* ── 6. Sidecar Dialogs ── */}
-      {invoiceIdForFlow !== null && (
-        <InvoiceToPaymentFlow
-          invoiceId={invoiceIdForFlow}
-          open={recordPaymentOpen}
-          onOpenChange={setRecordPaymentOpen}
-          onPaymentRecorded={handlePaymentRecorded}
-        />
-      )}
+      <RecordPaymentDialog
+        open={recordPaymentOpen}
+        onOpenChange={setRecordPaymentOpen}
+        invoice={invoiceForPaymentDialog}
+        onSuccess={handlePaymentRecorded}
+      />
 
       <VoidDialog
         payment={selectedRow}

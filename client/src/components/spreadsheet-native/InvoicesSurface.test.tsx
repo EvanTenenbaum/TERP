@@ -1,6 +1,19 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { InvoicesSurface } from "./InvoicesSurface";
+
+const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
+  vi.hoisted(() => ({
+    mockParseInvoiceDeepLink: vi.fn(() => ({
+      invoiceId: null,
+      openRecordPayment: false,
+      statusFilter: null,
+      orderId: null,
+      from: null,
+    })),
+    mockSetSelectedId: vi.fn(),
+    invoiceSelectionState: { selectedId: null as number | null },
+  }));
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
@@ -129,6 +142,14 @@ vi.mock("@/lib/trpc", () => ({
           })),
         },
       },
+      payments: {
+        getForInvoice: {
+          useQuery: vi.fn(() => ({
+            data: [],
+            isLoading: false,
+          })),
+        },
+      },
     },
     clients: {
       list: {
@@ -145,6 +166,20 @@ vi.mock("@/lib/trpc", () => ({
           isLoading: false,
         })),
       },
+      addLedgerAdjustment: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isPending: false,
+        })),
+      },
+      exportLedger: {
+        useQuery: vi.fn(() => ({
+          data: null,
+          isLoading: false,
+          isFetching: false,
+          refetch: vi.fn(),
+        })),
+      },
     },
     payments: {
       list: {
@@ -155,6 +190,11 @@ vi.mock("@/lib/trpc", () => ({
       invoices: {
         list: { invalidate: vi.fn() },
         getSummary: { invalidate: vi.fn() },
+      },
+      accounting: {
+        invoices: {
+          getARAging: { invalidate: vi.fn() },
+        },
       },
       payments: {
         list: { invalidate: vi.fn() },
@@ -198,8 +238,9 @@ vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
   KeyboardHintBar: () => <div data-testid="keyboard-hint-bar" />,
 }));
 
-vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({
-  InvoiceToPaymentFlow: () => <div data-testid="invoice-to-payment-flow" />,
+vi.mock("@/components/accounting/RecordPaymentDialog", () => ({
+  RecordPaymentDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="record-payment-dialog" /> : null,
 }));
 
 vi.mock("@/components/accounting/GLReversalStatus", () => ({
@@ -207,13 +248,13 @@ vi.mock("@/components/accounting/GLReversalStatus", () => ({
 }));
 
 vi.mock("@/components/work-surface/invoiceDeepLink", () => ({
-  parseInvoiceDeepLink: () => ({}),
+  parseInvoiceDeepLink: mockParseInvoiceDeepLink,
 }));
 
 vi.mock("@/lib/spreadsheet-native", () => ({
   useSpreadsheetSelectionParam: () => ({
-    selectedId: null,
-    setSelectedId: vi.fn(),
+    selectedId: invoiceSelectionState.selectedId,
+    setSelectedId: mockSetSelectedId,
   }),
 }));
 
@@ -253,10 +294,22 @@ vi.mock("@/lib/statusTokens", () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("InvoicesSurface", () => {
+  beforeEach(() => {
+    invoiceSelectionState.selectedId = null;
+    mockSetSelectedId.mockReset();
+    mockParseInvoiceDeepLink.mockReturnValue({
+      invoiceId: null,
+      openRecordPayment: false,
+      statusFilter: null,
+      orderId: null,
+      from: null,
+    });
+  });
+
   it("renders KPI badges ($24,500 AR, 3 overdue, 47 total)", () => {
     render(<InvoicesSurface />);
     expect(screen.getByText(/\$24,500/)).toBeInTheDocument();
-    expect(screen.getByText(/3 overdue/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/3 overdue/i)).not.toHaveLength(0);
     expect(screen.getByText(/47 total/i)).toBeInTheDocument();
   });
 
@@ -299,9 +352,72 @@ describe("InvoicesSurface", () => {
     expect(screen.getByTestId("status-bar")).toBeInTheDocument();
   });
 
+  it("surfaces an overdue follow-up banner with direct actions", () => {
+    render(<InvoicesSurface />);
+    expect(screen.getByTestId("overdue-follow-up-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("focus-overdue-button")).toBeInTheDocument();
+    expect(screen.getByTestId("refresh-overdue-button")).toBeInTheDocument();
+  });
+
   it("disables Mark Sent and Record Payment when no row selected", () => {
     render(<InvoicesSurface />);
     expect(screen.getByTestId("action-mark-sent")).toBeDisabled();
     expect(screen.getByTestId("action-record-payment")).toBeDisabled();
+  });
+
+  it("hydrates legacy sales invoice links into the spreadsheet selection param", () => {
+    mockParseInvoiceDeepLink.mockReturnValue({
+      invoiceId: 1,
+      openRecordPayment: true,
+      statusFilter: null,
+      orderId: 33,
+      from: "sales",
+    });
+
+    render(<InvoicesSurface />);
+
+    expect(mockSetSelectedId).toHaveBeenCalledWith(1);
+  });
+
+  it("renders a sales handoff banner instead of auto-opening the payment dialog", () => {
+    invoiceSelectionState.selectedId = 1;
+    mockParseInvoiceDeepLink.mockReturnValue({
+      invoiceId: 1,
+      openRecordPayment: true,
+      statusFilter: null,
+      orderId: 33,
+      from: "sales",
+    });
+
+    render(<InvoicesSurface />);
+
+    expect(
+      screen.getByTestId("invoice-payment-handoff-banner")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("record-payment-dialog")
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the payment dialog when the sales handoff CTA is clicked", () => {
+    invoiceSelectionState.selectedId = 1;
+    mockParseInvoiceDeepLink.mockReturnValue({
+      invoiceId: 1,
+      openRecordPayment: true,
+      statusFilter: null,
+      orderId: 33,
+      from: "sales",
+    });
+
+    render(<InvoicesSurface />);
+
+    fireEvent.click(
+      within(screen.getByTestId("invoice-payment-handoff-banner")).getByRole(
+        "button",
+        { name: "Record Payment" }
+      )
+    );
+
+    expect(screen.getByTestId("record-payment-dialog")).toBeInTheDocument();
   });
 });

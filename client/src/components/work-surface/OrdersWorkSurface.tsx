@@ -174,9 +174,8 @@ export function getMakePaymentRoute(
 
   const params = new URLSearchParams({
     tab: "invoices",
-    id: String(order.invoiceId),
+    invoiceId: String(order.invoiceId),
     orderId: String(order.id),
-    openRecordPayment: "true",
     from: "sales",
   });
 

@@ -23,7 +23,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from "react";
 import type { ColDef } from "ag-grid-community";
-import { useSearch } from "wouter";
+import { useSearch, useLocation } from "wouter";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import {
@@ -77,7 +77,7 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
-import { InvoiceToPaymentFlow } from "@/components/work-surface/golden-flows/InvoiceToPaymentFlow";
+import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
 import { InvoiceGLStatus } from "@/components/accounting/GLReversalStatus";
 
 import { PowersheetGrid } from "./PowersheetGrid";
@@ -469,6 +469,7 @@ const ledgerColumnDefs: ColDef<LedgerGridRow>[] = [
 
 export function InvoicesSurface() {
   const routeSearch = useSearch();
+  const [, navigate] = useLocation();
   const deepLink = useMemo(
     () => parseInvoiceDeepLink(routeSearch),
     [routeSearch]
@@ -510,6 +511,20 @@ export function InvoicesSurface() {
     notes: "",
   });
 
+  // Ledger feature state
+  const [ledgerDateFrom, setLedgerDateFrom] = useState("");
+  const [ledgerDateTo, setLedgerDateTo] = useState("");
+  const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
+  const [adjustmentStep, setAdjustmentStep] = useState<"form" | "confirm">(
+    "form"
+  );
+  const [adjustmentForm, setAdjustmentForm] = useState({
+    transactionType: "CREDIT" as "CREDIT" | "DEBIT",
+    amount: "",
+    description: "",
+    effectiveDate: "",
+  });
+
   // Persist aging panel state
   const toggleAging = useCallback(() => {
     setShowAging(v => {
@@ -545,6 +560,11 @@ export function InvoicesSurface() {
     enabled: showAging,
   });
 
+  const paymentHistoryQuery = trpc.accounting.payments.getForInvoice.useQuery(
+    { invoiceId: selectedInvoiceId ?? 0 },
+    { enabled: !!selectedInvoiceId }
+  );
+
   // Client ledger query — enabled when a client is selected and ledger visible
   const selectedClientId = useMemo(() => {
     if (!selectedInvoiceId) return null;
@@ -559,6 +579,8 @@ export function InvoicesSurface() {
       clientId: selectedClientId ?? 0,
       limit: LEDGER_PAGE_SIZE,
       offset: (ledgerPage - 1) * LEDGER_PAGE_SIZE,
+      ...(ledgerDateFrom ? { startDate: new Date(ledgerDateFrom) } : {}),
+      ...(ledgerDateTo ? { endDate: new Date(ledgerDateTo) } : {}),
     },
     { enabled: showLedger && selectedClientId !== null }
   );
@@ -661,6 +683,11 @@ export function InvoicesSurface() {
           days60: number;
           days90: number;
           days90Plus: number;
+          currentCount?: number;
+          days30Count?: number;
+          days60Count?: number;
+          days90Count?: number;
+          days90PlusCount?: number;
         }
       | null
       | undefined;
@@ -670,6 +697,7 @@ export function InvoicesSurface() {
         key: "current",
         label: "Current",
         amount: data.current,
+        count: data.currentCount ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS.current ??
           "bg-green-50 border-green-200 text-green-700",
@@ -678,6 +706,7 @@ export function InvoicesSurface() {
         key: "30",
         label: "1-30 Days",
         amount: data.days30,
+        count: data.days30Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["30"] ??
           "bg-yellow-50 border-yellow-200 text-yellow-700",
@@ -686,6 +715,7 @@ export function InvoicesSurface() {
         key: "60",
         label: "31-60 Days",
         amount: data.days60,
+        count: data.days60Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["60"] ??
           "bg-orange-50 border-orange-200 text-orange-700",
@@ -694,6 +724,7 @@ export function InvoicesSurface() {
         key: "90",
         label: "61-90 Days",
         amount: data.days90,
+        count: data.days90Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["90"] ?? "bg-red-50 border-red-200 text-red-700",
       },
@@ -701,6 +732,7 @@ export function InvoicesSurface() {
         key: "90+",
         label: "90+ Days",
         amount: data.days90Plus,
+        count: data.days90PlusCount ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["90+"] ??
           "bg-red-100 border-red-300 text-red-800",
@@ -753,6 +785,43 @@ export function InvoicesSurface() {
     onError: err => toast.error(err.message || "Failed to download PDF"),
   });
 
+  const checkOverdueMutation = trpc.invoices.checkOverdue.useMutation({
+    onSuccess: result => {
+      toast.success(
+        `Overdue check complete. Updated ${result.overdueCount} invoice(s).`
+      );
+      void utils.invoices.list.invalidate();
+      void utils.invoices.getSummary.invalidate();
+      void utils.accounting.invoices.getARAging.invalidate();
+    },
+    onError: err => toast.error(err.message || "Failed to refresh overdue status"),
+  });
+
+  const adjustmentMutation = trpc.clientLedger.addLedgerAdjustment.useMutation({
+    onSuccess: () => {
+      toast.success("Ledger adjustment added");
+      setShowAdjustmentDialog(false);
+      setAdjustmentStep("form");
+      setAdjustmentForm({
+        transactionType: "CREDIT",
+        amount: "",
+        description: "",
+        effectiveDate: "",
+      });
+      void utils.clientLedger.getLedger.invalidate();
+    },
+    onError: err => toast.error(err.message || "Failed to add adjustment"),
+  });
+
+  const exportLedgerQuery = trpc.clientLedger.exportLedger.useQuery(
+    {
+      clientId: selectedClientId ?? 0,
+      ...(ledgerDateFrom ? { startDate: new Date(ledgerDateFrom) } : {}),
+      ...(ledgerDateTo ? { endDate: new Date(ledgerDateTo) } : {}),
+    },
+    { enabled: false }
+  );
+
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
   const handleMarkSent = useCallback(() => {
@@ -785,6 +854,56 @@ export function InvoicesSurface() {
     window.print();
   }, [selectedRow]);
 
+  const handleAdjustmentSubmit = useCallback(() => {
+    if (!selectedClientId || !adjustmentForm.amount || !adjustmentForm.description)
+      return;
+    adjustmentMutation.mutate({
+      clientId: selectedClientId,
+      transactionType: adjustmentForm.transactionType,
+      amount: parseFloat(adjustmentForm.amount),
+      description: adjustmentForm.description,
+      ...(adjustmentForm.effectiveDate
+        ? { effectiveDate: new Date(adjustmentForm.effectiveDate) }
+        : {}),
+    });
+  }, [selectedClientId, adjustmentForm, adjustmentMutation]);
+
+  const handleExportCsv = useCallback(async () => {
+    if (!selectedClientId) return;
+    try {
+      const result = await exportLedgerQuery.refetch();
+      if (result.data) {
+        const blob = new Blob([result.data.content], {
+          type: result.data.mimeType,
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = result.data.filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Ledger CSV exported");
+      }
+    } catch {
+      toast.error("Failed to export ledger");
+    }
+  }, [selectedClientId, exportLedgerQuery]);
+
+  const handleLedgerRowClick = useCallback(
+    (row: LedgerGridRow | null) => {
+      if (!row) return;
+      if (row.referenceType === "INVOICE" && row.referenceId) {
+        // Select this invoice in the main grid
+        setSelectedInvoiceId(row.referenceId);
+      } else if (row.referenceType === "PAYMENT" && row.referenceId) {
+        navigate(`?tab=payments&id=${row.referenceId}`);
+      } else if (row.referenceType === "ORDER" && row.referenceId) {
+        navigate(`/sales?orderId=${row.referenceId}`);
+      }
+    },
+    [setSelectedInvoiceId, navigate]
+  );
+
   const handleCreateSubmit = useCallback(() => {
     if (!createForm.customerId || !createForm.dueDate) return;
     const invoiceNumber = generateNumberQuery.data ?? `INV-${Date.now()}`;
@@ -808,6 +927,64 @@ export function InvoicesSurface() {
     }
   }, [selectedRow?.invoiceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Accept legacy `?id=` invoice deep links and normalize them into the
+  // spreadsheet selection param used by the unified surface state.
+  useEffect(() => {
+    if (selectedInvoiceId !== null || deepLink.invoiceId === null) {
+      return;
+    }
+
+    setSelectedInvoiceId(deepLink.invoiceId);
+  }, [deepLink.invoiceId, selectedInvoiceId, setSelectedInvoiceId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(routeSearch);
+    if (!params.has("id") || params.has("invoiceId")) {
+      return;
+    }
+
+    const legacyInvoiceId = params.get("id");
+    if (!legacyInvoiceId) {
+      return;
+    }
+
+    params.delete("id");
+    params.set("invoiceId", legacyInvoiceId);
+    navigate(`?${params.toString()}`, { replace: true });
+  }, [navigate, routeSearch]);
+
+  const clearPaymentIntent = useCallback(() => {
+    const params = new URLSearchParams(routeSearch);
+    params.delete("openRecordPayment");
+    navigate(`?${params.toString()}`, { replace: true });
+  }, [navigate, routeSearch]);
+
+  const openPaymentDialogFromHandoff = useCallback(() => {
+    setShowPaymentDialog(true);
+  }, []);
+
+  // Keyboard shortcuts [ and ] for ledger pagination
+  useEffect(() => {
+    if (!showLedger) return;
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      )
+        return;
+      if (e.key === "[") {
+        e.preventDefault();
+        setLedgerPage(p => Math.max(1, p - 1));
+      } else if (e.key === "]") {
+        e.preventDefault();
+        setLedgerPage(p => p + 1);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showLedger]);
+
   // ─── Action-state helpers ──────────────────────────────────────────────────
 
   const isActionable =
@@ -816,6 +993,18 @@ export function InvoicesSurface() {
     selectedRow.status !== "VOID";
   const canSend = selectedRow?.status === "DRAFT";
   const canVoid = selectedRow && selectedRow.status !== "VOID";
+
+  const handleFocusOverdue = useCallback(() => {
+    setStatusFilter("OVERDUE");
+    setPage(1);
+    setSearchTerm("");
+    setShowAging(true);
+    try {
+      localStorage.setItem(AGING_STORAGE_KEY, "true");
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   // ─── Status bar ────────────────────────────────────────────────────────────
 
@@ -831,6 +1020,21 @@ export function InvoicesSurface() {
   );
 
   const clientsList = clientsQuery.data?.items ?? [];
+
+  const paymentDialogInvoice = useMemo(() => {
+    if (!selectedRow) {
+      return null;
+    }
+
+    return {
+      id: selectedRow.invoiceId,
+      invoiceNumber: selectedRow.invoiceNumber,
+      totalAmount: selectedRow.totalAmount,
+      amountPaid: selectedRow.amountPaid,
+      amountDue: selectedRow.amountDue,
+      status: selectedRow.status,
+    };
+  }, [selectedRow]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -985,6 +1189,84 @@ export function InvoicesSurface() {
         </div>
       </div>
 
+      {(overdueCount > 0 || summaryTotals.overdueAmount > 0) && (
+        <div
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50/80 px-2 py-1.5"
+          data-testid="overdue-follow-up-banner"
+        >
+          <Badge
+            variant="outline"
+            className="text-[9px] bg-amber-100 text-amber-800 border-amber-300"
+          >
+            Follow-up queue
+          </Badge>
+          <span className="text-[11px] font-medium text-amber-900">
+            {overdueCount} overdue invoice
+            {overdueCount === 1 ? "" : "s"} with{" "}
+            {formatCurrency(summaryTotals.overdueAmount)} outstanding
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 text-[9px] px-2"
+              onClick={handleFocusOverdue}
+              data-testid="focus-overdue-button"
+            >
+              Focus Overdue
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-5 text-[9px] px-2"
+              onClick={() => checkOverdueMutation.mutate()}
+              disabled={checkOverdueMutation.isPending}
+              data-testid="refresh-overdue-button"
+            >
+              {checkOverdueMutation.isPending ? "Checking..." : "Refresh Overdue"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {deepLink.openRecordPayment && selectedRow && (
+        <div
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 px-2 py-1.5"
+          data-testid="invoice-payment-handoff-banner"
+        >
+          <Badge
+            variant="outline"
+            className="text-[9px] bg-emerald-100 text-emerald-800 border-emerald-200"
+          >
+            Sales handoff
+          </Badge>
+          <span className="text-[11px] text-emerald-900">
+            {deepLink.orderId !== null
+              ? `Order #${deepLink.orderId} is linked to ${selectedRow.invoiceNumber}. Review the invoice and open Record Payment when you are ready.`
+              : `${selectedRow.invoiceNumber} is ready for payment review.`}
+          </span>
+          <div className="ml-auto flex gap-1">
+            <Button
+              type="button"
+              size="sm"
+              className="h-6 text-[10px]"
+              onClick={openPaymentDialogFromHandoff}
+            >
+              Record Payment
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[10px]"
+              onClick={clearPaymentIntent}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ── 3. Grid + Collapsible Inspector ── */}
       <div className="flex flex-1 min-h-0">
         <div className={cn("flex-1", selectedRow && "flex-[3]")}>
@@ -1134,6 +1416,48 @@ export function InvoicesSurface() {
               />
             </InspectorSection>
 
+            {/* Payment History */}
+            <InspectorSection title="Payment History" defaultOpen>
+              {paymentHistoryQuery.isLoading ? (
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              ) : !paymentHistoryQuery.data ||
+                (paymentHistoryQuery.data as unknown[]).length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  No payments recorded
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {(
+                    paymentHistoryQuery.data as Array<{
+                      id: number;
+                      paymentDate: string | Date;
+                      amount: string | number;
+                      paymentMethod?: string | null;
+                    }>
+                  ).map(pmt => (
+                    <div
+                      key={pmt.id}
+                      className="flex items-center justify-between text-xs border-b border-muted pb-1"
+                    >
+                      <div>
+                        <span className="text-muted-foreground">
+                          {formatDate(pmt.paymentDate)}
+                        </span>
+                        {pmt.paymentMethod && (
+                          <span className="ml-1.5 text-[9px] text-muted-foreground">
+                            ({pmt.paymentMethod})
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono font-medium">
+                        {formatCurrency(pmt.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </InspectorSection>
+
             {/* Quick actions */}
             <InspectorSection title="Quick Actions" defaultOpen>
               <div className="space-y-1">
@@ -1199,6 +1523,9 @@ export function InvoicesSurface() {
                   <div className="text-sm font-bold">
                     {formatCurrency(bucket.amount)}
                   </div>
+                  <div className="text-[8px] text-muted-foreground">
+                    {bucket.count} {bucket.count === 1 ? "invoice" : "invoices"}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1209,7 +1536,7 @@ export function InvoicesSurface() {
       {/* ── 5. Client Ledger Sub-View (collapsible) ── */}
       {selectedRow && (
         <div className="mx-2 mb-1.5 p-2 bg-blue-50/40 border border-blue-200 rounded-md">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Button
               variant="ghost"
               size="sm"
@@ -1236,6 +1563,68 @@ export function InvoicesSurface() {
                   )}
                 </Badge>
               )}
+
+            {/* Date range filter */}
+            {showLedger && (
+              <div className="flex items-center gap-1 ml-2">
+                <label className="text-[9px] text-muted-foreground">From</label>
+                <input
+                  type="date"
+                  className="h-5 px-1 text-[10px] border rounded bg-transparent w-28"
+                  value={ledgerDateFrom}
+                  onChange={e => {
+                    setLedgerDateFrom(e.target.value);
+                    setLedgerPage(1);
+                  }}
+                  data-testid="ledger-date-from"
+                />
+                <label className="text-[9px] text-muted-foreground">To</label>
+                <input
+                  type="date"
+                  className="h-5 px-1 text-[10px] border rounded bg-transparent w-28"
+                  value={ledgerDateTo}
+                  onChange={e => {
+                    setLedgerDateTo(e.target.value);
+                    setLedgerPage(1);
+                  }}
+                  data-testid="ledger-date-to"
+                />
+              </div>
+            )}
+
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 text-[9px] px-2"
+                disabled={!selectedClientId}
+                onClick={() => {
+                  setAdjustmentStep("form");
+                  setAdjustmentForm({
+                    transactionType: "CREDIT",
+                    amount: "",
+                    description: "",
+                    effectiveDate: "",
+                  });
+                  setShowAdjustmentDialog(true);
+                }}
+                data-testid="ledger-add-adjustment"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Adjustment
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 text-[9px] px-2"
+                disabled={!selectedClientId || exportLedgerQuery.isFetching}
+                onClick={() => void handleExportCsv()}
+                data-testid="ledger-export-csv"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Export CSV
+              </Button>
+            </div>
           </div>
 
           {showLedger && (
@@ -1248,7 +1637,7 @@ export function InvoicesSurface() {
                 columnDefs={ledgerColumnDefs}
                 getRowId={row => row.rowKey}
                 selectedRowId={null}
-                onSelectedRowChange={() => {}}
+                onSelectedRowChange={handleLedgerRowClick}
                 selectionMode="cell-range"
                 enableFillHandle={false}
                 enableUndoRedo={false}
@@ -1301,20 +1690,23 @@ export function InvoicesSurface() {
 
       {/* ── 7. Sidecar Dialogs ── */}
 
-      {/* InvoiceToPaymentFlow */}
-      {selectedInvoiceId !== null && (
-        <InvoiceToPaymentFlow
-          invoiceId={selectedInvoiceId}
-          open={showPaymentDialog}
-          onOpenChange={setShowPaymentDialog}
-          onPaymentRecorded={() => {
-            void utils.invoices.list.invalidate();
-            void utils.invoices.getSummary.invalidate();
-            void utils.payments.list.invalidate();
-            setShowPaymentDialog(false);
-          }}
-        />
-      )}
+      <RecordPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={open => {
+          setShowPaymentDialog(open);
+          if (!open && deepLink.openRecordPayment) {
+            clearPaymentIntent();
+          }
+        }}
+        invoice={paymentDialogInvoice}
+        onSuccess={() => {
+          void utils.invoices.list.invalidate();
+          void utils.invoices.getSummary.invalidate();
+          void utils.payments.list.invalidate();
+          setShowPaymentDialog(false);
+          clearPaymentIntent();
+        }}
+      />
 
       {/* Void with Reason dialog */}
       <Dialog
@@ -1446,6 +1838,187 @@ export function InvoicesSurface() {
             >
               {createMutation.isPending ? "Creating..." : "Create Invoice"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ledger Adjustment dialog (two-step: form -> confirm) */}
+      <Dialog
+        open={showAdjustmentDialog}
+        onOpenChange={open => {
+          setShowAdjustmentDialog(open);
+          if (!open) setAdjustmentStep("form");
+        }}
+      >
+        <DialogContent data-testid="ledger-adjustment-dialog">
+          <DialogHeader>
+            <DialogTitle>
+              {adjustmentStep === "form"
+                ? "Add Ledger Adjustment"
+                : "Confirm Adjustment"}
+            </DialogTitle>
+            <DialogDescription>
+              {adjustmentStep === "form"
+                ? `Add a manual credit or debit to ${selectedRow?.clientName ?? "client"}'s ledger.`
+                : "Please review the adjustment details before submitting."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {adjustmentStep === "form" ? (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="adj-type">Type</Label>
+                <Select
+                  value={adjustmentForm.transactionType}
+                  onValueChange={v =>
+                    setAdjustmentForm(f => ({
+                      ...f,
+                      transactionType: v as "CREDIT" | "DEBIT",
+                    }))
+                  }
+                >
+                  <SelectTrigger id="adj-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CREDIT">Credit</SelectItem>
+                    <SelectItem value="DEBIT">Debit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adj-amount">Amount</Label>
+                <Input
+                  id="adj-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  value={adjustmentForm.amount}
+                  onChange={e =>
+                    setAdjustmentForm(f => ({ ...f, amount: e.target.value }))
+                  }
+                  data-testid="adj-amount-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adj-description">Description</Label>
+                <Textarea
+                  id="adj-description"
+                  placeholder="Reason for adjustment..."
+                  value={adjustmentForm.description}
+                  onChange={e =>
+                    setAdjustmentForm(f => ({
+                      ...f,
+                      description: e.target.value,
+                    }))
+                  }
+                  data-testid="adj-description-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adj-date">Effective Date (optional)</Label>
+                <input
+                  id="adj-date"
+                  type="date"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={adjustmentForm.effectiveDate}
+                  onChange={e =>
+                    setAdjustmentForm(f => ({
+                      ...f,
+                      effectiveDate: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 py-2">
+              <div className="p-3 bg-muted/50 rounded-md space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Client</span>
+                  <span className="font-medium">
+                    {selectedRow?.clientName}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Type</span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px]",
+                      adjustmentForm.transactionType === "CREDIT"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-red-50 text-red-700"
+                    )}
+                  >
+                    {adjustmentForm.transactionType}
+                  </Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-mono font-bold">
+                    {formatCurrency(adjustmentForm.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Description</span>
+                  <span className="text-right max-w-[200px] truncate">
+                    {adjustmentForm.description}
+                  </span>
+                </div>
+                {adjustmentForm.effectiveDate && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Effective Date
+                    </span>
+                    <span>{adjustmentForm.effectiveDate}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            {adjustmentStep === "form" ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAdjustmentDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={
+                    !adjustmentForm.amount ||
+                    parseFloat(adjustmentForm.amount) <= 0 ||
+                    !adjustmentForm.description.trim()
+                  }
+                  onClick={() => setAdjustmentStep("confirm")}
+                  data-testid="adj-next-button"
+                >
+                  Next
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setAdjustmentStep("form")}
+                >
+                  Back
+                </Button>
+                <Button
+                  disabled={adjustmentMutation.isPending}
+                  onClick={handleAdjustmentSubmit}
+                  data-testid="adj-confirm-button"
+                >
+                  {adjustmentMutation.isPending
+                    ? "Saving..."
+                    : "Confirm Adjustment"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

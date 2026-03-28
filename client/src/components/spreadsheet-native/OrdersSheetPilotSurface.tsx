@@ -634,8 +634,18 @@ export function OrdersSheetPilotSurface({
                 return;
               }
 
+              const params = new URLSearchParams({
+                tab: "invoices",
+                from: "sales",
+              });
+
+              if (selectedOrderRow.invoiceId) {
+                params.set("invoiceId", String(selectedOrderRow.invoiceId));
+                params.set("orderId", String(selectedOrderRow.orderId));
+              }
+
               setLocation(
-                `/accounting?tab=payments&orderId=${selectedOrderRow.orderId}&from=sales`
+                `/accounting?${params.toString()}`
               );
             }}
           >

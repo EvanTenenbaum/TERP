@@ -470,6 +470,16 @@ describe("OrdersSheetPilotSurface", () => {
     expect(screen.getByText("Issued #55")).toBeInTheDocument();
   });
 
+  it("routes the accounting handoff through the invoice workspace payment deep link", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /accounting/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/accounting?tab=invoices&from=sales&invoiceId=55&orderId=2"
+    );
+  });
+
   it("can be forced into document mode without the ordersView query param", () => {
     render(
       <OrdersSheetPilotSurface onOpenClassic={vi.fn()} forceDocumentMode />

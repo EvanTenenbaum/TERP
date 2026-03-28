@@ -797,6 +797,21 @@ export const accountingRouter = router({
         return await arApDb.getInvoiceById(input.id);
       }),
 
+    getByReference: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .input(
+        z.object({
+          referenceId: z.number(),
+          referenceTypes: z.array(z.string()).optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await arApDb.getInvoiceByReference(
+          input.referenceId,
+          input.referenceTypes
+        );
+      }),
+
     create: protectedProcedure
       .use(requirePermission("accounting:create"))
       .input(

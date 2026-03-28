@@ -9,21 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { DollarSign, CreditCard, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
@@ -76,7 +61,29 @@ export function RecordPaymentDialog({
       setNotes("");
       setPaymentDate(format(new Date(), "yyyy-MM-dd"));
     }
-  }, [open, invoice]);
+  }, [open, invoice?.id, invoice?.amountDue]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onOpenChange]);
 
   const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
     onSuccess: (data) => {
@@ -137,7 +144,7 @@ export function RecordPaymentDialog({
     });
   };
 
-  if (!invoice) return null;
+  if (!open || !invoice) return null;
 
   const amountDue = parseFloat(invoice.amountDue);
   const amountPaid = parseFloat(invoice.amountPaid);
@@ -147,17 +154,31 @@ export function RecordPaymentDialog({
   const isFullPayment = paymentAmount >= amountDue;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="record-payment-dialog-title"
+      onMouseDown={event => {
+        if (event.target === event.currentTarget) {
+          onOpenChange(false);
+        }
+      }}
+      data-testid="record-payment-dialog"
+    >
+      <div className="w-full max-w-[500px] rounded-lg border bg-background p-6 shadow-lg">
+        <div className="mb-4 flex flex-col gap-2 text-center sm:text-left">
+          <h2
+            id="record-payment-dialog-title"
+            className="flex items-center gap-2 text-lg leading-none font-semibold"
+          >
             <DollarSign className="h-5 w-5" />
             Record Payment
-          </DialogTitle>
-          <DialogDescription>
+          </h2>
+          <p className="text-sm text-muted-foreground">
             Record a payment for invoice {invoice.invoiceNumber}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Invoice Summary */}
@@ -222,18 +243,18 @@ export function RecordPaymentDialog({
           {/* Payment Method */}
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">Payment Method *</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select method" />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHODS.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              id="paymentMethod"
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            >
+              {PAYMENT_METHODS.map(method => (
+                <option key={method.value} value={method.value}>
+                  {method.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Payment Date */}
@@ -270,7 +291,7 @@ export function RecordPaymentDialog({
             />
           </div>
 
-          <DialogFooter className="gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
@@ -295,10 +316,10 @@ export function RecordPaymentDialog({
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
