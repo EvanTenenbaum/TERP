@@ -16,14 +16,19 @@ export { CogsAdjustmentModal } from "./CogsAdjustmentModal";
 export { OrderCOGSDetails } from "./OrderCOGSDetails"; // TERP-0012 Phase 5
 
 // Order totals and summary
-export { OrderTotalsPanel } from "./OrderTotalsPanel";
 export { OrderPreview } from "./OrderPreview";
 export { OrderItemCard } from "./OrderItemCard";
-export { OrderAdjustmentPanel } from "./OrderAdjustmentPanel";
+export { InvoiceBottom } from "./InvoiceBottom";
+export { OrderAdjustmentsBar } from "./OrderAdjustmentsBar";
+export type {
+  AppliedPricingRule,
+  LineItem,
+  LineItemMarginSource,
+  OrderAdjustment,
+  PaymentTerms,
+} from "./types";
 
-// Line item components
 export { LineItemRow } from "./LineItemRow";
-export { LineItemTable } from "./LineItemTable";
 export { OrdersDocumentLineItemsGrid } from "./OrdersDocumentLineItemsGrid";
 
 // Fulfillment components
@@ -46,9 +51,5 @@ export { ConfirmDraftModal } from "./ConfirmDraftModal";
 export { DeleteDraftModal } from "./DeleteDraftModal";
 export { EditInvoiceDialog } from "./EditInvoiceDialog";
 
-// Floating components
-export { FloatingOrderPreview } from "./FloatingOrderPreview";
-
 // Referral components
-export { ReferralCreditsPanel } from "./ReferralCreditsPanel";
 export { ReferredBySelector } from "./ReferredBySelector";

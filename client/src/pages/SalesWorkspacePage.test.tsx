@@ -100,6 +100,10 @@ vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
   ),
 }));
 
+vi.mock("@/components/spreadsheet-native/SalesOrderSurface", () => ({
+  default: () => <div data-testid="sales-order-surface">SalesOrderSurface</div>,
+}));
+
 vi.mock("@/components/spreadsheet-native/ReturnsPilotSurface", () => ({
   default: () => <div>returns pilot surface</div>,
 }));
@@ -120,10 +124,6 @@ vi.mock("@/components/spreadsheet-native/PilotSurfaceBoundary", () => ({
 
 vi.mock("@/pages/ReturnsPage", () => ({
   default: () => <div>returns page</div>,
-}));
-
-vi.mock("@/pages/OrderCreatorPage", () => ({
-  default: () => <div>order creator page</div>,
 }));
 
 vi.mock("@/pages/LiveShoppingPage", () => ({
@@ -152,16 +152,14 @@ describe("SalesWorkspacePage quote entry flow", () => {
     expect(screen.queryByText("order creator page")).not.toBeInTheDocument();
   });
 
-  it("relabels the create-order tab to New Quote when mode=quote is active", () => {
+  it("relabels the create-order tab to New Quote when mode=quote is active", async () => {
     mockActiveTab = "create-order";
     mockSearch = "?tab=create-order&mode=quote";
-    mockPilotEnabled = false;
-    mockSurfaceMode = "classic";
 
     render(<SalesWorkspacePage />);
 
     expect(screen.getByText("New Quote")).toBeInTheDocument();
-    expect(screen.getByText("order creator page")).toBeInTheDocument();
+    expect(await screen.findByTestId("sales-order-surface")).toBeInTheDocument();
     expect(screen.queryByText("quotes work surface")).not.toBeInTheDocument();
   });
 });

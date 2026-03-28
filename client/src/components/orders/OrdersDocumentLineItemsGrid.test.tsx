@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrdersDocumentLineItemsGrid } from "./OrdersDocumentLineItemsGrid";
-import type { LineItem } from "./LineItemTable";
+import type { LineItem } from "./types";
 
 const mockPowersheetGrid = vi.fn(
   ({

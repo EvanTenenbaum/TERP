@@ -10,6 +10,9 @@ const OrdersSheetPilotSurface = lazy(
 const SalesCatalogueSurface = lazy(
   () => import("@/components/spreadsheet-native/SalesCatalogueSurface")
 );
+const SalesOrderSurface = lazy(
+  () => import("@/components/spreadsheet-native/SalesOrderSurface")
+);
 const QuotesPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/QuotesPilotSurface")
 );
@@ -17,7 +20,6 @@ const ReturnsPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/ReturnsPilotSurface")
 );
 import ReturnsPage from "@/pages/ReturnsPage";
-import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -75,15 +77,12 @@ export default function SalesWorkspacePage() {
       )
     : SALES_TABS_CONFIG_BASE;
   // Orders / create-order pilot (separate from sales-sheets to prevent cross-tab surfaceMode bleed)
-  const ordersPilotSupported =
-    activeTab === "orders" || activeTab === "create-order";
+  const ordersPilotSupported = activeTab === "orders";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(ordersPilotSupported);
-  const ordersSurfaceModuleId =
-    activeTab === "create-order" ? "create-order" : "orders";
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
     buildSurfaceAvailability(
-      ordersSurfaceModuleId,
+      "orders",
       sheetPilotEnabled,
       availabilityReady && ordersPilotSupported
     )
@@ -139,7 +138,7 @@ export default function SalesWorkspacePage() {
       onTabChange={tab => setActiveTab(tab)}
       meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
-        activeTab === "orders" || activeTab === "create-order" ? (
+        activeTab === "orders" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -214,22 +213,15 @@ export default function SalesWorkspacePage() {
         <LiveShoppingPage />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="create-order">
-        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<OrderCreatorPage />}>
-            <OrdersSheetPilotSurface
-              forceDocumentMode
-              onOpenClassic={orderId =>
-                setLocation(
-                  buildSalesWorkspacePath("create-order", {
-                    orderId: orderId ?? undefined,
-                  })
-                )
-              }
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <OrderCreatorPage />
-        )}
+        <Suspense
+          fallback={
+            <div className="p-4 text-sm text-muted-foreground">
+              Loading order...
+            </div>
+          }
+        >
+          <SalesOrderSurface />
+        </Suspense>
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

@@ -104,6 +104,29 @@ describe("TER-859 dead route redirects", () => {
     });
   });
 
+  describe("/orders/create and /orders/new → /sales?tab=create-order", () => {
+    it("redirects /orders/create to the unified create-order surface", () => {
+      const destination = buildRedirectWithTab("/sales", "create-order");
+      expect(destination).toBe("/sales?tab=create-order");
+    });
+
+    it("preserves draft hydration params on /orders/create redirects", () => {
+      const destination = buildRedirectWithTab(
+        "/sales",
+        "create-order",
+        "?draftId=42&mode=quote"
+      );
+      expect(destination).toContain("tab=create-order");
+      expect(destination).toContain("draftId=42");
+      expect(destination).toContain("mode=quote");
+    });
+
+    it("redirects /orders/new to the unified create-order surface", () => {
+      const destination = buildRedirectWithTab("/sales", "create-order");
+      expect(destination).toBe("/sales?tab=create-order");
+    });
+  });
+
   describe("/admin → /settings", () => {
     it("redirects /admin to /settings (no tab required)", () => {
       // /admin is a plain redirect to /settings with no tab override

@@ -231,8 +231,8 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: (props: Record<string, unknown>) => mockPowersheetGrid(props),
 }));
 
-vi.mock("@/pages/OrderCreatorPage", () => ({
-  default: () => <div>Orders Document Sheet</div>,
+vi.mock("@/components/spreadsheet-native/SalesOrderSurface", () => ({
+  default: () => <div>SalesOrderSurface</div>,
 }));
 
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
@@ -485,10 +485,7 @@ describe("OrdersSheetPilotSurface", () => {
       <OrdersSheetPilotSurface onOpenClassic={vi.fn()} forceDocumentMode />
     );
 
-    expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /classic composer/i })
-    ).toBeInTheDocument();
+    expect(screen.getByText("SalesOrderSurface")).toBeInTheDocument();
   });
 
   it("renders the sheet-native document workflow when ordersView=document is requested", () => {
@@ -497,13 +494,7 @@ describe("OrdersSheetPilotSurface", () => {
 
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
-    expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /back to queue/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /classic composer/i })
-    ).toBeInTheDocument();
+    expect(screen.getByText("SalesOrderSurface")).toBeInTheDocument();
     expect(mockClientsListUseQuery).toHaveBeenCalledWith(
       { limit: 1000 },
       { enabled: false }

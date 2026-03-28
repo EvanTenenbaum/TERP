@@ -10,7 +10,7 @@ import {
   resolveRouteSeedOrderType,
   shouldSeedComposerFromRoute,
   shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget,
-} from "./OrderCreatorPage";
+} from "@/hooks/useOrderDraft";
 
 describe("resolveInventoryPricingContext", () => {
   it("marks rows with applied pricing rules as customer-profile priced", () => {
