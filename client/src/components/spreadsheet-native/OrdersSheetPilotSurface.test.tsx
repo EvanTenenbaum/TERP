@@ -18,6 +18,7 @@ const {
   mockAuditLogUseQuery,
   mockDeleteDraftUseMutation,
   mockLedgerListUseQuery,
+  mockInvoiceByReferenceUseQuery,
   mockDraftsRefetch,
   mockConfirmedRefetch,
   mockDetailRefetch,
@@ -32,6 +33,7 @@ const {
   mockAuditLogUseQuery: vi.fn(),
   mockDeleteDraftUseMutation: vi.fn(),
   mockLedgerListUseQuery: vi.fn(),
+  mockInvoiceByReferenceUseQuery: vi.fn(),
   mockDraftsRefetch: vi.fn(),
   mockConfirmedRefetch: vi.fn(),
   mockDetailRefetch: vi.fn(),
@@ -201,6 +203,13 @@ vi.mock("@/lib/trpc", () => ({
           })),
         },
       },
+      invoices: {
+        getByReference: {
+          useQuery: mockInvoiceByReferenceUseQuery.mockImplementation(() => ({
+            data: null,
+          })),
+        },
+      },
     },
     invoices: {
       generateFromOrder: {
@@ -293,6 +302,9 @@ describe("OrdersSheetPilotSurface", () => {
     vi.clearAllMocks();
     mockSearch = "";
     mockQueueSelectionSummary = null;
+    mockInvoiceByReferenceUseQuery.mockImplementation(() => ({
+      data: null,
+    }));
   });
 
   it("renders one dominant queue with linked detail and selection actions", () => {
@@ -476,7 +488,62 @@ describe("OrdersSheetPilotSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: /accounting/i }));
 
     expect(mockSetLocation).toHaveBeenCalledWith(
-      "/accounting?tab=invoices&from=sales&invoiceId=55&orderId=2"
+      "/accounting?tab=invoices&from=sales&orderId=2&invoiceId=55"
+    );
+  });
+
+  it("uses linked invoice references when the order record has not backfilled invoiceId yet", () => {
+    mockOrdersGetAllUseQuery.mockImplementation(
+      ({ isDraft }: { isDraft: boolean }) => ({
+        data: {
+          items: isDraft
+            ? [
+                {
+                  id: 1,
+                  orderNumber: "SO-001",
+                  clientId: 1,
+                  orderType: "SALE",
+                  total: "400",
+                  lineItems: [{ id: 10 }],
+                  createdAt: "2026-03-10T00:00:00.000Z",
+                  confirmedAt: null,
+                  invoiceId: null,
+                  version: 1,
+                },
+              ]
+            : [
+                {
+                  id: 2,
+                  orderNumber: "SO-002",
+                  clientId: 1,
+                  orderType: "SALE",
+                  fulfillmentStatus: "READY_FOR_PACKING",
+                  total: "900",
+                  lineItems: [{ id: 11 }, { id: 12 }],
+                  createdAt: "2026-03-09T00:00:00.000Z",
+                  confirmedAt: "2026-03-09T02:00:00.000Z",
+                  invoiceId: null,
+                  version: 2,
+                },
+              ],
+        },
+        isLoading: false,
+        error: null,
+        refetch: isDraft ? mockDraftsRefetch : mockConfirmedRefetch,
+      })
+    );
+    mockInvoiceByReferenceUseQuery.mockImplementation(() => ({
+      data: { id: 64 },
+    }));
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Issued #64")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /accounting/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/accounting?tab=invoices&from=sales&orderId=2&invoiceId=64"
     );
   });
 
