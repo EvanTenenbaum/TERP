@@ -4,7 +4,7 @@ import type {
   ICellRendererParams,
   RowSelectedEvent,
 } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -413,7 +413,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         )}
         {!isLoading && !error && rows.length > 0 && (
           <div className="ag-theme-alpine h-[600px] w-full">
-            <AgGridReact<PickPackGridRow>
+            <AgGridReactCompat<PickPackGridRow>
               rowData={rows}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}

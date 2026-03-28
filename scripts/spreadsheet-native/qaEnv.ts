@@ -1,14 +1,12 @@
-import path from "node:path";
-import { config as loadDotenv } from "dotenv";
+import { getCodexEnvPath, loadCodexEnv as loadSharedCodexEnv } from "../_lib/loadCodexEnv";
 
 export function loadCodexEnv() {
-  loadDotenv({
-    path: path.resolve(process.env.HOME ?? "", ".codex/.env"),
-    override: false,
-  });
+  loadSharedCodexEnv();
 }
 
 export function getEnvOrDefault(name: string, fallback: string) {
   const value = process.env[name]?.trim();
   return value ? value : fallback;
 }
+
+export { getCodexEnvPath };

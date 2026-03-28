@@ -25,7 +25,7 @@ import type {
   SelectionChangedEvent,
 } from "ag-grid-community";
 import { themeAlpine } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -559,7 +559,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
             style={{ height: minHeight, minHeight }}
             className="w-full overflow-hidden rounded-md"
           >
-            <AgGridReact<Row>
+            <AgGridReactCompat<Row>
               theme={themeAlpine}
               rowData={rows}
               columnDefs={columnDefs}

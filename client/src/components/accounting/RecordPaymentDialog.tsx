@@ -61,7 +61,7 @@ export function RecordPaymentDialog({
       setNotes("");
       setPaymentDate(format(new Date(), "yyyy-MM-dd"));
     }
-  }, [open, invoice?.id, invoice?.amountDue]);
+  }, [open, invoice]);
 
   useEffect(() => {
     if (!open) {
