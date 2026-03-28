@@ -846,6 +846,14 @@ export const adminSchemaPushRouter = router({
       `
       );
 
+      // Add orders.shipping for sales-order freight persistence
+      await safeExecute(
+        "add_orders_shipping",
+        sql`
+        ALTER TABLE orders ADD COLUMN shipping DECIMAL(15, 2) DEFAULT 0
+      `
+      );
+
       // ============================================================================
       // SUMMARY
       // ============================================================================
@@ -1031,6 +1039,7 @@ export const adminSchemaPushRouter = router({
           "converted_from_sales_sheet_id"
         ),
         deleted_at: ordersCols.includes("deleted_at"),
+        shipping: ordersCols.includes("shipping"),
       };
 
       const allTablesPresent = Object.values(criticalTables).every(v => v);

@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import {
   AlertTriangle,
-  ArrowLeft,
   FileText,
   Plus,
   RefreshCw,
@@ -16,9 +15,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
   buildOperationsWorkspacePath,
-  buildSalesWorkspacePath,
   buildSheetNativeOrdersDocumentPath,
-  buildSheetNativeOrdersPath,
 } from "@/lib/workspaceRoutes";
 import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
 import {
@@ -42,7 +39,7 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
-import OrderCreatorPage from "@/pages/OrderCreatorPage";
+import SalesOrderSurface from "@/components/spreadsheet-native/SalesOrderSurface";
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
@@ -77,16 +74,6 @@ const queueKeyboardHints: KeyboardHint[] = [
   { key: `${mod}+Click`, label: "add to selection" },
   { key: `${mod}+C`, label: "copy cells" },
   { key: `${mod}+A`, label: "select all" },
-];
-
-const documentKeyboardHints: KeyboardHint[] = [
-  { key: "Tab", label: "next cell" },
-  { key: "Shift+Tab", label: "prev cell" },
-  { key: "Enter", label: "next row" },
-  { key: "Escape", label: "cancel edit" },
-  { key: `${mod}+C`, label: "copy" },
-  { key: `${mod}+V`, label: "paste" },
-  { key: `${mod}+Z`, label: "undo" },
 ];
 
 const formatCurrency = (value: number) =>
@@ -200,7 +187,6 @@ export function OrdersSheetPilotSurface({
   );
   const needIdFromRoute = parsePositiveIntegerParam(searchParams.get("needId"));
   const fromSalesSheet = searchParams.get("fromSalesSheet") === "true";
-  const routeMode = searchParams.get("mode");
   const currentDocumentMode =
     forceDocumentMode ||
     searchParams.get("ordersView") === "document" ||
@@ -216,12 +202,6 @@ export function OrdersSheetPilotSurface({
     params?: Record<string, string | number | boolean | null | undefined>
   ) => {
     setLocation(buildSheetNativeOrdersDocumentPath(params));
-  };
-
-  const openQueueMode = (
-    params?: Record<string, string | number | boolean | null | undefined>
-  ) => {
-    setLocation(buildSheetNativeOrdersPath(params));
   };
 
   const clientsQuery = trpc.clients.list.useQuery(
@@ -484,75 +464,8 @@ export function OrdersSheetPilotSurface({
     selectedOrderRow?.lane === "confirmed" && selectedOrderRow.invoiceId
   );
   const rowScopedActionsBlocked = queueSelectionTouchesMultipleRows;
-  const classicDocumentParams = {
-    draftId: draftIdFromRoute ?? undefined,
-    quoteId: quoteIdFromRoute ?? undefined,
-    clientId: clientIdFromRoute ?? undefined,
-    needId: needIdFromRoute ?? undefined,
-    mode: routeMode ?? undefined,
-    fromSalesSheet: fromSalesSheet ? true : undefined,
-  };
-  const documentContextLabel =
-    draftIdFromRoute !== null
-      ? `Draft #${draftIdFromRoute}`
-      : quoteIdFromRoute !== null
-        ? `Quote #${quoteIdFromRoute}`
-        : clientIdFromRoute !== null
-          ? `Client #${clientIdFromRoute}`
-          : fromSalesSheet
-            ? "Sales Catalogue import"
-            : "New draft";
-
   if (currentDocumentMode) {
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              openQueueMode({
-                orderId: draftIdFromRoute ?? undefined,
-              })
-            }
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Queue
-          </Button>
-          <Badge variant="outline">Sheet-native Orders</Badge>
-          <Badge variant="secondary">Document mode</Badge>
-          <span className="text-sm text-muted-foreground">
-            {documentContextLabel}
-          </span>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                setLocation(
-                  buildSalesWorkspacePath("create-order", {
-                    ...classicDocumentParams,
-                    classic: true,
-                  })
-                )
-              }
-            >
-              <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-              Classic Composer
-            </Button>
-          </div>
-        </div>
-
-        <OrderCreatorPage surfaceVariant="sheet-native-orders" />
-
-        <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-1.5">
-          <span className="text-xs font-medium text-muted-foreground">
-            Keyboard:
-          </span>
-          <KeyboardHintBar hints={documentKeyboardHints} className="text-xs" />
-        </div>
-      </div>
-    );
+    return <SalesOrderSurface />;
   }
 
   return (
